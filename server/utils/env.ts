@@ -111,6 +111,10 @@ export const envSchema = z
     ),
     /** Supabase's S3-compatible endpoint does not support bucket-policy APIs. */
     S3_SKIP_BUCKET_POLICY: envFlag(false),
+    /** Temporarily skip S3 bucket startup checks for scaffold services before storage is provisioned. */
+    S3_SKIP_BUCKET_INIT: envFlag(false),
+    /** Temporarily skip runtime migrations before the production database is provisioned. */
+    SKIP_RUNTIME_MIGRATIONS: envFlag(false),
     /** IP address of the trusted reverse proxy (e.g., Render, Cloudflare). When set, X-Forwarded-For is trusted for rate limiting. */
     TRUSTED_PROXY_IP: z.string().min(1).optional(),
     /** Slug of the demo organization. When set, write operations are blocked for this org. */
@@ -290,7 +294,7 @@ export const env = new Proxy({} as z.infer<typeof envSchema>, {
             `Ensure these variables are set in the Render web service environment.\n` +
             `Required: DATABASE_URL, BETTER_AUTH_SECRET, S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET\n` +
             `Required on Render: BETTER_AUTH_URL=https://careers.thefactoryhq.com\n` +
-            `Optional: BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), S3_SKIP_BUCKET_POLICY, TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_DISCOVERY_URL, OIDC_PROVIDER_NAME, AUTH_GOOGLE_CLIENT_ID, AUTH_GOOGLE_CLIENT_SECRET, AUTH_GITHUB_CLIENT_ID, AUTH_GITHUB_CLIENT_SECRET, AUTH_MICROSOFT_CLIENT_ID, AUTH_MICROSOFT_CLIENT_SECRET, AUTH_MICROSOFT_TENANT_ID, FACTORY_CAREERS_HIRING_INBOX, FACTORY_ALLOWED_EMAIL_DOMAINS, FACTORY_INITIAL_OWNER_EMAILS\n`,
+            `Optional: BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), S3_SKIP_BUCKET_POLICY, S3_SKIP_BUCKET_INIT, SKIP_RUNTIME_MIGRATIONS, TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_DISCOVERY_URL, OIDC_PROVIDER_NAME, AUTH_GOOGLE_CLIENT_ID, AUTH_GOOGLE_CLIENT_SECRET, AUTH_GITHUB_CLIENT_ID, AUTH_GITHUB_CLIENT_SECRET, AUTH_MICROSOFT_CLIENT_ID, AUTH_MICROSOFT_CLIENT_SECRET, AUTH_MICROSOFT_TENANT_ID, FACTORY_CAREERS_HIRING_INBOX, FACTORY_ALLOWED_EMAIL_DOMAINS, FACTORY_INITIAL_OWNER_EMAILS\n`,
         );
         throw result.error;
       }

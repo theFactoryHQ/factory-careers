@@ -5,11 +5,10 @@ export default defineNitroPlugin(async () => {
   // Skip during build-time prerendering — database isn't available
   if (import.meta.prerender) return
 
-  // Railway handles schema sync via preDeploy commands.
-  // Running runtime migrations there can conflict with drizzle-kit push/migrate.
-  if (process.env.RAILWAY_ENVIRONMENT_ID) {
-    console.log('[Factory Careers] Skipping runtime migrations on Railway (handled in preDeploy)')
-    logInfo('migrations.skipped_railway')
+  // Temporary bootstrap services can opt out until DATABASE_URL is wired.
+  if (env.SKIP_RUNTIME_MIGRATIONS || process.env.RAILWAY_ENVIRONMENT_ID) {
+    console.log('[Factory Careers] Skipping runtime migrations')
+    logInfo('migrations.skipped_runtime')
     return
   }
 

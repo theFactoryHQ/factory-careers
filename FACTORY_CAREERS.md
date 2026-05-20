@@ -31,6 +31,8 @@ S3_BUCKET=factory-careers-documents
 S3_REGION=us-east-1
 S3_FORCE_PATH_STYLE=true
 S3_SKIP_BUCKET_POLICY=true
+S3_SKIP_BUCKET_INIT=false
+SKIP_RUNTIME_MIGRATIONS=false
 
 FACTORY_ORG_NAME=Factory
 FACTORY_ORG_SLUG=factory
@@ -54,3 +56,5 @@ npm run db:seed:factory
 ```
 
 Documents stay private. Candidate resumes are stored by server-side object keys and are only previewed/downloaded through authenticated dashboard routes.
+
+For a temporary free Render scaffold before Supabase is available, set `S3_SKIP_BUCKET_INIT=true` and `SKIP_RUNTIME_MIGRATIONS=true` with placeholder `DATABASE_URL` and S3 values. Turn both flags back to `false` before production smoke testing.
