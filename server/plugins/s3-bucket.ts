@@ -11,12 +11,15 @@ export default defineNitroPlugin(async () => {
   // Skip during build-time prerendering — S3 isn't available
   if (import.meta.prerender) return
 
+<<<<<<< HEAD
   if (env.S3_SKIP_BUCKET_INIT) {
     console.log(`[Factory Careers] S3 bucket initialization skipped`)
     logInfo('s3.bucket_init_skipped', { bucket: env.S3_BUCKET })
     return
   }
 
+=======
+>>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
   // Managed S3 providers pre-provision buckets
   // and enforce privacy at the platform level — skip bucket initialization
   if (!env.S3_FORCE_PATH_STYLE) {

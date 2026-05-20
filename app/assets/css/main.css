@@ -18,6 +18,7 @@
   /* ── Brand / Primary ──────────────────────────────────
      Factory orange — used for primary actions, active nav,
      public links, and job-board highlights. */
+<<<<<<< HEAD
   --color-brand-50:  #fff3ef;
   --color-brand-100: #ffe0d8;
   --color-brand-200: #ffc3b4;
@@ -29,6 +30,19 @@
   --color-brand-800: #9f2314;
   --color-brand-900: #812217;
   --color-brand-950: #460c05;
+=======
+  --color-brand-50:  oklch(98.2% 0.020 67);
+  --color-brand-100: oklch(95.5% 0.050 67);
+  --color-brand-200: oklch(90.0% 0.095 63);
+  --color-brand-300: oklch(84.0% 0.145 58);
+  --color-brand-400: oklch(77.0% 0.185 52);
+  --color-brand-500: oklch(70.0% 0.205 45);
+  --color-brand-600: oklch(63.0% 0.215 40);
+  --color-brand-700: oklch(52.0% 0.190 37);
+  --color-brand-800: oklch(42.0% 0.150 35);
+  --color-brand-900: oklch(32.0% 0.105 34);
+  --color-brand-950: oklch(20.0% 0.060 33);
+>>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
 
   /* ── Accent ───────────────────────────────────────────
      Gold — subtle signal color for highlights and insights. */

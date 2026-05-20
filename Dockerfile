@@ -1,5 +1,9 @@
 # ─── Stage 1: Build ─────────────────────────────────────────────────────────
+<<<<<<< HEAD
 FROM node:22.22.0-alpine AS builder
+=======
+FROM node:24-alpine AS builder
+>>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
 WORKDIR /app
 
 # Install dependencies first (layer-cached unless package.json changes)
@@ -24,7 +28,11 @@ ENV POSTHOG_HOST=${POSTHOG_HOST}
 RUN npm run build
 
 # ─── Stage 2: Run ────────────────────────────────────────────────────────────
+<<<<<<< HEAD
 FROM node:22.22.0-alpine AS runner
+=======
+FROM node:24-alpine AS runner
+>>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
 WORKDIR /app
 
 ENV NODE_ENV=production

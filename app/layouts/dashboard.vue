@@ -17,6 +17,7 @@ const isDemo = computed(() => {
 })
 
 const isDemoAccount = computed(() => session.value?.user?.email === config.public.liveDemoEmail)
+<<<<<<< HEAD
 
 // Explicit preloading for common dashboard surfaces (pairs with the SWR caching
 // we added to the composables and router.options.ts). This makes clicking
@@ -27,6 +28,8 @@ onMounted(() => {
   // This onMounted can be expanded with router.prefetch() calls for specific
   // heavy routes if desired in the future.
 })
+=======
+>>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
 </script>
 
 <template>
@@ -50,8 +53,13 @@ onMounted(() => {
             href="https://github.com/caffeinebounce/factory-careers"
             target="_blank"
             rel="noopener noreferrer"
+<<<<<<< HEAD
             class="ml-1 font-semibold text-brand-300 underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"
           >View source →</a>
+=======
+            class="ml-1 font-semibold underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"
+          >View the Factory Careers fork →</a>
+>>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
         </span>
       </div>
       <div :class="isFullbleed ? 'min-h-0 flex-1' : 'flex-1'">

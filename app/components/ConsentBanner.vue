@@ -15,6 +15,7 @@ const { needsConsent, acceptAnalytics, declineAnalytics } = useAnalyticsConsent(
       v-if="needsConsent"
       class="fixed bottom-4 right-4 z-50 w-full max-w-[300px] overflow-hidden rounded-2xl border border-white/[0.08] bg-black/95 shadow-2xl backdrop-blur-2xl sm:bottom-6 sm:right-6"
     >
+<<<<<<< HEAD
       <!-- Factory brand accent line -->
       <div class="h-px w-full bg-gradient-to-r from-brand-500/50 via-brand-400/25 to-transparent" />
 
@@ -49,6 +50,37 @@ const { needsConsent, acceptAnalytics, declineAnalytics } = useAnalyticsConsent(
             Sure, help improve it
           </button>
         </div>
+=======
+      <p class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-white/40">A small ask</p>
+      <p class="text-[13px] leading-relaxed text-white/70">
+        Help us improve Factory Careers. No ads, no data selling, just product insights.
+      </p>
+      <p class="mt-1.5 text-[12px] text-white/40">
+        <a
+          :href="`${useRuntimeConfig().public.marketingUrl}/privacy`"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline underline-offset-2 transition hover:text-white/70"
+        >
+          Privacy policy
+        </a>
+      </p>
+      <div class="mt-3 flex gap-2">
+        <button
+          type="button"
+          class="rounded-md px-3 py-1.5 text-xs font-medium text-white/40 transition hover:text-white/70"
+          @click="declineAnalytics"
+        >
+          No thanks
+        </button>
+        <button
+          type="button"
+          class="rounded-md bg-brand-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-500"
+          @click="acceptAnalytics"
+        >
+          Sure, help improve it
+        </button>
+>>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
       </div>
     </div>
   </Transition>

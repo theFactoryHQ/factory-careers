@@ -20,14 +20,22 @@ const { isDark, toggle: toggleColorMode } = useColorMode()
         class="flex items-center gap-3 text-surface-900 dark:text-white"
       >
         <img
+<<<<<<< HEAD
           src="/factory-logo-dark.png"
           alt="Factory"
           width="456"
           height="76"
+=======
+          src="/factory-logo.png"
+          alt="Factory Careers"
+          width="28"
+          height="28"
+>>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
           loading="eager"
           decoding="sync"
           class="h-auto w-[108px] shrink-0 object-contain dark:hidden sm:w-[128px]"
         />
+<<<<<<< HEAD
         <img
           src="/factory-logo.png"
           alt="Factory"
@@ -38,6 +46,9 @@ const { isDark, toggle: toggleColorMode } = useColorMode()
           class="hidden h-auto w-[108px] shrink-0 object-contain dark:block sm:w-[128px]"
         />
         <span class="text-[26px] font-light leading-none tracking-normal">Careers</span>
+=======
+        Factory Careers
+>>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
       </a>
 
       <!-- Center nav links (desktop) -->

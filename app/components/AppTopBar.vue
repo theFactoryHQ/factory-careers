@@ -218,6 +218,7 @@ onUnmounted(() => {
     <div class="relative z-20 border-b border-white/10 bg-black/90 backdrop-blur-xl">
       <div class="flex h-16 items-center justify-between px-4 lg:px-6">
         <!-- Left: Logo + Nav -->
+<<<<<<< HEAD
         <div class="flex min-w-0 items-center gap-2 lg:gap-3">
           <NuxtLink
             :to="$localePath('/dashboard')"
@@ -226,6 +227,17 @@ onUnmounted(() => {
             <img src="/factory-logo.png" alt="Factory" class="h-auto w-[108px] shrink-0 object-contain sm:w-[128px]" />
             <span class="hidden text-[26px] font-light leading-none tracking-normal text-white sm:block">Careers</span>
           </NuxtLink>
+=======
+        <div class="flex items-center gap-1 lg:gap-2">
+          <!-- Logo — links to Factory's public site, not the app root -->
+          <a
+            :href="useRuntimeConfig().public.marketingUrl"
+            class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg no-underline hover:bg-surface-100/60 dark:hover:bg-surface-800/60 transition-colors mr-1 lg:mr-4"
+          >
+            <img src="/factory-logo.png" alt="Factory Careers" class="size-7 shrink-0 object-contain" />
+            <span class="text-[15px] font-bold text-surface-900 dark:text-surface-100 hidden sm:block tracking-tight">Factory Careers</span>
+          </a>
+>>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
 
           <!-- Desktop nav links -->
           <nav class="hidden md:flex items-center gap-0.5">
@@ -321,7 +333,11 @@ onUnmounted(() => {
           <!-- Get Started CTA (demo mode only) -->
           <div v-if="isDemo" ref="getStartedMenuRoot" class="relative hidden sm:block">
             <button
+<<<<<<< HEAD
               class="factory-button-cta factory-button-premium group inline-flex h-9 items-center gap-2 px-4 text-[13px] transition-all duration-200 cursor-pointer"
+=======
+              class="group inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-700 to-brand-500 px-4 py-1.5 text-[13px] font-semibold text-white shadow-md shadow-brand-600/25 hover:shadow-lg hover:shadow-brand-600/30 active:shadow-sm transition-all duration-200 cursor-pointer border-0"
+>>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
               @click="showGetStartedMenu = !showGetStartedMenu"
             >
               <Sparkles class="size-3.5 transition-transform duration-300 group-hover:rotate-12" />
@@ -356,8 +372,13 @@ onUnmounted(() => {
                       <Cloud class="size-4" />
                     </div>
                     <div>
+<<<<<<< HEAD
                       <div class="text-sm font-semibold text-white transition-colors">Factory Staff</div>
                       <div class="text-xs text-white/48 mt-0.5">Use Microsoft SSO or an invitation to access hiring workflows</div>
+=======
+                      <div class="text-sm font-semibold text-surface-900 dark:text-surface-100 group-hover/item:text-brand-700 dark:group-hover/item:text-brand-300 transition-colors">Factory Staff</div>
+                      <div class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">Use Microsoft SSO or an invitation to access hiring workflows</div>
+>>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
                     </div>
                   </NuxtLink>
                   <a
@@ -370,8 +391,13 @@ onUnmounted(() => {
                       <Server class="size-4" />
                     </div>
                     <div>
+<<<<<<< HEAD
                       <div class="text-sm font-semibold text-white transition-colors">Source</div>
                       <div class="text-xs text-white/48 mt-0.5">Factory Careers source lives here</div>
+=======
+                      <div class="text-sm font-semibold text-surface-900 dark:text-surface-100 group-hover/item:text-surface-700 dark:group-hover/item:text-surface-200 transition-colors">Source</div>
+                      <div class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">Factory Careers stays a thin AGPL Reqcore fork</div>
+>>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
                     </div>
                   </a>
                 </div>

@@ -70,6 +70,7 @@ async function enforceFactoryAuthPolicy(event: H3Event) {
   }
 
   if (
+<<<<<<< HEAD
     env.FACTORY_ADMIN_SSO_ONLY &&
     (
       authPath.startsWith('/sign-in/email') ||
@@ -86,6 +87,8 @@ async function enforceFactoryAuthPolicy(event: H3Event) {
   }
 
   if (
+=======
+>>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
     env.FACTORY_DISABLE_PUBLIC_ORG_CREATION &&
     authPath.includes('/organization/create')
   ) {
