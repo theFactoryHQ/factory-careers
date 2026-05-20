@@ -92,13 +92,13 @@ function nowStamp(): string {
  */
 export function generateInterviewICS(event: ICalEvent): string {
   const endTime = new Date(event.startTime.getTime() + event.durationMinutes * 60_000)
-  const uid = `interview-${event.interviewId}@reqcore.com`
+  const uid = `interview-${event.interviewId}@thefactoryhq.com`
   const sequence = event.sequence ?? 0
 
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Reqcore//Interview Scheduling//EN',
+    'PRODID:-//Factory Careers//Interview Scheduling//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:REQUEST',
     'BEGIN:VEVENT',
@@ -132,13 +132,13 @@ export function generateInterviewICS(event: ICalEvent): string {
  */
 export function generateCancellationICS(event: Pick<ICalEvent, 'interviewId' | 'summary' | 'startTime' | 'durationMinutes' | 'organizerName' | 'organizerEmail' | 'attendeeEmail' | 'attendeeName'> & { sequence?: number }): string {
   const endTime = new Date(event.startTime.getTime() + event.durationMinutes * 60_000)
-  const uid = `interview-${event.interviewId}@reqcore.com`
+  const uid = `interview-${event.interviewId}@thefactoryhq.com`
   const sequence = (event.sequence ?? 0) + 1
 
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Reqcore//Interview Scheduling//EN',
+    'PRODID:-//Factory Careers//Interview Scheduling//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:CANCEL',
     'BEGIN:VEVENT',

@@ -52,7 +52,7 @@ const jobDescriptionPlain = computed(() => markdownToPlainText(job.value?.descri
 // ─────────────────────────────────────────────
 
 useSeoMeta({
-  title: computed(() => job.value ? `${job.value.title} — Hiring Now` : 'Job Details — Reqcore'),
+  title: computed(() => job.value ? `${job.value.title} — Factory Careers` : 'Job Details — Factory Careers'),
   description: computed(() => {
     if (!job.value) return 'View job details and apply'
     const loc = job.value.location ? ` in ${job.value.location}` : ''
@@ -66,7 +66,7 @@ useSeoMeta({
     return `Apply for ${job.value.title}${org}. ${job.value.location ?? 'Remote'}.`
   }),
   ogType: 'website',
-  ogImage: '/reqcore-banner-github.jpeg',
+  ogImage: '/factory-careers-og.png',
   twitterCard: 'summary_large_image',
   twitterTitle: computed(() => job.value?.title ?? 'Job Details'),
   twitterDescription: computed(() => {

@@ -14,37 +14,37 @@
       "github": "GitHub",
       "dashboard": "Dashboard",
       "logIn": "Log in",
-      "signUp": "Sign up"
+      "signUp": "Request access"
     },
-    "badge": "Open Source ATS for Developer Teams",
+    "badge": "Factory Careers",
     "hero": {
-      "titleLine1": "Your hiring.",
-      "titleHighlight": "Your infrastructure.",
-      "subtitle": "Open-source applicant tracking built for teams that self-host.",
+      "titleLine1": "Build what",
+      "titleHighlight": "comes next.",
+      "subtitle": "Explore open roles at Factory and tell us where your work can create leverage.",
       "goToDashboard": "Go to Dashboard",
       "signIn": "Sign in",
-      "createAccount": "Create account",
+      "createAccount": "Request access",
       "ctaDemo": "Try live demo",
       "ctaStart": "View on GitHub",
       "hint": "Early open-source release — try the demo with sample data, no sign-up needed"
     },
     "pillars": {
       "yourData": {
-        "label": "Your data",
-        "desc": "Postgres + MinIO on your infrastructure. Nothing leaves your network."
+        "label": "Private by default",
+        "desc": "Applications and documents stay in Factory-controlled infrastructure."
       },
       "auditable": {
-        "label": "Fully auditable",
-        "desc": "Open source — every line of matching logic is visible and overridable."
+        "label": "Built on open source",
+        "desc": "Factory Careers is a thin, branded Reqcore fork."
       },
       "unlimitedSeats": {
-        "label": "Unlimited seats",
-        "desc": "Add your whole hiring team. No per-seat pricing, ever."
+        "label": "Hiring team workflow",
+        "desc": "Jobs, candidates, pipeline stages, interviews, and source tracking in one place."
       }
     },
     "footer": {
       "source": "Source",
-      "tagline": "Reqcore — open-source applicant tracking"
+      "tagline": "Factory Careers — powered by Reqcore"
     }
   }
 }

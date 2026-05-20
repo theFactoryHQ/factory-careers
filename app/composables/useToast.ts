@@ -12,7 +12,7 @@ export interface Toast {
   duration?: number
 }
 
-const GITHUB_ISSUES_URL = 'https://github.com/reqcore-inc/reqcore/issues/new'
+const GITHUB_ISSUES_URL = 'https://github.com/caffeinebounce/factory-careers/issues/new'
 
 function getPostHog(): PostHog | undefined {
   try {

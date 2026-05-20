@@ -15,13 +15,13 @@ import {
 let _s3Client: S3Client | undefined
 
 /**
- * Lazily-initialized S3-compatible client for MinIO (local dev) or Railway Buckets (production).
+ * Lazily-initialized S3-compatible client for MinIO, Supabase Storage S3, or AWS S3.
  * The client is created on first access — not at import time — so build-time
  * prerendering doesn't crash when S3 env vars aren't available.
  *
  * `forcePathStyle` is controlled by `S3_FORCE_PATH_STYLE` env var:
  * - `true` (default) — required for MinIO (path-style URLs)
- * - `false` — required for Railway Buckets / AWS S3 (virtual-hosted-style URLs)
+ * - `false` — required for AWS S3-style virtual-hosted URLs
  */
 export function getS3Client(): S3Client {
   if (!_s3Client) {
@@ -132,7 +132,12 @@ export async function ensureBucketExists(): Promise<void> {
     await getS3Client().send(new CreateBucketCommand({ Bucket: env.S3_BUCKET }))
   }
 
-  // Always enforce private policy (idempotent)
+  if (env.S3_SKIP_BUCKET_POLICY) {
+    console.info(`[Factory Careers] S3 bucket "${env.S3_BUCKET}" — skipping bucket policy enforcement`)
+    return
+  }
+
+  // Always enforce private policy (idempotent) when the S3 provider supports it.
   await enforcePrivateBucketPolicy()
 }
 
@@ -155,6 +160,33 @@ async function enforcePrivateBucketPolicy(): Promise<void> {
     if (error instanceof Error && 'name' in error && error.name === 'NoSuchBucketPolicy') {
       return
     }
+    if (isUnsupportedBucketPolicyError(error)) {
+      logWarn('s3.bucket_policy_unsupported', {
+        bucket: env.S3_BUCKET,
+        error_message: error instanceof Error ? error.message : String(error),
+      })
+      return
+    }
     throw error
   }
+}
+
+function isUnsupportedBucketPolicyError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+
+  const metadata = (error as { $metadata?: { httpStatusCode?: number } }).$metadata
+  const statusCode = metadata?.httpStatusCode
+  const name = error.name.toLowerCase()
+  const message = error.message.toLowerCase()
+
+  return (
+    statusCode === 400 ||
+    statusCode === 405 ||
+    statusCode === 501 ||
+    name.includes('notimplemented') ||
+    name.includes('not supported') ||
+    message.includes('not implemented') ||
+    message.includes('not supported') ||
+    message.includes('unsupported')
+  )
 }

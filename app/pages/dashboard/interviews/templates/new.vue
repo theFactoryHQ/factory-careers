@@ -9,7 +9,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'New Template — Email Templates — Reqcore',
+  title: 'New Template — Email Templates — Factory Careers',
   description: 'Create a new interview invitation email template',
   robots: 'noindex, nofollow',
 })

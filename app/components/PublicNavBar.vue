@@ -14,21 +14,21 @@ const { isDark, toggle: toggleColorMode } = useColorMode()
 <template>
   <nav class="fixed inset-x-0 top-0 z-50 border-b border-surface-200/80 dark:border-white/[0.06] bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-xl">
     <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-      <!-- Logo — links to marketing site (reqcore.com) -->
+      <!-- Logo — links to Factory's public site -->
       <a
         :href="useRuntimeConfig().public.marketingUrl"
         class="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight text-surface-900 dark:text-white"
       >
         <img
-          src="/eagle-mascot-logo-128.png"
-          alt="Reqcore mascot"
+          src="/factory-logo.png"
+          alt="Factory Careers"
           width="28"
           height="28"
           loading="eager"
           decoding="sync"
           class="h-7 w-7 object-contain"
         />
-        Reqcore
+        Factory Careers
       </a>
 
       <!-- Center nav links (desktop) -->
@@ -41,7 +41,7 @@ const { isDark, toggle: toggleColorMode } = useColorMode()
           {{ t('home.nav.openPositions') }}
         </NuxtLink>
         <a
-          href="https://github.com/reqcore-inc/reqcore"
+          href="https://github.com/caffeinebounce/factory-careers"
           target="_blank"
           rel="noopener noreferrer"
           class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium text-surface-500 dark:text-surface-400 transition hover:text-surface-900 dark:hover:text-white"
@@ -86,7 +86,7 @@ const { isDark, toggle: toggleColorMode } = useColorMode()
             :to="localePath('/auth/sign-up')"
             class="rounded-md bg-surface-900 dark:bg-white px-3.5 py-1.5 text-[13px] font-semibold text-white dark:text-[#09090b] transition hover:bg-surface-800 dark:hover:bg-white/90"
           >
-            {{ t('home.nav.signUp') }}
+            Request access
           </NuxtLink>
         </template>
       </div>

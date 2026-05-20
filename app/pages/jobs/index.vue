@@ -20,18 +20,18 @@ const sourceQuery = computed(() => {
 })
 
 useSeoMeta({
-  title: 'Open Positions — Job Board',
+  title: 'Open Positions — Factory Careers',
   description:
-    'Browse open job positions on Reqcore and apply directly. Find your next career opportunity with companies that value transparency.',
-  ogTitle: 'Open Positions — Reqcore Job Board',
+    'Browse open roles at Factory and submit your application directly.',
+  ogTitle: 'Open Positions — Factory Careers',
   ogDescription:
-    'Browse open job positions and apply directly. Powered by the open-source ATS you actually own.',
+    'Browse open Factory roles and submit your application directly.',
   ogType: 'website',
-  ogImage: '/reqcore-banner-github.jpeg',
+  ogImage: '/factory-careers-og.png',
   twitterCard: 'summary_large_image',
-  twitterTitle: 'Open Positions — Reqcore Job Board',
+  twitterTitle: 'Open Positions — Factory Careers',
   twitterDescription:
-    'Browse open job positions and apply directly.',
+    'Browse open Factory roles and apply directly.',
 })
 
 // ─────────────────────────────────────────────
@@ -110,7 +110,7 @@ function formatDate(dateStr: string) {
     <div class="mb-8">
       <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-100">Open Positions</h1>
       <p class="text-sm text-surface-500 mt-1">
-        Browse our current openings and find your next opportunity.
+        Browse Factory openings and share where your work could fit.
       </p>
     </div>
 

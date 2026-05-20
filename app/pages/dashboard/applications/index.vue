@@ -7,7 +7,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Applications — Reqcore',
+  title: 'Applications — Factory Careers',
   description: 'Manage applications across all jobs',
 })
 

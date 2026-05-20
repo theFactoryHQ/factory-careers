@@ -6,7 +6,8 @@ const railwayEnvironmentName =
   process.env.RAILWAY_ENVIRONMENT_NAME?.toLowerCase() ?? "";
 const railwayPublicDomain =
   process.env.RAILWAY_PUBLIC_DOMAIN?.toLowerCase() ?? "";
-const siteUrl = process.env.NUXT_PUBLIC_SITE_URL || "https://reqcore.com";
+const siteUrl =
+  process.env.NUXT_PUBLIC_SITE_URL || "https://careers.thefactoryhq.com";
 const i18nDefaultLocale = "en";
 const i18nLocales = [
   { code: "en", language: "en-US", name: "English", file: "en.json" },
@@ -99,7 +100,7 @@ export default defineNuxtConfig({
     publicKey: process.env.POSTHOG_PUBLIC_KEY || "",
     host: process.env.POSTHOG_HOST || "https://eu.i.posthog.com",
     clientConfig: {
-      // ── Reverse proxy: route PostHog through reqcore.com to bypass ad blockers ──
+      // ── Reverse proxy: route PostHog through the app domain to bypass ad blockers ──
       // Requests to /ingest/** are proxied by Nitro to eu.i.posthog.com
       api_host: "/ingest",
       ui_host: "https://eu.posthog.com",
@@ -168,10 +169,9 @@ export default defineNuxtConfig({
   // ─────────────────────────────────────────────
   app: {
     head: {
-      titleTemplate: "%s — Reqcore",
+      titleTemplate: "%s — Factory Careers",
       link: [
-        { rel: "icon", type: "image/png", href: "/favicon.png" },
-        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+        { rel: "icon", type: "image/png", href: "/factory-logo.png" },
         {
           rel: "apple-touch-icon",
           sizes: "180x180",
@@ -193,10 +193,10 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      /** Base URL of the marketing site (reqcore-web) for cross-domain links */
+      /** Base URL of the Factory marketing site for cross-domain links */
       marketingUrl:
-        process.env.NUXT_PUBLIC_MARKETING_URL || "https://reqcore.com",
-      /** Cookie domain for cross-subdomain sharing (e.g. '.reqcore.com') */
+        process.env.NUXT_PUBLIC_MARKETING_URL || "https://thefactoryhq.com",
+      /** Cookie domain for cross-subdomain sharing (e.g. '.thefactoryhq.com') */
       cookieDomain: process.env.NUXT_PUBLIC_COOKIE_DOMAIN || "",
       // PostHog runtimeConfig is managed by @posthog/nuxt via posthogConfig above.
       // Override at runtime with NUXT_PUBLIC_POSTHOG_PUBLIC_KEY / NUXT_PUBLIC_POSTHOG_HOST.
@@ -208,13 +208,13 @@ export default defineNuxtConfig({
         const email =
           process.env.LIVE_DEMO_EMAIL ||
           process.env.DEMO_EMAIL ||
-          "demo@reqcore.com";
+          "demo@thefactoryhq.com";
         // Guard against stale applirank.com domain from old env vars
         if (email.endsWith("@applirank.com")) {
           console.warn(
-            "[config] Stale demo email detected (applirank.com domain) — falling back to demo@reqcore.com",
+            "[config] Stale demo email detected (applirank.com domain) — falling back to demo@thefactoryhq.com",
           );
-          return "demo@reqcore.com";
+          return "demo@thefactoryhq.com";
         }
         return email;
       })(),
@@ -232,7 +232,13 @@ export default defineNuxtConfig({
         process.env.OIDC_DISCOVERY_URL
       ),
       /** Display name for the SSO provider button */
-      oidcProviderName: process.env.OIDC_PROVIDER_NAME || "SSO",
+      oidcProviderName: process.env.OIDC_PROVIDER_NAME || "Microsoft SSO",
+      factoryAppName: process.env.FACTORY_APP_NAME || "Factory Careers",
+      factoryOrgName: process.env.FACTORY_ORG_NAME || "Factory",
+      factoryPublicSignupEnabled:
+        process.env.FACTORY_DISABLE_PUBLIC_SIGNUP === "false",
+      factoryPublicOrgCreationEnabled:
+        process.env.FACTORY_DISABLE_PUBLIC_ORG_CREATION === "false",
       /**
        * Feature flag overrides forced by env vars (FEATURE_FLAG_*).
        * Self-hosters use these to enable/disable flags without running PostHog.

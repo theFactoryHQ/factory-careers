@@ -1,7 +1,7 @@
 /**
  * SSR-safe composable for managing dark/light mode.
  *
- * - Persists preference to `localStorage` under the key `reqcore-color-mode`.
+ * - Persists preference to `localStorage` under the key `factory-careers-color-mode`.
  * - Defaults to OS preference (`prefers-color-scheme: dark`) on first visit.
  * - Manages the `.dark` class on `<html>` via both Nuxt's useHead (so it
  *   survives Unhead's reactive attribute patching) and direct DOM manipulation
@@ -47,7 +47,7 @@ export function useColorMode() {
     colorMode.value = colorMode.value === 'dark' ? 'light' : 'dark'
     applyClass()
     if (import.meta.client) {
-      localStorage.setItem('reqcore-color-mode', colorMode.value)
+      localStorage.setItem('factory-careers-color-mode', colorMode.value)
     }
   }
 
@@ -56,7 +56,7 @@ export function useColorMode() {
     colorMode.value = mode
     applyClass()
     if (import.meta.client) {
-      localStorage.setItem('reqcore-color-mode', mode)
+      localStorage.setItem('factory-careers-color-mode', mode)
     }
   }
 
@@ -64,7 +64,7 @@ export function useColorMode() {
   // storage events from other tabs, etc.)
   if (import.meta.client) {
     onMounted(() => {
-      const stored = localStorage.getItem('reqcore-color-mode') as 'light' | 'dark' | null
+      const stored = localStorage.getItem('factory-careers-color-mode') as 'light' | 'dark' | null
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
       const resolved: 'light' | 'dark' = stored ? stored : (prefersDark ? 'dark' : 'light')
       if (colorMode.value !== resolved) {

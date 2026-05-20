@@ -215,13 +215,13 @@ onUnmounted(() => {
       <div class="flex h-14 items-center justify-between px-4 lg:px-6">
         <!-- Left: Logo + Nav -->
         <div class="flex items-center gap-1 lg:gap-2">
-          <!-- Logo — links to marketing site (reqcore.com), not app root -->
+          <!-- Logo — links to Factory's public site, not the app root -->
           <a
             :href="useRuntimeConfig().public.marketingUrl"
             class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg no-underline hover:bg-surface-100/60 dark:hover:bg-surface-800/60 transition-colors mr-1 lg:mr-4"
           >
-            <img src="/eagle-mascot-logo.png" alt="Reqcore mascot" class="size-7 shrink-0 object-contain" />
-            <span class="text-[15px] font-bold text-surface-900 dark:text-surface-100 hidden sm:block tracking-tight">Reqcore</span>
+            <img src="/factory-logo.png" alt="Factory Careers" class="size-7 shrink-0 object-contain" />
+            <span class="text-[15px] font-bold text-surface-900 dark:text-surface-100 hidden sm:block tracking-tight">Factory Careers</span>
           </a>
 
           <!-- Desktop nav links -->
@@ -295,7 +295,7 @@ onUnmounted(() => {
           <!-- Get Started CTA (demo mode only) -->
           <div v-if="isDemo" ref="getStartedMenuRoot" class="relative hidden sm:block">
             <button
-              class="group inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-600 to-violet-600 px-4 py-1.5 text-[13px] font-semibold text-white shadow-md shadow-brand-600/25 hover:shadow-lg hover:shadow-brand-600/30 active:shadow-sm transition-all duration-200 cursor-pointer border-0"
+              class="group inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-700 to-brand-500 px-4 py-1.5 text-[13px] font-semibold text-white shadow-md shadow-brand-600/25 hover:shadow-lg hover:shadow-brand-600/30 active:shadow-sm transition-all duration-200 cursor-pointer border-0"
               @click="showGetStartedMenu = !showGetStartedMenu"
             >
               <Sparkles class="size-3.5 transition-transform duration-300 group-hover:rotate-12" />
@@ -330,12 +330,12 @@ onUnmounted(() => {
                       <Cloud class="size-4" />
                     </div>
                     <div>
-                      <div class="text-sm font-semibold text-surface-900 dark:text-surface-100 group-hover/item:text-brand-700 dark:group-hover/item:text-brand-300 transition-colors">Cloud Hosted</div>
-                      <div class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">Start free in seconds — we handle hosting, updates &amp; backups</div>
+                      <div class="text-sm font-semibold text-surface-900 dark:text-surface-100 group-hover/item:text-brand-700 dark:group-hover/item:text-brand-300 transition-colors">Factory Staff</div>
+                      <div class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">Use Microsoft SSO or an invitation to access hiring workflows</div>
                     </div>
                   </NuxtLink>
                   <a
-                    href="https://github.com/reqcore-inc/reqcore#quick-start"
+                    href="https://github.com/caffeinebounce/factory-careers"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-surface-50 dark:hover:bg-surface-800/60 no-underline group/item"
@@ -344,8 +344,8 @@ onUnmounted(() => {
                       <Server class="size-4" />
                     </div>
                     <div>
-                      <div class="text-sm font-semibold text-surface-900 dark:text-surface-100 group-hover/item:text-surface-700 dark:group-hover/item:text-surface-200 transition-colors">Self-Host</div>
-                      <div class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">Deploy on your own infrastructure — full control, 100% free</div>
+                      <div class="text-sm font-semibold text-surface-900 dark:text-surface-100 group-hover/item:text-surface-700 dark:group-hover/item:text-surface-200 transition-colors">Source</div>
+                      <div class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">Factory Careers stays a thin AGPL Reqcore fork</div>
                     </div>
                   </a>
                 </div>
@@ -626,16 +626,16 @@ onUnmounted(() => {
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-950/40 hover:bg-brand-100 dark:hover:bg-brand-950/60 transition-colors no-underline"
               >
                 <Cloud class="size-4" />
-                Cloud Hosted — Start Free
+                Factory Staff — Sign in
               </NuxtLink>
               <a
-                href="https://github.com/reqcore-inc/reqcore#quick-start"
+                href="https://github.com/caffeinebounce/factory-careers"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors no-underline mt-1"
               >
                 <Server class="size-4" />
-                Self-Host — Deploy Free
+                Source — View fork
               </a>
             </div>
           </template>

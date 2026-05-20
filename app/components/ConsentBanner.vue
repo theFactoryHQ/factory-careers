@@ -17,11 +17,11 @@ const { needsConsent, acceptAnalytics, declineAnalytics } = useAnalyticsConsent(
     >
       <p class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-white/40">A small ask</p>
       <p class="text-[13px] leading-relaxed text-white/70">
-        Help us improve reqcore. No ads, no data selling, just product insights.
+        Help us improve Factory Careers. No ads, no data selling, just product insights.
       </p>
       <p class="mt-1.5 text-[12px] text-white/40">
         <a
-          :href="`${useRuntimeConfig().public.marketingUrl}/docs/legal/privacy-policy`"
+          :href="`${useRuntimeConfig().public.marketingUrl}/privacy`"
           target="_blank"
           rel="noopener noreferrer"
           class="underline underline-offset-2 transition hover:text-white/70"
@@ -39,7 +39,7 @@ const { needsConsent, acceptAnalytics, declineAnalytics } = useAnalyticsConsent(
         </button>
         <button
           type="button"
-          class="rounded-md bg-indigo-500 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-400"
+          class="rounded-md bg-brand-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-500"
           @click="acceptAnalytics"
         >
           Sure, help improve it

@@ -11,7 +11,7 @@ const pillars = computed(() => [
   { icon: Users, label: t('home.pillars.unlimitedSeats.label'), desc: t('home.pillars.unlimitedSeats.desc') },
 ])
 
-useHead({ title: 'Reqcore' })
+useHead({ title: 'Factory Careers' })
 definePageMeta({ layout: false })
 </script>
 
@@ -84,7 +84,7 @@ definePageMeta({ layout: false })
       <footer class="hero-animate hero-delay-5 mt-28 flex flex-col items-center gap-4 text-center">
         <div class="flex items-center gap-5">
           <a
-            href="https://github.com/reqcore-inc/reqcore"
+            href="https://github.com/caffeinebounce/factory-careers"
             target="_blank"
             rel="noopener noreferrer"
             class="flex items-center gap-1.5 text-[13px] text-surface-500 transition hover:text-surface-700 dark:hover:text-surface-300"

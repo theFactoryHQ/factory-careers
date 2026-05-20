@@ -150,7 +150,7 @@ const previewSubject = computed(() => renderTemplatePreview(form.subject, sample
 const previewBody = computed(() => renderTemplatePreview(form.body, sampleVariables))
 
 useSeoMeta({
-  title: computed(() => form.name ? `${form.name} — Email Templates — Reqcore` : 'Email Template — Reqcore'),
+  title: computed(() => form.name ? `${form.name} — Email Templates — Factory Careers` : 'Email Template — Factory Careers'),
   robots: 'noindex, nofollow',
 })
 </script>

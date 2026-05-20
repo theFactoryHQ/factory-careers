@@ -7,14 +7,15 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Create Organization — Reqcore',
-  description: 'Create your organization to start recruiting',
+  title: 'Join Factory — Factory Careers',
+  description: 'Join the Factory Careers workspace',
   robots: 'noindex, nofollow',
 })
 
 const { orgs, isOrgsLoading, switchOrg, createOrg, activeOrg } = useCurrentOrg()
 const { acceptInviteLink } = useInviteLinks()
 const localePath = useLocalePath()
+const config = useRuntimeConfig()
 const { track } = useTrack()
 
 onMounted(() => track('onboarding_viewed', { mode: viewMode.value }))
@@ -25,6 +26,9 @@ const slugEdited = ref(false)
 const error = ref('')
 const isLoading = ref(false)
 const showCreateForm = ref(false)
+const publicOrgCreationEnabled = computed(
+  () => config.public.factoryPublicOrgCreationEnabled === true,
+)
 
 // ─────────────────────────────────────────────
 // View mode: 'picker' | 'create' | 'join'
@@ -87,6 +91,11 @@ function onSlugInput() {
 
 async function handleCreateOrg() {
   error.value = ''
+
+  if (!publicOrgCreationEnabled.value) {
+    error.value = 'Factory Careers uses a single Factory organization. Ask an administrator for an invitation.'
+    return
+  }
 
   if (!orgName.value.trim()) {
     error.value = 'Organization name is required.'
@@ -294,6 +303,7 @@ async function handleSubmitJoinRequest() {
 
     <div class="flex flex-col gap-2 mt-2 pt-2 border-t border-surface-200 dark:border-surface-800">
       <button
+        v-if="publicOrgCreationEnabled"
         class="text-sm text-brand-600 dark:text-brand-400 hover:underline"
         @click="viewMode = 'create'"
       >
@@ -443,15 +453,15 @@ async function handleSubmitJoinRequest() {
     <div class="flex flex-col items-center gap-2">
       <button
         class="text-sm text-brand-600 dark:text-brand-400 hover:underline"
-        @click="viewMode = orgs.length > 0 ? 'picker' : 'create'"
+        @click="viewMode = orgs.length > 0 ? 'picker' : (publicOrgCreationEnabled ? 'create' : 'join')"
       >
-        {{ orgs.length > 0 ? 'Back to organization list' : 'Create a new organization instead' }}
+        {{ orgs.length > 0 ? 'Back to organization list' : (publicOrgCreationEnabled ? 'Create a new organization instead' : 'Use an invite link instead') }}
       </button>
     </div>
   </div>
 
   <!-- Create org form -->
-  <form v-else class="flex flex-col gap-4" @submit.prevent="handleCreateOrg">
+  <form v-else-if="publicOrgCreationEnabled" class="flex flex-col gap-4" @submit.prevent="handleCreateOrg">
     <h2 class="text-xl font-semibold text-center text-surface-900 dark:text-surface-100">Create your organization</h2>
     <p class="text-sm text-surface-500 dark:text-surface-400 text-center mb-2">
       Set up your workspace to start managing candidates and jobs.
@@ -509,4 +519,19 @@ async function handleSubmitJoinRequest() {
       </button>
     </div>
   </form>
+
+  <div v-else class="flex flex-col gap-5 text-center">
+    <div>
+      <h2 class="text-xl font-semibold text-surface-900 dark:text-surface-100">Join Factory Careers</h2>
+      <p class="mt-2 text-sm leading-6 text-surface-500 dark:text-surface-400">
+        This workspace is managed by Factory. Use an invite link or request access so an administrator can approve you.
+      </p>
+    </div>
+    <button
+      class="rounded-md bg-brand-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-700"
+      @click="viewMode = 'join'"
+    >
+      Enter invite or request access
+    </button>
+  </div>
 </template>

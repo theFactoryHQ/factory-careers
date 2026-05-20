@@ -1,5 +1,5 @@
 # ─── Stage 1: Build ─────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 
 # Install dependencies first (layer-cached unless package.json changes)
@@ -15,7 +15,7 @@ ENV NUXT_PUBLIC_SITE_URL=${NUXT_PUBLIC_SITE_URL}
 
 # PostHog — the @posthog/nuxt module is conditionally loaded at build time.
 # Pass your project API key so the module is included in the production bundle.
-# Railway auto-passes service variables as Docker build args.
+# Hosting platforms can pass service variables as Docker build args when needed.
 ARG POSTHOG_PUBLIC_KEY
 ENV POSTHOG_PUBLIC_KEY=${POSTHOG_PUBLIC_KEY}
 ARG POSTHOG_HOST
@@ -24,7 +24,7 @@ ENV POSTHOG_HOST=${POSTHOG_HOST}
 RUN npm run build
 
 # ─── Stage 2: Run ────────────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

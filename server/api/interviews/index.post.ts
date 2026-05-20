@@ -64,7 +64,7 @@ export default defineEventHandler(async (event) => {
       ...(body.location ? [`Location: ${body.location}`] : []),
       ...(body.notes ? [`\nNotes: ${body.notes}`] : []),
       '',
-      `Scheduled via ${org?.name || 'Reqcore'}`,
+      `Scheduled via ${org?.name || 'Factory Careers'}`,
     ].join('\n')
     const addCandidate = body.calendarAddCandidateAttendee !== false
     const sendUpdates = body.calendarSendUpdates !== false

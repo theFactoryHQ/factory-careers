@@ -171,32 +171,30 @@ function resolveBetterAuthUrl(): string {
   const explicitUrl = env.BETTER_AUTH_URL?.trim();
   const railwayDomain = env.RAILWAY_PUBLIC_DOMAIN?.trim();
 
-  // Explicit URL always wins (custom domain, local dev, etc.)
+  // Explicit URL always wins (Render custom domain, local dev, etc.)
   if (explicitUrl) {
     return explicitUrl;
   }
 
-  // Derive from Railway's auto-injected public domain (works for all environments)
+  // Retain upstream Railway preview-app compatibility.
   if (railwayDomain) {
-    // Railway sets this as bare domain (e.g. "app.up.railway.app"), never with protocol
     const domain = railwayDomain.replace(/^https?:\/\//, "");
     const url = `https://${domain}`;
     console.info(
-      `[Reqcore] Using Railway public-domain BETTER_AUTH_URL: ${url}`,
+      `[Factory Careers] Using platform public-domain BETTER_AUTH_URL: ${url}`,
     );
     return url;
   }
 
   throw new Error(
-    "BETTER_AUTH_URL is required. Either set it explicitly or generate a public domain in Railway.\n" +
-      "Railway users: go to Settings → Networking → Generate Domain, then redeploy.",
+    "BETTER_AUTH_URL is required. On Render, set it to https://careers.thefactoryhq.com and redeploy.",
   );
 }
 
 /**
  * Lazily create the Better Auth instance on first access.
  * Prevents build-time prerendering from crashing when auth env vars
- * aren't available (Railway injects env vars only at deploy time).
+ * aren't available during build/prerender.
  */
 function getAuth(): Auth {
   if (!_auth) {

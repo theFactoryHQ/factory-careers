@@ -13,7 +13,7 @@ const isDemo = computed(() => {
   return slug && activeOrg.value?.slug === slug
 })
 
-const isDemoAccount = computed(() => session.value?.user?.email === 'demo@reqcore.com')
+const isDemoAccount = computed(() => session.value?.user?.email === config.public.liveDemoEmail)
 </script>
 
 <template>
@@ -33,13 +33,13 @@ const isDemoAccount = computed(() => session.value?.user?.email === 'demo@reqcor
     >
       <Eye class="size-4 shrink-0" />
       <span>
-        <strong>Live demo</strong> — Explore freely with sample data. Editing is disabled here.
+        <strong>Demo mode</strong> — Explore freely with sample data. Editing is disabled here.
         <a
-          href="https://github.com/reqcore-inc/reqcore#quick-start"
+          href="https://github.com/caffeinebounce/factory-careers"
           target="_blank"
           rel="noopener noreferrer"
           class="ml-1 font-semibold underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"
-        >Deploy your own free instance →</a>
+        >View the Factory Careers fork →</a>
       </span>
     </div>
 

@@ -1,5 +1,5 @@
 {
-  "name": "reqcore",
+  "name": "factory-careers",
   "version": "1.4.0",
   "type": "module",
   "private": true,
@@ -16,6 +16,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "npx tsx server/scripts/seed.ts",
+    "db:seed:factory": "npx tsx server/scripts/seed-factory.ts",
     "db:reseed": "npx tsx server/scripts/delete-demo-org.ts && npx tsx server/scripts/seed.ts",
     "test:e2e": "npx playwright test",
     "i18n:crowdin:upload": "crowdin upload sources",

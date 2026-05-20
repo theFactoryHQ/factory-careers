@@ -7,8 +7,8 @@ definePageMeta({
 });
 
 useSeoMeta({
-    title: "Sign In — Reqcore",
-    description: "Sign in to your Reqcore account",
+    title: "Sign In — Factory Careers",
+    description: "Sign in to Factory Careers",
     robots: "noindex, nofollow",
 });
 
@@ -83,7 +83,7 @@ async function handleSignIn() {
             error.value =
                 result.error.message && result.error.message !== "Server Error"
                     ? result.error.message
-                    : 'Sign-in failed due to a server error. If you are self-hosting, make sure the BETTER_AUTH_URL environment variable is set to your deployment domain (e.g. "https://your-app.up.railway.app") and redeploy.';
+                    : 'Sign-in failed due to a server error. Make sure BETTER_AUTH_URL is set to "https://careers.thefactoryhq.com" in production and redeploy.';
         } else {
             error.value =
                 result.error.message ??
@@ -163,7 +163,7 @@ async function handleEnterpriseSso() {
         if (result.error) {
             error.value =
                 result.error.message ??
-                "No SSO provider found for this email domain. Sign in with email and password instead.";
+            "No SSO provider found for this email domain. Use Microsoft SSO or an invitation link.";
             ssoRedirecting.value = false;
         }
     } catch (e: unknown) {
@@ -206,7 +206,7 @@ async function handleSocialSignIn(providerId: string) {
         <h2
             class="text-xl font-semibold text-center text-surface-900 dark:text-surface-100 mb-2"
         >
-            Sign in to your account
+            Sign in to Factory Careers
         </h2>
 
         <div
@@ -368,7 +368,7 @@ async function handleSocialSignIn(providerId: string) {
         </template>
 
         <p class="text-center text-sm text-surface-500 dark:text-surface-400">
-            Don't have an account?
+            Need access?
             <NuxtLink
                 :to="
                     route.query.invitation
@@ -379,7 +379,7 @@ async function handleSocialSignIn(providerId: string) {
                         : $localePath('/auth/sign-up')
                 "
                 class="text-brand-600 dark:text-brand-400 hover:underline"
-                >Sign up</NuxtLink
+                >Use an invitation link</NuxtLink
             >
         </p>
     </form>

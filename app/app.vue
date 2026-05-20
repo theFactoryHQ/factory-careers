@@ -18,7 +18,7 @@ useHead({
   script: [
     {
       key: 'dark-mode-init',
-      innerHTML: '(function(){try{var s=localStorage.getItem("reqcore-color-mode");var m=s||(window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");document.documentElement.classList.toggle("dark",m==="dark");document.documentElement.style.colorScheme=m}catch(e){}})()',
+      innerHTML: '(function(){try{var s=localStorage.getItem("factory-careers-color-mode");var m=s||(window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");document.documentElement.classList.toggle("dark",m==="dark");document.documentElement.style.colorScheme=m}catch(e){}})()',
       tagPosition: 'head',
       ...(_nonce ? { nonce: _nonce } : {}),
     },

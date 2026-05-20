@@ -4,7 +4,7 @@
  * Returns which authentication providers are enabled at runtime.
  * This replaces build-time runtimeConfig flags so that Docker images
  * built without OAuth credentials still show the correct buttons when
- * credentials are injected at runtime (e.g. Railway, self-hosting).
+ * credentials are injected at runtime (e.g. Render, self-hosting).
  */
 export default defineEventHandler(() => {
   return {
@@ -25,6 +25,6 @@ export default defineEventHandler(() => {
       process.env.OIDC_CLIENT_SECRET &&
       process.env.OIDC_DISCOVERY_URL
     ),
-    oidcProviderName: process.env.OIDC_PROVIDER_NAME || "SSO",
+    oidcProviderName: process.env.OIDC_PROVIDER_NAME || "Microsoft SSO",
   };
 });

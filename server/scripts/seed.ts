@@ -2,7 +2,7 @@
  * Seeds the database with realistic demo data for Reqcore.
  *
  * Creates:
- * - 1 demo user (demo@reqcore.com / demo1234)
+ * - 1 demo user (demo@thefactoryhq.com / demo1234)
  * - 1 organization ("Reqcore Demo")
  * - 5 jobs with varying statuses
  * - 30 candidates
@@ -74,7 +74,7 @@ if (!DATABASE_URL) {
   process.exit(1)
 }
 
-const DEMO_EMAIL = 'demo@reqcore.com'
+const DEMO_EMAIL = 'demo@thefactoryhq.com'
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD ?? 'demo1234'
 const DEMO_ORG_NAME = 'Reqcore Demo'
 const DEMO_ORG_SLUG = 'reqcore-demo'

@@ -2,13 +2,37 @@ import { z } from "zod";
 
 /**
  * Preprocessor that normalizes empty strings to undefined.
- * Railway and some platforms may set env vars to "" instead of leaving them unset.
+ * Some hosting platforms may set env vars to "" instead of leaving them unset.
  * This ensures `.default()` and `.optional()` work as expected.
  */
 const emptyToUndefined = z.preprocess(
   (val) => (typeof val === "string" && val.trim() === "" ? undefined : val),
   z.string(),
 );
+
+const envFlag = (defaultValue: boolean) =>
+  z.preprocess((val) => {
+    if (typeof val === "string") {
+      const trimmed = val.trim().toLowerCase();
+      if (!trimmed) return defaultValue;
+      return ["1", "true", "yes", "on"].includes(trimmed);
+    }
+    if (val === undefined) return defaultValue;
+    return val;
+  }, z.boolean().default(defaultValue));
+
+const commaList = (defaultValue: string[] = []) =>
+  z.preprocess(
+    (val) => (typeof val === "string" && val.trim() === "" ? undefined : val),
+    z.string().optional(),
+  ).transform((value) =>
+    value
+      ? value
+          .split(",")
+          .map((item) => item.trim().toLowerCase())
+          .filter(Boolean)
+      : defaultValue,
+  );
 
 /**
  * Detect whether the current Railway environment is a PR/preview environment.
@@ -44,7 +68,7 @@ export const envSchema = z
       .preprocess((val) => {
         if (typeof val !== "string") return val;
         const trimmed = val.trim();
-        // Treat empty strings and broken Railway template refs ("https://") as unset
+        // Treat empty strings and broken platform template refs ("https://") as unset
         if (trimmed === "" || trimmed === "https://" || trimmed === "http://")
           return undefined;
         return trimmed;
@@ -77,7 +101,7 @@ export const envSchema = z
       .pipe(z.string().min(1))
       .optional()
       .default("us-east-1"),
-    /** Use path-style S3 URLs. Required for MinIO (local dev), must be `false` for Railway Buckets / AWS S3. */
+    /** Use path-style S3 URLs. Required for MinIO and Supabase Storage S3. */
     S3_FORCE_PATH_STYLE: z.preprocess(
       (val) =>
         typeof val === "string" && val.trim() === ""
@@ -85,7 +109,9 @@ export const envSchema = z
           : val === "true" || val === undefined,
       z.boolean().default(true),
     ),
-    /** IP address of the trusted reverse proxy (e.g., Railway, Cloudflare). When set, X-Forwarded-For is trusted for rate limiting. */
+    /** Supabase's S3-compatible endpoint does not support bucket-policy APIs. */
+    S3_SKIP_BUCKET_POLICY: envFlag(false),
+    /** IP address of the trusted reverse proxy (e.g., Render, Cloudflare). When set, X-Forwarded-For is trusted for rate limiting. */
     TRUSTED_PROXY_IP: z.string().min(1).optional(),
     /** Slug of the demo organization. When set, write operations are blocked for this org. */
     DEMO_ORG_SLUG: emptyToUndefined.optional(),
@@ -99,11 +125,11 @@ export const envSchema = z
       .optional(),
     /** Resend API key for transactional emails (invitations, etc.). When not set, emails are logged to console. */
     RESEND_API_KEY: emptyToUndefined.pipe(z.string().min(1)).optional(),
-    /** Sender email address for Resend emails. Must be a verified domain in Resend. Defaults to "Reqcore <noreply@reqcore.com>". */
+    /** Sender email address for Resend emails. Must be a verified domain in Resend. */
     RESEND_FROM_EMAIL: emptyToUndefined
       .pipe(z.string().min(1))
       .optional()
-      .default("Reqcore <noreply@reqcore.com>"),
+      .default("Factory Careers <careers@thefactoryhq.com>"),
     /** SMTP hostname for outbound email (e.g. smtp.gmail.com). When set, SMTP is used instead of Resend. */
     SMTP_HOST: emptyToUndefined.pipe(z.string().min(1)).optional(),
     /** SMTP port. Defaults to 587 (STARTTLS). Use 465 for implicit TLS, 25 for unencrypted. */
@@ -120,11 +146,11 @@ export const envSchema = z
     SMTP_USER: emptyToUndefined.pipe(z.string().min(1)).optional(),
     /** SMTP password for authentication. Omit for anonymous relay. */
     SMTP_PASS: emptyToUndefined.pipe(z.string().min(1)).optional(),
-    /** Sender address for SMTP emails. Defaults to "Reqcore <noreply@reqcore.com>". */
+    /** Sender address for SMTP emails. */
     SMTP_FROM: emptyToUndefined
       .pipe(z.string().min(1))
       .optional()
-      .default('Reqcore <noreply@reqcore.com>'),
+      .default('Factory Careers <careers@thefactoryhq.com>'),
     /** Use implicit TLS on port 465. When false, uses STARTTLS (port 587). Defaults to false. */
     SMTP_SECURE: z.preprocess(
       (val) => typeof val === 'string' && val.trim() === '' ? false : val === 'true',
@@ -166,10 +192,38 @@ export const envSchema = z
       .pipe(z.string().min(1))
       .optional()
       .default("SSO"),
+    /** Factory-branded product name shown in fork-specific copy. */
+    FACTORY_APP_NAME: emptyToUndefined
+      .pipe(z.string().min(1))
+      .optional()
+      .default("Factory Careers"),
+    /** Single bootstrapped organization name. */
+    FACTORY_ORG_NAME: emptyToUndefined
+      .pipe(z.string().min(1))
+      .optional()
+      .default("Factory"),
+    /** Single bootstrapped organization slug. */
+    FACTORY_ORG_SLUG: emptyToUndefined
+      .pipe(z.string().min(1))
+      .optional()
+      .default("factory"),
+    /** Comma-separated staff email domains allowed to create/sign in before invitation approval. */
+    FACTORY_ALLOWED_EMAIL_DOMAINS: commaList(["thefactoryhq.com"]),
+    /** Comma-separated email addresses allowed to perform emergency first-org bootstrap. */
+    FACTORY_INITIAL_OWNER_EMAILS: commaList([]),
+    /** Hiring team notification inbox for new public applications. */
+    FACTORY_CAREERS_HIRING_INBOX: emptyToUndefined
+      .pipe(z.string().min(1))
+      .optional()
+      .default("careers@thefactoryhq.com"),
+    /** Disable public email/password account creation for staff access. */
+    FACTORY_DISABLE_PUBLIC_SIGNUP: envFlag(true),
+    /** Disable arbitrary organization creation; the Factory org is seeded. */
+    FACTORY_DISABLE_PUBLIC_ORG_CREATION: envFlag(true),
   })
   .superRefine((data, ctx) => {
-    // BETTER_AUTH_URL can be derived at runtime from RAILWAY_PUBLIC_DOMAIN,
-    // so it's only required when not running on Railway.
+    // BETTER_AUTH_URL is explicit on Render; Railway preview compatibility is
+    // retained from upstream for temporary review apps.
     if (!data.BETTER_AUTH_URL && !data.RAILWAY_PUBLIC_DOMAIN) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -212,8 +266,7 @@ export const envSchema = z
  * Validated environment variables. Uses lazy initialization so the schema
  * is only parsed on first access at runtime — not at import time. This
  * prevents build-time prerendering from failing when env vars aren't
- * available (e.g., Railway injects variables only at deploy time, not
- * during the build phase).
+ * available during the build phase.
  */
 export const env = new Proxy({} as z.infer<typeof envSchema>, {
   get(_, prop: string | symbol) {
@@ -233,11 +286,11 @@ export const env = new Proxy({} as z.infer<typeof envSchema>, {
           .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
           .join("\n");
         console.error(
-          `\n[Reqcore] ❌ Missing or invalid environment variables:\n${missing}\n\n` +
-            `Ensure these variables are set in your Railway service (Settings → Variables).\n` +
+          `\n[Factory Careers] ❌ Missing or invalid environment variables:\n${missing}\n\n` +
+            `Ensure these variables are set in the Render web service environment.\n` +
             `Required: DATABASE_URL, BETTER_AUTH_SECRET, S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET\n` +
-            `Required when not on Railway: BETTER_AUTH_URL (or generate a Railway domain)\n` +
-            `Optional: BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_DISCOVERY_URL, OIDC_PROVIDER_NAME, AUTH_GOOGLE_CLIENT_ID, AUTH_GOOGLE_CLIENT_SECRET, AUTH_GITHUB_CLIENT_ID, AUTH_GITHUB_CLIENT_SECRET, AUTH_MICROSOFT_CLIENT_ID, AUTH_MICROSOFT_CLIENT_SECRET, AUTH_MICROSOFT_TENANT_ID\n`,
+            `Required on Render: BETTER_AUTH_URL=https://careers.thefactoryhq.com\n` +
+            `Optional: BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), S3_SKIP_BUCKET_POLICY, TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_DISCOVERY_URL, OIDC_PROVIDER_NAME, AUTH_GOOGLE_CLIENT_ID, AUTH_GOOGLE_CLIENT_SECRET, AUTH_GITHUB_CLIENT_ID, AUTH_GITHUB_CLIENT_SECRET, AUTH_MICROSOFT_CLIENT_ID, AUTH_MICROSOFT_CLIENT_SECRET, AUTH_MICROSOFT_TENANT_ID, FACTORY_CAREERS_HIRING_INBOX, FACTORY_ALLOWED_EMAIL_DOMAINS, FACTORY_INITIAL_OWNER_EMAILS\n`,
         );
         throw result.error;
       }

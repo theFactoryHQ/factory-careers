@@ -10,7 +10,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'AI Analysis — Reqcore',
+  title: 'AI Analysis — Factory Careers',
   robots: 'noindex, nofollow',
 })
 

@@ -40,7 +40,7 @@ function createOAuth2Client(redirectUri: string) {
 function getRedirectUri(): string {
   const baseUrl = env.BETTER_AUTH_URL
     || (env.RAILWAY_PUBLIC_DOMAIN ? `https://${env.RAILWAY_PUBLIC_DOMAIN}` : '')
-    || 'https://reqcore.com'
+    || 'https://thefactoryhq.com'
   return `${baseUrl}/api/calendar/google/callback`
 }
 
@@ -484,7 +484,7 @@ export async function setupCalendarWebhook(userId: string): Promise<boolean> {
 
   const baseUrl = env.BETTER_AUTH_URL
     || (env.RAILWAY_PUBLIC_DOMAIN ? `https://${env.RAILWAY_PUBLIC_DOMAIN}` : '')
-    || 'https://reqcore.com'
+    || 'https://thefactoryhq.com'
 
   const channelId = crypto.randomUUID()
   const calendarId = integration.calendarId || 'primary'

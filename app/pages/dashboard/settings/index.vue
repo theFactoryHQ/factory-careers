@@ -4,7 +4,7 @@ import { Building2, Save, AlertTriangle, Trash2, Loader2 } from 'lucide-vue-next
 definePageMeta({})
 
 useSeoMeta({
-  title: 'Organization Settings — Reqcore',
+  title: 'Organization Settings — Factory Careers',
   description: 'Manage your organization settings',
 })
 
@@ -162,7 +162,7 @@ async function handleDeleteOrg() {
           </label>
           <div class="flex items-center rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 overflow-hidden focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500 transition-colors">
             <span class="px-3 text-sm text-surface-400 dark:text-surface-500 select-none bg-surface-50 dark:bg-surface-800/50 border-r border-surface-200 dark:border-surface-700 py-2">
-              reqcore.com/
+              careers.thefactoryhq.com/
             </span>
             <input
               id="org-slug"
