@@ -167,4 +167,12 @@ describe('P0 tenant-isolation route coverage', () => {
       }
     }
   })
+
+  it('does not let CI flags bypass API rate limiting in production', () => {
+    const source = read('server/middleware/api-rate-limit.ts')
+
+    expect(source).toContain("process.env.NODE_ENV !== 'production'")
+    expect(source).not.toContain('process.env.CI')
+    expect(source).not.toContain('process.env.GITHUB_ACTIONS')
+  })
 })
