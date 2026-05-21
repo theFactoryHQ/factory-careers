@@ -40,7 +40,7 @@ The codebase is promising and has several strong production signals: active upst
 - Added `PRODUCTION-RUNBOOK.md` and `scripts/backup-restore-rehearsal.sh` so deployment, monitoring, rollback, and backup/restore expectations are executable and reviewable.
 - Fixed the live `requirePermission` gate to reject Better Auth `{ success: false }` permission results instead of only checking for transport/API errors.
 - Rejected empty `requirePermission(event, {})` calls instead of treating them as authorized.
-- Remediated all npm audit advisories by updating dependencies and pinning runtime expectations to Node 22.22+.
+- Remediated all npm audit advisories by updating dependencies, pinning runtime expectations to Node 22.22+, and overriding `samlify` to the patched `2.13.1` release required by `@better-auth/sso`.
 
 ## Production Gates
 
@@ -55,7 +55,7 @@ The codebase is promising and has several strong production signals: active upst
 | Invite links | Covered for high-risk token edges | Playwright verifies public info does not return the token, anonymous accept is denied, max-use exhaustion returns 410, revoked links return 404, and expired links return 404. |
 | Source/activity isolation | Covered for core analytics filters | Playwright verifies source-tracking stats and activity-log resource filters do not leak org A application/job/link/candidate data to org B, and verifies public tracking redirects preserve only the expected `ref` target. |
 | Chatbot privacy | Covered for per-user resources | Playwright verifies chatbot folders, agents, and conversations are scoped by both active organization and user, while same-org members can create and manage only their own chatbot resources when the feature flag is enabled. |
-| Dependency security | Passing | `npm audit --audit-level=high` and full `npm audit --json` report 0 vulnerabilities after dependency updates. |
+| Dependency security | Passing | `npm audit --audit-level=high` and full `npm audit --json` report 0 vulnerabilities after dependency updates and the patched `samlify` override. |
 | Secrets | Improved | Gitleaks passes locally and in CI. Any real leaked credential requires rotation, not just allowlisting. |
 | Static application security testing | Added | CodeQL is configured for JavaScript/TypeScript on PRs, `main`, weekly schedule, and manual dispatch. Before production, require a passing CodeQL result on the exact candidate. |
 | Production environment preflight | Partially covered | `npm run ops:validate-production-env -- <env-file>` catches placeholder secrets, non-HTTPS public URLs, partial OIDC/OAuth config, weak cron secrets, S3 path-style mismatches, missing email provider posture, and telemetry processor-review prompts. It still needs to be run against the real production environment values before launch. |
@@ -133,12 +133,12 @@ Collected on 2026-05-21 from this readiness branch:
 | Command | Result | Notes |
 |---|---|---|
 | `npm ci` | Pass | Installed dependencies successfully. |
-| `npm run test:unit` | Pass | 24 test files, 387 tests. |
+| `npm run test:unit` | Pass | 25 test files, 397 tests. |
 | `npm run typecheck` | Pass with warning | Vue/Volar `vue-router/volar/sfc-route-blocks` export warning remains. |
 | `npm run build` | Pass with warnings | Nuxt/Nitro production build completed; Tailwind sourcemap warnings remain. |
 | `npm audit --audit-level=high` | Pass | 0 vulnerabilities. |
 | `gitleaks detect --source . --config .gitleaks.toml --redact --verbose` | Pass | Full repository history scanned, no leaks found. |
-| `npx vitest run tests/unit/production-env-validation.test.ts` | Pass | 6 tests cover complete production-like envs, placeholder rejection, partial provider rejection, HTTPS provider requirements, human-approval warnings, and `.env` parsing. |
+| `npx vitest run tests/unit/production-env-validation.test.ts` | Pass | 7 tests cover complete production-like envs, placeholder rejection, partial provider rejection, HTTPS provider requirements, human-approval warnings, rate-limit override validation, and `.env` parsing. |
 | `npm run ops:validate-production-env -- .env.example` | Expected fail | Confirms the preflight rejects documented example credentials and localhost public URLs. |
 | `npm run ops:backup-restore-rehearsal` | Pass | Disposable Postgres dump/restore rehearsal passed with `postgres:16-alpine`; verified sentinel row count 1. |
 | `npm run ops:object-storage-restore-rehearsal` | Pass | Disposable MinIO backup/restore rehearsal passed; verified sentinel object content after restore. |
