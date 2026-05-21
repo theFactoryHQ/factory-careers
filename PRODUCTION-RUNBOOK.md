@@ -19,6 +19,8 @@ Record these before deploying:
 - `npm run ops:object-storage-restore-rehearsal`.
 - `npm run test:e2e` against Postgres and S3-compatible storage.
 - CI run URL for PR validation, secret scan, CodeQL, backup restore rehearsal, and e2e on the exact candidate commit.
+- Completed `PRODUCTION-APPROVAL-CHECKLIST.md` with required approvals,
+  AGPL review, and data processor decisions.
 
 ## Environment
 

@@ -22,6 +22,7 @@ The codebase is promising and has several strong production signals: active upst
 - Added an `ops:backup-restore-rehearsal` script and `Backup Restore Rehearsal` workflow so SQL dump/restore proof runs as a CI gate.
 - Added `ops:object-storage-restore-rehearsal` and folded it into the backup/restore workflow so S3-compatible document backup/restore proof runs alongside database restore proof.
 - Added an `ops:validate-production-env` preflight with unit coverage for production secret, URL, storage, provider, email, and telemetry configuration.
+- Added `PRODUCTION-APPROVAL-CHECKLIST.md` so launch evidence, AGPL review, required approvals, and data processor decisions are captured before real candidate data.
 - Made PR validation report lint as "not configured" instead of silently presenting a skipped lint gate as green.
 - Fixed constant-time secret comparison for long cron/OAuth state secrets by adding `timingSafeStringEqual`.
 - Added a minimal unauthenticated `/api/healthz` liveness endpoint.
@@ -54,7 +55,7 @@ The codebase is promising and has several strong production signals: active upst
 | Secrets | Improved | Gitleaks passes locally and in CI. Any real leaked credential requires rotation, not just allowlisting. |
 | Static application security testing | Added | CodeQL is configured for JavaScript/TypeScript on PRs, `main`, weekly schedule, and manual dispatch. Before production, require a passing CodeQL result on the exact candidate. |
 | Production environment preflight | Partially covered | `npm run ops:validate-production-env -- <env-file>` catches placeholder secrets, non-HTTPS public URLs, partial OIDC/OAuth config, weak cron secrets, S3 path-style mismatches, missing email provider posture, and telemetry processor-review prompts. It still needs to be run against the real production environment values before launch. |
-| Legal/license | Open | AGPL-3.0 obligations are reviewed and accepted for the intended deployment and any proprietary integrations. |
+| Legal/license | Open | AGPL-3.0 obligations are reviewed and accepted for the intended deployment and any proprietary integrations. Capture the decision in `PRODUCTION-APPROVAL-CHECKLIST.md`. |
 | Deployment/runbook | Partially covered | `PRODUCTION-RUNBOOK.md` defines deployment, environment, monitoring, rollback, and incident procedures. `scripts/backup-restore-rehearsal.sh` verifies SQL dump/restore mechanics and `scripts/object-storage-restore-rehearsal.sh` verifies S3-compatible object backup/restore mechanics locally and through the `Backup Restore Rehearsal` CI workflow. Before real candidate data, run both against sanitized production-like backups. |
 
 ## P0 Before Real Candidate Data
@@ -75,6 +76,7 @@ The codebase is promising and has several strong production signals: active upst
    - AI provider/API keys for scoring or criteria generation.
    - PostHog or any telemetry endpoint, if enabled.
 7. Complete AGPL-3.0 review before using this in a proprietary hosted workflow.
+8. Complete `PRODUCTION-APPROVAL-CHECKLIST.md` with engineering, security, legal/license, privacy, and operations sign-off.
 
 ## P1 For A Small Production Pilot
 
