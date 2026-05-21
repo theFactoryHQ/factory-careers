@@ -128,4 +128,14 @@ describe('P0 tenant-isolation route coverage', () => {
     expect(source).toContain('eq(application.organizationId, orgId)')
     expect(source).toContain('eq(job.organizationId, orgId)')
   })
+
+  it('cleans up candidate-owned document objects when deleting a candidate', () => {
+    const source = read('server/api/candidates/[id].delete.ts')
+
+    expect(source).toContain('db.query.document.findMany')
+    expect(source).toContain('eq(document.candidateId, id)')
+    expect(source).toContain('eq(document.organizationId, orgId)')
+    expect(source).toContain('deleteFromS3(doc.storageKey)')
+    expect(source).toContain('candidate.document_s3_delete_failed')
+  })
 })
