@@ -36,7 +36,7 @@ const PLACEHOLDER_PATTERNS = [
   /change-?me/i,
   /replace-with/i,
   /your[-_\s]/i,
-  /example\.com/i,
+  /^(?:.*[./:@_-])?example\.com(?:[/?#:._-].*)?$/i,
   /localhost/i,
   /^demo1234$/i,
   /^minioadmin$/i,
@@ -100,6 +100,10 @@ function isPrivateHostname(hostname) {
     hostname.startsWith('192.168.') ||
     /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)
   )
+}
+
+function isAmazonAwsHostname(hostname) {
+  return hostname === 'amazonaws.com' || hostname.endsWith('.amazonaws.com')
 }
 
 function hasPlaceholder(key, value) {
@@ -297,7 +301,7 @@ function checkStorage(env, errors, warnings) {
   if (s3Endpoint && forcePathStyle === false && isPrivateHostname(s3Endpoint.hostname)) {
     warnings.push(issue('S3_FORCE_PATH_STYLE', 'is false for private/MinIO-like storage; MinIO usually requires true'))
   }
-  if (s3Endpoint && forcePathStyle === true && s3Endpoint.hostname.includes('amazonaws.com')) {
+  if (s3Endpoint && forcePathStyle === true && isAmazonAwsHostname(s3Endpoint.hostname)) {
     warnings.push(issue('S3_FORCE_PATH_STYLE', 'is true for AWS S3; managed S3 providers usually use false'))
   }
 
