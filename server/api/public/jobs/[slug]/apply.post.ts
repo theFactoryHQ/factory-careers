@@ -6,6 +6,7 @@ import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
 import { autoScoreApplication } from '../../../../utils/ai/autoScore'
 import { sendApplicationReceiptEmail, sendApplicationTeamAlertEmail } from '../../../../utils/email'
 import { parseDocument } from '../../../../utils/resume-parser'
+import { assertUploadContentLength } from '../../../../utils/uploadLimits'
 import {
   ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE,
@@ -20,6 +21,9 @@ const applyRateLimit = createRateLimiter({
   maxRequests: 5,
   message: 'Too many applications submitted. Please try again later.',
 })
+
+const MULTIPART_OVERHEAD_BYTES = 1024 * 1024
+const MAX_PUBLIC_APPLICATION_MULTIPART_BYTES = (MAX_DOCUMENTS_PER_CANDIDATE * MAX_FILE_SIZE) + MULTIPART_OVERHEAD_BYTES
 
 /**
  * POST /api/public/jobs/:slug/apply
@@ -45,9 +49,9 @@ const applyRateLimit = createRateLimiter({
  */
 export default defineEventHandler(async (event) => {
   // Enforce rate limit before any processing.
-  // Skipped outside production and in CI so local dev and E2E test environments
-  // are not throttled. NODE_ENV is set explicitly by the deployment environment.
-  if (process.env.NODE_ENV === 'production' && !process.env.CI && !process.env.GITHUB_ACTIONS) {
+  // Skipped outside production so local dev and test environments are not
+  // throttled. Production rate limits must not be bypassed by CI-like env vars.
+  if (process.env.NODE_ENV === 'production') {
     await applyRateLimit(event)
   }
 
@@ -59,6 +63,10 @@ export default defineEventHandler(async (event) => {
 
   const contentType = getHeader(event, 'content-type') ?? ''
   const isMultipart = contentType.includes('multipart/form-data')
+
+  if (isMultipart) {
+    assertUploadContentLength(event, MAX_PUBLIC_APPLICATION_MULTIPART_BYTES)
+  }
 
   let firstName: string
   let lastName: string

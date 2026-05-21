@@ -1,5 +1,6 @@
 import type { H3Event } from 'h3'
 import type { statements } from '~~/shared/permissions'
+import { assertFactoryStaffAccess } from './factoryAccess'
 
 /**
  * Permission descriptor — maps a resource to the actions being requested.
@@ -60,6 +61,12 @@ export async function requirePermission(
   if (!activeOrganizationId) {
     throw createError({ statusCode: 403, statusMessage: 'No active organization' })
   }
+
+  await assertFactoryStaffAccess({
+    userId: session.user.id,
+    email: session.user.email,
+    activeOrganizationId,
+  })
 
   // ── Step 3: Permission check (Better Auth AC) ──
   // Type assertion needed because the organization plugin dynamically

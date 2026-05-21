@@ -3,115 +3,13 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { organization, genericOAuth } from "better-auth/plugins";
 import { sso } from "@better-auth/sso";
 import { eq } from "drizzle-orm";
+import { Buffer } from "node:buffer";
 import { ac, owner, admin, member } from "~~/shared/permissions";
 import { sendOrgInvitationEmail, sendPasswordResetEmail } from "./email";
 import * as schema from "../database/schema";
 
 type Auth = ReturnType<typeof betterAuth>;
 let _auth: Auth | undefined;
-
-// ── SSRF blocklist ────────────────────────────────────────────────────────────
-// Prevent org admins from using SSO provider registration to probe the
-// internal network or cloud metadata services (OWASP A10 - SSRF).
-const BLOCKED_HOSTNAMES = new Set([
-  "localhost",
-  "169.254.169.254",          // AWS / Azure / DigitalOcean IMDS
-  "metadata.google.internal", // GCP IMDS
-  "metadata.internal",
-  "instance-data",            // older cloud-init
-])
-
-/**
- * Returns true if the hostname resolves to a private, loopback, link-local,
- * or well-known cloud metadata address that must not be contacted server-side.
- */
-function isBlockedHost(urlString: string): boolean {
-  let hostname: string
-  try {
-    hostname = new URL(urlString).hostname.toLowerCase()
-  } catch {
-    return true // malformed URL → block
-  }
-  if (BLOCKED_HOSTNAMES.has(hostname)) return true
-
-  // IPv4 private / loopback ranges
-  const ipv4 = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
-  if (ipv4) {
-    const [a, b] = [Number(ipv4[1]), Number(ipv4[2])]
-    if (a === 127) return true                          // 127.0.0.0/8  loopback
-    if (a === 0) return true                            // 0.0.0.0/8
-    if (a === 10) return true                           // 10.0.0.0/8   RFC 1918
-    if (a === 172 && b >= 16 && b <= 31) return true   // 172.16.0.0/12 RFC 1918
-    if (a === 192 && b === 168) return true             // 192.168.0.0/16 RFC 1918
-    if (a === 100 && b >= 64 && b <= 127) return true  // 100.64.0.0/10 CGNAT
-    if (a === 169 && b === 254) return true             // 169.254.0.0/16 link-local
-  }
-
-  // IPv6 loopback and link-local
-  if (hostname === "::1") return true
-  if (hostname.startsWith("fe80:") || hostname.startsWith("[fe80:")) return true
-
-  return false
-}
-
-/**
- * Fetch an OIDC discovery document and inject every endpoint origin into
- * better-auth's live trusted-origins list so the SSO plugin trusts them
- * during provider registration.
- *
- * Why: better-auth resolves `trustedOrigins` once at init and caches the
- * result as a plain array. The SSO plugin then validates every URL in the
- * discovery document (discovery endpoint, token_endpoint, jwks_uri, etc.)
- * against that cached array. IdPs like Google use multiple domains
- * (accounts.google.com vs oauth2.googleapis.com), so we must discover
- * those origins and inject them into the live array before registration.
- *
- * Must be called **before** `auth.api.registerSSOProvider()`.
- */
-export async function prefetchOidcEndpointOrigins(issuerUrl: string): Promise<void> {
-  // SSRF guard — reject internal/private addresses before any network call
-  if (isBlockedHost(issuerUrl)) {
-    throw createError({
-      statusCode: 422,
-      statusMessage: "Issuer URL must not target internal or private network addresses.",
-    });
-  }
-
-  const discoveryUrl = issuerUrl.replace(/\/+$/, "") + "/.well-known/openid-configuration";
-  const res = await $fetch<Record<string, unknown>>(discoveryUrl, {
-    timeout: 10_000,
-  });
-
-  // Collect origins from all endpoint fields + the issuer itself
-  const newOrigins = new Set<string>();
-  try { newOrigins.add(new URL(issuerUrl).origin); } catch {}
-
-  const endpointKeys = [
-    "authorization_endpoint",
-    "token_endpoint",
-    "userinfo_endpoint",
-    "revocation_endpoint",
-    "introspection_endpoint",
-    "end_session_endpoint",
-    "jwks_uri",
-  ];
-  for (const key of endpointKeys) {
-    const value = res[key];
-    if (typeof value === "string") {
-      try { newOrigins.add(new URL(value).origin); } catch {}
-    }
-  }
-
-  // Push directly into better-auth's live trustedOrigins array so
-  // isTrustedOrigin() sees them immediately (it reads this.trustedOrigins).
-  const ctx = await (auth as any).$context;
-  const existing = new Set(ctx.trustedOrigins as string[]);
-  for (const origin of newOrigins) {
-    if (!existing.has(origin)) {
-      (ctx.trustedOrigins as string[]).push(origin);
-    }
-  }
-}
 
 /**
  * Resolve trusted origins for CSRF checks and OIDC discovery.
@@ -120,8 +18,8 @@ export async function prefetchOidcEndpointOrigins(issuerUrl: string): Promise<vo
  *  1. App origins (base URL, configured origins, dev defaults)
  *  2. Already-registered SSO provider issuers from the database
  *
- * Additional IdP endpoint origins are injected at runtime by
- * `prefetchOidcEndpointOrigins()` directly into the auth context.
+ * SSO registration pre-discovers and stores explicit OIDC endpoint URLs, so
+ * trusted origins only need app origins plus registered issuer origins.
  * For edge cases, add origins to the BETTER_AUTH_TRUSTED_ORIGINS env var.
  */
 function resolveTrustedOrigins(baseUrl: string): (request?: Request) => Promise<string[]> {
@@ -191,6 +89,48 @@ function resolveBetterAuthUrl(): string {
   );
 }
 
+function isMicrosoftSsoIssuer(issuer?: string): boolean {
+  if (!issuer) return false;
+  try {
+    const hostname = new URL(issuer).hostname.toLowerCase();
+    return hostname === "login.microsoftonline.com" || hostname === "sts.windows.net";
+  } catch {
+    return false;
+  }
+}
+
+async function fetchMicrosoftSsoProfileImage(options: {
+  accessToken?: string;
+  providerIssuer?: string;
+  userId: string;
+}): Promise<string | null> {
+  if (!options.accessToken || !isMicrosoftSsoIssuer(options.providerIssuer)) return null;
+
+  try {
+    const response = await fetch("https://graph.microsoft.com/v1.0/me/photos/96x96/$value", {
+      headers: {
+        Authorization: `Bearer ${options.accessToken}`,
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    if (!contentType.startsWith("image/")) return null;
+
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (!bytes.length) return null;
+
+    return `data:${contentType};base64,${bytes.toString("base64")}`;
+  } catch (err) {
+    logError("auth.microsoft_sso_profile_image_failed", {
+      posthog_distinct_id: options.userId,
+      error_message: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
+}
+
 /**
  * Lazily create the Better Auth instance on first access.
  * Prevents build-time prerendering from crashing when auth env vars
@@ -235,6 +175,10 @@ function getAuth(): Auth {
       // using BETTER_AUTH_SECRET as the encryption key.
       account: {
         encryptOAuthTokens: true,
+        accountLinking: {
+          enabled: true,
+          trustedProviders: ["thefactoryhq-sso"],
+        },
       },
 
       // ── Rate Limiting (built-in, database-backed) ──────────
@@ -363,14 +307,23 @@ function getAuth(): Auth {
           },
           // Run provisioning on every login to keep profile data in sync
           provisionUserOnEveryLogin: true,
-          provisionUser: async ({ user, userInfo }) => {
+          provisionUser: async ({ user, userInfo, token, provider }) => {
             // Sync name/image from IdP on each login
-            if (userInfo.name || userInfo.image) {
+            const providerName = typeof userInfo.name === "string" ? userInfo.name : null;
+            const providerImage = typeof userInfo.image === "string" ? userInfo.image : null;
+            const microsoftImage = await fetchMicrosoftSsoProfileImage({
+              accessToken: token?.accessToken,
+              providerIssuer: provider.issuer,
+              userId: user.id,
+            });
+            const nextImage = microsoftImage || providerImage;
+
+            if (providerName || nextImage) {
               await db
                 .update(schema.user)
                 .set({
-                  ...(userInfo.name ? { name: userInfo.name } : {}),
-                  ...(userInfo.image ? { image: userInfo.image } : {}),
+                  ...(providerName ? { name: providerName } : {}),
+                  ...(nextImage ? { image: nextImage } : {}),
                   updatedAt: new Date(),
                 })
                 .where(eq(schema.user.id, user.id));

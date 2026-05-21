@@ -193,6 +193,8 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
+      /** Base URL of this Factory Careers app */
+      siteUrl,
       /** Base URL of the Factory marketing site for cross-domain links */
       marketingUrl:
         process.env.NUXT_PUBLIC_MARKETING_URL || "https://thefactoryhq.com",
@@ -220,7 +222,7 @@ export default defineNuxtConfig({
       })(),
       /** Public live-demo passcode used to prefill sign-in */
       liveDemoPasscode:
-        process.env.LIVE_DEMO_SECRET || process.env.DEMO_PASSWORD || "demo1234",
+        process.env.LIVE_DEMO_SECRET || process.env.DEMO_PASSWORD || "",
       /** Whether in-app feedback via GitHub Issues is enabled */
       feedbackEnabled: !!(
         process.env.GITHUB_FEEDBACK_TOKEN && process.env.GITHUB_FEEDBACK_REPO
@@ -233,8 +235,11 @@ export default defineNuxtConfig({
       ),
       /** Display name for the SSO provider button */
       oidcProviderName: process.env.OIDC_PROVIDER_NAME || "Microsoft SSO",
+      factoryCareersUrl:
+        process.env.NUXT_PUBLIC_FACTORY_CAREERS_URL || "https://careers.thefactoryhq.com",
       factoryAppName: process.env.FACTORY_APP_NAME || "Factory Careers",
       factoryOrgName: process.env.FACTORY_ORG_NAME || "Factory",
+      factoryOrgSlug: process.env.FACTORY_ORG_SLUG || "factory",
       factoryPublicSignupEnabled:
         process.env.FACTORY_DISABLE_PUBLIC_SIGNUP === "false",
       factoryPublicOrgCreationEnabled:

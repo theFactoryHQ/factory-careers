@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { z } from 'zod'
+import { registerSsoSchema } from '../../server/utils/ssoSecurity'
 
 /**
  * SSO Security-focused tests.
@@ -12,22 +12,6 @@ import { z } from 'zod'
  * — Auto-provisioning role enforcement
  * — Input sanitization edge cases
  */
-
-// ─── Mirror schemas from routes ────────────────────────────────────
-
-const registerSsoSchema = z.object({
-  providerId: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/, 'Only lowercase alphanumeric and hyphens'),
-  issuer: z.string().url().refine(
-    (url) => url.startsWith('https://') || url.startsWith('http://'),
-    'Issuer URL must use HTTPS (or HTTP for local development)',
-  ),
-  domain: z.string().min(1).max(253).regex(
-    /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/,
-    'Must be a valid domain (e.g. company.com)',
-  ),
-  clientId: z.string().min(1),
-  clientSecret: z.string().min(1),
-})
 
 // ─── Simulate the GET response shape ───────────────────────────────
 
@@ -252,9 +236,7 @@ describe('SSO input sanitization edge cases', () => {
       ...validPayload,
       issuer: 'https://user:password@auth.example.com',
     })
-    // z.string().url() accepts this — but it's a valid URL format
-    // The IdP discovery will fail, which is the correct fallback behavior
-    expect(result.success).toBe(true)
+    expect(result.success).toBe(false)
   })
 
   it('rejects issuer with file:// protocol', () => {
