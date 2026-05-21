@@ -5,6 +5,7 @@ import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/
 import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
 import { autoScoreApplication } from '../../../../utils/ai/autoScore'
 import { parseDocument } from '../../../../utils/resume-parser'
+import { readPositiveIntegerEnv } from '../../../../utils/rateLimitConfig'
 import {
   ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE,
@@ -13,10 +14,19 @@ import {
   sanitizeFilename,
 } from '../../../../utils/schemas/document'
 
-/** Rate limit: max 5 applications per IP per 15 minutes */
+const APPLICATION_RATE_LIMIT_WINDOW_MS = readPositiveIntegerEnv(
+  'PUBLIC_APPLICATION_RATE_LIMIT_WINDOW_MS',
+  15 * 60 * 1000,
+)
+const APPLICATION_RATE_LIMIT_MAX_REQUESTS = readPositiveIntegerEnv(
+  'PUBLIC_APPLICATION_RATE_LIMIT_MAX_REQUESTS',
+  5,
+)
+
+/** Rate limit: max 5 applications per IP per 15 minutes by default. */
 const applyRateLimit = createRateLimiter({
-  windowMs: 15 * 60 * 1000,
-  maxRequests: 5,
+  windowMs: APPLICATION_RATE_LIMIT_WINDOW_MS,
+  maxRequests: APPLICATION_RATE_LIMIT_MAX_REQUESTS,
   message: 'Too many applications submitted. Please try again later.',
 })
 

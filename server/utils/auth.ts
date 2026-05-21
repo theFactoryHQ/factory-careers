@@ -6,10 +6,20 @@ import { eq } from "drizzle-orm";
 import { ac, owner, admin, member } from "~~/shared/permissions";
 import { sendOrgInvitationEmail, sendPasswordResetEmail } from "./email";
 import { deleteFromS3 } from "./s3";
+import { readPositiveIntegerEnv } from "./rateLimitConfig";
 import * as schema from "../database/schema";
 
 type Auth = ReturnType<typeof betterAuth>;
 let _auth: Auth | undefined;
+
+const AUTH_RATE_LIMIT_WINDOW_SECONDS = readPositiveIntegerEnv(
+  "BETTER_AUTH_RATE_LIMIT_WINDOW_SECONDS",
+  60,
+);
+const AUTH_RATE_LIMIT_MAX_REQUESTS = readPositiveIntegerEnv(
+  "BETTER_AUTH_RATE_LIMIT_MAX_REQUESTS",
+  100,
+);
 
 const pendingOrganizationDocumentDeletes = new Map<
   string,
@@ -254,8 +264,8 @@ function getAuth(): Auth {
       // deployment platforms set them.
       rateLimit: {
         enabled: process.env.NODE_ENV === "production",
-        window: 60,
-        max: 100,        // 100 requests per minute per IP — stops bots, not humans
+        window: AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        max: AUTH_RATE_LIMIT_MAX_REQUESTS, // 100 requests per minute per IP by default.
         storage: "database",
       },
 

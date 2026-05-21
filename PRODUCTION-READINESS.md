@@ -74,6 +74,7 @@ The codebase is promising and has several strong production signals: active upst
    - Postgres and MinIO/S3 are private, backed up, and restorable.
    - `S3_FORCE_PATH_STYLE` matches the storage provider.
    - `BETTER_AUTH_TRUSTED_ORIGINS` is explicit for multi-domain deployments.
+   - Rate-limit override variables are either unset/defaulted or explicitly approved; do not carry CI/E2E-only high ceilings into production.
 5. Run and attach backup/restore evidence from a sanitized production-like database and object-storage backup.
 6. Decide data processor posture for optional integrations:
    - Email provider for invitations and resets.

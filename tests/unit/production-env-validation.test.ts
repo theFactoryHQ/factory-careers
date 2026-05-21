@@ -110,6 +110,26 @@ describe('production environment preflight', () => {
     ]))
   })
 
+  it('validates explicit production rate-limit overrides', () => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      PUBLIC_APPLICATION_RATE_LIMIT_MAX_REQUESTS: '200',
+      API_AUTH_WRITE_RATE_LIMIT_MAX_REQUESTS: '250',
+      BETTER_AUTH_RATE_LIMIT_MAX_REQUESTS: '1000',
+      API_GLOBAL_WRITE_RATE_LIMIT_MAX_REQUESTS: '0',
+      PUBLIC_APPLICATION_RATE_LIMIT_WINDOW_MS: 'not-a-number',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(messages(result)).toEqual(expect.arrayContaining([
+      expect.stringContaining('PUBLIC_APPLICATION_RATE_LIMIT_MAX_REQUESTS: is unusually high for public job applications'),
+      expect.stringContaining('API_AUTH_WRITE_RATE_LIMIT_MAX_REQUESTS: is unusually high for sign-in/sign-up attempts'),
+      expect.stringContaining('BETTER_AUTH_RATE_LIMIT_MAX_REQUESTS: is unusually high for Better Auth account-level throttling'),
+      expect.stringContaining('API_GLOBAL_WRITE_RATE_LIMIT_MAX_REQUESTS: must be a positive integer'),
+      expect.stringContaining('PUBLIC_APPLICATION_RATE_LIMIT_WINDOW_MS: must be a positive integer'),
+    ]))
+  })
+
   it('parses quoted env files without expanding values', () => {
     const env = parseEnvFile(`
       export BETTER_AUTH_URL="https://app.example.test"

@@ -48,6 +48,13 @@ jobs:
       S3_REGION: us-east-1
       S3_FORCE_PATH_STYLE: "true"
       FEATURE_FLAG_CHATBOT_EXPERIENCE: "true"
+      # Playwright creates many synthetic accounts/applications from one runner
+      # IP while NODE_ENV=production. Keep real production limits enabled, but
+      # raise the explicit test-harness ceilings so E2E can exercise behavior.
+      API_AUTH_WRITE_RATE_LIMIT_MAX_REQUESTS: "250"
+      API_GLOBAL_WRITE_RATE_LIMIT_MAX_REQUESTS: "500"
+      BETTER_AUTH_RATE_LIMIT_MAX_REQUESTS: "1000"
+      PUBLIC_APPLICATION_RATE_LIMIT_MAX_REQUESTS: "200"
 
     steps:
       - name: Start MinIO

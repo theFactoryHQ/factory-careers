@@ -54,6 +54,49 @@ const OAUTH_PAIRS = [
 
 const OIDC_KEYS = ['OIDC_CLIENT_ID', 'OIDC_CLIENT_SECRET', 'OIDC_DISCOVERY_URL']
 
+const RATE_LIMIT_SETTINGS = [
+  {
+    key: 'API_GLOBAL_READ_RATE_LIMIT_MAX_REQUESTS',
+    warnAbove: 1000,
+    message: 'is unusually high for global read traffic; confirm edge/WAF controls if this is intentional',
+  },
+  {
+    key: 'API_GLOBAL_WRITE_RATE_LIMIT_MAX_REQUESTS',
+    warnAbove: 200,
+    message: 'is unusually high for write traffic; confirm abuse monitoring before launch',
+  },
+  {
+    key: 'API_AUTH_READ_RATE_LIMIT_MAX_REQUESTS',
+    warnAbove: 1200,
+    message: 'is unusually high for auth read traffic; confirm brute-force monitoring before launch',
+  },
+  {
+    key: 'API_AUTH_WRITE_RATE_LIMIT_MAX_REQUESTS',
+    warnAbove: 100,
+    message: 'is unusually high for sign-in/sign-up attempts; confirm brute-force controls before launch',
+  },
+  {
+    key: 'BETTER_AUTH_RATE_LIMIT_MAX_REQUESTS',
+    warnAbove: 300,
+    message: 'is unusually high for Better Auth account-level throttling; confirm this is not a test-only value',
+  },
+  {
+    key: 'BETTER_AUTH_RATE_LIMIT_WINDOW_SECONDS',
+    warnBelow: 30,
+    message: 'is a short Better Auth throttling window; confirm brute-force controls before launch',
+  },
+  {
+    key: 'PUBLIC_APPLICATION_RATE_LIMIT_MAX_REQUESTS',
+    warnAbove: 20,
+    message: 'is unusually high for public job applications; confirm anti-spam controls before launch',
+  },
+  {
+    key: 'PUBLIC_APPLICATION_RATE_LIMIT_WINDOW_MS',
+    warnBelow: 60_000,
+    message: 'is a short public-application throttling window; confirm anti-spam controls before launch',
+  },
+]
+
 function trimValue(value) {
   return typeof value === 'string' ? value.trim() : ''
 }
@@ -71,6 +114,16 @@ function parseBoolean(value) {
   if (['true', '1', 'yes', 'on'].includes(normalized)) return true
   if (['false', '0', 'no', 'off'].includes(normalized)) return false
   return undefined
+}
+
+function parsePositiveInteger(value) {
+  const normalized = trimValue(value)
+  if (!normalized) return undefined
+
+  const parsed = Number(normalized)
+  if (!Number.isSafeInteger(parsed) || parsed < 1) return undefined
+
+  return parsed
 }
 
 function parseUrl(value) {
@@ -393,6 +446,25 @@ function checkTelemetry(env, errors, warnings) {
   }
 }
 
+function checkRateLimitOverrides(env, errors, warnings) {
+  for (const setting of RATE_LIMIT_SETTINGS) {
+    if (!isSet(env, setting.key)) continue
+
+    const value = parsePositiveInteger(env[setting.key])
+    if (value === undefined) {
+      errors.push(issue(setting.key, 'must be a positive integer when set'))
+      continue
+    }
+
+    if (setting.warnAbove !== undefined && value > setting.warnAbove) {
+      warnings.push(issue(setting.key, setting.message))
+    }
+    if (setting.warnBelow !== undefined && value < setting.warnBelow) {
+      warnings.push(issue(setting.key, setting.message))
+    }
+  }
+}
+
 export function validateProductionEnv(input) {
   const env = Object.fromEntries(
     Object.entries(input ?? {}).map(([key, value]) => [key, trimValue(value)]),
@@ -408,6 +480,7 @@ export function validateProductionEnv(input) {
   checkProviderPairs(env, errors, warnings)
   checkEmail(env, errors, warnings)
   checkTelemetry(env, errors, warnings)
+  checkRateLimitOverrides(env, errors, warnings)
 
   return {
     ok: errors.length === 0,
