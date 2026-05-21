@@ -25,7 +25,7 @@ trap cleanup EXIT
 wait_for_postgres() {
   local container="$1"
   for _ in $(seq 1 60); do
-    if docker exec "$container" pg_isready -U postgres >/dev/null 2>&1; then
+    if docker exec -e PGHOST=127.0.0.1 "$container" pg_isready -U postgres >/dev/null 2>&1; then
       return 0
     fi
     sleep 1
@@ -43,8 +43,8 @@ docker run -d \
   "$POSTGRES_IMAGE" >/dev/null
 wait_for_postgres "$SOURCE_CONTAINER"
 
-docker exec "$SOURCE_CONTAINER" createdb -U postgres reqcore
-docker exec -i "$SOURCE_CONTAINER" psql -U postgres -d reqcore -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
+docker exec -e PGHOST=127.0.0.1 "$SOURCE_CONTAINER" createdb -U postgres reqcore
+docker exec -i -e PGHOST=127.0.0.1 "$SOURCE_CONTAINER" psql -U postgres -d reqcore -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
 create table restore_sentinel (
   id text primary key,
   marker text not null,
@@ -55,7 +55,7 @@ insert into restore_sentinel (id, marker)
 values ('sentinel-1', 'reqcore-restore-rehearsal');
 SQL
 
-docker exec "$SOURCE_CONTAINER" \
+docker exec -e PGHOST=127.0.0.1 "$SOURCE_CONTAINER" \
   pg_dump -U postgres --no-owner --no-acl reqcore > "$BACKUP_PATH"
 
 if [[ ! -s "$BACKUP_PATH" ]]; then
@@ -69,12 +69,12 @@ docker run -d \
   "$POSTGRES_IMAGE" >/dev/null
 wait_for_postgres "$TARGET_CONTAINER"
 
-docker exec "$TARGET_CONTAINER" createdb -U postgres reqcore
-docker exec -i "$TARGET_CONTAINER" \
+docker exec -e PGHOST=127.0.0.1 "$TARGET_CONTAINER" createdb -U postgres reqcore
+docker exec -i -e PGHOST=127.0.0.1 "$TARGET_CONTAINER" \
   psql -U postgres -d reqcore -v ON_ERROR_STOP=1 < "$BACKUP_PATH" >/dev/null
 
 restored_count="$(
-  docker exec "$TARGET_CONTAINER" \
+  docker exec -e PGHOST=127.0.0.1 "$TARGET_CONTAINER" \
     psql -U postgres -d reqcore -tAc \
       "select count(*) from restore_sentinel where marker = 'reqcore-restore-rehearsal';"
 )"
