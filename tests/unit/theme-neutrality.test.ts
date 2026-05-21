@@ -37,11 +37,20 @@ describe('brand-neutral theme variables', () => {
       '.ui-button',
       '.ui-button-primary',
       '.ui-button-secondary',
+      '.ui-button-ghost',
       '.ui-field',
       '.ui-icon-state',
       '.ui-icon-state-danger',
       '.ui-icon-state-success',
       '.ui-icon-state-brand',
+      '.ui-empty-state',
+      '.ui-selectable-panel',
+      '.ui-selectable-panel-active',
+      '.ui-pill',
+      '.ui-pill-brand',
+      '.ui-table-shell',
+      '.ui-table-header',
+      '.ui-table-row',
     ]) {
       expect(css).toContain(recipe)
     }
@@ -79,6 +88,42 @@ describe('brand-neutral theme variables', () => {
           'ui-icon-state-brand',
           'ui-icon-state-success',
         ],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
+  it('applies shared UI recipes to onboarding and form surfaces', () => {
+    const recipeUsage = [
+      {
+        path: 'app/pages/onboarding/create-org.vue',
+        recipes: [
+          'ui-alert-danger',
+          'ui-alert-success',
+          'ui-button-primary',
+          'ui-empty-state',
+          'ui-field',
+          'ui-icon-state-success',
+          'ui-panel',
+          'ui-panel-muted',
+          'ui-selectable-panel',
+          'ui-selectable-panel-active',
+        ],
+      },
+      {
+        path: 'app/components/QuestionForm.vue',
+        recipes: ['ui-button-primary', 'ui-button-secondary', 'ui-field', 'ui-panel-muted'],
+      },
+      {
+        path: 'app/components/ConsentBanner.vue',
+        recipes: ['ui-button-ghost', 'ui-button-primary'],
       },
     ]
 

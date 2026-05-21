@@ -109,7 +109,7 @@ const isEditing = computed(() => !!props.question)
 </script>
 
 <template>
-  <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 p-4">
+  <div class="ui-panel-muted p-4">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-300">
         {{ isEditing ? 'Edit Question' : 'Add Question' }}
@@ -134,8 +134,8 @@ const isEditing = computed(() => !!props.question)
           v-model="form.label"
           type="text"
           placeholder="e.g. How many years of experience do you have?"
-          class="w-full rounded-lg border px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
-          :class="errors.label ? 'border-danger-300' : 'border-surface-300 dark:border-surface-700'"
+          class="ui-field"
+          :class="errors.label ? 'border-danger-300 dark:border-danger-700' : ''"
         />
         <p v-if="errors.label" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ errors.label }}</p>
       </div>
@@ -148,7 +148,7 @@ const isEditing = computed(() => !!props.question)
         <select
           id="q-type"
           v-model="form.type"
-          class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors bg-white dark:bg-surface-800"
+          class="ui-field"
         >
           <option v-for="qt in questionTypes" :key="qt.value" :value="qt.value">
             {{ qt.label }}
@@ -166,7 +166,7 @@ const isEditing = computed(() => !!props.question)
           v-model="form.description"
           type="text"
           placeholder="Additional context shown below the field"
-          class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
+          class="ui-field"
         />
       </div>
 
@@ -181,7 +181,7 @@ const isEditing = computed(() => !!props.question)
               v-model="form.options[index]"
               type="text"
               :placeholder="`Option ${index + 1}`"
-              class="flex-1 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
+              class="ui-field flex-1 py-1.5"
             />
             <button
               type="button"
@@ -218,13 +218,13 @@ const isEditing = computed(() => !!props.question)
       <div class="flex items-center gap-2 pt-1">
         <button
           type="submit"
-          class="inline-flex items-center rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+          class="ui-button ui-button-primary px-3 py-1.5"
         >
           {{ isEditing ? 'Update' : 'Add Question' }}
         </button>
         <button
           type="button"
-          class="rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+          class="ui-button ui-button-secondary px-3 py-1.5"
           @click="emit('cancel')"
         >
           Cancel
