@@ -9,6 +9,11 @@ import {
   getApplicationTransitionLabel,
   getAnalysisRunStatusBadgeClass,
   getAnalysisRunStatusDotClass,
+  getCandidateResponseActionLabel,
+  getCandidateResponseButtonClass,
+  getCandidateResponseIconClass,
+  getCandidateResponseLabel,
+  getCandidateResponseSymbol,
   getJobStatusBadgeClass,
   getJobStatusLabel,
   getScoreBadgeClass,
@@ -81,5 +86,17 @@ describe('status display helpers', () => {
     expect(getJobStatusBadgeClass('open')).toContain('success')
     expect(getJobStatusBadgeClass('closed', 'ring')).toContain('ring-warning-200')
     expect(getJobStatusBadgeClass('unknown', 'ring')).toContain('ring-surface-200')
+  })
+
+  it('centralizes candidate interview response display values', () => {
+    expect(getCandidateResponseActionLabel('accepted')).toBe('Accept')
+    expect(getCandidateResponseActionLabel('tentative')).toBe('Mark as Tentative')
+    expect(getCandidateResponseLabel('pending')).toBe('Pending')
+    expect(getCandidateResponseLabel('needs_follow_up')).toBe('Needs Follow Up')
+    expect(getCandidateResponseButtonClass('accepted')).toContain('success')
+    expect(getCandidateResponseButtonClass('declined')).toContain('danger')
+    expect(getCandidateResponseButtonClass('tentative')).toContain('warning')
+    expect(getCandidateResponseIconClass('declined')).toContain('danger')
+    expect(getCandidateResponseSymbol('accepted')).toBe('✓')
   })
 })

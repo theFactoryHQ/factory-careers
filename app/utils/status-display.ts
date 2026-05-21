@@ -12,6 +12,8 @@ export type ApplicationStatusBadgeVariant = 'soft' | 'ring' | 'subtle-ring' | 'f
 export type ApplicationTransitionButtonVariant = 'solid' | 'subtle' | 'factory'
 export type JobStatusBadgeVariant = 'soft' | 'ring'
 export type ScoreBadgeVariant = 'solid' | 'soft' | 'subtle' | 'muted'
+export type CandidateResponseActionKey = typeof CANDIDATE_RESPONSE_ACTION_KEYS[number]
+export type CandidateResponseKey = typeof CANDIDATE_RESPONSE_KEYS[number]
 
 const APPLICATION_STATUS_LABELS: Record<ApplicationStatusKey, string> = {
   new: 'New',
@@ -168,6 +170,52 @@ const JOB_STATUS_BADGE_FALLBACKS: Record<JobStatusBadgeVariant, string> = {
   ring: 'bg-surface-50 text-surface-600 ring-surface-200 dark:bg-surface-800/60 dark:text-surface-400 dark:ring-surface-700',
 }
 
+const CANDIDATE_RESPONSE_ACTION_KEYS = [
+  'accepted',
+  'declined',
+  'tentative',
+] as const
+
+const CANDIDATE_RESPONSE_KEYS = [
+  'pending',
+  ...CANDIDATE_RESPONSE_ACTION_KEYS,
+] as const
+
+const CANDIDATE_RESPONSE_ACTION_LABELS: Record<CandidateResponseActionKey, string> = {
+  accepted: 'Accept',
+  declined: 'Decline',
+  tentative: 'Mark as Tentative',
+}
+
+const CANDIDATE_RESPONSE_LABELS: Record<CandidateResponseKey, string> = {
+  pending: 'Pending',
+  accepted: 'Accepted',
+  declined: 'Declined',
+  tentative: 'Tentative',
+}
+
+const CANDIDATE_RESPONSE_BUTTON_CLASSES: Record<CandidateResponseActionKey, string> = {
+  accepted: 'bg-success-600 hover:bg-success-700',
+  declined: 'bg-danger-600 hover:bg-danger-700',
+  tentative: 'bg-warning-600 hover:bg-warning-700',
+}
+
+const CANDIDATE_RESPONSE_ICON_CLASSES: Record<CandidateResponseKey, string> = {
+  pending: 'bg-info-100 text-info-700 dark:bg-info-950/40 dark:text-info-300',
+  accepted: 'bg-success-100 text-success-700 dark:bg-success-950/40 dark:text-success-300',
+  declined: 'bg-danger-100 text-danger-700 dark:bg-danger-950/40 dark:text-danger-300',
+  tentative: 'bg-warning-100 text-warning-700 dark:bg-warning-950/40 dark:text-warning-300',
+}
+
+const CANDIDATE_RESPONSE_SYMBOLS: Record<CandidateResponseActionKey, string> = {
+  accepted: '✓',
+  declined: '✗',
+  tentative: '?',
+}
+
+const CANDIDATE_RESPONSE_BUTTON_FALLBACK_CLASS = 'bg-surface-700 hover:bg-surface-800 dark:bg-surface-700 dark:hover:bg-surface-600'
+const CANDIDATE_RESPONSE_ICON_FALLBACK_CLASS = 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-300'
+
 const SCORE_BADGE_CLASSES: Record<ScoreBadgeVariant, Record<ScoreBucket, string>> = {
   solid: {
     high: 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950 dark:text-success-300 dark:ring-success-800',
@@ -299,6 +347,14 @@ function isJobStatus(status: string): status is JobStatusKey {
   return JOB_STATUS_KEYS.includes(status as JobStatusKey)
 }
 
+function isCandidateResponseAction(status: string): status is CandidateResponseActionKey {
+  return CANDIDATE_RESPONSE_ACTION_KEYS.includes(status as CandidateResponseActionKey)
+}
+
+function isCandidateResponse(status: string): status is CandidateResponseKey {
+  return CANDIDATE_RESPONSE_KEYS.includes(status as CandidateResponseKey)
+}
+
 function titleizeStatus(status: string): string {
   return status
     .split(/[-_\s]+/)
@@ -352,6 +408,26 @@ export function getJobStatusBadgeClass(
   return isJobStatus(status)
     ? JOB_STATUS_BADGE_CLASSES[variant][status]
     : JOB_STATUS_BADGE_FALLBACKS[variant]
+}
+
+export function getCandidateResponseActionLabel(status: string): string {
+  return isCandidateResponseAction(status) ? CANDIDATE_RESPONSE_ACTION_LABELS[status] : titleizeStatus(status)
+}
+
+export function getCandidateResponseLabel(status: string): string {
+  return isCandidateResponse(status) ? CANDIDATE_RESPONSE_LABELS[status] : titleizeStatus(status)
+}
+
+export function getCandidateResponseButtonClass(status: string): string {
+  return isCandidateResponseAction(status) ? CANDIDATE_RESPONSE_BUTTON_CLASSES[status] : CANDIDATE_RESPONSE_BUTTON_FALLBACK_CLASS
+}
+
+export function getCandidateResponseIconClass(status: string): string {
+  return isCandidateResponse(status) ? CANDIDATE_RESPONSE_ICON_CLASSES[status] : CANDIDATE_RESPONSE_ICON_FALLBACK_CLASS
+}
+
+export function getCandidateResponseSymbol(status: string): string {
+  return isCandidateResponseAction(status) ? CANDIDATE_RESPONSE_SYMBOLS[status] : '?'
 }
 
 function getScoreBucket(score: number | null | undefined, max = 100): ScoreBucket {

@@ -1,4 +1,12 @@
 <script setup lang="ts">
+import {
+  getCandidateResponseActionLabel,
+  getCandidateResponseButtonClass,
+  getCandidateResponseIconClass,
+  getCandidateResponseLabel,
+  getCandidateResponseSymbol,
+} from '~/utils/status-display'
+
 definePageMeta({
   layout: 'public',
 })
@@ -13,25 +21,6 @@ const { data, error: fetchError, status: fetchStatus } = await useFetch('/api/pu
   query: { token },
   immediate: !!token.value,
 })
-
-const actionLabels: Record<string, string> = {
-  accepted: 'Accept',
-  declined: 'Decline',
-  tentative: 'Mark as Tentative',
-}
-
-const actionColors: Record<string, string> = {
-  accepted: 'bg-green-600 hover:bg-green-700',
-  declined: 'bg-red-600 hover:bg-red-700',
-  tentative: 'bg-yellow-600 hover:bg-yellow-700',
-}
-
-const responseLabels: Record<string, string> = {
-  accepted: 'Accepted',
-  declined: 'Declined',
-  tentative: 'Tentative',
-  pending: 'Pending',
-}
 
 const interviewTypeLabels: Record<string, string> = {
   video: 'Video Call',
@@ -133,9 +122,9 @@ useHead({
     <!-- Confirmed successfully -->
     <div v-else-if="confirmed" class="text-center">
       <div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
-           :class="data?.action === 'accepted' ? 'bg-green-100 dark:bg-green-900/30' : data?.action === 'declined' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-yellow-100 dark:bg-yellow-900/30'">
+           :class="getCandidateResponseIconClass(data?.action ?? '')">
         <span class="text-2xl">
-          {{ data?.action === 'accepted' ? '✓' : data?.action === 'declined' ? '✗' : '?' }}
+          {{ getCandidateResponseSymbol(data?.action ?? '') }}
         </span>
       </div>
       <h1 class="text-xl font-semibold text-surface-900 dark:text-surface-100 mb-2">
@@ -165,7 +154,7 @@ useHead({
           Already Responded
         </h1>
         <p class="text-surface-500">
-          You previously {{ responseLabels[data.interview.candidateResponse]?.toLowerCase() ?? 'responded to' }} this interview.
+          You previously {{ getCandidateResponseLabel(data.interview.candidateResponse).toLowerCase() }} this interview.
           If you need to change your response, please contact the hiring team directly.
         </p>
       </div>
@@ -258,7 +247,7 @@ useHead({
         <!-- Confirm action -->
         <div class="text-center">
           <p class="text-sm text-surface-500 mb-4">
-            You are about to <strong>{{ actionLabels[data.action]?.toLowerCase() }}</strong> this interview.
+            You are about to <strong>{{ getCandidateResponseActionLabel(data.action).toLowerCase() }}</strong> this interview.
           </p>
 
           <div v-if="confirmError" class="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
@@ -267,12 +256,12 @@ useHead({
 
           <button
             :disabled="confirming"
-            :class="actionColors[data.action]"
+            :class="getCandidateResponseButtonClass(data.action)"
             class="w-full text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             @click="confirmResponse"
           >
             <span v-if="confirming">Processing...</span>
-            <span v-else>{{ actionLabels[data.action] }} Interview</span>
+            <span v-else>{{ getCandidateResponseActionLabel(data.action) }} Interview</span>
           </button>
 
           <p class="text-xs text-surface-400 mt-4">
