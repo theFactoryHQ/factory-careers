@@ -9,6 +9,8 @@ import {
   getApplicationTransitionLabel,
   getAnalysisRunStatusBadgeClass,
   getAnalysisRunStatusDotClass,
+  getJobStatusBadgeClass,
+  getJobStatusLabel,
   getScoreBadgeClass,
   getScoreBarClass,
   getScoreTextClass,
@@ -71,5 +73,13 @@ describe('status display helpers', () => {
     expect(getSourceChannelBadgeClass('linkedin')).toContain('blue')
     expect(getSourceChannelBadgeClass('unknown')).toContain('surface')
     expect(getSourceChannelDotClass('career_site')).toContain('brand')
+  })
+
+  it('centralizes job status display values', () => {
+    expect(getJobStatusLabel('open')).toBe('Open')
+    expect(getJobStatusLabel('pending_review')).toBe('Pending Review')
+    expect(getJobStatusBadgeClass('open')).toContain('success')
+    expect(getJobStatusBadgeClass('closed', 'ring')).toContain('ring-warning-200')
+    expect(getJobStatusBadgeClass('unknown', 'ring')).toContain('ring-surface-200')
   })
 })

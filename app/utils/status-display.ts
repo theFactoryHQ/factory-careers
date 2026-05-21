@@ -10,6 +10,7 @@ export const APPLICATION_STATUS_KEYS = [
 export type ApplicationStatusKey = typeof APPLICATION_STATUS_KEYS[number]
 export type ApplicationStatusBadgeVariant = 'soft' | 'ring' | 'subtle-ring' | 'factory'
 export type ApplicationTransitionButtonVariant = 'solid' | 'subtle' | 'factory'
+export type JobStatusBadgeVariant = 'soft' | 'ring'
 export type ScoreBadgeVariant = 'solid' | 'soft' | 'subtle' | 'muted'
 
 const APPLICATION_STATUS_LABELS: Record<ApplicationStatusKey, string> = {
@@ -129,6 +130,42 @@ const APPLICATION_TRANSITION_DOT_CLASSES: Record<ApplicationStatusKey, string> =
   offer: 'bg-teal-200',
   hired: 'bg-green-100',
   rejected: 'bg-danger-200',
+}
+
+const JOB_STATUS_KEYS = [
+  'draft',
+  'open',
+  'closed',
+  'archived',
+] as const
+
+type JobStatusKey = typeof JOB_STATUS_KEYS[number]
+
+const JOB_STATUS_LABELS: Record<JobStatusKey, string> = {
+  draft: 'Draft',
+  open: 'Open',
+  closed: 'Closed',
+  archived: 'Archived',
+}
+
+const JOB_STATUS_BADGE_CLASSES: Record<JobStatusBadgeVariant, Record<JobStatusKey, string>> = {
+  soft: {
+    draft: 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400',
+    open: 'bg-success-50 text-success-700 dark:bg-success-950 dark:text-success-400',
+    closed: 'bg-warning-50 text-warning-700 dark:bg-warning-950 dark:text-warning-400',
+    archived: 'bg-surface-100 text-surface-400 dark:bg-surface-800 dark:text-surface-500',
+  },
+  ring: {
+    draft: 'bg-surface-50 text-surface-600 ring-surface-200 dark:bg-surface-800/60 dark:text-surface-400 dark:ring-surface-700',
+    open: 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/60 dark:text-success-400 dark:ring-success-800',
+    closed: 'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950/60 dark:text-warning-400 dark:ring-warning-800',
+    archived: 'bg-surface-50 text-surface-400 ring-surface-200 dark:bg-surface-800/60 dark:text-surface-500 dark:ring-surface-700',
+  },
+}
+
+const JOB_STATUS_BADGE_FALLBACKS: Record<JobStatusBadgeVariant, string> = {
+  soft: 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400',
+  ring: 'bg-surface-50 text-surface-600 ring-surface-200 dark:bg-surface-800/60 dark:text-surface-400 dark:ring-surface-700',
 }
 
 const SCORE_BADGE_CLASSES: Record<ScoreBadgeVariant, Record<ScoreBucket, string>> = {
@@ -258,6 +295,10 @@ function isApplicationStatus(status: string): status is ApplicationStatusKey {
   return APPLICATION_STATUS_KEYS.includes(status as ApplicationStatusKey)
 }
 
+function isJobStatus(status: string): status is JobStatusKey {
+  return JOB_STATUS_KEYS.includes(status as JobStatusKey)
+}
+
 function titleizeStatus(status: string): string {
   return status
     .split(/[-_\s]+/)
@@ -298,6 +339,19 @@ export function getApplicationTransitionButtonClass(
 
 export function getApplicationTransitionDotClass(status: string): string {
   return isApplicationStatus(status) ? APPLICATION_TRANSITION_DOT_CLASSES[status] : 'bg-surface-400 dark:bg-surface-500'
+}
+
+export function getJobStatusLabel(status: string): string {
+  return isJobStatus(status) ? JOB_STATUS_LABELS[status] : titleizeStatus(status)
+}
+
+export function getJobStatusBadgeClass(
+  status: string,
+  variant: JobStatusBadgeVariant = 'soft',
+): string {
+  return isJobStatus(status)
+    ? JOB_STATUS_BADGE_CLASSES[variant][status]
+    : JOB_STATUS_BADGE_FALLBACKS[variant]
 }
 
 function getScoreBucket(score: number | null | undefined, max = 100): ScoreBucket {

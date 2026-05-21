@@ -8,6 +8,7 @@ import {
   Cloud, Server, Sparkles, Radio, History,
   MessageCircle, MoreHorizontal,
 } from 'lucide-vue-next'
+import { getJobStatusBadgeClass, getJobStatusLabel } from '~/utils/status-display'
 
 const route = useRoute()
 const localePath = useLocalePath()
@@ -91,13 +92,6 @@ const activeJobStatus = computed(() => {
   const found = sidebarJobs.value.find((j: any) => j.id === activeJobId.value)
   return (found as any)?.status ?? null
 })
-
-const jobStatusBadgeClasses: Record<string, string> = {
-  draft: 'bg-surface-50 text-surface-600 ring-surface-200 dark:bg-surface-800/60 dark:text-surface-400 dark:ring-surface-700',
-  open: 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/60 dark:text-success-400 dark:ring-success-800',
-  closed: 'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950/60 dark:text-warning-400 dark:ring-warning-800',
-  archived: 'bg-surface-50 text-surface-400 ring-surface-200 dark:bg-surface-800/60 dark:text-surface-500 dark:ring-surface-700',
-}
 
 const { data: feedbackConfig } = useFetch('/api/feedback/config', {
   key: 'feedback-config',
@@ -571,9 +565,9 @@ onUnmounted(() => {
             <span
               v-if="activeJobStatus"
               class="inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold capitalize ring-1 ring-inset"
-              :class="jobStatusBadgeClasses[activeJobStatus] ?? 'bg-surface-50 text-surface-600 ring-surface-200'"
+              :class="getJobStatusBadgeClass(activeJobStatus, 'ring')"
             >
-              {{ activeJobStatus }}
+              {{ getJobStatusLabel(activeJobStatus) }}
             </span>
           </div>
 
