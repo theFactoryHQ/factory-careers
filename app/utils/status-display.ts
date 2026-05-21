@@ -10,6 +10,7 @@ export const APPLICATION_STATUS_KEYS = [
 export type ApplicationStatusKey = typeof APPLICATION_STATUS_KEYS[number]
 export type ApplicationStatusBadgeVariant = 'soft' | 'ring' | 'factory'
 export type ApplicationTransitionButtonVariant = 'solid' | 'subtle' | 'factory'
+export type ScoreBadgeVariant = 'solid' | 'subtle'
 
 const APPLICATION_STATUS_LABELS: Record<ApplicationStatusKey, string> = {
   new: 'New',
@@ -121,12 +122,48 @@ const APPLICATION_TRANSITION_DOT_CLASSES: Record<ApplicationStatusKey, string> =
   rejected: 'bg-danger-200',
 }
 
-const SCORE_BADGE_CLASSES = {
-  high: 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950 dark:text-success-300 dark:ring-success-800',
-  medium: 'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950 dark:text-warning-300 dark:ring-warning-800',
-  low: 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950 dark:text-danger-300 dark:ring-danger-800',
-  empty: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
-} as const
+const SCORE_BADGE_CLASSES: Record<ScoreBadgeVariant, Record<ScoreBucket, string>> = {
+  solid: {
+    high: 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950 dark:text-success-300 dark:ring-success-800',
+    medium: 'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950 dark:text-warning-300 dark:ring-warning-800',
+    low: 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950 dark:text-danger-300 dark:ring-danger-800',
+    empty: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
+  },
+  subtle: {
+    high: 'bg-success-50 text-success-700 ring-success-200/60 dark:bg-success-950 dark:text-success-400 dark:ring-success-800/40',
+    medium: 'bg-warning-50 text-warning-700 ring-warning-200/60 dark:bg-warning-950 dark:text-warning-400 dark:ring-warning-800/40',
+    low: 'bg-danger-50 text-danger-700 ring-danger-200/60 dark:bg-danger-950 dark:text-danger-400 dark:ring-danger-800/40',
+    empty: 'bg-surface-100 text-surface-600 ring-surface-200/60 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700/40',
+  },
+}
+
+const SCORE_TEXT_CLASSES: Record<ScoreBucket, string> = {
+  high: 'text-success-600 dark:text-success-400',
+  medium: 'text-warning-600 dark:text-warning-400',
+  low: 'text-danger-600 dark:text-danger-400',
+  empty: 'text-surface-400',
+}
+
+const SCORE_BAR_CLASSES: Record<Exclude<ScoreBucket, 'empty'>, string> = {
+  high: 'bg-success-500',
+  medium: 'bg-warning-500',
+  low: 'bg-danger-500',
+}
+
+const ANALYSIS_RUN_STATUS_BADGE_CLASSES: Record<string, string> = {
+  completed: 'bg-success-50 text-success-700 ring-success-200/60 dark:bg-success-950 dark:text-success-400 dark:ring-success-800/40',
+  failed: 'bg-danger-50 text-danger-700 ring-danger-200/60 dark:bg-danger-950 dark:text-danger-400 dark:ring-danger-800/40',
+}
+
+const ANALYSIS_RUN_STATUS_DOT_CLASSES: Record<string, string> = {
+  completed: 'bg-success-500',
+  failed: 'bg-danger-500',
+}
+
+const ANALYSIS_RUN_STATUS_PENDING_BADGE_CLASS = 'bg-warning-50 text-warning-700 ring-warning-200/60 dark:bg-warning-950 dark:text-warning-400 dark:ring-warning-800/40'
+const ANALYSIS_RUN_STATUS_PENDING_DOT_CLASS = 'bg-warning-500'
+
+type ScoreBucket = 'high' | 'medium' | 'low' | 'empty'
 
 function isApplicationStatus(status: string): status is ApplicationStatusKey {
   return APPLICATION_STATUS_KEYS.includes(status as ApplicationStatusKey)
@@ -174,9 +211,34 @@ export function getApplicationTransitionDotClass(status: string): string {
   return isApplicationStatus(status) ? APPLICATION_TRANSITION_DOT_CLASSES[status] : 'bg-surface-400 dark:bg-surface-500'
 }
 
-export function getScoreBadgeClass(score: number | null | undefined): string {
-  if (score == null) return SCORE_BADGE_CLASSES.empty
-  if (score >= 75) return SCORE_BADGE_CLASSES.high
-  if (score >= 40) return SCORE_BADGE_CLASSES.medium
-  return SCORE_BADGE_CLASSES.low
+function getScoreBucket(score: number | null | undefined, max = 100): ScoreBucket {
+  if (score == null || max <= 0) return 'empty'
+  const pct = (score / max) * 100
+  if (pct >= 75) return 'high'
+  if (pct >= 40) return 'medium'
+  return 'low'
+}
+
+export function getScoreBadgeClass(
+  score: number | null | undefined,
+  variant: ScoreBadgeVariant = 'solid',
+): string {
+  return SCORE_BADGE_CLASSES[variant][getScoreBucket(score)]
+}
+
+export function getScoreTextClass(score: number | null | undefined, max = 100): string {
+  return SCORE_TEXT_CLASSES[getScoreBucket(score, max)]
+}
+
+export function getScoreBarClass(score: number | null | undefined, max = 100): string {
+  const bucket = getScoreBucket(score, max)
+  return bucket === 'empty' ? 'bg-surface-300 dark:bg-surface-600' : SCORE_BAR_CLASSES[bucket]
+}
+
+export function getAnalysisRunStatusBadgeClass(status: string): string {
+  return ANALYSIS_RUN_STATUS_BADGE_CLASSES[status] ?? ANALYSIS_RUN_STATUS_PENDING_BADGE_CLASS
+}
+
+export function getAnalysisRunStatusDotClass(status: string): string {
+  return ANALYSIS_RUN_STATUS_DOT_CLASSES[status] ?? ANALYSIS_RUN_STATUS_PENDING_DOT_CLASS
 }

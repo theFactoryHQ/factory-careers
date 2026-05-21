@@ -7,7 +7,11 @@ import {
   getApplicationTransitionButtonClass,
   getApplicationTransitionDotClass,
   getApplicationTransitionLabel,
+  getAnalysisRunStatusBadgeClass,
+  getAnalysisRunStatusDotClass,
   getScoreBadgeClass,
+  getScoreBarClass,
+  getScoreTextClass,
 } from '../../app/utils/status-display'
 
 describe('status display helpers', () => {
@@ -44,5 +48,14 @@ describe('status display helpers', () => {
     expect(getScoreBadgeClass(40)).toContain('warning')
     expect(getScoreBadgeClass(39)).toContain('danger')
     expect(getScoreBadgeClass(null)).toContain('surface')
+    expect(getScoreBadgeClass(75, 'subtle')).toContain('ring-success-200/60')
+    expect(getScoreTextClass(75)).toContain('text-success')
+    expect(getScoreBarClass(40, 80)).toContain('warning')
+  })
+
+  it('centralizes AI analysis run status colors', () => {
+    expect(getAnalysisRunStatusBadgeClass('completed')).toContain('success')
+    expect(getAnalysisRunStatusDotClass('failed')).toContain('danger')
+    expect(getAnalysisRunStatusBadgeClass('queued')).toContain('warning')
   })
 })

@@ -3,6 +3,11 @@ import {
   Brain, Sparkles, TrendingUp, AlertTriangle, CheckCircle2,
   XCircle, Zap, Clock, BarChart3, Activity, AlertCircle, DollarSign,
 } from 'lucide-vue-next'
+import {
+  getAnalysisRunStatusBadgeClass,
+  getAnalysisRunStatusDotClass,
+  getScoreBadgeClass,
+} from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -95,25 +100,6 @@ function formatDateTime(dateStr: string | Date): string {
   })
 }
 
-function scoreColor(score: number | null): string {
-  if (score == null) return 'text-surface-400'
-  if (score >= 75) return 'text-success-600 dark:text-success-400'
-  if (score >= 40) return 'text-warning-600 dark:text-warning-400'
-  return 'text-danger-600 dark:text-danger-400'
-}
-
-function scoreBadgeClass(score: number | null): string {
-  if (score == null) return ''
-  if (score >= 75) return 'bg-success-50 text-success-700 ring-success-200/60 dark:bg-success-950 dark:text-success-400 dark:ring-success-800/40'
-  if (score >= 40) return 'bg-warning-50 text-warning-700 ring-warning-200/60 dark:bg-warning-950 dark:text-warning-400 dark:ring-warning-800/40'
-  return 'bg-danger-50 text-danger-700 ring-danger-200/60 dark:bg-danger-950 dark:text-danger-400 dark:ring-danger-800/40'
-}
-
-function statusBadgeClass(status: string): string {
-  if (status === 'completed') return 'bg-success-50 text-success-700 ring-success-200/60 dark:bg-success-950 dark:text-success-400 dark:ring-success-800/40'
-  if (status === 'failed') return 'bg-danger-50 text-danger-700 ring-danger-200/60 dark:bg-danger-950 dark:text-danger-400 dark:ring-danger-800/40'
-  return 'bg-warning-50 text-warning-700 ring-warning-200/60 dark:bg-warning-950 dark:text-warning-400 dark:ring-warning-800/40'
-}
 </script>
 
 <template>
@@ -464,11 +450,11 @@ function statusBadgeClass(status: string): string {
                 <td class="px-4 py-3">
                   <span
                     class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset capitalize whitespace-nowrap"
-                    :class="statusBadgeClass(run.status)"
+                    :class="getAnalysisRunStatusBadgeClass(run.status)"
                   >
                     <span
                       class="size-1.5 rounded-full"
-                      :class="run.status === 'completed' ? 'bg-success-500' : run.status === 'failed' ? 'bg-danger-500' : 'bg-warning-500'"
+                      :class="getAnalysisRunStatusDotClass(run.status)"
                     />
                     {{ run.status }}
                   </span>
@@ -483,7 +469,7 @@ function statusBadgeClass(status: string): string {
                   <span
                     v-if="run.compositeScore != null"
                     class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ring-1 ring-inset"
-                    :class="scoreBadgeClass(run.compositeScore)"
+                    :class="getScoreBadgeClass(run.compositeScore, 'subtle')"
                   >
                     {{ run.compositeScore }}
                   </span>
