@@ -137,14 +137,14 @@ jobs:
           done
           echo "✅ minio is healthy"
 
-      - name: Wait for app to be reachable on :3000
+      - name: Wait for app readiness on :3000
         id: app_health
         run: |
           set -euo pipefail
           echo "Waiting for app..."
           for i in $(seq 60); do
-            if curl -fs http://localhost:3000 > /dev/null 2>&1; then
-              echo "✅ App is reachable on http://localhost:3000"
+            if curl -fs http://localhost:3000/api/readyz > /dev/null 2>&1; then
+              echo "✅ App is ready on http://localhost:3000/api/readyz"
               exit 0
             fi
             state="$(docker inspect --format='{{.State.Status}}' reqcore_app 2>/dev/null || echo 'missing')"
@@ -156,7 +156,7 @@ jobs:
             echo "  attempt $i/60 — waiting..."
             sleep 3
           done
-          echo "❌ App did not become reachable in time"
+          echo "❌ App did not become ready in time"
           docker compose logs app --tail=100
           exit 1
 
@@ -330,7 +330,7 @@ jobs:
           row  6 "Docker build & start"               "${{ steps.docker_build.outcome }}"
           row  7 "Database healthy"                   "${{ steps.db_health.outcome }}"
           row  8 "MinIO healthy"                      "${{ steps.minio_health.outcome }}"
-          row  9 "App reachable on :3000"             "${{ steps.app_health.outcome }}"
+          row  9 "App ready on :3000"                 "${{ steps.app_health.outcome }}"
           row 10 "DB migrations applied"              "${{ steps.db_migrations.outcome }}"
           row 11 "S3 bucket ready"                    "${{ steps.s3_bucket.outcome }}"
           row 12 "HTTP smoke tests"                   "${{ steps.http_smoke.outcome }}"
@@ -377,7 +377,7 @@ jobs:
           junit_case "Docker build and start"             "${{ steps.docker_build.outcome }}"
           junit_case "Database healthy"                   "${{ steps.db_health.outcome }}"
           junit_case "MinIO healthy"                      "${{ steps.minio_health.outcome }}"
-          junit_case "App reachable on :3000"             "${{ steps.app_health.outcome }}"
+          junit_case "App ready on :3000"                 "${{ steps.app_health.outcome }}"
 
           echo "    </testsuite>" >> docker-integration-results.xml
           echo '    <testsuite name="Startup Assertions" tests="2">' >> docker-integration-results.xml
