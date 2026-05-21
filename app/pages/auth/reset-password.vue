@@ -84,14 +84,14 @@ async function handleResetPassword() {
 
         <template v-if="success">
             <div
-                class="rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 p-3 text-sm text-green-700 dark:text-green-400"
+                class="ui-alert ui-alert-success"
             >
                 Your password has been reset successfully.
             </div>
 
             <NuxtLink
                 :to="$localePath('/auth/sign-in')"
-                class="mt-2 px-4 py-2.5 bg-brand-600 text-white rounded-md text-sm font-medium cursor-pointer hover:bg-brand-700 transition-colors text-center block"
+                class="ui-button ui-button-primary mt-2 w-full"
             >
                 Sign in with new password
             </NuxtLink>
@@ -99,7 +99,7 @@ async function handleResetPassword() {
 
         <template v-else-if="tokenError || !token">
             <div
-                class="rounded-md border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-3 text-sm text-danger-700 dark:text-danger-400"
+                class="ui-alert ui-alert-danger"
             >
                 {{ tokenError === 'INVALID_TOKEN'
                     ? "This password reset link is invalid or has expired."
@@ -108,7 +108,7 @@ async function handleResetPassword() {
 
             <NuxtLink
                 :to="$localePath('/auth/forgot-password')"
-                class="mt-2 px-4 py-2.5 bg-brand-600 text-white rounded-md text-sm font-medium cursor-pointer hover:bg-brand-700 transition-colors text-center block"
+                class="ui-button ui-button-primary mt-2 w-full"
             >
                 Request new reset link
             </NuxtLink>
@@ -117,7 +117,7 @@ async function handleResetPassword() {
         <template v-else>
             <div
                 v-if="error"
-                class="rounded-md border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-3 text-sm text-danger-700 dark:text-danger-400"
+                class="ui-alert ui-alert-danger"
             >
                 {{ error }}
             </div>
@@ -133,7 +133,7 @@ async function handleResetPassword() {
                         autocomplete="new-password"
                         required
                         minlength="8"
-                        class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
+                        class="ui-field"
                     />
                 </label>
 
@@ -147,14 +147,14 @@ async function handleResetPassword() {
                         autocomplete="new-password"
                         required
                         minlength="8"
-                        class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
+                        class="ui-field"
                     />
                 </label>
 
                 <button
                     type="submit"
                     :disabled="isLoading"
-                    class="mt-2 px-4 py-2.5 bg-brand-600 text-white rounded-md text-sm font-medium cursor-pointer hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                    class="ui-button ui-button-primary mt-2"
                 >
                     {{ isLoading ? "Resetting…" : "Reset password" }}
                 </button>

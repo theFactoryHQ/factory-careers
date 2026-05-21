@@ -84,7 +84,7 @@ useHead({
   <div class="max-w-lg mx-auto py-12">
     <!-- No token -->
     <div v-if="!token" class="text-center">
-      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
+      <div class="ui-icon-state ui-icon-state-danger mx-auto mb-4 size-16">
         <span class="text-2xl">⚠</span>
       </div>
       <h1 class="text-xl font-semibold text-surface-900 dark:text-surface-100 mb-2">
@@ -105,7 +105,7 @@ useHead({
 
     <!-- Error fetching -->
     <div v-else-if="fetchError" class="text-center">
-      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
+      <div class="ui-icon-state ui-icon-state-danger mx-auto mb-4 size-16">
         <span class="text-2xl">⚠</span>
       </div>
       <h1 class="text-xl font-semibold text-surface-900 dark:text-surface-100 mb-2">
@@ -147,7 +147,7 @@ useHead({
     <div v-else-if="data">
       <!-- Already responded -->
       <div v-if="data.interview.candidateResponse !== 'pending'" class="text-center">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 mb-4">
+        <div class="ui-icon-state ui-icon-state-info mx-auto mb-4 size-16">
           <span class="text-2xl">ℹ</span>
         </div>
         <h1 class="text-xl font-semibold text-surface-900 dark:text-surface-100 mb-2">
@@ -161,7 +161,7 @@ useHead({
 
       <!-- Interview is no longer scheduled -->
       <div v-else-if="data.interview.status !== 'scheduled'" class="text-center">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-100 dark:bg-surface-800 mb-4">
+        <div class="ui-icon-state mx-auto mb-4 size-16">
           <span class="text-2xl">ℹ</span>
         </div>
         <h1 class="text-xl font-semibold text-surface-900 dark:text-surface-100 mb-2">
@@ -179,7 +179,7 @@ useHead({
         </h1>
 
         <!-- Interview details card -->
-        <div class="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl p-6 mb-6">
+        <div class="ui-panel p-6 mb-6">
           <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-4">
             {{ data.interview.title }}
           </h2>
@@ -250,14 +250,14 @@ useHead({
             You are about to <strong>{{ getCandidateResponseActionLabel(data.action).toLowerCase() }}</strong> this interview.
           </p>
 
-          <div v-if="confirmError" class="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
+          <div v-if="confirmError" class="ui-alert ui-alert-danger mb-4">
             {{ confirmError }}
           </div>
 
           <button
             :disabled="confirming"
             :class="getCandidateResponseButtonClass(data.action)"
-            class="w-full text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="ui-button w-full py-3 px-6 text-white font-semibold"
             @click="confirmResponse"
           >
             <span v-if="confirming">Processing...</span>
