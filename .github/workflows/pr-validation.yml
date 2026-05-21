@@ -60,6 +60,27 @@ jobs:
           set -euo pipefail
           npm audit --audit-level=high 2>&1 | tee audit-output.txt
 
+      - name: Validate production environment contract
+        id: production_env
+        run: npm run ops:validate-production-env
+        env:
+          DATABASE_URL: postgresql://factory_app:database-password-for-ci-prod-check@db.internal:5432/factory_careers
+          BETTER_AUTH_SECRET: ci-production-contract-secret-with-40-characters
+          BETTER_AUTH_URL: https://careers.thefactory.com
+          BETTER_AUTH_TRUSTED_ORIGINS: https://careers.thefactory.com
+          NUXT_PUBLIC_SITE_URL: https://careers.thefactory.com
+          CRON_SECRET: ci-production-contract-cron-secret-32chars
+          S3_ENDPOINT: https://s3.us-east-1.amazonaws.com
+          S3_ACCESS_KEY: ci-production-access-key
+          S3_SECRET_KEY: ci-production-secret-key-material
+          S3_BUCKET: factory-careers-documents
+          S3_REGION: us-east-1
+          S3_FORCE_PATH_STYLE: "false"
+          SMTP_HOST: smtp.mailprovider.test
+          SMTP_PORT: "587"
+          SMTP_SECURE: "false"
+          SMTP_FROM: noreply@thefactory.com
+
       - name: Build
         id: build
         run: |
@@ -87,6 +108,7 @@ jobs:
           fi
           echo "| Typecheck | $(status_icon '${{ steps.typecheck.outcome }}') ${{ steps.typecheck.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Dependency audit | $(status_icon '${{ steps.audit.outcome }}') ${{ steps.audit.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Production env contract | $(status_icon '${{ steps.production_env.outcome }}') ${{ steps.production_env.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
 
           if [ -f audit-output.txt ] && [ "${{ steps.audit.outcome }}" != "success" ]; then
             echo "" >> "$GITHUB_STEP_SUMMARY"
