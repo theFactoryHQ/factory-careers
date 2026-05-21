@@ -14,6 +14,7 @@ Record these before deploying:
 - `npm ci`, `npm run test:unit`, `npm run typecheck`, `npm run build`.
 - `npm audit --audit-level=high`.
 - `gitleaks detect --source . --config .gitleaks.toml --redact --verbose`.
+- `npm run ops:validate-production-env -- <production-env-file-or-export>`.
 - `npm run ops:backup-restore-rehearsal`.
 - `npm run test:e2e` against Postgres and S3-compatible storage.
 - CI run URL for PR validation, secret scan, backup restore rehearsal, and e2e on the exact candidate commit.
@@ -31,6 +32,17 @@ Required production settings:
 - `CRON_SECRET`, OAuth, SSO, SMTP, Resend, AI provider, and telemetry secrets are generated per environment.
 
 Never copy example credentials into production.
+
+Before launch, export the exact production values into a local file or run the
+preflight inside the deployment environment:
+
+```bash
+npm run ops:validate-production-env -- .env.production
+```
+
+This preflight fails on placeholder secrets, localhost or HTTP public URLs,
+partial OAuth/OIDC provider config, invalid S3 path-style values, and other
+configuration that should not reach real candidate data.
 
 ## Deployment
 
