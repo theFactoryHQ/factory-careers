@@ -28,6 +28,7 @@ The codebase is promising and has several strong production signals: active upst
 - Fixed constant-time secret comparison for long cron/OAuth state secrets by adding `timingSafeStringEqual`.
 - Added a minimal unauthenticated `/api/healthz` liveness endpoint.
 - Added unauthenticated `/api/readyz` readiness endpoint that returns 503 until the database schema is present.
+- Wired Docker image and Compose app health checks to `/api/readyz` so self-hosted deployments expose a real app readiness signal.
 - Fixed e2e CI startup so the app runtime owns migrations instead of double-applying schema after `drizzle-kit push`.
 - Added static security coverage tests for route auth gates, direct-resource org scoping, list scoping, and body-supplied `organizationId` ignores.
 - Added DB-backed Playwright tenant-isolation checks for interviews, scoring, properties, stale membership/session access, DOCX preview denial, owner document parse/delete, invite-link edge cases, source-tracking stats isolation, activity-log resource filters, and multi-org active-organization switching.
@@ -60,7 +61,7 @@ The codebase is promising and has several strong production signals: active upst
 | Production environment preflight | Partially covered | `npm run ops:validate-production-env -- <env-file>` catches placeholder secrets, non-HTTPS public URLs, partial OIDC/OAuth config, weak cron secrets, S3 path-style mismatches, missing email provider posture, and telemetry processor-review prompts. It still needs to be run against the real production environment values before launch. |
 | Legal/license | Open | AGPL-3.0 obligations are reviewed and accepted for the intended deployment and any proprietary integrations. Capture the decision in `PRODUCTION-APPROVAL-CHECKLIST.md`. |
 | Data retention | Partially covered | `PRODUCTION-DATA-RETENTION.md` defines required retention decisions and current deletion behavior. Actual retention periods, backup purge SLA, and privacy/legal approval remain required before real candidate data. |
-| Deployment/runbook | Partially covered | `PRODUCTION-RUNBOOK.md` defines deployment, environment, monitoring, rollback, and incident procedures. `scripts/backup-restore-rehearsal.sh` verifies SQL dump/restore mechanics and `scripts/object-storage-restore-rehearsal.sh` verifies S3-compatible object backup/restore mechanics locally and through the `Backup Restore Rehearsal` CI workflow. Before real candidate data, run both against sanitized production-like backups. |
+| Deployment/runbook | Partially covered | `PRODUCTION-RUNBOOK.md` defines deployment, environment, monitoring, rollback, and incident procedures. Docker app health checks now use `/api/readyz`. `scripts/backup-restore-rehearsal.sh` verifies SQL dump/restore mechanics and `scripts/object-storage-restore-rehearsal.sh` verifies S3-compatible object backup/restore mechanics locally and through the `Backup Restore Rehearsal` CI workflow. Before real candidate data, run both restore rehearsals against sanitized production-like backups. |
 
 ## P0 Before Real Candidate Data
 
@@ -87,7 +88,7 @@ The codebase is promising and has several strong production signals: active upst
 ## P1 For A Small Production Pilot
 
 - Add a real lint/format gate or formally decide not to have one.
-- Wire `/api/healthz` into the production load balancer or uptime monitor.
+- Wire `/api/readyz` or `/api/healthz` into the production load balancer and external uptime monitor.
 - Add monitoring and alerting for app availability, error rate, disk usage, backup success, DB availability, and storage availability.
 - Add provider-live success-path tests for configured SSO and AI providers before enabling those integrations with production data.
 - Define incident response basics: who owns alerts, where credentials live, how to rotate secrets, how to disable risky integrations, and how to roll back a release.
