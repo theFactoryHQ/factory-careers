@@ -175,4 +175,13 @@ describe('P0 tenant-isolation route coverage', () => {
     expect(source).not.toContain('process.env.CI')
     expect(source).not.toContain('process.env.GITHUB_ACTIONS')
   })
+
+  it('requires HTTPS SSO issuer URLs in production', () => {
+    const source = read('server/api/sso/providers.post.ts')
+
+    expect(source).toContain('function isAllowedIssuerProtocol')
+    expect(source).toContain("protocol === 'https:'")
+    expect(source).toContain("protocol === 'http:' && process.env.NODE_ENV !== 'production'")
+    expect(source).toContain('Issuer URL must use HTTPS in production')
+  })
 })
