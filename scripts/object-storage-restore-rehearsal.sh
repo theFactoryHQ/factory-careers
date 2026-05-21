@@ -10,6 +10,7 @@ TARGET_CONTAINER="${TARGET_CONTAINER:-reqcore-object-rehearsal-target-$$}"
 NETWORK="${NETWORK:-reqcore-object-rehearsal-$$}"
 MINIO_IMAGE="${MINIO_IMAGE:-minio/minio:latest}"
 MC_IMAGE="${MC_IMAGE:-minio/mc:latest}"
+CLEANUP_IMAGE="${CLEANUP_IMAGE:-alpine:3.20}"
 MINIO_ROOT_USER="${MINIO_ROOT_USER:-reqcore}"
 MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-reqcore-object-rehearsal-secret}"
 BUCKET="${S3_BUCKET:-reqcore}"
@@ -22,7 +23,13 @@ cleanup() {
   docker rm -f "$SOURCE_CONTAINER" "$TARGET_CONTAINER" >/dev/null 2>&1 || true
   docker network rm "$NETWORK" >/dev/null 2>&1 || true
   if [[ "${KEEP_OBJECT_REHEARSAL_ARTIFACTS:-}" != "1" ]]; then
-    rm -rf "$TMP_DIR"
+    if ! rm -rf "$TMP_DIR" 2>/dev/null; then
+      docker run --rm \
+        -v "$TMP_DIR:/work" \
+        "$CLEANUP_IMAGE" \
+        sh -c 'rm -rf /work/* /work/.[!.]* /work/..?*' >/dev/null 2>&1 || true
+      rm -rf "$TMP_DIR" 2>/dev/null || true
+    fi
   else
     echo "Keeping object storage rehearsal artifacts in $TMP_DIR"
   fi
