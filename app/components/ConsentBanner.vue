@@ -68,14 +68,14 @@ const { needsConsent, acceptAnalytics, declineAnalytics } = useAnalyticsConsent(
       <div class="mt-3 flex gap-2">
         <button
           type="button"
-          class="rounded-md px-3 py-1.5 text-xs font-medium text-white/40 transition hover:text-white/70"
+          class="ui-button ui-button-ghost px-3 py-1.5 text-xs font-medium text-white/40 hover:bg-white/5 hover:text-white/70"
           @click="declineAnalytics"
         >
           No thanks
         </button>
         <button
           type="button"
-          class="rounded-md bg-brand-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-500"
+          class="ui-button ui-button-primary px-4 py-1.5 text-xs font-semibold shadow-sm hover:bg-brand-500"
           @click="acceptAnalytics"
         >
           Sure, help improve it
