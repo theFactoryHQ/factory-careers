@@ -115,6 +115,19 @@ export default defineEventHandler(async (event) => {
       },
     })
 
+    recordActivity({
+      organizationId: orgId,
+      actorId: session.user.id,
+      action: 'created',
+      resourceType: 'ssoProvider',
+      resourceId: result.id,
+      metadata: {
+        providerId: result.providerId,
+        domain: result.domain,
+        issuer: result.issuer,
+      },
+    })
+
     setResponseStatus(event, 201)
     return {
       id: result.id,

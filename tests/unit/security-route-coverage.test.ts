@@ -150,4 +150,21 @@ describe('P0 tenant-isolation route coverage', () => {
     expect(source).toContain('deleteFromS3(doc.storageKey)')
     expect(source).toContain('organization.document_s3_delete_failed')
   })
+
+  it('records audit activity for production-sensitive admin and source tracking changes', () => {
+    const routes: Record<string, string[]> = {
+      'server/api/sso/providers.post.ts': ['recordActivity({', "resourceType: 'ssoProvider'", "action: 'created'"],
+      'server/api/sso/providers/[id].delete.ts': ['recordActivity({', "resourceType: 'ssoProvider'", "action: 'deleted'"],
+      'server/api/tracking-links/index.post.ts': ['recordActivity({', "resourceType: 'trackingLink'", "action: 'created'"],
+      'server/api/tracking-links/[id].patch.ts': ['recordActivity({', "resourceType: 'trackingLink'", "action: 'updated'"],
+      'server/api/tracking-links/[id].delete.ts': ['recordActivity({', "resourceType: 'trackingLink'", "action: 'deleted'"],
+    }
+
+    for (const [path, snippets] of Object.entries(routes)) {
+      const source = read(path)
+      for (const snippet of snippets) {
+        expect(source, `${path} missing ${snippet}`).toContain(snippet)
+      }
+    }
+  })
 })
