@@ -13,7 +13,7 @@ const paramsSchema = z.object({ id: z.string().min(1) })
  * so users can edit name / model / pricing without re-entering credentials.
  */
 export default defineEventHandler(async (event) => {
-  const session = await requirePermission(event, { scoring: ['create'] })
+  const session = await requirePermission(event, { organization: ['update'] })
   const orgId = session.session.activeOrganizationId
   const { id } = await getValidatedRouterParams(event, paramsSchema.parse)
   const body = await readValidatedBody(event, updateAiConfigSchema.parse)

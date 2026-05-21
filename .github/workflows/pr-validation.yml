@@ -24,23 +24,34 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
+        id: install
         run: npm ci
 
-      - name: Run tests (if present)
+      - name: Run unit tests
         id: tests
-        run: npm run test --if-present
+        run: npm run test:unit
 
-      - name: Lint (if present)
+      - name: Lint
         id: lint
-        run: npm run lint --if-present
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! node -e "const { scripts = {} } = require('./package.json'); process.exit(typeof scripts.lint === 'string' && scripts.lint.trim() ? 0 : 1)"; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "No lint script configured; skipping."
+            exit 0
+          fi
+
+          echo "configured=true" >> "$GITHUB_OUTPUT"
+          npm run lint
 
       - name: Typecheck
         id: typecheck
-        run: npx nuxi typecheck
+        run: npm run typecheck
 
       - name: Audit dependencies (high severity+)
         id: audit
@@ -48,6 +59,27 @@ jobs:
         run: |
           set -euo pipefail
           npm audit --audit-level=high 2>&1 | tee audit-output.txt
+
+      - name: Validate production environment contract
+        id: production_env
+        run: npm run ops:validate-production-env
+        env:
+          DATABASE_URL: postgresql://factory_app:database-password-for-ci-prod-check@db.internal:5432/factory_careers
+          BETTER_AUTH_SECRET: ci-production-contract-secret-with-40-characters
+          BETTER_AUTH_URL: https://careers.thefactory.com
+          BETTER_AUTH_TRUSTED_ORIGINS: https://careers.thefactory.com
+          NUXT_PUBLIC_SITE_URL: https://careers.thefactory.com
+          CRON_SECRET: ci-production-contract-cron-secret-32chars
+          S3_ENDPOINT: https://s3.us-east-1.amazonaws.com
+          S3_ACCESS_KEY: ci-production-access-key
+          S3_SECRET_KEY: ci-production-secret-key-material
+          S3_BUCKET: factory-careers-documents
+          S3_REGION: us-east-1
+          S3_FORCE_PATH_STYLE: "false"
+          SMTP_HOST: smtp.mailprovider.test
+          SMTP_PORT: "587"
+          SMTP_SECURE: "false"
+          SMTP_FROM: noreply@thefactory.com
 
       - name: Build
         id: build
@@ -67,11 +99,16 @@ jobs:
 
           status_icon() { [ "$1" = "success" ] && echo "✅" || echo "❌"; }
 
-          echo "| Install dependencies | $(status_icon '${{ steps.tests.outcome != 'skipped' && 'success' || 'failure' }}') |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Install dependencies | $(status_icon '${{ steps.install.outcome }}') ${{ steps.install.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Tests | $(status_icon '${{ steps.tests.outcome }}') ${{ steps.tests.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Lint | $(status_icon '${{ steps.lint.outcome }}') ${{ steps.lint.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.lint.outputs.configured }}" = "false" ]; then
+            echo "| Lint | ⚪ not configured |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| Lint | $(status_icon '${{ steps.lint.outcome }}') ${{ steps.lint.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo "| Typecheck | $(status_icon '${{ steps.typecheck.outcome }}') ${{ steps.typecheck.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Dependency audit | $(status_icon '${{ steps.audit.outcome }}') ${{ steps.audit.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Production env contract | $(status_icon '${{ steps.production_env.outcome }}') ${{ steps.production_env.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
 
           if [ -f audit-output.txt ] && [ "${{ steps.audit.outcome }}" != "success" ]; then
             echo "" >> "$GITHUB_STEP_SUMMARY"

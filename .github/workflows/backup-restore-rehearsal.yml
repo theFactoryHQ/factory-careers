@@ -1,0 +1,50 @@
+name: Backup Restore Rehearsal
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-restore-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rehearsal:
+    name: Backup and restore rehearsal
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Run database backup restore rehearsal
+        id: database
+        run: npm run ops:backup-restore-rehearsal
+
+      - name: Run object storage backup restore rehearsal
+        id: object_storage
+        run: npm run ops:object-storage-restore-rehearsal
+
+      - name: Backup Restore Summary
+        if: ${{ always() && !cancelled() }}
+        run: |
+          echo "## Backup Restore Rehearsal" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Check | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|--------|" >> "$GITHUB_STEP_SUMMARY"
+
+          status_icon() { [ "$1" = "success" ] && echo "PASS" || echo "FAIL"; }
+          echo "| PostgreSQL dump/restore | $(status_icon '${{ steps.database.outcome }}') ${{ steps.database.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Object storage backup/restore | $(status_icon '${{ steps.object_storage.outcome }}') ${{ steps.object_storage.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "_Run: \`${{ github.run_id }}\` · Commit: \`${{ github.sha }}\`_" >> "$GITHUB_STEP_SUMMARY"

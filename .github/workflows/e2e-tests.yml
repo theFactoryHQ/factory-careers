@@ -47,6 +47,14 @@ jobs:
       S3_BUCKET: reqcore
       S3_REGION: us-east-1
       S3_FORCE_PATH_STYLE: "true"
+      FEATURE_FLAG_CHATBOT_EXPERIENCE: "true"
+      # Playwright creates many synthetic accounts/applications from one runner
+      # IP while NODE_ENV=production. Keep real production limits enabled, but
+      # raise the explicit test-harness ceilings so E2E can exercise behavior.
+      API_AUTH_WRITE_RATE_LIMIT_MAX_REQUESTS: "250"
+      API_GLOBAL_WRITE_RATE_LIMIT_MAX_REQUESTS: "500"
+      BETTER_AUTH_RATE_LIMIT_MAX_REQUESTS: "1000"
+      PUBLIC_APPLICATION_RATE_LIMIT_MAX_REQUESTS: "200"
 
     steps:
       - name: Start MinIO
@@ -70,14 +78,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Push database schema
-        run: npx drizzle-kit push
 
       - name: Build Nuxt application
         run: npm run build
@@ -90,9 +95,10 @@ jobs:
         env:
           PORT: 3000
           NODE_ENV: production
+          CI: true
 
       - name: Wait for server to be ready
-        run: npx wait-on http://localhost:3000 --timeout 30000
+        run: npx wait-on http-get://localhost:3000/api/readyz --timeout 90000
 
       - name: Run Playwright tests
         id: playwright

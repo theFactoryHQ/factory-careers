@@ -12,7 +12,7 @@ import { encrypt } from '../../utils/encryption'
  * inside the same transaction so exactly one default exists per purpose.
  */
 export default defineEventHandler(async (event) => {
-  const session = await requirePermission(event, { scoring: ['create'] })
+  const session = await requirePermission(event, { organization: ['update'] })
   const orgId = session.session.activeOrganizationId
   const body = await readValidatedBody(event, createAiConfigSchema.parse)
 

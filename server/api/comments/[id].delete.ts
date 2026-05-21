@@ -6,8 +6,8 @@ import { commentIdParamSchema } from '../../utils/schemas/comment'
  * DELETE /api/comments/:id
  * Remove a comment.
  * Requires comment:delete permission.
- * Authors can delete their own comments; admin/owner roles
- * already have comment:delete granted so they can remove any.
+ * Only admin/owner roles have comment:delete, so members cannot delete even
+ * their own comments. Admins and owners can delete any comment in the org.
  */
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { comment: ['delete'] })
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Comment not found' })
   }
 
-  // Admins/owners can delete any comment; members can only delete their own
+  // Admins/owners can delete any comment.
   if (existing.authorId !== session.user.id) {
     const mem = await db.query.member.findFirst({
       where: and(

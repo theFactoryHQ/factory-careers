@@ -8,7 +8,7 @@ const paramsSchema = z.object({ id: z.string().min(1) })
  * GET /api/ai-config/:id — fetch a single AI configuration (no API key).
  */
 export default defineEventHandler(async (event) => {
-  const session = await requirePermission(event, { scoring: ['read'] })
+  const session = await requirePermission(event, { organization: ['update'] })
   const orgId = session.session.activeOrganizationId
   const { id } = await getValidatedRouterParams(event, paramsSchema.parse)
 

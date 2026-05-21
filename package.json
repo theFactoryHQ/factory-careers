@@ -3,6 +3,9 @@
   "version": "1.4.0",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=22.22.0 <23 || >=24.11.0 <25"
+  },
   "scripts": {
     "build": "nuxt build",
     "start": "node .output/server/index.mjs",
@@ -17,7 +20,13 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "npx tsx server/scripts/seed.ts",
     "db:reseed": "npx tsx server/scripts/delete-demo-org.ts && npx tsx server/scripts/seed.ts",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "typecheck": "nuxi typecheck",
     "test:e2e": "npx playwright test",
+    "ops:backup-restore-rehearsal": "bash scripts/backup-restore-rehearsal.sh",
+    "ops:object-storage-restore-rehearsal": "bash scripts/object-storage-restore-rehearsal.sh",
+    "ops:validate-production-env": "node scripts/validate-production-env.mjs",
     "i18n:crowdin:upload": "crowdin upload sources",
     "i18n:crowdin:download": "crowdin download --all",
     "i18n:crowdin:sync": "npm run i18n:crowdin:upload && npm run i18n:crowdin:download"
@@ -46,7 +55,7 @@
     "lucide-vue-next": "^0.577.0",
     "mammoth": "^1.12.0",
     "nodemailer": "^8.0.7",
-    "nuxt": "^4.4.4",
+    "nuxt": "^4.4.6",
     "pdf-parse": "^2.4.5",
     "postgres": "^3.4.8",
     "posthog-node": "^5.28.0",
@@ -92,6 +101,7 @@
     "fast-xml-builder": "1.2.0",
     "kysely": "0.28.17",
     "simple-git": "3.36.0",
-    "protobufjs": "8.3.0"
+    "protobufjs": "8.3.0",
+    "samlify": "2.13.1"
   }
 }

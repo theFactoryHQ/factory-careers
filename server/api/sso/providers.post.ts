@@ -35,12 +35,22 @@ function isBlockedIssuerUrl(url: string): boolean {
   return false
 }
 
+function isAllowedIssuerProtocol(url: string): boolean {
+  try {
+    const protocol = new URL(url).protocol
+    if (protocol === 'https:') return true
+    return protocol === 'http:' && process.env.NODE_ENV !== 'production'
+  } catch {
+    return false
+  }
+}
+
 const registerSsoSchema = z.object({
   providerId: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/, 'Only lowercase alphanumeric and hyphens'),
   issuer: z.string().url()
     .refine(
-      (url) => url.startsWith('https://') || url.startsWith('http://'),
-      'Issuer URL must use HTTPS (or HTTP for local development)',
+      isAllowedIssuerProtocol,
+      'Issuer URL must use HTTPS in production. HTTP is only allowed for local development.',
     )
     .refine(
       (url) => !isBlockedIssuerUrl(url),
@@ -112,6 +122,19 @@ export default defineEventHandler(async (event) => {
           scopes: ['openid', 'email', 'profile'],
           pkce: true,
         },
+      },
+    })
+
+    recordActivity({
+      organizationId: orgId,
+      actorId: session.user.id,
+      action: 'created',
+      resourceType: 'ssoProvider',
+      resourceId: result.id,
+      metadata: {
+        providerId: result.providerId,
+        domain: result.domain,
+        issuer: result.issuer,
       },
     })
 

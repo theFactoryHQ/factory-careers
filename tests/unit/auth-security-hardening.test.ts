@@ -109,8 +109,11 @@ describe('OAuth token encryption at rest', () => {
 // ── Issue #4: Better Auth rate limiting config ──────────────────────
 
 describe('Rate limiting configuration', () => {
+  function isRateLimitEnabled(env: { NODE_ENV?: string; CI?: string; GITHUB_ACTIONS?: string }): boolean {
+    return env.NODE_ENV === 'production'
+  }
+
   const rateLimitConfig = {
-    enabled: !process.env.CI && !process.env.GITHUB_ACTIONS,
     window: 60,
     max: 100,
     storage: 'database' as const,
@@ -125,17 +128,15 @@ describe('Rate limiting configuration', () => {
     expect(rateLimitConfig.max).toBeLessThanOrEqual(200)
   })
 
-  it('is disabled in CI environments (Better Auth internal limiter only)', () => {
-    // Better Auth's internal rate limiter is disabled in CI to prevent E2E
-    // test flakiness. The apply-endpoint rate limiter uses NODE_ENV instead
-    // and must not be bypassed via CI env vars in production.
-    const ciConfig = { enabled: !('CI' in process.env) && !('GITHUB_ACTIONS' in process.env) }
-    if (process.env.CI || process.env.GITHUB_ACTIONS) {
-      expect(ciConfig.enabled).toBe(false)
-    }
-    else {
-      expect(ciConfig.enabled).toBe(true)
-    }
+  it('is enabled in production even when CI flags are present', () => {
+    expect(isRateLimitEnabled({ NODE_ENV: 'production' })).toBe(true)
+    expect(isRateLimitEnabled({ NODE_ENV: 'production', CI: 'true' })).toBe(true)
+    expect(isRateLimitEnabled({ NODE_ENV: 'production', GITHUB_ACTIONS: 'true' })).toBe(true)
+  })
+
+  it('is disabled outside production', () => {
+    expect(isRateLimitEnabled({ NODE_ENV: 'development' })).toBe(false)
+    expect(isRateLimitEnabled({ NODE_ENV: 'test', CI: 'true' })).toBe(false)
   })
 })
 

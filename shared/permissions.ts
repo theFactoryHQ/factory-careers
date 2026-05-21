@@ -73,7 +73,7 @@ export const owner = ac.newRole({
 
 export const admin = ac.newRole({
   ...adminAc.statements,
-  organization: ['read', 'update', 'delete'],
+  organization: ['read', 'update'],
   job: ['create', 'read', 'update', 'delete'],
   candidate: ['create', 'read', 'update', 'delete'],
   application: ['create', 'read', 'update', 'delete'],
@@ -93,10 +93,10 @@ export const member = ac.newRole({
   candidate: ['create', 'read', 'update'],
   application: ['create', 'read', 'update'],
   document: ['create', 'read'],
-  comment: ['create', 'read', 'delete'],
+  comment: ['create', 'read'],
   interview: ['create', 'read', 'update'],
-  emailTemplate: ['create', 'read', 'update'],
+  emailTemplate: ['read'],
   activityLog: ['read'],
-  scoring: ['create', 'read'],
+  scoring: ['read'],
   sourceTracking: ['read'],
 })

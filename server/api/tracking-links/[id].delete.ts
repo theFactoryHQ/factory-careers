@@ -25,6 +25,14 @@ export default defineEventHandler(async (event) => {
   await db.delete(trackingLink)
     .where(and(eq(trackingLink.id, id), eq(trackingLink.organizationId, orgId)))
 
+  recordActivity({
+    organizationId: orgId,
+    actorId: session.user.id,
+    action: 'deleted',
+    resourceType: 'trackingLink',
+    resourceId: existing.id,
+  })
+
   setResponseStatus(event, 204)
   return null
 })

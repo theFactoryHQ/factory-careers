@@ -8,22 +8,15 @@
  * This is an internal endpoint — only callable by authenticated admins/owners.
  */
 import { lt, and, isNotNull } from 'drizzle-orm'
-import { timingSafeEqual } from 'node:crypto'
 import { calendarIntegration } from '../../database/schema'
 import { setupCalendarWebhook } from '../../utils/google-calendar'
+import { timingSafeStringEqual } from '../../utils/secureCompare'
 
 export default defineEventHandler(async (event) => {
   // Check for CRON_SECRET header (server-to-server / scheduled job)
   const cronSecret = getHeader(event, 'x-cron-secret')
   if (cronSecret && env.CRON_SECRET) {
-    // Use fixed-length buffers to avoid leaking secret length via timing
-    const a = Buffer.alloc(64)
-    const b = Buffer.alloc(64)
-    Buffer.from(cronSecret).copy(a)
-    Buffer.from(env.CRON_SECRET).copy(b)
-    const valid = cronSecret.length === env.CRON_SECRET.length
-      && timingSafeEqual(a, b)
-    if (!valid) {
+    if (!timingSafeStringEqual(cronSecret, env.CRON_SECRET)) {
       throw createError({ statusCode: 403, statusMessage: 'Invalid cron secret' })
     }
   }

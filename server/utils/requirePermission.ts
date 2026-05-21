@@ -61,18 +61,30 @@ export async function requirePermission(
     throw createError({ statusCode: 403, statusMessage: 'No active organization' })
   }
 
+  const requestedActions = Object.values(permissions).reduce(
+    (count, actions) => count + (actions?.length ?? 0),
+    0,
+  )
+
+  if (requestedActions === 0) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Forbidden: no permissions requested',
+    })
+  }
+
   // ── Step 3: Permission check (Better Auth AC) ──
   // Type assertion needed because the organization plugin dynamically
   // extends auth.api with hasPermission, which TypeScript can't infer
   // through the lazy proxy pattern.
-  const { error } = await (auth.api as any).hasPermission({
+  const result = await (auth.api as any).hasPermission({
     headers: event.headers,
     body: {
       permissions: permissions as Record<string, string[]>,
     },
   })
 
-  if (error) {
+  if (result.error || result.success !== true) {
     throw createError({
       statusCode: 403,
       statusMessage: 'Forbidden: insufficient permissions',

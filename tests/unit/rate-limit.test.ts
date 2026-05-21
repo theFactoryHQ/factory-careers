@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import type { H3Event, EventHandlerRequest } from 'h3'
 
 // ── Stub Nitro auto-imports BEFORE importing the module under test ───────────
@@ -32,6 +32,8 @@ vi.stubGlobal('createError', (opts: { statusCode: number, statusMessage?: string
 })
 
 const { createRateLimiter } = await import('../../server/utils/rateLimit')
+const { readPositiveIntegerEnv } = await import('../../server/utils/rateLimitConfig')
+const TEST_RATE_LIMIT_ENV = 'REQCORE_TEST_RATE_LIMIT_MAX_REQUESTS'
 
 function makeEvent(ip = '1.2.3.4', headers: Record<string, string> = {}): FakeEvent & H3Event<EventHandlerRequest> {
   return { __ip: ip, __headers: headers, __resHeaders: {} } as unknown as FakeEvent & H3Event<EventHandlerRequest>
@@ -39,6 +41,11 @@ function makeEvent(ip = '1.2.3.4', headers: Record<string, string> = {}): FakeEv
 
 beforeEach(() => {
   envStub.TRUSTED_PROXY_IP = undefined
+  delete process.env[TEST_RATE_LIMIT_ENV]
+})
+
+afterEach(() => {
+  delete process.env[TEST_RATE_LIMIT_ENV]
 })
 
 describe('createRateLimiter', () => {
@@ -161,5 +168,30 @@ describe('createRateLimiter', () => {
     // Re-using the trusted hop with the same forwarded IP should now hit the limit.
     const trustedAgain = makeEvent('127.0.0.1', { 'x-forwarded-for': '203.0.113.7' })
     await expect(limiter(trustedAgain)).rejects.toMatchObject({ statusCode: 429 })
+  })
+})
+
+describe('readPositiveIntegerEnv', () => {
+  it('uses the default when no override is set', () => {
+    expect(readPositiveIntegerEnv(TEST_RATE_LIMIT_ENV, 40)).toBe(40)
+  })
+
+  it('reads an explicit positive integer override', () => {
+    process.env[TEST_RATE_LIMIT_ENV] = '250'
+
+    expect(readPositiveIntegerEnv(TEST_RATE_LIMIT_ENV, 40)).toBe(250)
+  })
+
+  it('warns and falls back for invalid overrides', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      process.env[TEST_RATE_LIMIT_ENV] = '0'
+
+      expect(readPositiveIntegerEnv(TEST_RATE_LIMIT_ENV, 40)).toBe(40)
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining(TEST_RATE_LIMIT_ENV))
+    }
+    finally {
+      warn.mockRestore()
+    }
   })
 })
