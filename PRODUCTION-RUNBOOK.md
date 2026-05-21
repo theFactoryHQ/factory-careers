@@ -21,6 +21,8 @@ Record these before deploying:
 - CI run URL for PR validation, secret scan, CodeQL, backup restore rehearsal, and e2e on the exact candidate commit.
 - Completed `PRODUCTION-APPROVAL-CHECKLIST.md` with required approvals,
   AGPL review, and data processor decisions.
+- Completed `PRODUCTION-DATA-RETENTION.md` with approved retention periods,
+  backup purge expectations, and deletion-response owners.
 
 ## Environment
 

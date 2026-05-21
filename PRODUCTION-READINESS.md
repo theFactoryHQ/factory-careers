@@ -23,6 +23,7 @@ The codebase is promising and has several strong production signals: active upst
 - Added `ops:object-storage-restore-rehearsal` and folded it into the backup/restore workflow so S3-compatible document backup/restore proof runs alongside database restore proof.
 - Added an `ops:validate-production-env` preflight with unit coverage for production secret, URL, storage, provider, email, and telemetry configuration.
 - Added `PRODUCTION-APPROVAL-CHECKLIST.md` so launch evidence, AGPL review, required approvals, and data processor decisions are captured before real candidate data.
+- Added `PRODUCTION-DATA-RETENTION.md` so candidate, application, document, interview, activity-log, AI, auth, telemetry, and backup retention decisions are explicit before launch.
 - Made PR validation report lint as "not configured" instead of silently presenting a skipped lint gate as green.
 - Fixed constant-time secret comparison for long cron/OAuth state secrets by adding `timingSafeStringEqual`.
 - Added a minimal unauthenticated `/api/healthz` liveness endpoint.
@@ -58,6 +59,7 @@ The codebase is promising and has several strong production signals: active upst
 | Static application security testing | Added | CodeQL is configured for JavaScript/TypeScript on PRs, `main`, weekly schedule, and manual dispatch. Before production, require a passing CodeQL result on the exact candidate. |
 | Production environment preflight | Partially covered | `npm run ops:validate-production-env -- <env-file>` catches placeholder secrets, non-HTTPS public URLs, partial OIDC/OAuth config, weak cron secrets, S3 path-style mismatches, missing email provider posture, and telemetry processor-review prompts. It still needs to be run against the real production environment values before launch. |
 | Legal/license | Open | AGPL-3.0 obligations are reviewed and accepted for the intended deployment and any proprietary integrations. Capture the decision in `PRODUCTION-APPROVAL-CHECKLIST.md`. |
+| Data retention | Partially covered | `PRODUCTION-DATA-RETENTION.md` defines required retention decisions and current deletion behavior. Actual retention periods, backup purge SLA, and privacy/legal approval remain required before real candidate data. |
 | Deployment/runbook | Partially covered | `PRODUCTION-RUNBOOK.md` defines deployment, environment, monitoring, rollback, and incident procedures. `scripts/backup-restore-rehearsal.sh` verifies SQL dump/restore mechanics and `scripts/object-storage-restore-rehearsal.sh` verifies S3-compatible object backup/restore mechanics locally and through the `Backup Restore Rehearsal` CI workflow. Before real candidate data, run both against sanitized production-like backups. |
 
 ## P0 Before Real Candidate Data
@@ -79,6 +81,7 @@ The codebase is promising and has several strong production signals: active upst
    - PostHog or any telemetry endpoint, if enabled.
 7. Complete AGPL-3.0 review before using this in a proprietary hosted workflow.
 8. Complete `PRODUCTION-APPROVAL-CHECKLIST.md` with engineering, security, legal/license, privacy, and operations sign-off.
+9. Complete `PRODUCTION-DATA-RETENTION.md` decisions for candidate/application retention, document backups, activity logs, and processor-specific retention.
 
 ## P1 For A Small Production Pilot
 
@@ -87,7 +90,7 @@ The codebase is promising and has several strong production signals: active upst
 - Add monitoring and alerting for app availability, error rate, disk usage, backup success, DB availability, and storage availability.
 - Add provider-live success-path tests for configured SSO and AI providers before enabling those integrations with production data.
 - Define incident response basics: who owns alerts, where credentials live, how to rotate secrets, how to disable risky integrations, and how to roll back a release.
-- Define data retention and deletion expectations for candidate resumes, applications, interview notes, and logs.
+- Convert approved retention periods into scheduled purge jobs and monitoring.
 
 ## Production Candidate Commands
 
