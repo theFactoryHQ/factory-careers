@@ -193,4 +193,14 @@ describe('P0 tenant-isolation route coverage', () => {
     expect(source).toContain("protocol === 'http:' && process.env.NODE_ENV !== 'production'")
     expect(source).toContain('Issuer URL must use HTTPS in production')
   })
+
+  it('rolls back public applications when required document upload fails', () => {
+    const source = read('server/api/public/jobs/[slug]/apply.post.ts')
+
+    expect(source).toContain('async function rollbackApplicationSubmission')
+    expect(source).toContain('application.rollback_s3_cleanup_failed')
+    expect(source).toContain('Failed to upload an application document. Please try again.')
+    expect(source).toContain('Failed to upload your resume. Please try again.')
+    expect(source).not.toContain("don't fail the entire application for a file upload error")
+  })
 })

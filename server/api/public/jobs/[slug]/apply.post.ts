@@ -487,7 +487,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const uploadedDocIds: string[] = []
+  const uploadedDocuments: { id: string; storageKey: string }[] = []
 
   for (const [questionId, file] of uploadedFiles) {
     const docId = crypto.randomUUID()
@@ -523,7 +523,7 @@ export default defineEventHandler(async (event) => {
         parsedContent: parsedContent as any,
       }).returning({ id: document.id })
 
-      uploadedDocIds.push(created!.id)
+      uploadedDocuments.push({ id: created!.id, storageKey })
 
       // Store a response linking the file_upload question to the document ID
       await db.insert(questionResponse).values({
@@ -548,7 +548,13 @@ export default defineEventHandler(async (event) => {
         question_id: questionId,
         error_message: uploadError instanceof Error ? uploadError.message : String(uploadError),
       })
-      // Continue processing — don't fail the entire application for a file upload error
+      await rollbackApplicationSubmission({
+        applicationId: newApplication!.id,
+        organizationId: orgId,
+        uploadedDocuments,
+      })
+
+      throw createError({ statusCode: 502, statusMessage: 'Failed to upload an application document. Please try again.' })
     }
   }
 
@@ -596,19 +602,11 @@ export default defineEventHandler(async (event) => {
         error_message: uploadError instanceof Error ? uploadError.message : String(uploadError),
       })
 
-      // Roll back: delete the application so the user can fix the file and retry
-      try {
-        // Delete question responses first (FK constraint)
-        await db.delete(questionResponse)
-          .where(eq(questionResponse.applicationId, newApplication!.id))
-        await db.delete(application)
-          .where(eq(application.id, newApplication!.id))
-      } catch (rollbackError) {
-        logError('application.rollback_failed', {
-          application_id: newApplication!.id,
-          error_message: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
-        })
-      }
+      await rollbackApplicationSubmission({
+        applicationId: newApplication!.id,
+        organizationId: orgId,
+        uploadedDocuments,
+      })
 
       throw createError({ statusCode: 502, statusMessage: 'Failed to upload your resume. Please try again.' })
     }
@@ -651,6 +649,52 @@ export default defineEventHandler(async (event) => {
   setResponseStatus(event, 201)
   return { success: true }
 })
+
+async function rollbackApplicationSubmission(params: {
+  applicationId: string
+  organizationId: string
+  uploadedDocuments: { id: string; storageKey: string }[]
+}): Promise<void> {
+  for (const doc of params.uploadedDocuments) {
+    try {
+      await deleteFromS3(doc.storageKey)
+    } catch (cleanupError) {
+      logWarn('application.rollback_s3_cleanup_failed', {
+        application_id: params.applicationId,
+        document_id: doc.id,
+        storage_key: doc.storageKey,
+        error_message: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+      })
+    }
+  }
+
+  try {
+    await db.delete(questionResponse)
+      .where(and(
+        eq(questionResponse.applicationId, params.applicationId),
+        eq(questionResponse.organizationId, params.organizationId),
+      ))
+
+    for (const doc of params.uploadedDocuments) {
+      await db.delete(document)
+        .where(and(
+          eq(document.id, doc.id),
+          eq(document.organizationId, params.organizationId),
+        ))
+    }
+
+    await db.delete(application)
+      .where(and(
+        eq(application.id, params.applicationId),
+        eq(application.organizationId, params.organizationId),
+      ))
+  } catch (rollbackError) {
+    logError('application.rollback_failed', {
+      application_id: params.applicationId,
+      error_message: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
+    })
+  }
+}
 
 // ─────────────────────────────────────────────
 // Source attribution helpers
