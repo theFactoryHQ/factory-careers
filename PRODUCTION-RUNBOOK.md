@@ -16,6 +16,7 @@ Record these before deploying:
 - `gitleaks detect --source . --config .gitleaks.toml --redact --verbose`.
 - `npm run ops:validate-production-env -- <production-env-file-or-export>`.
 - `npm run ops:backup-restore-rehearsal`.
+- `npm run ops:object-storage-restore-rehearsal`.
 - `npm run test:e2e` against Postgres and S3-compatible storage.
 - CI run URL for PR validation, secret scan, CodeQL, backup restore rehearsal, and e2e on the exact candidate commit.
 
@@ -96,13 +97,16 @@ Run the local rehearsal before approving a production candidate:
 
 ```bash
 npm run ops:backup-restore-rehearsal
+npm run ops:object-storage-restore-rehearsal
 ```
 
 Attach the output to the launch decision. This proves the SQL dump/restore
-mechanics work on the workstation or CI runner. The same check runs in the
-`Backup Restore Rehearsal` workflow for pull requests and manual release
-validation. A real production launch also needs a restore rehearsal using a
-sanitized production-like backup and a separate restore target.
+mechanics and S3-compatible object backup/restore mechanics work on the
+workstation or CI runner. The same checks run in the `Backup Restore
+Rehearsal` workflow for pull requests and manual release validation. A real
+production launch also needs a restore rehearsal using sanitized
+production-like database and object-storage backups with separate restore
+targets.
 
 Restore to a clean Docker database:
 
@@ -117,6 +121,22 @@ docker compose -f docker-compose.production.yml up -d app
 
 Confirm `/api/readyz` returns 200 and spot-check auth, jobs, candidates, and
 document download/preview.
+
+Restore MinIO object storage backup to a clean volume:
+
+```bash
+docker compose -f docker-compose.production.yml down
+docker volume rm reqcore_minio_data
+docker volume create reqcore_minio_data
+docker run --rm \
+  -v reqcore_minio_data:/data \
+  -v "$PWD/backups:/backup" \
+  alpine sh -c 'tar xzf /backup/minio-YYYYMMDD-HHMMSS.tar.gz -C /data'
+docker compose -f docker-compose.production.yml up -d minio app
+```
+
+Confirm document download and preview still work for restored synthetic
+candidate documents.
 
 ## Monitoring
 
