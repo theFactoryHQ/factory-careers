@@ -6,6 +6,12 @@ import {
   ExternalLink, AlertCircle, CalendarDays,
   Hash, Tag, Layers, Pencil, X, ChevronDown,
 } from 'lucide-vue-next'
+import {
+  getApplicationStatusBadgeClass,
+  getSourceChannelBadgeClass,
+  getSourceChannelDotClass,
+  getSourceChannelLabel,
+} from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -92,60 +98,6 @@ async function copyTrackingUrl() {
 // ─────────────────────────────────────────────
 // Display helpers
 // ─────────────────────────────────────────────
-
-const channelLabels: Record<string, string> = {
-  linkedin: 'LinkedIn', indeed: 'Indeed', glassdoor: 'Glassdoor',
-  ziprecruiter: 'ZipRecruiter', monster: 'Monster', handshake: 'Handshake',
-  angellist: 'AngelList', wellfound: 'Wellfound', dice: 'Dice',
-  stackoverflow: 'Stack Overflow', weworkremotely: 'We Work Remotely',
-  remoteok: 'Remote OK', builtin: 'Built In', hired: 'Hired',
-  lever: 'Lever', greenhouse_board: 'Greenhouse', google_jobs: 'Google Jobs',
-  facebook: 'Facebook', twitter: 'X / Twitter', instagram: 'Instagram',
-  tiktok: 'TikTok', reddit: 'Reddit', referral: 'Referral',
-  career_site: 'Career Site', email: 'Email', event: 'Event',
-  agency: 'Agency', direct: 'Direct', other: 'Other', custom: 'Custom',
-}
-
-const channelColors: Record<string, string> = {
-  linkedin: 'bg-blue-500', indeed: 'bg-indigo-500', glassdoor: 'bg-emerald-500',
-  ziprecruiter: 'bg-green-600', monster: 'bg-violet-500', google_jobs: 'bg-red-500',
-  facebook: 'bg-blue-600', twitter: 'bg-surface-700 dark:bg-surface-300',
-  instagram: 'bg-pink-500', tiktok: 'bg-surface-900 dark:bg-surface-100',
-  reddit: 'bg-orange-500', referral: 'bg-amber-500', career_site: 'bg-brand-500',
-  email: 'bg-teal-500', direct: 'bg-surface-400', other: 'bg-surface-300 dark:bg-surface-600',
-  custom: 'bg-brand-400', event: 'bg-cyan-500', agency: 'bg-rose-500',
-}
-
-const channelBadgeClasses: Record<string, string> = {
-  linkedin: 'bg-blue-50 text-blue-700 ring-blue-200/60 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-800/40',
-  indeed: 'bg-indigo-50 text-indigo-700 ring-indigo-200/60 dark:bg-indigo-950 dark:text-indigo-400 dark:ring-indigo-800/40',
-  glassdoor: 'bg-emerald-50 text-emerald-700 ring-emerald-200/60 dark:bg-emerald-950 dark:text-emerald-400 dark:ring-emerald-800/40',
-  referral: 'bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-800/40',
-  direct: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
-  career_site: 'bg-brand-50 text-brand-700 ring-brand-200/60 dark:bg-brand-950 dark:text-brand-400 dark:ring-brand-800/40',
-  email: 'bg-teal-50 text-teal-700 ring-teal-200/60 dark:bg-teal-950 dark:text-teal-400 dark:ring-teal-800/40',
-}
-
-const statusBadgeClasses: Record<string, string> = {
-  new: 'bg-blue-50 text-blue-700 ring-blue-200/60 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-800/40',
-  screening: 'bg-violet-50 text-violet-700 ring-violet-200/60 dark:bg-violet-950 dark:text-violet-400 dark:ring-violet-800/40',
-  interview: 'bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-800/40',
-  offer: 'bg-teal-50 text-teal-700 ring-teal-200/60 dark:bg-teal-950 dark:text-teal-400 dark:ring-teal-800/40',
-  hired: 'bg-green-50 text-green-700 ring-green-200/60 dark:bg-green-950 dark:text-green-400 dark:ring-green-800/40',
-  rejected: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
-}
-
-function getChannelBadge(channel: string) {
-  return channelBadgeClasses[channel] ?? 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700'
-}
-
-function getChannelColor(channel: string) {
-  return channelColors[channel] ?? 'bg-surface-400 dark:bg-surface-500'
-}
-
-function getChannelLabel(channel: string) {
-  return channelLabels[channel] ?? channel
-}
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr)
@@ -356,9 +308,9 @@ async function handleSidebarUpdated() {
               </h1>
               <span
                 class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset"
-                :class="getChannelBadge(link.channel)"
+                :class="getSourceChannelBadgeClass(link.channel)"
               >
-                {{ getChannelLabel(link.channel) }}
+                {{ getSourceChannelLabel(link.channel) }}
               </span>
               <span
                 class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
@@ -589,8 +541,8 @@ async function handleSidebarUpdated() {
               <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-surface-500 dark:text-surface-400">Channel</span>
                 <span class="inline-flex items-center gap-1.5 text-sm font-medium text-surface-800 dark:text-surface-200">
-                  <span class="size-2 rounded-full" :class="getChannelColor(link.channel)" />
-                  {{ getChannelLabel(link.channel) }}
+                  <span class="size-2 rounded-full" :class="getSourceChannelDotClass(link.channel)" />
+                  {{ getSourceChannelLabel(link.channel) }}
                 </span>
               </div>
               <div class="flex items-center justify-between">
@@ -777,7 +729,7 @@ async function handleSidebarUpdated() {
                 <td class="px-4 py-3.5 text-center">
                   <span
                     class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ring-1 ring-inset"
-                    :class="statusBadgeClasses[app.status] ?? 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400 ring-surface-200 dark:ring-surface-700'"
+                    :class="getApplicationStatusBadgeClass(app.status, 'subtle-ring')"
                   >
                     {{ app.status }}
                   </span>
@@ -842,13 +794,13 @@ async function handleSidebarUpdated() {
                 class="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
               >
                 <optgroup label="Job Boards">
-                  <option v-for="ch in ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  <option v-for="ch in ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
                 </optgroup>
                 <optgroup label="Social Media">
-                  <option v-for="ch in ['facebook', 'twitter', 'instagram', 'tiktok', 'reddit']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  <option v-for="ch in ['facebook', 'twitter', 'instagram', 'tiktok', 'reddit']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
                 </optgroup>
                 <optgroup label="Other">
-                  <option v-for="ch in ['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  <option v-for="ch in ['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
                 </optgroup>
               </select>
             </div>

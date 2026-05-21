@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { Users, SlidersHorizontal, X, Check, ChevronsUpDown, ChevronUp, ChevronDown, UserRound } from 'lucide-vue-next'
+import {
+  getApplicationStatusBadgeClass,
+  getApplicationStatusLabel,
+  getScoreBadgeClass,
+} from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -69,28 +74,10 @@ const total = computed(() => appData.value?.total ?? 0)
 // Status & badge helpers
 // ─────────────────────────────────────────────
 
-const statusBadgeClasses: Record<string, string> = {
-  new: 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-950/50 dark:text-blue-400 dark:ring-blue-800',
-  screening: 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-950/50 dark:text-violet-400 dark:ring-violet-800',
-  interview: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:ring-amber-800',
-  offer: 'bg-teal-50 text-teal-700 ring-teal-200 dark:bg-teal-950/50 dark:text-teal-400 dark:ring-teal-800',
-  hired: 'bg-green-50 text-green-700 ring-green-200 dark:bg-green-950/50 dark:text-green-400 dark:ring-green-800',
-  rejected: 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:ring-surface-700',
-}
-
 function getCandidateInitials(firstName?: string, lastName?: string) {
   const first = firstName?.trim().charAt(0) ?? ''
   const last = lastName?.trim().charAt(0) ?? ''
   return `${first}${last}`.toUpperCase() || 'C'
-}
-
-const statusLabels: Record<Status, string> = {
-  new: 'New',
-  screening: 'Screening',
-  interview: 'Interview',
-  offer: 'Offer',
-  hired: 'Hired',
-  rejected: 'Rejected',
 }
 
 function toggleStatus(s: Status) {
@@ -198,12 +185,6 @@ function timeAgo(date: string | Date) {
   const days = Math.floor(hrs / 24)
   if (days < 30) return `${days}d ago`
   return new Date(date).toLocaleDateString()
-}
-
-function scoreClass(score: number) {
-  if (score >= 75) return 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/60 dark:text-success-400 dark:ring-success-800'
-  if (score >= 40) return 'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950/60 dark:text-warning-400 dark:ring-warning-800'
-  return 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950/60 dark:text-danger-400 dark:ring-danger-800'
 }
 
 // ─────────────────────────────────────────────
@@ -326,10 +307,10 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
                     <Check v-if="selectedStatuses.includes(s)" class="size-3 text-white" :stroke-width="3" />
                   </span>
                   <span
-                  class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold capitalize ring-1 ring-inset"
-                    :class="statusBadgeClasses[s]"
+                    class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold capitalize ring-1 ring-inset"
+                    :class="getApplicationStatusBadgeClass(s, 'ring')"
                   >
-                    {{ statusLabels[s] }}
+                    {{ getApplicationStatusLabel(s) }}
                   </span>
                 </label>
               </div>
@@ -379,10 +360,10 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
             v-for="s in selectedStatuses"
             :key="s"
             class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium capitalize cursor-pointer"
-            :class="statusBadgeClasses[s]"
+            :class="getApplicationStatusBadgeClass(s, 'ring')"
             @click="toggleStatus(s as Status)"
           >
-            {{ statusLabels[s] }}
+            {{ getApplicationStatusLabel(s) }}
             <X class="size-2.5" />
           </span>
         </template>
@@ -512,7 +493,7 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
                   <span
                     v-if="app.score != null"
                     class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums ring-1 ring-inset"
-                    :class="scoreClass(app.score)"
+                    :class="getScoreBadgeClass(app.score, 'muted')"
                   >
                     {{ app.score }} pts
                   </span>
@@ -521,7 +502,7 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
                 <td v-if="visibleCols.status" class="px-4 py-3">
                   <span
                     class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold capitalize ring-1 ring-inset"
-                    :class="statusBadgeClasses[app.status] ?? 'bg-surface-100 text-surface-600 ring-surface-200'"
+                    :class="getApplicationStatusBadgeClass(app.status, 'ring')"
                   >
                     {{ app.status }}
                   </span>

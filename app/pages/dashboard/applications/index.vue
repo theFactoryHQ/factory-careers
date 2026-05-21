@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { FileText, Search, X, Briefcase, Mail, Clock, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, Maximize2, Minimize2, Check } from 'lucide-vue-next'
+import {
+  getApplicationStatusBadgeClass,
+  getApplicationStatusDotClass,
+  getApplicationStatusLabel,
+  getScoreBadgeClass,
+} from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -198,39 +204,6 @@ function timeAgo(date: string | Date) {
   const days = Math.floor(hrs / 24)
   if (days < 30) return `${days}d ago`
   return new Date(date).toLocaleDateString()
-}
-
-function scoreClass(score: number) {
-  if (score >= 75) return 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950 dark:text-success-400 dark:ring-success-800'
-  if (score >= 40) return 'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950 dark:text-warning-400 dark:ring-warning-800'
-  return 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950 dark:text-danger-400 dark:ring-danger-800'
-}
-
-const statusBadgeClasses: Record<string, string> = {
-  new: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
-  screening: 'bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-400',
-  interview: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
-  offer: 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-400',
-  hired: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400',
-  rejected: 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400',
-}
-
-const statusDotClasses: Record<string, string> = {
-  new: 'bg-blue-500',
-  screening: 'bg-violet-500',
-  interview: 'bg-amber-500',
-  offer: 'bg-teal-500',
-  hired: 'bg-green-600',
-  rejected: 'bg-surface-400 dark:bg-surface-500',
-}
-
-const statusLabels: Record<Status, string> = {
-  new: 'New',
-  screening: 'Screening',
-  interview: 'Interview',
-  offer: 'Offer',
-  hired: 'Hired',
-  rejected: 'Rejected',
 }
 
 // ── Drawer + Saved Views ──────────────────────────────────────────────────────
@@ -452,7 +425,7 @@ const selectedApplicationId = ref<string | null>(null)
                 ? 'bg-surface-900 text-white dark:bg-surface-100 dark:text-surface-900'
                 : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'"
               @click="activeStatus = activeStatus === s ? undefined : s"
-            >{{ statusLabels[s] }}</button>
+            >{{ getApplicationStatusLabel(s) }}</button>
           </div>
         </div>
 
@@ -675,17 +648,17 @@ const selectedApplicationId = ref<string | null>(null)
               <td v-if="visibleColumns.status" class="px-4 py-3">
                 <span
                   class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium capitalize whitespace-nowrap"
-                  :class="statusBadgeClasses[app.status] ?? 'bg-surface-100 text-surface-600'"
+                  :class="getApplicationStatusBadgeClass(app.status)"
                 >
-                  <span class="size-1.5 rounded-full" :class="statusDotClasses[app.status] ?? 'bg-surface-400'" />
-                  {{ statusLabels[app.status as Status] ?? app.status }}
+                  <span class="size-1.5 rounded-full" :class="getApplicationStatusDotClass(app.status)" />
+                  {{ getApplicationStatusLabel(app.status) }}
                 </span>
               </td>
               <td v-if="visibleColumns.score" class="px-4 py-3 text-center hidden sm:table-cell">
                 <span
                   v-if="app.score != null"
                   class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ring-1 ring-inset"
-                  :class="scoreClass(app.score)"
+                  :class="getScoreBadgeClass(app.score, 'soft')"
                 >
                   {{ app.score }}%
                 </span>

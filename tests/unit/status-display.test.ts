@@ -12,6 +12,9 @@ import {
   getScoreBadgeClass,
   getScoreBarClass,
   getScoreTextClass,
+  getSourceChannelBadgeClass,
+  getSourceChannelDotClass,
+  getSourceChannelLabel,
 } from '../../app/utils/status-display'
 
 describe('status display helpers', () => {
@@ -24,6 +27,7 @@ describe('status display helpers', () => {
   it('returns reusable application status classes by variant', () => {
     expect(getApplicationStatusBadgeClass('hired')).toContain('text-green-700')
     expect(getApplicationStatusBadgeClass('hired', 'ring')).toContain('ring-green-200')
+    expect(getApplicationStatusBadgeClass('hired', 'subtle-ring')).toContain('ring-green-200/60')
     expect(getApplicationStatusBadgeClass('hired', 'factory')).toContain('text-success-200')
     expect(getApplicationStatusBadgeClass('unknown', 'factory')).toContain('text-white/58')
   })
@@ -49,6 +53,8 @@ describe('status display helpers', () => {
     expect(getScoreBadgeClass(39)).toContain('danger')
     expect(getScoreBadgeClass(null)).toContain('surface')
     expect(getScoreBadgeClass(75, 'subtle')).toContain('ring-success-200/60')
+    expect(getScoreBadgeClass(75, 'soft')).toContain('dark:text-success-400')
+    expect(getScoreBadgeClass(75, 'muted')).toContain('dark:bg-success-950/60')
     expect(getScoreTextClass(75)).toContain('text-success')
     expect(getScoreBarClass(40, 80)).toContain('warning')
   })
@@ -57,5 +63,13 @@ describe('status display helpers', () => {
     expect(getAnalysisRunStatusBadgeClass('completed')).toContain('success')
     expect(getAnalysisRunStatusDotClass('failed')).toContain('danger')
     expect(getAnalysisRunStatusBadgeClass('queued')).toContain('warning')
+  })
+
+  it('centralizes source channel display values', () => {
+    expect(getSourceChannelLabel('google_jobs')).toBe('Google Jobs')
+    expect(getSourceChannelLabel('custom_board')).toBe('custom_board')
+    expect(getSourceChannelBadgeClass('linkedin')).toContain('blue')
+    expect(getSourceChannelBadgeClass('unknown')).toContain('surface')
+    expect(getSourceChannelDotClass('career_site')).toContain('brand')
   })
 })

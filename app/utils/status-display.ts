@@ -8,9 +8,9 @@ export const APPLICATION_STATUS_KEYS = [
 ] as const
 
 export type ApplicationStatusKey = typeof APPLICATION_STATUS_KEYS[number]
-export type ApplicationStatusBadgeVariant = 'soft' | 'ring' | 'factory'
+export type ApplicationStatusBadgeVariant = 'soft' | 'ring' | 'subtle-ring' | 'factory'
 export type ApplicationTransitionButtonVariant = 'solid' | 'subtle' | 'factory'
-export type ScoreBadgeVariant = 'solid' | 'subtle'
+export type ScoreBadgeVariant = 'solid' | 'soft' | 'subtle' | 'muted'
 
 const APPLICATION_STATUS_LABELS: Record<ApplicationStatusKey, string> = {
   new: 'New',
@@ -47,6 +47,14 @@ const APPLICATION_STATUS_BADGE_CLASSES: Record<ApplicationStatusBadgeVariant, Re
     hired: 'bg-green-50 text-green-700 ring-green-200 dark:bg-green-950/50 dark:text-green-400 dark:ring-green-800',
     rejected: 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:ring-surface-700',
   },
+  'subtle-ring': {
+    new: 'bg-blue-50 text-blue-700 ring-blue-200/60 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-800/40',
+    screening: 'bg-violet-50 text-violet-700 ring-violet-200/60 dark:bg-violet-950 dark:text-violet-400 dark:ring-violet-800/40',
+    interview: 'bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-800/40',
+    offer: 'bg-teal-50 text-teal-700 ring-teal-200/60 dark:bg-teal-950 dark:text-teal-400 dark:ring-teal-800/40',
+    hired: 'bg-green-50 text-green-700 ring-green-200/60 dark:bg-green-950 dark:text-green-400 dark:ring-green-800/40',
+    rejected: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
+  },
   factory: {
     new: 'border-brand-500/55 bg-brand-500/14 text-brand-200',
     screening: 'border-brand-500/55 bg-brand-500/14 text-brand-200',
@@ -60,6 +68,7 @@ const APPLICATION_STATUS_BADGE_CLASSES: Record<ApplicationStatusBadgeVariant, Re
 const APPLICATION_STATUS_BADGE_FALLBACKS: Record<ApplicationStatusBadgeVariant, string> = {
   soft: 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400',
   ring: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
+  'subtle-ring': 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
   factory: 'border-white/16 bg-white/[0.04] text-white/58',
 }
 
@@ -129,11 +138,23 @@ const SCORE_BADGE_CLASSES: Record<ScoreBadgeVariant, Record<ScoreBucket, string>
     low: 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950 dark:text-danger-300 dark:ring-danger-800',
     empty: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
   },
+  soft: {
+    high: 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950 dark:text-success-400 dark:ring-success-800',
+    medium: 'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950 dark:text-warning-400 dark:ring-warning-800',
+    low: 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950 dark:text-danger-400 dark:ring-danger-800',
+    empty: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
+  },
   subtle: {
     high: 'bg-success-50 text-success-700 ring-success-200/60 dark:bg-success-950 dark:text-success-400 dark:ring-success-800/40',
     medium: 'bg-warning-50 text-warning-700 ring-warning-200/60 dark:bg-warning-950 dark:text-warning-400 dark:ring-warning-800/40',
     low: 'bg-danger-50 text-danger-700 ring-danger-200/60 dark:bg-danger-950 dark:text-danger-400 dark:ring-danger-800/40',
     empty: 'bg-surface-100 text-surface-600 ring-surface-200/60 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700/40',
+  },
+  muted: {
+    high: 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/60 dark:text-success-400 dark:ring-success-800',
+    medium: 'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950/60 dark:text-warning-400 dark:ring-warning-800',
+    low: 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950/60 dark:text-danger-400 dark:ring-danger-800',
+    empty: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:ring-surface-700',
   },
 }
 
@@ -162,6 +183,74 @@ const ANALYSIS_RUN_STATUS_DOT_CLASSES: Record<string, string> = {
 
 const ANALYSIS_RUN_STATUS_PENDING_BADGE_CLASS = 'bg-warning-50 text-warning-700 ring-warning-200/60 dark:bg-warning-950 dark:text-warning-400 dark:ring-warning-800/40'
 const ANALYSIS_RUN_STATUS_PENDING_DOT_CLASS = 'bg-warning-500'
+
+const SOURCE_CHANNEL_LABELS: Record<string, string> = {
+  linkedin: 'LinkedIn',
+  indeed: 'Indeed',
+  glassdoor: 'Glassdoor',
+  ziprecruiter: 'ZipRecruiter',
+  monster: 'Monster',
+  handshake: 'Handshake',
+  angellist: 'AngelList',
+  wellfound: 'Wellfound',
+  dice: 'Dice',
+  stackoverflow: 'Stack Overflow',
+  weworkremotely: 'We Work Remotely',
+  remoteok: 'Remote OK',
+  builtin: 'Built In',
+  hired: 'Hired',
+  lever: 'Lever',
+  greenhouse_board: 'Greenhouse',
+  google_jobs: 'Google Jobs',
+  facebook: 'Facebook',
+  twitter: 'X / Twitter',
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
+  reddit: 'Reddit',
+  referral: 'Referral',
+  career_site: 'Career Site',
+  email: 'Email',
+  event: 'Event',
+  agency: 'Agency',
+  direct: 'Direct',
+  other: 'Other',
+  custom: 'Custom',
+}
+
+const SOURCE_CHANNEL_DOT_CLASSES: Record<string, string> = {
+  linkedin: 'bg-blue-500',
+  indeed: 'bg-indigo-500',
+  glassdoor: 'bg-emerald-500',
+  ziprecruiter: 'bg-green-600',
+  monster: 'bg-violet-500',
+  google_jobs: 'bg-red-500',
+  facebook: 'bg-blue-600',
+  twitter: 'bg-surface-700 dark:bg-surface-300',
+  instagram: 'bg-pink-500',
+  tiktok: 'bg-surface-900 dark:bg-surface-100',
+  reddit: 'bg-orange-500',
+  referral: 'bg-amber-500',
+  career_site: 'bg-brand-500',
+  email: 'bg-teal-500',
+  direct: 'bg-surface-400',
+  other: 'bg-surface-300 dark:bg-surface-600',
+  custom: 'bg-brand-400',
+  event: 'bg-cyan-500',
+  agency: 'bg-rose-500',
+}
+
+const SOURCE_CHANNEL_BADGE_CLASSES: Record<string, string> = {
+  linkedin: 'bg-blue-50 text-blue-700 ring-blue-200/60 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-800/40',
+  indeed: 'bg-indigo-50 text-indigo-700 ring-indigo-200/60 dark:bg-indigo-950 dark:text-indigo-400 dark:ring-indigo-800/40',
+  glassdoor: 'bg-emerald-50 text-emerald-700 ring-emerald-200/60 dark:bg-emerald-950 dark:text-emerald-400 dark:ring-emerald-800/40',
+  referral: 'bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-800/40',
+  direct: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
+  career_site: 'bg-brand-50 text-brand-700 ring-brand-200/60 dark:bg-brand-950 dark:text-brand-400 dark:ring-brand-800/40',
+  email: 'bg-teal-50 text-teal-700 ring-teal-200/60 dark:bg-teal-950 dark:text-teal-400 dark:ring-teal-800/40',
+}
+
+const SOURCE_CHANNEL_BADGE_FALLBACK_CLASS = 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700'
+const SOURCE_CHANNEL_DOT_FALLBACK_CLASS = 'bg-surface-400 dark:bg-surface-500'
 
 type ScoreBucket = 'high' | 'medium' | 'low' | 'empty'
 
@@ -241,4 +330,16 @@ export function getAnalysisRunStatusBadgeClass(status: string): string {
 
 export function getAnalysisRunStatusDotClass(status: string): string {
   return ANALYSIS_RUN_STATUS_DOT_CLASSES[status] ?? ANALYSIS_RUN_STATUS_PENDING_DOT_CLASS
+}
+
+export function getSourceChannelLabel(channel: string): string {
+  return SOURCE_CHANNEL_LABELS[channel] ?? channel
+}
+
+export function getSourceChannelBadgeClass(channel: string): string {
+  return SOURCE_CHANNEL_BADGE_CLASSES[channel] ?? SOURCE_CHANNEL_BADGE_FALLBACK_CLASS
+}
+
+export function getSourceChannelDotClass(channel: string): string {
+  return SOURCE_CHANNEL_DOT_CLASSES[channel] ?? SOURCE_CHANNEL_DOT_FALLBACK_CLASS
 }
