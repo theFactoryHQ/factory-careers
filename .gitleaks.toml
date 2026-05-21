@@ -13,4 +13,5 @@ regexes = [
   '''BETTER_AUTH_SECRET:\s+ci-test-secret-that-is-at-least-32-chars-long''',
   '''Just the token:\s+abc123def456\.\.\.''',
   '''sk-test-1234567890''',
+  '''S3_SKIP_BUCKET_POLICY''',
 ]
