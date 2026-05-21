@@ -21,10 +21,25 @@ const AUTH_RATE_LIMIT_MAX_REQUESTS = readPositiveIntegerEnv(
   100,
 );
 
+const ORGANIZATION_DOCUMENT_DELETE_TTL_MS = 10 * 60 * 1000;
+
+type PendingOrganizationDocumentDelete = {
+  documents: Array<{ id: string; storageKey: string }>;
+  cleanupTimer: ReturnType<typeof setTimeout>;
+};
+
 const pendingOrganizationDocumentDeletes = new Map<
   string,
-  Array<{ id: string; storageKey: string }>
+  PendingOrganizationDocumentDelete
 >();
+
+function clearPendingOrganizationDocumentDelete(organizationId: string): void {
+  const pending = pendingOrganizationDocumentDeletes.get(organizationId);
+  if (pending) {
+    clearTimeout(pending.cleanupTimer);
+    pendingOrganizationDocumentDeletes.delete(organizationId);
+  }
+}
 
 // ── SSRF blocklist ────────────────────────────────────────────────────────────
 // Prevent org admins from using SSO provider registration to probe the
@@ -337,16 +352,29 @@ function getAuth(): Auth {
                 },
               });
 
+              clearPendingOrganizationDocumentDelete(organization.id);
+
+              const cleanupTimer = setTimeout(() => {
+                pendingOrganizationDocumentDeletes.delete(organization.id);
+              }, ORGANIZATION_DOCUMENT_DELETE_TTL_MS);
+              (cleanupTimer as ReturnType<typeof setTimeout> & {
+                unref?: () => void;
+              }).unref?.();
+
               pendingOrganizationDocumentDeletes.set(
                 organization.id,
-                documentsToDelete,
+                {
+                  documents: documentsToDelete,
+                  cleanupTimer,
+                },
               );
             },
 
             async afterDeleteOrganization({ organization }) {
-              const documentsToDelete =
-                pendingOrganizationDocumentDeletes.get(organization.id) ?? [];
-              pendingOrganizationDocumentDeletes.delete(organization.id);
+              const pending =
+                pendingOrganizationDocumentDeletes.get(organization.id);
+              clearPendingOrganizationDocumentDelete(organization.id);
+              const documentsToDelete = pending?.documents ?? [];
 
               for (const doc of documentsToDelete) {
                 try {

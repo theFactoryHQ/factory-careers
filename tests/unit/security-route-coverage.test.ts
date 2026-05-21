@@ -145,6 +145,8 @@ describe('P0 tenant-isolation route coverage', () => {
     expect(source).toContain('beforeDeleteOrganization')
     expect(source).toContain('afterDeleteOrganization')
     expect(source).toContain('pendingOrganizationDocumentDeletes')
+    expect(source).toContain('ORGANIZATION_DOCUMENT_DELETE_TTL_MS')
+    expect(source).toContain('clearPendingOrganizationDocumentDelete')
     expect(source).toContain('db.query.document.findMany')
     expect(source).toContain('eq(schema.document.organizationId, organization.id)')
     expect(source).toContain('deleteFromS3(doc.storageKey)')
