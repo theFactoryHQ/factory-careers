@@ -17,18 +17,27 @@ const { isDark, toggle: toggleColorMode } = useColorMode()
       <!-- Logo — links to Factory's public site -->
       <a
         :href="useRuntimeConfig().public.marketingUrl"
-        class="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight text-surface-900 dark:text-white"
+        class="flex items-center gap-3 text-surface-900 dark:text-white"
       >
         <img
-          src="/factory-logo.png"
-          alt="Factory Careers"
-          width="28"
-          height="28"
+          src="/factory-logo-dark.png"
+          alt="Factory"
+          width="456"
+          height="76"
           loading="eager"
           decoding="sync"
-          class="h-7 w-7 object-contain"
+          class="h-auto w-[108px] shrink-0 object-contain dark:hidden sm:w-[128px]"
         />
-        Factory Careers
+        <img
+          src="/factory-logo.png"
+          alt="Factory"
+          width="456"
+          height="76"
+          loading="eager"
+          decoding="sync"
+          class="hidden h-auto w-[108px] shrink-0 object-contain dark:block sm:w-[128px]"
+        />
+        <span class="text-[26px] font-light leading-none tracking-normal">Careers</span>
       </a>
 
       <!-- Center nav links (desktop) -->
@@ -66,7 +75,7 @@ const { isDark, toggle: toggleColorMode } = useColorMode()
             <div class="size-8" aria-hidden="true" />
           </template>
         </ClientOnly>
-        <LanguageSwitcher />
+        <LanguageSwitcher tone="factory" />
         <template v-if="session?.user">
           <NuxtLink
             :to="localePath('/dashboard')"

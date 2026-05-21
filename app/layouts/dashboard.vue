@@ -20,7 +20,7 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
 </script>
 
 <template>
-  <div class="flex h-screen flex-col overflow-hidden bg-surface-50 dark:bg-surface-950">
+  <div class="factory-dashboard-shell flex h-screen flex-col overflow-hidden bg-black text-white">
     <AppTopBar />
     <AppToasts />
     <PreviewUpsellModal v-if="isUpsellOpen" @close="closeUpsell" />
@@ -31,7 +31,7 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
       <!-- Demo mode banner -->
       <div
         v-if="isDemo"
-        class="mx-auto mb-6 flex max-w-5xl items-center gap-3 rounded-lg border border-brand-200 dark:border-brand-900 bg-brand-50 dark:bg-brand-950/40 px-4 py-2.5 text-sm text-brand-700 dark:text-brand-300"
+        class="mx-auto mb-6 flex max-w-5xl items-center gap-3 border border-brand-500/35 bg-brand-500/10 px-4 py-2.5 text-sm text-white/74"
       >
         <Eye class="size-4 shrink-0" />
         <span>
@@ -40,8 +40,8 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
             href="https://github.com/caffeinebounce/factory-careers"
             target="_blank"
             rel="noopener noreferrer"
-            class="ml-1 font-semibold underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"
-          >View the Factory Careers fork →</a>
+            class="ml-1 font-semibold text-brand-300 underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"
+          >View source →</a>
         </span>
       </div>
       <slot />

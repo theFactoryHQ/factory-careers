@@ -44,7 +44,7 @@ export default defineNuxtPlugin({
     })
 
     // ── Cross-domain consent linking ──
-    // The marketing site (thefactoryhq.com) appends ?ph_consent=granted when the
+    // The marketing site (reqcore.com) appends ?ph_consent=granted when the
     // user already accepted analytics there.  Apply it to the shared cookie so
     // the consent banner doesn't appear a second time on the app.
     const url = new URL(window.location.href)
@@ -59,7 +59,7 @@ export default defineNuxtPlugin({
       if (document.referrer) {
         try {
           const ref = new URL(document.referrer)
-          fromTrustedOrigin = ref.hostname === 'thefactoryhq.com' || ref.hostname.endsWith('.thefactoryhq.com')
+          fromTrustedOrigin = ref.hostname === 'reqcore.com' || ref.hostname.endsWith('.reqcore.com')
         }
         catch { /* invalid referrer — ignore */ }
       }
@@ -83,7 +83,7 @@ export default defineNuxtPlugin({
     }
 
     // ── Cross-domain identity linking ──
-    // The marketing site (thefactoryhq.com) appends ?ph_did=<distinct_id> to links
+    // The marketing site (reqcore.com) appends ?ph_did=<distinct_id> to links
     // pointing here.  If present, alias the marketing visitor's distinct id
     // to this session so the full journey is stitched together in PostHog.
     //
