@@ -34,6 +34,7 @@ The codebase is promising and has several strong production signals: active upst
 - Added RBAC matrix coverage and tightened admin/member permissions so organization deletion is owner-only and comment deletion is admin/owner-only.
 - Tightened member access so AI config and email template management are admin/owner-controlled.
 - Tightened candidate deletion so associated document objects are removed from S3-compatible storage after the org-scoped database deletion succeeds.
+- Tightened organization deletion so associated document objects are removed from S3-compatible storage after Better Auth's org-scoped database deletion succeeds.
 - Added `PRODUCTION-RUNBOOK.md` and `scripts/backup-restore-rehearsal.sh` so deployment, monitoring, rollback, and backup/restore expectations are executable and reviewable.
 - Fixed the live `requirePermission` gate to reject Better Auth `{ success: false }` permission results instead of only checking for transport/API errors.
 - Rejected empty `requirePermission(event, {})` calls instead of treating them as authorized.
@@ -48,7 +49,7 @@ The codebase is promising and has several strong production signals: active upst
 | Tenant isolation | Covered for core and major secondary IDOR paths | Static tests assert key direct-resource and list-route org scoping; Playwright proves org B cannot read or mutate org A jobs, candidates, applications, interviews, documents, tracking links/stats, scoring, custom properties, comments, uploads, AI config, email templates, SSO providers, chatbot resources, or member-management views. It also proves stale memberships lose protected access. |
 | RBAC | Covered at policy and route level | Matrix tests cover owner/admin/member expectations, including owner-only org deletion, admin/owner-only comment deletion, and admin/owner-controlled AI config/email template management. Playwright verifies a live member session can perform expected recruiter work and is denied for job create/update/delete, candidate delete, document delete, comment edit/delete, invite-link creation, org settings update, AI config mutation, email template mutation, SSO provider management, and Better Auth member-management mutation. |
 | Unauthenticated access | Covered statically and for core request paths | All non-public API routes must contain an auth/session gate; expected public routes are explicitly allowlisted. Playwright covers 401/403 behavior for the most important direct-resource and document paths. |
-| Document security | Covered for core paths | Playwright covers upload accept/reject behavior with S3-backed storage, successful owner download/PDF preview, DOCX inline preview denial, owner parse/delete, cross-org denial, unauthenticated denial, and cross-org/anonymous parse/delete denial. Candidate deletion now also removes associated document objects from S3-compatible storage after the org-scoped database delete succeeds. |
+| Document security | Covered for core paths | Playwright covers upload accept/reject behavior with S3-backed storage, successful owner download/PDF preview, DOCX inline preview denial, owner parse/delete, cross-org denial, unauthenticated denial, and cross-org/anonymous parse/delete denial. Candidate and organization deletion now also remove associated document objects from S3-compatible storage after the org-scoped database delete succeeds. |
 | Invite links | Covered for high-risk token edges | Playwright verifies public info does not return the token, anonymous accept is denied, max-use exhaustion returns 410, revoked links return 404, and expired links return 404. |
 | Source/activity isolation | Covered for core analytics filters | Playwright verifies source-tracking stats and activity-log resource filters do not leak org A application/job/link/candidate data to org B, and verifies public tracking redirects preserve only the expected `ref` target. |
 | Chatbot privacy | Covered for per-user resources | Playwright verifies chatbot folders, agents, and conversations are scoped by both active organization and user, while same-org members can create and manage only their own chatbot resources when the feature flag is enabled. |
@@ -127,7 +128,7 @@ Collected on 2026-05-21 from this readiness branch:
 | Command | Result | Notes |
 |---|---|---|
 | `npm ci` | Pass | Installed dependencies successfully. |
-| `npm run test:unit` | Pass | 24 test files, 386 tests. |
+| `npm run test:unit` | Pass | 24 test files, 387 tests. |
 | `npm run typecheck` | Pass with warning | Vue/Volar `vue-router/volar/sfc-route-blocks` export warning remains. |
 | `npm run build` | Pass with warnings | Nuxt/Nitro production build completed; Tailwind sourcemap warnings remain. |
 | `npm audit --audit-level=high` | Pass | 0 vulnerabilities. |

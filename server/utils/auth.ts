@@ -5,10 +5,16 @@ import { sso } from "@better-auth/sso";
 import { eq } from "drizzle-orm";
 import { ac, owner, admin, member } from "~~/shared/permissions";
 import { sendOrgInvitationEmail, sendPasswordResetEmail } from "./email";
+import { deleteFromS3 } from "./s3";
 import * as schema from "../database/schema";
 
 type Auth = ReturnType<typeof betterAuth>;
 let _auth: Auth | undefined;
+
+const pendingOrganizationDocumentDeletes = new Map<
+  string,
+  Array<{ id: string; storageKey: string }>
+>();
 
 // ── SSRF blocklist ────────────────────────────────────────────────────────────
 // Prevent org admins from using SSO provider registration to probe the
@@ -310,6 +316,45 @@ function getAuth(): Auth {
           cancelPendingInvitationsOnReInvite: true,
           // 48 hours (default) — explicitly stated for auditability.
           invitationExpiresIn: 48 * 60 * 60,
+
+          organizationHooks: {
+            async beforeDeleteOrganization({ organization }) {
+              const documentsToDelete = await db.query.document.findMany({
+                where: eq(schema.document.organizationId, organization.id),
+                columns: {
+                  id: true,
+                  storageKey: true,
+                },
+              });
+
+              pendingOrganizationDocumentDeletes.set(
+                organization.id,
+                documentsToDelete,
+              );
+            },
+
+            async afterDeleteOrganization({ organization }) {
+              const documentsToDelete =
+                pendingOrganizationDocumentDeletes.get(organization.id) ?? [];
+              pendingOrganizationDocumentDeletes.delete(organization.id);
+
+              for (const doc of documentsToDelete) {
+                try {
+                  await deleteFromS3(doc.storageKey);
+                } catch (s3Error) {
+                  logWarn("organization.document_s3_delete_failed", {
+                    organization_id: organization.id,
+                    document_id: doc.id,
+                    storage_key: doc.storageKey,
+                    error_message:
+                      s3Error instanceof Error
+                        ? s3Error.message
+                        : String(s3Error),
+                  });
+                }
+              }
+            },
+          },
         }),
 
         // ── OIDC SSO (Keycloak, Authentik, Authelia, Okta, Azure AD, etc.) ──

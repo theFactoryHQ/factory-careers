@@ -138,4 +138,16 @@ describe('P0 tenant-isolation route coverage', () => {
     expect(source).toContain('deleteFromS3(doc.storageKey)')
     expect(source).toContain('candidate.document_s3_delete_failed')
   })
+
+  it('cleans up organization-owned document objects when deleting an organization', () => {
+    const source = read('server/utils/auth.ts')
+
+    expect(source).toContain('beforeDeleteOrganization')
+    expect(source).toContain('afterDeleteOrganization')
+    expect(source).toContain('pendingOrganizationDocumentDeletes')
+    expect(source).toContain('db.query.document.findMany')
+    expect(source).toContain('eq(schema.document.organizationId, organization.id)')
+    expect(source).toContain('deleteFromS3(doc.storageKey)')
+    expect(source).toContain('organization.document_s3_delete_failed')
+  })
 })
