@@ -168,12 +168,21 @@ describe('P0 tenant-isolation route coverage', () => {
     }
   })
 
-  it('does not let CI flags bypass API rate limiting in production', () => {
-    const source = read('server/middleware/api-rate-limit.ts')
+  it('does not let CI flags bypass rate limiting in production', () => {
+    const sources = [
+      read('server/middleware/api-rate-limit.ts'),
+      read('server/api/public/jobs/[slug]/apply.post.ts'),
+      read('server/utils/auth.ts'),
+    ]
 
-    expect(source).toContain("process.env.NODE_ENV !== 'production'")
-    expect(source).not.toContain('process.env.CI')
-    expect(source).not.toContain('process.env.GITHUB_ACTIONS')
+    expect(sources[0]).toContain("process.env.NODE_ENV !== 'production'")
+    expect(sources[1]).toContain("process.env.NODE_ENV === 'production'")
+    expect(sources[2]).toContain('enabled: process.env.NODE_ENV === "production"')
+
+    for (const source of sources) {
+      expect(source).not.toContain('process.env.CI')
+      expect(source).not.toContain('process.env.GITHUB_ACTIONS')
+    }
   })
 
   it('requires HTTPS SSO issuer URLs in production', () => {

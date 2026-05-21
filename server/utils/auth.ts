@@ -250,10 +250,10 @@ function getAuth(): Auth {
       // state across instances (horizontal scaling).
       // Complements the external IP-based rate limiter in api-rate-limit.ts
       // with account-level throttling for auth-sensitive endpoints.
-      // Disabled in CI/test (GITHUB_ACTIONS or NODE_ENV !== 'production')
-      // to prevent E2E test flakiness.
+      // CI flags must not disable this when NODE_ENV=production because several
+      // deployment platforms set them.
       rateLimit: {
-        enabled: !process.env.CI && !process.env.GITHUB_ACTIONS,
+        enabled: process.env.NODE_ENV === "production",
         window: 60,
         max: 100,        // 100 requests per minute per IP — stops bots, not humans
         storage: "database",
