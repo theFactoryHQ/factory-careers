@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { X, ExternalLink, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Download, Eye, AlertTriangle } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
+import { getApplicationStatusBadgeClass } from '~/utils/status-display'
 
 const props = defineProps<{
   candidateId: string
@@ -83,15 +84,6 @@ async function handleDownload(docId: string) {
 }
 
 // ─── Display helpers ──────────────────────────────────────────────────────────
-
-const applicationStatusClasses: Record<string, string> = {
-  new: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
-  screening: 'bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-400',
-  interview: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
-  offer: 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-400',
-  hired: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400',
-  rejected: 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400',
-}
 
 const genderLabels: Record<string, string> = {
   male: 'Male',
@@ -353,7 +345,7 @@ onUnmounted(() => {
                     </button>
                     <span
                       class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0"
-                      :class="applicationStatusClasses[app.status] ?? 'bg-surface-100 text-surface-600'"
+                      :class="getApplicationStatusBadgeClass(app.status)"
                     >
                       {{ app.status }}
                     </span>

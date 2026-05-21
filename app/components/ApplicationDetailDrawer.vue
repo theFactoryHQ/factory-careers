@@ -2,6 +2,12 @@
 import { X, ExternalLink, User, Briefcase, Calendar, Clock, Hash, FileText, MessageSquare } from 'lucide-vue-next'
 import { APPLICATION_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
+import {
+  getApplicationStatusBadgeClass,
+  getApplicationTransitionButtonClass,
+  getApplicationTransitionDotClass,
+  getApplicationTransitionLabel,
+} from '~/utils/status-display'
 
 const props = defineProps<{
   applicationId: string
@@ -19,33 +25,6 @@ const { application, status: fetchStatus, error, refresh, updateApplication } = 
 const { formatCandidateName } = useOrgSettings()
 
 // ─── Status transitions ───────────────────────────────────────────────────────
-
-const transitionLabels: Record<string, string> = {
-  new: 'Re-open',
-  screening: 'Move to Screening',
-  interview: 'Move to Interview',
-  offer: 'Make Offer',
-  hired: 'Mark Hired',
-  rejected: 'Reject',
-}
-
-const transitionClasses: Record<string, string> = {
-  new: 'border border-white/16 bg-black text-white/80 hover:border-brand-500 hover:bg-brand-500/12 hover:text-white',
-  screening: 'border border-brand-500 bg-brand-600 text-white hover:bg-brand-500',
-  interview: 'border border-brand-500 bg-brand-600 text-white hover:bg-brand-500',
-  offer: 'border border-brand-500 bg-brand-600 text-white hover:bg-brand-500',
-  hired: 'border border-brand-500 bg-brand-600 text-white hover:bg-brand-500',
-  rejected: 'border border-danger-500 bg-danger-600 text-white hover:bg-danger-500',
-}
-
-const transitionDotClasses: Record<string, string> = {
-  new: 'bg-surface-400 dark:bg-surface-500',
-  screening: 'bg-violet-200',
-  interview: 'bg-amber-200',
-  offer: 'bg-teal-200',
-  hired: 'bg-green-100',
-  rejected: 'bg-danger-200',
-}
 
 const allowedTransitions = computed(() => {
   if (!application.value) return []
@@ -95,15 +74,6 @@ async function saveNotes() {
 }
 
 // ─── Display helpers ──────────────────────────────────────────────────────────
-
-const statusBadgeClasses: Record<string, string> = {
-  new: 'border-brand-500/55 bg-brand-500/14 text-brand-200',
-  screening: 'border-brand-500/55 bg-brand-500/14 text-brand-200',
-  interview: 'border-brand-500/55 bg-brand-500/14 text-brand-200',
-  offer: 'border-brand-500/55 bg-brand-500/14 text-brand-200',
-  hired: 'border-success-500/45 bg-success-500/12 text-success-200',
-  rejected: 'border-white/16 bg-white/[0.04] text-white/58',
-}
 
 function formatResponseValue(value: unknown): string {
   if (Array.isArray(value)) return value.join(', ')
@@ -212,7 +182,7 @@ onUnmounted(() => {
               <div class="flex flex-wrap items-center gap-3">
                 <span
                   class="inline-flex items-center border px-2.5 py-0.5 text-xs font-semibold uppercase"
-                  :class="statusBadgeClasses[application.status] ?? 'border-white/16 bg-white/[0.04] text-white/58'"
+                  :class="getApplicationStatusBadgeClass(application.status, 'factory')"
                 >
                   {{ application.status }}
                 </span>
@@ -231,14 +201,14 @@ onUnmounted(() => {
                   :key="nextStatus"
                   :disabled="isTransitioning"
                   class="inline-flex cursor-pointer items-center px-3.5 py-1.5 text-xs font-semibold uppercase transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
-                  :class="transitionClasses[nextStatus] ?? 'border border-white/16 bg-black text-white/80 hover:border-brand-500 hover:bg-brand-500/12 hover:text-white'"
+                  :class="getApplicationTransitionButtonClass(nextStatus, 'factory')"
                   @click="handleTransition(nextStatus)"
                 >
                   <span
                     class="mr-2 inline-flex size-1.5 rounded-full"
-                    :class="transitionDotClasses[nextStatus] ?? 'bg-surface-400 dark:bg-surface-500'"
+                    :class="getApplicationTransitionDotClass(nextStatus)"
                   />
-                  {{ transitionLabels[nextStatus] ?? nextStatus }}
+                  {{ getApplicationTransitionLabel(nextStatus) }}
                 </button>
                 <button
                   class="inline-flex cursor-pointer items-center gap-1.5 border border-white/16 bg-black px-3.5 py-1.5 text-xs font-semibold uppercase text-white/80 hover:border-brand-500 hover:bg-brand-500/12 hover:text-white transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
