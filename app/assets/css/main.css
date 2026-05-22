@@ -178,6 +178,52 @@
     color: var(--color-surface-100);
   }
 
+  .ui-panel-brand {
+    border: 1px solid var(--color-brand-200);
+    border-radius: 0.75rem;
+    background-color: #ffffff;
+    color: var(--color-surface-900);
+  }
+
+  .dark .ui-panel-brand {
+    border-color: color-mix(in srgb, var(--color-brand-800) 60%, transparent);
+    background-color: var(--color-surface-900);
+    color: var(--color-surface-100);
+  }
+
+  .ui-panel-brand-header {
+    border-bottom: 1px solid var(--color-brand-100);
+    background-color: color-mix(in srgb, var(--color-brand-50) 50%, transparent);
+  }
+
+  .dark .ui-panel-brand-header {
+    border-color: color-mix(in srgb, var(--color-brand-900) 40%, transparent);
+    background-color: color-mix(in srgb, var(--color-brand-950) 20%, transparent);
+  }
+
+  .ui-panel-danger {
+    border: 1px solid color-mix(in srgb, var(--color-danger-200) 60%, transparent);
+    border-radius: 0.75rem;
+    background-color: color-mix(in srgb, var(--color-danger-50) 30%, transparent);
+    color: var(--color-danger-700);
+  }
+
+  .dark .ui-panel-danger {
+    border-color: color-mix(in srgb, var(--color-danger-900) 40%, transparent);
+    background-color: color-mix(in srgb, var(--color-danger-950) 20%, transparent);
+    color: var(--color-danger-400);
+  }
+
+  .ui-panel-footer {
+    border-top: 1px solid var(--color-surface-100);
+    background-color: color-mix(in srgb, var(--color-surface-50) 80%, transparent);
+  }
+
+  .dark .ui-panel-footer {
+    border-color: var(--color-surface-800);
+    background-color: color-mix(in srgb, var(--color-surface-950) 40%, transparent);
+  }
+
   .ui-panel-muted {
     border: 1px solid var(--color-surface-200);
     border-radius: 0.75rem;
@@ -467,6 +513,16 @@
   .ui-button-success:hover:not(:disabled) {
     background-color: var(--color-success-700);
     color: #ffffff;
+  }
+
+  .ui-spinner-brand {
+    border-color: var(--color-brand-200);
+    border-top-color: var(--color-brand-600);
+  }
+
+  .dark .ui-spinner-brand {
+    border-color: var(--color-brand-800);
+    border-top-color: var(--color-brand-400);
   }
 
   .ui-field {
@@ -964,8 +1020,16 @@
     background-color: var(--color-surface-400);
   }
 
+  .ui-status-dot-brand {
+    background-color: var(--color-brand-500);
+  }
+
   .ui-status-dot-success {
     background-color: var(--color-success-500);
+  }
+
+  .ui-status-dot-danger {
+    background-color: var(--color-danger-500);
   }
 
   .ui-code {
