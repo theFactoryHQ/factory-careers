@@ -128,10 +128,10 @@ async function handleDeleteOrg() {
     </div>
 
     <!-- Organization profile -->
-    <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
-      <div class="px-4 sm:px-6 py-5 border-b border-surface-200 dark:border-surface-800">
+    <section class="ui-panel overflow-hidden">
+      <div class="ui-panel-header px-4 sm:px-6 py-5">
         <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-10 shrink-0 rounded-lg bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400">
+          <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
             <Building2 class="size-5" />
           </div>
           <div>
@@ -151,7 +151,7 @@ async function handleDeleteOrg() {
             v-model="orgName"
             type="text"
             :disabled="!canUpdateOrg"
-            class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            class="ui-field disabled:opacity-60 disabled:cursor-not-allowed"
             placeholder="My Company"
           />
         </div>
@@ -160,7 +160,7 @@ async function handleDeleteOrg() {
           <label for="org-slug" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
             URL slug
           </label>
-          <div class="flex items-center rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 overflow-hidden focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500 transition-colors">
+          <div class="ui-field flex items-center overflow-hidden p-0 focus-within:border-brand-500">
             <span class="px-3 text-sm text-surface-400 dark:text-surface-500 select-none bg-surface-50 dark:bg-surface-800/50 border-r border-surface-200 dark:border-surface-700 py-2">
               careers.thefactoryhq.com/
             </span>
@@ -185,7 +185,7 @@ async function handleDeleteOrg() {
         <div class="flex items-center gap-3 pt-2">
           <button
             :disabled="!canUpdateOrg || isSaving"
-            class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="ui-button ui-button-primary disabled:opacity-50 disabled:cursor-not-allowed"
             @click="handleSaveOrg"
           >
             <Loader2 v-if="isSaving" class="size-4 animate-spin" />
@@ -205,22 +205,22 @@ async function handleDeleteOrg() {
           </Transition>
         </div>
 
-        <div v-if="saveError" class="rounded-lg bg-danger-50 dark:bg-danger-950/40 border border-danger-200 dark:border-danger-900 px-4 py-3 text-sm text-danger-700 dark:text-danger-400">
+        <div v-if="saveError" class="ui-alert ui-alert-danger">
           {{ saveError }}
         </div>
       </div>
     </section>
 
     <!-- Danger zone -->
-    <section v-if="canDeleteOrg" class="mt-8 rounded-xl border border-danger-200 dark:border-danger-900 bg-white dark:bg-surface-900 overflow-hidden">
-      <div class="px-4 sm:px-6 py-5 border-b border-danger-200 dark:border-danger-900 bg-danger-50/50 dark:bg-danger-950/20">
+    <section v-if="canDeleteOrg" class="ui-panel mt-8 overflow-hidden">
+      <div class="ui-panel-header px-4 sm:px-6 py-5">
         <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-10 shrink-0 rounded-lg bg-danger-100 dark:bg-danger-950 text-danger-600 dark:text-danger-400">
+          <div class="ui-icon-state ui-icon-state-danger flex items-center justify-center size-10 shrink-0 rounded-lg">
             <AlertTriangle class="size-5" />
           </div>
           <div>
-            <h2 class="text-base font-semibold text-danger-700 dark:text-danger-300">Danger zone</h2>
-            <p class="text-sm text-danger-600/80 dark:text-danger-400/80">Irreversible and destructive actions.</p>
+            <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Danger zone</h2>
+            <p class="text-sm text-surface-500 dark:text-surface-400">Irreversible and destructive actions.</p>
           </div>
         </div>
       </div>
@@ -234,7 +234,7 @@ async function handleDeleteOrg() {
             </p>
           </div>
           <button
-            class="shrink-0 inline-flex items-center gap-2 rounded-lg border border-danger-300 dark:border-danger-800 bg-white dark:bg-surface-900 px-3.5 py-2 text-sm font-medium text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950/40 transition-colors"
+            class="ui-button ui-button-danger shrink-0 px-3.5 py-2"
             @click="showDeleteConfirm = true"
           >
             <Trash2 class="size-4" />
@@ -249,20 +249,20 @@ async function handleDeleteOrg() {
           enter-from-class="opacity-0 -translate-y-2"
           leave-to-class="opacity-0 -translate-y-2"
         >
-          <div v-if="showDeleteConfirm" class="mt-5 rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50/50 dark:bg-danger-950/30 px-4 py-4 space-y-3">
+          <div v-if="showDeleteConfirm" class="ui-alert ui-alert-danger mt-5 space-y-3">
             <p class="text-sm text-surface-700 dark:text-surface-300">
               Type <strong class="text-surface-900 dark:text-surface-100 font-semibold">{{ activeOrg?.name }}</strong> to confirm deletion:
             </p>
             <input
               v-model="deleteConfirmText"
               type="text"
-              class="w-full rounded-lg border border-danger-300 dark:border-danger-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-danger-500 focus:border-danger-500 transition-colors"
+              class="ui-field"
               :placeholder="activeOrg?.name"
             />
             <div class="flex items-center gap-2">
               <button
                 :disabled="!canConfirmDelete || isDeleting"
-                class="inline-flex items-center gap-2 rounded-lg bg-danger-600 px-4 py-2 text-sm font-medium text-white hover:bg-danger-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                class="ui-button ui-button-danger disabled:opacity-50 disabled:cursor-not-allowed"
                 @click="handleDeleteOrg"
               >
                 <Loader2 v-if="isDeleting" class="size-4 animate-spin" />
@@ -270,13 +270,13 @@ async function handleDeleteOrg() {
                 {{ isDeleting ? 'Deleting…' : 'Permanently delete' }}
               </button>
               <button
-                class="rounded-lg px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-colors"
+                class="ui-button ui-button-secondary"
                 @click="showDeleteConfirm = false; deleteConfirmText = ''"
               >
                 Cancel
               </button>
             </div>
-            <div v-if="deleteError" class="text-sm text-danger-600 dark:text-danger-400">
+            <div v-if="deleteError" class="ui-alert ui-alert-danger">
               {{ deleteError }}
             </div>
           </div>
@@ -285,7 +285,7 @@ async function handleDeleteOrg() {
     </section>
 
     <!-- Read-only notice for non-admin users -->
-    <div v-if="!canUpdateOrg" class="mt-6 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-800 px-4 py-3 text-sm text-surface-500 dark:text-surface-400">
+    <div v-if="!canUpdateOrg" class="ui-alert ui-alert-info mt-6">
       You don't have permission to modify organization settings. Contact an admin or owner for changes.
     </div>
   </div>

@@ -496,10 +496,10 @@ async function handleRemoveMember() {
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
-const roleConfig: Record<string, { label: string; color: string; bg: string; icon: Component }> = {
-  owner: { label: 'Owner', color: 'text-warning-700 dark:text-warning-400', bg: 'bg-warning-50 dark:bg-warning-950', icon: Crown },
-  admin: { label: 'Admin', color: 'text-brand-700 dark:text-brand-400', bg: 'bg-brand-50 dark:bg-brand-950', icon: ShieldCheck },
-  member: { label: 'Member', color: 'text-surface-700 dark:text-surface-300', bg: 'bg-surface-100 dark:bg-surface-800', icon: Shield },
+const roleConfig: Record<string, { label: string; pillClass: string; icon: Component }> = {
+  owner: { label: 'Owner', pillClass: 'ui-pill-warning', icon: Crown },
+  admin: { label: 'Admin', pillClass: 'ui-pill-brand', icon: ShieldCheck },
+  member: { label: 'Member', pillClass: '', icon: Shield },
 }
 
 function getRoleConfig(role: string) {
@@ -553,7 +553,7 @@ onUnmounted(() => {
     <section v-if="canInvite" class="mb-6">
       <button
         v-if="!showInviteForm"
-        class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+        class="ui-button ui-button-primary py-2.5"
         @click="showInviteForm = true"
       >
         <UserPlus class="size-4" />
@@ -566,14 +566,14 @@ onUnmounted(() => {
         enter-from-class="opacity-0 -translate-y-2"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-if="showInviteForm" class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
+        <div v-if="showInviteForm" class="ui-panel p-5">
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
               <UserPlus class="size-5 text-brand-600 dark:text-brand-400" />
               <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Invite a team member</h3>
             </div>
             <button
-              class="p-1 rounded-md text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              class="ui-button ui-button-ghost p-1"
               @click="showInviteForm = false; resetInviteForm()"
             >
               <X class="size-4" />
@@ -588,7 +588,7 @@ onUnmounted(() => {
                 v-model="inviteEmail"
                 type="email"
                 placeholder="colleague@company.com"
-                class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                class="ui-field"
                 @keydown.enter="handleInvite"
               />
             </div>
@@ -596,7 +596,7 @@ onUnmounted(() => {
             <div class="relative">
               <select
                 v-model="inviteRole"
-                class="appearance-none rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 pl-3 pr-8 py-2 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors cursor-pointer"
+                class="ui-field appearance-none pr-8 cursor-pointer"
               >
                 <option value="member">Member</option>
                 <option value="admin">Admin</option>
@@ -606,7 +606,7 @@ onUnmounted(() => {
 
             <button
               :disabled="isInviting || !inviteEmail.trim()"
-              class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              class="ui-button ui-button-primary disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               @click="handleInvite"
             >
               <Loader2 v-if="isInviting" class="size-4 animate-spin" />
@@ -627,7 +627,7 @@ onUnmounted(() => {
             </div>
           </Transition>
 
-          <div v-if="inviteError" class="mt-3 rounded-lg bg-danger-50 dark:bg-danger-950/40 border border-danger-200 dark:border-danger-900 px-3 py-2 text-sm text-danger-700 dark:text-danger-400">
+          <div v-if="inviteError" class="ui-alert ui-alert-danger mt-3 px-3 py-2">
             {{ inviteError }}
           </div>
         </div>
@@ -635,7 +635,7 @@ onUnmounted(() => {
     </section>
 
     <!-- Role update error banner -->
-    <div v-if="roleUpdateError" class="mb-4 rounded-lg bg-danger-50 dark:bg-danger-950/40 border border-danger-200 dark:border-danger-900 px-4 py-3 text-sm text-danger-700 dark:text-danger-400 flex items-center justify-between">
+    <div v-if="roleUpdateError" class="ui-alert ui-alert-danger mb-4 flex items-center justify-between">
       <span>{{ roleUpdateError }}</span>
       <button class="text-danger-500 hover:text-danger-700 transition-colors" @click="roleUpdateError = ''">
         <X class="size-4" />
@@ -649,17 +649,17 @@ onUnmounted(() => {
       enter-from-class="opacity-0"
       leave-to-class="opacity-0"
     >
-      <div v-if="resendSuccess" class="mb-4 flex items-center gap-2 rounded-lg bg-success-50 dark:bg-success-950/40 border border-success-200 dark:border-success-900 px-4 py-3 text-sm text-success-700 dark:text-success-400">
+      <div v-if="resendSuccess" class="ui-alert ui-alert-success mb-4 flex items-center gap-2">
         <Check class="size-4" />
         {{ resendSuccess }}
       </div>
     </Transition>
 
     <!-- Pending invitations -->
-    <section v-if="canInvite && (isLoadingInvitations || pendingInvitations.length > 0)" class="mb-6 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
-      <div class="px-4 sm:px-6 py-4 border-b border-surface-200 dark:border-surface-800">
+    <section v-if="canInvite && (isLoadingInvitations || pendingInvitations.length > 0)" class="ui-panel mb-6 overflow-hidden">
+      <div class="ui-panel-header px-4 sm:px-6 py-4">
         <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-8 rounded-lg bg-warning-50 dark:bg-warning-950 text-warning-600 dark:text-warning-400">
+          <div class="ui-icon-state ui-icon-state-warning flex items-center justify-center size-8 rounded-lg">
             <Clock class="size-4" />
           </div>
           <div>
@@ -672,7 +672,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoadingInvitations" class="px-4 sm:px-6 py-6 text-center text-surface-400 text-sm">
+      <div v-if="isLoadingInvitations" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
         <Loader2 class="size-4 animate-spin mx-auto mb-1.5" />
         Loading invitations…
       </div>
@@ -691,12 +691,12 @@ onUnmounted(() => {
         <div
           v-for="inv in pendingInvitations"
           :key="inv.id"
-          class="px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors"
+          class="ui-list-row px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
         >
           <!-- Email icon + Info -->
           <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
             <div class="flex-shrink-0">
-              <div class="size-9 rounded-full bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-surface-400 dark:text-surface-500">
+              <div class="ui-icon-state size-9 rounded-full">
                 <Mail class="size-4" />
               </div>
             </div>
@@ -710,8 +710,8 @@ onUnmounted(() => {
               </div>
               <div class="flex items-center gap-2 text-xs text-surface-400 dark:text-surface-500">
                 <span
-                  :class="[getRoleConfig(inv.role).bg, getRoleConfig(inv.role).color]"
-                  class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+                  :class="getRoleConfig(inv.role).pillClass"
+                  class="ui-pill rounded-full px-2 py-0.5 text-xs"
                 >
                   <component :is="getRoleConfig(inv.role).icon" class="size-2.5" />
                   {{ getRoleConfig(inv.role).label }}
@@ -727,7 +727,7 @@ onUnmounted(() => {
           <div v-if="canCancelInvite" class="flex items-center gap-1.5 flex-shrink-0 pl-12 sm:pl-0">
             <button
               :disabled="resendingInvitation === inv.id"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="ui-button ui-button-secondary px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               title="Resend invitation email"
               @click="handleResendInvitation(inv)"
             >
@@ -737,7 +737,7 @@ onUnmounted(() => {
             </button>
             <button
               :disabled="cancellingInvitation === inv.id"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-danger-200 dark:border-danger-800 bg-white dark:bg-surface-800 px-3 py-1.5 text-xs font-medium text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="ui-button ui-button-danger-outline px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               title="Cancel invitation"
               @click="handleCancelInvitation(inv.id)"
             >
@@ -751,11 +751,11 @@ onUnmounted(() => {
     </section>
 
     <!-- Invite links section -->
-    <section v-if="canInvite" class="mb-6 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
-      <div class="px-4 sm:px-6 py-4 border-b border-surface-200 dark:border-surface-800">
+    <section v-if="canInvite" class="ui-panel mb-6 overflow-hidden">
+      <div class="ui-panel-header px-4 sm:px-6 py-4">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="flex items-center justify-center size-8 shrink-0 rounded-lg bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400">
+            <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-8 shrink-0 rounded-lg">
               <Link2 class="size-4" />
             </div>
             <div class="min-w-0">
@@ -767,7 +767,7 @@ onUnmounted(() => {
           </div>
           <button
             v-if="!showCreateLinkForm"
-            class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 transition-colors"
+            class="ui-button ui-button-primary px-3 py-1.5 text-xs"
             @click="showCreateLinkForm = true"
           >
             <Link2 class="size-3.5" />
@@ -783,11 +783,11 @@ onUnmounted(() => {
         enter-from-class="opacity-0 -translate-y-2"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-if="showCreateLinkForm" class="px-4 sm:px-6 py-4 border-b border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-800/50">
+        <div v-if="showCreateLinkForm" class="ui-panel-muted rounded-none border-x-0 border-t-0 px-4 sm:px-6 py-4">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-sm font-medium text-surface-900 dark:text-surface-100">New invite link</h3>
             <button
-              class="p-1 rounded-md text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
+              class="ui-button ui-button-ghost p-1"
               @click="showCreateLinkForm = false; createLinkError = ''"
             >
               <X class="size-4" />
@@ -800,7 +800,7 @@ onUnmounted(() => {
               <div class="relative">
                 <select
                   v-model="newLinkRole"
-                  class="appearance-none rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 pl-3 pr-8 py-1.5 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors cursor-pointer"
+                  class="ui-field appearance-none pr-8 py-1.5 cursor-pointer"
                 >
                   <option value="member">Member</option>
                   <option value="admin">Admin</option>
@@ -814,7 +814,7 @@ onUnmounted(() => {
               <div class="relative">
                 <select
                   v-model="newLinkExpiresInHours"
-                  class="appearance-none rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 pl-3 pr-8 py-1.5 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors cursor-pointer"
+                  class="ui-field appearance-none pr-8 py-1.5 cursor-pointer"
                 >
                   <option v-for="opt in expiryOptions" :key="opt.value" :value="opt.value">
                     {{ opt.label }}
@@ -831,13 +831,13 @@ onUnmounted(() => {
                 type="number"
                 min="1"
                 placeholder="Unlimited"
-                class="w-28 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-1.5 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
+                class="ui-field w-28 py-1.5"
               />
             </div>
 
             <button
               :disabled="isCreatingLink"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="ui-button ui-button-primary px-4 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               @click="handleCreateLink"
             >
               <Loader2 v-if="isCreatingLink" class="size-3.5 animate-spin" />
@@ -858,14 +858,14 @@ onUnmounted(() => {
         enter-from-class="opacity-0"
         leave-to-class="opacity-0"
       >
-        <div v-if="createLinkSuccess" class="px-4 sm:px-6 py-2 flex items-center gap-2 text-sm text-success-600 dark:text-success-400 bg-success-50 dark:bg-success-950/40 border-b border-success-200 dark:border-success-900">
+        <div v-if="createLinkSuccess" class="ui-alert ui-alert-success rounded-none border-x-0 border-t-0 px-4 sm:px-6 py-2 flex items-center gap-2">
           <Check class="size-4" />
           {{ createLinkSuccess }}
         </div>
       </Transition>
 
       <!-- Loading state -->
-      <div v-if="isLoadingLinks" class="px-4 sm:px-6 py-6 text-center text-surface-400 text-sm">
+      <div v-if="isLoadingLinks" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
         <Loader2 class="size-4 animate-spin mx-auto mb-1.5" />
         Loading invite links…
       </div>
@@ -880,7 +880,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Empty state -->
-      <div v-else-if="inviteLinks.length === 0 && !showCreateLinkForm" class="px-4 sm:px-6 py-6 text-center text-sm text-surface-400 dark:text-surface-500">
+      <div v-else-if="inviteLinks.length === 0 && !showCreateLinkForm" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
         No active invite links. Create one to share with your team.
       </div>
 
@@ -889,13 +889,14 @@ onUnmounted(() => {
         <div
           v-for="link in inviteLinks"
           :key="link.id"
-          class="px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors"
+          class="ui-list-row px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
           :class="{ 'opacity-50': !isLinkActive(link) }"
         >
           <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
             <div class="flex-shrink-0">
-              <div class="size-9 rounded-full flex items-center justify-center"
-                :class="isLinkActive(link) ? 'bg-brand-100 dark:bg-brand-950 text-brand-600 dark:text-brand-400' : 'bg-surface-100 dark:bg-surface-800 text-surface-400'"
+              <div
+                class="ui-icon-state size-9 rounded-full"
+                :class="isLinkActive(link) ? 'ui-icon-state-brand' : ''"
               >
                 <Link2 class="size-4" />
               </div>
@@ -904,8 +905,8 @@ onUnmounted(() => {
             <div class="min-w-0">
               <div class="flex items-center gap-2 text-sm font-medium text-surface-900 dark:text-surface-100">
                 <span
-                  :class="[getRoleConfig(link.role).bg, getRoleConfig(link.role).color]"
-                  class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+                  :class="getRoleConfig(link.role).pillClass"
+                  class="ui-pill rounded-full px-2 py-0.5 text-xs"
                 >
                   <component :is="getRoleConfig(link.role).icon" class="size-2.5" />
                   {{ getRoleConfig(link.role).label }}
@@ -925,7 +926,7 @@ onUnmounted(() => {
           <div class="flex items-center gap-1.5 flex-shrink-0 pl-12 sm:pl-0">
             <button
               v-if="isLinkActive(link)"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
+              class="ui-button ui-button-secondary px-3 py-1.5 text-xs"
               :title="copiedLinkId === link.id ? 'Copied!' : 'Copy invite link'"
               @click="copyLinkToClipboard(link)"
             >
@@ -935,7 +936,7 @@ onUnmounted(() => {
             </button>
             <button
               :disabled="revokingLinkId === link.id"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-danger-200 dark:border-danger-800 bg-white dark:bg-surface-800 px-3 py-1.5 text-xs font-medium text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="ui-button ui-button-danger-outline px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               title="Revoke invite link"
               @click="handleRevokeLink(link.id)"
             >
@@ -949,10 +950,10 @@ onUnmounted(() => {
     </section>
 
     <!-- Join requests section -->
-    <section v-if="canInvite && (isLoadingJoinRequests || joinRequests.length > 0)" class="mb-6 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
-      <div class="px-4 sm:px-6 py-4 border-b border-surface-200 dark:border-surface-800">
+    <section v-if="canInvite && (isLoadingJoinRequests || joinRequests.length > 0)" class="ui-panel mb-6 overflow-hidden">
+      <div class="ui-panel-header px-4 sm:px-6 py-4">
         <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-8 rounded-lg bg-warning-50 dark:bg-warning-950 text-warning-600 dark:text-warning-400">
+          <div class="ui-icon-state ui-icon-state-warning flex items-center justify-center size-8 rounded-lg">
             <UserCheck class="size-4" />
           </div>
           <div>
@@ -965,7 +966,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Join request action error -->
-      <div v-if="joinRequestActionError" class="px-4 sm:px-6 py-2 flex items-center justify-between text-sm text-danger-700 dark:text-danger-400 bg-danger-50 dark:bg-danger-950/40 border-b border-danger-200 dark:border-danger-900">
+      <div v-if="joinRequestActionError" class="ui-alert ui-alert-danger rounded-none border-x-0 border-t-0 px-4 sm:px-6 py-2 flex items-center justify-between">
         <span>{{ joinRequestActionError }}</span>
         <button class="text-danger-500 hover:text-danger-700 transition-colors" @click="joinRequestActionError = ''">
           <X class="size-4" />
@@ -973,7 +974,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoadingJoinRequests" class="px-4 sm:px-6 py-6 text-center text-surface-400 text-sm">
+      <div v-if="isLoadingJoinRequests" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
         <Loader2 class="size-4 animate-spin mx-auto mb-1.5" />
         Loading join requests…
       </div>
@@ -992,7 +993,7 @@ onUnmounted(() => {
         <div
           v-for="req in joinRequests"
           :key="req.id"
-          class="px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors"
+          class="ui-list-row px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
         >
           <!-- Avatar + Info -->
           <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
@@ -1026,7 +1027,7 @@ onUnmounted(() => {
           <div class="flex items-center gap-1.5 flex-shrink-0 pl-12 sm:pl-0">
             <button
               :disabled="approvingRequestId === req.id"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-success-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-success-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="ui-button ui-button-success px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               title="Approve — adds as Member"
               @click="handleApproveRequest(req.id)"
             >
@@ -1036,7 +1037,7 @@ onUnmounted(() => {
             </button>
             <button
               :disabled="rejectingRequestId === req.id"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-danger-200 dark:border-danger-800 bg-white dark:bg-surface-800 px-3 py-1.5 text-xs font-medium text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="ui-button ui-button-danger-outline px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               title="Reject join request"
               @click="handleRejectRequest(req.id)"
             >
@@ -1050,11 +1051,11 @@ onUnmounted(() => {
     </section>
 
     <!-- Members list -->
-    <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900">
-      <div class="px-4 sm:px-6 py-5 border-b border-surface-200 dark:border-surface-800">
+    <section class="ui-panel">
+      <div class="ui-panel-header px-4 sm:px-6 py-5">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="flex items-center gap-3">
-            <div class="flex items-center justify-center size-10 shrink-0 rounded-lg bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400">
+            <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
               <Users class="size-5" />
             </div>
             <div>
@@ -1071,7 +1072,7 @@ onUnmounted(() => {
                 v-model="memberSearch"
                 type="text"
                 placeholder="Search members…"
-                class="w-full sm:w-48 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 pl-8.5 pr-3 py-1.5 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                class="ui-field w-full sm:w-48 pl-8.5 pr-3 py-1.5"
               />
             </div>
           </div>
@@ -1079,7 +1080,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoadingMembers" class="px-4 sm:px-6 py-8 text-center text-surface-400 text-sm">
+      <div v-if="isLoadingMembers" class="ui-empty-state px-4 sm:px-6 py-8 text-sm">
         <Loader2 class="size-5 animate-spin mx-auto mb-2" />
         Loading members…
       </div>
@@ -1098,7 +1099,7 @@ onUnmounted(() => {
         <div
           v-for="m in visibleMembers"
           :key="m.id"
-          class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors"
+          class="ui-list-row px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
         >
           <!-- Avatar + Info row -->
           <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
@@ -1134,8 +1135,8 @@ onUnmounted(() => {
           <!-- Role badge + Actions -->
           <div class="flex items-center gap-2 pl-[3.25rem] sm:pl-0 flex-shrink-0">
             <span
-              :class="[getRoleConfig(m.role).bg, getRoleConfig(m.role).color]"
-              class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+              :class="getRoleConfig(m.role).pillClass"
+              class="ui-pill rounded-full px-2.5 py-1 text-xs"
             >
               <component :is="getRoleConfig(m.role).icon" class="size-3" />
               {{ getRoleConfig(m.role).label }}
@@ -1144,7 +1145,7 @@ onUnmounted(() => {
           <!-- Actions dropdown -->
           <div v-if="canManageMembers && !isCurrentUser(m.userId) && m.role !== 'owner'" class="relative" data-member-actions>
             <button
-              class="p-1.5 rounded-md text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              class="ui-button ui-button-ghost p-1.5"
               @click.stop="toggleDropdown(m.id)"
             >
               <MoreHorizontal class="size-4" />
@@ -1158,7 +1159,7 @@ onUnmounted(() => {
             >
               <div
                 v-if="activeDropdown === m.id"
-                class="absolute right-0 top-full mt-1 w-48 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg z-50 overflow-hidden"
+                class="ui-panel absolute right-0 top-full mt-1 w-48 shadow-lg z-50 overflow-hidden"
               >
                 <!-- Role options -->
                 <div class="py-1 border-b border-surface-100 dark:border-surface-800">
@@ -1168,7 +1169,7 @@ onUnmounted(() => {
                   <button
                     v-if="m.role !== 'admin'"
                     :disabled="isUpdatingRole === m.id"
-                    class="w-full px-3 py-2 text-left text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors flex items-center gap-2 disabled:opacity-50 bg-transparent border-0 cursor-pointer"
+                    class="ui-list-row w-full px-3 py-2 text-left text-sm text-surface-700 dark:text-surface-300 flex items-center gap-2 disabled:opacity-50 bg-transparent border-0 cursor-pointer"
                     @click="handleUpdateRole(m.id, 'admin')"
                   >
                     <ShieldCheck class="size-3.5 text-brand-500" />
@@ -1177,7 +1178,7 @@ onUnmounted(() => {
                   <button
                     v-if="m.role !== 'member'"
                     :disabled="isUpdatingRole === m.id"
-                    class="w-full px-3 py-2 text-left text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors flex items-center gap-2 disabled:opacity-50 bg-transparent border-0 cursor-pointer"
+                    class="ui-list-row w-full px-3 py-2 text-left text-sm text-surface-700 dark:text-surface-300 flex items-center gap-2 disabled:opacity-50 bg-transparent border-0 cursor-pointer"
                     @click="handleUpdateRole(m.id, 'member')"
                   >
                     <Shield class="size-3.5 text-surface-400" />
@@ -1188,7 +1189,7 @@ onUnmounted(() => {
                 <!-- Remove -->
                 <div class="py-1">
                   <button
-                    class="w-full px-3 py-2 text-left text-sm text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950/40 transition-colors flex items-center gap-2 bg-transparent border-0 cursor-pointer"
+                    class="ui-list-row w-full px-3 py-2 text-left text-sm text-danger-600 dark:text-danger-400 flex items-center gap-2 bg-transparent border-0 cursor-pointer"
                     @click="memberToRemove = { id: m.id, name: m.user.name }; closeDropdown()"
                   >
                     <Trash2 class="size-3.5" />
@@ -1234,9 +1235,9 @@ onUnmounted(() => {
             enter-from-class="opacity-0 scale-95"
             leave-to-class="opacity-0 scale-95"
           >
-            <div v-if="memberToRemove" class="w-full max-w-md bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-800 shadow-2xl p-6">
+            <div v-if="memberToRemove" class="ui-modal-panel w-full max-w-md p-6">
               <div class="flex items-center gap-3 mb-4">
-                <div class="flex items-center justify-center size-10 rounded-full bg-danger-100 dark:bg-danger-950 text-danger-600 dark:text-danger-400">
+                <div class="ui-icon-state ui-icon-state-danger flex items-center justify-center size-10">
                   <AlertTriangle class="size-5" />
                 </div>
                 <div>
@@ -1251,20 +1252,20 @@ onUnmounted(() => {
                 They will lose access to all organization data immediately.
               </p>
 
-              <div v-if="removeError" class="mb-4 rounded-lg bg-danger-50 dark:bg-danger-950/40 border border-danger-200 dark:border-danger-900 px-3 py-2 text-sm text-danger-700 dark:text-danger-400">
+              <div v-if="removeError" class="ui-alert ui-alert-danger mb-4 px-3 py-2">
                 {{ removeError }}
               </div>
 
               <div class="flex items-center gap-3 justify-end">
                 <button
-                  class="rounded-lg px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                  class="ui-button ui-button-secondary"
                   @click="memberToRemove = null; removeError = ''"
                 >
                   Cancel
                 </button>
                 <button
                   :disabled="isRemoving"
-                  class="inline-flex items-center gap-2 rounded-lg bg-danger-600 px-4 py-2 text-sm font-medium text-white hover:bg-danger-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="ui-button ui-button-danger disabled:opacity-50 disabled:cursor-not-allowed"
                   @click="handleRemoveMember"
                 >
                   <Loader2 v-if="isRemoving" class="size-4 animate-spin" />
@@ -1279,7 +1280,7 @@ onUnmounted(() => {
     </Teleport>
 
     <!-- Permissions notice for members -->
-    <div v-if="!canManageMembers" class="mt-6 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-800 px-4 py-3 text-sm text-surface-500 dark:text-surface-400">
+    <div v-if="!canManageMembers" class="ui-alert ui-alert-info mt-6">
       You don't have permission to manage team members. Contact an admin or owner to invite new members or change roles.
     </div>
   </div>

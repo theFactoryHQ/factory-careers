@@ -80,10 +80,10 @@ const previewDateFormatted = computed(() => {
     </div>
 
     <!-- Settings card -->
-    <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
-      <div class="px-4 sm:px-6 py-5 border-b border-surface-200 dark:border-surface-800">
+    <section class="ui-panel overflow-hidden">
+      <div class="ui-panel-header px-4 sm:px-6 py-5">
         <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-10 shrink-0 rounded-lg bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400">
+          <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
             <Globe class="size-5" />
           </div>
           <div>
@@ -104,10 +104,10 @@ const previewDateFormatted = computed(() => {
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
             <label
-              class="flex items-start gap-3 flex-1 rounded-lg border p-3.5 cursor-pointer transition-colors"
+              class="ui-selectable-panel flex items-start gap-3 flex-1 p-3.5"
               :class="localNameFormat === 'first_last'
-                ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 dark:border-brand-600'
-                : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600'"
+                ? 'ui-selectable-panel-active'
+                : ''"
             >
               <input
                 v-model="localNameFormat"
@@ -122,10 +122,10 @@ const previewDateFormatted = computed(() => {
               </div>
             </label>
             <label
-              class="flex items-start gap-3 flex-1 rounded-lg border p-3.5 cursor-pointer transition-colors"
+              class="ui-selectable-panel flex items-start gap-3 flex-1 p-3.5"
               :class="localNameFormat === 'last_first'
-                ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 dark:border-brand-600'
-                : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600'"
+                ? 'ui-selectable-panel-active'
+                : ''"
             >
               <input
                 v-model="localNameFormat"
@@ -152,10 +152,10 @@ const previewDateFormatted = computed(() => {
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
             <label
-              class="flex items-start gap-3 flex-1 rounded-lg border p-3.5 cursor-pointer transition-colors"
+              class="ui-selectable-panel flex items-start gap-3 flex-1 p-3.5"
               :class="localDateFormat === 'mdy'
-                ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 dark:border-brand-600'
-                : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600'"
+                ? 'ui-selectable-panel-active'
+                : ''"
             >
               <input
                 v-model="localDateFormat"
@@ -170,10 +170,10 @@ const previewDateFormatted = computed(() => {
               </div>
             </label>
             <label
-              class="flex items-start gap-3 flex-1 rounded-lg border p-3.5 cursor-pointer transition-colors"
+              class="ui-selectable-panel flex items-start gap-3 flex-1 p-3.5"
               :class="localDateFormat === 'dmy'
-                ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 dark:border-brand-600'
-                : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600'"
+                ? 'ui-selectable-panel-active'
+                : ''"
             >
               <input
                 v-model="localDateFormat"
@@ -188,10 +188,10 @@ const previewDateFormatted = computed(() => {
               </div>
             </label>
             <label
-              class="flex items-start gap-3 flex-1 rounded-lg border p-3.5 cursor-pointer transition-colors"
+              class="ui-selectable-panel flex items-start gap-3 flex-1 p-3.5"
               :class="localDateFormat === 'ymd'
-                ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 dark:border-brand-600'
-                : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600'"
+                ? 'ui-selectable-panel-active'
+                : ''"
             >
               <input
                 v-model="localDateFormat"
@@ -209,7 +209,7 @@ const previewDateFormatted = computed(() => {
         </div>
 
         <!-- Live preview -->
-        <div class="rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50 p-4">
+        <div class="ui-panel-muted p-4">
           <p class="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide mb-2">Preview</p>
           <div class="flex flex-col sm:flex-row sm:items-center gap-3 text-sm">
             <div class="flex items-center gap-2">
@@ -227,7 +227,7 @@ const previewDateFormatted = computed(() => {
         <!-- Error -->
         <div
           v-if="saveError"
-          class="rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 px-4 py-3 text-sm text-danger-700 dark:text-danger-400"
+          class="ui-alert ui-alert-danger"
         >
           {{ saveError }}
         </div>
@@ -236,7 +236,7 @@ const previewDateFormatted = computed(() => {
         <div class="flex items-center gap-3">
           <button
             :disabled="!canUpdateOrg || isSaving"
-            class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="ui-button ui-button-primary disabled:opacity-50 disabled:cursor-not-allowed"
             @click="handleSave"
           >
             <Check v-if="saveSuccess" class="size-4" />

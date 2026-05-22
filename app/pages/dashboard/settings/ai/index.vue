@@ -146,7 +146,7 @@ function formatPrice(p: number | null): string {
       <NuxtLink
         v-if="canManageAi"
         to="/dashboard/settings/ai/new"
-        class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+        class="ui-button ui-button-primary px-3 py-1.5"
       >
         <Plus class="size-4" />
         Add a model
@@ -160,7 +160,7 @@ function formatPrice(p: number | null): string {
 
     <div
       v-else-if="!canManageAi"
-      class="rounded-xl border border-warning-200 dark:border-warning-800 bg-warning-50 dark:bg-warning-950 p-5 text-sm text-warning-700 dark:text-warning-400 flex items-start gap-3"
+      class="ui-alert ui-alert-warning p-5 flex items-start gap-3"
     >
       <AlertTriangle class="size-5 shrink-0 mt-0.5" />
       <div>
@@ -170,7 +170,7 @@ function formatPrice(p: number | null): string {
     </div>
 
     <!-- Loading -->
-    <div v-else-if="isLoading" class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-8 text-center text-sm text-surface-500">
+    <div v-else-if="isLoading" class="ui-panel p-8 text-center text-sm text-surface-500">
       <Loader2 class="size-5 animate-spin mx-auto mb-2 text-surface-400" />
       Loading configurations…
     </div>
@@ -178,9 +178,9 @@ function formatPrice(p: number | null): string {
     <!-- Empty state -->
     <div
       v-else-if="configs.length === 0"
-      class="rounded-2xl border border-dashed border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 p-10 text-center"
+      class="ui-empty-panel border-dashed p-10"
     >
-      <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 mb-3">
+      <div class="ui-icon-state ui-icon-state-brand mx-auto flex size-12 items-center justify-center mb-3">
         <Brain class="size-6" />
       </div>
       <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">No AI models configured yet</h2>
@@ -189,7 +189,7 @@ function formatPrice(p: number | null): string {
       </p>
       <NuxtLink
         to="/dashboard/settings/ai/new"
-        class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+        class="ui-button ui-button-primary"
       >
         <Plus class="size-4" />
         Add your first model
@@ -201,33 +201,33 @@ function formatPrice(p: number | null): string {
       <li
         v-for="c in configs"
         :key="c.id"
-        class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden"
+        class="ui-panel overflow-hidden"
       >
         <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-4">
           <!-- Identity -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
               <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 truncate">{{ c.name }}</h3>
-              <span class="inline-flex items-center gap-1 rounded-full border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-2 py-0.5 text-[11px] font-medium text-surface-700 dark:text-surface-300">
+              <span class="ui-pill rounded-full px-2 py-0.5 text-[11px]">
                 {{ providerLabel(c.provider) }}
               </span>
               <span
                 v-if="c.isDefaultChatbot"
-                class="inline-flex items-center gap-1 rounded-full border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/50 px-2 py-0.5 text-[11px] font-medium text-brand-700 dark:text-brand-300"
+                class="ui-pill ui-pill-brand rounded-full px-2 py-0.5 text-[11px]"
                 title="Default for the chatbot"
               >
                 <Sparkles class="size-3" /> Chatbot default
               </span>
               <span
                 v-if="c.isDefaultAnalysis"
-                class="inline-flex items-center gap-1 rounded-full border border-warning-200 dark:border-warning-800 bg-warning-50 dark:bg-warning-950/50 px-2 py-0.5 text-[11px] font-medium text-warning-700 dark:text-warning-300"
+                class="ui-pill ui-pill-warning rounded-full px-2 py-0.5 text-[11px]"
                 title="Default for candidate analysis"
               >
                 <Star class="size-3" /> Analysis default
               </span>
               <span
                 v-if="!c.hasApiKey"
-                class="inline-flex items-center gap-1 rounded-full border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950/50 px-2 py-0.5 text-[11px] font-medium text-danger-700 dark:text-danger-300"
+                class="ui-pill ui-pill-danger rounded-full px-2 py-0.5 text-[11px]"
               >
                 <AlertTriangle class="size-3" /> Missing API key
               </span>
@@ -265,7 +265,7 @@ function formatPrice(p: number | null): string {
             <button
               v-if="!c.isDefaultChatbot"
               :disabled="!c.hasApiKey || (togglingDefaultId === c.id && togglingPurpose === 'chatbot')"
-              class="inline-flex items-center gap-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-2.5 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-300 hover:border-brand-300 dark:hover:border-brand-700 hover:text-brand-700 dark:hover:text-brand-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              class="ui-button ui-button-secondary px-2.5 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               :title="c.hasApiKey ? 'Use this model for the chatbot' : 'Add an API key first'"
               @click="setDefault(c, 'chatbot')"
             >
@@ -277,7 +277,7 @@ function formatPrice(p: number | null): string {
             <button
               v-if="!c.isDefaultAnalysis"
               :disabled="!c.hasApiKey || (togglingDefaultId === c.id && togglingPurpose === 'analysis')"
-              class="inline-flex items-center gap-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-2.5 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-300 hover:border-warning-300 dark:hover:border-warning-700 hover:text-warning-700 dark:hover:text-warning-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              class="ui-button ui-button-secondary px-2.5 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               :title="c.hasApiKey ? 'Use this model for candidate analysis' : 'Add an API key first'"
               @click="setDefault(c, 'analysis')"
             >
@@ -288,7 +288,7 @@ function formatPrice(p: number | null): string {
 
             <button
               :disabled="testingId === c.id || !c.hasApiKey"
-              class="inline-flex items-center gap-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-2.5 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              class="ui-button ui-button-secondary px-2.5 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               @click="testConnection(c)"
             >
               <Loader2 v-if="testingId === c.id" class="size-3.5 animate-spin" />
@@ -298,7 +298,7 @@ function formatPrice(p: number | null): string {
 
             <NuxtLink
               :to="`/dashboard/settings/ai/${c.id}`"
-              class="inline-flex items-center gap-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-2.5 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
+              class="ui-button ui-button-secondary px-2.5 py-1.5 text-xs"
             >
               <Pencil class="size-3.5" />
               Edit
@@ -306,7 +306,7 @@ function formatPrice(p: number | null): string {
 
             <button
               :disabled="deletingId === c.id"
-              class="inline-flex items-center gap-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-2.5 py-1.5 text-xs font-medium text-danger-600 dark:text-danger-400 hover:border-danger-300 dark:hover:border-danger-700 hover:bg-danger-50 dark:hover:bg-danger-950/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              class="ui-button ui-button-danger-outline px-2.5 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               @click="deleteConfig(c)"
             >
               <Loader2 v-if="deletingId === c.id" class="size-3.5 animate-spin" />

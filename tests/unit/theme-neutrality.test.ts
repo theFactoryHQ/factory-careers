@@ -34,21 +34,50 @@ describe('brand-neutral theme variables', () => {
       '.ui-alert',
       '.ui-alert-danger',
       '.ui-alert-success',
+      '.ui-alert-warning',
       '.ui-button',
       '.ui-button-primary',
       '.ui-button-secondary',
       '.ui-button-ghost',
+      '.ui-button-danger',
+      '.ui-button-danger-outline',
+      '.ui-button-success',
       '.ui-field',
+      '.ui-checkbox',
+      '.ui-checkbox-brand',
+      '.ui-checkbox-warning',
       '.ui-icon-state',
       '.ui-icon-state-danger',
       '.ui-icon-state-success',
       '.ui-icon-state-brand',
+      '.ui-icon-state-warning',
       '.ui-empty-state',
       '.ui-empty-panel',
       '.ui-selectable-panel',
       '.ui-selectable-panel-active',
+      '.ui-list-row',
+      '.ui-nav-shell',
+      '.ui-nav-link',
+      '.ui-nav-link-active',
+      '.ui-nav-icon',
+      '.ui-nav-icon-active',
+      '.ui-panel-header',
       '.ui-pill',
       '.ui-pill-brand',
+      '.ui-pill-success',
+      '.ui-pill-warning',
+      '.ui-pill-danger',
+      '.ui-pill-info',
+      '.ui-status-dot',
+      '.ui-status-dot-success',
+      '.ui-code',
+      '.ui-step-marker',
+      '.ui-meter-track',
+      '.ui-meter-fill',
+      '.ui-meter-fill-danger',
+      '.ui-meter-fill-warning',
+      '.ui-meter-fill-brand',
+      '.ui-meter-fill-success',
       '.ui-table-shell',
       '.ui-table-header',
       '.ui-table-row',
@@ -187,6 +216,117 @@ describe('brand-neutral theme variables', () => {
       for (const recipe of recipes) {
         expect(source, `${path} should use ${recipe}`).toContain(recipe)
       }
+    }
+  })
+
+  it('applies shared UI recipes to settings surfaces', () => {
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/settings/index.vue',
+        recipes: ['ui-panel', 'ui-panel-header', 'ui-field', 'ui-alert-danger', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/account.vue',
+        recipes: ['ui-panel', 'ui-panel-header', 'ui-field', 'ui-alert-danger', 'ui-button-primary', 'ui-meter-track', 'ui-meter-fill'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/localization.vue',
+        recipes: ['ui-panel', 'ui-panel-header', 'ui-panel-muted', 'ui-selectable-panel', 'ui-alert-danger', 'ui-button-primary'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/integrations.vue',
+        recipes: ['ui-panel', 'ui-panel-header', 'ui-panel-muted', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary', 'ui-pill-success', 'ui-status-dot-success', 'ui-code'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/sso.vue',
+        recipes: ['ui-panel', 'ui-panel-muted', 'ui-empty-panel', 'ui-field', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline', 'ui-pill-warning', 'ui-pill-success', 'ui-code', 'ui-step-marker'],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
+  it('applies shared UI recipes to member management surfaces', () => {
+    const source = readProjectFile('app/pages/dashboard/settings/members.vue')
+
+    for (const recipe of [
+      'ui-panel',
+      'ui-panel-header',
+      'ui-list-row',
+      'ui-field',
+      'ui-alert-danger',
+      'ui-alert-success',
+      'ui-button-primary',
+      'ui-button-secondary',
+      'ui-button-danger',
+      'ui-button-danger-outline',
+      'ui-button-success',
+      'ui-empty-state',
+      'ui-modal-panel',
+      'ui-pill',
+      'ui-pill-brand',
+      'ui-pill-warning',
+      'ui-icon-state-brand',
+      'ui-icon-state-danger',
+      'ui-icon-state-warning',
+    ]) {
+      expect(source, `members settings should use ${recipe}`).toContain(recipe)
+    }
+  })
+
+  it('applies shared UI recipes to AI settings surfaces', () => {
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/settings/ai/index.vue',
+        recipes: ['ui-panel', 'ui-empty-panel', 'ui-alert-warning', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline', 'ui-pill', 'ui-pill-brand', 'ui-pill-warning', 'ui-pill-danger'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/ai/new.vue',
+        recipes: ['ui-alert-warning'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/ai/[id].vue',
+        recipes: ['ui-alert-warning', 'ui-alert-danger', 'ui-button-danger'],
+      },
+      {
+        path: 'app/components/AiConfigForm.vue',
+        recipes: ['ui-panel', 'ui-field', 'ui-checkbox', 'ui-selectable-panel', 'ui-alert-info', 'ui-button-primary', 'ui-button-secondary', 'ui-pill-info', 'ui-pill-success'],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
+  it('applies shared UI recipes to settings navigation surfaces', () => {
+    const recipeUsage = [
+      'app/components/SettingsSidebar.vue',
+      'app/components/SettingsMobileNav.vue',
+    ]
+
+    for (const path of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of ['ui-nav-shell', 'ui-nav-link', 'ui-nav-link-active']) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+
+    const sidebar = readProjectFile('app/components/SettingsSidebar.vue')
+
+    for (const recipe of ['ui-nav-icon', 'ui-nav-icon-active', 'ui-pill-warning']) {
+      expect(sidebar, `SettingsSidebar should use ${recipe}`).toContain(recipe)
     }
   })
 })

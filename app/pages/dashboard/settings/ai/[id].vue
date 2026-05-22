@@ -79,7 +79,7 @@ function onCancel() {
 
     <div
       v-else-if="!canManageAi"
-      class="mx-auto max-w-2xl rounded-xl border border-warning-200 dark:border-warning-800 bg-warning-50 dark:bg-warning-950 p-5 text-sm text-warning-700 dark:text-warning-400 flex items-start gap-3"
+      class="ui-alert ui-alert-warning mx-auto max-w-2xl p-5 flex items-start gap-3"
     >
       <AlertTriangle class="size-5 shrink-0 mt-0.5" />
       <div>
@@ -94,7 +94,7 @@ function onCancel() {
 
     <div
       v-else-if="notFound"
-      class="mx-auto max-w-2xl rounded-xl border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-5 text-sm text-danger-700 dark:text-danger-400 flex items-start gap-3"
+      class="ui-alert ui-alert-danger mx-auto max-w-2xl p-5 flex items-start gap-3"
     >
       <AlertTriangle class="size-5 shrink-0 mt-0.5" />
       <div>
@@ -102,7 +102,7 @@ function onCancel() {
         <p class="mb-3">This AI configuration no longer exists or you don't have access to it.</p>
         <NuxtLink
           to="/dashboard/settings/ai"
-          class="inline-flex items-center gap-1.5 rounded-lg bg-danger-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-danger-700 transition-colors"
+          class="ui-button ui-button-danger px-3 py-1.5 text-xs"
         >
           Back to AI configuration
         </NuxtLink>

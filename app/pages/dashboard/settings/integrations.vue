@@ -76,14 +76,14 @@ async function handleDisconnect() {
     <Transition name="fade">
       <div
         v-if="successMessage"
-        class="mb-4 flex items-center gap-3 rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3"
+        class="ui-alert ui-alert-success mb-4 flex items-center gap-3"
       >
-        <Check class="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-        <p class="text-sm text-emerald-700 dark:text-emerald-300 flex-1">
+        <Check class="size-4 shrink-0" />
+        <p class="flex-1">
           {{ successMessage }}
         </p>
         <button
-          class="text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-200"
+          class="text-success-400 hover:text-success-600 dark:hover:text-success-200"
           @click="successMessage = ''"
         >
           <X class="size-4" />
@@ -94,10 +94,10 @@ async function handleDisconnect() {
     <Transition name="fade">
       <div
         v-if="errorMessage"
-        class="mb-4 flex items-center gap-3 rounded-lg border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950/30 px-4 py-3"
+        class="ui-alert ui-alert-danger mb-4 flex items-center gap-3"
       >
-        <AlertTriangle class="size-4 text-danger-500 shrink-0" />
-        <p class="text-sm text-danger-700 dark:text-danger-300 flex-1">
+        <AlertTriangle class="size-4 shrink-0" />
+        <p class="flex-1">
           {{ errorMessage }}
         </p>
         <button
@@ -110,11 +110,11 @@ async function handleDisconnect() {
     </Transition>
 
     <!-- Google Calendar Integration Card -->
-    <div class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
+    <div class="ui-panel overflow-hidden">
       <!-- Header -->
-      <div class="flex items-center gap-4 px-4 sm:px-6 py-5 border-b border-surface-100 dark:border-surface-800">
-        <div class="flex items-center justify-center size-10 rounded-lg bg-brand-50 dark:bg-brand-950/40">
-          <Calendar class="size-5 text-brand-600 dark:text-brand-400" />
+      <div class="ui-panel-header flex items-center gap-4 px-4 sm:px-6 py-5">
+        <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 rounded-lg">
+          <Calendar class="size-5" />
         </div>
         <div class="flex-1 min-w-0">
           <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">
@@ -128,14 +128,14 @@ async function handleDisconnect() {
         <!-- Status Badge -->
         <div
           v-if="isConnected"
-          class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+          class="ui-pill ui-pill-success rounded-full px-2.5 py-1 text-xs"
         >
-          <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span class="ui-status-dot ui-status-dot-success animate-pulse" />
           Connected
         </div>
         <div
           v-else-if="!isAvailable"
-          class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400"
+          class="ui-pill rounded-full px-2.5 py-1 text-xs"
         >
           Not configured
         </div>
@@ -152,9 +152,9 @@ async function handleDisconnect() {
         <div v-else-if="!isAvailable" class="space-y-3">
           <p class="text-sm text-surface-600 dark:text-surface-400">
             Google Calendar integration requires server configuration. A server administrator must set the
-            <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1.5 py-0.5 rounded font-mono">GOOGLE_CLIENT_ID</code>
+            <code class="ui-code">GOOGLE_CLIENT_ID</code>
             and
-            <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1.5 py-0.5 rounded font-mono">GOOGLE_CLIENT_SECRET</code>
+            <code class="ui-code">GOOGLE_CLIENT_SECRET</code>
             environment variables before users can connect.
           </p>
           <div class="flex items-center gap-4">
@@ -207,8 +207,8 @@ async function handleDisconnect() {
               Two-way sync:
               <span
                 :class="calendarStatus.webhookActive
-                  ? 'text-emerald-600 dark:text-emerald-400 font-medium'
-                  : 'text-amber-600 dark:text-amber-400'"
+                  ? 'text-success-600 dark:text-success-400 font-medium'
+                  : 'text-warning-600 dark:text-warning-400'"
               >
                 {{ calendarStatus.webhookActive ? 'Active' : 'Pending setup' }}
               </span>
@@ -216,21 +216,21 @@ async function handleDisconnect() {
           </div>
 
           <!-- Features list -->
-          <div class="rounded-lg bg-surface-50 dark:bg-surface-800/50 p-4 space-y-2">
+          <div class="ui-panel-muted p-4 space-y-2">
             <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-              <Check class="size-4 text-emerald-500 shrink-0" />
+              <Check class="size-4 text-success-500 shrink-0" />
               Interviews automatically appear in your Google Calendar
             </div>
             <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-              <Check class="size-4 text-emerald-500 shrink-0" />
+              <Check class="size-4 text-success-500 shrink-0" />
               Candidates receive calendar invites as attendees
             </div>
             <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-              <Check class="size-4 text-emerald-500 shrink-0" />
+              <Check class="size-4 text-success-500 shrink-0" />
               RSVP responses sync back automatically
             </div>
             <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-              <Clock class="size-4 text-emerald-500 shrink-0" />
+              <Clock class="size-4 text-success-500 shrink-0" />
               Timezone-aware scheduling
             </div>
           </div>
@@ -245,7 +245,7 @@ async function handleDisconnect() {
             <div class="flex items-center gap-2">
               <button
                 v-if="!showDisconnectConfirm"
-                class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950/30 transition-colors"
+                class="ui-button ui-button-danger-outline px-3 py-1.5"
                 @click="showDisconnectConfirm = true"
               >
                 <Unplug class="size-3.5" />
@@ -256,14 +256,14 @@ async function handleDisconnect() {
                 <span class="text-sm text-surface-500 dark:text-surface-400">Are you sure?</span>
                 <button
                   :disabled="isDisconnecting"
-                  class="inline-flex items-center gap-1.5 rounded-lg bg-danger-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-danger-700 disabled:opacity-50 transition-colors"
+                  class="ui-button ui-button-danger px-3 py-1.5 disabled:opacity-50"
                   @click="handleDisconnect"
                 >
                   <Loader2 v-if="isDisconnecting" class="size-3.5 animate-spin" />
                   Yes, disconnect
                 </button>
                 <button
-                  class="rounded-lg px-3 py-1.5 text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                  class="ui-button ui-button-secondary px-3 py-1.5"
                   @click="showDisconnectConfirm = false"
                 >
                   Cancel
@@ -283,7 +283,7 @@ async function handleDisconnect() {
             </p>
 
             <!-- Features preview -->
-            <div class="rounded-lg bg-surface-50 dark:bg-surface-800/50 p-4 space-y-2">
+            <div class="ui-panel-muted p-4 space-y-2">
               <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
                 <Calendar class="size-4 text-brand-500 shrink-0" />
                 Auto-create calendar events for scheduled interviews
@@ -304,7 +304,7 @@ async function handleDisconnect() {
           </div>
 
           <button
-            class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+            class="ui-button ui-button-primary py-2.5"
             @click="connect"
           >
             <Calendar class="size-4" />

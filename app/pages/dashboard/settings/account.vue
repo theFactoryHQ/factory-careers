@@ -66,8 +66,8 @@ const passwordsMatch = computed(() =>
 
 const passwordStrength = computed(() => {
   const pw = newPassword.value
-  if (pw.length === 0) return { label: '', bgColor: '', textColor: '', width: '0%' }
-  if (pw.length < 8) return { label: 'Too short', bgColor: 'bg-danger-500', textColor: 'text-danger-500', width: '20%' }
+  if (pw.length === 0) return { label: '', fillClass: '', textColor: '', width: '0%' }
+  if (pw.length < 8) return { label: 'Too short', fillClass: 'ui-meter-fill-danger', textColor: 'text-danger-500', width: '20%' }
 
   let score = 0
   if (pw.length >= 8) score++
@@ -76,10 +76,10 @@ const passwordStrength = computed(() => {
   if (/[0-9]/.test(pw)) score++
   if (/[^A-Za-z0-9]/.test(pw)) score++
 
-  if (score <= 2) return { label: 'Weak', bgColor: 'bg-danger-500', textColor: 'text-danger-500', width: '40%' }
-  if (score <= 3) return { label: 'Fair', bgColor: 'bg-warning-500', textColor: 'text-warning-500', width: '60%' }
-  if (score <= 4) return { label: 'Good', bgColor: 'bg-brand-500', textColor: 'text-brand-500', width: '80%' }
-  return { label: 'Strong', bgColor: 'bg-success-500', textColor: 'text-success-500', width: '100%' }
+  if (score <= 2) return { label: 'Weak', fillClass: 'ui-meter-fill-danger', textColor: 'text-danger-500', width: '40%' }
+  if (score <= 3) return { label: 'Fair', fillClass: 'ui-meter-fill-warning', textColor: 'text-warning-500', width: '60%' }
+  if (score <= 4) return { label: 'Good', fillClass: 'ui-meter-fill-brand', textColor: 'text-brand-500', width: '80%' }
+  return { label: 'Strong', fillClass: 'ui-meter-fill-success', textColor: 'text-success-500', width: '100%' }
 })
 
 async function handleChangePassword() {
@@ -135,10 +135,10 @@ function getInitials(name: string | undefined): string {
     </div>
 
     <!-- Profile section -->
-    <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
-      <div class="px-4 sm:px-6 py-5 border-b border-surface-200 dark:border-surface-800">
+    <section class="ui-panel overflow-hidden">
+      <div class="ui-panel-header px-4 sm:px-6 py-5">
         <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-10 shrink-0 rounded-lg bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400">
+          <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
             <User class="size-5" />
           </div>
           <div>
@@ -182,7 +182,7 @@ function getInitials(name: string | undefined): string {
             id="profile-name"
             v-model="profileName"
             type="text"
-            class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+            class="ui-field"
             placeholder="Your name"
           />
         </div>
@@ -192,7 +192,7 @@ function getInitials(name: string | undefined): string {
           <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
             Email address
           </label>
-          <div class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50 px-3 py-2 text-sm text-surface-500 dark:text-surface-400">
+          <div class="ui-panel-muted px-3 py-2 text-sm text-surface-500 dark:text-surface-400">
             {{ session?.user?.email }}
           </div>
           <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">
@@ -204,7 +204,7 @@ function getInitials(name: string | undefined): string {
         <div class="flex items-center gap-3 pt-2">
           <button
             :disabled="isSavingProfile"
-            class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="ui-button ui-button-primary disabled:opacity-50 disabled:cursor-not-allowed"
             @click="handleSaveProfile"
           >
             <Loader2 v-if="isSavingProfile" class="size-4 animate-spin" />
@@ -225,17 +225,17 @@ function getInitials(name: string | undefined): string {
           </Transition>
         </div>
 
-        <div v-if="profileError" class="rounded-lg bg-danger-50 dark:bg-danger-950/40 border border-danger-200 dark:border-danger-900 px-4 py-3 text-sm text-danger-700 dark:text-danger-400">
+        <div v-if="profileError" class="ui-alert ui-alert-danger">
           {{ profileError }}
         </div>
       </div>
     </section>
 
     <!-- Password section -->
-    <section class="mt-8 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
-      <div class="px-4 sm:px-6 py-5 border-b border-surface-200 dark:border-surface-800">
+    <section class="ui-panel mt-8 overflow-hidden">
+      <div class="ui-panel-header px-4 sm:px-6 py-5">
         <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-10 shrink-0 rounded-lg bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400">
+          <div class="ui-icon-state flex items-center justify-center size-10 shrink-0 rounded-lg">
             <KeyRound class="size-5" />
           </div>
           <div>
@@ -257,7 +257,7 @@ function getInitials(name: string | undefined): string {
               v-model="currentPassword"
               :type="showCurrentPassword ? 'text' : 'password'"
               autocomplete="current-password"
-              class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 pr-10 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+              class="ui-field pr-10"
               placeholder="Enter current password"
             />
             <button
@@ -282,7 +282,7 @@ function getInitials(name: string | undefined): string {
               v-model="newPassword"
               :type="showNewPassword ? 'text' : 'password'"
               autocomplete="new-password"
-              class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 pr-10 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+              class="ui-field pr-10"
               placeholder="Enter new password"
             />
             <button
@@ -303,10 +303,10 @@ function getInitials(name: string | undefined): string {
                 {{ passwordStrength.label }}
               </span>
             </div>
-            <div class="h-1.5 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden">
+            <div class="ui-meter-track h-1.5">
               <div
-                class="h-full rounded-full transition-all duration-300"
-                :class="passwordStrength.bgColor"
+                class="ui-meter-fill"
+                :class="passwordStrength.fillClass"
                 :style="{ width: passwordStrength.width }"
               />
             </div>
@@ -323,7 +323,7 @@ function getInitials(name: string | undefined): string {
             v-model="confirmPassword"
             type="password"
             autocomplete="new-password"
-            class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+            class="ui-field"
             placeholder="Confirm new password"
           />
           <p
@@ -345,7 +345,7 @@ function getInitials(name: string | undefined): string {
         <div class="flex items-center gap-3 pt-2">
           <button
             :disabled="isChangingPassword || !passwordsMatch || !currentPassword"
-            class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="ui-button ui-button-primary disabled:opacity-50 disabled:cursor-not-allowed"
             @click="handleChangePassword"
           >
             <Loader2 v-if="isChangingPassword" class="size-4 animate-spin" />
@@ -366,17 +366,17 @@ function getInitials(name: string | undefined): string {
           </Transition>
         </div>
 
-        <div v-if="passwordError" class="rounded-lg bg-danger-50 dark:bg-danger-950/40 border border-danger-200 dark:border-danger-900 px-4 py-3 text-sm text-danger-700 dark:text-danger-400">
+        <div v-if="passwordError" class="ui-alert ui-alert-danger">
           {{ passwordError }}
         </div>
       </div>
     </section>
 
     <!-- Session info -->
-    <section class="mt-8 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
-      <div class="px-4 sm:px-6 py-5 border-b border-surface-200 dark:border-surface-800">
+    <section class="ui-panel mt-8 overflow-hidden">
+      <div class="ui-panel-header px-4 sm:px-6 py-5">
         <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-10 shrink-0 rounded-lg bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400">
+          <div class="ui-icon-state flex items-center justify-center size-10 shrink-0 rounded-lg">
             <Calendar class="size-5" />
           </div>
           <div>

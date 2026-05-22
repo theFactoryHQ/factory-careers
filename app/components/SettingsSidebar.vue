@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Component } from 'vue'
 import {
   Building2, Users, UserCircle, ChevronLeft, Settings, Plug, Brain, ShieldCheck, Globe,
 } from 'lucide-vue-next'
@@ -6,7 +7,14 @@ import {
 const route = useRoute()
 const localePath = useLocalePath()
 
-const settingsNav = [
+const settingsNav: Array<{
+  label: string
+  description: string
+  to: string
+  icon: Component
+  exact: boolean
+  badge?: string
+}> = [
   {
     label: 'General',
     description: 'Organization profile',
@@ -68,7 +76,7 @@ function isActive(to: string, exact: boolean) {
 
 <template>
   <aside
-    class="flex h-full w-56 min-w-56 flex-col border-r border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-y-auto overscroll-contain"
+    class="ui-nav-shell flex h-full w-56 min-w-56 flex-col border-r overflow-y-auto overscroll-contain"
   >
     <!-- Header -->
     <div class="px-4 pt-5 pb-4">
@@ -80,7 +88,7 @@ function isActive(to: string, exact: boolean) {
         Back to jobs
       </NuxtLink>
       <div class="flex items-center gap-2.5">
-        <div class="flex items-center justify-center size-8 rounded-lg bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400">
+        <div class="ui-nav-icon flex items-center justify-center size-8 rounded-lg">
           <Settings class="size-4" />
         </div>
         <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">
@@ -96,16 +104,16 @@ function isActive(to: string, exact: boolean) {
           v-for="item in settingsNav"
           :key="item.to"
           :to="$localePath(item.to)"
-          class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all no-underline"
+          class="ui-nav-link group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm no-underline"
           :class="isActive(item.to, item.exact)
-            ? 'bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 font-medium'
-            : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800/60 hover:text-surface-900 dark:hover:text-surface-100'"
+            ? 'ui-nav-link-active'
+            : ''"
         >
           <div
-            class="flex items-center justify-center size-8 rounded-md transition-colors"
+            class="ui-nav-icon flex items-center justify-center size-8 rounded-md"
             :class="isActive(item.to, item.exact)
-              ? 'bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400'
-              : 'bg-surface-100 dark:bg-surface-800 text-surface-400 dark:text-surface-500 group-hover:text-surface-600 dark:group-hover:text-surface-300'"
+              ? 'ui-nav-icon-active'
+              : ''"
           >
             <component :is="item.icon" class="size-4" />
           </div>
@@ -114,7 +122,7 @@ function isActive(to: string, exact: boolean) {
               <span class="truncate">{{ item.label }}</span>
               <span
                 v-if="item.badge"
-                class="shrink-0 inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
+                class="ui-pill ui-pill-warning shrink-0 rounded-full px-1.5 py-0.5 text-[10px]"
               >
                 {{ item.badge }}
               </span>

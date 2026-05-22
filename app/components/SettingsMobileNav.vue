@@ -59,7 +59,7 @@ function isActive(to: string, exact: boolean) {
 </script>
 
 <template>
-  <div class="border-b border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-sm">
+  <div class="ui-nav-shell border-b shadow-sm">
     <!-- Back link + title -->
     <div class="flex items-center gap-3 px-4 pt-3 pb-2">
       <NuxtLink
@@ -80,10 +80,10 @@ function isActive(to: string, exact: boolean) {
         v-for="item in settingsNav"
         :key="item.to"
         :to="$localePath(item.to)"
-        class="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors no-underline shrink-0"
+        class="ui-nav-link flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium no-underline shrink-0"
         :class="isActive(item.to, item.exact)
-          ? 'bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300'
-          : 'text-surface-500 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800/60 hover:text-surface-900 dark:hover:text-surface-100'"
+          ? 'ui-nav-link-active'
+          : ''"
       >
         <component :is="item.icon" class="size-3.5" />
         {{ item.label }}
