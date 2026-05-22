@@ -262,8 +262,8 @@ export default defineNuxtConfig({
     // to eu-assets.i.posthog.com and everything else to eu.i.posthog.com).
     // Defining routeRules here would be shadowed by the server route, so we
     // intentionally do not declare them.
-    "/jobs": { isr: 3600 },
-    "/jobs/**": { isr: 3600 },
+    "/jobs": { isr: 86400 },      // Daily revalidation for public job board (very stable content)
+    "/jobs/**": { isr: 86400 },
     ...localizedPublicRouteRules,
   },
 

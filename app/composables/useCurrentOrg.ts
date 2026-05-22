@@ -2,7 +2,7 @@
  * Composable for managing the current user's organization context.
  * Provides org list, active org, and org switch/create actions.
  *
- * For session data, use `authClient.useSession(useFetch)` directly.
+ * For session data, use `useAuthSession()` (centralized + cached wrapper).
  * Must be called in `<script setup>` context.
  */
 export function useCurrentOrg() {

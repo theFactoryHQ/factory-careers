@@ -145,6 +145,14 @@ reqcore/
 
 ## Key Architectural Decisions
 
+### Performance & Caching Strategy (2026 refresh)
+- **Client SWR**: 45-second stale-while-revalidate on all major dashboard composables (`useDashboard`, `useJobs`, `useCandidates`, `useInterviews`, `useSourceTracking`, etc.) via `getCachedData`. Repeated navigations within an org are near-instant.
+- **Server SWR**: `defineCachedEventHandler` (30s, swr) on read-heavy endpoints such as `/api/dashboard/stats`.
+- **Public pages**: ISR (24h) on `/jobs/**` + Cloudflare edge caching.
+- **Middleware**: Centralized `useAuthSession()` to avoid duplicate session fetches.
+- **Prefetch**: `router.options.ts` with `linkPrefetch: 'hover'` + explicit intent in dashboard layout.
+- Result: Dashboard feels fast even on slower connections; public job board is highly cacheable.
+
 ### 1. Multi-Tenancy via Organization Plugin
 
 Every domain table (`job`, `candidate`, `application`, `document`) has an `organizationId` foreign key. Tenant isolation is enforced at the **application layer** — every database query MUST include an `organizationId` filter derived from `session.session.activeOrganizationId`.

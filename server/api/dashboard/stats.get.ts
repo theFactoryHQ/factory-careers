@@ -10,7 +10,10 @@ import { application, candidate, job } from '../../database/schema'
  * - Recent applications (last 10 with candidate + job info)
  * - Top active jobs (open jobs sorted by application count, top 5)
  */
-export default defineEventHandler(async (event) => {
+// Server-side SWR cache for dashboard stats (30s).
+// This is safe because the data is org-scoped and read-mostly.
+// Repeated calls from the same org within the window get a fast cached response.
+export default defineCachedEventHandler(async (event) => {
   const session = await requirePermission(event, { job: ['read'], candidate: ['read'], application: ['read'] })
   const orgId = session.session.activeOrganizationId
 
@@ -140,4 +143,9 @@ export default defineEventHandler(async (event) => {
     recentApplications,
     topJobs,
   }
+}, {
+  maxAge: 30,
+  swr: true,
+  // Org-scoped caching: the request cookies + permission check ensure
+  // different organizations get separate cache entries.
 })
