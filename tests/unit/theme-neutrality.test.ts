@@ -90,6 +90,17 @@ describe('brand-neutral theme variables', () => {
       '.ui-meter-label-danger',
       '.ui-meter-label-brand',
       '.ui-meter-label-success',
+      '.ui-portal-panel',
+      '.ui-portal-header',
+      '.ui-portal-body',
+      '.ui-portal-card',
+      '.ui-portal-pill',
+      '.ui-portal-action',
+      '.ui-portal-field',
+      '.ui-portal-empty-action',
+      '.ui-portal-alert-danger',
+      '.ui-portal-divider',
+      '.ui-portal-link',
       '.ui-action-bar',
       '.ui-avatar',
       '.ui-avatar-brand',
@@ -399,6 +410,26 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared UI recipes to application drawer portal surfaces', () => {
+    const source = readProjectFile('app/components/ApplicationDetailDrawer.vue')
+
+    for (const recipe of [
+      'ui-portal-panel',
+      'ui-portal-header',
+      'ui-portal-body',
+      'ui-portal-card',
+      'ui-portal-pill',
+      'ui-portal-action',
+      'ui-portal-field',
+      'ui-portal-empty-action',
+      'ui-portal-alert-danger',
+      'ui-portal-divider',
+      'ui-portal-link',
+    ]) {
+      expect(source, `application drawer should use ${recipe}`).toContain(recipe)
+    }
+  })
+
   it('applies shared UI recipes to AI settings surfaces', () => {
     const recipeUsage = [
       {
@@ -561,6 +592,26 @@ describe('brand-neutral theme variables', () => {
       for (const pattern of patterns) {
         expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
       }
+    }
+  })
+
+  it('keeps application drawer portal choices behind shared recipes', () => {
+    const source = readProjectFile('app/components/ApplicationDetailDrawer.vue')
+
+    for (const pattern of [
+      /border-l border-white\/12 bg-black text-white/,
+      /border-b border-white\/10 bg-white\/\[0\.035\]/,
+      /border border-white\/12 bg-white\/\[0\.025\]/,
+      /border border-white\/10 bg-white\/\[0\.04\]/,
+      /border border-danger-500\/45 bg-danger-500\/10/,
+      /border border-white\/16 bg-black/,
+      /border border-dashed border-white\/12 bg-black/,
+      /focus:ring-brand-500\/40/,
+      /placeholder:text-white\/34/,
+      /border-b border-white\/10/,
+      /text-brand-600 hover:text-brand-700 dark:text-brand-400/,
+    ]) {
+      expect(source, `application drawer should centralize ${pattern}`).not.toMatch(pattern)
     }
   })
 })

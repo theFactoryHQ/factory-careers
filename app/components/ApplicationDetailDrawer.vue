@@ -121,24 +121,24 @@ onUnmounted(() => {
       leave-to-class="translate-x-full"
     >
       <aside
-        class="factory-dashboard-portal fixed inset-y-0 right-0 z-[60] w-full max-w-2xl flex flex-col border-l border-white/12 bg-black text-white shadow-none"
+        class="factory-dashboard-portal ui-portal-panel fixed inset-y-0 right-0 z-[60] w-full max-w-2xl flex flex-col shadow-none"
         role="dialog"
         aria-modal="true"
         aria-label="Application detail"
       >
         <!-- Header -->
-        <header class="flex items-center justify-between gap-3 border-b border-white/10 bg-white/[0.035] px-5 py-4 shrink-0">
-          <span class="truncate text-sm font-semibold text-white">Application detail</span>
+        <header class="ui-portal-header flex items-center justify-between gap-3 px-5 py-4 shrink-0">
+          <span class="truncate text-sm font-semibold">Application detail</span>
           <div class="flex items-center gap-2 shrink-0">
             <NuxtLink
               :to="localePath(`/dashboard/applications/${applicationId}`)"
-              class="factory-toolbar-button inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-medium uppercase text-white/78 hover:text-white transition-colors"
+              class="factory-toolbar-button inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-medium uppercase"
             >
               <ExternalLink class="size-3.5" />
               Open full page
             </NuxtLink>
             <button
-              class="factory-toolbar-button p-1.5 text-white/58 hover:text-white transition-colors"
+              class="factory-toolbar-button p-1.5"
               @click="emit('close')"
             >
               <X class="size-4" />
@@ -147,7 +147,7 @@ onUnmounted(() => {
         </header>
 
         <!-- Scrollable body -->
-        <div class="flex-1 overflow-y-auto bg-black p-5 space-y-4">
+        <div class="ui-portal-body flex-1 overflow-y-auto p-5 space-y-4">
           <!-- Loading -->
           <div v-if="fetchStatus === 'pending'" class="text-center py-12 text-surface-400">
             Loading application…
@@ -156,14 +156,14 @@ onUnmounted(() => {
           <!-- Error -->
           <div
             v-else-if="error"
-            class="border border-danger-500/45 bg-danger-500/10 p-4 text-sm text-danger-200"
+            class="ui-portal-alert-danger p-4 text-sm"
           >
             {{ error.statusCode === 404 ? 'Application not found.' : 'Failed to load application.' }}
           </div>
 
           <template v-else-if="application">
             <!-- Header card -->
-            <div class="border border-white/12 bg-white/[0.025] p-5">
+            <div class="ui-portal-card p-5">
               <p class="mb-2 text-xs font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
                 Application Overview
               </p>
@@ -174,7 +174,7 @@ onUnmounted(() => {
                 <span class="text-surface-400">→</span>
                 <NuxtLink
                   :to="localePath(`/dashboard/jobs/${application.job.id}`)"
-                  class="text-xl text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 truncate transition-colors"
+                  class="ui-portal-link text-xl truncate"
                 >
                   {{ application.job.title }}
                 </NuxtLink>
@@ -193,14 +193,14 @@ onUnmounted(() => {
             </div>
 
             <!-- Quick actions -->
-            <div class="border border-white/12 bg-white/[0.025] p-3">
+            <div class="ui-portal-card p-3">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="inline-flex items-center border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold uppercase text-white/58">Quick actions</span>
+                <span class="ui-portal-pill">Quick actions</span>
                 <button
                   v-for="nextStatus in allowedTransitions"
                   :key="nextStatus"
                   :disabled="isTransitioning"
-                  class="inline-flex cursor-pointer items-center px-3.5 py-1.5 text-xs font-semibold uppercase transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="inline-flex cursor-pointer items-center px-3.5 py-1.5 text-xs font-semibold uppercase transition-all duration-150 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   :class="getApplicationTransitionButtonClass(nextStatus, 'factory')"
                   @click="handleTransition(nextStatus)"
                 >
@@ -211,7 +211,7 @@ onUnmounted(() => {
                   {{ getApplicationTransitionLabel(nextStatus) }}
                 </button>
                 <button
-                  class="inline-flex cursor-pointer items-center gap-1.5 border border-white/16 bg-black px-3.5 py-1.5 text-xs font-semibold uppercase text-white/80 hover:border-brand-500 hover:bg-brand-500/12 hover:text-white transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                  class="ui-portal-action inline-flex cursor-pointer items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold uppercase disabled:cursor-not-allowed disabled:opacity-50"
                   @click="showInterviewSidebar = true"
                 >
                   <Calendar class="size-3.5" />
@@ -223,7 +223,7 @@ onUnmounted(() => {
             <!-- Candidate & Job cards -->
             <div class="grid gap-4 sm:grid-cols-2">
               <!-- Candidate info -->
-              <div class="border border-white/12 bg-white/[0.025] p-5">
+              <div class="ui-portal-card p-5">
                 <div class="flex items-center gap-2 mb-3">
                   <User class="size-4 text-surface-500 dark:text-surface-400" />
                   <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Candidate</h3>
@@ -234,7 +234,7 @@ onUnmounted(() => {
                     <dd class="text-surface-700 dark:text-surface-200 font-medium">
                       <NuxtLink
                         :to="localePath(`/dashboard/candidates/${application.candidate.id}`)"
-                        class="text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
+                        class="ui-portal-link"
                       >
                         {{ formatCandidateName(application.candidate) }}
                       </NuxtLink>
@@ -246,7 +246,7 @@ onUnmounted(() => {
                       <a
                         :href="`mailto:${application.candidate.email}`"
                         target="_blank"
-                        class="hover:text-brand-600 dark:hover:text-brand-400 hover:underline cursor-pointer transition-colors"
+                        class="ui-portal-link"
                       >{{ application.candidate.email }}</a>
                     </dd>
                   </div>
@@ -258,7 +258,7 @@ onUnmounted(() => {
               </div>
 
               <!-- Job info -->
-              <div class="border border-white/12 bg-white/[0.025] p-5">
+              <div class="ui-portal-card p-5">
                 <div class="flex items-center gap-2 mb-3">
                   <Briefcase class="size-4 text-surface-500 dark:text-surface-400" />
                   <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Job</h3>
@@ -269,7 +269,7 @@ onUnmounted(() => {
                     <dd class="text-surface-700 dark:text-surface-200 font-medium">
                       <NuxtLink
                         :to="localePath(`/dashboard/jobs/${application.job.id}`)"
-                        class="text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
+                        class="ui-portal-link"
                       >
                         {{ application.job.title }}
                       </NuxtLink>
@@ -284,7 +284,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Application details -->
-            <div class="border border-white/12 bg-white/[0.025] p-5">
+            <div class="ui-portal-card p-5">
               <div class="flex items-center gap-2 mb-3">
                 <Hash class="size-4 text-surface-500 dark:text-surface-400" />
                 <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Details</h3>
@@ -320,7 +320,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Notes -->
-            <div class="border border-white/12 bg-white/[0.025] p-5">
+            <div class="ui-portal-card p-5">
               <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-2">
                   <MessageSquare class="size-4 text-surface-500 dark:text-surface-400" />
@@ -328,7 +328,7 @@ onUnmounted(() => {
                 </div>
                 <button
                   v-if="!isEditingNotes && application.notes"
-                  class="cursor-pointer text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors"
+                  class="ui-portal-link text-xs font-medium"
                   @click="startEditNotes"
                 >
                   Edit
@@ -341,7 +341,7 @@ onUnmounted(() => {
                   v-model="notesInput"
                   rows="4"
                   placeholder="Add notes about this application…"
-                  class="w-full border border-white/16 bg-black/45 px-3 py-2 text-sm text-white placeholder:text-white/34 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                  class="ui-portal-field"
                 />
                 <div class="flex items-center gap-2 mt-2">
                   <button
@@ -352,7 +352,7 @@ onUnmounted(() => {
                     {{ isSavingNotes ? 'Saving…' : 'Save' }}
                   </button>
                   <button
-                    class="factory-toolbar-button cursor-pointer border px-3 py-1.5 text-xs font-medium text-white/78 hover:text-white transition-colors"
+                    class="factory-toolbar-button cursor-pointer border px-3 py-1.5 text-xs font-medium"
                     @click="isEditingNotes = false"
                   >
                     Cancel
@@ -368,16 +368,16 @@ onUnmounted(() => {
               <button
                 v-else
                 type="button"
-                class="group flex w-full cursor-pointer items-center justify-between border border-dashed border-white/12 bg-black px-3 py-3 text-left text-sm text-surface-400 transition-colors hover:border-brand-500/70 hover:bg-brand-500/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                class="ui-portal-empty-action group flex w-full cursor-pointer items-center justify-between px-3 py-3 text-left text-sm"
                 @click="startEditNotes"
               >
                 <span class="italic">No notes yet.</span>
-                <span class="text-xs font-semibold uppercase text-brand-400 transition-colors group-hover:text-brand-300">Add Notes</span>
+                <span class="ui-portal-link text-xs font-semibold uppercase">Add Notes</span>
               </button>
             </div>
 
             <!-- Properties -->
-            <div class="border border-white/12 bg-white/[0.025] p-4">
+            <div class="ui-portal-card p-4">
               <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200 mb-2 px-2">Properties</h3>
               <PropertyBlock
                 entity-type="application"
@@ -391,7 +391,7 @@ onUnmounted(() => {
             <!-- Question Responses -->
             <div
               v-if="application.responses && application.responses.length > 0"
-              class="border border-white/12 bg-white/[0.025] p-5"
+              class="ui-portal-card p-5"
             >
               <div class="flex items-center gap-2 mb-3">
                 <FileText class="size-4 text-surface-500 dark:text-surface-400" />
@@ -403,7 +403,7 @@ onUnmounted(() => {
                 <div
                   v-for="response in application.responses"
                   :key="response.id"
-                  class="border-b border-white/10 pb-3 last:border-0 last:pb-0"
+                  class="ui-portal-divider pb-3 last:pb-0"
                 >
                   <dt class="text-xs font-medium text-surface-500 dark:text-surface-400 mb-0.5">
                     {{ response.question?.label ?? 'Unknown question' }}
