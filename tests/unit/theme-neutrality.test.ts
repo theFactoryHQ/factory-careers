@@ -801,6 +801,21 @@ describe('brand-neutral theme variables', () => {
         ],
       },
       {
+        path: 'app/components/ApplyToJobModal.vue',
+        recipes: [
+          'factory-dashboard-portal',
+          'ui-modal-backdrop',
+          'ui-modal-panel',
+          'ui-panel-header',
+          'ui-alert-danger',
+          'ui-empty-state',
+          'ui-list-row',
+          'ui-button-ghost',
+          'ui-icon-brand',
+          'ui-inline-link-brand',
+        ],
+      },
+      {
         path: 'app/components/FeedbackModal.vue',
         recipes: [
           'ui-modal-panel',
@@ -1118,6 +1133,35 @@ describe('brand-neutral theme variables', () => {
       'getApplicationTransitionLabel',
     ]) {
       expect(source, `candidate drawer should use ${recipe}`).toContain(recipe)
+    }
+  })
+
+  it('applies shared UI recipes to candidate detail drawer surfaces', () => {
+    const source = readProjectFile('app/components/CandidateDetailDrawer.vue')
+
+    for (const recipe of [
+      'factory-dashboard-portal',
+      'ui-modal-backdrop',
+      'ui-drawer-panel',
+      'ui-drawer-header',
+      'ui-drawer-tabs',
+      'ui-drawer-body',
+      'ui-tab',
+      'ui-tab-active',
+      'ui-tab-inactive',
+      'ui-panel',
+      'ui-empty-panel',
+      'ui-alert-danger',
+      'ui-button-secondary',
+      'ui-button-ghost',
+      'ui-icon-state',
+      'ui-icon-state-brand',
+      'ui-icon-danger',
+      'ui-inline-link-brand',
+      'ui-list-row',
+      'ui-selectable-panel',
+    ]) {
+      expect(source, `candidate detail drawer should use ${recipe}`).toContain(recipe)
     }
   })
 
@@ -1577,6 +1621,18 @@ describe('brand-neutral theme variables', () => {
         ],
       },
       {
+        path: 'app/components/ApplyToJobModal.vue',
+        patterns: [
+          /fixed inset-0 z-50 flex items-center justify-center/,
+          /absolute inset-0 bg-black\/50/,
+          /relative bg-white dark:bg-surface-900 rounded-xl shadow-xl/,
+          /flex items-center justify-between px-5 py-4 border-b border-surface-200 dark:border-surface-800/,
+          /rounded-lg border border-danger-200 bg-danger-50 dark:bg-danger-950/,
+          /w-full flex items-center justify-between rounded-lg px-3 py-2\.5 text-left hover:bg-surface-50 dark:hover:bg-surface-800/,
+          /text-brand-600 dark:text-brand-400/,
+        ],
+      },
+      {
         path: 'app/components/FeedbackModal.vue',
         patterns: [
           /bg-white dark:bg-surface-900 rounded-xl/,
@@ -1701,6 +1757,27 @@ describe('brand-neutral theme variables', () => {
       /focus:ring-brand-500/,
     ]) {
       expect(source, `candidate drawer should centralize ${pattern}`).not.toMatch(pattern)
+    }
+  })
+
+  it('keeps candidate detail drawer surface choices behind shared recipes', () => {
+    const source = readProjectFile('app/components/CandidateDetailDrawer.vue')
+
+    for (const pattern of [
+      /fixed inset-0 z-\[55\] bg-surface-900\/40/,
+      /fixed inset-y-0 right-0 z-\[60\] w-full max-w-2xl flex flex-col bg-white dark:bg-surface-900 shadow-2xl border-l border-surface-200 dark:border-surface-800/,
+      /flex items-center justify-between gap-3 px-5 py-4 border-b border-surface-200 dark:border-surface-800 shrink-0/,
+      /rounded-lg border border-danger-200 bg-danger-50/,
+      /rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+      /border-b border-surface-200 dark:border-surface-800/,
+      /border-brand-600 text-brand-600/,
+      /inline-flex items-center gap-1\.5 rounded-lg border border-surface-300 dark:border-surface-700/,
+      /hover:border-brand-400 dark:hover:border-brand-600 hover:bg-brand-50/,
+      /w-full rounded-lg border border-surface-200 dark:border-surface-800/,
+      /text-danger-500 dark:text-danger-400/,
+      /rounded-lg p-1\.5 text-surface-400 hover:text-brand-600/,
+    ]) {
+      expect(source, `candidate detail drawer should centralize ${pattern}`).not.toMatch(pattern)
     }
   })
 

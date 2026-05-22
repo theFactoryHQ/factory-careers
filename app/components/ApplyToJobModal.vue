@@ -45,17 +45,19 @@ async function applyToJob(jobId: string) {
 
 <template>
   <Teleport to="body">
-    <div class="fixed inset-0 z-50 flex items-center justify-center">
-      <div class="absolute inset-0 bg-black/50" @click="emit('close')" />
-      <div class="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+    <div
+      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+      @click.self="emit('close')"
+    >
+      <div class="ui-modal-panel relative w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden">
         <!-- Header -->
-        <div class="flex items-center justify-between px-5 py-4 border-b border-surface-200 dark:border-surface-800">
+        <div class="ui-panel-header flex items-center justify-between px-5 py-4">
           <div class="flex items-center gap-2">
-            <Briefcase class="size-5 text-brand-600 dark:text-brand-400" />
+            <Briefcase class="ui-icon-brand size-5" />
             <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-50">Apply to Job</h3>
           </div>
           <button
-            class="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 transition-colors"
+            class="ui-button ui-button-ghost p-1"
             @click="emit('close')"
           >
             <X class="size-5" />
@@ -63,17 +65,17 @@ async function applyToJob(jobId: string) {
         </div>
 
         <!-- Error -->
-        <div v-if="applyError" class="mx-5 mt-3 rounded-lg border border-danger-200 bg-danger-50 dark:bg-danger-950 p-3 text-sm text-danger-700 dark:text-danger-400">
+        <div v-if="applyError" class="ui-alert ui-alert-danger mx-5 mt-3">
           {{ applyError }}
         </div>
 
         <!-- Job list -->
         <div class="flex-1 overflow-y-auto px-5 py-3">
-          <div v-if="jobFetchStatus === 'pending'" class="text-center py-6 text-surface-400 text-sm">
+          <div v-if="jobFetchStatus === 'pending'" class="ui-empty-state py-6 text-sm">
             Loading jobs…
           </div>
 
-          <div v-else-if="jobs.length === 0" class="text-center py-6 text-surface-400 text-sm">
+          <div v-else-if="jobs.length === 0" class="ui-empty-state py-6 text-sm">
             No open jobs available.
           </div>
 
@@ -82,7 +84,7 @@ async function applyToJob(jobId: string) {
               v-for="j in jobs"
               :key="j.id"
               :disabled="isApplying"
-              class="w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-left hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors disabled:opacity-50"
+              class="ui-list-row w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-left disabled:opacity-50"
               @click="applyToJob(j.id)"
             >
               <div class="min-w-0">
@@ -91,7 +93,7 @@ async function applyToJob(jobId: string) {
                 </p>
                 <p v-if="j.location" class="text-xs text-surface-400 truncate">{{ j.location }}</p>
               </div>
-              <span class="text-xs text-brand-600 dark:text-brand-400 font-medium shrink-0 ml-2">
+              <span class="ui-inline-link-brand text-xs font-medium shrink-0 ml-2">
                 Apply
               </span>
             </button>
