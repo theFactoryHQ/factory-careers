@@ -203,15 +203,16 @@ jobs:
             local label="$1" url="$2" expected="$3"
             local actual
             actual="$(curl -s -o /dev/null -w "%{http_code}" "$url")"
-            if [ "$actual" = "$expected" ]; then
+            # Support multiple acceptable codes for home (some setups redirect root → /jobs)
+            if [[ ",$expected," == *",$actual,"* ]]; then
               echo "✅ $label → $actual"
             else
-              echo "❌ $label → expected $expected, got $actual"
+              echo "❌ $label → expected one of [$expected], got $actual"
               fail=1
             fi
           }
 
-          check "Home page"               "http://localhost:3000"                "200"
+          check "Home page"               "http://localhost:3000"                "200,301,302"
           check "Sign-in page"            "http://localhost:3000/auth/sign-in"   "200"
           check "Sign-up page"            "http://localhost:3000/auth/sign-up"   "200"
           check "Public job board"        "http://localhost:3000/jobs"           "200"
