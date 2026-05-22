@@ -401,120 +401,6 @@
     border-color: transparent;
   }
 
-  .ui-portal-panel {
-    border-left: 1px solid var(--ui-border-strong, var(--color-surface-800));
-    background-color: var(--ui-bg, #000000);
-    color: var(--ui-text, #ffffff);
-  }
-
-  .ui-portal-header {
-    border-bottom: 1px solid var(--ui-border, rgb(255 255 255 / 0.1));
-    background-color: color-mix(in srgb, var(--ui-text, #ffffff) 3.5%, transparent);
-  }
-
-  .ui-portal-body {
-    background-color: var(--ui-bg, #000000);
-  }
-
-  .ui-portal-card {
-    border: 1px solid var(--ui-border, rgb(255 255 255 / 0.1));
-    background-color: color-mix(in srgb, var(--ui-text, #ffffff) 2.5%, transparent);
-    color: var(--ui-text, #ffffff);
-  }
-
-  .ui-portal-pill {
-    display: inline-flex;
-    align-items: center;
-    border: 1px solid var(--ui-border, rgb(255 255 255 / 0.1));
-    background-color: color-mix(in srgb, var(--ui-text, #ffffff) 4%, transparent);
-    padding: 0.25rem 0.625rem;
-    color: var(--ui-muted, rgb(255 255 255 / 0.58));
-    font-size: 0.6875rem;
-    font-weight: 600;
-    line-height: 1rem;
-    text-transform: uppercase;
-  }
-
-  .ui-portal-action {
-    border: 1px solid var(--ui-border-strong, rgb(255 255 255 / 0.16));
-    background-color: var(--ui-bg, #000000);
-    color: color-mix(in srgb, var(--ui-text, #ffffff) 80%, transparent);
-    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease;
-  }
-
-  .ui-portal-action:hover:not(:disabled) {
-    border-color: color-mix(in srgb, var(--color-brand-500) 80%, transparent);
-    background-color: color-mix(in srgb, var(--color-brand-500) 12%, transparent);
-    color: var(--ui-text, #ffffff);
-  }
-
-  .ui-portal-action:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-500) 22%, transparent);
-  }
-
-  .ui-portal-field {
-    width: 100%;
-    border: 1px solid var(--ui-border-strong, rgb(255 255 255 / 0.16));
-    background-color: color-mix(in srgb, var(--ui-bg, #000000) 55%, transparent);
-    padding: 0.5rem 0.75rem;
-    color: var(--ui-text, #ffffff);
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    outline: none;
-    transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
-  }
-
-  .ui-portal-field::placeholder {
-    color: var(--ui-faint, rgb(255 255 255 / 0.38));
-  }
-
-  .ui-portal-field:focus {
-    border-color: color-mix(in srgb, var(--color-brand-500) 75%, transparent);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-500) 20%, transparent);
-  }
-
-  .ui-portal-empty-action {
-    border: 1px dashed var(--ui-border, rgb(255 255 255 / 0.1));
-    background-color: var(--ui-bg, #000000);
-    color: var(--ui-muted, rgb(255 255 255 / 0.58));
-    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
-  }
-
-  .ui-portal-empty-action:hover,
-  .ui-portal-empty-action:focus {
-    border-color: color-mix(in srgb, var(--color-brand-500) 70%, transparent);
-    background-color: color-mix(in srgb, var(--color-brand-500) 10%, transparent);
-    color: var(--ui-text, #ffffff);
-    outline: none;
-  }
-
-  .ui-portal-alert-danger {
-    border: 1px solid color-mix(in srgb, var(--color-danger-500) 45%, transparent);
-    background-color: color-mix(in srgb, var(--color-danger-500) 10%, transparent);
-    color: var(--color-danger-200);
-  }
-
-  .ui-portal-divider {
-    border-bottom: 1px solid var(--ui-border, rgb(255 255 255 / 0.1));
-  }
-
-  .ui-portal-divider:last-child {
-    border-bottom: 0;
-  }
-
-  .ui-portal-link {
-    color: var(--color-brand-400);
-    cursor: pointer;
-    text-decoration: none;
-    transition: color 150ms ease, text-decoration-color 150ms ease;
-  }
-
-  .ui-portal-link:hover {
-    color: var(--color-brand-300);
-    text-decoration-line: underline;
-  }
-
   .ui-alert {
     border: 1px solid var(--color-surface-200);
     border-radius: 0.5rem;
@@ -2490,8 +2376,7 @@
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
     .ui-field,
-    .ui-field-control,
-    .ui-portal-field
+    .ui-field-control
   ) {
     border-color: var(--ui-border-strong) !important;
     background-color: var(--ui-panel) !important;
@@ -2500,8 +2385,7 @@
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
     .ui-field,
-    .ui-field-control,
-    .ui-portal-field
+    .ui-field-control
   )::placeholder {
     color: var(--ui-faint) !important;
   }
@@ -3096,12 +2980,6 @@
     .ui-filter-drawer,
     .ui-filter-section,
     .ui-filter-count,
-    .ui-portal-card,
-    .ui-portal-pill,
-    .ui-portal-action,
-    .ui-portal-field,
-    .ui-portal-empty-action,
-    .ui-portal-alert-danger,
     .ui-alert,
     .ui-button,
     .ui-field,
