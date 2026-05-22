@@ -1243,6 +1243,38 @@ describe('brand-neutral theme variables', () => {
     )
   })
 
+  it('fully scopes Settings panel state recipes to the Factory dashboard shell', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+    const factoryScopedSelector = (recipe: string) =>
+      new RegExp(`:where\\(\\.factory-dashboard-shell, \\.factory-dashboard-portal\\)[^{]*${recipe.replace('.', '\\.')}[^{]*\\{`)
+
+    for (const recipe of [
+      '.ui-alert-info',
+      '.ui-button-primary',
+      '.ui-button-danger',
+      '.ui-button-success',
+      '.ui-icon-state-danger',
+      '.ui-icon-state-success',
+      '.ui-icon-state-warning',
+      '.ui-icon-state-info',
+      '.ui-pill-success',
+      '.ui-pill-warning',
+      '.ui-pill-danger',
+      '.ui-pill-info',
+      '.ui-avatar-brand',
+      '.ui-status-dot-success',
+      '.ui-radio-brand',
+      '.ui-meter-fill-danger',
+      '.ui-meter-fill-warning',
+      '.ui-meter-fill-brand',
+      '.ui-meter-fill-success',
+    ]) {
+      expect(css, `Factory shell should explicitly adapt Settings state recipe ${recipe}`).toMatch(
+        factoryScopedSelector(recipe),
+      )
+    }
+  })
+
   it('applies shared UI recipes to the settings route boundary', () => {
     const source = readProjectFile('app/pages/dashboard/settings.vue')
 
