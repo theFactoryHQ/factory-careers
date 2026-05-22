@@ -17,6 +17,8 @@ describe('security issue regressions: permissions', () => {
     expect(member.statements.aiConfig ?? []).toHaveLength(0)
 
     expect(member.statements.scoring).toEqual(expect.arrayContaining(['create', 'read']))
+    expect(member.statements.scoring).not.toContain('update')
+    expect(member.statements.scoring).not.toContain('delete')
   })
 })
 
