@@ -940,6 +940,14 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared UI recipes to the settings route boundary', () => {
+    const source = readProjectFile('app/pages/dashboard/settings.vue')
+
+    for (const recipe of ['ui-panel', 'ui-panel-danger', 'ui-icon-danger', 'ui-button', 'ui-button-primary']) {
+      expect(source, `settings route boundary should use ${recipe}`).toContain(recipe)
+    }
+  })
+
   it('adapts neutral UI recipes inside the Factory dashboard shell', () => {
     const css = readProjectFile('app/assets/css/main.css')
 
@@ -1075,6 +1083,15 @@ describe('brand-neutral theme variables', () => {
           /ui-icon-state ui-icon-state-brand size-9 rounded-xl/,
         ],
       },
+      {
+        path: 'app/pages/dashboard/settings.vue',
+        patterns: [
+          /rounded-xl border border-danger-200 dark:border-danger-900 bg-danger-50\/50 dark:bg-danger-950\/30/,
+          /text-danger-500/,
+          /text-danger-700 dark:text-danger-300/,
+          /inline-flex items-center gap-2 rounded-lg bg-brand-600/,
+        ],
+      },
     ]
 
     for (const { path, patterns } of disallowedPatternsByFile) {
@@ -1118,6 +1135,15 @@ describe('brand-neutral theme variables', () => {
           /hover:bg-surface-50 dark:hover:bg-surface-800\/50/,
           /absolute inset-y-0 right-0 flex items-center px-3 text-surface-400 hover:text-surface-600 dark:hover:text-surface-200/,
           /cursor-pointer hover:text-surface-700 dark:hover:text-surface-200/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings.vue',
+        patterns: [
+          /rounded-xl border border-danger-200 dark:border-danger-900 bg-danger-50\/50 dark:bg-danger-950\/30/,
+          /text-danger-500/,
+          /text-danger-700 dark:text-danger-300/,
+          /inline-flex items-center gap-2 rounded-lg bg-brand-600/,
         ],
       },
       {
