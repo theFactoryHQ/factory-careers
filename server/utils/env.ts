@@ -244,11 +244,11 @@ export const envSchema = z
       .pipe(z.string().min(1))
       .optional()
       .default("careers@thefactoryhq.com"),
-    /** Microsoft 365 group/calendar email used for organization-wide interview scheduling. */
+    /** Shared mailbox or user mailbox email used for organization-wide interview scheduling. */
     FACTORY_CAREERS_CALENDAR_EMAIL: emptyToUndefined
       .pipe(z.string().email())
       .optional()
-      .default("careers@thefactoryhq.com"),
+      .default("interviews@thefactoryhq.com"),
     /** Optional Microsoft Graph group ID for FACTORY_CAREERS_CALENDAR_EMAIL. */
     FACTORY_CAREERS_CALENDAR_GROUP_ID: emptyToUndefined
       .pipe(z.string().min(1))

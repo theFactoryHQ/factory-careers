@@ -22,7 +22,7 @@ const isMicrosoftCalendar = computed(() => selectedCalendarProvider.value === 'm
 const isAdminManagedCalendar = computed(() => calendarStatus.value.managedByAdmin)
 const calendarProviderName = computed(() => isMicrosoftCalendar.value ? 'Microsoft Calendar' : 'Google Calendar')
 const calendarSyncLabel = computed(() => isAdminManagedCalendar.value ? 'Mailbox sync' : (isMicrosoftCalendar.value ? 'Event sync' : 'Two-way sync'))
-const sharedCalendarEmail = computed(() => calendarStatus.value.expectedAccountEmail || 'careers@thefactoryhq.com')
+const sharedCalendarEmail = computed(() => calendarStatus.value.expectedAccountEmail || 'interviews@thefactoryhq.com')
 const calendarDestinations = computed(() => calendarStatus.value.destinations ?? [])
 const destinationTypeLabel = (type: string) => type === 'shared_mailbox' ? 'Shared mailbox' : 'User mailbox'
 
@@ -45,7 +45,7 @@ onMounted(() => {
     errorMessage.value = `Failed to connect ${calendarProviderName.value}. Please try again.`
   }
   else if (error === 'account_mismatch' || error === 'calendar_not_accessible') {
-    errorMessage.value = `Could not access ${sharedCalendarEmail.value}. Sign in with a Factory Microsoft account that belongs to that Microsoft 365 group.`
+    errorMessage.value = `Could not access ${sharedCalendarEmail.value}. Sign in with a Factory Microsoft account that can access that mailbox.`
   }
 
   // Clear query params after reading
@@ -323,7 +323,7 @@ async function handleDisconnect() {
           <div class="space-y-3">
             <p class="text-sm text-surface-600 dark:text-surface-400">
               Connect with a Factory Microsoft account that can access {{ sharedCalendarEmail }}.
-              Interview schedules will sync to that shared Microsoft 365 group calendar.
+              Interview schedules will sync to that shared interview mailbox calendar.
               Candidates will see the event in their calendars, with
               attendee notifications handled by the calendar provider.
             </p>

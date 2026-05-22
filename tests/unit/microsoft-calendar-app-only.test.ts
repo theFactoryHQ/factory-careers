@@ -34,7 +34,7 @@ describe('Microsoft Calendar app-only configuration', () => {
       MICROSOFT_CALENDAR_CLIENT_SECRET: 'client-secret',
       MICROSOFT_CALENDAR_TENANT_ID: 'tenant-id',
       FACTORY_CAREERS_CALENDAR_SYNC_SHARED: 'true',
-      FACTORY_CAREERS_CALENDAR_EMAIL: 'careers@thefactoryhq.com',
+      FACTORY_CAREERS_CALENDAR_EMAIL: 'interviews@thefactoryhq.com',
       FACTORY_CAREERS_CALENDAR_USER_EMAILS: 'Doug@thefactoryhq.com, recruiting@thefactoryhq.com',
       FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS: 'true',
     })
@@ -69,9 +69,9 @@ describe('Microsoft Calendar app-only configuration', () => {
 describe('Microsoft Calendar destinations', () => {
   it('deduplicates destinations and uses the shared mailbox as the primary inviter', () => {
     const destinations = resolveMicrosoftCalendarDestinations({
-      sharedCalendarEmail: 'careers@thefactoryhq.com',
+      sharedCalendarEmail: 'interviews@thefactoryhq.com',
       syncSharedCalendar: true,
-      configuredUserEmails: ['Doug@thefactoryhq.com', 'careers@thefactoryhq.com'],
+      configuredUserEmails: ['Doug@thefactoryhq.com', 'interviews@thefactoryhq.com'],
       syncInterviewers: true,
       interviewerEmails: ['doug@thefactoryhq.com', 'external@example.com', 'Recruiting@thefactoryhq.com'],
       allowedDomains: ['thefactoryhq.com'],
@@ -80,7 +80,7 @@ describe('Microsoft Calendar destinations', () => {
     expect(destinations).toEqual([
       {
         type: 'shared_mailbox',
-        email: 'careers@thefactoryhq.com',
+        email: 'interviews@thefactoryhq.com',
         isPrimary: true,
       },
       {
@@ -98,7 +98,7 @@ describe('Microsoft Calendar destinations', () => {
 
   it('uses the first user mailbox as primary when shared calendar sync is disabled', () => {
     const destinations = resolveMicrosoftCalendarDestinations({
-      sharedCalendarEmail: 'careers@thefactoryhq.com',
+      sharedCalendarEmail: 'interviews@thefactoryhq.com',
       syncSharedCalendar: false,
       configuredUserEmails: ['recruiting@thefactoryhq.com', 'doug@thefactoryhq.com'],
       syncInterviewers: false,
@@ -125,7 +125,7 @@ describe('Microsoft Calendar app-only event creation', () => {
       MICROSOFT_CALENDAR_CLIENT_ID: 'client-id',
       MICROSOFT_CALENDAR_CLIENT_SECRET: 'client-secret',
       MICROSOFT_CALENDAR_TENANT_ID: 'tenant-id',
-      FACTORY_CAREERS_CALENDAR_EMAIL: 'careers@thefactoryhq.com',
+      FACTORY_CAREERS_CALENDAR_EMAIL: 'interviews@thefactoryhq.com',
       FACTORY_CAREERS_CALENDAR_SYNC_SHARED: 'true',
       FACTORY_CAREERS_CALENDAR_USER_EMAILS: 'doug@thefactoryhq.com',
       FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS: 'true',
@@ -167,14 +167,14 @@ describe('Microsoft Calendar app-only event creation', () => {
       isPrimary: result.isPrimary,
       success: result.success,
     }))).toEqual([
-      { email: 'careers@thefactoryhq.com', isPrimary: true, success: true },
+      { email: 'interviews@thefactoryhq.com', isPrimary: true, success: true },
       { email: 'doug@thefactoryhq.com', isPrimary: false, success: true },
       { email: 'recruiting@thefactoryhq.com', isPrimary: false, success: true },
     ])
 
     const eventCalls = fetchMock.mock.calls.filter(([url]) => String(url).includes('graph.microsoft.com'))
     expect(eventCalls.map(([url]) => String(url))).toEqual([
-      'https://graph.microsoft.com/v1.0/users/careers%40thefactoryhq.com/calendar/events',
+      'https://graph.microsoft.com/v1.0/users/interviews%40thefactoryhq.com/calendar/events',
       'https://graph.microsoft.com/v1.0/users/doug%40thefactoryhq.com/calendar/events',
       'https://graph.microsoft.com/v1.0/users/recruiting%40thefactoryhq.com/calendar/events',
     ])
