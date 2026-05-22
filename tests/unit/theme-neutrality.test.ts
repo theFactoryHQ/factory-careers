@@ -48,6 +48,7 @@ describe('brand-neutral theme variables', () => {
       '.ui-button-ghost-danger',
       '.ui-button-success',
       '.ui-field',
+      '.ui-field-invalid',
       '.ui-checkbox',
       '.ui-checkbox-brand',
       '.ui-checkbox-warning',
@@ -366,6 +367,33 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared UI recipes to job settings surfaces', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/settings.vue')
+
+    for (const recipe of [
+      'ui-panel',
+      'ui-panel-brand',
+      'ui-panel-danger',
+      'ui-panel-muted',
+      'ui-alert-danger',
+      'ui-field',
+      'ui-field-invalid',
+      'ui-checkbox',
+      'ui-checkbox-brand',
+      'ui-button-primary',
+      'ui-button-secondary',
+      'ui-button-danger',
+      'ui-button-danger-outline',
+      'ui-button-ghost-danger',
+      'ui-feedback-danger',
+      'ui-icon-brand',
+      'ui-inline-link-brand',
+      'ui-required-marker',
+    ]) {
+      expect(source, `job settings should use ${recipe}`).toContain(recipe)
+    }
+  })
+
   it('applies shared UI recipes to settings surfaces', () => {
     const recipeUsage = [
       {
@@ -387,6 +415,75 @@ describe('brand-neutral theme variables', () => {
       {
         path: 'app/pages/dashboard/settings/sso.vue',
         recipes: ['ui-panel', 'ui-panel-muted', 'ui-panel-divider', 'ui-empty-panel', 'ui-field', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline', 'ui-button-ghost-danger', 'ui-pill-warning', 'ui-pill-success', 'ui-code', 'ui-step-marker', 'ui-required-marker', 'ui-icon-success', 'ui-inline-link-brand'],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
+  it('applies shared UI recipes to AI settings surfaces', () => {
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/settings/ai/index.vue',
+        recipes: [
+          'ui-alert-warning',
+          'ui-button-primary',
+          'ui-button-secondary',
+          'ui-button-danger-outline',
+          'ui-empty-panel',
+          'ui-feedback-success',
+          'ui-feedback-danger',
+          'ui-icon-state-brand',
+          'ui-panel',
+          'ui-pill',
+          'ui-pill-brand',
+          'ui-pill-warning',
+          'ui-pill-danger',
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/ai/new.vue',
+        recipes: ['ui-alert-warning'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/ai/[id].vue',
+        recipes: ['ui-alert-warning', 'ui-alert-danger', 'ui-button-danger'],
+      },
+      {
+        path: 'app/components/AiConfigForm.vue',
+        recipes: [
+          'ui-action-bar',
+          'ui-alert-info',
+          'ui-button-primary',
+          'ui-button-secondary',
+          'ui-checkbox',
+          'ui-checkbox-brand',
+          'ui-checkbox-warning',
+          'ui-disclosure-trigger',
+          'ui-feedback-success',
+          'ui-feedback-danger',
+          'ui-field',
+          'ui-field-icon-button',
+          'ui-icon-brand',
+          'ui-icon-state-brand',
+          'ui-icon-warning',
+          'ui-inline-link',
+          'ui-inline-link-brand',
+          'ui-panel',
+          'ui-panel-header',
+          'ui-pill',
+          'ui-pill-brand',
+          'ui-pill-info',
+          'ui-pill-success',
+          'ui-selectable-panel',
+          'ui-selectable-panel-active',
+        ],
       },
     ]
 
@@ -440,6 +537,43 @@ describe('brand-neutral theme variables', () => {
       'ui-list-divider',
     ]) {
       expect(source, `members settings should use ${recipe}`).toContain(recipe)
+    }
+  })
+
+  it('keeps Settings and member surface choices behind shared recipes', () => {
+    const paths = [
+      'app/layouts/settings.vue',
+      'app/components/AiConfigForm.vue',
+      'app/components/SettingsMobileNav.vue',
+      'app/pages/dashboard/settings/index.vue',
+      'app/pages/dashboard/settings/account.vue',
+      'app/pages/dashboard/settings/localization.vue',
+      'app/pages/dashboard/settings/integrations.vue',
+      'app/pages/dashboard/settings/sso.vue',
+      'app/pages/dashboard/settings/members.vue',
+      'app/pages/dashboard/settings/ai/index.vue',
+      'app/pages/dashboard/settings/ai/new.vue',
+      'app/pages/dashboard/settings/ai/[id].vue',
+    ]
+    const disallowedPatterns = [
+      /rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+      /rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950/,
+      /rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50\/50 dark:bg-brand-950\/30/,
+      /w-full rounded-lg border(?: border-surface-300 dark:border-surface-700)? px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800/,
+      /size-4 rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500/,
+      /inline-flex(?: cursor-pointer)? items-center gap-[\w.[\]-]+ rounded-lg bg-brand-600/,
+      /inline-flex(?: cursor-pointer)? items-center gap-[\w.[\]-]+ rounded-lg bg-danger-600/,
+      /focus:ring-brand-500/,
+      /text-brand-600 dark:text-brand-400/,
+      /text-danger-500/,
+    ]
+
+    for (const path of paths) {
+      const source = readProjectFile(path)
+
+      for (const pattern of disallowedPatterns) {
+        expect(source, `${path} should not keep inline theme pattern ${pattern}`).not.toMatch(pattern)
+      }
     }
   })
 
@@ -932,6 +1066,30 @@ describe('brand-neutral theme variables', () => {
       /rounded-lg bg-surface-900 dark:bg-surface-950/,
     ]) {
       expect(updates, `updates should centralize ${pattern}`).not.toMatch(pattern)
+    }
+  })
+
+  it('keeps job settings surface choices behind shared recipes', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/settings.vue')
+
+    for (const pattern of [
+      /rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6/,
+      /rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950/,
+      /w-full rounded-lg border(?: border-surface-300 dark:border-surface-700)? px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800/,
+      /size-4 rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500/,
+      /rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50\/50 dark:bg-brand-950\/30/,
+      /flex-1 rounded-lg border border-brand-200 dark:border-brand-800 bg-white dark:bg-surface-900/,
+      /inline-flex items-center gap-1\.5 rounded-lg bg-brand-600/,
+      /inline-flex cursor-pointer items-center gap-2 rounded-lg bg-brand-600/,
+      /rounded-xl border border-danger-200 dark:border-danger-800\/60 bg-danger-50\/50 dark:bg-danger-950\/20/,
+      /rounded-lg border border-danger-300 dark:border-danger-700 bg-white dark:bg-surface-900/,
+      /inline-flex cursor-pointer items-center gap-1\.5 rounded-lg bg-danger-600/,
+      /inline-flex cursor-pointer items-center gap-1\.5 rounded-lg border border-surface-300 dark:border-surface-700/,
+      /text-danger-500/,
+      /text-brand-600 dark:text-brand-400/,
+      /focus:ring-brand-500/,
+    ]) {
+      expect(source, `job settings should centralize ${pattern}`).not.toMatch(pattern)
     }
   })
 })
