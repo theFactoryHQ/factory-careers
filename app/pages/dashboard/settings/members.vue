@@ -783,7 +783,7 @@ onUnmounted(() => {
         enter-from-class="opacity-0 -translate-y-2"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-if="showCreateLinkForm" class="ui-panel-muted rounded-none border-x-0 border-t-0 px-4 sm:px-6 py-4">
+        <div v-if="showCreateLinkForm" class="ui-panel-muted ui-panel-subsection px-4 sm:px-6 py-4">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-sm font-medium text-surface-900 dark:text-surface-100">New invite link</h3>
             <button
@@ -858,7 +858,7 @@ onUnmounted(() => {
         enter-from-class="opacity-0"
         leave-to-class="opacity-0"
       >
-        <div v-if="createLinkSuccess" class="ui-alert ui-alert-success rounded-none border-x-0 border-t-0 px-4 sm:px-6 py-2 flex items-center gap-2">
+        <div v-if="createLinkSuccess" class="ui-alert ui-alert-success ui-panel-subsection px-4 sm:px-6 py-2 flex items-center gap-2">
           <Check class="size-4" />
           {{ createLinkSuccess }}
         </div>
@@ -966,7 +966,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Join request action error -->
-      <div v-if="joinRequestActionError" class="ui-alert ui-alert-danger rounded-none border-x-0 border-t-0 px-4 sm:px-6 py-2 flex items-center justify-between">
+      <div v-if="joinRequestActionError" class="ui-alert ui-alert-danger ui-panel-subsection px-4 sm:px-6 py-2 flex items-center justify-between">
         <span>{{ joinRequestActionError }}</span>
         <button class="ui-button ui-button-ghost p-1" @click="joinRequestActionError = ''">
           <X class="size-4" />
@@ -1159,10 +1159,10 @@ onUnmounted(() => {
             >
               <div
                 v-if="activeDropdown === m.id"
-                class="ui-panel absolute right-0 top-full mt-1 w-48 shadow-lg z-50 overflow-hidden"
+                class="ui-panel ui-floating-menu absolute right-0 top-full mt-1 w-48 z-50 overflow-hidden"
               >
                 <!-- Role options -->
-                <div class="py-1 border-b border-surface-100 dark:border-surface-800">
+                <div class="ui-menu-divider py-1">
                   <div class="px-3 py-1.5 text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-wider">
                     Change role
                   </div>
@@ -1208,7 +1208,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Show more button -->
-        <div v-if="hasMoreMembers" class="px-4 sm:px-6 py-3 text-center border-t border-surface-100 dark:border-surface-800">
+        <div v-if="hasMoreMembers" class="ui-panel-divider px-4 sm:px-6 py-3 text-center">
           <button
             class="ui-inline-link ui-inline-link-brand text-sm font-medium"
             @click="showMoreMembers"
@@ -1228,7 +1228,7 @@ onUnmounted(() => {
         enter-from-class="opacity-0"
         leave-to-class="opacity-0"
       >
-        <div v-if="memberToRemove" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm" @click.self="memberToRemove = null">
+        <div v-if="memberToRemove" class="ui-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center" @click.self="memberToRemove = null">
           <Transition
             enter-active-class="transition-all duration-200"
             leave-active-class="transition-all duration-150"

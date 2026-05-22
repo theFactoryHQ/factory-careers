@@ -113,7 +113,7 @@ const previewDateFormatted = computed(() => {
                 v-model="localNameFormat"
                 type="radio"
                 value="first_last"
-                class="mt-0.5 accent-brand-600"
+                class="ui-radio-brand mt-0.5"
                 :disabled="!canUpdateOrg"
               />
               <div>
@@ -131,7 +131,7 @@ const previewDateFormatted = computed(() => {
                 v-model="localNameFormat"
                 type="radio"
                 value="last_first"
-                class="mt-0.5 accent-brand-600"
+                class="ui-radio-brand mt-0.5"
                 :disabled="!canUpdateOrg"
               />
               <div>
@@ -161,7 +161,7 @@ const previewDateFormatted = computed(() => {
                 v-model="localDateFormat"
                 type="radio"
                 value="mdy"
-                class="mt-0.5 accent-brand-600"
+                class="ui-radio-brand mt-0.5"
                 :disabled="!canUpdateOrg"
               />
               <div>
@@ -179,7 +179,7 @@ const previewDateFormatted = computed(() => {
                 v-model="localDateFormat"
                 type="radio"
                 value="dmy"
-                class="mt-0.5 accent-brand-600"
+                class="ui-radio-brand mt-0.5"
                 :disabled="!canUpdateOrg"
               />
               <div>
@@ -197,7 +197,7 @@ const previewDateFormatted = computed(() => {
                 v-model="localDateFormat"
                 type="radio"
                 value="ymd"
-                class="mt-0.5 accent-brand-600"
+                class="ui-radio-brand mt-0.5"
                 :disabled="!canUpdateOrg"
               />
               <div>

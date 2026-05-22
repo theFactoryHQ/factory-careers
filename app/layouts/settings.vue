@@ -17,7 +17,7 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
 </script>
 
 <template>
-  <div class="factory-dashboard-shell flex min-h-screen flex-col bg-black text-white">
+  <div class="factory-dashboard-shell flex min-h-screen flex-col">
     <!-- AppTopBar: desktop only -->
     <AppTopBar class="hidden lg:block" />
     <AppToasts />
@@ -29,7 +29,7 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
     <!-- Demo mode banner -->
     <div
       v-if="isDemo"
-      class="mx-auto mb-6 flex max-w-5xl items-center gap-3 border border-brand-500/35 bg-brand-500/10 px-4 py-2.5 text-sm text-white/74"
+      class="ui-demo-banner mx-auto mb-6 flex max-w-5xl items-center gap-3 px-4 py-2.5 text-sm"
     >
       <Eye class="size-4 shrink-0" />
       <span>
@@ -38,7 +38,7 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
           href="https://github.com/caffeinebounce/factory-careers"
           target="_blank"
           rel="noopener noreferrer"
-          class="ml-1 font-semibold text-brand-300 underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"
+          class="ui-demo-link ml-1 font-semibold"
         >View source →</a>
       </span>
     </div>

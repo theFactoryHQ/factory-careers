@@ -169,7 +169,7 @@ async function handleDeleteOrg() {
               v-model="orgSlug"
               type="text"
               :disabled="!canUpdateOrg"
-              class="flex-1 bg-transparent px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+              class="ui-field-control flex-1 px-3 py-2 disabled:opacity-60 disabled:cursor-not-allowed"
               placeholder="my-company"
             />
           </div>

@@ -268,15 +268,15 @@ describe('brand-neutral theme variables', () => {
     const recipeUsage = [
       {
         path: 'app/pages/dashboard/settings/index.vue',
-        recipes: ['ui-panel', 'ui-panel-header', 'ui-field', 'ui-field-addon', 'ui-feedback-success', 'ui-feedback-danger', 'ui-alert-danger', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
+        recipes: ['ui-panel', 'ui-panel-header', 'ui-field', 'ui-field-control', 'ui-field-addon', 'ui-feedback-success', 'ui-feedback-danger', 'ui-alert-danger', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
       },
       {
         path: 'app/pages/dashboard/settings/account.vue',
-        recipes: ['ui-panel', 'ui-panel-header', 'ui-field', 'ui-alert-danger', 'ui-button-primary', 'ui-meter-track', 'ui-meter-fill', 'ui-meter-label-danger', 'ui-meter-label-brand', 'ui-meter-label-success', 'ui-avatar', 'ui-avatar-brand', 'ui-feedback-success', 'ui-feedback-danger', 'ui-inline-link'],
+        recipes: ['ui-panel', 'ui-panel-header', 'ui-field', 'ui-field-icon-button', 'ui-alert-danger', 'ui-button-primary', 'ui-meter-track', 'ui-meter-fill', 'ui-meter-label-danger', 'ui-meter-label-warning', 'ui-meter-label-brand', 'ui-meter-label-success', 'ui-avatar', 'ui-avatar-brand', 'ui-feedback-success', 'ui-feedback-danger', 'ui-inline-link'],
       },
       {
         path: 'app/pages/dashboard/settings/localization.vue',
-        recipes: ['ui-panel', 'ui-panel-header', 'ui-panel-muted', 'ui-selectable-panel', 'ui-alert-danger', 'ui-button-primary'],
+        recipes: ['ui-panel', 'ui-panel-header', 'ui-panel-muted', 'ui-selectable-panel', 'ui-radio-brand', 'ui-alert-danger', 'ui-button-primary'],
       },
       {
         path: 'app/pages/dashboard/settings/integrations.vue',
@@ -284,7 +284,7 @@ describe('brand-neutral theme variables', () => {
       },
       {
         path: 'app/pages/dashboard/settings/sso.vue',
-        recipes: ['ui-panel', 'ui-panel-muted', 'ui-empty-panel', 'ui-field', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline', 'ui-button-ghost-danger', 'ui-pill-warning', 'ui-pill-success', 'ui-code', 'ui-step-marker', 'ui-required-marker', 'ui-icon-success', 'ui-inline-link-brand'],
+        recipes: ['ui-panel', 'ui-panel-muted', 'ui-panel-divider', 'ui-empty-panel', 'ui-field', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline', 'ui-button-ghost-danger', 'ui-pill-warning', 'ui-pill-success', 'ui-code', 'ui-step-marker', 'ui-required-marker', 'ui-icon-success', 'ui-inline-link-brand'],
       },
     ]
 
@@ -313,7 +313,12 @@ describe('brand-neutral theme variables', () => {
       'ui-button-danger-outline',
       'ui-button-success',
       'ui-empty-state',
+      'ui-floating-menu',
+      'ui-menu-divider',
       'ui-modal-panel',
+      'ui-modal-backdrop',
+      'ui-panel-divider',
+      'ui-panel-subsection',
       'ui-pill',
       'ui-pill-brand',
       'ui-pill-warning',
@@ -545,8 +550,19 @@ describe('brand-neutral theme variables', () => {
 
     const sidebar = readProjectFile('app/components/SettingsSidebar.vue')
 
-    for (const recipe of ['ui-nav-icon', 'ui-nav-icon-active', 'ui-nav-description', 'ui-nav-description-active', 'ui-pill-warning', 'ui-inline-link']) {
+    for (const recipe of ['ui-nav-shell-side', 'ui-nav-icon', 'ui-nav-icon-active', 'ui-nav-description', 'ui-nav-description-active', 'ui-pill-warning', 'ui-inline-link']) {
       expect(sidebar, `SettingsSidebar should use ${recipe}`).toContain(recipe)
+    }
+
+    const mobileNav = readProjectFile('app/components/SettingsMobileNav.vue')
+    expect(mobileNav, 'SettingsMobileNav should use ui-nav-shell-top').toContain('ui-nav-shell-top')
+  })
+
+  it('applies shared UI recipes to settings layout surfaces', () => {
+    const source = readProjectFile('app/layouts/settings.vue')
+
+    for (const recipe of ['factory-dashboard-shell', 'ui-demo-banner', 'ui-demo-link']) {
+      expect(source, `settings layout should use ${recipe}`).toContain(recipe)
     }
   })
 
@@ -556,6 +572,21 @@ describe('brand-neutral theme variables', () => {
         path: 'app/components/SettingsSidebar.vue',
         patterns: [
           /text-brand-500\/70 dark:text-brand-400\/60/,
+          /ui-nav-shell flex h-full w-56 min-w-56 flex-col border-r/,
+        ],
+      },
+      {
+        path: 'app/components/SettingsMobileNav.vue',
+        patterns: [
+          /ui-nav-shell border-b shadow-sm/,
+        ],
+      },
+      {
+        path: 'app/layouts/settings.vue',
+        patterns: [
+          /factory-dashboard-shell flex min-h-screen flex-col bg-black text-white/,
+          /border border-brand-500\/35 bg-brand-500\/10/,
+          /text-brand-300 underline decoration-brand-400\/40/,
         ],
       },
       {
@@ -568,6 +599,7 @@ describe('brand-neutral theme variables', () => {
       {
         path: 'app/pages/dashboard/settings/index.vue',
         patterns: [
+          /class="flex-1 bg-transparent px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none/,
           /focus-within:border-brand-500/,
           /bg-surface-50 dark:bg-surface-800\/50 border-r/,
           /text-danger-500/,
@@ -579,6 +611,14 @@ describe('brand-neutral theme variables', () => {
           /ring-2 ring-surface-(?:100|200)/,
           /bg-brand-100 dark:bg-brand-900/,
           /textColor: 'text-(?:danger|brand|success)-500'/,
+          /textColor: 'text-warning-500'/,
+          /hover:text-surface-600 dark:hover:text-surface-300/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/localization.vue',
+        patterns: [
+          /accent-brand-600/,
         ],
       },
       {
@@ -592,6 +632,7 @@ describe('brand-neutral theme variables', () => {
         path: 'app/pages/dashboard/settings/sso.vue',
         patterns: [
           /hover:text-danger-500/,
+          /border-t border-surface-100 dark:border-surface-800/,
         ],
       },
       {
@@ -600,6 +641,11 @@ describe('brand-neutral theme variables', () => {
           /ring-2 ring-surface-100/,
           /bg-brand-100 dark:bg-brand-900/,
           /divide-y divide-surface-100/,
+          /rounded-none border-x-0 border-t-0/,
+          /border-b border-surface-100 dark:border-surface-800/,
+          /border-t border-surface-100 dark:border-surface-800/,
+          /bg-black\/50 backdrop-blur-sm/,
+          /ui-panel absolute right-0 top-full mt-1 w-48 shadow-lg/,
         ],
       },
     ]

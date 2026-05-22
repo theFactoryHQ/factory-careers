@@ -77,7 +77,7 @@ const passwordStrength = computed(() => {
   if (/[^A-Za-z0-9]/.test(pw)) score++
 
   if (score <= 2) return { label: 'Weak', fillClass: 'ui-meter-fill-danger', textColor: 'ui-meter-label-danger', width: '40%' }
-  if (score <= 3) return { label: 'Fair', fillClass: 'ui-meter-fill-warning', textColor: 'text-warning-500', width: '60%' }
+  if (score <= 3) return { label: 'Fair', fillClass: 'ui-meter-fill-warning', textColor: 'ui-meter-label-warning', width: '60%' }
   if (score <= 4) return { label: 'Good', fillClass: 'ui-meter-fill-brand', textColor: 'ui-meter-label-brand', width: '80%' }
   return { label: 'Strong', fillClass: 'ui-meter-fill-success', textColor: 'ui-meter-label-success', width: '100%' }
 })
@@ -262,7 +262,7 @@ function getInitials(name: string | undefined): string {
             />
             <button
               type="button"
-              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
+              class="ui-field-icon-button absolute right-2.5 top-1/2 -translate-y-1/2"
               @click="showCurrentPassword = !showCurrentPassword"
             >
               <EyeOff v-if="showCurrentPassword" class="size-4" />
@@ -287,7 +287,7 @@ function getInitials(name: string | undefined): string {
             />
             <button
               type="button"
-              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
+              class="ui-field-icon-button absolute right-2.5 top-1/2 -translate-y-1/2"
               @click="showNewPassword = !showNewPassword"
             >
               <EyeOff v-if="showNewPassword" class="size-4" />

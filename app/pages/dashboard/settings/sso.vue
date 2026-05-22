@@ -423,7 +423,7 @@ async function copyCallbackUrl(providerId: string) {
           </form>
 
           <!-- Setup guide -->
-          <div class="mt-6 border-t border-surface-100 dark:border-surface-800 pt-4">
+          <div class="ui-panel-divider mt-6 pt-4">
             <h4 class="text-xs font-semibold text-surface-600 dark:text-surface-400 uppercase tracking-wider mb-2">
               Quick setup guide
             </h4>

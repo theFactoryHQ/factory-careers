@@ -59,7 +59,7 @@ function isActive(to: string, exact: boolean) {
 </script>
 
 <template>
-  <div class="ui-nav-shell border-b shadow-sm">
+  <div class="ui-nav-shell ui-nav-shell-top">
     <!-- Back link + title -->
     <div class="flex items-center gap-3 px-4 pt-3 pb-2">
       <NuxtLink

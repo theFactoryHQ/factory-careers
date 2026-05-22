@@ -76,7 +76,7 @@ function isActive(to: string, exact: boolean) {
 
 <template>
   <aside
-    class="ui-nav-shell flex h-full w-56 min-w-56 flex-col border-r overflow-y-auto overscroll-contain"
+    class="ui-nav-shell ui-nav-shell-side flex h-full w-56 min-w-56 flex-col overflow-y-auto overscroll-contain"
   >
     <!-- Header -->
     <div class="px-4 pt-5 pb-4">
