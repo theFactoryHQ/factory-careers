@@ -116,9 +116,9 @@ async function handleDeleteOrg() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl">
+  <div class="ui-settings-page">
     <!-- Page title -->
-    <div class="mb-6">
+    <div class="ui-settings-page-header">
       <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">
         General
       </h1>
@@ -128,8 +128,8 @@ async function handleDeleteOrg() {
     </div>
 
     <!-- Organization profile -->
-    <section class="ui-panel ui-dashboard-panel overflow-hidden">
-      <div class="ui-panel-header ui-dashboard-panel-header px-4 sm:px-6 py-5">
+    <section class="ui-panel ui-dashboard-panel ui-settings-panel">
+      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
           <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-10 shrink-0">
             <Building2 class="size-5" />
@@ -141,7 +141,7 @@ async function handleDeleteOrg() {
         </div>
       </div>
 
-      <div class="px-4 sm:px-6 py-5 space-y-5">
+      <div class="ui-settings-panel-body space-y-5">
         <div>
           <label for="org-name" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
             Organization name
@@ -212,8 +212,8 @@ async function handleDeleteOrg() {
     </section>
 
     <!-- Danger zone -->
-    <section v-if="canDeleteOrg" class="ui-panel ui-dashboard-panel ui-panel-danger mt-8 overflow-hidden">
-      <div class="ui-panel-header ui-dashboard-panel-header px-4 sm:px-6 py-5">
+    <section v-if="canDeleteOrg" class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-spaced ui-panel-danger">
+      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
           <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-danger ui-icon-tile size-10 shrink-0">
             <AlertTriangle class="size-5" />
@@ -225,7 +225,7 @@ async function handleDeleteOrg() {
         </div>
       </div>
 
-      <div class="px-4 sm:px-6 py-5">
+      <div class="ui-settings-panel-body">
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Delete organization</h3>

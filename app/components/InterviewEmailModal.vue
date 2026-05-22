@@ -154,14 +154,14 @@ const canSend = computed(() => {
 
 <template>
   <Teleport to="body">
-    <div class="fixed inset-0 z-50 flex items-center justify-center">
-      <!-- Backdrop -->
-      <div class="absolute inset-0 bg-black/40 backdrop-blur-[2px]" @click="emit('close')" />
-
+    <div
+      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+      @click.self="emit('close')"
+    >
       <!-- Modal -->
-      <div class="ui-modal-panel relative w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="ui-modal-panel relative w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <!-- Header -->
-        <div class="shrink-0 border-b border-surface-200/80 dark:border-surface-800/60 px-4 sm:px-6 py-4">
+        <div class="ui-panel-header shrink-0 px-4 sm:px-6 py-4">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
               <div class="ui-icon-state ui-icon-state-brand size-9 rounded-lg">
@@ -177,7 +177,7 @@ const canSend = computed(() => {
               </div>
             </div>
             <button
-              class="rounded-lg p-1.5 text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:text-surface-300 dark:hover:bg-surface-800 transition-all cursor-pointer"
+              class="ui-button ui-button-ghost p-1.5"
               @click="emit('close')"
             >
               <X class="size-5" />
@@ -199,7 +199,7 @@ const canSend = computed(() => {
         <!-- Main content -->
         <template v-else>
           <!-- Tabs -->
-          <div class="shrink-0 border-b border-surface-200/80 dark:border-surface-800/60 px-4 sm:px-6 overflow-x-auto scrollbar-none">
+          <div class="ui-panel-header shrink-0 px-4 sm:px-6 overflow-x-auto scrollbar-none">
             <div class="flex gap-1">
               <button
                 v-for="tab in ([
@@ -208,10 +208,10 @@ const canSend = computed(() => {
                   { id: 'manage' as Tab, label: 'Manage Templates', icon: Sparkles },
                 ])"
                 :key="tab.id"
-                class="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-all cursor-pointer -mb-px whitespace-nowrap shrink-0"
+                class="ui-tab flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium cursor-pointer -mb-px whitespace-nowrap shrink-0"
                 :class="activeTab === tab.id
-                  ? 'border-brand-500 text-brand-700 dark:text-brand-300'
-                  : 'border-transparent text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'"
+                  ? 'ui-tab-active'
+                  : 'ui-tab-inactive'"
                 @click="activeTab = tab.id"
               >
                 <component :is="tab.icon" class="size-3.5" />
@@ -237,15 +237,15 @@ const canSend = computed(() => {
                 v-for="t in allTemplates"
                 :key="t.id"
                 type="button"
-                class="w-full text-left rounded-xl border-2 p-4 transition-all duration-150 cursor-pointer"
+                class="ui-selectable-panel w-full p-4 text-left"
                 :class="selectedTemplateId === t.id
-                  ? 'border-brand-500 bg-brand-50/50 dark:border-brand-400 dark:bg-brand-950/20 shadow-sm'
-                  : 'border-surface-200 dark:border-surface-700/80 hover:border-surface-300 dark:hover:border-surface-600 hover:bg-surface-50 dark:hover:bg-surface-800/40'"
+                  ? 'ui-selectable-panel-active'
+                  : ''"
                 @click="selectedTemplateId = t.id"
               >
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-sm font-semibold text-surface-800 dark:text-surface-200">{{ t.name }}</span>
-                  <span v-if="t.isSystem" class="text-[10px] uppercase tracking-wider font-semibold text-surface-400 bg-surface-100 dark:bg-surface-800 px-1.5 py-0.5 rounded">
+                  <span v-if="t.isSystem" class="ui-pill text-[10px] uppercase font-semibold px-1.5 py-0.5">
                     Built-in
                   </span>
                 </div>
@@ -258,7 +258,7 @@ const canSend = computed(() => {
               <div v-if="selectedTemplate" class="mt-4">
                 <button
                   type="button"
-                  class="flex items-center gap-1.5 text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors cursor-pointer"
+                  class="ui-disclosure-trigger inline-flex items-center gap-1.5 text-sm font-medium cursor-pointer"
                   @click="showPreview = !showPreview"
                 >
                   <Eye class="size-3.5" />
@@ -316,7 +316,7 @@ const canSend = computed(() => {
                   <span
                     v-for="v in AVAILABLE_VARIABLES"
                     :key="v.key"
-                    class="inline-flex items-center gap-1 rounded-md bg-brand-50 dark:bg-brand-950/30 px-2 py-1 text-[11px] font-mono text-brand-700 dark:text-brand-300"
+                    class="ui-code inline-flex items-center gap-1 px-2 py-1 text-[11px]"
                     :title="v.desc"
                   >
                     {{ v.key }}
@@ -328,7 +328,7 @@ const canSend = computed(() => {
               <div v-if="customSubject || customBody">
                 <button
                   type="button"
-                  class="flex items-center gap-1.5 text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors cursor-pointer"
+                  class="ui-disclosure-trigger inline-flex items-center gap-1.5 text-sm font-medium cursor-pointer"
                   @click="showPreview = !showPreview"
                 >
                   <Eye class="size-3.5" />
@@ -414,7 +414,7 @@ const canSend = computed(() => {
                 <div
                   v-for="t in templates"
                   :key="t.id"
-                  class="ui-panel flex items-center justify-between p-3.5"
+                  class="ui-panel ui-list-row flex items-center justify-between p-3.5"
                 >
                   <div class="min-w-0 flex-1">
                     <p class="text-sm font-semibold text-surface-800 dark:text-surface-200 truncate">{{ t.name }}</p>
@@ -422,7 +422,7 @@ const canSend = computed(() => {
                   </div>
                   <button
                     type="button"
-                    class="shrink-0 ml-3 rounded-lg p-1.5 text-surface-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:text-danger-400 dark:hover:bg-danger-950/40 transition-all cursor-pointer"
+                    class="ui-button ui-button-ghost ui-button-ghost-danger shrink-0 ml-3 p-1.5"
                     @click="handleDeleteTemplate(t.id)"
                   >
                     <Trash2 class="size-3.5" />
@@ -442,7 +442,7 @@ const canSend = computed(() => {
                   <span
                     v-for="v in AVAILABLE_VARIABLES"
                     :key="v.key"
-                    class="inline-flex items-center gap-1 rounded-md bg-brand-50 dark:bg-brand-950/30 px-2 py-1 text-[11px] font-mono text-brand-700 dark:text-brand-300"
+                    class="ui-code inline-flex items-center gap-1 px-2 py-1 text-[11px]"
                     :title="v.desc"
                   >
                     {{ v.key }}
@@ -453,11 +453,11 @@ const canSend = computed(() => {
           </div>
 
           <!-- Footer -->
-          <div v-if="activeTab !== 'manage'" class="shrink-0 border-t border-surface-200/80 dark:border-surface-800/60 bg-surface-50/80 dark:bg-surface-950/60 px-6 py-4">
+          <div v-if="activeTab !== 'manage'" class="ui-panel-footer shrink-0 px-6 py-4">
             <div class="flex items-center gap-3">
               <button
                 type="button"
-                class="ui-button ui-button-secondary flex-1 rounded-xl"
+                class="ui-button ui-button-secondary flex-1"
                 @click="emit('close')"
               >
                 Cancel
@@ -465,7 +465,7 @@ const canSend = computed(() => {
               <button
                 type="button"
                 :disabled="!canSend || isSending"
-                class="ui-button ui-button-primary flex-1 rounded-xl font-semibold shadow-sm shadow-brand-500/20"
+                class="ui-button ui-button-primary flex-1 font-semibold"
                 @click="handleSend"
               >
                 <Send class="size-4" />

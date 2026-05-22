@@ -14,18 +14,19 @@ function closeModal() {
 
 <template>
   <Teleport to="body">
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-black/50" @click="closeModal" />
-
-      <div class="relative w-full max-w-md rounded-xl border border-surface-200 bg-white shadow-xl dark:border-surface-800 dark:bg-surface-900">
-        <div class="flex items-center justify-between border-b border-surface-200 px-5 py-4 dark:border-surface-800">
+    <div
+      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+      @click.self="closeModal"
+    >
+      <div class="ui-modal-panel relative w-full max-w-md">
+        <div class="ui-panel-header flex items-center justify-between px-5 py-4">
           <div class="flex items-center gap-2">
             <Eye class="size-5 text-brand-600 dark:text-brand-400" />
             <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-50">You're in demo mode</h3>
           </div>
 
           <button
-            class="cursor-pointer text-surface-400 transition-colors hover:text-surface-600 dark:hover:text-surface-200"
+            class="ui-button ui-button-ghost p-1.5"
             @click="closeModal"
           >
             <X class="size-5" />
@@ -45,10 +46,10 @@ function closeModal() {
             <!-- Cloud hosted option -->
             <NuxtLink
               :to="$localePath('/auth/fresh-signup')"
-              class="flex items-start gap-3 rounded-xl border border-brand-200 dark:border-brand-800 bg-gradient-to-r from-brand-50 to-violet-50 dark:from-brand-950/30 dark:to-violet-950/30 px-4 py-3 transition-all hover:shadow-md hover:border-brand-300 dark:hover:border-brand-700 no-underline group"
+              class="ui-selectable-panel ui-selectable-panel-active flex items-start gap-3 px-4 py-3 no-underline group"
               @click="closeModal"
             >
-              <div class="flex items-center justify-center size-9 rounded-lg bg-gradient-to-br from-brand-500 to-violet-600 text-white shrink-0 shadow-sm mt-0.5">
+              <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-9 shrink-0 mt-0.5">
                 <Cloud class="size-4" />
               </div>
               <div>
@@ -62,9 +63,9 @@ function closeModal() {
               href="https://github.com/caffeinebounce/factory-careers"
               target="_blank"
               rel="noopener noreferrer"
-              class="flex items-start gap-3 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-3 transition-all hover:shadow-md hover:border-surface-300 dark:hover:border-surface-600 hover:bg-surface-50/50 dark:hover:bg-surface-800/40 no-underline group"
+              class="ui-selectable-panel flex items-start gap-3 px-4 py-3 no-underline group"
             >
-              <div class="flex items-center justify-center size-9 rounded-lg bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 shrink-0 shadow-sm mt-0.5">
+              <div class="ui-icon-state flex items-center justify-center size-9 shrink-0 mt-0.5">
                 <Rocket class="size-4" />
               </div>
               <div>
@@ -78,7 +79,7 @@ function closeModal() {
             href="https://github.com/caffeinebounce/factory-careers"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-1.5 text-xs text-surface-400 dark:text-surface-500 hover:text-surface-600 dark:hover:text-surface-300 transition-colors no-underline"
+            class="ui-inline-link ui-inline-link-muted inline-flex items-center gap-1.5 text-xs no-underline"
           >
             <Github class="size-3.5" />
             View on GitHub

@@ -697,9 +697,12 @@ function formatFileSize(bytes: number | null | undefined): string {
 
           <!-- Document delete confirmation dialog -->
           <Teleport to="body">
-            <div v-if="showDocDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center">
-              <div class="absolute inset-0 bg-black/50" @click="showDocDeleteConfirm = null" />
-              <div class="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
+            <div
+              v-if="showDocDeleteConfirm"
+              class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+              @click.self="showDocDeleteConfirm = null"
+            >
+              <div class="ui-modal-panel relative w-full max-w-sm p-6">
                 <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-50 mb-2">Delete Document</h3>
                 <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
                   Are you sure you want to delete this document? This action cannot be undone.
@@ -707,14 +710,14 @@ function formatFileSize(bytes: number | null | undefined): string {
                 <div class="flex justify-end gap-2">
                   <button
                     :disabled="isDeletingDoc"
-                    class="rounded-lg border border-surface-300 dark:border-surface-600 px-3 py-1.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+                    class="ui-button ui-button-secondary px-3 py-1.5 text-sm"
                     @click="showDocDeleteConfirm = null"
                   >
                     Cancel
                   </button>
                   <button
                     :disabled="isDeletingDoc"
-                    class="rounded-lg bg-danger-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-danger-700 disabled:opacity-50 transition-colors"
+                    class="ui-button ui-button-danger px-3 py-1.5 text-sm disabled:opacity-50"
                     @click="handleDeleteDoc(showDocDeleteConfirm!)"
                   >
                     {{ isDeletingDoc ? 'Deleting…' : 'Delete' }}
@@ -860,9 +863,12 @@ function formatFileSize(bytes: number | null | undefined): string {
 
       <!-- Delete confirmation dialog -->
       <Teleport to="body">
-        <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center">
-          <div class="absolute inset-0 bg-black/50" @click="showDeleteConfirm = false" />
-          <div class="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
+        <div
+          v-if="showDeleteConfirm"
+          class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+          @click.self="showDeleteConfirm = false"
+        >
+          <div class="ui-modal-panel relative w-full max-w-sm p-6">
             <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-50 mb-2">Delete Candidate</h3>
             <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
               Are you sure you want to delete <strong>{{ formatCandidateName(candidate) }}</strong>?
@@ -871,14 +877,14 @@ function formatFileSize(bytes: number | null | undefined): string {
             <div class="flex justify-end gap-2">
               <button
                 :disabled="isDeleting"
-                class="rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+                class="ui-button ui-button-secondary px-3 py-1.5 text-sm"
                 @click="showDeleteConfirm = false"
               >
                 Cancel
               </button>
               <button
                 :disabled="isDeleting"
-                class="rounded-lg bg-danger-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-danger-700 disabled:opacity-50 transition-colors"
+                class="ui-button ui-button-danger px-3 py-1.5 text-sm disabled:opacity-50"
                 @click="handleDelete"
               >
                 {{ isDeleting ? 'Deleting…' : 'Delete' }}

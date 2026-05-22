@@ -2367,8 +2367,11 @@ function closeDocPreview() {
 
     <!-- Document Preview Modal -->
     <Teleport :to="teleportTarget">
-      <div v-if="showDocPreview" class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
-        <div class="ui-modal-backdrop absolute inset-0" @click="closeDocPreview" />
+      <div
+        v-if="showDocPreview"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center px-4 py-6"
+        @click.self="closeDocPreview"
+      >
         <div class="ui-modal-panel relative flex flex-col w-full max-w-4xl" style="height: calc(100vh - 3rem);">
           <!-- Header -->
           <div class="ui-panel-header flex items-center justify-between px-5 py-3 shrink-0">

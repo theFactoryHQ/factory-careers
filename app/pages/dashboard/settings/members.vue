@@ -538,9 +538,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl">
+  <div class="ui-settings-page ui-settings-page-wide">
     <!-- Page title -->
-    <div class="mb-6">
+    <div class="ui-settings-page-header">
       <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">
         Members
       </h1>
@@ -550,7 +550,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Invite member section -->
-    <section v-if="canInvite" class="mb-6">
+    <section v-if="canInvite" class="ui-settings-panel-list">
       <button
         v-if="!showInviteForm"
         class="ui-button ui-button-primary py-2.5"
@@ -566,7 +566,7 @@ onUnmounted(() => {
         enter-from-class="opacity-0 -translate-y-2"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-if="showInviteForm" class="ui-panel ui-dashboard-panel p-5">
+        <div v-if="showInviteForm" class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-content">
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
               <UserPlus class="ui-icon-brand size-5" />
@@ -656,8 +656,8 @@ onUnmounted(() => {
     </Transition>
 
     <!-- Pending invitations -->
-    <section v-if="canInvite && (isLoadingInvitations || pendingInvitations.length > 0)" class="ui-panel ui-dashboard-panel mb-6 overflow-hidden">
-      <div class="ui-panel-header ui-dashboard-panel-header px-4 sm:px-6 py-4">
+    <section v-if="canInvite && (isLoadingInvitations || pendingInvitations.length > 0)" class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-list">
+      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header ui-settings-panel-header-sm">
         <div class="flex items-center gap-3">
           <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-warning ui-icon-tile size-8">
             <Clock class="size-4" />
@@ -751,8 +751,8 @@ onUnmounted(() => {
     </section>
 
     <!-- Invite links section -->
-    <section v-if="canInvite" class="ui-panel ui-dashboard-panel mb-6 overflow-hidden">
-      <div class="ui-panel-header ui-dashboard-panel-header px-4 sm:px-6 py-4">
+    <section v-if="canInvite" class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-list">
+      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header ui-settings-panel-header-sm">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-3 min-w-0">
             <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-8 shrink-0">
@@ -783,7 +783,7 @@ onUnmounted(() => {
         enter-from-class="opacity-0 -translate-y-2"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-if="showCreateLinkForm" class="ui-panel-muted ui-panel-subsection px-4 sm:px-6 py-4">
+        <div v-if="showCreateLinkForm" class="ui-panel-muted ui-panel-subsection ui-settings-panel-body">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-sm font-medium text-surface-900 dark:text-surface-100">New invite link</h3>
             <button
@@ -950,8 +950,8 @@ onUnmounted(() => {
     </section>
 
     <!-- Join requests section -->
-    <section v-if="canInvite && (isLoadingJoinRequests || joinRequests.length > 0)" class="ui-panel ui-dashboard-panel mb-6 overflow-hidden">
-      <div class="ui-panel-header ui-dashboard-panel-header px-4 sm:px-6 py-4">
+    <section v-if="canInvite && (isLoadingJoinRequests || joinRequests.length > 0)" class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-list">
+      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header ui-settings-panel-header-sm">
         <div class="flex items-center gap-3">
           <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-warning ui-icon-tile size-8">
             <UserCheck class="size-4" />
@@ -1051,8 +1051,8 @@ onUnmounted(() => {
     </section>
 
     <!-- Members list -->
-    <section class="ui-panel ui-dashboard-panel">
-      <div class="ui-panel-header ui-dashboard-panel-header px-4 sm:px-6 py-5">
+    <section class="ui-panel ui-dashboard-panel ui-settings-panel">
+      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="flex items-center gap-3">
             <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-10 shrink-0">

@@ -217,10 +217,10 @@ function resetAndClose() {
 
 <template>
   <Teleport to="body">
-    <div class="fixed inset-0 z-50 flex items-start justify-center p-4 sm:items-center">
-      <!-- Backdrop -->
-      <div class="absolute inset-0 bg-black/50" @click="resetAndClose" />
-
+    <div
+      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+      @click.self="resetAndClose"
+    >
       <!-- Modal -->
       <div class="ui-modal-panel relative w-full max-w-lg flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden">
         <!-- Header -->

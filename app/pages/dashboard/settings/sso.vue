@@ -154,8 +154,8 @@ async function copyCallbackUrl(providerId: string) {
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl">
-    <div class="mb-6">
+  <div class="ui-settings-page ui-settings-page-wide">
+    <div class="ui-settings-page-header">
       <div class="flex items-center gap-2">
         <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-100">
           Single Sign-On
@@ -212,7 +212,7 @@ async function copyCallbackUrl(providerId: string) {
         <div
           v-for="provider in providers"
           :key="provider.id"
-          class="ui-panel ui-dashboard-panel p-4"
+          class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-content"
         >
           <div class="flex items-start justify-between gap-4">
             <div class="flex-1 min-w-0">
@@ -327,7 +327,7 @@ async function copyCallbackUrl(providerId: string) {
 
       <!-- Registration form -->
       <Transition name="fade">
-        <div v-if="showForm" class="ui-panel ui-dashboard-panel p-5">
+        <div v-if="showForm" class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-content">
           <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
             Register OIDC SSO Provider
           </h3>

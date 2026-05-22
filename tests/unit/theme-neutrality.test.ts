@@ -867,6 +867,186 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared Factory portal recipes to remaining dashboard modal surfaces', () => {
+    const recipeUsage = [
+      {
+        path: 'app/components/InterviewEmailModal.vue',
+        recipes: [
+          'factory-dashboard-portal',
+          'ui-modal-backdrop',
+          'ui-modal-panel',
+          'ui-panel-header',
+          'ui-panel-footer',
+          'ui-tab',
+          'ui-tab-active',
+          'ui-tab-inactive',
+          'ui-selectable-panel',
+          'ui-selectable-panel-active',
+          'ui-disclosure-trigger',
+          'ui-code',
+          'ui-list-row',
+          'ui-button-ghost-danger',
+        ],
+      },
+      {
+        path: 'app/components/FeedbackModal.vue',
+        recipes: [
+          'factory-dashboard-portal',
+          'ui-modal-backdrop',
+          'ui-modal-panel',
+        ],
+      },
+      {
+        path: 'app/components/ChatbotAgentManagerModal.vue',
+        recipes: [
+          'factory-dashboard-portal',
+          'ui-modal-backdrop',
+          'ui-modal-panel',
+          'ui-panel-header',
+          'ui-panel-footer',
+          'ui-field',
+          'ui-field-invalid',
+          'ui-checkbox',
+          'ui-checkbox-brand',
+          'ui-list-row',
+          'ui-menu-action-active',
+          'ui-pill',
+          'ui-button-primary',
+          'ui-button-secondary',
+          'ui-button-ghost',
+          'ui-button-ghost-danger',
+        ],
+      },
+      {
+        path: 'app/components/PreviewUpsellModal.vue',
+        recipes: [
+          'factory-dashboard-portal',
+          'ui-modal-backdrop',
+          'ui-modal-panel',
+          'ui-panel-header',
+          'ui-selectable-panel',
+          'ui-selectable-panel-active',
+          'ui-icon-state',
+          'ui-button-ghost',
+        ],
+      },
+      {
+        path: 'app/components/JobSubNavActions.vue',
+        recipes: [
+          'factory-dashboard-portal',
+          'ui-modal-backdrop',
+          'ui-modal-panel',
+          'ui-button-secondary',
+          'ui-button-danger',
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/candidates/[id].vue',
+        recipes: [
+          'factory-dashboard-portal',
+          'ui-modal-backdrop',
+          'ui-modal-panel',
+          'ui-button-secondary',
+          'ui-button-danger',
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/jobs/[id]/index.vue',
+        recipes: [
+          'factory-dashboard-portal',
+          'ui-modal-backdrop',
+          'ui-modal-panel',
+        ],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
+  it('keeps remaining dashboard modal surface choices behind shared recipes', () => {
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/components/InterviewEmailModal.vue',
+        patterns: [
+          /class="fixed inset-0 z-50 flex items-center justify-center"/,
+          /absolute inset-0 bg-black\/40/,
+          /shrink-0 border-b border-surface-200\/80 dark:border-surface-800\/60/,
+          /w-full text-left rounded-xl border-2/,
+          /inline-flex items-center gap-1 rounded-md bg-brand-50/,
+          /rounded-lg p-1\.5 text-surface-400 hover:text-danger-600/,
+          /shrink-0 border-t border-surface-200\/80 dark:border-surface-800\/60 bg-surface-50\/80/,
+        ],
+      },
+      {
+        path: 'app/components/FeedbackModal.vue',
+        patterns: [
+          /class="fixed inset-0 z-50 flex items-start justify-center/,
+          /absolute inset-0 bg-black\/50/,
+        ],
+      },
+      {
+        path: 'app/components/ChatbotAgentManagerModal.vue',
+        patterns: [
+          /fixed inset-0 z-50 flex items-center justify-center bg-black\/50/,
+          /rounded-2xl bg-white dark:bg-surface-950/,
+          /w-full rounded-lg border border-surface-300/,
+          /size-4 rounded border-surface-300 text-brand-600/,
+          /inline-flex items-center gap-1\.5 rounded-lg bg-brand-600/,
+        ],
+      },
+      {
+        path: 'app/components/PreviewUpsellModal.vue',
+        patterns: [
+          /class="fixed inset-0 z-50 flex items-center justify-center p-4"/,
+          /absolute inset-0 bg-black\/50/,
+          /rounded-xl border border-surface-200 bg-white/,
+          /rounded-xl border border-brand-200/,
+          /rounded-xl border border-surface-200 dark:border-surface-700/,
+        ],
+      },
+      {
+        path: 'app/components/JobSubNavActions.vue',
+        patterns: [
+          /class="fixed inset-0 z-50 flex items-center justify-center"/,
+          /absolute inset-0 bg-black\/40/,
+          /relative bg-white dark:bg-surface-900 rounded-2xl/,
+          /cursor-pointer rounded-lg border border-surface-300/,
+          /cursor-pointer rounded-lg bg-danger-600/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/candidates/[id].vue',
+        patterns: [
+          /showDocDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center"/,
+          /showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center"/,
+          /absolute inset-0 bg-black\/50/,
+          /relative bg-white dark:bg-surface-900 rounded-xl/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/jobs/[id]/index.vue',
+        patterns: [
+          /showDocPreview" class="fixed inset-0 z-50 flex items-center justify-center/,
+          /ui-modal-backdrop absolute inset-0/,
+        ],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
+    }
+  })
+
   it('applies shared UI recipes to specialized menu and filter controls', () => {
     const recipeUsage = [
       {
@@ -1332,6 +1512,83 @@ describe('brand-neutral theme variables', () => {
       {
         path: 'app/components/AiConfigForm.vue',
         recipes: ['ui-dashboard-panel', 'ui-dashboard-panel-header', 'ui-dashboard-soft-icon'],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
+  it('centralizes Settings panel structure behind shared recipes', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+
+    for (const recipe of [
+      '.ui-settings-page',
+      '.ui-settings-page-wide',
+      '.ui-settings-page-form',
+      '.ui-settings-page-header',
+      '.ui-settings-page-header-split',
+      '.ui-settings-panel',
+      '.ui-settings-panel-spaced',
+      '.ui-settings-panel-list',
+      '.ui-settings-panel-header',
+      '.ui-settings-panel-header-sm',
+      '.ui-settings-panel-body',
+      '.ui-settings-panel-content',
+    ]) {
+      expect(css, `Settings recipe ${recipe} should be defined`).toMatch(
+        new RegExp(`${recipe.replace('.', '\\.')}\\s*\\{`),
+      )
+    }
+
+    for (const recipe of [
+      '.ui-settings-panel',
+      '.ui-settings-panel-header',
+      '.ui-settings-panel-body',
+      '.ui-settings-panel-content',
+    ]) {
+      expect(css, `Factory shell should adapt Settings recipe ${recipe}`).toMatch(
+        new RegExp(`:where\\(\\.factory-dashboard-shell, \\.factory-dashboard-portal\\)[\\s\\S]*${recipe.replace('.', '\\.')}`),
+      )
+    }
+
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/settings/index.vue',
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-settings-panel-spaced'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/account.vue',
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-settings-panel-spaced'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/localization.vue',
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/integrations.vue',
+        recipes: ['ui-settings-page-wide', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/members.vue',
+        recipes: ['ui-settings-page-wide', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-header-sm', 'ui-settings-panel-body', 'ui-settings-panel-content', 'ui-settings-panel-list'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/ai/index.vue',
+        recipes: ['ui-settings-page-wide', 'ui-settings-page-header', 'ui-settings-page-header-split', 'ui-settings-panel', 'ui-settings-panel-body'],
+      },
+      {
+        path: 'app/components/AiConfigForm.vue',
+        recipes: ['ui-settings-page-form', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-content', 'ui-settings-panel-body'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/sso.vue',
+        recipes: ['ui-settings-page-wide', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-content'],
       },
     ]
 

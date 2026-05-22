@@ -134,9 +134,9 @@ function formatPrice(p: number | null): string {
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl">
+  <div class="ui-settings-page ui-settings-page-wide">
     <!-- Page header -->
-    <div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
+    <div class="ui-settings-page-header ui-settings-page-header-split">
       <div>
         <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">AI Configuration</h1>
         <p class="text-sm text-surface-500 dark:text-surface-400 mt-0.5">
@@ -170,7 +170,7 @@ function formatPrice(p: number | null): string {
     </div>
 
     <!-- Loading -->
-    <div v-else-if="isLoading" class="ui-panel ui-dashboard-panel p-8 text-center text-sm text-surface-500">
+    <div v-else-if="isLoading" class="ui-panel ui-dashboard-panel ui-settings-panel-body text-center text-sm text-surface-500">
       <Loader2 class="size-5 animate-spin mx-auto mb-2 text-surface-400" />
       Loading configurations…
     </div>
@@ -201,9 +201,9 @@ function formatPrice(p: number | null): string {
       <li
         v-for="c in configs"
         :key="c.id"
-        class="ui-panel ui-dashboard-panel overflow-hidden"
+        class="ui-panel ui-dashboard-panel ui-settings-panel"
       >
-        <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-4">
+        <div class="ui-settings-panel-body flex flex-col sm:flex-row sm:items-start gap-4">
           <!-- Identity -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">

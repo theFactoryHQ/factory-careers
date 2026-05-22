@@ -75,8 +75,8 @@ async function handleDisconnect() {
 </script>
 
 <template>
-  <div class="w-full">
-    <div class="mb-6">
+  <div class="ui-settings-page ui-settings-page-wide">
+    <div class="ui-settings-page-header">
       <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-100">
         Integrations
       </h1>
@@ -123,9 +123,9 @@ async function handleDisconnect() {
     </Transition>
 
     <!-- Calendar Integration Card -->
-    <div class="ui-panel ui-dashboard-panel overflow-hidden">
+    <div class="ui-panel ui-dashboard-panel ui-settings-panel">
       <!-- Header -->
-      <div class="ui-panel-header ui-dashboard-panel-header flex items-center gap-4 px-4 sm:px-6 py-5">
+      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header flex items-center gap-4">
         <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-10">
           <Calendar class="size-5" />
         </div>
@@ -155,7 +155,7 @@ async function handleDisconnect() {
       </div>
 
       <!-- Body -->
-      <div class="px-4 sm:px-6 py-5">
+      <div class="ui-settings-panel-body">
         <!-- Loading state -->
         <div v-if="status === 'pending'" class="flex items-center justify-center py-4">
           <Loader2 class="size-5 text-surface-400 animate-spin" />

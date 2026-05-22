@@ -123,9 +123,9 @@ function getInitials(name: string | undefined): string {
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl">
+  <div class="ui-settings-page">
     <!-- Page title -->
-    <div class="mb-6">
+    <div class="ui-settings-page-header">
       <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">
         Account
       </h1>
@@ -135,8 +135,8 @@ function getInitials(name: string | undefined): string {
     </div>
 
     <!-- Profile section -->
-    <section class="ui-panel ui-dashboard-panel overflow-hidden">
-      <div class="ui-panel-header ui-dashboard-panel-header px-4 sm:px-6 py-5">
+    <section class="ui-panel ui-dashboard-panel ui-settings-panel">
+      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
           <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-10 shrink-0">
             <User class="size-5" />
@@ -148,7 +148,7 @@ function getInitials(name: string | undefined): string {
         </div>
       </div>
 
-      <div class="px-4 sm:px-6 py-5 space-y-5">
+      <div class="ui-settings-panel-body space-y-5">
         <!-- Avatar row -->
         <div class="flex items-center gap-4">
           <div v-if="session?.user?.image" class="ui-avatar size-16">
@@ -232,8 +232,8 @@ function getInitials(name: string | undefined): string {
     </section>
 
     <!-- Password section -->
-    <section class="ui-panel ui-dashboard-panel mt-8 overflow-hidden">
-      <div class="ui-panel-header ui-dashboard-panel-header px-4 sm:px-6 py-5">
+    <section class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-spaced">
+      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
           <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-tile size-10 shrink-0">
             <KeyRound class="size-5" />
@@ -245,7 +245,7 @@ function getInitials(name: string | undefined): string {
         </div>
       </div>
 
-      <div class="px-4 sm:px-6 py-5 space-y-5">
+      <div class="ui-settings-panel-body space-y-5">
         <!-- Current password -->
         <div>
           <label for="current-password" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
@@ -373,8 +373,8 @@ function getInitials(name: string | undefined): string {
     </section>
 
     <!-- Session info -->
-    <section class="ui-panel ui-dashboard-panel mt-8 overflow-hidden">
-      <div class="ui-panel-header ui-dashboard-panel-header px-4 sm:px-6 py-5">
+    <section class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-spaced">
+      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
           <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-tile size-10 shrink-0">
             <Calendar class="size-5" />
@@ -386,7 +386,7 @@ function getInitials(name: string | undefined): string {
         </div>
       </div>
 
-      <div class="px-4 sm:px-6 py-5">
+      <div class="ui-settings-panel-body">
         <dl class="space-y-3">
           <div class="flex items-center justify-between">
             <dt class="text-sm text-surface-500 dark:text-surface-400">Session ID</dt>
