@@ -2538,10 +2538,74 @@
     color: var(--ui-text) !important;
   }
 
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button {
+    font-family: var(--font-sans);
+    font-weight: 400 !important;
+    letter-spacing: 0 !important;
+    text-transform: uppercase !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-primary {
+    border-color: var(--color-brand-500) !important;
+    background-color: var(--color-brand-500) !important;
+    color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-primary:hover:not(:disabled) {
+    border-color: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #080808 !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-danger {
+    border-color: color-mix(in srgb, var(--color-danger-400) 65%, transparent) !important;
+    background-color: color-mix(in srgb, var(--color-danger-500) 16%, #050505) !important;
+    color: rgb(253 164 175) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-danger:hover:not(:disabled) {
+    border-color: rgb(253 164 175) !important;
+    background-color: rgb(253 164 175) !important;
+    color: #080808 !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-success {
+    border-color: color-mix(in srgb, var(--color-success-400) 62%, transparent) !important;
+    background-color: color-mix(in srgb, var(--color-success-500) 14%, #050505) !important;
+    color: rgb(134 239 172) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-success:hover:not(:disabled) {
+    border-color: rgb(134 239 172) !important;
+    background-color: rgb(134 239 172) !important;
+    color: #080808 !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
+    .ui-button-danger-outline,
+    .ui-button-ghost-danger
+  ) {
+    border-color: color-mix(in srgb, var(--color-danger-400) 45%, transparent) !important;
+    color: rgb(253 164 175) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
+    .ui-button-danger-outline,
+    .ui-button-ghost-danger
+  ):hover:not(:disabled) {
+    border-color: rgb(253 164 175) !important;
+    background-color: rgb(244 63 94 / 0.14) !important;
+    color: #ffffff !important;
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-checkbox-indicator-checked {
     border-color: var(--color-brand-500) !important;
     background-color: var(--color-brand-500) !important;
     color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-radio-brand {
+    accent-color: var(--color-brand-500) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
@@ -2576,6 +2640,66 @@
     .ui-nav-link-active
   ) {
     background-color: color-mix(in srgb, var(--color-brand-500) 13%, transparent) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
+    .ui-icon-state-danger,
+    .ui-pill-danger
+  ) {
+    border-color: color-mix(in srgb, var(--color-danger-400) 44%, transparent) !important;
+    background-color: rgb(244 63 94 / 0.13) !important;
+    color: rgb(253 164 175) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
+    .ui-icon-state-success,
+    .ui-pill-success
+  ) {
+    border-color: color-mix(in srgb, var(--color-success-400) 44%, transparent) !important;
+    background-color: rgb(34 197 94 / 0.13) !important;
+    color: rgb(134 239 172) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
+    .ui-icon-state-warning,
+    .ui-pill-warning
+  ) {
+    border-color: color-mix(in srgb, var(--color-warning-400) 46%, transparent) !important;
+    background-color: rgb(245 158 11 / 0.13) !important;
+    color: rgb(251 191 36) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
+    .ui-icon-state-info,
+    .ui-pill-info
+  ) {
+    border-color: color-mix(in srgb, var(--color-info-400) 46%, transparent) !important;
+    background-color: rgb(14 165 233 / 0.13) !important;
+    color: rgb(125 211 252) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-avatar-brand {
+    background-color: color-mix(in srgb, var(--color-brand-500) 14%, transparent) !important;
+    color: var(--color-brand-300) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
+    .ui-status-dot-success,
+    .ui-meter-fill-success
+  ) {
+    background-color: var(--color-success-400) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-meter-fill-brand {
+    background-color: var(--color-brand-500) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-meter-fill-warning {
+    background-color: var(--color-warning-400) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-meter-fill-danger {
+    background-color: var(--color-danger-400) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
