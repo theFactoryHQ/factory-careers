@@ -96,7 +96,7 @@ async function handleDisconnect() {
           {{ successMessage }}
         </p>
         <button
-          class="text-success-400 hover:text-success-600 dark:hover:text-success-200"
+          class="ui-button ui-button-ghost p-1"
           @click="successMessage = ''"
         >
           <X class="size-4" />
@@ -114,7 +114,7 @@ async function handleDisconnect() {
           {{ errorMessage }}
         </p>
         <button
-          class="text-danger-400 hover:text-danger-600 dark:hover:text-danger-200"
+          class="ui-button ui-button-ghost p-1"
           @click="errorMessage = ''"
         >
           <X class="size-4" />
@@ -175,7 +175,7 @@ async function handleDisconnect() {
               href="https://learn.microsoft.com/en-us/graph/outlook-calendar-concept-overview"
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center gap-1.5 text-sm text-brand-600 dark:text-brand-400 hover:underline"
+              class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1.5 text-sm"
             >
               Microsoft Graph Calendar
               <ExternalLink class="size-3.5" />
@@ -184,7 +184,7 @@ async function handleDisconnect() {
               href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade"
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center gap-1.5 text-sm text-surface-500 dark:text-surface-400 hover:underline"
+              class="ui-inline-link ui-inline-link-muted inline-flex items-center gap-1.5 text-sm"
             >
               Azure App registrations
               <ExternalLink class="size-3.5" />
@@ -220,8 +220,8 @@ async function handleDisconnect() {
               {{ calendarSyncLabel }}:
               <span
                 :class="isMicrosoftCalendar || calendarStatus.webhookActive
-                  ? 'text-success-600 dark:text-success-400 font-medium'
-                  : 'text-warning-600 dark:text-warning-400'"
+                  ? 'ui-feedback-success'
+                  : 'ui-feedback-warning'"
               >
                 {{ isMicrosoftCalendar ? 'Active' : (calendarStatus.webhookActive ? 'Active' : 'Pending setup') }}
               </span>
@@ -245,7 +245,7 @@ async function handleDisconnect() {
                 </div>
                 <span
                   v-if="destination.isPrimary"
-                  class="shrink-0 rounded-full bg-brand-50 dark:bg-brand-950/40 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-300"
+                  class="ui-pill ui-pill-brand shrink-0 rounded-full px-2 py-0.5 text-xs"
                 >
                   Primary
                 </span>
@@ -255,7 +255,7 @@ async function handleDisconnect() {
               v-if="calendarStatus.syncInterviewers"
               class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400"
             >
-              <Check class="size-4 text-success-500 shrink-0" />
+              <Check class="ui-icon-success size-4 shrink-0" />
               Interviewer mailboxes are included automatically
             </div>
           </div>
@@ -263,19 +263,19 @@ async function handleDisconnect() {
           <!-- Features list -->
           <div class="ui-panel-muted p-4 space-y-2">
             <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-              <Check class="size-4 text-success-500 shrink-0" />
+              <Check class="ui-icon-success size-4 shrink-0" />
               Interviews automatically appear on configured mailbox calendars
             </div>
             <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-              <Check class="size-4 text-success-500 shrink-0" />
+              <Check class="ui-icon-success size-4 shrink-0" />
               Candidates receive calendar invites as attendees
             </div>
             <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-              <Check class="size-4 text-success-500 shrink-0" />
+              <Check class="ui-icon-success size-4 shrink-0" />
               Events are created on {{ sharedCalendarEmail }}
             </div>
             <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-              <Clock class="size-4 text-success-500 shrink-0" />
+              <Clock class="ui-icon-success size-4 shrink-0" />
               Timezone-aware scheduling
             </div>
           </div>
@@ -331,19 +331,19 @@ async function handleDisconnect() {
             <!-- Features preview -->
             <div class="ui-panel-muted p-4 space-y-2">
               <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-                <Calendar class="size-4 text-brand-500 shrink-0" />
+                <Calendar class="ui-icon-brand size-4 shrink-0" />
                 Auto-create events on the Factory shared calendar
               </div>
               <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-                <RefreshCw class="size-4 text-brand-500 shrink-0" />
+                <RefreshCw class="ui-icon-brand size-4 shrink-0" />
                 Interview event creation, updates, and cancellation sync
               </div>
               <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-                <Clock class="size-4 text-brand-500 shrink-0" />
+                <Clock class="ui-icon-brand size-4 shrink-0" />
                 Proper timezone handling — no more scheduling confusion
               </div>
               <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-                <Shield class="size-4 text-brand-500 shrink-0" />
+                <Shield class="ui-icon-brand size-4 shrink-0" />
                 OAuth tokens encrypted at rest — revoke anytime
               </div>
             </div>

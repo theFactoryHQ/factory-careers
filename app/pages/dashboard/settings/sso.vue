@@ -179,7 +179,7 @@ async function copyCallbackUrl(providerId: string) {
         <p class="flex-1">
           {{ formSuccess }}
         </p>
-        <button class="text-success-400 hover:text-success-600 dark:hover:text-success-200" @click="formSuccess = ''">
+        <button class="ui-button ui-button-ghost p-1" @click="formSuccess = ''">
           <X class="size-4" />
         </button>
       </div>
@@ -194,7 +194,7 @@ async function copyCallbackUrl(providerId: string) {
         <p class="flex-1">
           {{ formError }}
         </p>
-        <button class="text-danger-400 hover:text-danger-600 dark:hover:text-danger-200" @click="formError = ''">
+        <button class="ui-button ui-button-ghost p-1" @click="formError = ''">
           <X class="size-4" />
         </button>
       </div>
@@ -217,7 +217,7 @@ async function copyCallbackUrl(providerId: string) {
           <div class="flex items-start justify-between gap-4">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
-                <ShieldCheck class="size-4 text-success-500 shrink-0" />
+                <ShieldCheck class="ui-icon-success size-4 shrink-0" />
                 <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100 truncate">
                   {{ provider.providerId }}
                 </h3>
@@ -250,7 +250,7 @@ async function copyCallbackUrl(providerId: string) {
                     title="Copy callback URL"
                     @click="copyCallbackUrl(provider.providerId)"
                   >
-                    <Check v-if="copiedProviderId === provider.providerId" class="size-3.5 text-success-500" />
+                    <Check v-if="copiedProviderId === provider.providerId" class="ui-icon-success size-3.5" />
                     <Copy v-else class="size-3.5" />
                   </button>
                 </div>
@@ -279,7 +279,7 @@ async function copyCallbackUrl(providerId: string) {
               </template>
               <button
                 v-else
-                class="ui-button ui-button-ghost p-1.5 hover:text-danger-500"
+                class="ui-button ui-button-ghost ui-button-ghost-danger p-1.5"
                 title="Remove SSO provider"
                 @click="confirmDeleteId = provider.id"
               >
@@ -333,7 +333,7 @@ async function copyCallbackUrl(providerId: string) {
           <form class="space-y-4" @submit.prevent="handleRegister">
             <!-- Domain -->
             <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-              <span>Email domain <span class="text-danger-500">*</span></span>
+              <span>Email domain <span class="ui-required-marker">*</span></span>
               <input
                 v-model="form.domain"
                 type="text"
@@ -346,7 +346,7 @@ async function copyCallbackUrl(providerId: string) {
 
             <!-- Issuer URL -->
             <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-              <span>Issuer URL <span class="text-danger-500">*</span></span>
+              <span>Issuer URL <span class="ui-required-marker">*</span></span>
               <input
                 v-model="form.issuer"
                 type="url"
@@ -362,7 +362,7 @@ async function copyCallbackUrl(providerId: string) {
 
             <!-- Provider ID -->
             <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-              <span>Provider ID <span class="text-danger-500">*</span></span>
+              <span>Provider ID <span class="ui-required-marker">*</span></span>
               <input
                 v-model="form.providerId"
                 type="text"
@@ -376,7 +376,7 @@ async function copyCallbackUrl(providerId: string) {
 
             <!-- Client ID -->
             <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-              <span>Client ID <span class="text-danger-500">*</span></span>
+              <span>Client ID <span class="ui-required-marker">*</span></span>
               <input
                 v-model="form.clientId"
                 type="text"
@@ -389,7 +389,7 @@ async function copyCallbackUrl(providerId: string) {
 
             <!-- Client Secret -->
             <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-              <span>Client Secret <span class="text-danger-500">*</span></span>
+              <span>Client Secret <span class="ui-required-marker">*</span></span>
               <input
                 v-model="form.clientSecret"
                 type="password"
@@ -439,7 +439,7 @@ async function copyCallbackUrl(providerId: string) {
                 href="https://developer.okta.com/docs/guides/sign-into-web-app-redirect/node-express/main/"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline"
+                class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1 text-xs"
               >
                 Okta guide <ExternalLink class="size-3" />
               </a>
@@ -447,7 +447,7 @@ async function copyCallbackUrl(providerId: string) {
                 href="https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline"
+                class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1 text-xs"
               >
                 Azure AD guide <ExternalLink class="size-3" />
               </a>
@@ -455,7 +455,7 @@ async function copyCallbackUrl(providerId: string) {
                 href="https://support.google.com/a/answer/60224"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline"
+                class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1 text-xs"
               >
                 Google Workspace guide <ExternalLink class="size-3" />
               </a>

@@ -67,7 +67,7 @@ const passwordsMatch = computed(() =>
 const passwordStrength = computed(() => {
   const pw = newPassword.value
   if (pw.length === 0) return { label: '', fillClass: '', textColor: '', width: '0%' }
-  if (pw.length < 8) return { label: 'Too short', fillClass: 'ui-meter-fill-danger', textColor: 'text-danger-500', width: '20%' }
+  if (pw.length < 8) return { label: 'Too short', fillClass: 'ui-meter-fill-danger', textColor: 'ui-meter-label-danger', width: '20%' }
 
   let score = 0
   if (pw.length >= 8) score++
@@ -76,10 +76,10 @@ const passwordStrength = computed(() => {
   if (/[0-9]/.test(pw)) score++
   if (/[^A-Za-z0-9]/.test(pw)) score++
 
-  if (score <= 2) return { label: 'Weak', fillClass: 'ui-meter-fill-danger', textColor: 'text-danger-500', width: '40%' }
+  if (score <= 2) return { label: 'Weak', fillClass: 'ui-meter-fill-danger', textColor: 'ui-meter-label-danger', width: '40%' }
   if (score <= 3) return { label: 'Fair', fillClass: 'ui-meter-fill-warning', textColor: 'text-warning-500', width: '60%' }
-  if (score <= 4) return { label: 'Good', fillClass: 'ui-meter-fill-brand', textColor: 'text-brand-500', width: '80%' }
-  return { label: 'Strong', fillClass: 'ui-meter-fill-success', textColor: 'text-success-500', width: '100%' }
+  if (score <= 4) return { label: 'Good', fillClass: 'ui-meter-fill-brand', textColor: 'ui-meter-label-brand', width: '80%' }
+  return { label: 'Strong', fillClass: 'ui-meter-fill-success', textColor: 'ui-meter-label-success', width: '100%' }
 })
 
 async function handleChangePassword() {
@@ -151,12 +151,12 @@ function getInitials(name: string | undefined): string {
       <div class="px-4 sm:px-6 py-5 space-y-5">
         <!-- Avatar row -->
         <div class="flex items-center gap-4">
-          <div v-if="session?.user?.image" class="size-16 rounded-full overflow-hidden ring-2 ring-surface-200 dark:ring-surface-700">
+          <div v-if="session?.user?.image" class="ui-avatar size-16">
             <img :src="session.user.image" :alt="session.user.name" class="size-full object-cover" />
           </div>
           <div
             v-else
-            class="size-16 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center text-lg font-bold text-brand-700 dark:text-brand-300 ring-2 ring-surface-200 dark:ring-surface-700"
+            class="ui-avatar ui-avatar-brand size-16 text-lg font-bold"
           >
             {{ getInitials(session?.user?.name) }}
           </div>
@@ -165,7 +165,7 @@ function getInitials(name: string | undefined): string {
             <a
               :href="session?.user?.email ? `mailto:${session.user.email}` : undefined"
               target="_blank"
-              class="text-sm text-surface-500 dark:text-surface-400 flex items-center gap-1.5 hover:text-brand-600 dark:hover:text-brand-400 hover:underline cursor-pointer transition-colors"
+              class="ui-inline-link inline-flex items-center gap-1.5 text-sm"
             >
               <Mail class="size-3.5" />
               {{ session?.user?.email }}
@@ -218,7 +218,7 @@ function getInitials(name: string | undefined): string {
             enter-from-class="opacity-0"
             leave-to-class="opacity-0"
           >
-            <span v-if="profileSuccess" class="text-sm text-success-600 dark:text-success-400 font-medium flex items-center gap-1.5">
+            <span v-if="profileSuccess" class="ui-feedback-success text-sm">
               <Check class="size-4" />
               Profile updated
             </span>
@@ -328,13 +328,13 @@ function getInitials(name: string | undefined): string {
           />
           <p
             v-if="confirmPassword && !passwordsMatch"
-            class="mt-1.5 text-xs text-danger-500"
+            class="ui-feedback-danger mt-1.5 text-xs"
           >
             Passwords do not match.
           </p>
           <p
             v-if="confirmPassword && passwordsMatch"
-            class="mt-1.5 text-xs text-success-500 flex items-center gap-1"
+            class="ui-feedback-success mt-1.5 text-xs"
           >
             <Check class="size-3" />
             Passwords match
@@ -359,7 +359,7 @@ function getInitials(name: string | undefined): string {
             enter-from-class="opacity-0"
             leave-to-class="opacity-0"
           >
-            <span v-if="passwordSuccess" class="text-sm text-success-600 dark:text-success-400 font-medium flex items-center gap-1.5">
+            <span v-if="passwordSuccess" class="ui-feedback-success text-sm">
               <Check class="size-4" />
               Password changed
             </span>

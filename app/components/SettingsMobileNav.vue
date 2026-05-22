@@ -64,7 +64,7 @@ function isActive(to: string, exact: boolean) {
     <div class="flex items-center gap-3 px-4 pt-3 pb-2">
       <NuxtLink
         :to="$localePath('/dashboard')"
-        class="inline-flex items-center gap-1 text-xs font-medium text-surface-400 dark:text-surface-500 hover:text-surface-600 dark:hover:text-surface-300 transition-colors no-underline"
+        class="ui-inline-link inline-flex items-center gap-1 text-xs font-medium no-underline"
       >
         <ChevronLeft class="size-3.5" />
         Back

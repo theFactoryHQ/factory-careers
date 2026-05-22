@@ -230,7 +230,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
     <div class="mb-6">
       <NuxtLink
         to="/dashboard/settings/ai"
-        class="inline-flex items-center gap-1 text-xs font-medium text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200 transition-colors mb-3"
+        class="ui-inline-link inline-flex items-center gap-1 text-xs font-medium mb-3"
       >
         <ArrowLeft class="size-3.5" />
         Back to AI configuration
@@ -268,7 +268,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
             type="button"
             class="ui-selectable-panel flex flex-col items-start gap-1 px-3 py-2.5 text-left"
             :class="form.provider === key
-              ? 'ui-selectable-panel-active ring-1 ring-brand-500/30'
+              ? 'ui-selectable-panel-active'
               : ''"
             @click="pickProvider(String(key))"
           >
@@ -292,7 +292,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
             :href="selectedProvider.modelsUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline shrink-0"
+            class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1 text-xs shrink-0"
           >
             Browse all <ExternalLink class="size-3" />
           </a>
@@ -305,7 +305,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
             type="button"
             class="ui-selectable-panel px-3 py-3 text-left"
             :class="form.model === m.id
-              ? 'ui-selectable-panel-active ring-1 ring-brand-500/30'
+              ? 'ui-selectable-panel-active'
               : ''"
             @click="pickModel(m)"
           >
@@ -401,7 +401,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
                 :href="selectedProvider.apiKeyUrl"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex items-center gap-1 text-[11px] text-brand-600 dark:text-brand-400 hover:underline"
+                class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1 text-[11px]"
               >
                 Get a key <ExternalLink class="size-3" />
               </a>
@@ -440,13 +440,13 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
             </button>
             <span
               v-if="testResult?.success"
-              class="inline-flex items-center gap-1 text-xs text-success-600 dark:text-success-400"
+              class="ui-feedback-success text-xs"
             >
               <Check class="size-3.5" /> Connection verified.
             </span>
             <span
               v-else-if="testResult && !testResult.success"
-              class="inline-flex items-start gap-1 text-xs text-danger-600 dark:text-danger-400"
+              class="ui-feedback-danger items-start text-xs"
             >
               <AlertTriangle class="size-3.5 mt-px" /> {{ testResult.message }}
             </span>
@@ -471,7 +471,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
             >
             <div class="flex-1">
               <div class="flex items-center gap-1.5 text-sm font-medium text-surface-900 dark:text-surface-100">
-                <Sparkles class="size-3.5 text-brand-500" />
+                <Sparkles class="ui-icon-brand size-3.5" />
                 Chatbot conversations
               </div>
               <p class="text-[11px] text-surface-500 dark:text-surface-400 mt-0.5">
@@ -584,7 +584,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
     </div>
 
     <!-- Sticky save bar -->
-    <div class="fixed inset-x-0 bottom-0 z-20 border-t border-surface-200 dark:border-surface-800 bg-white/90 dark:bg-surface-950/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-surface-950/70">
+    <div class="ui-action-bar fixed inset-x-0 bottom-0 z-20">
       <div class="mx-auto max-w-3xl px-4 sm:px-6 py-3 flex items-center justify-end gap-2">
         <button
           type="button"

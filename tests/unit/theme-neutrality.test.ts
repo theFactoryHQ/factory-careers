@@ -41,6 +41,7 @@ describe('brand-neutral theme variables', () => {
       '.ui-button-ghost',
       '.ui-button-danger',
       '.ui-button-danger-outline',
+      '.ui-button-ghost-danger',
       '.ui-button-success',
       '.ui-field',
       '.ui-checkbox',
@@ -61,6 +62,8 @@ describe('brand-neutral theme variables', () => {
       '.ui-nav-link-active',
       '.ui-nav-icon',
       '.ui-nav-icon-active',
+      '.ui-nav-description',
+      '.ui-nav-description-active',
       '.ui-panel-header',
       '.ui-pill',
       '.ui-pill-brand',
@@ -78,6 +81,24 @@ describe('brand-neutral theme variables', () => {
       '.ui-meter-fill-warning',
       '.ui-meter-fill-brand',
       '.ui-meter-fill-success',
+      '.ui-meter-label-danger',
+      '.ui-meter-label-brand',
+      '.ui-meter-label-success',
+      '.ui-action-bar',
+      '.ui-avatar',
+      '.ui-avatar-brand',
+      '.ui-feedback-success',
+      '.ui-feedback-danger',
+      '.ui-feedback-warning',
+      '.ui-field-addon',
+      '.ui-icon-brand',
+      '.ui-icon-success',
+      '.ui-icon-danger',
+      '.ui-inline-link',
+      '.ui-inline-link-brand',
+      '.ui-inline-link-muted',
+      '.ui-list-divider',
+      '.ui-required-marker',
       '.ui-table-shell',
       '.ui-table-header',
       '.ui-table-row',
@@ -223,11 +244,11 @@ describe('brand-neutral theme variables', () => {
     const recipeUsage = [
       {
         path: 'app/pages/dashboard/settings/index.vue',
-        recipes: ['ui-panel', 'ui-panel-header', 'ui-field', 'ui-alert-danger', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
+        recipes: ['ui-panel', 'ui-panel-header', 'ui-field', 'ui-field-addon', 'ui-feedback-success', 'ui-feedback-danger', 'ui-alert-danger', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
       },
       {
         path: 'app/pages/dashboard/settings/account.vue',
-        recipes: ['ui-panel', 'ui-panel-header', 'ui-field', 'ui-alert-danger', 'ui-button-primary', 'ui-meter-track', 'ui-meter-fill'],
+        recipes: ['ui-panel', 'ui-panel-header', 'ui-field', 'ui-alert-danger', 'ui-button-primary', 'ui-meter-track', 'ui-meter-fill', 'ui-meter-label-danger', 'ui-meter-label-brand', 'ui-meter-label-success', 'ui-avatar', 'ui-avatar-brand', 'ui-feedback-success', 'ui-feedback-danger', 'ui-inline-link'],
       },
       {
         path: 'app/pages/dashboard/settings/localization.vue',
@@ -235,11 +256,11 @@ describe('brand-neutral theme variables', () => {
       },
       {
         path: 'app/pages/dashboard/settings/integrations.vue',
-        recipes: ['ui-panel', 'ui-panel-header', 'ui-panel-muted', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary', 'ui-pill-success', 'ui-status-dot-success', 'ui-code'],
+        recipes: ['ui-panel', 'ui-panel-header', 'ui-panel-muted', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary', 'ui-pill-success', 'ui-status-dot-success', 'ui-code', 'ui-icon-brand', 'ui-icon-success', 'ui-inline-link-brand', 'ui-inline-link-muted', 'ui-feedback-success', 'ui-feedback-warning'],
       },
       {
         path: 'app/pages/dashboard/settings/sso.vue',
-        recipes: ['ui-panel', 'ui-panel-muted', 'ui-empty-panel', 'ui-field', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline', 'ui-pill-warning', 'ui-pill-success', 'ui-code', 'ui-step-marker'],
+        recipes: ['ui-panel', 'ui-panel-muted', 'ui-empty-panel', 'ui-field', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline', 'ui-button-ghost-danger', 'ui-pill-warning', 'ui-pill-success', 'ui-code', 'ui-step-marker', 'ui-required-marker', 'ui-icon-success', 'ui-inline-link-brand'],
       },
     ]
 
@@ -272,9 +293,17 @@ describe('brand-neutral theme variables', () => {
       'ui-pill',
       'ui-pill-brand',
       'ui-pill-warning',
+      'ui-avatar',
+      'ui-avatar-brand',
+      'ui-feedback-success',
+      'ui-feedback-danger',
       'ui-icon-state-brand',
       'ui-icon-state-danger',
       'ui-icon-state-warning',
+      'ui-icon-brand',
+      'ui-icon-danger',
+      'ui-inline-link',
+      'ui-list-divider',
     ]) {
       expect(source, `members settings should use ${recipe}`).toContain(recipe)
     }
@@ -284,7 +313,7 @@ describe('brand-neutral theme variables', () => {
     const recipeUsage = [
       {
         path: 'app/pages/dashboard/settings/ai/index.vue',
-        recipes: ['ui-panel', 'ui-empty-panel', 'ui-alert-warning', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline', 'ui-pill', 'ui-pill-brand', 'ui-pill-warning', 'ui-pill-danger'],
+        recipes: ['ui-panel', 'ui-empty-panel', 'ui-alert-warning', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline', 'ui-pill', 'ui-pill-brand', 'ui-pill-warning', 'ui-pill-danger', 'ui-feedback-success', 'ui-feedback-danger'],
       },
       {
         path: 'app/pages/dashboard/settings/ai/new.vue',
@@ -296,7 +325,7 @@ describe('brand-neutral theme variables', () => {
       },
       {
         path: 'app/components/AiConfigForm.vue',
-        recipes: ['ui-panel', 'ui-field', 'ui-checkbox', 'ui-selectable-panel', 'ui-alert-info', 'ui-button-primary', 'ui-button-secondary', 'ui-pill-info', 'ui-pill-success'],
+        recipes: ['ui-panel', 'ui-field', 'ui-checkbox', 'ui-selectable-panel', 'ui-alert-info', 'ui-button-primary', 'ui-button-secondary', 'ui-pill-info', 'ui-pill-success', 'ui-action-bar', 'ui-feedback-success', 'ui-feedback-danger', 'ui-icon-brand', 'ui-inline-link-brand'],
       },
     ]
 
@@ -325,8 +354,71 @@ describe('brand-neutral theme variables', () => {
 
     const sidebar = readProjectFile('app/components/SettingsSidebar.vue')
 
-    for (const recipe of ['ui-nav-icon', 'ui-nav-icon-active', 'ui-pill-warning']) {
+    for (const recipe of ['ui-nav-icon', 'ui-nav-icon-active', 'ui-nav-description', 'ui-nav-description-active', 'ui-pill-warning', 'ui-inline-link']) {
       expect(sidebar, `SettingsSidebar should use ${recipe}`).toContain(recipe)
+    }
+  })
+
+  it('keeps remaining Settings and member surface choices behind shared recipes', () => {
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/components/SettingsSidebar.vue',
+        patterns: [
+          /text-brand-500\/70 dark:text-brand-400\/60/,
+        ],
+      },
+      {
+        path: 'app/components/AiConfigForm.vue',
+        patterns: [
+          /ring-1 ring-brand-500\/30/,
+          /border-t border-surface-200 dark:border-surface-800 bg-white\/90/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/index.vue',
+        patterns: [
+          /focus-within:border-brand-500/,
+          /bg-surface-50 dark:bg-surface-800\/50 border-r/,
+          /text-danger-500/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/account.vue',
+        patterns: [
+          /ring-2 ring-surface-(?:100|200)/,
+          /bg-brand-100 dark:bg-brand-900/,
+          /textColor: 'text-(?:danger|brand|success)-500'/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/integrations.vue',
+        patterns: [
+          /text-success-600 dark:text-success-400 font-medium/,
+          /text-warning-600 dark:text-warning-400/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/sso.vue',
+        patterns: [
+          /hover:text-danger-500/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/members.vue',
+        patterns: [
+          /ring-2 ring-surface-100/,
+          /bg-brand-100 dark:bg-brand-900/,
+          /divide-y divide-surface-100/,
+        ],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
     }
   })
 })

@@ -160,8 +160,8 @@ async function handleDeleteOrg() {
           <label for="org-slug" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
             URL slug
           </label>
-          <div class="ui-field flex items-center overflow-hidden p-0 focus-within:border-brand-500">
-            <span class="px-3 text-sm text-surface-400 dark:text-surface-500 select-none bg-surface-50 dark:bg-surface-800/50 border-r border-surface-200 dark:border-surface-700 py-2">
+          <div class="ui-field flex items-center overflow-hidden p-0">
+            <span class="ui-field-addon text-sm">
               careers.thefactoryhq.com/
             </span>
             <input
@@ -176,7 +176,7 @@ async function handleDeleteOrg() {
           <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">
             Used in your public job board URL. Only lowercase letters, numbers, and hyphens.
           </p>
-          <p v-if="slugError" class="mt-1 text-xs text-danger-500">
+          <p v-if="slugError" class="ui-feedback-danger mt-1 text-xs">
             {{ slugError }}
           </p>
         </div>
@@ -199,7 +199,7 @@ async function handleDeleteOrg() {
             enter-from-class="opacity-0"
             leave-to-class="opacity-0"
           >
-            <span v-if="saveSuccess" class="text-sm text-success-600 dark:text-success-400 font-medium">
+            <span v-if="saveSuccess" class="ui-feedback-success text-sm">
               Changes saved
             </span>
           </Transition>

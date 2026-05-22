@@ -82,7 +82,7 @@ function isActive(to: string, exact: boolean) {
     <div class="px-4 pt-5 pb-4">
       <NuxtLink
         :to="$localePath('/dashboard')"
-        class="inline-flex items-center gap-1.5 text-xs font-medium text-surface-400 dark:text-surface-500 hover:text-surface-600 dark:hover:text-surface-300 transition-colors no-underline mb-3"
+        class="ui-inline-link inline-flex items-center gap-1.5 text-xs font-medium no-underline mb-3"
       >
         <ChevronLeft class="size-3.5" />
         Back to jobs
@@ -128,10 +128,10 @@ function isActive(to: string, exact: boolean) {
               </span>
             </div>
             <div
-              class="text-[11px] leading-tight mt-0.5 truncate"
+              class="ui-nav-description text-[11px] leading-tight mt-0.5 truncate"
               :class="isActive(item.to, item.exact)
-                ? 'text-brand-500/70 dark:text-brand-400/60'
-                : 'text-surface-400 dark:text-surface-500'"
+                ? 'ui-nav-description-active'
+                : ''"
             >
               {{ item.description }}
             </div>

@@ -247,13 +247,13 @@ function formatPrice(p: number | null): string {
             <div v-if="testResults[c.id]" class="mt-2">
               <span
                 v-if="testResults[c.id]?.success"
-                class="inline-flex items-center gap-1 text-[11px] text-success-600 dark:text-success-400"
+                class="ui-feedback-success text-[11px]"
               >
                 <Check class="size-3" /> Connection verified.
               </span>
               <span
                 v-else
-                class="inline-flex items-start gap-1 text-[11px] text-danger-600 dark:text-danger-400"
+                class="ui-feedback-danger items-start text-[11px]"
               >
                 <AlertTriangle class="size-3 mt-px" /> {{ testResults[c.id]?.message }}
               </span>
