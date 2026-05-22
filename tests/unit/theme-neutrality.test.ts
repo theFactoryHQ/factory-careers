@@ -81,6 +81,7 @@ describe('brand-neutral theme variables', () => {
       '.ui-status-dot',
       '.ui-status-dot-brand',
       '.ui-status-dot-success',
+      '.ui-status-dot-warning',
       '.ui-status-dot-danger',
       '.ui-code',
       '.ui-step-marker',
@@ -128,7 +129,14 @@ describe('brand-neutral theme variables', () => {
       '.ui-inline-link-muted',
       '.ui-list-divider',
       '.ui-menu-action',
+      '.ui-menu-action-active',
       '.ui-menu-action-danger',
+      '.ui-menu-trigger',
+      '.ui-menu-trigger-active',
+      '.ui-checkbox-indicator',
+      '.ui-checkbox-indicator-checked',
+      '.ui-inline-edit-trigger',
+      '.ui-inline-edit-trigger-active',
       '.ui-required-marker',
       '.ui-disclosure-trigger',
       '.ui-table-shell',
@@ -796,6 +804,84 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared UI recipes to specialized menu and filter controls', () => {
+    const recipeUsage = [
+      {
+        path: 'app/components/SavedViewsMenu.vue',
+        recipes: [
+          'ui-menu-trigger',
+          'ui-menu-trigger-active',
+          'ui-floating-menu',
+          'ui-menu-action',
+          'ui-menu-action-active',
+          'ui-menu-divider',
+          'ui-field',
+          'ui-button-primary',
+          'ui-button-ghost',
+          'ui-status-dot-warning',
+        ],
+      },
+      {
+        path: 'app/components/ColumnsMenu.vue',
+        recipes: [
+          'ui-menu-trigger',
+          'ui-menu-trigger-active',
+          'ui-floating-menu',
+          'ui-menu-action',
+          'ui-menu-divider',
+          'ui-checkbox-indicator',
+          'ui-checkbox-indicator-checked',
+        ],
+      },
+      {
+        path: 'app/components/OrgSwitcher.vue',
+        recipes: [
+          'ui-menu-trigger',
+          'ui-floating-menu',
+          'ui-menu-action',
+          'ui-menu-action-active',
+          'ui-menu-divider',
+        ],
+      },
+      {
+        path: 'app/components/PropertyFilterBar.vue',
+        recipes: [
+          'ui-filter-chip',
+          'ui-filter-chip-active',
+          'ui-filter-chip-inactive',
+          'ui-floating-menu',
+          'ui-menu-action',
+          'ui-menu-divider',
+          'ui-field',
+          'ui-button-secondary',
+        ],
+      },
+      {
+        path: 'app/components/PropertyValueEditor.vue',
+        recipes: [
+          'ui-checkbox-indicator',
+          'ui-checkbox-indicator-checked',
+          'ui-inline-edit-trigger',
+          'ui-inline-edit-trigger-active',
+          'ui-floating-menu',
+          'ui-menu-action',
+          'ui-menu-divider',
+          'ui-field',
+          'ui-button-primary',
+          'ui-button-ghost',
+        ],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
   it('applies shared UI recipes to application drawer portal surfaces', () => {
     const source = readProjectFile('app/components/ApplicationDetailDrawer.vue')
 
@@ -1251,6 +1337,72 @@ describe('brand-neutral theme variables', () => {
           /border-red-300/,
           /border-amber-300/,
           /bg-green-100/,
+        ],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
+    }
+  })
+
+  it('keeps specialized menu and filter control choices behind shared recipes', () => {
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/components/SavedViewsMenu.vue',
+        patterns: [
+          /inline-flex items-center gap-1\.5 rounded-lg border px-3 py-2/,
+          /border-brand-300 bg-brand-50 text-brand-700/,
+          /absolute left-0 top-full mt-1\.5 z-30 w-72 rounded-xl border border-surface-200/,
+          /border-t border-surface-100 dark:border-surface-800 bg-surface-50\/60/,
+          /rounded-md border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900/,
+          /rounded-md bg-brand-600 px-3 py-1\.5/,
+          /text-brand-600 dark:text-brand-400 hover:bg-brand-50/,
+          /focus:ring-brand-500/,
+        ],
+      },
+      {
+        path: 'app/components/ColumnsMenu.vue',
+        patterns: [
+          /inline-flex items-center gap-1\.5 rounded-lg border px-3 py-2/,
+          /border-brand-300 bg-brand-50 text-brand-700/,
+          /rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900/,
+          /border-b border-surface-100 dark:border-surface-800/,
+          /bg-brand-600 border-brand-600 text-white/,
+        ],
+      },
+      {
+        path: 'app/components/OrgSwitcher.vue',
+        patterns: [
+          /bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-md/,
+          /bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-md shadow-lg/,
+          /bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400/,
+          /border-t border-surface-200 dark:border-surface-700/,
+        ],
+      },
+      {
+        path: 'app/components/PropertyFilterBar.vue',
+        patterns: [
+          /rounded-full border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950\/40/,
+          /rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900/,
+          /rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900/,
+          /inline-flex items-center gap-1 rounded-full border border-dashed border-surface-300/,
+          /focus:ring-brand-500\/20/,
+        ],
+      },
+      {
+        path: 'app/components/PropertyValueEditor.vue',
+        patterns: [
+          /bg-brand-600 border-brand-600 hover:bg-brand-700 hover:border-brand-700/,
+          /rounded border border-brand-500 bg-white dark:bg-surface-900/,
+          /rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg/,
+          /border-t border-surface-100 dark:border-surface-800/,
+          /rounded bg-brand-600 px-2 py-1/,
+          /ring-2 ring-brand-500/,
         ],
       },
     ]

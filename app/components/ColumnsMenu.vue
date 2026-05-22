@@ -41,43 +41,43 @@ const hiddenCount = computed(() =>
   <div ref="menuRef" class="relative">
     <button
       type="button"
-      class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+      class="ui-menu-trigger px-3 py-2 text-sm"
       :class="hiddenCount > 0
-        ? 'border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-700 dark:bg-brand-950 dark:text-brand-300'
-        : 'border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'"
+        ? 'ui-menu-trigger-active'
+        : ''"
       @click.stop="open = !open"
     >
       <Columns2 class="size-4" />
       Columns
       <span
         v-if="hiddenCount > 0"
-        class="inline-flex items-center justify-center min-w-[1rem] h-4 px-1 rounded-full bg-brand-600 text-white text-[10px] font-semibold"
+        class="ui-pill ui-pill-brand min-w-[1rem] h-4 justify-center px-1 py-0 text-[10px]"
       >{{ hiddenCount }}</span>
     </button>
 
     <div
       v-if="open"
-      class="absolute right-0 z-50 mt-1 w-48 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg py-1"
+      class="ui-floating-menu absolute right-0 z-50 mt-1 w-48 py-1"
     >
-      <div class="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-surface-400 dark:text-surface-500 border-b border-surface-100 dark:border-surface-800 mb-1">
+      <div class="ui-menu-divider px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-surface-400 dark:text-surface-500 mb-1">
         Toggle columns
       </div>
       <button
         v-for="col in columns"
         :key="col.key"
         type="button"
-        class="flex w-full items-center gap-2.5 px-3 py-1.5 text-sm transition-colors"
+        class="ui-menu-action px-3 py-1.5 text-sm"
         :class="col.required
           ? 'text-surface-400 dark:text-surface-500 cursor-not-allowed'
-          : 'text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800'"
+          : ''"
         :disabled="col.required"
         @click="!col.required && toggle(col.key)"
       >
         <span
-          class="flex size-4 shrink-0 items-center justify-center rounded border transition-colors"
+          class="ui-checkbox-indicator size-4 shrink-0"
           :class="(col.required || modelValue[col.key])
-            ? 'bg-brand-600 border-brand-600 text-white'
-            : 'border-surface-300 dark:border-surface-600'"
+            ? 'ui-checkbox-indicator-checked'
+            : ''"
         >
           <Check v-if="col.required || modelValue[col.key]" class="size-3" />
         </span>
