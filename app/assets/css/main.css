@@ -1704,6 +1704,70 @@
     color: var(--color-surface-400);
   }
 
+  .ui-settings-page {
+    width: 100%;
+    max-width: 42rem;
+    margin-inline: auto;
+  }
+
+  .ui-settings-page-wide {
+    max-width: 56rem;
+  }
+
+  .ui-settings-page-form {
+    max-width: 48rem;
+    padding-bottom: 8rem;
+  }
+
+  .ui-settings-page-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .ui-settings-page-header-split {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .ui-settings-panel {
+    overflow: hidden;
+  }
+
+  .ui-settings-panel-spaced {
+    margin-top: 2rem;
+  }
+
+  .ui-settings-panel-list {
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+
+  .ui-settings-panel-header {
+    padding: 1.25rem 1rem;
+  }
+
+  .ui-settings-panel-header-sm {
+    padding-block: 1rem;
+  }
+
+  .ui-settings-panel-body,
+  .ui-settings-panel-content {
+    padding: 1.25rem 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .ui-settings-panel-header,
+    .ui-settings-panel-body {
+      padding-inline: 1.5rem;
+    }
+
+    .ui-settings-panel-content {
+      padding: 1.5rem;
+    }
+  }
+
   .ui-timeline-line {
     background-color: var(--color-surface-200);
     border-color: var(--color-surface-200);
@@ -2286,6 +2350,8 @@
     .ui-menu-trigger,
     .ui-nav-shell,
     .ui-dashboard-panel,
+    .ui-settings-panel,
+    .ui-settings-panel-content,
     .ui-table-shell
   ),
   :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
@@ -2301,6 +2367,8 @@
     .ui-menu-trigger,
     .ui-nav-shell,
     .ui-dashboard-panel,
+    .ui-settings-panel,
+    .ui-settings-panel-content,
     .ui-table-shell
   ) {
     border-color: var(--ui-border) !important;
@@ -2317,6 +2385,7 @@
     .ui-filter-drawer-body,
     .ui-action-bar,
     .ui-empty-panel-dashed,
+    .ui-settings-panel-body,
     .ui-selectable-panel:hover
   ) {
     border-color: var(--ui-border) !important;
@@ -2338,6 +2407,7 @@
     .ui-drawer-tabs,
     .ui-filter-section,
     .ui-dashboard-panel-header,
+    .ui-settings-panel-header,
     .ui-list-divider > :not([hidden]) ~ :not([hidden]),
     .ui-menu-divider
   ) {
@@ -3001,6 +3071,9 @@
     .ui-action-bar,
     .ui-floating-menu,
     .ui-dashboard-panel,
+    .ui-settings-panel,
+    .ui-settings-panel-body,
+    .ui-settings-panel-content,
     .ui-dashboard-stat-card,
     .ui-dashboard-soft-icon,
     .ui-table-shell,
