@@ -154,8 +154,8 @@ async function copyCallbackUrl(providerId: string) {
 </script>
 
 <template>
-  <div class="w-full">
-    <div class="mb-6">
+  <div class="ui-settings-page">
+    <div class="ui-settings-page-header">
       <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-100">
         Single Sign-On
       </h1>
@@ -207,9 +207,9 @@ async function copyCallbackUrl(providerId: string) {
         <div
           v-for="provider in providers"
           :key="provider.id"
-          class="ui-panel p-4"
+          class="ui-panel ui-settings-panel"
         >
-          <div class="flex items-start justify-between gap-4">
+          <div class="ui-settings-panel-body flex items-start justify-between gap-4">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
                 <ShieldCheck class="size-4 text-emerald-500 shrink-0" />
@@ -320,12 +320,14 @@ async function copyCallbackUrl(providerId: string) {
 
       <!-- Registration form -->
       <Transition name="fade">
-        <div v-if="showForm" class="ui-panel p-5">
-          <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
-            Register OIDC SSO Provider
-          </h3>
+        <div v-if="showForm" class="ui-panel ui-settings-panel">
+          <div class="ui-panel-header ui-settings-panel-header">
+            <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100">
+              Register OIDC SSO Provider
+            </h3>
+          </div>
 
-          <form class="space-y-4" @submit.prevent="handleRegister">
+          <form class="ui-settings-panel-body space-y-4" @submit.prevent="handleRegister">
             <!-- Domain -->
             <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
               <span>Email domain <span class="text-danger-500">*</span></span>

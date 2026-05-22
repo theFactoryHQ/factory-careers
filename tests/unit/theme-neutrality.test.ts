@@ -64,6 +64,27 @@ describe('brand-neutral theme variables', () => {
       '.ui-table-shell',
       '.ui-table-header',
       '.ui-table-row',
+      '.ui-settings-page',
+      '.ui-settings-page-header',
+      '.ui-settings-panel',
+      '.ui-settings-panel-header',
+      '.ui-settings-panel-body',
+      '.ui-dashboard-panel',
+      '.ui-dashboard-panel-header',
+      '.ui-icon-tile',
+      '.ui-pill-success',
+      '.ui-status-dot',
+      '.ui-status-dot-success',
+      '.ui-code',
+      '.ui-inline-link',
+      '.ui-inline-link-brand',
+      '.ui-inline-link-muted',
+      '.ui-feedback-success',
+      '.ui-feedback-warning',
+      '.ui-icon-success',
+      '.ui-icon-brand',
+      '.ui-panel-danger',
+      '.ui-icon-danger',
     ]) {
       expect(css).toContain(recipe)
     }
@@ -73,6 +94,38 @@ describe('brand-neutral theme variables', () => {
     expect(css).toContain('var(--color-success-')
     expect(css).toContain('var(--color-brand-')
     expect(css).not.toMatch(/\.factory-(panel|alert|field|icon-state)\b/)
+  })
+
+  it('adapts shared UI recipes inside the Factory dashboard shell', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+
+    for (const recipe of [
+      '.ui-panel',
+      '.ui-panel-muted',
+      '.ui-panel-header',
+      '.ui-modal-panel',
+      '.ui-alert',
+      '.ui-button',
+      '.ui-button-secondary',
+      '.ui-button-ghost',
+      '.ui-button-danger-outline',
+      '.ui-field',
+      '.ui-icon-state',
+      '.ui-empty-state',
+      '.ui-empty-panel',
+      '.ui-list-row',
+      '.ui-nav-shell',
+      '.ui-nav-link',
+      '.ui-nav-icon',
+      '.ui-pill',
+      '.ui-table-shell',
+      '.ui-settings-panel-body',
+      '.ui-code',
+    ]) {
+      expect(css, `${recipe} should have a Factory dashboard scoped rule`).toContain(
+        `:where(.factory-dashboard-shell, .factory-dashboard-portal) ${recipe}`,
+      )
+    }
   })
 
   it('applies shared UI recipes to invite and response surfaces', () => {
@@ -206,23 +259,23 @@ describe('brand-neutral theme variables', () => {
     const recipeUsage = [
       {
         path: 'app/pages/dashboard/settings/index.vue',
-        recipes: ['ui-panel', 'ui-panel-header', 'ui-field', 'ui-alert-danger', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-field', 'ui-alert-danger', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
       },
       {
         path: 'app/pages/dashboard/settings/account.vue',
-        recipes: ['ui-panel', 'ui-panel-header', 'ui-field', 'ui-alert-danger', 'ui-button-primary'],
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-field', 'ui-alert-danger', 'ui-button-primary'],
       },
       {
         path: 'app/pages/dashboard/settings/localization.vue',
-        recipes: ['ui-panel', 'ui-panel-header', 'ui-panel-muted', 'ui-field', 'ui-alert-danger', 'ui-button-primary'],
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted', 'ui-field', 'ui-alert-danger', 'ui-button-primary'],
       },
       {
         path: 'app/pages/dashboard/settings/integrations.vue',
-        recipes: ['ui-panel', 'ui-panel-header', 'ui-panel-muted', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
       },
       {
         path: 'app/pages/dashboard/settings/sso.vue',
-        recipes: ['ui-panel', 'ui-panel-muted', 'ui-empty-panel', 'ui-field', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline'],
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted', 'ui-empty-panel', 'ui-field', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline'],
       },
     ]
 
@@ -239,8 +292,11 @@ describe('brand-neutral theme variables', () => {
     const source = readProjectFile('app/pages/dashboard/settings/members.vue')
 
     for (const recipe of [
-      'ui-panel',
-      'ui-panel-header',
+      'ui-settings-page',
+      'ui-settings-page-header',
+      'ui-settings-panel',
+      'ui-settings-panel-header',
+      'ui-settings-panel-body',
       'ui-list-row',
       'ui-field',
       'ui-alert-danger',

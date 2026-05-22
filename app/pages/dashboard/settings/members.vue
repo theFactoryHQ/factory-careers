@@ -538,9 +538,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="w-full">
+  <div class="ui-settings-page">
     <!-- Page title -->
-    <div class="mb-6">
+    <div class="ui-settings-page-header">
       <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">
         Members
       </h1>
@@ -566,7 +566,7 @@ onUnmounted(() => {
         enter-from-class="opacity-0 -translate-y-2"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-if="showInviteForm" class="ui-panel p-5">
+        <div v-if="showInviteForm" class="ui-panel ui-settings-panel ui-settings-panel-body">
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
               <UserPlus class="size-5 text-brand-600 dark:text-brand-400" />
@@ -656,8 +656,8 @@ onUnmounted(() => {
     </Transition>
 
     <!-- Pending invitations -->
-    <section v-if="canInvite && (isLoadingInvitations || pendingInvitations.length > 0)" class="ui-panel mb-6 overflow-hidden">
-      <div class="ui-panel-header px-4 sm:px-6 py-4">
+    <section v-if="canInvite && (isLoadingInvitations || pendingInvitations.length > 0)" class="ui-panel ui-settings-panel mb-6">
+      <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
           <div class="ui-icon-state ui-icon-state-warning flex items-center justify-center size-8 rounded-lg">
             <Clock class="size-4" />
@@ -751,8 +751,8 @@ onUnmounted(() => {
     </section>
 
     <!-- Invite links section -->
-    <section v-if="canInvite" class="ui-panel mb-6 overflow-hidden">
-      <div class="ui-panel-header px-4 sm:px-6 py-4">
+    <section v-if="canInvite" class="ui-panel ui-settings-panel mb-6">
+      <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-3 min-w-0">
             <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-8 shrink-0 rounded-lg">
@@ -949,8 +949,8 @@ onUnmounted(() => {
     </section>
 
     <!-- Join requests section -->
-    <section v-if="canInvite && (isLoadingJoinRequests || joinRequests.length > 0)" class="ui-panel mb-6 overflow-hidden">
-      <div class="ui-panel-header px-4 sm:px-6 py-4">
+    <section v-if="canInvite && (isLoadingJoinRequests || joinRequests.length > 0)" class="ui-panel ui-settings-panel mb-6">
+      <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
           <div class="ui-icon-state ui-icon-state-warning flex items-center justify-center size-8 rounded-lg">
             <UserCheck class="size-4" />
@@ -1050,8 +1050,8 @@ onUnmounted(() => {
     </section>
 
     <!-- Members list -->
-    <section class="ui-panel">
-      <div class="ui-panel-header px-4 sm:px-6 py-5">
+    <section class="ui-panel ui-settings-panel">
+      <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="flex items-center gap-3">
             <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">

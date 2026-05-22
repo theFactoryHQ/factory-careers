@@ -692,6 +692,157 @@
     background-color: color-mix(in srgb, var(--color-surface-800) 45%, transparent);
   }
 
+  .ui-settings-page {
+    width: 100%;
+  }
+
+  .ui-settings-page-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .ui-settings-panel,
+  .ui-dashboard-panel {
+    overflow: hidden;
+  }
+
+  .ui-settings-panel-header,
+  .ui-dashboard-panel-header {
+    padding: 1.25rem 1rem;
+  }
+
+  .ui-settings-panel-body {
+    padding: 1.25rem 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .ui-settings-panel-header,
+    .ui-dashboard-panel-header,
+    .ui-settings-panel-body {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  .ui-icon-tile {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ui-pill-success {
+    background-color: var(--color-success-50);
+    color: var(--color-success-700);
+  }
+
+  .dark .ui-pill-success {
+    background-color: color-mix(in srgb, var(--color-success-950) 50%, transparent);
+    color: var(--color-success-300);
+  }
+
+  .ui-status-dot {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+  }
+
+  .ui-status-dot-success {
+    background-color: var(--color-success-500);
+  }
+
+  .ui-code {
+    border-radius: 0.25rem;
+    background-color: var(--color-surface-100);
+    padding: 0.125rem 0.25rem;
+    color: var(--color-surface-700);
+    font-size: 0.75rem;
+  }
+
+  .dark .ui-code {
+    background-color: var(--color-surface-800);
+    color: var(--color-surface-300);
+  }
+
+  .ui-inline-link {
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 150ms ease;
+  }
+
+  .ui-inline-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .ui-inline-link-brand {
+    color: var(--color-brand-600);
+  }
+
+  .dark .ui-inline-link-brand {
+    color: var(--color-brand-400);
+  }
+
+  .ui-inline-link-muted {
+    color: var(--color-surface-500);
+  }
+
+  .dark .ui-inline-link-muted {
+    color: var(--color-surface-400);
+  }
+
+  .ui-feedback-success {
+    color: var(--color-success-600);
+    font-weight: 500;
+  }
+
+  .dark .ui-feedback-success {
+    color: var(--color-success-300);
+  }
+
+  .ui-feedback-warning {
+    color: var(--color-warning-600);
+    font-weight: 500;
+  }
+
+  .dark .ui-feedback-warning {
+    color: var(--color-warning-300);
+  }
+
+  .ui-icon-success {
+    color: var(--color-success-600);
+  }
+
+  .dark .ui-icon-success {
+    color: var(--color-success-400);
+  }
+
+  .ui-icon-brand {
+    color: var(--color-brand-600);
+  }
+
+  .dark .ui-icon-brand {
+    color: var(--color-brand-400);
+  }
+
+  .ui-panel-danger {
+    border-color: var(--color-danger-200);
+    background-color: var(--color-danger-50);
+  }
+
+  .dark .ui-panel-danger {
+    border-color: var(--color-danger-800);
+    background-color: color-mix(in srgb, var(--color-danger-950) 40%, var(--color-surface-900));
+  }
+
+  .ui-icon-danger {
+    color: var(--color-danger-600);
+  }
+
+  .dark .ui-icon-danger {
+    color: var(--color-danger-400);
+  }
+
   .factory-button-cta {
     box-sizing: border-box;
     border-radius: 0;
@@ -929,6 +1080,313 @@
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) * {
     letter-spacing: 0 !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-panel {
+    border-color: var(--ui-border-strong) !important;
+    border-radius: 0 !important;
+    background-color: var(--ui-panel) !important;
+    color: var(--ui-text) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-panel-muted {
+    border-color: var(--ui-border) !important;
+    border-radius: 0 !important;
+    background-color: var(--ui-panel-strong) !important;
+    color: var(--ui-muted) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-panel-header {
+    border-color: var(--ui-border-strong) !important;
+    background-color: rgb(255 255 255 / 0.025) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-modal-panel {
+    border-radius: 0 !important;
+    background-color: var(--ui-panel) !important;
+    color: var(--ui-text) !important;
+    outline-color: var(--ui-border-strong) !important;
+    box-shadow: 0 24px 80px rgb(0 0 0 / 0.65) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-alert {
+    border-color: var(--ui-border-strong) !important;
+    border-radius: 0 !important;
+    background-color: rgb(255 255 255 / 0.035) !important;
+    color: rgb(255 255 255 / 0.76) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-alert-danger,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-panel-danger {
+    border-color: color-mix(in srgb, var(--color-danger-500) 52%, transparent) !important;
+    background-color: color-mix(in srgb, var(--color-danger-950) 38%, #050505) !important;
+    color: rgb(253 164 175) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-alert-success {
+    border-color: color-mix(in srgb, var(--color-success-500) 46%, transparent) !important;
+    background-color: color-mix(in srgb, var(--color-success-950) 34%, #050505) !important;
+    color: rgb(134 239 172) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-alert-warning {
+    border-color: color-mix(in srgb, var(--color-warning-500) 46%, transparent) !important;
+    background-color: color-mix(in srgb, var(--color-warning-950) 34%, #050505) !important;
+    color: rgb(251 191 36) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-alert-info {
+    border-color: rgb(14 165 233 / 0.42) !important;
+    background-color: rgb(14 165 233 / 0.12) !important;
+    color: rgb(125 211 252) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button {
+    border-radius: 0 !important;
+    font-weight: 400 !important;
+    letter-spacing: 0 !important;
+    text-transform: uppercase !important;
+    box-shadow: none !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-primary {
+    border-color: var(--color-brand-500) !important;
+    background-color: var(--color-brand-500) !important;
+    color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-primary:hover:not(:disabled) {
+    border-color: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #080808 !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-success {
+    border-color: color-mix(in srgb, var(--color-success-400) 58%, transparent) !important;
+    background-color: color-mix(in srgb, var(--color-success-600) 86%, #000000) !important;
+    color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-success:hover:not(:disabled) {
+    border-color: rgb(134 239 172) !important;
+    background-color: rgb(134 239 172) !important;
+    color: #080808 !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-secondary {
+    border-color: var(--ui-border-strong) !important;
+    background-color: var(--ui-panel) !important;
+    color: rgb(255 255 255 / 0.72) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-secondary:hover:not(:disabled) {
+    border-color: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #080808 !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-ghost {
+    border-color: transparent !important;
+    background-color: transparent !important;
+    color: var(--ui-muted) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-ghost:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-brand-500) 12%, transparent) !important;
+    color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-danger {
+    border-color: color-mix(in srgb, var(--color-danger-400) 65%, transparent) !important;
+    background-color: color-mix(in srgb, var(--color-danger-600) 88%, #000000) !important;
+    color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-danger:hover:not(:disabled) {
+    border-color: rgb(253 164 175) !important;
+    background-color: rgb(253 164 175) !important;
+    color: #080808 !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-danger-outline {
+    border-color: color-mix(in srgb, var(--color-danger-400) 62%, transparent) !important;
+    background-color: var(--ui-panel) !important;
+    color: rgb(253 164 175) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-danger-outline:hover:not(:disabled) {
+    border-color: rgb(253 164 175) !important;
+    background-color: rgb(253 164 175) !important;
+    color: #080808 !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-field {
+    border-color: var(--ui-border-strong) !important;
+    border-radius: 0 !important;
+    background-color: rgb(0 0 0 / 0.45) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-field::placeholder {
+    color: var(--ui-faint) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-field:focus,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-field:focus-within {
+    border-color: color-mix(in srgb, var(--color-brand-500) 75%, transparent) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-500) 20%, transparent) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-icon-state {
+    border: 1px solid var(--ui-border) !important;
+    border-radius: 0 !important;
+    background-color: rgb(255 255 255 / 0.04) !important;
+    color: var(--ui-muted) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-icon-state-brand,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-icon-brand {
+    color: var(--color-brand-400) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-icon-state-success,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-icon-success {
+    color: rgb(134 239 172) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-icon-state-warning {
+    color: rgb(251 191 36) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-icon-state-danger,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-icon-danger {
+    color: rgb(253 164 175) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-empty-state {
+    color: var(--ui-muted) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-empty-panel {
+    border-color: var(--ui-border-strong) !important;
+    border-radius: 0 !important;
+    background-color: var(--ui-panel) !important;
+    color: var(--ui-muted) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-list-row {
+    color: rgb(255 255 255 / 0.74) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-list-row:hover {
+    background-color: color-mix(in srgb, var(--color-brand-500) 7%, transparent) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-nav-shell {
+    border-color: var(--ui-border-strong) !important;
+    background-color: #000000 !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-nav-link {
+    border-radius: 0 !important;
+    color: var(--ui-muted) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-nav-link:hover {
+    background-color: rgb(255 255 255 / 0.055) !important;
+    color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-nav-link-active {
+    background-color: color-mix(in srgb, var(--color-brand-500) 16%, #000000) !important;
+    color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-nav-icon {
+    border: 1px solid var(--ui-border) !important;
+    border-radius: 0 !important;
+    background-color: rgb(255 255 255 / 0.04) !important;
+    color: var(--ui-faint) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-nav-icon-active,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-nav-link-active .ui-nav-icon {
+    border-color: color-mix(in srgb, var(--color-brand-500) 50%, transparent) !important;
+    background-color: color-mix(in srgb, var(--color-brand-500) 16%, #000000) !important;
+    color: var(--color-brand-300) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-pill {
+    border: 1px solid var(--ui-border) !important;
+    border-radius: 0 !important;
+    background-color: rgb(255 255 255 / 0.045) !important;
+    color: var(--ui-muted) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-pill-brand {
+    border-color: color-mix(in srgb, var(--color-brand-500) 46%, transparent) !important;
+    background-color: color-mix(in srgb, var(--color-brand-500) 14%, transparent) !important;
+    color: var(--color-brand-300) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-pill-success {
+    border-color: color-mix(in srgb, var(--color-success-500) 42%, transparent) !important;
+    background-color: rgb(34 197 94 / 0.13) !important;
+    color: rgb(134 239 172) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-settings-page {
+    color: var(--ui-text) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-settings-page-header {
+    color: var(--ui-text) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-settings-panel,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-dashboard-panel {
+    border-color: var(--ui-border-strong) !important;
+    border-radius: 0 !important;
+    background-color: var(--ui-panel) !important;
+    color: var(--ui-text) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-settings-panel-header,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-dashboard-panel-header {
+    border-color: var(--ui-border-strong) !important;
+    background-color: rgb(255 255 255 / 0.025) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-settings-panel-body {
+    color: rgb(255 255 255 / 0.76) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-code {
+    border: 1px solid var(--ui-border) !important;
+    border-radius: 0 !important;
+    background-color: rgb(255 255 255 / 0.055) !important;
+    color: rgb(255 255 255 / 0.78) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-inline-link-brand {
+    color: var(--color-brand-400) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-inline-link-muted {
+    color: var(--ui-muted) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-feedback-success {
+    color: rgb(134 239 172) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-feedback-warning {
+    color: rgb(251 191 36) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-status-dot-success {
+    background-color: rgb(34 197 94) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(

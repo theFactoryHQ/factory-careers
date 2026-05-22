@@ -87,9 +87,9 @@ const previewDateFormatted = computed(() => {
 </script>
 
 <template>
-  <div class="w-full">
+  <div class="ui-settings-page">
     <!-- Page title -->
-    <div class="mb-6">
+    <div class="ui-settings-page-header">
       <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">
         Localization
       </h1>
@@ -99,8 +99,8 @@ const previewDateFormatted = computed(() => {
     </div>
 
     <!-- Settings card -->
-    <section class="ui-panel overflow-hidden">
-      <div class="ui-panel-header px-4 sm:px-6 py-5">
+    <section class="ui-panel ui-settings-panel">
+      <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
           <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
             <Globe class="size-5" />
@@ -112,7 +112,7 @@ const previewDateFormatted = computed(() => {
         </div>
       </div>
 
-      <div class="px-4 sm:px-6 py-5 space-y-6">
+      <div class="ui-settings-panel-body space-y-6">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <!-- Name display format -->
           <div>

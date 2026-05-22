@@ -62,9 +62,9 @@ function getInitials(name: string | undefined): string {
 </script>
 
 <template>
-  <div class="w-full">
+  <div class="ui-settings-page">
     <!-- Page title -->
-    <div class="mb-6">
+    <div class="ui-settings-page-header">
       <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">
         Account
       </h1>
@@ -74,8 +74,8 @@ function getInitials(name: string | undefined): string {
     </div>
 
     <!-- Profile section -->
-    <section class="ui-panel overflow-hidden">
-      <div class="ui-panel-header px-4 sm:px-6 py-5">
+    <section class="ui-panel ui-settings-panel">
+      <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
           <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
             <User class="size-5" />
@@ -87,7 +87,7 @@ function getInitials(name: string | undefined): string {
         </div>
       </div>
 
-      <div class="px-4 sm:px-6 py-5 space-y-5">
+      <div class="ui-settings-panel-body space-y-5">
         <!-- Avatar row -->
         <div class="flex items-center gap-4">
           <div v-if="session?.user?.image" class="size-16 rounded-full overflow-hidden ring-2 ring-surface-200 dark:ring-surface-700">
