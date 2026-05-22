@@ -1096,11 +1096,61 @@
   }
 
   .ui-floating-menu {
+    border: 1px solid var(--color-surface-200);
+    border-radius: 0.75rem;
+    background-color: #ffffff;
+    color: var(--color-surface-900);
     box-shadow: 0 16px 30px -18px rgb(15 23 42 / 0.35);
   }
 
   .dark .ui-floating-menu {
+    border-color: var(--color-surface-800);
+    background-color: var(--color-surface-900);
+    color: var(--color-surface-100);
     box-shadow: 0 16px 30px -18px rgb(0 0 0 / 0.65);
+  }
+
+  .ui-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border: 1px solid var(--color-surface-200);
+    border-radius: 0.5rem;
+    background-color: #ffffff;
+    color: var(--color-surface-600);
+    cursor: pointer;
+    font-weight: 500;
+    text-align: left;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+
+  .ui-menu-trigger:hover {
+    background-color: var(--color-surface-50);
+    color: var(--color-surface-800);
+  }
+
+  .dark .ui-menu-trigger {
+    border-color: var(--color-surface-800);
+    background-color: var(--color-surface-900);
+    color: var(--color-surface-400);
+  }
+
+  .dark .ui-menu-trigger:hover {
+    background-color: var(--color-surface-800);
+    color: var(--color-surface-100);
+  }
+
+  .ui-menu-trigger-active {
+    border-color: var(--color-brand-300);
+    background-color: var(--color-brand-50);
+    color: var(--color-brand-700);
+  }
+
+  .dark .ui-menu-trigger-active {
+    border-color: var(--color-brand-700);
+    background-color: color-mix(in srgb, var(--color-brand-950) 50%, transparent);
+    color: var(--color-brand-300);
   }
 
   .ui-menu-action {
@@ -1135,6 +1185,17 @@
     color: var(--color-surface-100);
   }
 
+  .ui-menu-action-active {
+    background-color: var(--color-brand-50);
+    color: var(--color-brand-700);
+    font-weight: 500;
+  }
+
+  .dark .ui-menu-action-active {
+    background-color: color-mix(in srgb, var(--color-brand-950) 50%, transparent);
+    color: var(--color-brand-300);
+  }
+
   .ui-menu-action-danger {
     color: var(--color-danger-600);
   }
@@ -1151,6 +1212,58 @@
   .dark .ui-menu-action-danger:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-danger-950) 35%, transparent);
     color: var(--color-danger-300);
+  }
+
+  .ui-checkbox-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-surface-300);
+    border-radius: 0.25rem;
+    background-color: transparent;
+    color: transparent;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease;
+  }
+
+  .ui-checkbox-indicator:hover {
+    border-color: var(--color-surface-400);
+  }
+
+  .dark .ui-checkbox-indicator {
+    border-color: var(--color-surface-600);
+  }
+
+  .dark .ui-checkbox-indicator:hover {
+    border-color: var(--color-surface-500);
+  }
+
+  .ui-checkbox-indicator-checked {
+    border-color: var(--color-brand-600);
+    background-color: var(--color-brand-600);
+    color: #ffffff;
+  }
+
+  .ui-checkbox-indicator-checked:hover {
+    border-color: var(--color-brand-700);
+    background-color: var(--color-brand-700);
+  }
+
+  .ui-inline-edit-trigger {
+    border-radius: 0.375rem;
+    cursor: text;
+    transition: background-color 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+  }
+
+  .ui-inline-edit-trigger:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-surface-100) 80%, transparent);
+  }
+
+  .dark .ui-inline-edit-trigger:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-surface-800) 50%, transparent);
+  }
+
+  .ui-inline-edit-trigger-active {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-500) 30%, transparent);
   }
 
   .ui-nav-shell {
@@ -1411,6 +1524,10 @@
 
   .ui-status-dot-success {
     background-color: var(--color-success-500);
+  }
+
+  .ui-status-dot-warning {
+    background-color: var(--color-warning-500);
   }
 
   .ui-status-dot-danger {
@@ -2211,6 +2328,7 @@
     .ui-modal-panel,
     .ui-drawer-panel,
     .ui-floating-menu,
+    .ui-menu-trigger,
     .ui-nav-shell,
     .ui-dashboard-panel,
     .ui-table-shell
@@ -2250,7 +2368,9 @@
   :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
     .ui-panel-brand,
     .ui-panel-brand-header,
-    .ui-selectable-panel-active
+    .ui-selectable-panel-active,
+    .ui-menu-trigger-active,
+    .ui-menu-action-active
   ) {
     border-color: color-mix(in srgb, var(--color-brand-500) 45%, transparent) !important;
     background-color: color-mix(in srgb, var(--color-brand-500) 12%, var(--ui-panel)) !important;
@@ -2296,6 +2416,8 @@
     .ui-field-icon,
     .ui-field-icon-button,
     .ui-disclosure-trigger,
+    .ui-checkbox-indicator,
+    .ui-inline-edit-trigger,
     .ui-button-secondary,
     .ui-button-ghost,
     .ui-button-danger-outline
@@ -2308,6 +2430,8 @@
   :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
     .ui-field-icon-button,
     .ui-disclosure-trigger,
+    .ui-checkbox-indicator,
+    .ui-inline-edit-trigger,
     .ui-button-secondary,
     .ui-button-ghost,
     .ui-button-danger-outline
@@ -2315,6 +2439,12 @@
     border-color: var(--ui-border-strong) !important;
     background-color: rgb(255 255 255 / 0.07) !important;
     color: var(--ui-text) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-checkbox-indicator-checked {
+    border-color: var(--color-brand-500) !important;
+    background-color: var(--color-brand-500) !important;
+    color: #ffffff !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
@@ -2719,6 +2849,11 @@
     .ui-field,
     .ui-field-addon,
     .ui-filter-chip,
+    .ui-menu-trigger,
+    .ui-menu-action,
+    .ui-menu-action-active,
+    .ui-checkbox-indicator,
+    .ui-inline-edit-trigger,
     .ui-pill,
     .ui-code,
     .ui-step-marker,
