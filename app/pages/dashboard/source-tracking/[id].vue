@@ -243,7 +243,7 @@ async function handleSidebarUpdated() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-6xl">
+  <div class="ui-dashboard-page">
     <!-- ─── Loading skeleton ─── -->
     <div v-if="fetchStatus === 'pending'">
       <div class="mb-8">
@@ -252,19 +252,19 @@ async function handleSidebarUpdated() {
         <div class="h-4 w-48 bg-surface-200 dark:bg-surface-700 rounded animate-pulse" />
       </div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div v-for="i in 4" :key="i" class="ui-dashboard-panel p-6 animate-pulse">
+        <div v-for="i in 4" :key="i" class="ui-dashboard-panel ui-dashboard-panel-content animate-pulse">
           <div class="h-4 w-20 bg-surface-200 dark:bg-surface-700 rounded mb-4" />
           <div class="h-9 w-14 bg-surface-200 dark:bg-surface-700 rounded" />
         </div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 ui-dashboard-panel p-6 animate-pulse">
+        <div class="lg:col-span-2 ui-dashboard-panel ui-dashboard-panel-content animate-pulse">
           <div class="h-5 w-40 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-4">
             <div v-for="i in 5" :key="i" class="h-10 bg-surface-100 dark:bg-surface-800 rounded-xl" />
           </div>
         </div>
-        <div class="ui-dashboard-panel p-6 animate-pulse">
+        <div class="ui-dashboard-panel ui-dashboard-panel-content animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-3">
             <div v-for="i in 4" :key="i" class="h-14 bg-surface-100 dark:bg-surface-800 rounded-xl" />
@@ -291,7 +291,7 @@ async function handleSidebarUpdated() {
     <!-- ─── Main content ─── -->
     <template v-else-if="link">
       <!-- ─── Back + Header ─── -->
-      <div class="mb-6 sm:mb-8">
+      <div class="ui-dashboard-page-header">
         <NuxtLink
           :to="localePath('/dashboard/source-tracking')"
           class="inline-flex items-center gap-1.5 text-sm text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 transition-colors mb-4"
@@ -300,7 +300,7 @@ async function handleSidebarUpdated() {
           Back to Source Tracking
         </NuxtLink>
 
-        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div class="ui-dashboard-page-header-split">
           <div>
             <div class="flex items-center gap-3 mb-2">
               <h1 class="text-xl sm:text-2xl font-bold text-surface-900 dark:text-surface-50 tracking-tight">
@@ -378,7 +378,7 @@ async function handleSidebarUpdated() {
       </div>
 
       <!-- ─── Tracking URL display ─── -->
-      <div class="ui-panel-muted mb-6 sm:mb-8 px-4 py-3 flex items-center gap-3">
+      <div class="ui-panel-muted ui-dashboard-inline-notice">
         <Link2 class="size-4 text-surface-400 shrink-0" />
         <code class="ui-code truncate flex-1">
           {{ buildTrackingUrl(link.code) }}
@@ -394,7 +394,7 @@ async function handleSidebarUpdated() {
       <!-- ─── Stat cards ─── -->
       <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <!-- Clicks -->
-        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-brand group relative p-5 sm:p-6 overflow-hidden isolate">
+        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-brand ui-dashboard-stat-card-content group relative overflow-hidden isolate">
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <MousePointerClick class="absolute -bottom-3 -right-3 size-24 text-blue-500/[0.03] dark:text-blue-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
           <div class="relative">
@@ -410,7 +410,7 @@ async function handleSidebarUpdated() {
         </div>
 
         <!-- Applications -->
-        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-brand group relative p-5 sm:p-6 overflow-hidden isolate">
+        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-brand ui-dashboard-stat-card-content group relative overflow-hidden isolate">
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <Users class="absolute -bottom-3 -right-3 size-24 text-brand-500/[0.03] dark:text-brand-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
           <div class="relative">
@@ -426,7 +426,7 @@ async function handleSidebarUpdated() {
         </div>
 
         <!-- CVR -->
-        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-teal group relative p-5 sm:p-6 overflow-hidden isolate">
+        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-teal ui-dashboard-stat-card-content group relative overflow-hidden isolate">
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <Target class="absolute -bottom-3 -right-3 size-24 text-teal-500/[0.03] dark:text-teal-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
           <div class="relative">
@@ -442,7 +442,7 @@ async function handleSidebarUpdated() {
         </div>
 
         <!-- Hire Rate -->
-        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-teal group relative p-5 sm:p-6 overflow-hidden isolate">
+        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-teal ui-dashboard-stat-card-content group relative overflow-hidden isolate">
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <CheckCircle2 class="absolute -bottom-3 -right-3 size-24 text-green-500/[0.03] dark:text-green-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
           <div class="relative">
@@ -458,7 +458,7 @@ async function handleSidebarUpdated() {
         </div>
 
         <!-- Attributed -->
-        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-violet group relative p-5 sm:p-6 overflow-hidden isolate">
+        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-violet ui-dashboard-stat-card-content group relative overflow-hidden isolate">
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <Activity class="absolute -bottom-3 -right-3 size-24 text-violet-500/[0.03] dark:text-violet-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
           <div class="relative">
@@ -480,7 +480,7 @@ async function handleSidebarUpdated() {
         <div class="lg:col-span-2 space-y-6">
           <!-- Pipeline funnel -->
           <div class="ui-dashboard-panel">
-            <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
+            <div class="ui-dashboard-panel-header ui-dashboard-panel-header-lg ui-dashboard-panel-header-split">
               <div class="flex items-center gap-2.5">
                 <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
                   <TrendingUp class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -490,7 +490,7 @@ async function handleSidebarUpdated() {
               <span class="text-xs text-surface-400 tabular-nums font-medium">{{ funnelTotal }} total</span>
             </div>
 
-            <div v-if="funnelTotal === 0" class="px-6 py-12 text-center">
+            <div v-if="funnelTotal === 0" class="ui-dashboard-panel-empty-lg">
               <div class="ui-dashboard-soft-icon mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl">
                 <TrendingUp class="size-5 text-surface-400 dark:text-surface-500" />
               </div>
@@ -498,7 +498,7 @@ async function handleSidebarUpdated() {
               <p class="text-xs text-surface-400 dark:text-surface-500">Applications from this link will appear here.</p>
             </div>
 
-            <div v-else class="px-6 py-5 space-y-4">
+            <div v-else class="ui-dashboard-panel-body-lg space-y-4">
               <div v-for="s in funnelStages" :key="s.stage">
                 <div class="flex items-center justify-between mb-1.5">
                   <span class="text-sm font-medium text-surface-700 dark:text-surface-200 capitalize">{{ s.stage }}</span>
@@ -530,14 +530,14 @@ async function handleSidebarUpdated() {
         <div class="space-y-6">
           <!-- UTM Parameters -->
           <div class="ui-dashboard-panel">
-            <div class="ui-dashboard-panel-header flex items-center gap-2.5 px-5 py-4">
+            <div class="ui-dashboard-panel-header ui-dashboard-panel-header-md ui-dashboard-panel-header-inline">
               <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
                 <Tag class="size-3.5 text-surface-500 dark:text-surface-400" />
               </div>
               <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Link Configuration</h2>
             </div>
 
-            <div class="px-5 py-4 space-y-3">
+            <div class="ui-dashboard-panel-body-md space-y-3">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-surface-500 dark:text-surface-400">Channel</span>
                 <span class="inline-flex items-center gap-1.5 text-sm font-medium text-surface-800 dark:text-surface-200">
@@ -574,21 +574,21 @@ async function handleSidebarUpdated() {
 
           <!-- Referrer domains -->
           <div class="ui-dashboard-panel">
-            <div class="ui-dashboard-panel-header flex items-center gap-2.5 px-5 py-4">
+            <div class="ui-dashboard-panel-header ui-dashboard-panel-header-md ui-dashboard-panel-header-inline">
               <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
                 <Globe class="size-3.5 text-surface-500 dark:text-surface-400" />
               </div>
               <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Referrer Domains</h2>
             </div>
 
-            <div v-if="referrerDomains.length === 0" class="px-5 py-10 text-center">
+            <div v-if="referrerDomains.length === 0" class="ui-dashboard-panel-empty-md">
               <div class="ui-dashboard-soft-icon mx-auto mb-3 flex items-center justify-center size-10 rounded-2xl">
                 <Globe class="size-4 text-surface-400 dark:text-surface-500" />
               </div>
               <p class="text-xs font-medium text-surface-500 dark:text-surface-400">No referrer data</p>
             </div>
 
-            <div v-else class="px-5 py-4 space-y-3">
+            <div v-else class="ui-dashboard-panel-body-md space-y-3">
               <div
                 v-for="ref in referrerDomains"
                 :key="ref.domain ?? 'unknown'"
@@ -609,7 +609,7 @@ async function handleSidebarUpdated() {
 
       <!-- ─── Applications Over Time (full width) ─── -->
       <div class="mb-6 ui-dashboard-panel">
-        <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
+        <div class="ui-dashboard-panel-header ui-dashboard-panel-header-lg ui-dashboard-panel-header-split">
           <div class="flex items-center gap-2.5">
             <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
               <BarChart3 class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -618,7 +618,7 @@ async function handleSidebarUpdated() {
           </div>
         </div>
 
-        <div v-if="dailyTrend.length === 0" class="px-6 py-12 text-center">
+        <div v-if="dailyTrend.length === 0" class="ui-dashboard-panel-empty-lg">
           <div class="ui-dashboard-soft-icon mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl">
             <BarChart3 class="size-5 text-surface-400 dark:text-surface-500" />
           </div>
@@ -626,7 +626,7 @@ async function handleSidebarUpdated() {
           <p class="text-xs text-surface-400 dark:text-surface-500">Daily application counts will appear here.</p>
         </div>
 
-        <div v-else class="px-6 py-5">
+        <div v-else class="ui-dashboard-panel-body-lg">
           <div class="flex items-end gap-1 h-40">
             <div
               v-for="day in dailyTrend"
@@ -651,7 +651,7 @@ async function handleSidebarUpdated() {
 
       <!-- ─── Attributed Applications Table ─── -->
       <div class="ui-table-shell shadow-xs dark:shadow-none">
-        <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
+        <div class="ui-dashboard-panel-header ui-dashboard-panel-header-lg ui-dashboard-panel-header-split">
           <div class="flex items-center gap-2.5">
             <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
               <Users class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -765,7 +765,7 @@ async function handleSidebarUpdated() {
       >
         <div class="ui-modal-panel relative w-full max-w-lg">
           <!-- Header -->
-          <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
+          <div class="ui-dashboard-panel-header ui-dashboard-panel-header-lg ui-dashboard-panel-header-split">
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Edit Tracking Link</h2>
             <button
               class="ui-button ui-button-ghost size-8 p-0"
@@ -776,7 +776,7 @@ async function handleSidebarUpdated() {
           </div>
 
           <!-- Body -->
-          <form class="px-6 py-5 space-y-4" @submit.prevent="handleSaveEdit">
+          <form class="ui-dashboard-modal-body" @submit.prevent="handleSaveEdit">
             <!-- Name -->
             <div>
               <label for="edit-link-name" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Link Name</label>

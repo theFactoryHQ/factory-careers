@@ -271,7 +271,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
 </script>
 
 <template>
-  <div class="mx-auto max-w-6xl">
+  <div class="ui-dashboard-page">
     <!-- ─── Loading skeleton ─── -->
     <div v-if="statsStatus === 'pending'">
       <div class="mb-10">
@@ -279,19 +279,19 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
         <div class="h-4 w-72 bg-surface-200 dark:bg-surface-700 rounded animate-pulse" />
       </div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        <div v-for="i in 4" :key="i" class="ui-dashboard-panel p-6 animate-pulse">
+        <div v-for="i in 4" :key="i" class="ui-dashboard-panel ui-dashboard-panel-content animate-pulse">
           <div class="h-4 w-20 bg-surface-200 dark:bg-surface-700 rounded mb-4" />
           <div class="h-9 w-14 bg-surface-200 dark:bg-surface-700 rounded" />
         </div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 ui-dashboard-panel p-6 animate-pulse">
+        <div class="lg:col-span-2 ui-dashboard-panel ui-dashboard-panel-content animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-4">
             <div v-for="i in 5" :key="i" class="h-10 bg-surface-100 dark:bg-surface-800 rounded-xl" />
           </div>
         </div>
-        <div class="ui-dashboard-panel p-6 animate-pulse">
+        <div class="ui-dashboard-panel ui-dashboard-panel-content animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-3">
             <div v-for="i in 4" :key="i" class="h-14 bg-surface-100 dark:bg-surface-800 rounded-xl" />
@@ -313,7 +313,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
     <!-- ─── Main content ─── -->
     <template v-else>
       <!-- ─── Header ─── -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-10">
+      <div class="ui-dashboard-page-header ui-dashboard-page-header-split">
         <div>
           <h1 class="text-xl sm:text-2xl font-bold text-surface-900 dark:text-surface-50 tracking-tight">Source Tracking</h1>
           <p class="text-sm text-surface-400 dark:text-surface-500 mt-1">
@@ -396,7 +396,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
         <!-- ─── Stat cards ─── -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-10">
           <!-- Tracked Applications -->
-          <div class="ui-dashboard-stat-card ui-dashboard-stat-card-brand group relative p-5 sm:p-6 overflow-hidden isolate">
+          <div class="ui-dashboard-stat-card ui-dashboard-stat-card-brand ui-dashboard-stat-card-content group relative overflow-hidden isolate">
             <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <Target class="absolute -bottom-3 -right-3 size-24 text-brand-500/[0.03] dark:text-brand-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
             <div class="relative">
@@ -412,7 +412,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </div>
 
           <!-- Attribution Rate -->
-          <div class="ui-dashboard-stat-card ui-dashboard-stat-card-teal group relative p-5 sm:p-6 overflow-hidden isolate">
+          <div class="ui-dashboard-stat-card ui-dashboard-stat-card-teal ui-dashboard-stat-card-content group relative overflow-hidden isolate">
             <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <Activity class="absolute -bottom-3 -right-3 size-24 text-teal-500/[0.03] dark:text-teal-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
             <div class="relative">
@@ -428,7 +428,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </div>
 
           <!-- Active Links -->
-          <div class="ui-dashboard-stat-card ui-dashboard-stat-card-violet group relative p-5 sm:p-6 overflow-hidden isolate">
+          <div class="ui-dashboard-stat-card ui-dashboard-stat-card-violet ui-dashboard-stat-card-content group relative overflow-hidden isolate">
             <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <Link2 class="absolute -bottom-3 -right-3 size-24 text-violet-500/[0.03] dark:text-violet-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
             <div class="relative">
@@ -445,7 +445,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
 
           <!-- Untracked -->
           <div
-            class="ui-dashboard-stat-card group relative p-5 sm:p-6 overflow-hidden isolate"
+            class="ui-dashboard-stat-card ui-dashboard-stat-card-content group relative overflow-hidden isolate"
             :class="summary.totalUntracked > 0
               ? 'ui-dashboard-stat-card-warning'
               : ''"
@@ -486,7 +486,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           <div class="lg:col-span-2 space-y-6">
             <!-- Channel breakdown -->
             <div class="ui-dashboard-panel">
-              <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
+              <div class="ui-dashboard-panel-header ui-dashboard-panel-header-lg ui-dashboard-panel-header-split">
                 <div class="flex items-center gap-2.5">
                   <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
                     <BarChart3 class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -496,7 +496,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                 <span class="text-xs text-surface-400 tabular-nums font-medium">{{ totalApplications }} total</span>
               </div>
 
-              <div v-if="channelBreakdown.length === 0" class="px-6 py-12 text-center">
+              <div v-if="channelBreakdown.length === 0" class="ui-dashboard-panel-empty-lg">
                 <div class="ui-dashboard-soft-icon mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl">
                   <BarChart3 class="size-5 text-surface-400 dark:text-surface-500" />
                 </div>
@@ -506,7 +506,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                 </p>
               </div>
 
-              <div v-else class="px-6 py-5 space-y-4">
+              <div v-else class="ui-dashboard-panel-body-lg space-y-4">
                 <button
                   v-for="item in channelBreakdown"
                   :key="item.channel"
@@ -545,7 +545,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
               v-if="Object.keys(funnel).length > 0"
               class="ui-table-shell shadow-xs dark:shadow-none"
             >
-              <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
+              <div class="ui-dashboard-panel-header ui-dashboard-panel-header-lg ui-dashboard-panel-header-split">
                 <div class="flex items-center gap-2.5">
                   <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
                     <TrendingUp class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -608,7 +608,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           <div class="space-y-6">
             <!-- Top tracking links -->
             <div class="ui-dashboard-panel">
-              <div class="ui-dashboard-panel-header flex items-center justify-between px-5 py-4">
+              <div class="ui-dashboard-panel-header ui-dashboard-panel-header-md ui-dashboard-panel-header-split">
                 <div class="flex items-center gap-2.5">
                   <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
                     <Link2 class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -624,7 +624,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                 </button>
               </div>
 
-              <div v-if="topLinks.length === 0" class="ui-panel-muted m-5 px-4 py-6 text-center">
+              <div v-if="topLinks.length === 0" class="ui-panel-muted ui-dashboard-panel-inset-empty">
                 <div class="ui-dashboard-soft-icon mx-auto mb-3 flex items-center justify-center size-10 rounded-2xl">
                   <Link2 class="size-4 text-surface-400 dark:text-surface-500" />
                 </div>
@@ -666,7 +666,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
 
             <!-- Top referrer domains -->
             <div class="ui-dashboard-panel">
-              <div class="ui-dashboard-panel-header flex items-center justify-between px-5 py-4">
+              <div class="ui-dashboard-panel-header ui-dashboard-panel-header-md ui-dashboard-panel-header-split">
                 <div class="flex items-center gap-2.5">
                   <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
                     <Globe class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -675,14 +675,14 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                 </div>
               </div>
 
-              <div v-if="topReferrerDomains.length === 0" class="px-5 py-10 text-center">
+              <div v-if="topReferrerDomains.length === 0" class="ui-dashboard-panel-empty-md">
                 <div class="ui-dashboard-soft-icon mx-auto mb-3 flex items-center justify-center size-10 rounded-2xl">
                   <Globe class="size-4 text-surface-400 dark:text-surface-500" />
                 </div>
                 <p class="text-xs font-medium text-surface-500 dark:text-surface-400">No referrer data yet</p>
               </div>
 
-              <div v-else class="px-5 py-4 space-y-3">
+              <div v-else class="ui-dashboard-panel-body-md space-y-3">
                 <div
                   v-for="ref in topReferrerDomains"
                   :key="ref.domain ?? 'unknown'"
@@ -701,7 +701,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
 
             <!-- Recent attributed -->
             <div class="ui-dashboard-panel">
-              <div class="ui-dashboard-panel-header flex items-center justify-between px-5 py-4">
+              <div class="ui-dashboard-panel-header ui-dashboard-panel-header-md ui-dashboard-panel-header-split">
                 <div class="flex items-center gap-2.5">
                   <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
                     <Clock class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -717,7 +717,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                 </button>
               </div>
 
-              <div v-if="recentAttributed.length === 0" class="px-5 py-10 text-center">
+              <div v-if="recentAttributed.length === 0" class="ui-dashboard-panel-empty-md">
                 <p class="text-xs text-surface-400">No attributed applications yet</p>
               </div>
 
@@ -1016,7 +1016,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
       >
         <div class="ui-modal-panel relative w-full max-w-lg">
           <!-- Header -->
-          <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
+          <div class="ui-dashboard-panel-header ui-dashboard-panel-header-lg ui-dashboard-panel-header-split">
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Create Tracking Link</h2>
             <button
               class="ui-button ui-button-ghost size-8 p-0"
@@ -1027,7 +1027,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </div>
 
           <!-- Body -->
-          <form class="px-6 py-5 space-y-4" @submit.prevent="handleCreateLink">
+          <form class="ui-dashboard-modal-body" @submit.prevent="handleCreateLink">
             <!-- Name -->
             <div>
               <label for="link-name" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Link Name</label>

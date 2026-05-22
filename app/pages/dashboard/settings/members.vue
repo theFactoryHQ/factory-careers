@@ -672,13 +672,13 @@ onUnmounted(() => {
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoadingInvitations" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
+      <div v-if="isLoadingInvitations" class="ui-empty-state ui-settings-panel-state">
         <Loader2 class="size-4 animate-spin mx-auto mb-1.5" />
         Loading invitations…
       </div>
 
       <!-- Error state -->
-      <div v-else-if="invitationsError" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
+      <div v-else-if="invitationsError" class="ui-empty-state ui-settings-panel-state">
         <AlertTriangle class="ui-icon-danger size-5 mx-auto mb-1.5" />
         <p class="ui-feedback-danger mx-auto">{{ invitationsError }}</p>
         <button class="ui-inline-link ui-inline-link-brand mt-1.5 text-sm" @click="fetchInvitations">
@@ -691,7 +691,7 @@ onUnmounted(() => {
         <div
           v-for="inv in pendingInvitations"
           :key="inv.id"
-          class="ui-list-row px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
+          class="ui-list-row ui-settings-list-row"
         >
           <!-- Email icon + Info -->
           <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
@@ -858,20 +858,20 @@ onUnmounted(() => {
         enter-from-class="opacity-0"
         leave-to-class="opacity-0"
       >
-        <div v-if="createLinkSuccess" class="ui-alert ui-alert-success ui-panel-subsection px-4 sm:px-6 py-2 flex items-center gap-2">
+        <div v-if="createLinkSuccess" class="ui-alert ui-alert-success ui-panel-subsection ui-settings-panel-alert">
           <Check class="size-4" />
           {{ createLinkSuccess }}
         </div>
       </Transition>
 
       <!-- Loading state -->
-      <div v-if="isLoadingLinks" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
+      <div v-if="isLoadingLinks" class="ui-empty-state ui-settings-panel-state">
         <Loader2 class="size-4 animate-spin mx-auto mb-1.5" />
         Loading invite links…
       </div>
 
       <!-- Error state -->
-      <div v-else-if="linksError" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
+      <div v-else-if="linksError" class="ui-empty-state ui-settings-panel-state">
         <AlertTriangle class="ui-icon-danger size-5 mx-auto mb-1.5" />
         <p class="ui-feedback-danger mx-auto">{{ linksError }}</p>
         <button class="ui-inline-link ui-inline-link-brand mt-1.5 text-sm" @click="fetchInviteLinks">
@@ -880,7 +880,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Empty state -->
-      <div v-else-if="inviteLinks.length === 0 && !showCreateLinkForm" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
+      <div v-else-if="inviteLinks.length === 0 && !showCreateLinkForm" class="ui-empty-state ui-settings-panel-state">
         No active invite links. Create one to share with your team.
       </div>
 
@@ -889,7 +889,7 @@ onUnmounted(() => {
         <div
           v-for="link in inviteLinks"
           :key="link.id"
-          class="ui-list-row px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
+          class="ui-list-row ui-settings-list-row"
           :class="{ 'opacity-50': !isLinkActive(link) }"
         >
           <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
@@ -966,7 +966,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Join request action error -->
-      <div v-if="joinRequestActionError" class="ui-alert ui-alert-danger ui-panel-subsection px-4 sm:px-6 py-2 flex items-center justify-between">
+      <div v-if="joinRequestActionError" class="ui-alert ui-alert-danger ui-panel-subsection ui-settings-panel-alert ui-settings-panel-alert-split">
         <span>{{ joinRequestActionError }}</span>
         <button class="ui-button ui-button-ghost p-1" @click="joinRequestActionError = ''">
           <X class="size-4" />
@@ -974,13 +974,13 @@ onUnmounted(() => {
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoadingJoinRequests" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
+      <div v-if="isLoadingJoinRequests" class="ui-empty-state ui-settings-panel-state">
         <Loader2 class="size-4 animate-spin mx-auto mb-1.5" />
         Loading join requests…
       </div>
 
       <!-- Error state -->
-      <div v-else-if="joinRequestsError" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
+      <div v-else-if="joinRequestsError" class="ui-empty-state ui-settings-panel-state">
         <AlertTriangle class="ui-icon-danger size-5 mx-auto mb-1.5" />
         <p class="ui-feedback-danger mx-auto">{{ joinRequestsError }}</p>
         <button class="ui-inline-link ui-inline-link-brand mt-1.5 text-sm" @click="fetchJoinRequests">
@@ -993,7 +993,7 @@ onUnmounted(() => {
         <div
           v-for="req in joinRequests"
           :key="req.id"
-          class="ui-list-row px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
+          class="ui-list-row ui-settings-list-row"
         >
           <!-- Avatar + Info -->
           <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
@@ -1080,13 +1080,13 @@ onUnmounted(() => {
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoadingMembers" class="ui-empty-state px-4 sm:px-6 py-8 text-sm">
+      <div v-if="isLoadingMembers" class="ui-empty-state ui-settings-panel-state ui-settings-panel-state-lg">
         <Loader2 class="size-5 animate-spin mx-auto mb-2" />
         Loading members…
       </div>
 
       <!-- Error state -->
-      <div v-else-if="membersError" class="ui-empty-state px-4 sm:px-6 py-8 text-sm">
+      <div v-else-if="membersError" class="ui-empty-state ui-settings-panel-state ui-settings-panel-state-lg">
         <AlertTriangle class="ui-icon-danger size-6 mx-auto mb-2" />
         <p class="ui-feedback-danger mx-auto">{{ membersError }}</p>
         <button class="ui-inline-link ui-inline-link-brand mt-2 text-sm" @click="fetchMembers">
@@ -1099,7 +1099,7 @@ onUnmounted(() => {
         <div
           v-for="m in visibleMembers"
           :key="m.id"
-          class="ui-list-row px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
+          class="ui-list-row ui-settings-list-row ui-settings-list-row-lg"
         >
           <!-- Avatar + Info row -->
           <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
@@ -1208,7 +1208,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Show more button -->
-        <div v-if="hasMoreMembers" class="ui-panel-divider px-4 sm:px-6 py-3 text-center">
+        <div v-if="hasMoreMembers" class="ui-panel-divider ui-settings-panel-footer">
           <button
             class="ui-inline-link ui-inline-link-brand text-sm font-medium"
             @click="showMoreMembers"
@@ -1235,8 +1235,8 @@ onUnmounted(() => {
             enter-from-class="opacity-0 scale-95"
             leave-to-class="opacity-0 scale-95"
           >
-            <div v-if="memberToRemove" class="ui-modal-panel w-full max-w-md p-6">
-              <div class="flex items-center gap-3 mb-4">
+            <div v-if="memberToRemove" class="ui-modal-panel ui-settings-modal-panel w-full max-w-md">
+              <div class="ui-settings-modal-header">
                 <div class="ui-icon-state ui-icon-state-danger flex items-center justify-center size-10">
                   <AlertTriangle class="size-5" />
                 </div>
@@ -1246,13 +1246,13 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <p class="text-sm text-surface-600 dark:text-surface-400 mb-5">
+              <p class="ui-settings-modal-copy text-sm text-surface-600 dark:text-surface-400">
                 Are you sure you want to remove <strong class="text-surface-900 dark:text-surface-100">{{ memberToRemove.name }}</strong> from
                 <strong class="text-surface-900 dark:text-surface-100">{{ activeOrg?.name }}</strong>?
                 They will lose access to all organization data immediately.
               </p>
 
-              <div v-if="removeError" class="ui-alert ui-alert-danger mb-4 px-3 py-2">
+              <div v-if="removeError" class="ui-alert ui-alert-danger ui-settings-modal-alert">
                 {{ removeError }}
               </div>
 

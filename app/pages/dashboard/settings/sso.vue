@@ -467,7 +467,7 @@ async function copyCallbackUrl(providerId: string) {
       </Transition>
 
       <!-- How it works -->
-      <div class="ui-panel-muted mt-8 p-5">
+      <div class="ui-panel-muted ui-settings-callout">
         <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3">
           How Enterprise SSO works
         </h3>

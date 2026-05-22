@@ -73,7 +73,7 @@ function onCancel() {
 
     <div
       v-else-if="!canManageAi"
-      class="ui-alert ui-alert-warning mx-auto max-w-2xl p-5 flex items-start gap-3"
+      class="ui-alert ui-alert-warning ui-settings-route-alert ui-settings-route-alert-centered"
     >
       <AlertTriangle class="size-5 shrink-0 mt-0.5" />
       <div>

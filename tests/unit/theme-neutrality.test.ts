@@ -383,6 +383,121 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('centralizes source tracking page panel structure behind shared recipes', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+
+    for (const recipe of [
+      '.ui-dashboard-page',
+      '.ui-dashboard-page-header',
+      '.ui-dashboard-page-header-split',
+      '.ui-dashboard-panel-content',
+      '.ui-dashboard-panel-header-lg',
+      '.ui-dashboard-panel-header-md',
+      '.ui-dashboard-panel-header-split',
+      '.ui-dashboard-panel-header-inline',
+      '.ui-dashboard-panel-body-lg',
+      '.ui-dashboard-panel-body-md',
+      '.ui-dashboard-panel-empty-lg',
+      '.ui-dashboard-panel-empty-md',
+      '.ui-dashboard-panel-inset-empty',
+      '.ui-dashboard-inline-notice',
+      '.ui-dashboard-modal-body',
+      '.ui-dashboard-stat-card-content',
+    ]) {
+      expect(css, `Dashboard structural recipe ${recipe} should be defined`).toMatch(
+        new RegExp(`${recipe.replace('.', '\\.')}\\s*\\{`),
+      )
+    }
+
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/source-tracking/index.vue',
+        recipes: [
+          'ui-dashboard-page',
+          'ui-dashboard-page-header',
+          'ui-dashboard-page-header-split',
+          'ui-dashboard-panel-content',
+          'ui-dashboard-panel-header-lg',
+          'ui-dashboard-panel-header-md',
+          'ui-dashboard-panel-header-split',
+          'ui-dashboard-panel-body-lg',
+          'ui-dashboard-panel-body-md',
+          'ui-dashboard-panel-empty-lg',
+          'ui-dashboard-panel-empty-md',
+          'ui-dashboard-panel-inset-empty',
+          'ui-dashboard-modal-body',
+          'ui-dashboard-stat-card-content',
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/source-tracking/[id].vue',
+        recipes: [
+          'ui-dashboard-page',
+          'ui-dashboard-page-header',
+          'ui-dashboard-page-header-split',
+          'ui-dashboard-panel-content',
+          'ui-dashboard-panel-header-lg',
+          'ui-dashboard-panel-header-md',
+          'ui-dashboard-panel-header-split',
+          'ui-dashboard-panel-header-inline',
+          'ui-dashboard-panel-body-lg',
+          'ui-dashboard-panel-body-md',
+          'ui-dashboard-panel-empty-lg',
+          'ui-dashboard-panel-empty-md',
+          'ui-dashboard-inline-notice',
+          'ui-dashboard-modal-body',
+          'ui-dashboard-stat-card-content',
+        ],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/pages/dashboard/source-tracking/index.vue',
+        patterns: [
+          /class="mx-auto max-w-6xl"/,
+          /ui-dashboard-panel p-6/,
+          /ui-dashboard-stat-card[^"]*p-5 sm:p-6/,
+          /ui-dashboard-panel-header flex items-center justify-between px-(?:5|6) py-4/,
+          /class="px-6 py-(?:5|12)(?: space-y-4| text-center)?"/,
+          /class="px-5 py-(?:4|10)(?: space-y-3| text-center)?"/,
+          /ui-panel-muted m-5 px-4 py-6 text-center/,
+          /form class="px-6 py-5 space-y-4"/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/source-tracking/[id].vue',
+        patterns: [
+          /class="mx-auto max-w-6xl"/,
+          /ui-dashboard-panel p-6/,
+          /ui-dashboard-stat-card[^"]*p-5 sm:p-6/,
+          /ui-dashboard-panel-header flex items-center justify-between px-6 py-4/,
+          /ui-dashboard-panel-header flex items-center gap-2\.5 px-5 py-4/,
+          /class="px-6 py-(?:5|12)(?: space-y-4| text-center)?"/,
+          /class="px-5 py-(?:4|10)(?: space-y-3| text-center)?"/,
+          /ui-panel-muted mb-6 sm:mb-8 px-4 py-3/,
+          /form class="px-6 py-5 space-y-4"/,
+        ],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
+    }
+  })
+
   it('keeps source tracking surface choices behind shared recipes', () => {
     const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
       {
@@ -1601,6 +1716,136 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('centralizes Settings/member panel internals behind shared recipes', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+
+    for (const recipe of [
+      '.ui-settings-panel-state',
+      '.ui-settings-panel-state-lg',
+      '.ui-settings-list-row',
+      '.ui-settings-list-row-lg',
+      '.ui-settings-panel-alert',
+      '.ui-settings-panel-alert-split',
+      '.ui-settings-panel-footer',
+      '.ui-settings-callout',
+      '.ui-settings-route-alert',
+      '.ui-settings-route-alert-centered',
+      '.ui-settings-empty-panel',
+      '.ui-settings-action-bar-inner',
+      '.ui-settings-modal-panel',
+      '.ui-settings-modal-header',
+      '.ui-settings-modal-copy',
+      '.ui-settings-modal-alert',
+    ]) {
+      expect(css, `Settings internal recipe ${recipe} should be defined`).toMatch(
+        new RegExp(`${recipe.replace('.', '\\.')}\\s*\\{`),
+      )
+      expect(css, `Factory shell should adapt Settings internal recipe ${recipe}`).toMatch(
+        new RegExp(`:where\\(\\.factory-dashboard-shell, \\.factory-dashboard-portal\\)[\\s\\S]*${recipe.replace('.', '\\.')}`),
+      )
+    }
+
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/settings/members.vue',
+        recipes: [
+          'ui-settings-panel-state',
+          'ui-settings-panel-state-lg',
+          'ui-settings-list-row',
+          'ui-settings-list-row-lg',
+          'ui-settings-panel-alert',
+          'ui-settings-panel-alert-split',
+          'ui-settings-panel-footer',
+          'ui-settings-modal-panel',
+          'ui-settings-modal-header',
+          'ui-settings-modal-copy',
+          'ui-settings-modal-alert',
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/ai/index.vue',
+        recipes: ['ui-settings-route-alert', 'ui-settings-empty-panel'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/ai/new.vue',
+        recipes: ['ui-settings-route-alert', 'ui-settings-route-alert-centered'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/ai/[id].vue',
+        recipes: ['ui-settings-route-alert', 'ui-settings-route-alert-centered'],
+      },
+      {
+        path: 'app/components/AiConfigForm.vue',
+        recipes: ['ui-settings-action-bar-inner'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/sso.vue',
+        recipes: ['ui-settings-callout'],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/pages/dashboard/settings/members.vue',
+        patterns: [
+          /ui-empty-state px-4 sm:px-6 py-(?:6|8) text-sm/,
+          /ui-list-row px-4 sm:px-6 py-(?:3\.5|4) flex flex-col/,
+          /ui-alert [^"]*ui-panel-subsection px-4 sm:px-6 py-2/,
+          /ui-panel-divider px-4 sm:px-6 py-3 text-center/,
+          /ui-modal-panel w-full max-w-md p-6/,
+          /ui-alert ui-alert-danger mb-4 px-3 py-2/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/ai/index.vue',
+        patterns: [
+          /ui-alert ui-alert-warning p-5 flex items-start gap-3/,
+          /ui-empty-panel ui-empty-panel-dashed p-10/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/ai/new.vue',
+        patterns: [
+          /ui-alert ui-alert-warning mx-auto max-w-2xl p-5 flex items-start gap-3/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/ai/[id].vue',
+        patterns: [
+          /ui-alert ui-alert-(?:warning|danger) mx-auto max-w-2xl p-5 flex items-start gap-3/,
+        ],
+      },
+      {
+        path: 'app/components/AiConfigForm.vue',
+        patterns: [
+          /mx-auto max-w-3xl px-4 sm:px-6 py-3 flex items-center justify-end gap-2/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/sso.vue',
+        patterns: [
+          /ui-panel-muted mt-8 p-5/,
+        ],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
+    }
+  })
+
   it('keeps Settings portals and fixed panels inside the Factory theme scope', () => {
     const members = readProjectFile('app/pages/dashboard/settings/members.vue')
     const css = readProjectFile('app/assets/css/main.css')
@@ -1664,6 +1909,27 @@ describe('brand-neutral theme variables', () => {
         factoryScopedSelector(recipe),
       )
     }
+  })
+
+  it('applies Factory-readable text colors to semantic alert recipes', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+    const factoryAlertColor = (recipe: string, colorPattern: string) =>
+      new RegExp(
+        `:where\\(\\.factory-dashboard-shell, \\.factory-dashboard-portal\\)[^{]*${recipe.replace('.', '\\.')}[^{]*\\{[^}]*color: ${colorPattern} !important;`,
+      )
+
+    expect(css, 'Factory warning alerts should not keep light-theme warning text').toMatch(
+      factoryAlertColor('.ui-alert-warning', 'rgb\\(251 191 36\\)'),
+    )
+    expect(css, 'Factory success alerts should not keep light-theme success text').toMatch(
+      factoryAlertColor('.ui-alert-success', 'rgb\\(134 239 172\\)'),
+    )
+    expect(css, 'Factory danger alerts should not keep light-theme danger text').toMatch(
+      factoryAlertColor('.ui-alert-danger', 'rgb\\(253 164 175\\)'),
+    )
+    expect(css, 'Factory info alerts should not keep light-theme info text').toMatch(
+      factoryAlertColor('.ui-alert-info', 'rgb\\(125 211 252\\)'),
+    )
   })
 
   it('keeps Settings panel bodies on the same Factory surface as their panel frame', () => {

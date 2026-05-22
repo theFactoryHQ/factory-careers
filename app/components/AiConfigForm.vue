@@ -585,7 +585,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
 
     <!-- Sticky save bar -->
     <div class="ui-action-bar fixed inset-x-0 bottom-0 z-20">
-      <div class="mx-auto max-w-3xl px-4 sm:px-6 py-3 flex items-center justify-end gap-2">
+      <div class="ui-settings-action-bar-inner">
         <button
           type="button"
           class="ui-button ui-button-secondary"
