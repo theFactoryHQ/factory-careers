@@ -358,7 +358,7 @@ function formatDateTime(dateStr: string | Date): string {
       </div>
 
       <!-- ─── Model breakdown ─── -->
-      <div v-if="modelBreakdown.length > 0" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden mb-6">
+      <div v-if="modelBreakdown.length > 0" class="ui-table-shell mb-6">
         <div class="px-6 py-5 border-b border-surface-200 dark:border-surface-800">
           <div class="flex items-center gap-3">
             <div class="flex items-center justify-center size-10 rounded-lg bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400">
@@ -374,7 +374,7 @@ function formatDateTime(dateStr: string | Date): string {
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="bg-surface-50 dark:bg-surface-800/50 border-b border-surface-200 dark:border-surface-800">
+              <tr class="ui-table-header">
                 <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">Provider</th>
                 <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">Model</th>
                 <th class="text-right px-4 py-3 font-medium text-surface-500 dark:text-surface-400">Runs</th>
@@ -384,11 +384,11 @@ function formatDateTime(dateStr: string | Date): string {
                 <th v-if="pricing.configured" class="text-right px-4 py-3 font-medium text-surface-500 dark:text-surface-400">Cost</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
+            <tbody>
               <tr
                 v-for="m in modelBreakdown"
                 :key="`${m.provider}-${m.model}`"
-                class="bg-white dark:bg-surface-900 hover:bg-surface-50 dark:hover:bg-surface-800/60 transition-colors"
+                class="ui-table-row"
               >
                 <td class="px-4 py-3 font-medium text-surface-700 dark:text-surface-300 capitalize">{{ m.provider }}</td>
                 <td class="px-4 py-3">
@@ -406,7 +406,7 @@ function formatDateTime(dateStr: string | Date): string {
       </div>
 
       <!-- ─── Recent runs ─── -->
-      <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
+      <div class="ui-table-shell">
         <div class="px-6 py-5 border-b border-surface-200 dark:border-surface-800">
           <div class="flex items-center gap-3">
             <div class="flex items-center justify-center size-10 rounded-lg bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400">
@@ -430,7 +430,7 @@ function formatDateTime(dateStr: string | Date): string {
         <div v-else class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="bg-surface-50 dark:bg-surface-800/50 border-b border-surface-200 dark:border-surface-800">
+              <tr class="ui-table-header">
                 <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">Status</th>
                 <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">Candidate</th>
                 <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400 hidden lg:table-cell">Job</th>
@@ -441,11 +441,11 @@ function formatDateTime(dateStr: string | Date): string {
                 <th class="text-right px-4 py-3 font-medium text-surface-500 dark:text-surface-400">Date</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
+            <tbody>
               <tr
                 v-for="run in recentRuns"
                 :key="run.id"
-                class="bg-white dark:bg-surface-900 hover:bg-surface-50 dark:hover:bg-surface-800/60 transition-colors"
+                class="ui-table-row"
               >
                 <td class="px-4 py-3">
                   <span

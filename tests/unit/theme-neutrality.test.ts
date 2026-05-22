@@ -135,4 +135,21 @@ describe('brand-neutral theme variables', () => {
       }
     }
   })
+
+  it('applies shared UI recipes to dashboard table surfaces', () => {
+    const recipeUsage = [
+      'app/pages/dashboard/applications/index.vue',
+      'app/pages/dashboard/candidates/index.vue',
+      'app/pages/dashboard/jobs/[id]/candidates.vue',
+      'app/pages/dashboard/ai-analysis.vue',
+    ]
+
+    for (const path of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of ['ui-table-shell', 'ui-table-header', 'ui-table-row']) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
 })

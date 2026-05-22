@@ -507,10 +507,10 @@ const selectedCandidateId = ref<string | null>(null)
             </button>
           </div>
           <div :class="isFullscreen ? 'flex-1 overflow-auto p-4' : ''">
-            <div class="overflow-x-auto rounded-lg border border-surface-200 dark:border-surface-800">
+            <div class="ui-table-shell overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
-            <tr class="bg-surface-50 dark:bg-surface-800/50 border-b border-surface-200 dark:border-surface-800">
+            <tr class="ui-table-header">
               <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">
                 <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('name')">
                   Name
@@ -561,11 +561,11 @@ const selectedCandidateId = ref<string | null>(null)
               </template>
             </tr>
           </thead>
-          <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
+          <tbody>
             <tr
               v-for="c in sortedCandidates"
               :key="c.id"
-              class="group bg-white dark:bg-surface-900 hover:bg-surface-50 dark:hover:bg-surface-800/60 transition-colors cursor-pointer [&>td]:align-top"
+              class="ui-table-row group cursor-pointer [&>td]:align-top"
               @click="selectedCandidateId = c.id"
             >
               <td class="px-4 py-3">

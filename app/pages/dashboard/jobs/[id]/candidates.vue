@@ -396,12 +396,12 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
       <!-- Data table -->
       <div
         v-else
-        class="rounded-xl border border-surface-200/80 dark:border-surface-800/60 overflow-hidden shadow-sm shadow-surface-900/[0.03] dark:shadow-none"
+        class="ui-table-shell shadow-sm shadow-surface-900/[0.03] dark:shadow-none"
       >
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="border-b border-surface-200/80 dark:border-surface-800/60 bg-surface-50/80 dark:bg-surface-900">
+              <tr class="ui-table-header">
                 <!-- Name always visible -->
                 <th class="px-4 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide select-none">
                   <button
@@ -448,9 +448,9 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-surface-100 dark:divide-surface-800/60 bg-white dark:bg-surface-950">
+            <tbody>
               <!-- No results after filtering -->
-              <tr v-if="sorted.length === 0">
+              <tr v-if="sorted.length === 0" class="ui-table-row">
                 <td
                   :colspan="1 + Object.values(visibleCols).filter(Boolean).length"
                   class="px-4 py-10 text-center text-sm text-surface-400"
@@ -461,7 +461,7 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
               <tr
                 v-for="app in sorted"
                 :key="app.id"
-                class="cursor-pointer transition-all duration-150"
+                class="ui-table-row cursor-pointer transition-all duration-150"
                 :class="selectedAppId === app.id
                   ? 'bg-brand-50/70 dark:bg-brand-950/20'
                   : 'hover:bg-surface-50/80 dark:hover:bg-surface-900/60'"
