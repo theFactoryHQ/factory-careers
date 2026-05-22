@@ -755,10 +755,24 @@
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-500) 15%, transparent);
   }
 
+  .ui-field-invalid {
+    border-color: var(--color-danger-300);
+  }
+
+  .ui-field-invalid:focus,
+  .ui-field-invalid:focus-within {
+    border-color: var(--color-danger-500);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-danger-500) 15%, transparent);
+  }
+
   .dark .ui-field {
     border-color: var(--color-surface-700);
     background-color: var(--color-surface-800);
     color: var(--color-surface-100);
+  }
+
+  .dark .ui-field-invalid {
+    border-color: var(--color-danger-700);
   }
 
   .dark .ui-field::placeholder {
