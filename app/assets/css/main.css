@@ -903,6 +903,10 @@
     color: var(--color-surface-300);
   }
 
+  .ui-icon-tile {
+    border-radius: 0.5rem;
+  }
+
   .ui-icon-state-danger {
     background-color: var(--color-danger-100);
     color: var(--color-danger-600);
@@ -1034,6 +1038,10 @@
     border-color: var(--color-surface-800);
     background-color: var(--color-surface-900);
     color: var(--color-surface-400);
+  }
+
+  .ui-empty-panel-dashed {
+    border-style: dashed;
   }
 
   .ui-list-row {

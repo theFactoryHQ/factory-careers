@@ -784,7 +784,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
       <div>
         <NuxtLink
           :to="$localePath('/dashboard/jobs')"
-          class="inline-flex items-center gap-1 text-sm text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 mb-2 transition-colors"
+          class="ui-inline-link inline-flex items-center gap-1 text-sm mb-2"
         >
           <ArrowLeft class="size-4" />
           Back to Jobs
@@ -794,7 +794,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
       <div v-if="!isPublished" class="flex items-center gap-3">
         <button
           type="button"
-          class="px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 rounded-lg hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+          class="ui-button ui-button-secondary px-4 py-2 text-sm"
           @click="handleSubmit('draft')"
           :disabled="isSubmitting"
         >
@@ -805,7 +805,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
           type="button"
           :disabled="!canGoNext"
           @click="nextStep"
-          class="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+          class="ui-button ui-button-primary px-4 py-2 text-sm shadow-sm"
         >
           Save & continue
         </button>
@@ -823,7 +823,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
         >
           <div class="flex items-center gap-2 min-w-0">
             <div
-              class="flex items-center justify-center size-7 rounded-full border text-xs font-medium shrink-0 transition-all"
+              class="ui-step-marker size-7 text-xs font-medium shrink-0 transition-all"
               :class="[
                 currentStep === step.id
                   ? 'bg-brand-600 text-white border-brand-600 ring-2 ring-brand-100 dark:ring-brand-950'
@@ -855,35 +855,34 @@ const questionTypeLabels: Record<QuestionType, string> = {
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <!-- Left side: Form -->
       <div class="lg:col-span-8 space-y-6">
-
-        <div class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-sm overflow-hidden">
+        <div class="ui-panel shadow-sm overflow-hidden">
           <form @submit.prevent="() => handleSubmit()" class="p-6 md:p-8">
             <!-- Step 1: Job details -->
             <section v-if="currentStep === 1" class="space-y-10">
               <!-- Section: Job title and department -->
               <div class="space-y-6">
                 <div>
-                  <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-6 pb-2 border-b border-surface-100 dark:border-surface-800">Job title and department</h2>
+                  <h2 class="ui-panel-header text-lg font-semibold text-surface-900 dark:text-surface-100 mb-6 pb-2">Job title and department</h2>
                   <label for="title" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-                    Job title <span class="text-danger-500">*</span>
+                    Job title <span class="ui-required-marker">*</span>
                   </label>
                   <input
                     id="title"
                     v-model="form.title"
                     type="text"
                     placeholder="e.g. Senior Frontend Engineer"
-                    class="w-full rounded-lg border px-3 py-2.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                    :class="errors.title ? 'border-danger-300 ring-1 ring-danger-100' : 'border-surface-300 dark:border-surface-700'"
+                    class="ui-field py-2.5"
+                    :class="errors.title ? 'ui-field-invalid' : ''"
                     @blur="validateStep1"
                   />
-                  <p v-if="errors.title" class="mt-1.5 text-xs text-danger-600 dark:text-danger-400 font-medium">{{ errors.title }}</p>
+                  <p v-if="errors.title" class="ui-feedback-danger mt-1.5 text-xs">{{ errors.title }}</p>
                   <p v-else class="mt-1.5 text-xs text-surface-500">80 characters left. No special characters.</p>
                 </div>
               </div>
 
               <!-- Section: Location -->
               <div class="space-y-6">
-                <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-6 pb-2 border-b border-surface-100 dark:border-surface-800">Location</h2>
+                <h2 class="ui-panel-header text-lg font-semibold text-surface-900 dark:text-surface-100 mb-6 pb-2">Location</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -895,7 +894,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                       v-model="form.location"
                       type="text"
                       placeholder="e.g. New York, NY 10019, United States"
-                      class="w-full rounded-lg border px-3 py-2.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors border-surface-300 dark:border-surface-700"
+                      class="ui-field py-2.5"
                     />
                   </div>
                   <div>
@@ -905,7 +904,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                     <select
                       id="type"
                       v-model="form.type"
-                      class="w-full rounded-lg border px-3 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors bg-white dark:bg-surface-900 border-surface-300 dark:border-surface-700"
+                      class="ui-field py-2.5"
                     >
                       <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
                         {{ opt.label }}
@@ -917,14 +916,14 @@ const questionTypeLabels: Record<QuestionType, string> = {
 
               <!-- Section: Experience & Remote -->
               <div class="space-y-6">
-                <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-6 pb-2 border-b border-surface-100 dark:border-surface-800">Details</h2>
+                <h2 class="ui-panel-header text-lg font-semibold text-surface-900 dark:text-surface-100 mb-6 pb-2">Details</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label for="experienceLevel" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Experience level</label>
                     <select
                       id="experienceLevel"
                       v-model="form.experienceLevel"
-                      class="w-full rounded-lg border px-3 py-2.5 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 border-surface-300 dark:border-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                      class="ui-field py-2.5"
                     >
                       <option value="junior">Junior</option>
                       <option value="mid">Mid-level</option>
@@ -937,7 +936,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                     <select
                       id="remoteStatus"
                       v-model="form.remoteStatus"
-                      class="w-full rounded-lg border px-3 py-2.5 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 border-surface-300 dark:border-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                      class="ui-field py-2.5"
                     >
                       <option :value="undefined">Not specified</option>
                       <option value="remote">Remote</option>
@@ -950,7 +949,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
 
               <!-- Section: Description -->
               <div class="space-y-6">
-                <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-6 pb-2 border-b border-surface-100 dark:border-surface-800">Description</h2>
+                <h2 class="ui-panel-header text-lg font-semibold text-surface-900 dark:text-surface-100 mb-6 pb-2">Description</h2>
                 <div>
                   <label for="description" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
                     About the role
@@ -960,7 +959,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                     v-model="form.description"
                     rows="10"
                     placeholder="Describe the role, responsibilities, and requirements…"
-                    class="w-full rounded-lg border px-4 py-3 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors border-surface-300 dark:border-surface-700"
+                    class="ui-field px-4 py-3"
                   />
                   <p class="mt-2 text-xs text-surface-500">Minimum 700 characters recommended.</p>
                 </div>
@@ -978,41 +977,41 @@ const questionTypeLabels: Record<QuestionType, string> = {
 
               <!-- Personal information -->
               <div>
-                <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 pb-3 border-b border-surface-100 dark:border-surface-800">Personal information</h2>
-                <div class="divide-y divide-surface-100 dark:divide-surface-800">
-                  <div class="flex items-center justify-between py-3.5 px-1">
+                <h2 class="ui-panel-header text-base font-semibold text-surface-900 dark:text-surface-100 pb-3">Personal information</h2>
+                <div class="ui-list-divider">
+                  <div class="ui-list-row flex items-center justify-between py-3.5 px-1">
                     <div class="flex items-center gap-2.5">
                       <span class="text-sm text-surface-900 dark:text-surface-100">First name</span>
                       <Lock class="size-3 text-surface-300 dark:text-surface-600" />
                     </div>
-                    <span class="inline-flex items-center rounded-md bg-brand-50 dark:bg-brand-950/50 px-2.5 py-1 text-xs font-medium text-brand-700 dark:text-brand-300 ring-1 ring-inset ring-brand-200 dark:ring-brand-800">
+                    <span class="ui-pill ui-pill-brand px-2.5 py-1 text-xs">
                       Mandatory
                     </span>
                   </div>
-                  <div class="flex items-center justify-between py-3.5 px-1">
+                  <div class="ui-list-row flex items-center justify-between py-3.5 px-1">
                     <div class="flex items-center gap-2.5">
                       <span class="text-sm text-surface-900 dark:text-surface-100">Last name</span>
                       <Lock class="size-3 text-surface-300 dark:text-surface-600" />
                     </div>
-                    <span class="inline-flex items-center rounded-md bg-brand-50 dark:bg-brand-950/50 px-2.5 py-1 text-xs font-medium text-brand-700 dark:text-brand-300 ring-1 ring-inset ring-brand-200 dark:ring-brand-800">
+                    <span class="ui-pill ui-pill-brand px-2.5 py-1 text-xs">
                       Mandatory
                     </span>
                   </div>
-                  <div class="flex items-center justify-between py-3.5 px-1">
+                  <div class="ui-list-row flex items-center justify-between py-3.5 px-1">
                     <div class="flex items-center gap-2.5">
                       <span class="text-sm text-surface-900 dark:text-surface-100">Email</span>
                       <Lock class="size-3 text-surface-300 dark:text-surface-600" />
                     </div>
-                    <span class="inline-flex items-center rounded-md bg-brand-50 dark:bg-brand-950/50 px-2.5 py-1 text-xs font-medium text-brand-700 dark:text-brand-300 ring-1 ring-inset ring-brand-200 dark:ring-brand-800">
+                    <span class="ui-pill ui-pill-brand px-2.5 py-1 text-xs">
                       Mandatory
                     </span>
                   </div>
-                  <div class="flex items-center justify-between py-3.5 px-1">
+                  <div class="ui-list-row flex items-center justify-between py-3.5 px-1">
                     <div class="flex items-center gap-2.5">
                       <span class="text-sm text-surface-900 dark:text-surface-100">Phone</span>
                       <Lock class="size-3 text-surface-300 dark:text-surface-600" />
                     </div>
-                    <span class="inline-flex items-center rounded-md bg-surface-100 dark:bg-surface-800 px-2.5 py-1 text-xs font-medium text-surface-600 dark:text-surface-400 ring-1 ring-inset ring-surface-200 dark:ring-surface-700">
+                    <span class="ui-pill px-2.5 py-1 text-xs">
                       Optional
                     </span>
                   </div>
@@ -1021,10 +1020,10 @@ const questionTypeLabels: Record<QuestionType, string> = {
 
               <!-- Documents -->
               <div>
-                <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 pb-3 border-b border-surface-100 dark:border-surface-800">Documents</h2>
-                <div class="divide-y divide-surface-100 dark:divide-surface-800">
+                <h2 class="ui-panel-header text-base font-semibold text-surface-900 dark:text-surface-100 pb-3">Documents</h2>
+                <div class="ui-list-divider">
                   <!-- Resume -->
-                  <div class="flex items-center justify-between py-4 px-1">
+                  <div class="ui-list-row flex items-center justify-between py-4 px-1">
                     <div>
                       <div class="flex items-center gap-2">
                         <Upload class="size-4 text-surface-400 dark:text-surface-500" />
@@ -1060,7 +1059,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                     </div>
                   </div>
                   <!-- Cover letter -->
-                  <div class="flex items-center justify-between py-4 px-1">
+                  <div class="ui-list-row flex items-center justify-between py-4 px-1">
                     <div>
                       <div class="flex items-center gap-2">
                         <FileText class="size-4 text-surface-400 dark:text-surface-500" />
@@ -1100,7 +1099,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
 
               <!-- Screening questions -->
               <div>
-                <div class="flex items-center justify-between pb-3 border-b border-surface-100 dark:border-surface-800">
+                <div class="ui-panel-header flex items-center justify-between pb-3">
                   <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Screening questions</h2>
                   <span v-if="applicationForm.questions.length > 0" class="text-xs font-medium text-surface-400 dark:text-surface-500 tabular-nums">
                     {{ applicationForm.questions.length }} {{ applicationForm.questions.length === 1 ? 'question' : 'questions' }} added
@@ -1109,17 +1108,17 @@ const questionTypeLabels: Record<QuestionType, string> = {
 
                 <div
                   v-if="questionActionError"
-                  class="rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-3 text-sm text-danger-700 dark:text-danger-400 mt-4"
+                  class="ui-alert ui-alert-danger mt-4"
                 >
                   {{ questionActionError }}
                   <button class="ml-2 underline" @click="questionActionError = null">Dismiss</button>
                 </div>
 
-                <div v-if="applicationForm.questions.length > 0" class="divide-y divide-surface-100 dark:divide-surface-800">
+                <div v-if="applicationForm.questions.length > 0" class="ui-list-divider">
                   <div
                     v-for="(q, index) in applicationForm.questions"
                     :key="q.id"
-                    class="flex items-center gap-3 py-3.5 px-1 group"
+                    class="ui-list-row flex items-center gap-3 py-3.5 px-1 group"
                   >
                     <div class="text-surface-300 dark:text-surface-600 cursor-grab">
                       <GripVertical class="size-4" />
@@ -1129,13 +1128,13 @@ const questionTypeLabels: Record<QuestionType, string> = {
                         <span class="text-sm font-medium text-surface-900 dark:text-surface-100 truncate">{{ q.label }}</span>
                         <span
                           v-if="q.required"
-                          class="inline-flex items-center rounded-md bg-brand-50 dark:bg-brand-950/50 px-2 py-0.5 text-[10px] font-medium text-brand-700 dark:text-brand-300 ring-1 ring-inset ring-brand-200 dark:ring-brand-800"
+                          class="ui-pill ui-pill-brand px-2 py-0.5 text-[10px]"
                         >
                           Required
                         </span>
                         <span
                           v-else
-                          class="inline-flex items-center rounded-md bg-surface-100 dark:bg-surface-800 px-2 py-0.5 text-[10px] font-medium text-surface-500 dark:text-surface-400 ring-1 ring-inset ring-surface-200 dark:ring-surface-700"
+                          class="ui-pill px-2 py-0.5 text-[10px]"
                         >
                           Optional
                         </span>
@@ -1157,7 +1156,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                       <button
                         type="button"
                         :disabled="index === 0"
-                        class="rounded p-1.5 text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors disabled:opacity-30"
+                        class="ui-button ui-button-ghost p-1.5 disabled:opacity-30"
                         title="Move up"
                         @click="moveQuestion(index, 'up')"
                       >
@@ -1166,7 +1165,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                       <button
                         type="button"
                         :disabled="index === applicationForm.questions.length - 1"
-                        class="rounded p-1.5 text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors disabled:opacity-30"
+                        class="ui-button ui-button-ghost p-1.5 disabled:opacity-30"
                         title="Move down"
                         @click="moveQuestion(index, 'down')"
                       >
@@ -1174,7 +1173,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                       </button>
                       <button
                         type="button"
-                        class="rounded p-1.5 text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                        class="ui-button ui-button-ghost p-1.5"
                         title="Edit"
                         @click="editingQuestion = q; showAddForm = false"
                       >
@@ -1182,7 +1181,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                       </button>
                       <button
                         type="button"
-                        class="rounded p-1.5 text-surface-400 hover:text-danger-600 dark:hover:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950 transition-colors"
+                        class="ui-button ui-button-ghost ui-button-ghost-danger p-1.5"
                         title="Delete"
                         @click="handleDeleteQuestion(q.id)"
                       >
@@ -1215,7 +1214,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                   <button
                     v-if="!showAddForm && !editingQuestion"
                     type="button"
-                    class="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-surface-300 dark:border-surface-700 px-3 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:border-brand-400 dark:hover:border-brand-600 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50/50 dark:hover:bg-brand-950/30 transition-colors"
+                    class="ui-button ui-button-secondary border-dashed px-3 py-2 text-sm"
                     @click="showAddForm = true"
                   >
                     <Plus class="size-4" />
@@ -1228,7 +1227,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
             <!-- Step 3: AI scoring criteria -->
             <section v-else-if="currentStep === 3" class="space-y-8">
               <div>
-                <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2 pb-2 border-b border-surface-100 dark:border-surface-800">
+                <h2 class="ui-panel-header text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2 pb-2">
                   AI Candidate Scoring
                 </h2>
                 <p class="text-sm text-surface-500 dark:text-surface-400 mb-6">
@@ -1237,17 +1236,17 @@ const questionTypeLabels: Record<QuestionType, string> = {
               </div>
 
               <!-- AI not configured warning -->
-              <div v-if="!isAiConfigured" class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-5">
+              <div v-if="!isAiConfigured" class="ui-alert ui-alert-warning p-5">
                 <div class="flex items-start gap-3">
-                  <Sparkles class="size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <Sparkles class="size-5 shrink-0 mt-0.5" />
                   <div>
-                    <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">AI provider not configured</p>
-                    <p class="text-xs text-amber-700 dark:text-amber-300 mt-1 leading-relaxed">
+                    <p class="text-sm font-semibold">AI provider not configured</p>
+                    <p class="text-xs mt-1 leading-relaxed">
                       To use AI-powered scoring, you need to configure an AI provider first. You can still define criteria manually and set up AI later.
                     </p>
                     <NuxtLink
                       :to="$localePath('/dashboard/settings/ai')"
-                      class="inline-flex items-center gap-1.5 mt-3 text-xs font-medium text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 underline underline-offset-2"
+                      class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1.5 mt-3 text-xs font-medium"
                     >
                       <ExternalLink class="size-3" />
                       Go to AI settings
@@ -1261,14 +1260,14 @@ const questionTypeLabels: Record<QuestionType, string> = {
                 <!-- Pre-made templates -->
                 <button
                   type="button"
-                  class="relative flex flex-col items-start gap-3 p-5 rounded-xl border-2 text-left transition-all hover:shadow-md"
+                  class="ui-selectable-panel relative flex flex-col items-start gap-3 p-5 text-left transition-all hover:shadow-md"
                   :class="scoringMode === 'premade'
-                    ? 'border-brand-500 dark:border-brand-400 bg-brand-50/70 dark:bg-brand-950/30 ring-2 ring-brand-200 dark:ring-brand-900'
+                    ? 'ui-selectable-panel-active'
                     : 'border-surface-200 dark:border-surface-800 hover:border-surface-300 dark:hover:border-surface-700'"
                   @click="scoringMode = 'premade'"
                 >
                   <div class="inline-flex items-center justify-center size-10 rounded-lg bg-brand-100 dark:bg-brand-900/50">
-                    <Brain class="size-5 text-brand-600 dark:text-brand-400" />
+                    <Brain class="ui-icon-brand size-5" />
                   </div>
                   <div>
                     <span class="block text-sm font-semibold text-surface-900 dark:text-surface-100">Pre-made templates</span>
@@ -1282,9 +1281,9 @@ const questionTypeLabels: Record<QuestionType, string> = {
                 <button
                   type="button"
                   :disabled="!isAiConfigured"
-                  class="relative flex flex-col items-start gap-3 p-5 rounded-xl border-2 text-left transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="ui-selectable-panel relative flex flex-col items-start gap-3 p-5 text-left transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                   :class="scoringMode === 'ai'
-                    ? 'border-brand-500 dark:border-brand-400 bg-brand-50/70 dark:bg-brand-950/30 ring-2 ring-brand-200 dark:ring-brand-900'
+                    ? 'ui-selectable-panel-active'
                     : 'border-surface-200 dark:border-surface-800 hover:border-surface-300 dark:hover:border-surface-700'"
                   @click="generateAiCriteria(); scoringMode = 'ai'"
                 >
@@ -1308,9 +1307,9 @@ const questionTypeLabels: Record<QuestionType, string> = {
                 <!-- Custom criteria -->
                 <button
                   type="button"
-                  class="relative flex flex-col items-start gap-3 p-5 rounded-xl border-2 text-left transition-all hover:shadow-md"
+                  class="ui-selectable-panel relative flex flex-col items-start gap-3 p-5 text-left transition-all hover:shadow-md"
                   :class="scoringMode === 'custom'
-                    ? 'border-brand-500 dark:border-brand-400 bg-brand-50/70 dark:bg-brand-950/30 ring-2 ring-brand-200 dark:ring-brand-900'
+                    ? 'ui-selectable-panel-active'
                     : 'border-surface-200 dark:border-surface-800 hover:border-surface-300 dark:hover:border-surface-700'"
                   @click="scoringMode = 'custom'; showCustomForm = true"
                 >
@@ -1337,9 +1336,9 @@ const questionTypeLabels: Record<QuestionType, string> = {
                     ] as const"
                     :key="tmpl.key"
                     type="button"
-                    class="p-4 rounded-lg border text-left transition-all"
+                    class="ui-selectable-panel p-4 text-left transition-all"
                     :class="selectedTemplate === tmpl.key
-                      ? 'border-brand-400 dark:border-brand-600 bg-brand-50 dark:bg-brand-950/30'
+                      ? 'ui-selectable-panel-active'
                       : 'border-surface-200 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/50'"
                     @click="selectedTemplate = tmpl.key; loadPremadeCriteria(tmpl.key)"
                   >
@@ -1357,7 +1356,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                   </h3>
                   <button
                     type="button"
-                    class="text-xs text-danger-600 dark:text-danger-400 hover:underline"
+                    class="ui-button ui-button-ghost ui-button-ghost-danger px-2 py-1 text-xs"
                     @click="scoringCriteria = []; scoringMode = 'none'"
                   >
                     Clear all
@@ -1368,7 +1367,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                   <div
                     v-for="criterion in scoringCriteria"
                     :key="criterion.key"
-                    class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-950 p-4 transition-all hover:shadow-sm"
+                    class="ui-panel p-4 transition-all hover:shadow-sm"
                   >
                     <div class="flex items-start justify-between gap-3 mb-3">
                       <div class="flex-1 min-w-0">
@@ -1387,7 +1386,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                       </div>
                       <button
                         type="button"
-                        class="rounded p-1 text-surface-400 hover:text-danger-600 dark:hover:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950 transition-colors shrink-0"
+                        class="ui-button ui-button-ghost ui-button-ghost-danger p-1 shrink-0"
                         title="Remove"
                         @click="removeCriterion(criterion.key)"
                       >
@@ -1412,7 +1411,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
 
                     <div class="flex items-center gap-4 mt-2 text-xs text-surface-400">
                       <span>Max score: {{ criterion.maxScore }}</span>
-                      <span>Key: <code class="rounded bg-surface-100 dark:bg-surface-800 px-1 py-0.5 font-mono text-[10px]">{{ criterion.key }}</code></span>
+                      <span>Key: <code class="ui-code px-1 py-0.5 text-[10px]">{{ criterion.key }}</code></span>
                     </div>
                   </div>
                 </div>
@@ -1421,7 +1420,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                 <button
                   v-if="!showCustomForm"
                   type="button"
-                  class="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-surface-300 dark:border-surface-700 px-3 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:border-brand-400 dark:hover:border-brand-600 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950 transition-colors"
+                  class="ui-button ui-button-secondary border-dashed px-3 py-2 text-sm"
                   @click="showCustomForm = true"
                 >
                   <Plus class="size-4" />
@@ -1430,7 +1429,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
               </div>
 
               <!-- Custom criterion form -->
-              <div v-if="showCustomForm" class="rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 p-5 space-y-4">
+              <div v-if="showCustomForm" class="ui-panel-muted p-5 space-y-4">
                 <h3 class="text-sm font-semibold text-surface-800 dark:text-surface-200">Add custom criterion</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -1440,14 +1439,14 @@ const questionTypeLabels: Record<QuestionType, string> = {
                       @input="customCriterionForm.key = autoGenerateKey(customCriterionForm.name)"
                       type="text"
                       placeholder="e.g. React Expertise"
-                      class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      class="ui-field"
                     />
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-surface-700 dark:text-surface-300 mb-1">Category</label>
                     <select
                       v-model="customCriterionForm.category"
-                      class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      class="ui-field"
                     >
                       <option v-for="(label, key) in categoryLabels" :key="key" :value="key">{{ label }}</option>
                     </select>
@@ -1459,7 +1458,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                     v-model="customCriterionForm.description"
                     rows="2"
                     placeholder="Describe what the AI should evaluate for this criterion..."
-                    class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    class="ui-field"
                   />
                 </div>
                 <div class="grid grid-cols-2 gap-4">
@@ -1470,7 +1469,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                       type="number"
                       min="1"
                       max="100"
-                      class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      class="ui-field"
                     />
                   </div>
                   <div>
@@ -1480,7 +1479,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                       type="number"
                       min="0"
                       max="100"
-                      class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      class="ui-field"
                     />
                   </div>
                 </div>
@@ -1488,14 +1487,14 @@ const questionTypeLabels: Record<QuestionType, string> = {
                   <button
                     type="button"
                     :disabled="!customCriterionForm.name"
-                    class="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    class="ui-button ui-button-primary px-4 py-2 text-sm"
                     @click="addCustomCriterion"
                   >
                     Add criterion
                   </button>
                   <button
                     type="button"
-                    class="px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg transition-colors"
+                    class="ui-button ui-button-ghost px-4 py-2 text-sm"
                     @click="showCustomForm = false"
                   >
                     Cancel
@@ -1504,13 +1503,13 @@ const questionTypeLabels: Record<QuestionType, string> = {
               </div>
 
               <!-- Auto-score toggle -->
-              <div v-if="scoringCriteria.length > 0" class="rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 p-5">
+              <div v-if="scoringCriteria.length > 0" class="ui-panel-muted p-5">
                 <label class="flex items-start gap-3 cursor-pointer">
                   <input
                     v-model="autoScoreOnApply"
                     type="checkbox"
                     :disabled="!isAiConfigured"
-                    class="mt-0.5 size-4 rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="ui-checkbox ui-checkbox-brand mt-0.5 size-4 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <div>
                     <span class="block text-sm font-semibold text-surface-900 dark:text-surface-100">
@@ -1520,7 +1519,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                       When a candidate applies, AI will automatically analyze their resume against these criteria and assign a score. Requires an AI provider configured in settings plus a resume upload.
                     </span>
                     <span v-if="!isAiConfigured" class="text-xs text-amber-600 dark:text-amber-400 mt-1 block">
-                      <NuxtLink :to="$localePath('/dashboard/settings/ai')" class="underline underline-offset-2 hover:text-amber-800 dark:hover:text-amber-200">Configure an AI provider</NuxtLink> to enable automatic scoring.
+                      <NuxtLink :to="$localePath('/dashboard/settings/ai')" class="ui-inline-link ui-inline-link-brand underline underline-offset-2">Configure an AI provider</NuxtLink> to enable automatic scoring.
                     </span>
                   </div>
                 </label>
@@ -1585,7 +1584,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                 <!-- Distribution hub -->
                 <div>
                   <div class="flex items-center gap-3 mb-2">
-                    <Share2 class="size-5 text-brand-600 dark:text-brand-400" />
+                    <Share2 class="ui-icon-brand size-5" />
                     <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100">Distribute to job boards</h3>
                   </div>
                   <p class="text-sm text-surface-500 dark:text-surface-400 mb-6">
@@ -1800,7 +1799,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                         v-model="customBoardName"
                         type="text"
                         placeholder="e.g. Hacker News, AngelList, Niche Board"
-                        class="flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-700 dark:text-surface-300 placeholder-surface-400 dark:placeholder-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                        class="ui-field flex-1"
                         @keydown.enter.prevent="createCustomBoardLink"
                       />
                       <button
@@ -1871,7 +1870,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                             {{ createdLinkCount }} tracking {{ createdLinkCount === 1 ? 'link' : 'links' }} created.
                           </span>
                           View all analytics and manage links in the
-                          <NuxtLink :to="$localePath('/dashboard/source-tracking')" class="text-brand-600 dark:text-brand-400 font-medium underline underline-offset-2">Source Tracking dashboard</NuxtLink>.
+                          <NuxtLink :to="$localePath('/dashboard/source-tracking')" class="ui-inline-link ui-inline-link-brand font-medium underline underline-offset-2">Source Tracking dashboard</NuxtLink>.
                         </p>
                       </div>
                     </div>
@@ -1920,7 +1919,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                       <Check class="size-3" />
                     </span>
                     <div class="inline-flex items-center justify-center size-10 rounded-lg bg-brand-100 dark:bg-brand-900/50">
-                      <Rocket class="size-5 text-brand-600 dark:text-brand-400" />
+                      <Rocket class="ui-icon-brand size-5" />
                     </div>
                     <div>
                       <span class="block text-sm font-semibold text-surface-900 dark:text-surface-100">Publish now</span>
@@ -1989,12 +1988,12 @@ const questionTypeLabels: Record<QuestionType, string> = {
                 </div>
 
                 <!-- What happens next hint -->
-                <div v-if="publishChoice === 'publish'" class="rounded-xl border border-brand-100 dark:border-brand-900 bg-brand-50/50 dark:bg-brand-950/20 p-4 mt-6">
+                <div v-if="publishChoice === 'publish'" class="ui-panel-brand p-4 mt-6">
                   <div class="flex items-start gap-3">
-                    <Share2 class="size-4 text-brand-600 dark:text-brand-400 shrink-0 mt-0.5" />
+                    <Share2 class="ui-icon-brand size-4 shrink-0 mt-0.5" />
                     <div>
-                      <p class="text-sm font-medium text-brand-800 dark:text-brand-200">After publishing</p>
-                      <p class="text-xs text-brand-700 dark:text-brand-300 mt-0.5 leading-relaxed">
+                      <p class="text-sm font-medium text-surface-900 dark:text-surface-100">After publishing</p>
+                      <p class="text-xs text-surface-600 dark:text-surface-400 mt-0.5 leading-relaxed">
                         You'll get tracked links for LinkedIn, Indeed, and other platforms so you can see exactly where your applicants come from.
                       </p>
                     </div>
@@ -2090,7 +2089,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
               </li>
               <li v-if="currentStep === 3" class="text-sm text-surface-600 dark:text-surface-400 leading-relaxed">
                 <p class="font-medium text-surface-900 dark:text-surface-100 mb-1">AI setup required</p>
-                To use AI-generated criteria or automatic scoring, configure your AI provider in <NuxtLink :to="$localePath('/dashboard/settings/ai')" class="text-brand-600 dark:text-brand-400 underline">settings</NuxtLink>.
+                To use AI-generated criteria or automatic scoring, configure your AI provider in <NuxtLink :to="$localePath('/dashboard/settings/ai')" class="ui-inline-link ui-inline-link-brand underline">settings</NuxtLink>.
               </li>
               <li v-if="currentStep === 4" class="text-sm text-surface-600 dark:text-surface-400 leading-relaxed">
                 <p class="font-medium text-surface-900 dark:text-surface-100 mb-1">Publish when ready</p>

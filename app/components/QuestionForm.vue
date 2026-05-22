@@ -116,7 +116,7 @@ const isEditing = computed(() => !!props.question)
       </h3>
       <button
         type="button"
-        class="rounded p-1 text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+        class="ui-button ui-button-ghost p-1"
         @click="emit('cancel')"
       >
         <X class="size-4" />
@@ -127,7 +127,7 @@ const isEditing = computed(() => !!props.question)
       <!-- Label -->
       <div>
         <label for="q-label" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-          Question <span class="text-danger-500">*</span>
+          Question <span class="ui-required-marker">*</span>
         </label>
         <input
           id="q-label"
@@ -135,9 +135,9 @@ const isEditing = computed(() => !!props.question)
           type="text"
           placeholder="e.g. How many years of experience do you have?"
           class="ui-field"
-          :class="errors.label ? 'border-danger-300 dark:border-danger-700' : ''"
+          :class="errors.label ? 'ui-field-invalid' : ''"
         />
-        <p v-if="errors.label" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ errors.label }}</p>
+        <p v-if="errors.label" class="ui-feedback-danger mt-1 text-xs">{{ errors.label }}</p>
       </div>
 
       <!-- Type -->
@@ -173,7 +173,7 @@ const isEditing = computed(() => !!props.question)
       <!-- Options (for select types) -->
       <div v-if="isSelectType">
         <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-          Options <span class="text-danger-500">*</span>
+          Options <span class="ui-required-marker">*</span>
         </label>
         <div class="space-y-2">
           <div v-for="(_, index) in form.options" :key="index" class="flex items-center gap-2">
@@ -185,7 +185,7 @@ const isEditing = computed(() => !!props.question)
             />
             <button
               type="button"
-              class="rounded p-1 text-surface-400 hover:text-danger-600 transition-colors disabled:opacity-30"
+              class="ui-button ui-button-ghost ui-button-ghost-danger p-1 disabled:opacity-30"
               :disabled="form.options.length <= 1"
               @click="removeOption(index)"
             >
@@ -195,13 +195,13 @@ const isEditing = computed(() => !!props.question)
         </div>
         <button
           type="button"
-          class="mt-2 inline-flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700 transition-colors"
+          class="ui-inline-link ui-inline-link-brand mt-2 inline-flex items-center gap-1 text-sm"
           @click="addOption"
         >
           <Plus class="size-3.5" />
           Add option
         </button>
-        <p v-if="errors.options" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ errors.options }}</p>
+        <p v-if="errors.options" class="ui-feedback-danger mt-1 text-xs">{{ errors.options }}</p>
       </div>
 
       <!-- Required -->
@@ -209,7 +209,7 @@ const isEditing = computed(() => !!props.question)
         <input
           v-model="form.required"
           type="checkbox"
-          class="size-4 rounded border-surface-300 dark:border-surface-700 text-brand-600 focus:ring-brand-500"
+          class="ui-checkbox ui-checkbox-brand size-4"
         />
         <span class="text-sm text-surface-700 dark:text-surface-300">Required</span>
       </label>

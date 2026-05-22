@@ -132,7 +132,7 @@ const typeLabels: Record<string, string> = {
     <!-- Error banner -->
     <div
       v-if="actionError"
-      class="rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-3 text-sm text-danger-700 dark:text-danger-400 mb-4"
+      class="ui-alert ui-alert-danger mb-4"
     >
       {{ actionError }}
       <button class="ml-2 underline" @click="actionError = null">Dismiss</button>
@@ -148,7 +148,7 @@ const typeLabels: Record<string, string> = {
       <div
         v-for="(q, index) in questions"
         :key="q.id"
-        class="flex items-center gap-3 rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-3 group"
+        class="ui-panel ui-list-row flex items-center gap-3 p-3 group"
       >
         <!-- Grip / order indicator -->
         <div class="text-surface-300">
@@ -159,7 +159,7 @@ const typeLabels: Record<string, string> = {
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
             <span class="text-sm font-medium text-surface-900 dark:text-surface-100 truncate">{{ q.label }}</span>
-            <span v-if="q.required" class="text-xs text-danger-500 font-medium">Required</span>
+            <span v-if="q.required" class="ui-pill ui-pill-brand px-1.5 py-0.5 text-[10px]">Required</span>
           </div>
           <div class="flex items-center gap-2 mt-0.5">
             <span class="text-xs text-surface-400">{{ typeLabels[q.type] ?? q.type }}</span>
@@ -179,7 +179,7 @@ const typeLabels: Record<string, string> = {
         <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <button
             :disabled="index === 0"
-            class="rounded p-1 text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors disabled:opacity-30"
+            class="ui-button ui-button-ghost p-1 disabled:opacity-30"
             title="Move up"
             @click="moveQuestion(index, 'up')"
           >
@@ -187,14 +187,14 @@ const typeLabels: Record<string, string> = {
           </button>
           <button
             :disabled="index === questions.length - 1"
-            class="rounded p-1 text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors disabled:opacity-30"
+            class="ui-button ui-button-ghost p-1 disabled:opacity-30"
             title="Move down"
             @click="moveQuestion(index, 'down')"
           >
             <ChevronDown class="size-4" />
           </button>
           <button
-            class="rounded p-1 text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+            class="ui-button ui-button-ghost p-1"
             title="Edit"
             @click="editingQuestion = q; showAddForm = false"
           >
@@ -202,7 +202,7 @@ const typeLabels: Record<string, string> = {
           </button>
           <button
             :disabled="deletingId === q.id"
-            class="rounded p-1 text-surface-400 hover:text-danger-600 dark:hover:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950 transition-colors disabled:opacity-50"
+            class="ui-button ui-button-ghost ui-button-ghost-danger p-1 disabled:opacity-50"
             title="Delete"
             @click="handleDelete(q.id)"
           >
@@ -237,7 +237,7 @@ const typeLabels: Record<string, string> = {
     <!-- Add button -->
     <button
       v-if="!showAddForm && !editingQuestion"
-      class="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-surface-300 dark:border-surface-700 px-3 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:border-brand-400 dark:hover:border-brand-600 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950 transition-colors"
+      class="ui-button ui-button-secondary border-dashed px-3 py-2 text-sm"
       @click="showAddForm = true"
     >
       <Plus class="size-4" />

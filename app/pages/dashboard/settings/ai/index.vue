@@ -178,9 +178,9 @@ function formatPrice(p: number | null): string {
     <!-- Empty state -->
     <div
       v-else-if="configs.length === 0"
-      class="ui-empty-panel border-dashed p-10"
+      class="ui-empty-panel ui-empty-panel-dashed p-10"
     >
-      <div class="ui-icon-state ui-icon-state-brand mx-auto flex size-12 items-center justify-center mb-3">
+      <div class="ui-icon-state ui-icon-state-brand ui-icon-tile mx-auto size-12 mb-3">
         <Brain class="size-6" />
       </div>
       <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">No AI models configured yet</h2>

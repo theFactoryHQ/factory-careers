@@ -236,7 +236,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
         Back to AI configuration
       </NuxtLink>
       <div class="flex items-center gap-2.5">
-        <div class="ui-icon-state ui-icon-state-brand size-9 rounded-xl">
+        <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-9">
           <Brain class="size-5" />
         </div>
         <div>

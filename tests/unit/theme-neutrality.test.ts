@@ -57,8 +57,10 @@ describe('brand-neutral theme variables', () => {
       '.ui-icon-state-success',
       '.ui-icon-state-brand',
       '.ui-icon-state-warning',
+      '.ui-icon-tile',
       '.ui-empty-state',
       '.ui-empty-panel',
+      '.ui-empty-panel-dashed',
       '.ui-selectable-panel',
       '.ui-selectable-panel-active',
       '.ui-list-row',
@@ -805,6 +807,115 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared UI recipes to Settings/member state surfaces', () => {
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/settings/index.vue',
+        recipes: ['ui-panel-danger', 'ui-icon-tile'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/account.vue',
+        recipes: ['ui-icon-tile'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/localization.vue',
+        recipes: ['ui-icon-tile'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/integrations.vue',
+        recipes: ['ui-icon-tile'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/members.vue',
+        recipes: ['ui-icon-tile'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/ai/index.vue',
+        recipes: ['ui-empty-panel-dashed', 'ui-icon-tile'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/sso.vue',
+        recipes: ['ui-empty-panel-dashed', 'ui-icon-tile'],
+      },
+      {
+        path: 'app/components/AiConfigForm.vue',
+        recipes: ['ui-icon-tile'],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
+  it('keeps Settings/member state surface variants behind shared recipes', () => {
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/pages/dashboard/settings/index.vue',
+        patterns: [
+          /ui-panel mt-8 overflow-hidden/,
+          /ui-icon-state(?: ui-icon-state-(?:brand|danger))? flex items-center justify-center size-10 shrink-0 rounded-lg/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/account.vue',
+        patterns: [
+          /ui-icon-state(?: ui-icon-state-brand)? flex items-center justify-center size-10 shrink-0 rounded-lg/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/localization.vue',
+        patterns: [
+          /ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/integrations.vue',
+        patterns: [
+          /ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 rounded-lg/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/members.vue',
+        patterns: [
+          /ui-icon-state ui-icon-state-(?:brand|warning) flex items-center justify-center size-(?:8|10)(?: shrink-0)? rounded-lg/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/ai/index.vue',
+        patterns: [
+          /ui-empty-panel border-dashed/,
+          /ui-icon-state ui-icon-state-brand mx-auto flex size-12 items-center justify-center mb-3/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/settings/sso.vue',
+        patterns: [
+          /ui-empty-panel border-dashed/,
+          /<ShieldCheck class="size-10 text-surface-300 dark:text-surface-600 mx-auto mb-3" \/>/,
+        ],
+      },
+      {
+        path: 'app/components/AiConfigForm.vue',
+        patterns: [
+          /ui-icon-state ui-icon-state-brand size-9 rounded-xl/,
+        ],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
+    }
+  })
+
   it('keeps remaining Settings and member surface choices behind shared recipes', () => {
     const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
       {
@@ -1090,6 +1201,106 @@ describe('brand-neutral theme variables', () => {
       /focus:ring-brand-500/,
     ]) {
       expect(source, `job settings should centralize ${pattern}`).not.toMatch(pattern)
+    }
+  })
+
+  it('applies shared UI recipes to job creation and question form surfaces', () => {
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/jobs/new.vue',
+        recipes: [
+          'ui-alert-danger',
+          'ui-alert-warning',
+          'ui-button-primary',
+          'ui-button-secondary',
+          'ui-button-ghost',
+          'ui-checkbox',
+          'ui-checkbox-brand',
+          'ui-feedback-danger',
+          'ui-field',
+          'ui-field-invalid',
+          'ui-icon-brand',
+          'ui-inline-link',
+          'ui-inline-link-brand',
+          'ui-list-divider',
+          'ui-list-row',
+          'ui-panel',
+          'ui-panel-brand',
+          'ui-panel-header',
+          'ui-panel-muted',
+          'ui-pill',
+          'ui-pill-brand',
+          'ui-required-marker',
+          'ui-selectable-panel',
+          'ui-selectable-panel-active',
+          'ui-step-marker',
+        ],
+      },
+      {
+        path: 'app/components/JobQuestions.vue',
+        recipes: [
+          'ui-alert-danger',
+          'ui-button-secondary',
+          'ui-button-ghost',
+          'ui-button-ghost-danger',
+          'ui-list-row',
+          'ui-panel',
+          'ui-pill-brand',
+        ],
+      },
+      {
+        path: 'app/components/QuestionForm.vue',
+        recipes: [
+          'ui-button-ghost',
+          'ui-button-ghost-danger',
+          'ui-checkbox',
+          'ui-checkbox-brand',
+          'ui-feedback-danger',
+          'ui-field',
+          'ui-field-invalid',
+          'ui-inline-link-brand',
+          'ui-panel-muted',
+          'ui-required-marker',
+        ],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
+  it('keeps job creation and question form theme choices behind shared recipes', () => {
+    const paths = [
+      'app/pages/dashboard/jobs/new.vue',
+      'app/components/JobQuestions.vue',
+      'app/components/QuestionForm.vue',
+    ]
+    const disallowedPatterns = [
+      /rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+      /rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950/,
+      /w-full rounded-lg border px-3 py-2\.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900/,
+      /w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900/,
+      /inline-flex items-center gap-1\.5 rounded-lg border border-dashed border-surface-300 dark:border-surface-700/,
+      /px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700/,
+      /px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700/,
+      /size-4 rounded border-surface-300 dark:border-surface-700 text-brand-600 focus:ring-brand-500/,
+      /mt-0\.5 size-4 rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500/,
+      /text-danger-500/,
+      /text-brand-600 dark:text-brand-400/,
+      /focus:ring-brand-500/,
+    ]
+
+    for (const path of paths) {
+      const source = readProjectFile(path)
+
+      for (const pattern of disallowedPatterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
     }
   })
 })

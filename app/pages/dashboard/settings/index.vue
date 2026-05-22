@@ -131,7 +131,7 @@ async function handleDeleteOrg() {
     <section class="ui-panel overflow-hidden">
       <div class="ui-panel-header px-4 sm:px-6 py-5">
         <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
+          <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-10 shrink-0">
             <Building2 class="size-5" />
           </div>
           <div>
@@ -212,10 +212,10 @@ async function handleDeleteOrg() {
     </section>
 
     <!-- Danger zone -->
-    <section v-if="canDeleteOrg" class="ui-panel mt-8 overflow-hidden">
+    <section v-if="canDeleteOrg" class="ui-panel ui-panel-danger mt-8 overflow-hidden">
       <div class="ui-panel-header px-4 sm:px-6 py-5">
         <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-icon-state-danger flex items-center justify-center size-10 shrink-0 rounded-lg">
+          <div class="ui-icon-state ui-icon-state-danger ui-icon-tile size-10 shrink-0">
             <AlertTriangle class="size-5" />
           </div>
           <div>
