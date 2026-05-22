@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { admin, member, owner, statements } from '../../shared/permissions'
 import { createAiConfigSchema, updateAiConfigSchema } from '../../server/utils/schemas/scoring'
+import { validateServerSideUrlShape } from '../../server/utils/serverSideUrl'
 
 describe('security issue regressions: permissions', () => {
   it('keeps organization deletion owner-only', () => {
@@ -55,11 +56,29 @@ describe('security issue regressions: AI provider base URLs', () => {
       'https://192.168.1.10/v1',
       'https://169.254.169.254/latest/meta-data/',
       'https://metadata.google.internal/computeMetadata/v1/',
+      'https://[::ffff:127.0.0.1]/v1',
+      'https://[::ffff:10.0.0.1]/v1',
+      'https://[::ffff:169.254.169.254]/latest/meta-data/',
+      'https://[fe90::1]/v1',
     ]) {
       expect(
         createAiConfigSchema.safeParse({ ...basePayload, baseUrl }).success,
         `Expected ${baseUrl} to be rejected`,
       ).toBe(false)
+    }
+  })
+
+  it('rejects IPv4-mapped IPv6 and full IPv6 link-local SSRF forms at URL validation', () => {
+    for (const url of [
+      'https://[::ffff:127.0.0.1]/',
+      'https://[::ffff:7f00:1]/',
+      'https://[::ffff:169.254.169.254]/',
+      'https://[::ffff:a00:1]/',
+      'https://[fe80::1]/',
+      'https://[fe90::1]/',
+      'https://[febf::1]/',
+    ]) {
+      expect(validateServerSideUrlShape(url).ok, `Expected ${url} to be rejected`).toBe(false)
     }
   })
 

@@ -31,7 +31,7 @@ describe('requirePermission security boundary', () => {
       user: { id: 'user-1', email: 'doug@thefactoryhq.com' },
       session: { activeOrganizationId: 'org-factory' },
     })
-    mocks.hasPermission.mockResolvedValue({ error: null })
+    mocks.hasPermission.mockResolvedValue({ error: null, success: true })
   })
 
   it('enforces Factory staff access before returning a permission-gated session', async () => {

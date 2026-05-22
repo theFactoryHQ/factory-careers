@@ -199,6 +199,45 @@ describe('P0 tenant-isolation route coverage', () => {
     expect(securitySource).toContain('assertSafeServerSideUrl')
   })
 
+  it('validates discovered SSO endpoints with DNS checks and blocks redirects', () => {
+    const securitySource = read('server/utils/ssoSecurity.ts')
+
+    expect(securitySource).toContain('async function validateDiscoveryEndpoint')
+    expect(securitySource).toContain('await assertSafeServerSideUrl(value')
+    expect(securitySource).toContain("redirect: 'error'")
+  })
+
+  it('uses the dedicated AI config read permission for config-management reads', () => {
+    const guardedRoutes = [
+      'server/api/ai-config/index.get.ts',
+      'server/api/ai-config/[id].get.ts',
+      'server/api/ai-config/providers.get.ts',
+    ]
+
+    for (const path of guardedRoutes) {
+      expect(read(path), `${path} must require aiConfig:read`).toContain("requirePermission(event, { aiConfig: ['read'] })")
+    }
+  })
+
+  it('performs DNS-backed custom AI base URL validation before direct chatbot model use', () => {
+    const source = read('server/api/chatbot/chat.post.ts')
+    const assertionIndex = source.indexOf('await assertSafeServerSideUrl(config.baseUrl)')
+    const modelIndex = source.indexOf('const model = createLanguageModel')
+
+    expect(source).toContain("from '../../utils/serverSideUrl'")
+    expect(assertionIndex).toBeGreaterThanOrEqual(0)
+    expect(modelIndex).toBeGreaterThan(assertionIndex)
+  })
+
+  it('uses byte-safe OAuth state comparison for Microsoft calendar callbacks', () => {
+    const source = read('server/api/calendar/microsoft/callback.get.ts')
+
+    expect(source).toContain("from '../../../utils/secureCompare'")
+    expect(source).toContain('timingSafeStringEqual(storedState, state)')
+    expect(source).not.toContain('timingSafeEqual(')
+    expect(source).not.toContain('storedState.length !== state.length')
+  })
+
   it('rolls back public applications when required document upload fails', () => {
     const source = read('server/api/public/jobs/[slug]/apply.post.ts')
 

@@ -171,20 +171,20 @@ async function enforcePrivateBucketPolicy(): Promise<void> {
   }
 }
 
-function isUnsupportedBucketPolicyError(error: unknown): boolean {
+export function isUnsupportedBucketPolicyError(error: unknown): boolean {
   if (!(error instanceof Error)) return false
 
   const metadata = (error as { $metadata?: { httpStatusCode?: number } }).$metadata
   const statusCode = metadata?.httpStatusCode
   const name = error.name.toLowerCase()
+  const compactName = name.replace(/[^a-z0-9]/g, '')
   const message = error.message.toLowerCase()
 
   return (
-    statusCode === 400 ||
     statusCode === 405 ||
     statusCode === 501 ||
-    name.includes('notimplemented') ||
-    name.includes('not supported') ||
+    compactName.includes('notimplemented') ||
+    compactName.includes('notsupported') ||
     message.includes('not implemented') ||
     message.includes('not supported') ||
     message.includes('unsupported')

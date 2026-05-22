@@ -6,6 +6,6 @@ import { getProviderRegistryWithCachedModels } from '../../utils/ai/modelCatalog
  * Public within org (no secrets exposed).
  */
 export default defineEventHandler(async (event) => {
-  await requirePermission(event, { scoring: ['read'] })
+  await requirePermission(event, { aiConfig: ['read'] })
   return getProviderRegistryWithCachedModels()
 })

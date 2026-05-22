@@ -5,11 +5,11 @@
  * access. Validates CSRF state, exchanges the code, stores encrypted tokens,
  * and redirects back to integrations settings.
  */
-import { timingSafeEqual } from 'node:crypto'
 import {
   exchangeMicrosoftCodeForTokens,
   saveMicrosoftCalendarIntegration,
 } from '../../../utils/microsoft-calendar'
+import { timingSafeStringEqual } from '../../../utils/secureCompare'
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
@@ -33,16 +33,7 @@ export default defineEventHandler(async (event) => {
   deleteCookie(event, 'mscal_oauth_state', { path: '/api/calendar/microsoft/callback' })
   deleteCookie(event, 'mscal_oauth_org', { path: '/api/calendar/microsoft/callback' })
 
-  if (!storedState || storedState.length !== state.length) {
-    throw createError({ statusCode: 403, statusMessage: 'Invalid OAuth state — possible CSRF attack' })
-  }
-
-  const stateMatch = timingSafeEqual(
-    Buffer.from(storedState, 'utf-8'),
-    Buffer.from(state, 'utf-8'),
-  )
-
-  if (!stateMatch) {
+  if (!storedState || !timingSafeStringEqual(storedState, state)) {
     throw createError({ statusCode: 403, statusMessage: 'Invalid OAuth state — possible CSRF attack' })
   }
 

@@ -1,8 +1,27 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const dnsMocks = vi.hoisted(() => ({
+  lookup: vi.fn(async () => [{ address: '203.0.113.10', family: 4 }]),
+}))
+
+vi.mock('node:dns/promises', () => ({
+  lookup: dnsMocks.lookup,
+}))
+
 import {
   buildOidcRegistrationConfigFromDiscovery,
   validateSsoIssuerUrlShape,
 } from '../../server/utils/ssoSecurity'
+
+function makeError(opts: { statusCode: number, statusMessage?: string, cause?: unknown }) {
+  return Object.assign(new Error(opts.statusMessage), opts)
+}
+
+beforeEach(() => {
+  dnsMocks.lookup.mockReset()
+  dnsMocks.lookup.mockResolvedValue([{ address: '203.0.113.10', family: 4 }])
+  vi.stubGlobal('createError', makeError)
+})
 
 describe('SSO issuer URL validation', () => {
   it('requires HTTPS for public issuers', () => {
@@ -29,8 +48,8 @@ describe('SSO issuer URL validation', () => {
 })
 
 describe('SSO OIDC discovery hardening', () => {
-  it('builds explicit OIDC endpoints so registration can skip Better Auth runtime discovery', () => {
-    const config = buildOidcRegistrationConfigFromDiscovery('https://accounts.google.com', {
+  it('builds explicit OIDC endpoints so registration can skip Better Auth runtime discovery', async () => {
+    const config = await buildOidcRegistrationConfigFromDiscovery('https://accounts.google.com', {
       issuer: 'https://accounts.google.com',
       authorization_endpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
       token_endpoint: 'https://oauth2.googleapis.com/token',
@@ -48,21 +67,39 @@ describe('SSO OIDC discovery hardening', () => {
     })
   })
 
-  it('rejects discovery documents whose issuer does not match exactly except trailing slash', () => {
-    expect(() => buildOidcRegistrationConfigFromDiscovery('https://auth.example.com', {
+  it('rejects discovery documents whose issuer does not match exactly except trailing slash', async () => {
+    await expect(buildOidcRegistrationConfigFromDiscovery('https://auth.example.com', {
       issuer: 'https://evil.example.com',
       authorization_endpoint: 'https://auth.example.com/authorize',
       token_endpoint: 'https://auth.example.com/token',
       jwks_uri: 'https://auth.example.com/certs',
-    })).toThrow(/issuer/i)
+    })).rejects.toThrow(/issuer/i)
   })
 
-  it('rejects discovery endpoints that target private hosts', () => {
-    expect(() => buildOidcRegistrationConfigFromDiscovery('https://auth.example.com', {
+  it('rejects discovery endpoints that target private hosts', async () => {
+    await expect(buildOidcRegistrationConfigFromDiscovery('https://auth.example.com', {
       issuer: 'https://auth.example.com',
       authorization_endpoint: 'https://auth.example.com/authorize',
       token_endpoint: 'https://10.0.0.5/token',
       jwks_uri: 'https://auth.example.com/certs',
-    })).toThrow(/token_endpoint/i)
+    })).rejects.toThrow(/token_endpoint/i)
+  })
+
+  it('rejects discovery endpoints whose hostnames resolve to private addresses', async () => {
+    dnsMocks.lookup.mockImplementation(async (hostname: string) => {
+      if (hostname === 'internal.example.com') {
+        return [{ address: '127.0.0.1', family: 4 }]
+      }
+      return [{ address: '203.0.113.10', family: 4 }]
+    })
+
+    await expect(buildOidcRegistrationConfigFromDiscovery('https://auth.example.com', {
+      issuer: 'https://auth.example.com',
+      authorization_endpoint: 'https://auth.example.com/authorize',
+      token_endpoint: 'https://internal.example.com/token',
+      jwks_uri: 'https://auth.example.com/certs',
+    })).rejects.toThrow(/token_endpoint/i)
+
+    expect(dnsMocks.lookup).toHaveBeenCalledWith('internal.example.com', { all: true, verbatim: true })
   })
 })

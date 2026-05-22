@@ -79,47 +79,55 @@ function requireDiscoveryString(doc: OidcDiscoveryDocument, key: keyof OidcDisco
   return value
 }
 
-function validateDiscoveryEndpoint(name: string, value: string, options: SsoUrlValidationOptions): string {
+async function validateDiscoveryEndpoint(name: string, value: string, options: SsoUrlValidationOptions): Promise<string> {
   const result = validateServerSideUrlShape(value, validationOptionsForUrl(value, options))
   if (!result.ok) {
     throw new Error(`OIDC discovery ${name} is not allowed: ${result.reason}`)
   }
+
+  try {
+    await assertSafeServerSideUrl(value, validationOptionsForUrl(value, options))
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'URL hostname could not be resolved safely'
+    throw new Error(`OIDC discovery ${name} is not allowed: ${message}`)
+  }
+
   return result.url!.toString()
 }
 
-export function buildOidcRegistrationConfigFromDiscovery(
+export async function buildOidcRegistrationConfigFromDiscovery(
   issuer: string,
   doc: OidcDiscoveryDocument,
   options: SsoUrlValidationOptions = {},
-): OidcRegistrationConfig {
+): Promise<OidcRegistrationConfig> {
   const discoveredIssuer = requireDiscoveryString(doc, 'issuer')
   if (normalizeIssuer(discoveredIssuer) !== normalizeIssuer(issuer)) {
     throw new Error(`OIDC discovery issuer mismatch: expected ${issuer}, got ${discoveredIssuer}`)
   }
 
-  const discoveryEndpoint = validateDiscoveryEndpoint(
+  const discoveryEndpoint = await validateDiscoveryEndpoint(
     'discoveryEndpoint',
     computeOidcDiscoveryEndpoint(issuer),
     options,
   )
-  const authorizationEndpoint = validateDiscoveryEndpoint(
+  const authorizationEndpoint = await validateDiscoveryEndpoint(
     'authorization_endpoint',
     requireDiscoveryString(doc, 'authorization_endpoint'),
     options,
   )
-  const tokenEndpoint = validateDiscoveryEndpoint(
+  const tokenEndpoint = await validateDiscoveryEndpoint(
     'token_endpoint',
     requireDiscoveryString(doc, 'token_endpoint'),
     options,
   )
-  const jwksEndpoint = validateDiscoveryEndpoint(
+  const jwksEndpoint = await validateDiscoveryEndpoint(
     'jwks_uri',
     requireDiscoveryString(doc, 'jwks_uri'),
     options,
   )
 
   const userinfoEndpoint = typeof doc.userinfo_endpoint === 'string' && doc.userinfo_endpoint.trim()
-    ? validateDiscoveryEndpoint('userinfo_endpoint', doc.userinfo_endpoint, options)
+    ? await validateDiscoveryEndpoint('userinfo_endpoint', doc.userinfo_endpoint, options)
     : undefined
 
   return {
@@ -149,8 +157,11 @@ export async function discoverOidcRegistrationConfig(
   const discoveryEndpoint = computeOidcDiscoveryEndpoint(issuer)
   await assertSafeServerSideUrl(discoveryEndpoint, validationOptionsForUrl(discoveryEndpoint, options))
 
-  const doc = await $fetch<OidcDiscoveryDocument>(discoveryEndpoint, { timeout: 10_000 })
-  return buildOidcRegistrationConfigFromDiscovery(issuer, doc, options)
+  const doc = await $fetch<OidcDiscoveryDocument>(discoveryEndpoint, {
+    timeout: 10_000,
+    redirect: 'error',
+  })
+  return await buildOidcRegistrationConfigFromDiscovery(issuer, doc, options)
 }
 
 export const registerSsoSchema = z.object({

@@ -42,7 +42,7 @@ describe('production RBAC matrix', () => {
     expect(can(member, 'emailTemplate', 'delete')).toBe(false)
 
     expect(can(member, 'scoring', 'read')).toBe(true)
-    expect(can(member, 'scoring', 'create')).toBe(false)
+    expect(can(member, 'scoring', 'create')).toBe(true)
     expect(can(member, 'scoring', 'update')).toBe(false)
     expect(can(member, 'scoring', 'delete')).toBe(false)
   })

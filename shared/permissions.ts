@@ -100,7 +100,7 @@ export const member = ac.newRole({
   interview: ['create', 'read', 'update'],
   emailTemplate: ['read'],
   activityLog: ['read'],
-  scoring: ['read'],
+  scoring: ['create', 'read'],
   aiConfig: [],
   sourceTracking: ['read'],
 })
