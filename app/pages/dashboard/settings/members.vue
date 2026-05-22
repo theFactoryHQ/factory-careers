@@ -659,7 +659,7 @@ onUnmounted(() => {
     <section v-if="canInvite && (isLoadingInvitations || pendingInvitations.length > 0)" class="ui-panel ui-settings-panel mb-6">
       <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-icon-state-warning flex items-center justify-center size-8 rounded-lg">
+          <div class="ui-icon-state ui-icon-state-warning ui-icon-tile size-8">
             <Clock class="size-4" />
           </div>
           <div>
@@ -755,7 +755,7 @@ onUnmounted(() => {
       <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-8 shrink-0 rounded-lg">
+            <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-8 shrink-0">
               <Link2 class="size-4" />
             </div>
             <div class="min-w-0">
@@ -952,7 +952,7 @@ onUnmounted(() => {
     <section v-if="canInvite && (isLoadingJoinRequests || joinRequests.length > 0)" class="ui-panel ui-settings-panel mb-6">
       <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-icon-state-warning flex items-center justify-center size-8 rounded-lg">
+          <div class="ui-icon-state ui-icon-state-warning ui-icon-tile size-8">
             <UserCheck class="size-4" />
           </div>
           <div>
@@ -1054,7 +1054,7 @@ onUnmounted(() => {
       <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="flex items-center gap-3">
-            <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
+            <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-10 shrink-0">
               <Users class="size-5" />
             </div>
             <div>
