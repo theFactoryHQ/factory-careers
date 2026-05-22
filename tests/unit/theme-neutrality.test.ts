@@ -358,7 +358,7 @@ describe('brand-neutral theme variables', () => {
       'ui-button-secondary',
       'ui-button-danger',
       'ui-button-danger-outline',
-      'ui-button-success',
+      'ui-button',
       'ui-empty-state',
       'ui-modal-panel',
       'ui-icon-state-brand',
@@ -416,6 +416,201 @@ describe('brand-neutral theme variables', () => {
 
     for (const recipe of ['ui-nav-icon', 'ui-nav-icon-active']) {
       expect(sidebar, `SettingsSidebar should use ${recipe}`).toContain(recipe)
+    }
+  })
+
+  it('applies shared UI recipes to interview list and template surfaces', () => {
+    const interviewList = readProjectFile('app/pages/dashboard/interviews/index.vue')
+
+    for (const recipe of [
+      'getInterviewStatusBadgeClass',
+      'getInterviewStatusDotClass',
+      'getInterviewStatusLabel',
+      'getInterviewTransitionButtonClass',
+      'getInterviewTransitionLabel',
+      'ui-alert-danger',
+      'ui-button-danger',
+      'ui-button-ghost',
+      'ui-button-primary',
+      'ui-button-secondary',
+      'ui-empty-panel',
+      'ui-field',
+      'ui-feedback-danger',
+      'ui-filter-chip',
+      'ui-filter-chip-active',
+      'ui-filter-chip-inactive',
+      'ui-floating-menu',
+      'ui-icon-state',
+      'ui-icon-tile',
+      'ui-inline-link-brand',
+      'ui-list-row',
+      'ui-menu-action',
+      'ui-menu-action-danger',
+      'ui-menu-divider',
+      'ui-modal-backdrop',
+      'ui-modal-panel',
+      'ui-panel',
+      'ui-pill',
+      'ui-status-dot',
+    ]) {
+      expect(interviewList, `interview list should use ${recipe}`).toContain(recipe)
+    }
+
+    const statusDisplay = readProjectFile('app/utils/status-display.ts')
+    expect(statusDisplay, 'interview transition helpers should centralize success actions').toContain('ui-button-success')
+
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/interviews/templates/index.vue',
+        recipes: [
+          'ui-button-danger',
+          'ui-button-ghost',
+          'ui-button-primary',
+          'ui-button-secondary',
+          'ui-empty-panel',
+          'ui-empty-panel-dashed',
+          'ui-icon-state',
+          'ui-icon-tile',
+          'ui-list-row',
+          'ui-modal-backdrop',
+          'ui-modal-panel',
+          'ui-panel',
+          'ui-panel-brand',
+          'ui-pill',
+          'ui-spinner-brand',
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/interviews/templates/new.vue',
+        recipes: [
+          'ui-alert-danger',
+          'ui-button-ghost',
+          'ui-button-primary',
+          'ui-button-secondary',
+          'ui-code',
+          'ui-field',
+          'ui-icon-state',
+          'ui-icon-tile',
+          'ui-panel',
+          'ui-panel-brand',
+          'ui-panel-brand-header',
+          'ui-panel-divider',
+          'ui-panel-muted',
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/interviews/templates/[id].vue',
+        recipes: [
+          'ui-alert-danger',
+          'ui-button-danger',
+          'ui-button-ghost',
+          'ui-button-primary',
+          'ui-button-secondary',
+          'ui-code',
+          'ui-field',
+          'ui-icon-state',
+          'ui-icon-tile',
+          'ui-inline-link-brand',
+          'ui-panel',
+          'ui-panel-brand',
+          'ui-panel-brand-header',
+          'ui-panel-danger',
+          'ui-panel-divider',
+          'ui-panel-muted',
+          'ui-pill',
+          'ui-spinner-brand',
+        ],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
+  it('keeps interview list and template surface choices behind shared recipes', () => {
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/pages/dashboard/interviews/index.vue',
+        patterns: [
+          /const statusConfig:/,
+          /class: 'bg-brand-50 text-brand-700 ring-brand-200/,
+          /w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+          /inline-flex items-center gap-2 rounded-lg bg-brand-600/,
+          /inline-flex items-center gap-1\.5 rounded-full px-3 py-1\.5 text-xs font-medium/,
+          /flex rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden/,
+          /rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+          /rounded-lg border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950/,
+          /rounded-lg bg-success-600/,
+          /absolute right-0 top-full mt-1\.5 z-50 w-48 rounded-xl border border-surface-200/,
+          /border-t border-surface-100 dark:border-surface-800/,
+          /absolute inset-0 bg-black\/40 backdrop-blur-sm/,
+          /relative bg-white dark:bg-surface-900 rounded-2xl/,
+          /focus:ring-brand-500/,
+          /bg-emerald-/,
+          /text-emerald-/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/interviews/templates/index.vue',
+        patterns: [
+          /inline-flex items-center gap-1 rounded-full border border-surface-200/,
+          /flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500/,
+          /inline-flex items-center gap-1\.5 rounded-xl bg-brand-600/,
+          /group relative rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+          /inline-flex items-center gap-1 rounded-md bg-surface-100 dark:bg-surface-800/,
+          /rounded-xl border-2 border-dashed border-surface-200/,
+          /absolute inset-0 bg-black\/30 backdrop-blur/,
+          /relative w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-2xl bg-white/,
+          /cursor-pointer rounded-lg p-2 text-surface-400 hover:text-danger-600/,
+          /border-2 border-brand-200 border-t-brand-600/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/interviews/templates/new.vue',
+        patterns: [
+          /inline-flex items-center gap-1 rounded-full border border-surface-200/,
+          /flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500/,
+          /cursor-pointer inline-flex items-center gap-1\.5 rounded-xl border border-surface-200/,
+          /cursor-pointer inline-flex items-center gap-1\.5 rounded-xl bg-brand-600/,
+          /rounded-xl border border-danger-200\/80 bg-danger-50/,
+          /rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+          /w-full rounded-lg border border-surface-200 dark:border-surface-700/,
+          /rounded-xl border border-brand-200 dark:border-brand-800\/60 bg-white/,
+          /border-b border-brand-100 dark:border-brand-900\/40 bg-brand-50\/50/,
+          /focus:ring-brand-500/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/interviews/templates/[id].vue',
+        patterns: [
+          /inline-flex items-center gap-1 rounded-full border border-surface-200/,
+          /rounded-xl border border-danger-200 bg-danger-50/,
+          /inline-flex items-center gap-1\.5 rounded-lg bg-brand-600/,
+          /cursor-pointer inline-flex items-center gap-1\.5 rounded-xl border border-surface-200/,
+          /cursor-pointer inline-flex items-center gap-1\.5 rounded-xl bg-brand-600/,
+          /rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+          /w-full rounded-lg border border-surface-200 dark:border-surface-700/,
+          /rounded-xl border border-danger-200\/60/,
+          /cursor-pointer inline-flex items-center gap-1\.5 rounded-lg bg-danger-600/,
+          /rounded-xl border border-brand-200 dark:border-brand-800\/60 bg-white/,
+          /border-b border-brand-100 dark:border-brand-900\/40 bg-brand-50\/50/,
+          /border-2 border-brand-200 border-t-brand-600/,
+          /focus:ring-brand-500/,
+        ],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
     }
   })
 })

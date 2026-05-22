@@ -1640,10 +1640,12 @@
 
   .ui-timeline-line {
     background-color: var(--color-surface-200);
+    border-color: var(--color-surface-200);
   }
 
   .dark .ui-timeline-line {
     background-color: var(--color-surface-800);
+    border-color: var(--color-surface-800);
   }
 
   .ui-timeline-date-highlight {
