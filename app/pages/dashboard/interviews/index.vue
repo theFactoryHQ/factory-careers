@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import {
-  Calendar, Clock, Search, X, ChevronDown, Video, Phone,
+  Calendar, Clock, Search, X, Video, Phone,
   Building2, Code2, FileText, UsersRound, MoreHorizontal,
   CheckCircle2, XCircle, AlertTriangle, UserRound, Briefcase,
   Pencil, Trash2, MapPin, Users, CalendarDays,
   Mail, ExternalLink,
 } from 'lucide-vue-next'
+import { INTERVIEW_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
+import {
+  getInterviewStatusBadgeClass,
+  getInterviewStatusDotClass,
+  getInterviewStatusLabel,
+  getInterviewTransitionButtonClass,
+  getInterviewTransitionLabel,
+} from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -20,7 +28,7 @@ useSeoMeta({
 
 const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 const toast = useToast()
-const { formatPersonName, formatDateTime } = useOrgSettings()
+const { formatPersonName } = useOrgSettings()
 
 // ─── Filters ──────────────────────────────────────────────────────
 const searchInput = ref('')
@@ -78,32 +86,12 @@ const groupedByDate = computed(() => {
   return groups
 })
 
-// ─── Status styling ──────────────────────────────────────────────
-const statusConfig: Record<InterviewStatus, { label: string; icon: any; class: string; dot: string }> = {
-  scheduled: {
-    label: 'Scheduled',
-    icon: Calendar,
-    class: 'bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-950/50 dark:text-brand-300 dark:ring-brand-800',
-    dot: 'bg-brand-500',
-  },
-  completed: {
-    label: 'Completed',
-    icon: CheckCircle2,
-    class: 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/50 dark:text-success-300 dark:ring-success-800',
-    dot: 'bg-success-500',
-  },
-  cancelled: {
-    label: 'Cancelled',
-    icon: XCircle,
-    class: 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:ring-surface-700',
-    dot: 'bg-surface-400',
-  },
-  no_show: {
-    label: 'No Show',
-    icon: AlertTriangle,
-    class: 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950/50 dark:text-danger-300 dark:ring-danger-800',
-    dot: 'bg-danger-500',
-  },
+// ─── Status display ──────────────────────────────────────────────
+const interviewStatusIcons: Record<InterviewStatus, any> = {
+  scheduled: Calendar,
+  completed: CheckCircle2,
+  cancelled: XCircle,
+  no_show: AlertTriangle,
 }
 
 const typeIcons: Record<string, any> = {
@@ -129,14 +117,6 @@ function formatTime(dateStr: string) {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
-  })
-}
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
   })
 }
 
@@ -258,9 +238,6 @@ async function handleDelete() {
   }
 }
 
-// ─── Quick status change ─────────────────────────────────────────
-import { INTERVIEW_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
-
 function getAllowedTransitions(status: string): InterviewStatus[] {
   return (INTERVIEW_STATUS_TRANSITIONS[status] ?? []) as InterviewStatus[]
 }
@@ -313,7 +290,7 @@ const statusCounts = computed(() => {
       </div>
       <NuxtLink
         :to="$localePath('/dashboard/interviews/templates')"
-        class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors no-underline"
+        class="ui-button ui-button-primary no-underline"
       >
         <Mail class="size-4" />
         Email Templates
@@ -329,11 +306,11 @@ const statusCounts = computed(() => {
           v-model="searchInput"
           type="text"
           placeholder="Search interviews, candidates, jobs…"
-          class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 py-2 pl-10 pr-9 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors"
+          class="ui-field py-2 pl-10 pr-9"
         />
         <button
           v-if="searchInput"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 cursor-pointer"
+          class="ui-button ui-button-ghost absolute right-2 top-1/2 size-6 -translate-y-1/2 p-0"
           @click="searchInput = ''"
         >
           <X class="size-4" />
@@ -345,34 +322,34 @@ const statusCounts = computed(() => {
         <button
           v-for="s in STATUS_OPTIONS"
           :key="s"
-          class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-150 cursor-pointer border"
+          class="ui-filter-chip rounded-full"
           :class="activeStatus === s
-            ? 'border-brand-500 bg-brand-50 text-brand-700 dark:border-brand-400 dark:bg-brand-950/40 dark:text-brand-300 shadow-sm'
-            : 'border-surface-200 dark:border-surface-700/80 bg-white dark:bg-surface-900 text-surface-600 dark:text-surface-400 hover:border-surface-300 dark:hover:border-surface-600'"
+            ? 'ui-filter-chip-active shadow-sm'
+            : 'ui-filter-chip-inactive'"
           @click="activeStatus = activeStatus === s ? undefined : s"
         >
-          <span class="size-1.5 rounded-full" :class="statusConfig[s].dot" />
-          {{ statusConfig[s].label }}
-          <span class="tabular-nums text-[10px] font-semibold" :class="activeStatus === s ? 'text-brand-600 dark:text-brand-400' : 'text-surface-400 dark:text-surface-500'">{{ statusCounts[s] }}</span>
+          <span class="ui-status-dot size-1.5" :class="getInterviewStatusDotClass(s)" />
+          {{ getInterviewStatusLabel(s) }}
+          <span class="tabular-nums text-[10px] font-semibold" :class="activeStatus === s ? 'text-white/80' : 'text-surface-400 dark:text-surface-500'">{{ statusCounts[s] }}</span>
         </button>
       </div>
 
       <!-- View toggle -->
-      <div class="flex rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden ml-auto">
+      <div class="ui-panel ml-auto inline-flex overflow-hidden p-0">
         <button
-          class="px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
+          class="ui-filter-chip rounded-none px-3 py-1.5"
           :class="activeView === 'list'
-            ? 'bg-brand-600 text-white'
-            : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'"
+            ? 'ui-filter-chip-active'
+            : 'ui-filter-chip-inactive'"
           @click="activeView = 'list'"
         >
           List
         </button>
         <button
-          class="px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
+          class="ui-filter-chip rounded-none px-3 py-1.5"
           :class="activeView === 'calendar'
-            ? 'bg-brand-600 text-white'
-            : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'"
+            ? 'ui-filter-chip-active'
+            : 'ui-filter-chip-inactive'"
           @click="activeView = 'calendar'"
         >
           <CalendarDays class="inline size-3.5 mr-1 -mt-0.5" />
@@ -387,7 +364,7 @@ const statusCounts = computed(() => {
         <div
           v-for="i in 3"
           :key="i"
-          class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 animate-pulse"
+          class="ui-panel p-5 animate-pulse"
         >
           <div class="flex items-center justify-between mb-3">
             <div class="h-4 w-48 bg-surface-200 dark:bg-surface-700 rounded" />
@@ -404,10 +381,10 @@ const statusCounts = computed(() => {
     <!-- Error state -->
     <div
       v-else-if="error"
-      class="rounded-lg border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950 p-4 text-sm text-danger-700 dark:text-danger-400"
+      class="ui-alert ui-alert-danger p-4 text-sm"
     >
       Failed to load interviews.
-      <button class="underline ml-1 cursor-pointer" @click="refresh()">Retry</button>
+      <button class="ui-inline-link-brand ml-1 cursor-pointer" @click="refresh()">Retry</button>
     </div>
 
     <!-- Empty state -->
@@ -415,7 +392,9 @@ const statusCounts = computed(() => {
       v-else-if="filteredInterviews.length === 0"
       class="ui-empty-panel"
     >
-      <Calendar class="size-10 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
+      <div class="ui-icon-state ui-icon-tile mx-auto mb-3 size-10">
+        <Calendar class="size-5" />
+      </div>
       <h3 class="text-base font-semibold text-surface-700 dark:text-surface-200 mb-1">
         {{ searchInput || activeStatus ? 'No matching interviews' : 'No interviews yet' }}
       </h3>
@@ -439,17 +418,17 @@ const statusCounts = computed(() => {
         <div
           v-for="interviewItem in filteredInterviews"
           :key="interviewItem.id"
-          class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-5 py-4 hover:border-surface-300 dark:hover:border-surface-700 hover:shadow-sm transition-all group"
+          class="ui-panel ui-list-row group px-5 py-4"
         >
           <div class="flex items-start justify-between gap-4">
             <!-- Left: main info -->
             <div class="flex items-start gap-3.5 min-w-0 flex-1">
               <!-- Avatar -->
               <div
-                class="flex size-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold"
+                class="ui-avatar size-10 rounded-xl text-xs font-bold"
                 :class="isUpcoming(interviewItem.scheduledAt)
-                  ? 'bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-sm shadow-brand-500/20 dark:from-brand-500 dark:to-brand-700'
-                  : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'"
+                  ? 'ui-avatar-brand'
+                  : 'ui-dashboard-soft-icon'"
               >
                 {{ getCandidateInitials(interviewItem.candidateFirstName, interviewItem.candidateLastName) }}
               </div>
@@ -459,16 +438,16 @@ const statusCounts = computed(() => {
                 <div class="flex items-center gap-2.5 flex-wrap">
                   <NuxtLink
                     :to="$localePath(`/dashboard/interviews/${interviewItem.id}`)"
-                    class="text-sm font-semibold text-surface-900 dark:text-surface-100 hover:text-brand-600 dark:hover:text-brand-400 transition-colors truncate"
+                    class="ui-inline-link-brand truncate text-sm font-semibold no-underline"
                   >
                     {{ interviewItem.title }}
                   </NuxtLink>
                   <span
                     class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset"
-                    :class="statusConfig[interviewItem.status]?.class"
+                    :class="getInterviewStatusBadgeClass(interviewItem.status)"
                   >
-                    <span class="size-1.5 rounded-full" :class="statusConfig[interviewItem.status]?.dot" />
-                    {{ statusConfig[interviewItem.status]?.label }}
+                    <span class="ui-status-dot size-1.5" :class="getInterviewStatusDotClass(interviewItem.status)" />
+                    {{ getInterviewStatusLabel(interviewItem.status) }}
                   </span>
                 </div>
 
@@ -486,7 +465,7 @@ const statusCounts = computed(() => {
 
                 <!-- Schedule details -->
                 <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-surface-400 dark:text-surface-500">
-                  <TimelineDateLink :date="interviewItem.scheduledAt" class="inline-flex items-center gap-1 font-medium" :class="isUpcoming(interviewItem.scheduledAt) ? 'text-brand-600 dark:text-brand-400' : ''">
+                  <TimelineDateLink :date="interviewItem.scheduledAt" class="inline-flex items-center gap-1 font-medium" :class="isUpcoming(interviewItem.scheduledAt) ? 'ui-inline-link-brand no-underline' : ''">
                     <Calendar class="size-3.5" />
                     {{ formatDateShort(interviewItem.scheduledAt) }}
                   </TimelineDateLink>
@@ -511,14 +490,14 @@ const statusCounts = computed(() => {
                     :href="interviewItem.googleCalendarEventLink"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors"
+                    class="ui-pill ui-pill-success px-2 py-0.5 text-[10px] no-underline"
                     @click.stop
                   >
                     <Calendar class="size-3" />
                     Google Calendar
                     <ExternalLink class="size-2.5" />
                   </a>
-                  <span v-else-if="interviewItem.googleCalendarEventId" class="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                  <span v-else-if="interviewItem.googleCalendarEventId" class="ui-pill ui-pill-success px-2 py-0.5 text-[10px]">
                     <Calendar class="size-3" />
                     Google Calendar
                   </span>
@@ -531,16 +510,17 @@ const statusCounts = computed(() => {
               <!-- Quick status actions -->
               <button
                 v-if="interviewItem.status === 'scheduled'"
-                class="cursor-pointer rounded-lg bg-success-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-success-700 transition-all shadow-sm"
+                class="ui-button px-2.5 py-1.5 text-[11px] font-semibold shadow-sm"
+                :class="getInterviewTransitionButtonClass('completed')"
                 @click="quickStatusChange(interviewItem, 'completed')"
               >
-                Complete
+                {{ getInterviewTransitionLabel('completed') }}
               </button>
 
               <!-- More menu -->
               <div ref="menuRef" class="relative">
                 <button
-                  class="flex items-center justify-center rounded-lg border border-surface-200 dark:border-surface-700/80 p-1.5 text-surface-400 hover:text-surface-600 hover:bg-surface-50 dark:hover:text-surface-300 dark:hover:bg-surface-800 transition-all cursor-pointer"
+                  class="ui-button ui-button-ghost p-1.5"
                   @click.stop="toggleMenu(interviewItem.id)"
                 >
                   <MoreHorizontal class="size-4" />
@@ -556,10 +536,10 @@ const statusCounts = computed(() => {
                 >
                   <div
                     v-if="openMenuId === interviewItem.id"
-                    class="absolute right-0 top-full mt-1.5 z-50 w-48 rounded-xl border border-surface-200 dark:border-surface-700/80 bg-white dark:bg-surface-900 shadow-xl shadow-surface-900/5 dark:shadow-black/20 py-1.5 origin-top-right"
+                    class="ui-panel ui-floating-menu absolute right-0 top-full mt-1.5 z-50 w-48 overflow-hidden py-1.5 origin-top-right"
                   >
                     <button
-                      class="flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 transition-colors"
+                      class="ui-menu-action px-3.5 py-2 text-sm"
                       @click="openEdit(interviewItem); openMenuId = null"
                     >
                       <Pencil class="size-3.5 text-surface-400" />
@@ -567,16 +547,16 @@ const statusCounts = computed(() => {
                     </button>
                     <template v-for="nextStatus in getAllowedTransitions(interviewItem.status)" :key="nextStatus">
                       <button
-                        class="flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 transition-colors"
+                        class="ui-menu-action px-3.5 py-2 text-sm"
                         @click="quickStatusChange(interviewItem, nextStatus); openMenuId = null"
                       >
-                        <component :is="statusConfig[nextStatus]?.icon || Calendar" class="size-3.5 text-surface-400" />
-                        Mark as {{ statusConfig[nextStatus]?.label }}
+                        <component :is="interviewStatusIcons[nextStatus] || Calendar" class="size-3.5 text-surface-400" />
+                        Mark as {{ getInterviewTransitionLabel(nextStatus) }}
                       </button>
                     </template>
-                    <div class="border-t border-surface-100 dark:border-surface-800 my-1.5 mx-2" />
+                    <div class="ui-menu-divider my-1.5 mx-2" />
                     <button
-                      class="flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950/60 transition-colors"
+                      class="ui-menu-action ui-menu-action-danger px-3.5 py-2 text-sm"
                       @click="confirmDelete(interviewItem); openMenuId = null"
                     >
                       <Trash2 class="size-3.5" />
@@ -601,43 +581,43 @@ const statusCounts = computed(() => {
       <div class="space-y-8">
         <div v-for="[dateLabel, dateInterviews] in groupedByDate" :key="dateLabel">
           <div class="flex items-center gap-3 mb-3 px-1">
-            <div class="flex size-7 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-950/40">
-              <CalendarDays class="size-3.5 text-brand-600 dark:text-brand-400" />
+            <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-7">
+              <CalendarDays class="size-3.5" />
             </div>
             <h3 class="text-sm font-semibold text-surface-800 dark:text-surface-200">{{ dateLabel }}</h3>
             <span class="text-xs text-surface-400 dark:text-surface-500">{{ dateInterviews.length }} interview{{ dateInterviews.length === 1 ? '' : 's' }}</span>
           </div>
 
-          <div class="ml-3.5 border-l-2 border-surface-200 dark:border-surface-700/60 pl-6 space-y-3">
+          <div class="ui-timeline-line ml-3.5 border-l-2 pl-6 space-y-3">
             <div
               v-for="interviewItem in dateInterviews"
               :key="interviewItem.id"
-              class="relative rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-5 py-4 hover:border-surface-300 dark:hover:border-surface-700 hover:shadow-sm transition-all"
+              class="ui-panel ui-list-row relative px-5 py-4"
             >
               <!-- Timeline dot -->
               <div
                 class="absolute -left-[calc(1.5rem+5px)] top-5 size-2.5 rounded-full ring-2 ring-white dark:ring-surface-950"
-                :class="statusConfig[interviewItem.status]?.dot"
+                :class="getInterviewStatusDotClass(interviewItem.status)"
               />
 
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-sm font-semibold text-brand-600 dark:text-brand-400">
+                    <span class="ui-inline-link-brand text-sm font-semibold no-underline">
                       {{ formatTime(interviewItem.scheduledAt) }}
                     </span>
                     <span class="text-xs text-surface-400">{{ interviewItem.duration }}min</span>
                     <span
                       class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
-                      :class="statusConfig[interviewItem.status]?.class"
+                      :class="getInterviewStatusBadgeClass(interviewItem.status)"
                     >
-                      {{ statusConfig[interviewItem.status]?.label }}
+                      {{ getInterviewStatusLabel(interviewItem.status) }}
                     </span>
                   </div>
                   <p class="mt-1 text-sm font-medium">
                     <NuxtLink
                       :to="$localePath(`/dashboard/interviews/${interviewItem.id}`)"
-                      class="text-surface-900 dark:text-surface-100 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+                      class="ui-inline-link-brand no-underline"
                     >
                       {{ interviewItem.title }}
                     </NuxtLink>
@@ -660,14 +640,14 @@ const statusCounts = computed(() => {
                       :href="interviewItem.googleCalendarEventLink"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors"
+                      class="ui-pill ui-pill-success px-1.5 py-0.5 text-[10px] no-underline"
                       @click.stop
                     >
                       <Calendar class="size-2.5" />
                       Synced
                       <ExternalLink class="size-2" />
                     </a>
-                    <span v-else-if="interviewItem.googleCalendarEventId" class="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                    <span v-else-if="interviewItem.googleCalendarEventId" class="ui-pill ui-pill-success px-1.5 py-0.5 text-[10px]">
                       <Calendar class="size-2.5" />
                       Synced
                     </span>
@@ -675,17 +655,18 @@ const statusCounts = computed(() => {
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
                   <button
-                    class="cursor-pointer rounded-lg border border-surface-200 dark:border-surface-700 p-1.5 text-surface-400 hover:text-surface-600 hover:bg-surface-50 dark:hover:text-surface-300 dark:hover:bg-surface-800 transition-all"
+                    class="ui-button ui-button-ghost p-1.5"
                     @click="openEdit(interviewItem)"
                   >
                     <Pencil class="size-3.5" />
                   </button>
                   <button
                     v-if="interviewItem.status === 'scheduled'"
-                    class="cursor-pointer rounded-lg bg-success-600 px-2 py-1.5 text-[10px] font-semibold text-white hover:bg-success-700 transition-all shadow-sm"
+                    class="ui-button px-2 py-1.5 text-[10px] font-semibold shadow-sm"
+                    :class="getInterviewTransitionButtonClass('completed')"
                     @click="quickStatusChange(interviewItem, 'completed')"
                   >
-                    Complete
+                    {{ getInterviewTransitionLabel('completed') }}
                   </button>
                 </div>
               </div>
@@ -705,27 +686,27 @@ const statusCounts = computed(() => {
     <!-- Edit Interview Modal -->
     <Teleport to="body">
       <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="cancelEdit" />
-        <div class="relative bg-white dark:bg-surface-900 rounded-2xl shadow-2xl shadow-surface-900/10 dark:shadow-black/30 ring-1 ring-surface-200/80 dark:ring-surface-700/60 p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="ui-modal-backdrop absolute inset-0" @click="cancelEdit" />
+        <div class="ui-modal-panel relative p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-5">Edit Interview</h3>
 
-          <div v-if="editErrors.submit" class="mb-4 rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-700 dark:border-danger-800 dark:bg-danger-950/40 dark:text-danger-300">
+          <div v-if="editErrors.submit" class="ui-alert ui-alert-danger mb-4 p-3 text-sm">
             {{ editErrors.submit }}
           </div>
 
           <form class="space-y-4" @submit.prevent="handleSaveEdit">
             <div>
               <label for="edit-interview-title" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                Title <span class="text-danger-500">*</span>
+                Title <span class="ui-required-marker">*</span>
               </label>
               <input
                 id="edit-interview-title"
                 v-model="editForm.title"
                 type="text"
-                class="w-full rounded-lg border px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                :class="editErrors.title ? 'border-danger-300' : 'border-surface-300 dark:border-surface-700'"
+                class="ui-field"
+                :class="{ 'ui-field-invalid': editErrors.title }"
               />
-              <p v-if="editErrors.title" class="mt-1 text-xs text-danger-600">{{ editErrors.title }}</p>
+              <p v-if="editErrors.title" class="ui-feedback-danger mt-1 text-xs">{{ editErrors.title }}</p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -734,7 +715,7 @@ const statusCounts = computed(() => {
                 <select
                   id="edit-interview-type"
                   v-model="editForm.type"
-                  class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
+                  class="ui-field"
                 >
                   <option value="video">Video</option>
                   <option value="phone">Phone</option>
@@ -749,9 +730,9 @@ const statusCounts = computed(() => {
                 <select
                   id="edit-interview-status"
                   v-model="editForm.status"
-                  class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
+                  class="ui-field"
                 >
-                  <option v-for="s in STATUS_OPTIONS" :key="s" :value="s">{{ statusConfig[s]?.label }}</option>
+                  <option v-for="s in STATUS_OPTIONS" :key="s" :value="s">{{ getInterviewStatusLabel(s) }}</option>
                 </select>
               </div>
             </div>
@@ -763,7 +744,7 @@ const statusCounts = computed(() => {
                   id="edit-interview-date"
                   v-model="editForm.date"
                   type="date"
-                  class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
+                  class="ui-field"
                 />
               </div>
               <div>
@@ -772,7 +753,7 @@ const statusCounts = computed(() => {
                   id="edit-interview-time"
                   v-model="editForm.time"
                   type="time"
-                  class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
+                  class="ui-field"
                 />
               </div>
             </div>
@@ -785,7 +766,7 @@ const statusCounts = computed(() => {
                 type="number"
                 min="5"
                 max="480"
-                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
+                class="ui-field"
               />
             </div>
 
@@ -796,7 +777,7 @@ const statusCounts = computed(() => {
                 v-model="editForm.location"
                 type="text"
                 placeholder="Zoom link, office address…"
-                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
+                class="ui-field"
               />
             </div>
 
@@ -807,14 +788,14 @@ const statusCounts = computed(() => {
                 v-model="editForm.notes"
                 rows="3"
                 placeholder="Topics to cover…"
-                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors resize-none"
+                class="ui-field resize-none"
               />
             </div>
 
             <div class="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
-                class="cursor-pointer rounded-lg border border-surface-300 dark:border-surface-700 px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+                class="ui-button ui-button-secondary"
                 @click="cancelEdit"
               >
                 Cancel
@@ -822,7 +803,7 @@ const statusCounts = computed(() => {
               <button
                 type="submit"
                 :disabled="isSaving"
-                class="cursor-pointer rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                class="ui-button ui-button-primary"
               >
                 {{ isSaving ? 'Saving…' : 'Save Changes' }}
               </button>
@@ -835,8 +816,8 @@ const statusCounts = computed(() => {
     <!-- Delete Confirm Modal -->
     <Teleport to="body">
       <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showDeleteConfirm = false" />
-        <div class="relative bg-white dark:bg-surface-900 rounded-2xl shadow-2xl shadow-surface-900/10 dark:shadow-black/30 ring-1 ring-surface-200/80 dark:ring-surface-700/60 p-6 max-w-sm w-full mx-4">
+        <div class="ui-modal-backdrop absolute inset-0" @click="showDeleteConfirm = false" />
+        <div class="ui-modal-panel relative p-6 max-w-sm w-full mx-4">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Interview</h3>
           <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
             Are you sure you want to delete <strong>{{ deletingInterview?.title }}</strong>? This action cannot be undone.
@@ -844,14 +825,14 @@ const statusCounts = computed(() => {
           <div class="flex justify-end gap-2">
             <button
               :disabled="isDeleting"
-              class="cursor-pointer rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+              class="ui-button ui-button-secondary px-3 py-1.5"
               @click="showDeleteConfirm = false"
             >
               Cancel
             </button>
             <button
               :disabled="isDeleting"
-              class="cursor-pointer rounded-lg bg-danger-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-danger-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              class="ui-button ui-button-danger px-3 py-1.5"
               @click="handleDelete"
             >
               {{ isDeleting ? 'Deleting…' : 'Delete' }}

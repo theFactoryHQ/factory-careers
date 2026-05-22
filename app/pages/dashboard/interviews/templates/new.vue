@@ -85,7 +85,7 @@ async function handleCreate() {
     <!-- Breadcrumb -->
     <NuxtLink
       :to="localePath('/dashboard/interviews/templates')"
-      class="mb-6 inline-flex items-center gap-1 rounded-full border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-3 py-1.5 text-sm text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors no-underline"
+      class="ui-button ui-button-secondary mb-6 rounded-full px-3 py-1.5 text-sm no-underline"
     >
       <ArrowLeft class="size-4" />
       All Templates
@@ -94,8 +94,8 @@ async function handleCreate() {
     <!-- Page header -->
     <div class="mb-6 flex items-start justify-between gap-4">
       <div class="flex items-start gap-3">
-        <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-sm shadow-brand-500/20">
-          <FileText class="size-5 text-white" />
+        <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-11">
+          <FileText class="size-5" />
         </div>
         <div>
           <h1 class="text-xl font-bold text-surface-900 dark:text-surface-50 tracking-tight">
@@ -108,7 +108,7 @@ async function handleCreate() {
       </div>
       <div class="flex items-center gap-2 shrink-0">
         <button
-          class="cursor-pointer inline-flex items-center gap-1.5 rounded-xl border border-surface-200 dark:border-surface-700 px-3.5 py-2 text-sm font-medium text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-all"
+          class="ui-button ui-button-ghost px-3.5 py-2"
           @click="showPreview = !showPreview"
         >
           <component :is="showPreview ? EyeOff : Eye" class="size-4" />
@@ -116,7 +116,7 @@ async function handleCreate() {
         </button>
         <button
           :disabled="!canSave || isSaving"
-          class="cursor-pointer inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand-600/20 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          class="ui-button ui-button-primary px-4 py-2 font-semibold"
           @click="handleCreate"
         >
           <Save class="size-4" />
@@ -126,7 +126,7 @@ async function handleCreate() {
     </div>
 
     <!-- Error -->
-    <div v-if="saveError" class="mb-6 flex items-start gap-2.5 rounded-xl border border-danger-200/80 bg-danger-50 p-4 text-sm text-danger-700 dark:border-danger-800/60 dark:bg-danger-950/40 dark:text-danger-300">
+    <div v-if="saveError" class="ui-alert ui-alert-danger mb-6 flex items-start gap-2.5 p-4 text-sm">
       <AlertCircle class="size-4 shrink-0 mt-0.5" />
       {{ saveError }}
     </div>
@@ -135,7 +135,7 @@ async function handleCreate() {
       <!-- Editor panel -->
       <div class="space-y-5">
         <!-- Name -->
-        <div class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
+        <div class="ui-panel p-5">
           <label for="template-name" class="block text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-2">
             Template Name
           </label>
@@ -144,12 +144,12 @@ async function handleCreate() {
             v-model="form.name"
             type="text"
             placeholder="e.g., Welcome Interview, Engineering Screen"
-            class="w-full rounded-lg border border-surface-200 dark:border-surface-700 px-3.5 py-2.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+            class="ui-field px-3.5 py-2.5"
           />
         </div>
 
         <!-- Subject -->
-        <div class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
+        <div class="ui-panel p-5">
           <label for="template-subject" class="block text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-2">
             Subject Line
           </label>
@@ -158,12 +158,12 @@ async function handleCreate() {
             v-model="form.subject"
             type="text"
             placeholder="e.g., Interview Invitation: {{jobTitle}} at {{organizationName}}"
-            class="w-full rounded-lg border border-surface-200 dark:border-surface-700 px-3.5 py-2.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-mono text-[13px]"
+            class="ui-field px-3.5 py-2.5 font-mono text-[13px]"
           />
         </div>
 
         <!-- Body -->
-        <div class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
+        <div class="ui-panel p-5">
           <label for="template-body" class="block text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-2">
             Email Body
           </label>
@@ -172,7 +172,7 @@ async function handleCreate() {
             v-model="form.body"
             rows="18"
             placeholder="Write your invitation email here. Use {{variables}} for dynamic content…"
-            class="w-full rounded-lg border border-surface-200 dark:border-surface-700 px-3.5 py-2.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all resize-none font-mono text-[13px] leading-relaxed"
+            class="ui-field px-3.5 py-2.5 resize-none font-mono text-[13px] leading-relaxed"
           />
         </div>
       </div>
@@ -188,11 +188,11 @@ async function handleCreate() {
           leave-from-class="opacity-100 translate-y-0"
           leave-to-class="opacity-0 translate-y-2"
         >
-          <div v-if="showPreview" class="rounded-xl border border-brand-200 dark:border-brand-800/60 bg-white dark:bg-surface-900 overflow-hidden">
-            <div class="border-b border-brand-100 dark:border-brand-900/40 bg-brand-50/50 dark:bg-brand-950/20 px-5 py-3">
+          <div v-if="showPreview" class="ui-panel-brand overflow-hidden">
+            <div class="ui-panel-brand-header px-5 py-3">
               <div class="flex items-center gap-2">
-                <Mail class="size-4 text-brand-500 dark:text-brand-400" />
-                <span class="text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400">Live Preview</span>
+                <Mail class="ui-icon-brand size-4" />
+                <span class="ui-inline-link-brand text-xs font-semibold uppercase tracking-wider no-underline">Live Preview</span>
               </div>
             </div>
             <div class="p-5 space-y-4">
@@ -202,14 +202,14 @@ async function handleCreate() {
                   {{ previewSubject || 'Enter a subject line…' }}
                 </p>
               </div>
-              <div class="border-t border-surface-100 dark:border-surface-800 pt-4">
+              <div class="ui-panel-divider pt-4">
                 <span class="text-[10px] uppercase tracking-wider font-semibold text-surface-400 block mb-2">Body</span>
                 <div class="text-sm text-surface-700 dark:text-surface-300 whitespace-pre-wrap leading-relaxed">
                   {{ previewBody || 'Start writing to see a preview…' }}
                 </div>
               </div>
             </div>
-            <div class="border-t border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-950/30 px-5 py-2.5">
+            <div class="ui-panel-footer px-5 py-2.5">
               <p class="text-[11px] text-surface-400 dark:text-surface-500 italic">
                 Preview uses sample data. Actual values are populated when sending.
               </p>
@@ -218,7 +218,7 @@ async function handleCreate() {
         </Transition>
 
         <!-- Variable reference -->
-        <div class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
+        <div class="ui-panel p-5">
           <h3 class="text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-3">
             Available Variables
           </h3>
@@ -229,9 +229,9 @@ async function handleCreate() {
             <div
               v-for="v in AVAILABLE_VARIABLES"
               :key="v.key"
-              class="flex items-center justify-between rounded-lg bg-surface-50 dark:bg-surface-800/50 px-3 py-2"
+              class="ui-panel-muted flex items-center justify-between px-3 py-2"
             >
-              <code class="text-[11px] font-mono text-brand-700 dark:text-brand-300 select-all">{{ v.key }}</code>
+              <code class="ui-code select-all">{{ v.key }}</code>
               <span class="text-[11px] text-surface-400 dark:text-surface-500">{{ v.desc }}</span>
             </div>
           </div>

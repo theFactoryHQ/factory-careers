@@ -49,7 +49,7 @@ async function handleDelete() {
     <!-- Back to interviews -->
     <NuxtLink
       :to="localePath('/dashboard/interviews')"
-      class="mb-6 inline-flex items-center gap-1 rounded-full border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-3 py-1.5 text-sm text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors no-underline"
+      class="ui-button ui-button-secondary mb-6 rounded-full px-3 py-1.5 text-sm no-underline"
     >
       <ArrowLeft class="size-4" />
       Back to Interviews
@@ -59,8 +59,8 @@ async function handleDelete() {
     <div class="mb-8 flex items-start justify-between gap-4">
       <div>
         <div class="flex items-center gap-3 mb-2">
-          <div class="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-sm shadow-brand-500/20">
-            <Mail class="size-5 text-white" />
+          <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-10">
+            <Mail class="size-5" />
           </div>
           <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50 tracking-tight">
             Email Templates
@@ -72,7 +72,7 @@ async function handleDelete() {
       </div>
       <NuxtLink
         :to="localePath('/dashboard/interviews/templates/new')"
-        class="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/20 hover:bg-brand-700 hover:shadow-md hover:shadow-brand-600/25 transition-all no-underline shrink-0"
+        class="ui-button ui-button-primary shrink-0 px-4 py-2.5 text-sm font-semibold no-underline"
       >
         <Plus class="size-4" />
         New Template
@@ -92,13 +92,13 @@ async function handleDelete() {
           v-for="t in SYSTEM_TEMPLATES"
           :key="t.id"
           :to="localePath(`/dashboard/interviews/templates/${t.id}`)"
-          class="group relative rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 transition-all duration-200 hover:border-brand-300 dark:hover:border-brand-800 hover:shadow-lg hover:shadow-brand-500/5 no-underline"
+          class="ui-panel-brand ui-list-row group relative p-5 no-underline"
         >
           <div class="flex items-start justify-between mb-3">
-            <div class="flex size-9 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-950/40">
-              <FileText class="size-4 text-brand-600 dark:text-brand-400" />
+            <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-9">
+              <FileText class="size-4" />
             </div>
-            <span class="inline-flex items-center gap-1 rounded-md bg-surface-100 dark:bg-surface-800 px-2 py-0.5 text-[10px] uppercase tracking-wider font-semibold text-surface-400">
+            <span class="ui-pill text-[10px] uppercase tracking-wider">
               <Lock class="size-2.5" />
               Built-in
             </span>
@@ -127,7 +127,7 @@ async function handleDelete() {
           </h2>
           <span
             v-if="templates && templates.length > 0"
-            class="ml-1 inline-flex items-center justify-center rounded-full bg-surface-100 dark:bg-surface-800 px-2 py-0.5 text-[11px] font-semibold text-surface-500 dark:text-surface-400"
+            class="ui-pill ml-1 px-2 py-0.5 text-[11px] font-semibold"
           >
             {{ templates.length }}
           </span>
@@ -135,18 +135,18 @@ async function handleDelete() {
       </div>
 
       <!-- Loading state -->
-      <div v-if="fetchStatus === 'pending'" class="flex items-center gap-3 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-8 justify-center">
-        <div class="size-5 rounded-full border-2 border-brand-200 border-t-brand-600 dark:border-brand-800 dark:border-t-brand-400 animate-spin" />
+      <div v-if="fetchStatus === 'pending'" class="ui-panel flex items-center gap-3 p-8 justify-center">
+        <div class="ui-spinner-brand size-5 rounded-full border-2 animate-spin" />
         <span class="text-sm text-surface-400">Loading templates…</span>
       </div>
 
       <!-- Empty state -->
       <div
         v-else-if="!templates || templates.length === 0"
-        class="rounded-xl border-2 border-dashed border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50 p-10 text-center"
+        class="ui-empty-panel ui-empty-panel-dashed p-10"
       >
-        <div class="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-surface-100 dark:bg-surface-800">
-          <Mail class="size-5 text-surface-400" />
+        <div class="ui-icon-state mx-auto mb-4 size-12">
+          <Mail class="size-5" />
         </div>
         <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1">
           No custom templates yet
@@ -156,7 +156,7 @@ async function handleDelete() {
         </p>
         <NuxtLink
           :to="localePath('/dashboard/interviews/templates/new')"
-          class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-all no-underline"
+          class="ui-button ui-button-primary no-underline"
         >
           <Plus class="size-4" />
           Create Your First Template
@@ -168,15 +168,15 @@ async function handleDelete() {
         <div
           v-for="t in templates"
           :key="t.id"
-          class="group relative rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 transition-all duration-200 hover:border-surface-300 dark:hover:border-surface-700 hover:shadow-md hover:shadow-surface-900/5"
+          class="ui-panel ui-list-row group relative"
         >
           <NuxtLink
             :to="localePath(`/dashboard/interviews/templates/${t.id}`)"
             class="block p-5 pr-24 no-underline"
           >
             <div class="flex items-start gap-4">
-              <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-700">
-                <FileText class="size-4.5 text-surface-500 dark:text-surface-400" />
+              <div class="ui-icon-state ui-icon-tile size-10">
+                <FileText class="size-4.5" />
               </div>
               <div class="min-w-0">
                 <h3 class="text-sm font-semibold text-surface-800 dark:text-surface-200 mb-0.5 group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
@@ -195,7 +195,7 @@ async function handleDelete() {
           <!-- Actions -->
           <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1">
             <button
-              class="cursor-pointer rounded-lg p-2 text-surface-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:text-danger-400 dark:hover:bg-danger-950/40 transition-all opacity-0 group-hover:opacity-100"
+              class="ui-button ui-button-ghost ui-button-ghost-danger p-2 opacity-0 group-hover:opacity-100"
               title="Delete template"
               @click.stop.prevent="confirmDelete(t.id, t.name)"
             >
@@ -218,22 +218,22 @@ async function handleDelete() {
         leave-to-class="opacity-0"
       >
         <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div class="absolute inset-0 bg-black/30 backdrop-blur-[2px]" @click="showDeleteConfirm = false" />
-          <div class="relative w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-2xl bg-white dark:bg-surface-900 shadow-2xl ring-1 ring-surface-200/80 dark:ring-surface-700/60 p-6">
+          <div class="ui-modal-backdrop absolute inset-0" @click="showDeleteConfirm = false" />
+          <div class="ui-modal-panel relative w-full max-w-sm mx-4 mb-4 sm:mb-0 p-6">
             <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Template</h3>
             <p class="text-sm text-surface-600 dark:text-surface-400 mb-5">
               Are you sure you want to delete <strong>{{ templateToDelete?.name }}</strong>? This cannot be undone.
             </p>
             <div class="flex gap-3">
               <button
-                class="flex-1 cursor-pointer rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-all"
+                class="ui-button ui-button-secondary flex-1 px-4 py-2.5"
                 @click="showDeleteConfirm = false"
               >
                 Cancel
               </button>
               <button
                 :disabled="deletingId !== null"
-                class="flex-1 cursor-pointer rounded-xl bg-danger-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-danger-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                class="ui-button ui-button-danger flex-1 px-4 py-2.5"
                 @click="handleDelete"
               >
                 {{ deletingId ? 'Deleting…' : 'Delete' }}

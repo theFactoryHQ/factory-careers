@@ -172,17 +172,24 @@ const INTERVIEW_STATUS_BADGE_FALLBACKS: Record<InterviewStatusBadgeVariant, stri
   ring: 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:ring-surface-700',
 }
 
+const INTERVIEW_STATUS_DOT_CLASSES: Record<InterviewStatusKey, string> = {
+  scheduled: 'ui-status-dot-brand',
+  completed: 'ui-status-dot-success',
+  cancelled: 'ui-status-dot',
+  no_show: 'ui-status-dot-danger',
+}
+
 const INTERVIEW_TRANSITION_BUTTON_CLASSES: Record<InterviewTransitionButtonVariant, Record<InterviewStatusKey, string>> = {
   solid: {
-    scheduled: 'border border-surface-300 dark:border-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800',
-    completed: 'bg-success-600 text-white hover:bg-success-700',
-    cancelled: 'bg-surface-500 text-white hover:bg-surface-600',
-    no_show: 'bg-danger-600 text-white hover:bg-danger-700',
+    scheduled: 'ui-button-secondary',
+    completed: 'ui-button-success',
+    cancelled: 'ui-button-secondary',
+    no_show: 'ui-button-danger',
   },
 }
 
 const INTERVIEW_TRANSITION_BUTTON_FALLBACKS: Record<InterviewTransitionButtonVariant, string> = {
-  solid: 'border border-surface-300 dark:border-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800',
+  solid: 'ui-button-secondary',
 }
 
 const JOB_STATUS_KEYS = [
@@ -467,6 +474,10 @@ export function getInterviewStatusBadgeClass(
   return isInterviewStatus(status)
     ? INTERVIEW_STATUS_BADGE_CLASSES[variant][status]
     : INTERVIEW_STATUS_BADGE_FALLBACKS[variant]
+}
+
+export function getInterviewStatusDotClass(status: string): string {
+  return isInterviewStatus(status) ? INTERVIEW_STATUS_DOT_CLASSES[status] : 'ui-status-dot'
 }
 
 export function getInterviewTransitionButtonClass(
