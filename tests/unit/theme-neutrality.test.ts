@@ -836,6 +836,14 @@ describe('brand-neutral theme variables', () => {
     expect(css).toContain('color: var(--ui-text) !important;')
   })
 
+  it('normalizes shared recipe corners inside the Factory dashboard shell', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+
+    expect(css).toMatch(
+      /:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) :is\([\s\S]*\.ui-panel[\s\S]*\.ui-button[\s\S]*\.ui-field[\s\S]*\.ui-nav-shell[\s\S]*\.ui-avatar[\s\S]*\) {\n\s*border-radius: 0 !important;\n\s*}/,
+    )
+  })
+
   it('applies shared UI recipes to Settings/member state surfaces', () => {
     const recipeUsage = [
       {
