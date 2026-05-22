@@ -252,19 +252,19 @@ async function handleSidebarUpdated() {
         <div class="h-4 w-48 bg-surface-200 dark:bg-surface-700 rounded animate-pulse" />
       </div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div v-for="i in 4" :key="i" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div v-for="i in 4" :key="i" class="ui-dashboard-stat-card p-6 animate-pulse">
           <div class="h-4 w-20 bg-surface-200 dark:bg-surface-700 rounded mb-4" />
           <div class="h-9 w-14 bg-surface-200 dark:bg-surface-700 rounded" />
         </div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="lg:col-span-2 ui-panel ui-dashboard-panel p-6 animate-pulse">
           <div class="h-5 w-40 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-4">
             <div v-for="i in 5" :key="i" class="h-10 bg-surface-100 dark:bg-surface-800 rounded-xl" />
           </div>
         </div>
-        <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-panel ui-dashboard-panel p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-3">
             <div v-for="i in 4" :key="i" class="h-14 bg-surface-100 dark:bg-surface-800 rounded-xl" />
@@ -478,7 +478,7 @@ async function handleSidebarUpdated() {
         <!-- ─── Left: Pipeline funnel ─── -->
         <div class="lg:col-span-2 space-y-6">
           <!-- Pipeline funnel -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+          <div class="ui-panel ui-dashboard-panel overflow-hidden shadow-xs dark:shadow-none">
             <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
               <div class="flex items-center gap-2.5">
                 <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
@@ -528,7 +528,7 @@ async function handleSidebarUpdated() {
         <!-- ─── Right: UTM params + Referrers ─── -->
         <div class="space-y-6">
           <!-- UTM Parameters -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+          <div class="ui-panel ui-dashboard-panel overflow-hidden shadow-xs dark:shadow-none">
             <div class="flex items-center gap-2.5 px-5 py-4 border-b border-surface-100 dark:border-surface-800">
               <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                 <Tag class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -572,7 +572,7 @@ async function handleSidebarUpdated() {
           </div>
 
           <!-- Referrer domains -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+          <div class="ui-panel ui-dashboard-panel overflow-hidden shadow-xs dark:shadow-none">
             <div class="flex items-center gap-2.5 px-5 py-4 border-b border-surface-100 dark:border-surface-800">
               <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                 <Globe class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -607,7 +607,7 @@ async function handleSidebarUpdated() {
       </div>
 
       <!-- ─── Applications Over Time (full width) ─── -->
-      <div class="mb-6 rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+      <div class="mb-6 ui-panel ui-dashboard-panel overflow-hidden shadow-xs dark:shadow-none">
         <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
           <div class="flex items-center gap-2.5">
             <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
@@ -757,9 +757,8 @@ async function handleSidebarUpdated() {
     <!-- Modal: Edit tracking link                -->
     <!-- ═══════════════════════════════════════ -->
     <Teleport to="body">
-      <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/50 dark:bg-black/70" @click="showEditModal = false" />
-        <div class="relative w-full max-w-lg rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-2xl">
+      <div v-if="showEditModal" class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="ui-modal-panel relative w-full max-w-lg shadow-2xl">
           <!-- Header -->
           <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Edit Tracking Link</h2>

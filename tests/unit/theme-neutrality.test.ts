@@ -59,6 +59,7 @@ describe('brand-neutral theme variables', () => {
       '.ui-nav-icon',
       '.ui-nav-icon-active',
       '.ui-panel-header',
+      '.ui-modal-backdrop',
       '.ui-pill',
       '.ui-pill-brand',
       '.ui-table-shell',
@@ -71,6 +72,7 @@ describe('brand-neutral theme variables', () => {
       '.ui-settings-panel-body',
       '.ui-dashboard-panel',
       '.ui-dashboard-panel-header',
+      '.ui-dashboard-stat-card',
       '.ui-icon-tile',
       '.ui-pill-success',
       '.ui-status-dot',
@@ -103,6 +105,7 @@ describe('brand-neutral theme variables', () => {
       '.ui-panel',
       '.ui-panel-muted',
       '.ui-panel-header',
+      '.ui-modal-backdrop',
       '.ui-modal-panel',
       '.ui-alert',
       '.ui-button',
@@ -120,6 +123,7 @@ describe('brand-neutral theme variables', () => {
       '.ui-pill',
       '.ui-table-shell',
       '.ui-settings-panel-body',
+      '.ui-dashboard-stat-card',
       '.ui-code',
     ]) {
       expect(css, `${recipe} should have a Factory dashboard scoped rule`).toContain(
@@ -252,6 +256,55 @@ describe('brand-neutral theme variables', () => {
       for (const recipe of recipes) {
         expect(source, `${path} should use ${recipe}`).toContain(recipe)
       }
+    }
+  })
+
+  it('centralizes dashboard page-level panel and card surfaces', () => {
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/index.vue',
+        recipes: [
+          'ui-dashboard-stat-card',
+          'ui-dashboard-panel',
+          'ui-dashboard-panel-header',
+          'ui-empty-panel',
+          'ui-alert-danger',
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/timeline.vue',
+        recipes: [
+          'ui-dashboard-panel',
+          'ui-dashboard-panel-header',
+          'ui-empty-panel',
+          'ui-field',
+          'ui-alert-danger',
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/source-tracking/index.vue',
+        recipes: [
+          'ui-dashboard-stat-card',
+          'ui-dashboard-panel',
+          'ui-dashboard-panel-header',
+          'ui-empty-panel',
+          'ui-field',
+          'ui-button-primary',
+          'ui-alert-danger',
+        ],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+
+      expect(source, `${path} should not hand-roll dashboard panel shells`).not.toMatch(
+        /rounded-(?:2xl|3xl)\s+border\s+border-surface-200(?:\/80)?\s+dark:border-surface-800\s+bg-white\s+dark:bg-surface-900/,
+      )
     }
   })
 

@@ -53,3 +53,15 @@ New components should not duplicate long background, border, radius, focus, or t
 ## Third-party brand colors
 
 True third-party brand colors can stay explicit when they represent an external provider, logo, or required integration mark. Microsoft sign-in styling is an example of a deliberate exception. Keep those exceptions local and do not use them for Factory-owned surfaces.
+
+## Public job board surfaces (intentional exception)
+
+The public-facing job board and apply flows (`layouts/public.vue`) deliberately force a high-contrast dark theme (`dark min-h-screen bg-black text-white`) with glassmorphic controls (`bg-black/30`, `border-white/10`, `text-white/52`, etc.).
+
+This is **product branding** for the candidate experience on careers.thefactoryhq.com and is intentionally separate from the internal dashboard's neutral `--ui-*` token system and `ui-dashboard-*` recipes.
+
+- Files under `app/pages/jobs/**`, `app/pages/join/**`, and components like `DynamicField.vue` (when used in public apply forms) may continue to use direct dark + white-opacity utilities.
+- Do not attempt to force `ui-panel` / `--ui-panel` here; the visual goal is different (marketing dark vs. internal tool dark).
+- If repetition becomes painful, a small set of `ui-public-job-*` recipes can be added later, but they would live outside the neutral dashboard token contract.
+
+This exception is documented so the "no raw theme bundles" rule for internal dashboard surfaces remains enforceable.

@@ -111,7 +111,7 @@ function formatDateTime(dateStr: string | Date): string {
         <div class="h-4 w-64 bg-surface-200 dark:bg-surface-700 rounded animate-pulse" />
       </div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        <div v-for="i in 4" :key="i" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 animate-pulse">
+        <div v-for="i in 4" :key="i" class="ui-dashboard-stat-card p-5 animate-pulse">
           <div class="flex items-center justify-between mb-4">
             <div class="h-3 w-20 bg-surface-200 dark:bg-surface-700 rounded" />
             <div class="size-9 bg-surface-200 dark:bg-surface-700 rounded-xl" />
@@ -121,11 +121,11 @@ function formatDateTime(dateStr: string | Date): string {
         </div>
       </div>
       <div class="space-y-6">
-        <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-panel ui-dashboard-panel p-6 animate-pulse">
           <div class="h-5 w-40 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="h-24 bg-surface-100 dark:bg-surface-800 rounded-xl" />
         </div>
-        <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-panel ui-dashboard-panel p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-3">
             <div v-for="i in 3" :key="i" class="h-12 bg-surface-100 dark:bg-surface-800 rounded-xl" />
@@ -269,7 +269,7 @@ function formatDateTime(dateStr: string | Date): string {
       </div>
 
       <!-- ─── Usage chart (last 30 days) ─── -->
-      <div v-if="dailyRuns.length > 0" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden mb-6">
+      <div v-if="dailyRuns.length > 0" class="ui-panel ui-dashboard-panel overflow-hidden mb-6">
         <div class="px-6 py-5 border-b border-surface-200 dark:border-surface-800">
           <div class="flex items-center gap-3">
             <div class="flex items-center justify-center size-10 rounded-lg bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400">

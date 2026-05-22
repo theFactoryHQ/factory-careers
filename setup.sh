@@ -44,6 +44,7 @@ BETTER_AUTH_URL=http://localhost:3000
 FACTORY_DISABLE_PUBLIC_SIGNUP=false
 FACTORY_ADMIN_SSO_ONLY=false
 FACTORY_DISABLE_PUBLIC_ORG_CREATION=false
+FACTORY_DISABLE_ANALYTICS_CONSENT_BANNER=false
 
 # ─── Object Storage ──────────────────────────────────────────────────────────
 STORAGE_USER=reqcore

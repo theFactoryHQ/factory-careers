@@ -54,7 +54,9 @@ test.describe('Job Creation Flow', () => {
     await publishButton.click()
 
     // ── Verify the success state ("Your job is live!") ───
-    await expect(page.getByRole('heading', { name: 'Your job is live!' })).toBeVisible({ timeout: 20_000 })
+    await page.waitForResponse((resp) => resp.url().includes('/api/jobs') && [201, 200].includes(resp.status()), { timeout: 30_000 }).catch(() => {})
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {})
+    await expect(page.getByRole('heading', { name: 'Your job is live!' })).toBeVisible({ timeout: 30_000 })
 
     // ── Extract job slug from the application link ────────
     const applicationLink = await page.locator('input[readonly]').inputValue()

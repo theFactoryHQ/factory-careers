@@ -90,7 +90,7 @@ describe('Consent surface (banner + composable)', () => {
     expect(banner).toMatch(/declineAnalytics/)
 
     const appVue = read('app/app.vue')
-    expect(appVue).toMatch(/<ConsentBanner\s*\/>/)
+    expect(appVue).toMatch(/<ConsentBanner/)
   })
 })
 

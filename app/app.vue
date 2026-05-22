@@ -35,7 +35,7 @@ await usePostHogIdentity()
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
-    <ClientOnly>
+    <ClientOnly v-if="useRuntimeConfig().public.factoryAnalyticsConsentBannerEnabled">
       <ConsentBanner />
     </ClientOnly>
   </div>

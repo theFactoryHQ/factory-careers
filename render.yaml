@@ -35,6 +35,8 @@ services:
         value: "true"
       - key: FACTORY_DISABLE_PUBLIC_ORG_CREATION
         value: "true"
+      - key: FACTORY_DISABLE_ANALYTICS_CONSENT_BANNER
+        value: "true"
       - key: S3_BUCKET
         value: factory-careers-documents
       - key: S3_REGION

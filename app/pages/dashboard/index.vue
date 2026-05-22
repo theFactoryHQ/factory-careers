@@ -158,20 +158,20 @@ const isEmpty = computed(() =>
       </div>
       <!-- Stats skeleton -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        <div v-for="i in 4" :key="i" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div v-for="i in 4" :key="i" class="ui-dashboard-stat-card p-6 animate-pulse">
           <div class="h-4 w-20 bg-surface-200 dark:bg-surface-700 rounded mb-4" />
           <div class="h-9 w-14 bg-surface-200 dark:bg-surface-700 rounded" />
         </div>
       </div>
       <!-- Content skeleton -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-panel ui-dashboard-panel lg:col-span-2 p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-4">
             <div v-for="i in 3" :key="i" class="h-20 bg-surface-100 dark:bg-surface-800 rounded-xl" />
           </div>
         </div>
-        <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-panel ui-dashboard-panel p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-3">
             <div v-for="i in 4" :key="i" class="h-14 bg-surface-100 dark:bg-surface-800 rounded-xl" />
@@ -183,7 +183,7 @@ const isEmpty = computed(() =>
     <!-- ─── Error ─── -->
     <div
       v-else-if="error"
-      class="rounded-2xl border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950/60 p-5 text-sm text-danger-700 dark:text-danger-400 flex items-center gap-3"
+      class="ui-alert ui-alert-danger flex items-center gap-3 p-5"
     >
       <AlertCircle class="size-5 shrink-0" />
       <span>Failed to load dashboard.</span>
@@ -192,7 +192,7 @@ const isEmpty = computed(() =>
 
     <!-- ─── Empty state (brand new org) ─── -->
     <div v-else-if="isEmpty" class="flex flex-col items-center justify-center py-24">
-      <div class="rounded-3xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-14 text-center max-w-md shadow-sm">
+      <div class="ui-empty-panel max-w-md p-14 shadow-sm">
         <div class="mx-auto mb-8 flex items-center justify-center size-18 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-lg shadow-brand-500/20">
           <LayoutDashboard class="size-9 text-white" />
         </div>
@@ -229,7 +229,7 @@ const isEmpty = computed(() =>
         <!-- Open Jobs -->
         <NuxtLink
           :to="localePath('/dashboard/jobs')"
-          class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 no-underline overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-brand-500/25 dark:hover:ring-brand-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-500/[0.08]"
+          class="group ui-dashboard-stat-card p-5 sm:p-6 no-underline ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-brand-500/25 dark:hover:ring-brand-400/25 hover:shadow-lg hover:shadow-brand-500/[0.08]"
         >
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
           <Briefcase class="absolute -bottom-3 -right-3 size-24 text-brand-500/[0.05] dark:text-brand-400/[0.085] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
@@ -250,7 +250,7 @@ const isEmpty = computed(() =>
         <!-- Total Candidates -->
         <NuxtLink
           :to="localePath('/dashboard/candidates')"
-          class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 no-underline overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-violet-500/25 dark:hover:ring-violet-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/[0.08]"
+          class="group ui-dashboard-stat-card p-5 sm:p-6 no-underline ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-violet-500/25 dark:hover:ring-violet-400/25 hover:shadow-lg hover:shadow-violet-500/[0.08]"
         >
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
           <Users class="absolute -bottom-3 -right-3 size-24 text-violet-500/[0.05] dark:text-violet-400/[0.085] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
@@ -269,7 +269,7 @@ const isEmpty = computed(() =>
         <!-- Total Applications -->
         <NuxtLink
           :to="localePath('/dashboard/applications')"
-          class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 no-underline overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-teal-500/25 dark:hover:ring-teal-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-teal-500/[0.08]"
+          class="group ui-dashboard-stat-card p-5 sm:p-6 no-underline ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-teal-500/25 dark:hover:ring-teal-400/25 hover:shadow-lg hover:shadow-teal-500/[0.08]"
         >
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
           <FileText class="absolute -bottom-3 -right-3 size-24 text-teal-500/[0.05] dark:text-teal-400/[0.085] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
@@ -288,7 +288,7 @@ const isEmpty = computed(() =>
         <!-- To Review -->
         <NuxtLink
           :to="localePath({ path: '/dashboard/applications', query: { status: 'new' } })"
-          class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 no-underline overflow-hidden isolate transition-all duration-300 hover:-translate-y-0.5"
+          class="group ui-dashboard-stat-card p-5 sm:p-6 no-underline"
           :class="counts.newApplications > 0
             ? 'ring-1 ring-warning-400/30 dark:ring-warning-500/20 hover:ring-warning-500/40 dark:hover:ring-warning-400/30 shadow-sm shadow-warning-500/[0.06] hover:shadow-lg hover:shadow-warning-500/[0.12]'
             : 'ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-surface-300/50 dark:hover:ring-surface-600/30 hover:shadow-lg hover:shadow-surface-500/[0.04]'"
@@ -328,8 +328,8 @@ const isEmpty = computed(() =>
         <!-- ─── Left column (2/3) ─── -->
         <div class="lg:col-span-2 space-y-6">
           <!-- ─── Pipeline overview (per job) ─── -->
-          <div class="factory-pipeline-card rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="factory-pipeline-card-header flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
+          <div class="ui-panel ui-dashboard-panel factory-pipeline-card shadow-xs dark:shadow-none">
+            <div class="ui-panel-header ui-dashboard-panel-header factory-pipeline-card-header flex items-center justify-between">
               <div class="flex items-center gap-3">
                 <div class="factory-pipeline-icon flex items-center justify-center size-9 rounded-lg bg-surface-100 dark:bg-surface-800">
                   <TrendingUp class="size-4" />
@@ -410,8 +410,8 @@ const isEmpty = computed(() =>
           </div>
 
           <!-- ─── Recent applications ─── -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
+          <div class="ui-panel ui-dashboard-panel shadow-xs dark:shadow-none">
+            <div class="ui-panel-header ui-dashboard-panel-header flex items-center justify-between">
               <div class="flex items-center gap-2.5">
                 <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                   <Clock class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -478,8 +478,8 @@ const isEmpty = computed(() =>
         <!-- ─── Right column (1/3) ─── -->
         <div class="space-y-6">
           <!-- ─── Upcoming interviews ─── -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="flex items-center justify-between px-5 py-4 border-b border-surface-100 dark:border-surface-800">
+          <div class="ui-panel ui-dashboard-panel shadow-xs dark:shadow-none">
+            <div class="ui-panel-header ui-dashboard-panel-header flex items-center justify-between">
               <div class="flex items-center gap-2.5">
                 <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                   <Calendar class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -542,8 +542,8 @@ const isEmpty = computed(() =>
           </div>
 
           <!-- ─── Quick actions ─── -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="flex items-center gap-2.5 px-5 py-4 border-b border-surface-100 dark:border-surface-800">
+          <div class="ui-panel ui-dashboard-panel shadow-xs dark:shadow-none">
+            <div class="ui-panel-header ui-dashboard-panel-header flex items-center gap-2.5">
               <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                 <Zap class="size-3.5 text-surface-500 dark:text-surface-400" />
               </div>

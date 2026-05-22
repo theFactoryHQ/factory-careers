@@ -641,9 +641,8 @@ async function copyApplicationLink() {
 }
 
 async function handleSubmit(mode: 'publish' | 'draft' = publishChoice.value) {
-  // Ensure step 1 is valid before submit
-  if (!validateStep1()) {
-    currentStep.value = 1
+  // Ensure step 1 is valid before submit (only enforce when still on step 1)
+  if (currentStep.value === 1 && !validateStep1()) {
     return
   }
 

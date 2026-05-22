@@ -510,7 +510,7 @@ function humanizeIdentifier(value: string): string {
             v-model="searchQuery"
             type="text"
             placeholder="Search by name, date, or keyword…"
-            class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 pl-10 pr-10 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-400 dark:focus:border-brand-600 transition-colors"
+            class="ui-field pl-10 pr-10 py-2"
           />
           <button
             v-if="searchQuery"
@@ -559,7 +559,7 @@ function humanizeIdentifier(value: string): string {
     <!-- ─── Error state ─── -->
     <div
       v-else-if="error"
-      class="rounded-lg border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950/60 p-4 text-sm text-danger-700 dark:text-danger-400 flex items-center gap-3"
+      class="ui-alert ui-alert-danger flex items-center gap-3 p-4"
     >
       <AlertCircle class="size-4 shrink-0" />
       <span>{{ error }}</span>
@@ -573,7 +573,7 @@ function humanizeIdentifier(value: string): string {
       v-else-if="dayGroups.length === 0"
       class="flex flex-col items-center justify-center py-20"
     >
-      <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-10 text-center max-w-sm">
+      <div class="ui-empty-panel max-w-sm p-10">
         <div class="mx-auto mb-5 flex items-center justify-center size-12 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700">
           <History class="size-6 text-white" />
         </div>
@@ -677,10 +677,10 @@ function humanizeIdentifier(value: string): string {
 
           <!-- Events for this day, grouped by purpose -->
           <div class="ml-3.5 pl-5 space-y-3 mt-1">
-            <div v-for="section in group.sections" :key="section.jobId ?? section.type" class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/60 overflow-hidden">
+            <div v-for="section in group.sections" :key="section.jobId ?? section.type" class="ui-panel ui-dashboard-panel">
               <!-- Section header (collapsible) -->
               <button
-                class="flex items-center gap-2 px-3 py-2 w-full border-b border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/40 cursor-pointer hover:bg-surface-100/60 dark:hover:bg-surface-800/60 transition-colors"
+                class="ui-panel-header ui-dashboard-panel-header flex items-center gap-2 w-full cursor-pointer hover:bg-surface-100/60 dark:hover:bg-surface-800/60 transition-colors"
                 @click="toggleSection(sectionKey(group.date, section))"
               >
                 <ChevronRight

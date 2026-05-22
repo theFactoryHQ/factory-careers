@@ -67,6 +67,17 @@ const localizedJobsRobotsRules = Object.fromEntries(
     ]),
 );
 
+// Redirect locale roots to their respective job boards
+// (e.g. / → /jobs, /es → /es/jobs, /fr → /fr/jobs)
+const localizedRootRedirectRules = Object.fromEntries(
+  i18nLocales.map((locale) => {
+    const root = locale.code === i18nDefaultLocale ? "/" : `/${locale.code}`;
+    const target =
+      locale.code === i18nDefaultLocale ? "/jobs" : `/${locale.code}/jobs`;
+    return [root, { redirect: { to: target, statusCode: 301 } }];
+  }),
+);
+
 const isRailwayPreview =
   railwayEnvironmentName.startsWith("pr") ||
   railwayEnvironmentName.includes("pr-") ||
@@ -171,11 +182,23 @@ export default defineNuxtConfig({
     head: {
       titleTemplate: "%s — Factory Careers",
       link: [
-        { rel: "icon", type: "image/png", href: "/factory-logo.png" },
+        { rel: "shortcut icon", href: "/favicon.ico" },
+        { rel: "icon", href: "/favicon.ico", sizes: "any", type: "image/x-icon" },
+        { rel: "icon", href: "/icon.png", sizes: "512x512", type: "image/png" },
         {
           rel: "apple-touch-icon",
           sizes: "180x180",
           href: "/apple-touch-icon.png",
+        },
+        {
+          rel: "apple-touch-icon",
+          sizes: "167x167",
+          href: "/apple-touch-icon-167x167.png",
+        },
+        {
+          rel: "apple-touch-icon",
+          sizes: "152x152",
+          href: "/apple-touch-icon-152x152.png",
         },
       ],
       meta: [
@@ -244,6 +267,9 @@ export default defineNuxtConfig({
         process.env.FACTORY_DISABLE_PUBLIC_SIGNUP === "false",
       factoryPublicOrgCreationEnabled:
         process.env.FACTORY_DISABLE_PUBLIC_ORG_CREATION === "false",
+      /** Whether to show the analytics consent banner ("A small ask"). Disabled for Factory (SSO + always cookieless). */
+      factoryAnalyticsConsentBannerEnabled:
+        process.env.FACTORY_DISABLE_ANALYTICS_CONSENT_BANNER === "false",
       /**
        * Feature flag overrides forced by env vars (FEATURE_FLAG_*).
        * Self-hosters use these to enable/disable flags without running PostHog.
@@ -273,6 +299,7 @@ export default defineNuxtConfig({
     // to eu-assets.i.posthog.com and everything else to eu.i.posthog.com).
     // Defining routeRules here would be shadowed by the server route, so we
     // intentionally do not declare them.
+    ...localizedRootRedirectRules,
     "/jobs": { isr: 3600 },
     "/jobs/**": { isr: 3600 },
     ...localizedPublicRouteRules,

@@ -265,6 +265,8 @@ export const envSchema = z
     FACTORY_ADMIN_SSO_ONLY: envFlag(true),
     /** Disable arbitrary organization creation; the Factory org is seeded. */
     FACTORY_DISABLE_PUBLIC_ORG_CREATION: envFlag(true),
+    /** Hide the "Help us improve with analytics" consent banner (Factory uses SSO + cookieless PostHog). */
+    FACTORY_DISABLE_ANALYTICS_CONSENT_BANNER: envFlag(true),
   })
   .superRefine((data, ctx) => {
     // BETTER_AUTH_URL is explicit on Render; Railway preview compatibility is
