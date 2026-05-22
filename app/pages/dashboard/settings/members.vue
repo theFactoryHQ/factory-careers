@@ -601,7 +601,7 @@ onUnmounted(() => {
                 <option value="member">Member</option>
                 <option value="admin">Admin</option>
               </select>
-              <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-surface-400 pointer-events-none" />
+              <ChevronDown class="ui-field-icon absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 pointer-events-none" />
             </div>
 
             <button
@@ -805,7 +805,7 @@ onUnmounted(() => {
                   <option value="member">Member</option>
                   <option value="admin">Admin</option>
                 </select>
-                <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 size-3 text-surface-400 pointer-events-none" />
+                <ChevronDown class="ui-field-icon absolute right-2.5 top-1/2 -translate-y-1/2 size-3 pointer-events-none" />
               </div>
             </div>
 
@@ -820,7 +820,7 @@ onUnmounted(() => {
                     {{ opt.label }}
                   </option>
                 </select>
-                <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 size-3 text-surface-400 pointer-events-none" />
+                <ChevronDown class="ui-field-icon absolute right-2.5 top-1/2 -translate-y-1/2 size-3 pointer-events-none" />
               </div>
             </div>
 
@@ -1067,7 +1067,7 @@ onUnmounted(() => {
           </div>
           <div v-if="!isLoadingMembers && members.length > 5" class="flex-shrink-0">
             <div class="relative">
-              <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-surface-400 pointer-events-none" />
+              <Search class="ui-field-icon absolute left-3 top-1/2 -translate-y-1/2 size-3.5 pointer-events-none" />
               <input
                 v-model="memberSearch"
                 type="text"
@@ -1169,7 +1169,7 @@ onUnmounted(() => {
                   <button
                     v-if="m.role !== 'admin'"
                     :disabled="isUpdatingRole === m.id"
-                    class="ui-list-row w-full px-3 py-2 text-left text-sm text-surface-700 dark:text-surface-300 flex items-center gap-2 disabled:opacity-50 bg-transparent border-0 cursor-pointer"
+                    class="ui-menu-action px-3 py-2 text-sm"
                     @click="handleUpdateRole(m.id, 'admin')"
                   >
                     <ShieldCheck class="ui-icon-brand size-3.5" />
@@ -1178,10 +1178,10 @@ onUnmounted(() => {
                   <button
                     v-if="m.role !== 'member'"
                     :disabled="isUpdatingRole === m.id"
-                    class="ui-list-row w-full px-3 py-2 text-left text-sm text-surface-700 dark:text-surface-300 flex items-center gap-2 disabled:opacity-50 bg-transparent border-0 cursor-pointer"
+                    class="ui-menu-action px-3 py-2 text-sm"
                     @click="handleUpdateRole(m.id, 'member')"
                   >
-                    <Shield class="size-3.5 text-surface-400" />
+                    <Shield class="size-3.5" />
                     Make member
                   </button>
                 </div>
@@ -1189,7 +1189,7 @@ onUnmounted(() => {
                 <!-- Remove -->
                 <div class="py-1">
                   <button
-                    class="ui-list-row ui-feedback-danger w-full px-3 py-2 text-left text-sm flex items-center gap-2 bg-transparent border-0 cursor-pointer"
+                    class="ui-menu-action ui-menu-action-danger px-3 py-2 text-sm"
                     @click="memberToRemove = { id: m.id, name: m.user.name }; closeDropdown()"
                   >
                     <Trash2 class="size-3.5" />

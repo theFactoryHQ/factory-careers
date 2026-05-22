@@ -775,6 +775,14 @@
     color: var(--color-surface-100);
   }
 
+  .ui-field-icon {
+    color: var(--color-surface-400);
+  }
+
+  .dark .ui-field-icon {
+    color: var(--color-surface-500);
+  }
+
   .ui-field-icon-button {
     color: var(--color-surface-400);
     transition: color 150ms ease;
@@ -786,6 +794,25 @@
 
   .dark .ui-field-icon-button:hover {
     color: var(--color-surface-300);
+  }
+
+  .ui-disclosure-trigger {
+    color: var(--color-surface-500);
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+
+  .ui-disclosure-trigger:hover {
+    background-color: var(--color-surface-50);
+    color: var(--color-surface-700);
+  }
+
+  .dark .ui-disclosure-trigger {
+    color: var(--color-surface-400);
+  }
+
+  .dark .ui-disclosure-trigger:hover {
+    background-color: color-mix(in srgb, var(--color-surface-800) 50%, transparent);
+    color: var(--color-surface-200);
   }
 
   .ui-action-bar {
@@ -936,6 +963,14 @@
     color: var(--color-danger-400);
   }
 
+  .ui-icon-warning {
+    color: var(--color-warning-500);
+  }
+
+  .dark .ui-icon-warning {
+    color: var(--color-warning-400);
+  }
+
   .ui-avatar {
     display: flex;
     flex-shrink: 0;
@@ -1021,6 +1056,56 @@
 
   .dark .ui-floating-menu {
     box-shadow: 0 16px 30px -18px rgb(0 0 0 / 0.65);
+  }
+
+  .ui-menu-action {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.5rem;
+    border: 0;
+    background-color: transparent;
+    color: var(--color-surface-700);
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+
+  .ui-menu-action:hover:not(:disabled) {
+    background-color: var(--color-surface-50);
+    color: var(--color-surface-900);
+  }
+
+  .ui-menu-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .dark .ui-menu-action {
+    color: var(--color-surface-300);
+  }
+
+  .dark .ui-menu-action:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-surface-800) 50%, transparent);
+    color: var(--color-surface-100);
+  }
+
+  .ui-menu-action-danger {
+    color: var(--color-danger-600);
+  }
+
+  .ui-menu-action-danger:hover:not(:disabled) {
+    background-color: var(--color-danger-50);
+    color: var(--color-danger-700);
+  }
+
+  .dark .ui-menu-action-danger {
+    color: var(--color-danger-400);
+  }
+
+  .dark .ui-menu-action-danger:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-danger-950) 35%, transparent);
+    color: var(--color-danger-300);
   }
 
   .ui-nav-shell {

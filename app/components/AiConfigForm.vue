@@ -329,7 +329,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
         </div>
 
         <details class="mt-4">
-          <summary class="text-xs text-surface-500 dark:text-surface-400 cursor-pointer hover:text-surface-700 dark:hover:text-surface-200 select-none inline-flex items-center gap-1">
+          <summary class="ui-disclosure-trigger text-xs cursor-pointer select-none inline-flex items-center gap-1">
             <ChevronDown class="size-3 transition-transform group-open:rotate-180" />
             {{ selectedProvider.models.length ? 'Use a different model identifier' : 'Set the model identifier' }}
           </summary>
@@ -416,7 +416,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
               >
               <button
                 type="button"
-                class="absolute inset-y-0 right-0 flex items-center px-3 text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 cursor-pointer"
+                class="ui-field-icon-button absolute inset-y-0 right-0 flex items-center px-3 cursor-pointer"
                 :title="showApiKey ? 'Hide key' : 'Show key'"
                 @click="showApiKey = !showApiKey"
               >
@@ -487,7 +487,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
             >
             <div class="flex-1">
               <div class="flex items-center gap-1.5 text-sm font-medium text-surface-900 dark:text-surface-100">
-                <Star class="size-3.5 text-warning-500" />
+                <Star class="ui-icon-warning size-3.5" />
                 Candidate analysis
               </div>
               <p class="text-[11px] text-surface-500 dark:text-surface-400 mt-0.5">
@@ -510,7 +510,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
       <section class="ui-panel overflow-hidden">
         <button
           type="button"
-          class="w-full px-5 sm:px-6 py-4 flex items-center justify-between text-left cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors"
+          class="ui-disclosure-trigger w-full px-5 sm:px-6 py-4 flex items-center justify-between text-left cursor-pointer"
           @click="showAdvanced = !showAdvanced"
         >
           <div>
@@ -520,7 +520,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
             </p>
           </div>
           <ChevronDown
-            class="size-4 text-surface-400 transition-transform"
+            class="size-4 transition-transform"
             :class="showAdvanced ? 'rotate-180' : ''"
           />
         </button>
