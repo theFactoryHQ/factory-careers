@@ -1228,7 +1228,7 @@ onUnmounted(() => {
         enter-from-class="opacity-0"
         leave-to-class="opacity-0"
       >
-        <div v-if="memberToRemove" class="ui-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center" @click.self="memberToRemove = null">
+        <div v-if="memberToRemove" class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center" @click.self="memberToRemove = null">
           <Transition
             enter-active-class="transition-all duration-200"
             leave-active-class="transition-all duration-150"

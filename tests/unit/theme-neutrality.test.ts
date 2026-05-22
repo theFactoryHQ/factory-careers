@@ -153,6 +153,11 @@ describe('brand-neutral theme variables', () => {
       '.ui-filter-chip',
       '.ui-filter-chip-active',
       '.ui-filter-chip-inactive',
+      '.ui-filter-drawer',
+      '.ui-filter-drawer-body',
+      '.ui-filter-section',
+      '.ui-filter-label',
+      '.ui-filter-count',
       '.ui-timeline-line',
       '.ui-timeline-date-highlight',
       '.ui-timeline-section',
@@ -171,6 +176,28 @@ describe('brand-neutral theme variables', () => {
     expect(css).toContain('var(--color-success-')
     expect(css).toContain('var(--color-brand-')
     expect(css).not.toMatch(/\.factory-(panel|alert|field|icon-state)\b/)
+  })
+
+  it('documents the Factory shell and neutral UI recipe contract', () => {
+    const doc = readProjectFile('THEME.md')
+
+    for (const required of [
+      'factory-dashboard-shell',
+      'factory-dashboard-portal',
+      '--ui-bg',
+      '--ui-panel',
+      '--ui-border',
+      '--ui-text',
+      'ui-panel',
+      'ui-field',
+      'ui-button',
+      'Third-party brand colors',
+    ]) {
+      expect(doc, `theme contract should document ${required}`).toContain(required)
+    }
+
+    expect(doc).toMatch(/Factory-facing classes/)
+    expect(doc).toMatch(/neutral .*variables/i)
   })
 
   it('applies shared UI recipes to invite and response surfaces', () => {
@@ -882,6 +909,110 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared UI recipes to filter drawers and drawer filter controls', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+    const filterDrawer = readProjectFile('app/components/FilterDrawer.vue')
+
+    expect(css, 'filter drawer styling should use neutral recipes, not factory-filter selectors').not.toMatch(/\.factory-filter-/)
+
+    for (const recipe of [
+      'factory-dashboard-portal',
+      'ui-modal-backdrop',
+      'ui-drawer-panel',
+      'ui-filter-drawer',
+      'ui-drawer-header',
+      'ui-filter-count',
+      'ui-drawer-body',
+      'ui-filter-drawer-body',
+      'ui-panel-footer',
+      'ui-field',
+      'ui-button-primary',
+      'ui-button-secondary',
+      'ui-button-ghost',
+      'ui-inline-link',
+    ]) {
+      expect(filterDrawer, `FilterDrawer should use ${recipe}`).toContain(recipe)
+    }
+
+    const usage = [
+      {
+        path: 'app/pages/dashboard/jobs/index.vue',
+        recipes: ['ui-menu-trigger', 'ui-menu-trigger-active', 'ui-filter-section', 'ui-filter-label', 'ui-filter-chip', 'ui-filter-chip-active', 'ui-filter-chip-inactive', 'ui-field'],
+      },
+      {
+        path: 'app/pages/dashboard/applications/index.vue',
+        recipes: ['ui-filter-section', 'ui-filter-label', 'ui-filter-chip', 'ui-filter-chip-active', 'ui-filter-chip-inactive', 'ui-field', 'ui-checkbox-indicator', 'ui-checkbox-indicator-checked'],
+      },
+      {
+        path: 'app/pages/dashboard/candidates/index.vue',
+        recipes: ['ui-filter-section', 'ui-filter-label', 'ui-field', 'ui-checkbox-indicator', 'ui-checkbox-indicator-checked'],
+      },
+    ]
+
+    for (const { path, recipes } of usage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
+  it('keeps filter drawer surface and control choices behind shared recipes', () => {
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/components/FilterDrawer.vue',
+        patterns: [
+          /factory-filter-/,
+          /border-white\/12 bg-black text-white shadow-2xl shadow-black\/50/,
+          /border-b border-white\/10/,
+          /border-t border-white\/10 bg-white\/\[0\.04\]/,
+          /text-white\/45 hover:text-white hover:bg-white\/\[0\.07\]/,
+          /factory-button-cta factory-button-premium/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/jobs/index.vue',
+        patterns: [
+          /inline-flex items-center gap-1\.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors cursor-pointer/,
+          /border-brand-300 bg-brand-100 text-brand-700/,
+          /border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900/,
+          /flex-1 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900/,
+          /w-32 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/applications/index.vue',
+        patterns: [
+          /rounded-full px-3 py-1\.5 text-xs font-medium transition-colors/,
+          /bg-surface-900 text-white dark:bg-surface-100 dark:text-surface-900/,
+          /bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400/,
+          /w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900/,
+          /flex size-4 shrink-0 items-center justify-center rounded border transition-colors/,
+          /bg-brand-600 border-brand-600 text-white/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/candidates/index.vue',
+        patterns: [
+          /w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900/,
+          /flex-1 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900/,
+          /w-32 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900/,
+          /flex size-4 shrink-0 items-center justify-center rounded border transition-colors/,
+          /bg-brand-600 border-brand-600 text-white/,
+        ],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
+    }
+  })
+
   it('applies shared UI recipes to application drawer portal surfaces', () => {
     const source = readProjectFile('app/components/ApplicationDetailDrawer.vue')
 
@@ -1023,6 +1154,32 @@ describe('brand-neutral theme variables', () => {
 
     for (const recipe of ['factory-dashboard-shell', 'ui-demo-banner', 'ui-demo-link']) {
       expect(source, `settings layout should use ${recipe}`).toContain(recipe)
+    }
+  })
+
+  it('keeps Settings portals and fixed panels inside the Factory theme scope', () => {
+    const members = readProjectFile('app/pages/dashboard/settings/members.vue')
+    const css = readProjectFile('app/assets/css/main.css')
+
+    expect(members, 'teleported Settings member modals should carry the Factory portal scope').toContain('factory-dashboard-portal')
+    expect(members, 'member removal modal backdrop should be Factory-scoped after teleporting to body').toMatch(
+      /class="factory-dashboard-portal ui-modal-backdrop/,
+    )
+
+    for (const recipe of [
+      '.ui-action-bar',
+      '.ui-empty-state',
+      '.ui-feedback-success',
+      '.ui-feedback-danger',
+      '.ui-feedback-warning',
+      '.ui-icon-success',
+      '.ui-icon-danger',
+      '.ui-icon-warning',
+      '.ui-menu-action-danger',
+    ]) {
+      expect(css, `Factory shell should adapt Settings auxiliary recipe ${recipe}`).toMatch(
+        new RegExp(`:where\\(\\.factory-dashboard-shell, \\.factory-dashboard-portal\\)[\\s\\S]*${recipe.replace('.', '\\.')}`),
+      )
     }
   })
 

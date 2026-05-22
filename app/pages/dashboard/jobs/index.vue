@@ -474,24 +474,24 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
         <!-- Filters button -->
         <button
           type="button"
-          class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors cursor-pointer"
+          class="ui-menu-trigger px-3 py-2 text-sm"
           :class="activeFilterCount > 0
-            ? 'border-surface-400 bg-surface-100 text-surface-800 dark:border-surface-500 dark:bg-surface-800 dark:text-surface-200'
-            : 'border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'"
+            ? 'ui-menu-trigger-active'
+            : ''"
           @click="drawerOpen = true"
         >
           <SlidersHorizontal class="size-4" />
           Filters
           <span
             v-if="activeFilterCount > 0"
-            class="inline-flex items-center justify-center size-4 rounded-full bg-surface-700 dark:bg-surface-300 text-white dark:text-surface-900 text-xs font-semibold"
+            class="ui-filter-count"
           >{{ activeFilterCount }}</span>
         </button>
 
         <!-- Clear filters -->
         <button
           v-if="activeFilterCount > 0"
-          class="inline-flex items-center gap-1 text-xs text-surface-400 hover:text-danger-600 transition-colors"
+          class="ui-inline-link ui-inline-link-muted inline-flex items-center gap-1 text-xs"
           @click="clearFilters"
         >
           <X class="size-3" />
@@ -512,17 +512,17 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
       >
         <div class="space-y-6">
           <!-- Status -->
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Status</label>
+          <div class="ui-filter-section">
+            <label class="ui-filter-label mb-2 block">Status</label>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="opt in statusOptions"
                 :key="opt.value"
                 type="button"
-                class="rounded-full px-2.5 py-1 text-xs font-medium border transition-colors cursor-pointer"
+                class="ui-filter-chip px-2.5 py-1 text-xs"
                 :class="statusFilter.includes(opt.value)
-                  ? 'border-brand-300 bg-brand-100 text-brand-700 dark:border-brand-700 dark:bg-brand-950/60 dark:text-brand-300'
-                  : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'"
+                  ? 'ui-filter-chip-active'
+                  : 'ui-filter-chip-inactive'"
                 @click="toggleStatus(opt.value)"
               >
                 {{ opt.label }}
@@ -531,17 +531,17 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           </div>
 
           <!-- Employment type -->
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Employment type</label>
+          <div class="ui-filter-section">
+            <label class="ui-filter-label mb-2 block">Employment type</label>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="opt in typeOptions"
                 :key="opt.value"
                 type="button"
-                class="rounded-full px-2.5 py-1 text-xs font-medium border transition-colors cursor-pointer"
+                class="ui-filter-chip px-2.5 py-1 text-xs"
                 :class="typeFilter.includes(opt.value)
-                  ? 'border-brand-300 bg-brand-100 text-brand-700 dark:border-brand-700 dark:bg-brand-950/60 dark:text-brand-300'
-                  : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'"
+                  ? 'ui-filter-chip-active'
+                  : 'ui-filter-chip-inactive'"
                 @click="toggleType(opt.value)"
               >
                 {{ opt.label }}
@@ -550,17 +550,17 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           </div>
 
           <!-- Experience level -->
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Experience level</label>
+          <div class="ui-filter-section">
+            <label class="ui-filter-label mb-2 block">Experience level</label>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="opt in experienceOptions"
                 :key="opt.value"
                 type="button"
-                class="rounded-full px-2.5 py-1 text-xs font-medium border transition-colors cursor-pointer"
+                class="ui-filter-chip px-2.5 py-1 text-xs"
                 :class="experienceFilter.includes(opt.value)
-                  ? 'border-brand-300 bg-brand-100 text-brand-700 dark:border-brand-700 dark:bg-brand-950/60 dark:text-brand-300'
-                  : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'"
+                  ? 'ui-filter-chip-active'
+                  : 'ui-filter-chip-inactive'"
                 @click="toggleExperience(opt.value)"
               >
                 {{ opt.label }}
@@ -569,17 +569,17 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           </div>
 
           <!-- Work arrangement -->
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Work arrangement</label>
+          <div class="ui-filter-section">
+            <label class="ui-filter-label mb-2 block">Work arrangement</label>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="opt in remoteOptions"
                 :key="opt.value"
                 type="button"
-                class="rounded-full px-2.5 py-1 text-xs font-medium border transition-colors cursor-pointer"
+                class="ui-filter-chip px-2.5 py-1 text-xs"
                 :class="remoteFilter.includes(opt.value)
-                  ? 'border-brand-300 bg-brand-100 text-brand-700 dark:border-brand-700 dark:bg-brand-950/60 dark:text-brand-300'
-                  : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'"
+                  ? 'ui-filter-chip-active'
+                  : 'ui-filter-chip-inactive'"
                 @click="toggleRemote(opt.value)"
               >
                 {{ opt.label }}
@@ -588,12 +588,12 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           </div>
 
           <!-- Sort -->
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Sort by</label>
+          <div class="ui-filter-section">
+            <label class="ui-filter-label mb-2 block">Sort by</label>
             <div class="flex gap-2">
               <select
                 v-model="sortKey"
-                class="flex-1 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                class="ui-field flex-1"
               >
                 <option value="created">Date created</option>
                 <option value="title">Title</option>
@@ -605,7 +605,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
               </select>
               <select
                 v-model="sortDir"
-                class="w-32 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                class="ui-field w-32"
               >
                 <option value="asc">Ascending</option>
                 <option value="desc">Descending</option>

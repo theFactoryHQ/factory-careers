@@ -359,11 +359,11 @@ const selectedCandidateId = ref<string | null>(null)
     >
       <div class="space-y-6">
         <!-- Gender -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Gender</label>
+        <div class="ui-filter-section">
+          <label class="ui-filter-label mb-2 block">Gender</label>
           <select
             v-model="filterGender"
-            class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+            class="ui-field"
           >
             <option :value="undefined">Any</option>
             <option value="male">Male</option>
@@ -374,15 +374,15 @@ const selectedCandidateId = ref<string | null>(null)
         </div>
 
         <!-- Date of birth range -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Date of birth</label>
+        <div class="ui-filter-section">
+          <label class="ui-filter-label mb-2 block">Date of birth</label>
           <div class="grid grid-cols-2 gap-2">
             <div>
               <span class="block text-[11px] text-surface-500 mb-1">From</span>
               <input
                 v-model="filterDobFrom"
                 type="date"
-                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                class="ui-field"
               />
             </div>
             <div>
@@ -390,19 +390,19 @@ const selectedCandidateId = ref<string | null>(null)
               <input
                 v-model="filterDobTo"
                 type="date"
-                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                class="ui-field"
               />
             </div>
           </div>
         </div>
 
         <!-- Sort -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Sort by</label>
+        <div class="ui-filter-section">
+          <label class="ui-filter-label mb-2 block">Sort by</label>
           <div class="flex gap-2">
             <select
               v-model="sortKey"
-              class="flex-1 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+              class="ui-field flex-1"
             >
               <option value="created">Date added</option>
               <option value="name">Name</option>
@@ -412,7 +412,7 @@ const selectedCandidateId = ref<string | null>(null)
             </select>
             <select
               v-model="sortDir"
-              class="w-32 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+              class="ui-field w-32"
             >
               <option value="asc">Ascending</option>
               <option value="desc">Descending</option>
@@ -421,14 +421,14 @@ const selectedCandidateId = ref<string | null>(null)
         </div>
 
         <!-- Property filters -->
-        <div v-if="propertyDefs.length > 0">
-          <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Properties</label>
+        <div v-if="propertyDefs.length > 0" class="ui-filter-section">
+          <label class="ui-filter-label mb-2 block">Properties</label>
           <PropertyFilterBar v-model="propertyFilters" entity-type="candidate" />
         </div>
 
         <!-- Columns -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Columns</label>
+        <div class="ui-filter-section">
+          <label class="ui-filter-label mb-2 block">Columns</label>
           <div class="space-y-1.5">
             <label
               v-for="col in candidateColumns.filter(c => !c.required)"
@@ -436,8 +436,8 @@ const selectedCandidateId = ref<string | null>(null)
               class="flex items-center gap-2.5 cursor-pointer select-none group"
             >
               <span
-                class="flex size-4 shrink-0 items-center justify-center rounded border transition-colors"
-                :class="visibleColumns[col.key] ? 'bg-brand-600 border-brand-600 text-white' : 'border-surface-300 dark:border-surface-600'"
+                class="ui-checkbox-indicator size-4 shrink-0"
+                :class="visibleColumns[col.key] ? 'ui-checkbox-indicator-checked' : ''"
                 @click="visibleColumns = { ...visibleColumns, [col.key]: !visibleColumns[col.key] }"
               >
                 <Check v-if="visibleColumns[col.key]" class="size-3" />

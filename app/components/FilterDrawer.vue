@@ -77,7 +77,7 @@ onUnmounted(() => {
     >
       <div
         v-if="modelValue"
-        class="fixed inset-0 z-[55] bg-black/72"
+        class="ui-modal-backdrop fixed inset-0 z-[55]"
         @click="close"
       />
     </Transition>
@@ -90,28 +90,28 @@ onUnmounted(() => {
     >
       <aside
         v-if="modelValue"
-        class="factory-dashboard-portal factory-filter-drawer fixed inset-y-0 right-0 z-[60] w-full max-w-md flex flex-col border-l border-white/12 bg-black text-white shadow-2xl shadow-black/50"
+        class="factory-dashboard-portal ui-drawer-panel ui-filter-drawer fixed inset-y-0 right-0 z-[60] w-full max-w-md flex flex-col"
         role="dialog"
         aria-modal="true"
         :aria-label="title || 'Filters'"
       >
         <!-- Header -->
-        <header class="factory-filter-drawer-header flex items-start justify-between gap-3 px-5 py-4 border-b border-white/10">
+        <header class="ui-drawer-header flex items-start justify-between gap-3 px-5 py-4">
           <div class="min-w-0">
-            <h2 class="text-base font-semibold text-white flex items-center gap-2">
+            <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 flex items-center gap-2">
               {{ title || 'Filters' }}
               <span
                 v-if="activeCount && activeCount > 0"
-                class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 bg-brand-600 text-white text-xs font-semibold"
+                class="ui-filter-count"
               >{{ activeCount }}</span>
             </h2>
-            <p v-if="description" class="text-xs text-white/52 mt-0.5">
+            <p v-if="description" class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
               {{ description }}
             </p>
           </div>
           <button
             type="button"
-            class="shrink-0 p-1.5 text-white/45 hover:text-white hover:bg-white/[0.07] transition-colors"
+            class="ui-button ui-button-ghost shrink-0 p-1.5"
             aria-label="Close"
             @click="close"
           >
@@ -120,29 +120,29 @@ onUnmounted(() => {
         </header>
 
         <!-- Body (scrollable) -->
-        <div class="factory-filter-drawer-body flex-1 overflow-y-auto px-5 py-4">
+        <div class="ui-drawer-body ui-filter-drawer-body flex-1 overflow-y-auto px-5 py-4">
           <slot />
         </div>
 
         <!-- Footer -->
-        <footer class="factory-filter-drawer-footer border-t border-white/10 bg-white/[0.04]">
+        <footer class="ui-panel-footer">
           <!-- Inline save-view form -->
-          <div v-if="saveable && showSaveForm" class="flex items-center gap-2 px-5 py-3 border-b border-white/10">
-            <Bookmark class="size-4 text-brand-400 shrink-0" />
+          <div v-if="saveable && showSaveForm" class="ui-panel-divider flex items-center gap-2 px-5 py-3">
+            <Bookmark class="ui-icon-brand size-4 shrink-0" />
             <input
               ref="nameInput"
               v-model="newName"
               type="text"
               placeholder="Name this view"
               maxlength="60"
-              class="factory-filter-input flex-1 border px-2.5 py-1.5 text-sm focus:outline-none"
+              class="ui-field flex-1 px-2.5 py-1.5 text-sm"
               @keydown.enter.prevent="submitSave"
               @keydown.escape.prevent="showSaveForm = false; newName = ''"
             />
             <button
               type="button"
               :disabled="!newName.trim()"
-              class="factory-button-cta factory-button-premium factory-button-cta-sm inline-flex items-center gap-1 px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              class="ui-button ui-button-primary px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               @click="submitSave"
             >
               <Check class="size-3.5" />
@@ -150,7 +150,7 @@ onUnmounted(() => {
             </button>
             <button
               type="button"
-              class="factory-filter-icon-button p-1.5 transition-colors"
+              class="ui-button ui-button-ghost p-1.5"
               aria-label="Cancel"
               @click="showSaveForm = false; newName = ''"
             >
@@ -161,7 +161,7 @@ onUnmounted(() => {
           <div class="flex items-center justify-between gap-2 px-5 py-3">
             <button
               type="button"
-              class="factory-filter-reset inline-flex items-center gap-1.5 text-xs font-medium transition-colors"
+              class="ui-inline-link ui-inline-link-muted inline-flex items-center gap-1.5 text-xs font-medium"
               @click="emit('reset')"
             >
               <RotateCcw class="size-3.5" />
@@ -171,7 +171,7 @@ onUnmounted(() => {
               <button
                 v-if="saveable && !showSaveForm"
                 type="button"
-                class="factory-filter-secondary inline-flex items-center gap-1.5 border px-3 py-2 text-sm font-medium transition-colors"
+                class="ui-button ui-button-secondary px-3 py-2 text-sm"
                 @click="openSaveForm"
               >
                 <Plus class="size-3.5" />
@@ -180,7 +180,7 @@ onUnmounted(() => {
               <slot name="footer">
                 <button
                   type="button"
-                  class="factory-button-cta factory-button-premium px-4 py-2 text-sm"
+                  class="ui-button ui-button-primary px-4 py-2 text-sm"
                   @click="close"
                 >
                   Done
