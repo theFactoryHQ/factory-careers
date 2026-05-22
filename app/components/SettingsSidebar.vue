@@ -120,7 +120,7 @@ function isActive(to: string, exact: boolean) {
               <span class="truncate">{{ item.label }}</span>
               <span
                 v-if="item.badge"
-                class="shrink-0 inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
+                class="ui-pill ui-pill-warning shrink-0 rounded-full px-1.5 py-0.5 text-[10px]"
               >
                 {{ item.badge }}
               </span>
