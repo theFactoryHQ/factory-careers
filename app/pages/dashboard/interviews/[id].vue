@@ -828,9 +828,12 @@ const localePath = useLocalePath()
 
     <!-- Reschedule Modal -->
     <Teleport to="body">
-      <div v-if="showReschedule" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showReschedule = false" />
-        <div class="ui-modal-panel relative p-6 max-w-md w-full mx-4">
+      <div
+        v-if="showReschedule"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+        @click.self="showReschedule = false"
+      >
+        <div class="ui-modal-panel relative w-full max-w-md p-6">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-4">Reschedule Interview</h3>
 
           <div v-if="rescheduleError" class="ui-alert ui-alert-danger mb-4">
@@ -895,9 +898,12 @@ const localePath = useLocalePath()
 
     <!-- Edit Details Modal -->
     <Teleport to="body">
-      <div v-if="showEditDetails" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showEditDetails = false" />
-        <div class="ui-modal-panel relative p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div
+        v-if="showEditDetails"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+        @click.self="showEditDetails = false"
+      >
+        <div class="ui-modal-panel relative w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-5">Edit Interview Details</h3>
 
           <div v-if="editErrors.submit" class="ui-alert ui-alert-danger mb-4">
@@ -999,9 +1005,12 @@ const localePath = useLocalePath()
 
     <!-- Delete Confirm Modal -->
     <Teleport to="body">
-      <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showDeleteConfirm = false" />
-        <div class="ui-modal-panel relative p-6 max-w-sm w-full mx-4">
+      <div
+        v-if="showDeleteConfirm"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+        @click.self="showDeleteConfirm = false"
+      >
+        <div class="ui-modal-panel relative w-full max-w-sm p-6">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Interview</h3>
           <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
             Are you sure you want to delete <strong>{{ interview?.title }}</strong>? This action cannot be undone.

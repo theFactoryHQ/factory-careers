@@ -740,6 +740,8 @@ describe('brand-neutral theme variables', () => {
     const source = readProjectFile('app/pages/dashboard/interviews/[id].vue')
 
     for (const recipe of [
+      'factory-dashboard-portal',
+      'ui-modal-backdrop',
       'ui-panel',
       'ui-panel-brand',
       'ui-panel-brand-header',
@@ -1596,6 +1598,8 @@ describe('brand-neutral theme variables', () => {
       /rounded-xl border border-surface-200 dark:border-surface-800 bg-white/,
       /rounded-xl border border-danger-200\/60/,
       /bg-white dark:bg-surface-900 rounded-2xl/,
+      /<div v-if="show(?:Reschedule|EditDetails|DeleteConfirm)" class="fixed inset-0 z-50 flex items-center justify-center/,
+      /absolute inset-0 bg-black\/40 backdrop-blur-sm/,
       /focus:ring-brand-500/,
       /bg-emerald-/,
       /text-emerald-/,
