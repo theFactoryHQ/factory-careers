@@ -65,15 +65,15 @@ async function applyCandidate(candidateId: string) {
   <Teleport :to="teleportTarget">
     <div class="fixed inset-0 z-50 flex items-center justify-center">
       <div class="absolute inset-0 bg-black/50" @click="emit('close')" />
-      <div class="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+      <div class="ui-modal-panel relative w-full max-w-md mx-4 max-h-[80vh] flex flex-col overflow-hidden">
         <!-- Header -->
-        <div class="flex items-center justify-between px-5 py-4 border-b border-surface-200 dark:border-surface-800">
+        <div class="ui-panel-header flex items-center justify-between px-5 py-4">
           <div class="flex items-center gap-2">
-            <UserPlus class="size-5 text-brand-600 dark:text-brand-400" />
+            <UserPlus class="ui-icon-brand size-5" />
             <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-50">Add Candidate</h3>
           </div>
           <button
-            class="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 transition-colors"
+            class="ui-button ui-button-ghost p-1"
             @click="emit('close')"
           >
             <X class="size-5" />
@@ -88,13 +88,13 @@ async function applyCandidate(candidateId: string) {
               v-model="searchInput"
               type="text"
               placeholder="Search candidates by name or email…"
-              class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 pl-10 pr-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+              class="ui-field pl-10"
             />
           </div>
         </div>
 
         <!-- Error -->
-        <div v-if="applyError" class="mx-5 mt-3 rounded-lg border border-danger-200 bg-danger-50 dark:bg-danger-950 p-3 text-sm text-danger-700 dark:text-danger-400">
+        <div v-if="applyError" class="ui-alert ui-alert-danger mx-5 mt-3">
           {{ applyError }}
         </div>
 
@@ -113,7 +113,7 @@ async function applyCandidate(candidateId: string) {
               v-for="c in candidates"
               :key="c.id"
               :disabled="isApplying"
-              class="w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-left hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors disabled:opacity-50"
+              class="ui-list-row w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-left disabled:opacity-50"
               @click="applyCandidate(c.id)"
             >
               <div class="min-w-0">
@@ -122,7 +122,7 @@ async function applyCandidate(candidateId: string) {
                 </p>
                 <p class="text-xs text-surface-400 truncate">{{ c.email }}</p>
               </div>
-              <span class="text-xs text-brand-600 dark:text-brand-400 font-medium shrink-0 ml-2">
+              <span class="ui-inline-link-brand text-xs font-medium shrink-0 ml-2">
                 Apply
               </span>
             </button>

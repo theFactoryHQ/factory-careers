@@ -354,6 +354,51 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared UI recipes to modal form surfaces', () => {
+    const recipeUsage = [
+      {
+        path: 'app/components/ApplyCandidateModal.vue',
+        recipes: [
+          'ui-modal-panel',
+          'ui-panel-header',
+          'ui-field',
+          'ui-alert-danger',
+          'ui-button-ghost',
+          'ui-list-row',
+          'ui-inline-link-brand',
+        ],
+      },
+      {
+        path: 'app/components/FeedbackModal.vue',
+        recipes: [
+          'ui-modal-panel',
+          'ui-panel-header',
+          'ui-panel-footer',
+          'ui-alert-info',
+          'ui-alert-danger',
+          'ui-field',
+          'ui-checkbox',
+          'ui-checkbox-brand',
+          'ui-button-primary',
+          'ui-button-secondary',
+          'ui-button-ghost',
+          'ui-selectable-panel',
+          'ui-selectable-panel-active',
+          'ui-panel-muted',
+          'ui-icon-state-success',
+        ],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
   it('applies shared UI recipes to AI settings surfaces', () => {
     const recipeUsage = [
       {
@@ -482,6 +527,40 @@ describe('brand-neutral theme variables', () => {
       /text-emerald-/,
     ]) {
       expect(source, `interview detail should centralize ${pattern}`).not.toMatch(pattern)
+    }
+  })
+
+  it('keeps modal form surface choices behind shared recipes', () => {
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/components/ApplyCandidateModal.vue',
+        patterns: [
+          /bg-white dark:bg-surface-900 rounded-xl/,
+          /border border-surface-200 dark:border-surface-700 bg-white/,
+          /focus:ring-brand-500/,
+          /text-brand-600 dark:text-brand-400/,
+        ],
+      },
+      {
+        path: 'app/components/FeedbackModal.vue',
+        patterns: [
+          /bg-white dark:bg-surface-900 rounded-xl/,
+          /border border-surface-200 dark:border-surface-700 bg-white/,
+          /focus:ring-brand-500/,
+          /bg-brand-600/,
+          /border-red-300/,
+          /border-amber-300/,
+          /bg-green-100/,
+        ],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
     }
   })
 })

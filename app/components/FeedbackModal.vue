@@ -222,17 +222,17 @@ function resetAndClose() {
       <div class="absolute inset-0 bg-black/50" @click="resetAndClose" />
 
       <!-- Modal -->
-      <div class="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl w-full max-w-lg flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden">
+      <div class="ui-modal-panel relative w-full max-w-lg flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden">
         <!-- Header -->
-        <div class="flex items-center justify-between px-5 py-4 border-b border-surface-200 dark:border-surface-800">
+        <div class="ui-panel-header flex items-center justify-between px-5 py-4">
           <div class="flex items-center gap-2">
-            <MessageSquarePlus class="size-5 text-brand-600 dark:text-brand-400" />
+            <MessageSquarePlus class="ui-icon-brand size-5" />
             <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-50">
               Create GitHub Issue
             </h3>
           </div>
           <button
-            class="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 transition-colors cursor-pointer"
+            class="ui-button ui-button-ghost p-1"
             @click="resetAndClose"
           >
             <X class="size-5" />
@@ -241,8 +241,8 @@ function resetAndClose() {
 
         <!-- Success state -->
         <div v-if="successUrl" class="px-5 py-8 text-center">
-          <div class="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-            <svg class="size-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <div class="ui-icon-state ui-icon-state-success mx-auto mb-4">
+            <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
             </svg>
           </div>
@@ -257,13 +257,13 @@ function resetAndClose() {
               :href="successUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-surface-100 dark:bg-surface-800 px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors no-underline"
+              class="ui-button ui-button-secondary no-underline"
             >
               <ExternalLink class="size-4" />
               View on GitHub
             </a>
             <button
-              class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors cursor-pointer"
+              class="ui-button ui-button-primary px-4 py-2"
               @click="resetAndClose"
             >
               Done
@@ -274,7 +274,7 @@ function resetAndClose() {
         <!-- Form -->
         <form v-else class="flex min-h-0 flex-col" @submit.prevent="handleSubmit">
           <div class="min-h-0 overflow-y-auto px-5 py-4 space-y-4">
-            <div class="rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50 px-3 py-2 text-xs text-surface-600 dark:text-surface-300">
+            <div class="ui-alert ui-alert-info px-3 py-2 text-xs">
               Submitting this form creates a GitHub issue for the Factory Careers maintainers.
             </div>
 
@@ -286,10 +286,10 @@ function resetAndClose() {
               <div class="flex gap-2">
                 <button
                   type="button"
-                  class="flex-1 flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer"
+                  class="ui-selectable-panel flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium"
                   :class="feedbackType === 'bug'
-                    ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400'
-                    : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'"
+                    ? 'ui-selectable-panel-active'
+                    : ''"
                   @click="feedbackType = 'bug'"
                 >
                   <Bug class="size-4" />
@@ -297,10 +297,10 @@ function resetAndClose() {
                 </button>
                 <button
                   type="button"
-                  class="flex-1 flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer"
+                  class="ui-selectable-panel flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium"
                   :class="feedbackType === 'feature'
-                    ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400'
-                    : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'"
+                    ? 'ui-selectable-panel-active'
+                    : ''"
                   @click="feedbackType = 'feature'"
                 >
                   <Lightbulb class="size-4" />
@@ -320,7 +320,7 @@ function resetAndClose() {
                 type="text"
                 maxlength="200"
                 :placeholder="placeholders.title"
-                class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                class="ui-field"
               />
             </div>
 
@@ -335,14 +335,14 @@ function resetAndClose() {
                 rows="5"
                 maxlength="5000"
                 :placeholder="placeholders.description"
-                class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors resize-y min-h-[100px]"
+                class="ui-field resize-y min-h-[100px]"
               />
               <p class="mt-1 text-xs text-surface-400">
                 {{ feedbackType === 'bug' ? 'Include steps to reproduce, what you expected, and what actually happened.' : 'Describe the use case and how this feature would help you.' }}
               </p>
             </div>
 
-            <div class="rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50">
+            <div class="ui-panel-muted">
               <button
                 type="button"
                 class="flex w-full items-center justify-between px-3 py-2 text-left"
@@ -354,7 +354,7 @@ function resetAndClose() {
                 <component :is="showOptionalContext ? ChevronDown : ChevronRight" class="size-4 text-surface-500 dark:text-surface-400" />
               </button>
 
-              <div v-if="showOptionalContext" class="space-y-3 border-t border-surface-200 dark:border-surface-700 p-3">
+              <div v-if="showOptionalContext" class="ui-panel-header space-y-3 p-3">
                 <div v-if="feedbackType === 'bug'" class="space-y-3">
                   <p class="text-xs font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
                     Bug Context
@@ -370,7 +370,7 @@ function resetAndClose() {
                       rows="2"
                       maxlength="1500"
                       placeholder="Step-by-step instructions to reproduce the issue"
-                      class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors resize-y"
+                      class="ui-field resize-y"
                     />
                   </div>
 
@@ -384,7 +384,7 @@ function resetAndClose() {
                       rows="2"
                       maxlength="1000"
                       placeholder="What did you expect to happen?"
-                      class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors resize-y"
+                      class="ui-field resize-y"
                     />
                   </div>
 
@@ -398,7 +398,7 @@ function resetAndClose() {
                       rows="2"
                       maxlength="1000"
                       placeholder="What actually happened?"
-                      class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors resize-y"
+                      class="ui-field resize-y"
                     />
                   </div>
                 </div>
@@ -418,7 +418,7 @@ function resetAndClose() {
                       rows="2"
                       maxlength="1000"
                       placeholder="What problem are you trying to solve?"
-                      class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors resize-y"
+                      class="ui-field resize-y"
                     />
                   </div>
 
@@ -432,7 +432,7 @@ function resetAndClose() {
                       rows="2"
                       maxlength="1000"
                       placeholder="How should this work in Factory Careers?"
-                      class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors resize-y"
+                      class="ui-field resize-y"
                     />
                   </div>
 
@@ -446,14 +446,14 @@ function resetAndClose() {
                       rows="2"
                       maxlength="1000"
                       placeholder="What improves if this feature exists?"
-                      class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors resize-y"
+                      class="ui-field resize-y"
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50 p-3 space-y-2.5">
+            <div class="ui-panel-muted p-3 space-y-2.5">
               <p class="text-xs font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
                 Share Additional Context
               </p>
@@ -462,7 +462,7 @@ function resetAndClose() {
                 <input
                   v-model="includeReporterContext"
                   type="checkbox"
-                  class="mt-0.5 size-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500"
+                  class="ui-checkbox ui-checkbox-brand mt-0.5 size-4"
                 />
                 <span>Share my name and current page</span>
               </label>
@@ -471,7 +471,7 @@ function resetAndClose() {
                 <input
                   v-model="includeEmail"
                   type="checkbox"
-                  class="mt-0.5 size-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500"
+                  class="ui-checkbox ui-checkbox-brand mt-0.5 size-4"
                 />
                 <span>Share my email address with this issue</span>
               </label>
@@ -480,7 +480,7 @@ function resetAndClose() {
                 <input
                   v-model="includeDiagnostics"
                   type="checkbox"
-                  class="mt-0.5 size-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500"
+                  class="ui-checkbox ui-checkbox-brand mt-0.5 size-4"
                 />
                 <span>Share technical diagnostics (browser, screen size, timezone)</span>
               </label>
@@ -489,14 +489,14 @@ function resetAndClose() {
                 <input
                   v-model="includeScreenshot"
                   type="checkbox"
-                  class="mt-0.5 size-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500"
+                  class="ui-checkbox ui-checkbox-brand mt-0.5 size-4"
                   @change="!includeScreenshot && resetScreenshot()"
                 />
                 <span>Share a screenshot</span>
               </label>
 
               <div v-if="includeScreenshot" class="space-y-2">
-                <label class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors cursor-pointer">
+                <label class="ui-button ui-button-secondary">
                   <ImagePlus class="size-4" />
                   Choose image
                   <input
@@ -513,16 +513,16 @@ function resetAndClose() {
             </div>
 
             <!-- Error -->
-            <div v-if="submitError" class="rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-3 text-sm text-danger-700 dark:text-danger-400">
+            <div v-if="submitError" class="ui-alert ui-alert-danger">
               {{ submitError }}
             </div>
           </div>
 
           <!-- Footer -->
-          <div class="flex items-center justify-end gap-3 border-t border-surface-200 dark:border-surface-800 px-5 py-4">
+          <div class="ui-panel-footer flex items-center justify-end gap-3 px-5 py-4">
             <button
               type="button"
-              class="rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors cursor-pointer"
+              class="ui-button ui-button-secondary px-4 py-2"
               @click="resetAndClose"
             >
               Cancel
@@ -530,7 +530,7 @@ function resetAndClose() {
             <button
               type="submit"
               :disabled="!isValid || isSubmitting"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              class="ui-button ui-button-primary px-4 py-2"
             >
               <Send class="size-4" />
               {{ isSubmitting ? 'Creating issue…' : 'Create GitHub Issue' }}
