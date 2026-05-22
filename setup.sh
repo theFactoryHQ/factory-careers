@@ -41,6 +41,9 @@ DATABASE_URL=postgresql://reqcore:${DB_PASS}@localhost:5432/reqcore
 # ─── Authentication ──────────────────────────────────────────────────────────
 BETTER_AUTH_SECRET=${AUTH_SECRET}
 BETTER_AUTH_URL=http://localhost:3000
+FACTORY_DISABLE_PUBLIC_SIGNUP=false
+FACTORY_ADMIN_SSO_ONLY=false
+FACTORY_DISABLE_PUBLIC_ORG_CREATION=false
 
 # ─── Object Storage ──────────────────────────────────────────────────────────
 STORAGE_USER=reqcore
@@ -68,5 +71,5 @@ echo "App → http://localhost:3000"
 echo ""
 echo "Optional — seed demo account (after the app is running):"
 echo "  docker compose exec app npm run db:seed"
-echo "  Login: demo@reqcore.com / demo1234"
+echo "  Login: demo@thefactoryhq.com / demo1234"
 echo ""

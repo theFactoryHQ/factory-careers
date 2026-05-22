@@ -175,7 +175,7 @@ docker compose exec app npm run db:seed
 ```
 
 Then sign in with:
-- **Email:** `demo@reqcore.com`
+- **Email:** `demo@thefactoryhq.com`
 - **Password:** `demo1234`
 
 ---
