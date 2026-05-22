@@ -101,6 +101,13 @@ describe('brand-neutral theme variables', () => {
       '.ui-portal-alert-danger',
       '.ui-portal-divider',
       '.ui-portal-link',
+      '.ui-drawer-panel',
+      '.ui-drawer-header',
+      '.ui-drawer-tabs',
+      '.ui-drawer-body',
+      '.ui-tab',
+      '.ui-tab-active',
+      '.ui-tab-inactive',
       '.ui-action-bar',
       '.ui-avatar',
       '.ui-avatar-brand',
@@ -430,6 +437,41 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared UI recipes to candidate drawer surfaces', () => {
+    const source = readProjectFile('app/components/CandidateDetailSidebar.vue')
+
+    for (const recipe of [
+      'ui-drawer-panel',
+      'ui-drawer-header',
+      'ui-drawer-tabs',
+      'ui-drawer-body',
+      'ui-tab',
+      'ui-tab-active',
+      'ui-tab-inactive',
+      'ui-panel',
+      'ui-empty-panel',
+      'ui-modal-panel',
+      'ui-alert-danger',
+      'ui-field',
+      'ui-button-primary',
+      'ui-button-secondary',
+      'ui-button-danger',
+      'ui-button-ghost',
+      'ui-avatar',
+      'ui-avatar-brand',
+      'ui-icon-state-brand',
+      'ui-icon-state-info',
+      'ui-icon-state-warning',
+      'ui-icon-state-success',
+      'ui-inline-link-brand',
+      'getApplicationStatusBadgeClass',
+      'getApplicationTransitionButtonClass',
+      'getApplicationTransitionLabel',
+    ]) {
+      expect(source, `candidate drawer should use ${recipe}`).toContain(recipe)
+    }
+  })
+
   it('applies shared UI recipes to AI settings surfaces', () => {
     const recipeUsage = [
       {
@@ -612,6 +654,25 @@ describe('brand-neutral theme variables', () => {
       /text-brand-600 hover:text-brand-700 dark:text-brand-400/,
     ]) {
       expect(source, `application drawer should centralize ${pattern}`).not.toMatch(pattern)
+    }
+  })
+
+  it('keeps candidate drawer surface choices behind shared recipes', () => {
+    const source = readProjectFile('app/components/CandidateDetailSidebar.vue')
+
+    for (const pattern of [
+      /const transitionClasses/,
+      /const statusBadgeClasses/,
+      /rounded-xl border border-surface-200\/80 dark:border-surface-800\/60 bg-white dark:bg-surface-950/,
+      /rounded-lg border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-800/,
+      /rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950/,
+      /relative bg-white dark:bg-surface-900 rounded-2xl/,
+      /bg-brand-600 px-3 py-1\.5/,
+      /bg-danger-600 px-3 py-1\.5/,
+      /text-brand-600 hover:text-brand-700 dark:text-brand-400/,
+      /focus:ring-brand-500/,
+    ]) {
+      expect(source, `candidate drawer should centralize ${pattern}`).not.toMatch(pattern)
     }
   })
 })

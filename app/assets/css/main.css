@@ -285,6 +285,78 @@
     outline-color: color-mix(in srgb, var(--color-surface-700) 60%, transparent);
   }
 
+  .ui-drawer-panel {
+    border-left: 1px solid color-mix(in srgb, var(--color-surface-200) 80%, transparent);
+    background-color: #ffffff;
+    color: var(--color-surface-900);
+    box-shadow: 0 25px 50px -12px rgb(15 23 42 / 0.18);
+  }
+
+  .dark .ui-drawer-panel {
+    border-color: color-mix(in srgb, var(--color-surface-800) 60%, transparent);
+    background-color: var(--color-surface-900);
+    color: var(--color-surface-100);
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.32);
+  }
+
+  .ui-drawer-header,
+  .ui-drawer-tabs {
+    border-bottom: 1px solid color-mix(in srgb, var(--color-surface-200) 80%, transparent);
+  }
+
+  .dark .ui-drawer-header,
+  .dark .ui-drawer-tabs {
+    border-color: color-mix(in srgb, var(--color-surface-800) 70%, transparent);
+  }
+
+  .ui-drawer-body {
+    background-color: #ffffff;
+  }
+
+  .dark .ui-drawer-body {
+    background-color: var(--color-surface-900);
+  }
+
+  .ui-tab {
+    border-bottom: 2px solid transparent;
+    color: var(--color-surface-500);
+    transition: border-color 150ms ease, color 150ms ease;
+  }
+
+  .ui-tab:hover {
+    border-color: var(--color-surface-300);
+    color: var(--color-surface-700);
+  }
+
+  .dark .ui-tab {
+    color: var(--color-surface-400);
+  }
+
+  .dark .ui-tab:hover {
+    border-color: var(--color-surface-700);
+    color: var(--color-surface-300);
+  }
+
+  .ui-tab-active {
+    border-color: var(--color-brand-600);
+    color: var(--color-brand-600);
+  }
+
+  .ui-tab-active:hover {
+    border-color: var(--color-brand-600);
+    color: var(--color-brand-600);
+  }
+
+  .dark .ui-tab-active,
+  .dark .ui-tab-active:hover {
+    border-color: var(--color-brand-400);
+    color: var(--color-brand-400);
+  }
+
+  .ui-tab-inactive {
+    border-color: transparent;
+  }
+
   .ui-portal-panel {
     border-left: 1px solid var(--ui-border-strong, var(--color-surface-800));
     background-color: var(--ui-bg, #000000);
