@@ -1,19 +1,28 @@
 /**
  * POST /api/calendar/disconnect
  *
- * Disconnects the user's Google Calendar integration.
- * Stops the webhook channel and deletes encrypted credentials.
+ * Disconnects the user's calendar integration.
+ * Stops any provider webhook channel and deletes encrypted credentials.
  */
-import { removeCalendarIntegration, isGoogleCalendarConfigured } from '../../utils/google-calendar'
+import { isCalendarConfigured, removeConnectedCalendarIntegration } from '../../utils/calendar'
+import { isMicrosoftCalendarApplicationMode } from '../../utils/microsoft-calendar'
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
+  const orgId = session.session.activeOrganizationId
 
-  if (!isGoogleCalendarConfigured()) {
-    throw createError({ statusCode: 503, statusMessage: 'Google Calendar integration is not configured' })
+  if (!isCalendarConfigured()) {
+    throw createError({ statusCode: 503, statusMessage: 'Calendar integration is not configured' })
   }
 
-  await removeCalendarIntegration(session.user.id)
+  if (isMicrosoftCalendarApplicationMode()) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Microsoft Calendar is managed by server configuration',
+    })
+  }
+
+  await removeConnectedCalendarIntegration(session.user.id, orgId)
 
   return { success: true }
 })

@@ -34,6 +34,19 @@ const commaList = (defaultValue: string[] = []) =>
       : defaultValue,
   );
 
+const commaEmailList = (defaultValue: string[] = []) =>
+  z.preprocess(
+    (val) => (typeof val === "string" && val.trim() === "" ? undefined : val),
+    z.string().optional(),
+  ).transform((value) =>
+    value
+      ? value
+          .split(",")
+          .map((item) => item.trim().toLowerCase())
+          .filter(Boolean)
+      : defaultValue,
+  ).pipe(z.array(z.email()));
+
 /**
  * Detect whether the current Railway environment is a PR/preview environment.
  * Production and long-lived environments must provide explicit BETTER_AUTH_URL.
@@ -164,6 +177,17 @@ export const envSchema = z
     GOOGLE_CLIENT_ID: emptyToUndefined.pipe(z.string().min(1)).optional(),
     /** Google OAuth2 Client Secret for Calendar integration. */
     GOOGLE_CLIENT_SECRET: emptyToUndefined.pipe(z.string().min(1)).optional(),
+    /** Microsoft Entra ID Client ID for Microsoft Calendar integration. Falls back to AUTH_MICROSOFT_CLIENT_ID. */
+    MICROSOFT_CALENDAR_CLIENT_ID: emptyToUndefined.pipe(z.string().min(1)).optional(),
+    /** Microsoft Entra ID Client Secret for Microsoft Calendar integration. Falls back to AUTH_MICROSOFT_CLIENT_SECRET. */
+    MICROSOFT_CALENDAR_CLIENT_SECRET: emptyToUndefined.pipe(z.string().min(1)).optional(),
+    /** Microsoft Entra ID Tenant ID for Microsoft Calendar integration. Falls back to AUTH_MICROSOFT_TENANT_ID. */
+    MICROSOFT_CALENDAR_TENANT_ID: emptyToUndefined.pipe(z.string().min(1)).optional(),
+    /** Microsoft Calendar auth mode: delegated OAuth connect flow or app-only client credentials. */
+    MICROSOFT_CALENDAR_AUTH_MODE: z.preprocess(
+      (val) => (typeof val === "string" && val.trim() === "" ? undefined : val),
+      z.enum(["delegated", "application"]).default("delegated"),
+    ),
     /** Google OAuth2 Client ID for social sign-in. Obtain from Google Cloud Console → Credentials. */
     AUTH_GOOGLE_CLIENT_ID: emptyToUndefined.pipe(z.string().min(1)).optional(),
     /** Google OAuth2 Client Secret for social sign-in. */
@@ -220,8 +244,25 @@ export const envSchema = z
       .pipe(z.string().min(1))
       .optional()
       .default("careers@thefactoryhq.com"),
+    /** Microsoft 365 group/calendar email used for organization-wide interview scheduling. */
+    FACTORY_CAREERS_CALENDAR_EMAIL: emptyToUndefined
+      .pipe(z.string().email())
+      .optional()
+      .default("careers@thefactoryhq.com"),
+    /** Optional Microsoft Graph group ID for FACTORY_CAREERS_CALENDAR_EMAIL. */
+    FACTORY_CAREERS_CALENDAR_GROUP_ID: emptyToUndefined
+      .pipe(z.string().min(1))
+      .optional(),
+    /** Whether Microsoft app-only calendar sync writes to FACTORY_CAREERS_CALENDAR_EMAIL. */
+    FACTORY_CAREERS_CALENDAR_SYNC_SHARED: envFlag(true),
+    /** Comma-separated internal user mailboxes that should receive interview calendar copies. */
+    FACTORY_CAREERS_CALENDAR_USER_EMAILS: commaEmailList([]),
+    /** Whether Microsoft app-only calendar sync writes copies to interviewers' mailboxes. */
+    FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS: envFlag(false),
     /** Disable public email/password account creation for staff access. */
     FACTORY_DISABLE_PUBLIC_SIGNUP: envFlag(true),
+    /** Require Factory staff to use enterprise SSO instead of email/password login. */
+    FACTORY_ADMIN_SSO_ONLY: envFlag(true),
     /** Disable arbitrary organization creation; the Factory org is seeded. */
     FACTORY_DISABLE_PUBLIC_ORG_CREATION: envFlag(true),
   })
@@ -264,6 +305,48 @@ export const envSchema = z
         });
       }
     }
+
+    if (data.MICROSOFT_CALENDAR_AUTH_MODE === "application") {
+      const clientId = data.MICROSOFT_CALENDAR_CLIENT_ID || data.AUTH_MICROSOFT_CLIENT_ID;
+      const clientSecret = data.MICROSOFT_CALENDAR_CLIENT_SECRET || data.AUTH_MICROSOFT_CLIENT_SECRET;
+      const tenantId = data.MICROSOFT_CALENDAR_TENANT_ID || data.AUTH_MICROSOFT_TENANT_ID;
+
+      if (!clientId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["MICROSOFT_CALENDAR_CLIENT_ID"],
+          message: "MICROSOFT_CALENDAR_CLIENT_ID is required when MICROSOFT_CALENDAR_AUTH_MODE=application unless AUTH_MICROSOFT_CLIENT_ID is set.",
+        });
+      }
+
+      if (!clientSecret) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["MICROSOFT_CALENDAR_CLIENT_SECRET"],
+          message: "MICROSOFT_CALENDAR_CLIENT_SECRET is required when MICROSOFT_CALENDAR_AUTH_MODE=application unless AUTH_MICROSOFT_CLIENT_SECRET is set.",
+        });
+      }
+
+      if (!tenantId || ["common", "organizations", "consumers"].includes(tenantId.toLowerCase())) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["MICROSOFT_CALENDAR_TENANT_ID"],
+          message: "MICROSOFT_CALENDAR_TENANT_ID must be a concrete tenant ID or tenant domain when MICROSOFT_CALENDAR_AUTH_MODE=application.",
+        });
+      }
+
+      if (
+        !data.FACTORY_CAREERS_CALENDAR_SYNC_SHARED
+        && data.FACTORY_CAREERS_CALENDAR_USER_EMAILS.length === 0
+        && !data.FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["FACTORY_CAREERS_CALENDAR_USER_EMAILS"],
+          message: "Microsoft Calendar application mode needs at least one destination: enable shared sync, set user emails, or enable interviewer sync.",
+        });
+      }
+    }
   });
 
 /**
@@ -294,7 +377,7 @@ export const env = new Proxy({} as z.infer<typeof envSchema>, {
             `Ensure these variables are set in the Render web service environment.\n` +
             `Required: DATABASE_URL, BETTER_AUTH_SECRET, S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET\n` +
             `Required on Render: BETTER_AUTH_URL=https://careers.thefactoryhq.com\n` +
-            `Optional: BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), S3_SKIP_BUCKET_POLICY, S3_SKIP_BUCKET_INIT, SKIP_RUNTIME_MIGRATIONS, TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_DISCOVERY_URL, OIDC_PROVIDER_NAME, AUTH_GOOGLE_CLIENT_ID, AUTH_GOOGLE_CLIENT_SECRET, AUTH_GITHUB_CLIENT_ID, AUTH_GITHUB_CLIENT_SECRET, AUTH_MICROSOFT_CLIENT_ID, AUTH_MICROSOFT_CLIENT_SECRET, AUTH_MICROSOFT_TENANT_ID, FACTORY_CAREERS_HIRING_INBOX, FACTORY_ALLOWED_EMAIL_DOMAINS, FACTORY_INITIAL_OWNER_EMAILS\n`,
+            `Optional: BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), S3_SKIP_BUCKET_POLICY, S3_SKIP_BUCKET_INIT, SKIP_RUNTIME_MIGRATIONS, TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CALENDAR_AUTH_MODE, MICROSOFT_CALENDAR_CLIENT_ID, MICROSOFT_CALENDAR_CLIENT_SECRET, MICROSOFT_CALENDAR_TENANT_ID, FACTORY_CAREERS_CALENDAR_SYNC_SHARED, FACTORY_CAREERS_CALENDAR_USER_EMAILS, FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_DISCOVERY_URL, OIDC_PROVIDER_NAME, AUTH_GOOGLE_CLIENT_ID, AUTH_GOOGLE_CLIENT_SECRET, AUTH_GITHUB_CLIENT_ID, AUTH_GITHUB_CLIENT_SECRET, AUTH_MICROSOFT_CLIENT_ID, AUTH_MICROSOFT_CLIENT_SECRET, AUTH_MICROSOFT_TENANT_ID, FACTORY_CAREERS_HIRING_INBOX, FACTORY_ALLOWED_EMAIL_DOMAINS, FACTORY_INITIAL_OWNER_EMAILS\n`,
         );
         throw result.error;
       }
