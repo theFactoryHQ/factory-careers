@@ -10,6 +10,8 @@ export const APPLICATION_STATUS_KEYS = [
 export type ApplicationStatusKey = typeof APPLICATION_STATUS_KEYS[number]
 export type ApplicationStatusBadgeVariant = 'soft' | 'ring' | 'subtle-ring' | 'factory'
 export type ApplicationTransitionButtonVariant = 'solid' | 'subtle' | 'factory'
+export type InterviewStatusBadgeVariant = 'ring'
+export type InterviewTransitionButtonVariant = 'solid'
 export type JobStatusBadgeVariant = 'soft' | 'ring'
 export type ScoreBadgeVariant = 'solid' | 'soft' | 'subtle' | 'muted'
 export type CandidateResponseActionKey = typeof CANDIDATE_RESPONSE_ACTION_KEYS[number]
@@ -132,6 +134,55 @@ const APPLICATION_TRANSITION_DOT_CLASSES: Record<ApplicationStatusKey, string> =
   offer: 'bg-teal-200',
   hired: 'bg-green-100',
   rejected: 'bg-danger-200',
+}
+
+const INTERVIEW_STATUS_KEYS = [
+  'scheduled',
+  'completed',
+  'cancelled',
+  'no_show',
+] as const
+
+type InterviewStatusKey = typeof INTERVIEW_STATUS_KEYS[number]
+
+const INTERVIEW_STATUS_LABELS: Record<InterviewStatusKey, string> = {
+  scheduled: 'Scheduled',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  no_show: 'No Show',
+}
+
+const INTERVIEW_TRANSITION_LABELS: Record<InterviewStatusKey, string> = {
+  scheduled: 'Re-schedule',
+  completed: 'Completed',
+  cancelled: 'Cancel',
+  no_show: 'No Show',
+}
+
+const INTERVIEW_STATUS_BADGE_CLASSES: Record<InterviewStatusBadgeVariant, Record<InterviewStatusKey, string>> = {
+  ring: {
+    scheduled: 'bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-950/50 dark:text-brand-300 dark:ring-brand-800',
+    completed: 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/50 dark:text-success-300 dark:ring-success-800',
+    cancelled: 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:ring-surface-700',
+    no_show: 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950/50 dark:text-danger-300 dark:ring-danger-800',
+  },
+}
+
+const INTERVIEW_STATUS_BADGE_FALLBACKS: Record<InterviewStatusBadgeVariant, string> = {
+  ring: 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:ring-surface-700',
+}
+
+const INTERVIEW_TRANSITION_BUTTON_CLASSES: Record<InterviewTransitionButtonVariant, Record<InterviewStatusKey, string>> = {
+  solid: {
+    scheduled: 'border border-surface-300 dark:border-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800',
+    completed: 'bg-success-600 text-white hover:bg-success-700',
+    cancelled: 'bg-surface-500 text-white hover:bg-surface-600',
+    no_show: 'bg-danger-600 text-white hover:bg-danger-700',
+  },
+}
+
+const INTERVIEW_TRANSITION_BUTTON_FALLBACKS: Record<InterviewTransitionButtonVariant, string> = {
+  solid: 'border border-surface-300 dark:border-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800',
 }
 
 const JOB_STATUS_KEYS = [
@@ -343,6 +394,10 @@ function isApplicationStatus(status: string): status is ApplicationStatusKey {
   return APPLICATION_STATUS_KEYS.includes(status as ApplicationStatusKey)
 }
 
+function isInterviewStatus(status: string): status is InterviewStatusKey {
+  return INTERVIEW_STATUS_KEYS.includes(status as InterviewStatusKey)
+}
+
 function isJobStatus(status: string): status is JobStatusKey {
   return JOB_STATUS_KEYS.includes(status as JobStatusKey)
 }
@@ -395,6 +450,32 @@ export function getApplicationTransitionButtonClass(
 
 export function getApplicationTransitionDotClass(status: string): string {
   return isApplicationStatus(status) ? APPLICATION_TRANSITION_DOT_CLASSES[status] : 'bg-surface-400 dark:bg-surface-500'
+}
+
+export function getInterviewStatusLabel(status: string): string {
+  return isInterviewStatus(status) ? INTERVIEW_STATUS_LABELS[status] : titleizeStatus(status)
+}
+
+export function getInterviewTransitionLabel(status: string): string {
+  return isInterviewStatus(status) ? INTERVIEW_TRANSITION_LABELS[status] : titleizeStatus(status)
+}
+
+export function getInterviewStatusBadgeClass(
+  status: string,
+  variant: InterviewStatusBadgeVariant = 'ring',
+): string {
+  return isInterviewStatus(status)
+    ? INTERVIEW_STATUS_BADGE_CLASSES[variant][status]
+    : INTERVIEW_STATUS_BADGE_FALLBACKS[variant]
+}
+
+export function getInterviewTransitionButtonClass(
+  status: string,
+  variant: InterviewTransitionButtonVariant = 'solid',
+): string {
+  return isInterviewStatus(status)
+    ? INTERVIEW_TRANSITION_BUTTON_CLASSES[variant][status]
+    : INTERVIEW_TRANSITION_BUTTON_FALLBACKS[variant]
 }
 
 export function getJobStatusLabel(status: string): string {

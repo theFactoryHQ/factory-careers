@@ -1204,6 +1204,94 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared UI recipes to job detail pipeline surfaces', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+
+    for (const recipe of [
+      'getApplicationStatusBadgeClass',
+      'getApplicationStatusDotClass',
+      'getApplicationStatusLabel',
+      'getApplicationTransitionButtonClass',
+      'getApplicationTransitionLabel',
+      'getInterviewStatusBadgeClass',
+      'getInterviewStatusLabel',
+      'getInterviewTransitionButtonClass',
+      'getInterviewTransitionLabel',
+      'getScoreBadgeClass',
+      'getScoreTextClass',
+      'ui-alert-danger',
+      'ui-button',
+      'ui-button-ghost',
+      'ui-button-ghost-danger',
+      'ui-button-primary',
+      'ui-button-secondary',
+      'ui-checkbox',
+      'ui-checkbox-brand',
+      'ui-empty-panel',
+      'ui-feedback-danger',
+      'ui-field',
+      'ui-field-invalid',
+      'ui-filter-chip',
+      'ui-filter-chip-active',
+      'ui-filter-chip-inactive',
+      'ui-floating-menu',
+      'ui-icon-state',
+      'ui-icon-tile',
+      'ui-inline-link',
+      'ui-inline-link-brand',
+      'ui-list-row',
+      'ui-menu-action',
+      'ui-modal-backdrop',
+      'ui-modal-panel',
+      'ui-panel',
+      'ui-panel-divider',
+      'ui-panel-header',
+      'ui-panel-muted',
+      'ui-pill',
+      'ui-spinner-brand',
+      'ui-tab',
+      'ui-tab-active',
+      'ui-tab-inactive',
+    ]) {
+      expect(source, `job detail pipeline should use ${recipe}`).toContain(recipe)
+    }
+  })
+
+  it('keeps job detail pipeline surface and control choices behind shared recipes', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+
+    for (const pattern of [
+      /const statusBadgeClasses:/,
+      /const transitionLabels:/,
+      /const transitionClasses:/,
+      /const interviewStatusClasses:/,
+      /const interviewTransitionClasses:/,
+      /const interviewTransitionLabels:/,
+      /function scoreClass/,
+      /const jobStatusBadgeClasses:/,
+      /size-8 rounded-full border-2 border-brand-200 border-t-brand-600/,
+      /m-6 rounded-xl border border-danger-200\/80 bg-danger-50/,
+      /shrink-0 border-b border-surface-200\/80 bg-white/,
+      /hidden md:flex md:w-72 md:shrink-0 flex-col border-r border-surface-200\/80 bg-white/,
+      /w-full rounded-lg border border-surface-200\/80 bg-surface-50\/80/,
+      /absolute left-0 top-full z-50 mt-1 w-full rounded-lg border border-surface-200 bg-white/,
+      /rounded-lg border border-surface-200\/80 bg-surface-50\/80 p-2\.5/,
+      /size-3\.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500/,
+      /border-b border-surface-200\/80 bg-white px-4/,
+      /cursor-pointer px-3\.5 py-2\.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px/,
+      /absolute left-0 top-full z-50 mt-1 w-44 rounded-xl border border-surface-200/,
+      /rounded-xl border border-surface-200\/80 bg-white p-5 shadow-sm/,
+      /rounded-xl border border-surface-200\/80 bg-white p-10 text-center/,
+      /w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800/,
+      /w-full rounded-lg border px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800/,
+      /text-danger-600 dark:text-danger-400/,
+      /absolute inset-0 bg-black\/60 backdrop-blur-sm/,
+      /relative flex flex-col bg-white dark:bg-surface-900 rounded-2xl/,
+    ]) {
+      expect(source, `job detail pipeline should centralize ${pattern}`).not.toMatch(pattern)
+    }
+  })
+
   it('applies shared UI recipes to job creation and question form surfaces', () => {
     const recipeUsage = [
       {
