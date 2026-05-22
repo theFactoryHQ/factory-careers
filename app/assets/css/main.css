@@ -1694,6 +1694,108 @@
     border-color: var(--color-surface-800);
   }
 
+  .ui-dashboard-page {
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+  }
+
+  .ui-dashboard-page-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .ui-dashboard-page-header-split {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .ui-dashboard-panel-content {
+    padding: 1.5rem;
+  }
+
+  .ui-dashboard-panel-header-lg {
+    padding: 1rem 1.5rem;
+  }
+
+  .ui-dashboard-panel-header-md {
+    padding: 1rem 1.25rem;
+  }
+
+  .ui-dashboard-panel-header-split,
+  .ui-dashboard-panel-header-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  .ui-dashboard-panel-header-split {
+    justify-content: space-between;
+  }
+
+  .ui-dashboard-panel-body-lg {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .ui-dashboard-panel-body-md {
+    padding: 1rem 1.25rem;
+  }
+
+  .ui-dashboard-panel-empty-lg {
+    padding: 3rem 1.5rem;
+    text-align: center;
+  }
+
+  .ui-dashboard-panel-empty-md {
+    padding: 2.5rem 1.25rem;
+    text-align: center;
+  }
+
+  .ui-dashboard-panel-inset-empty {
+    margin: 1.25rem;
+    padding: 1.5rem 1rem;
+    text-align: center;
+  }
+
+  .ui-dashboard-inline-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .ui-dashboard-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .ui-dashboard-stat-card-content {
+    padding: 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .ui-dashboard-page-header {
+      margin-bottom: 2rem;
+    }
+
+    .ui-dashboard-page-header-split {
+      flex-direction: row;
+    }
+
+    .ui-dashboard-stat-card-content {
+      padding: 1.5rem;
+    }
+
+    .ui-dashboard-inline-notice {
+      margin-bottom: 2rem;
+    }
+  }
+
   .ui-dashboard-soft-icon {
     background-color: var(--color-surface-100);
     color: var(--color-surface-500);
@@ -1752,19 +1854,126 @@
     padding-block: 1rem;
   }
 
-  .ui-settings-panel-body,
+  .ui-settings-panel-body {
+    padding: 1.25rem 1rem;
+  }
+
   .ui-settings-panel-content {
     padding: 1.25rem 1rem;
   }
 
+  .ui-settings-panel-state {
+    padding: 1.5rem 1rem;
+    color: var(--color-surface-500);
+    font-size: 0.875rem;
+    text-align: center;
+  }
+
+  .dark .ui-settings-panel-state {
+    color: var(--color-surface-400);
+  }
+
+  .ui-settings-panel-state-lg {
+    padding-block: 2rem;
+  }
+
+  .ui-settings-list-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+  }
+
+  .ui-settings-list-row-lg {
+    padding-block: 1rem;
+  }
+
+  .ui-settings-panel-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .ui-settings-panel-alert-split {
+    justify-content: space-between;
+  }
+
+  .ui-settings-panel-footer {
+    padding: 0.75rem 1rem;
+    text-align: center;
+  }
+
+  .ui-settings-callout {
+    margin-top: 2rem;
+    padding: 1.25rem;
+  }
+
+  .ui-settings-route-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1.25rem;
+  }
+
+  .ui-settings-route-alert-centered {
+    max-width: 42rem;
+    margin-inline: auto;
+  }
+
+  .ui-settings-empty-panel {
+    padding: 2.5rem;
+  }
+
+  .ui-settings-action-bar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    max-width: 48rem;
+    margin-inline: auto;
+    padding: 0.75rem 1rem;
+  }
+
+  .ui-settings-modal-panel {
+    padding: 1.5rem;
+  }
+
+  .ui-settings-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .ui-settings-modal-copy {
+    margin-bottom: 1.25rem;
+  }
+
+  .ui-settings-modal-alert {
+    margin-bottom: 1rem;
+    padding: 0.5rem 0.75rem;
+  }
+
   @media (min-width: 640px) {
     .ui-settings-panel-header,
-    .ui-settings-panel-body {
+    .ui-settings-panel-body,
+    .ui-settings-panel-state,
+    .ui-settings-list-row,
+    .ui-settings-panel-alert,
+    .ui-settings-panel-footer,
+    .ui-settings-action-bar-inner {
       padding-inline: 1.5rem;
     }
 
     .ui-settings-panel-content {
       padding: 1.5rem;
+    }
+
+    .ui-settings-list-row {
+      flex-direction: row;
+      align-items: center;
+      gap: 1rem;
     }
   }
 
@@ -2352,6 +2561,7 @@
     .ui-dashboard-panel,
     .ui-settings-panel,
     .ui-settings-panel-content,
+    .ui-settings-modal-panel,
     .ui-table-shell
   ),
   :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
@@ -2369,6 +2579,7 @@
     .ui-dashboard-panel,
     .ui-settings-panel,
     .ui-settings-panel-content,
+    .ui-settings-modal-panel,
     .ui-table-shell
   ) {
     border-color: var(--ui-border) !important;
@@ -2384,6 +2595,7 @@
     .ui-drawer-body,
     .ui-filter-drawer-body,
     .ui-action-bar,
+    .ui-settings-callout,
     .ui-empty-panel-dashed,
     .ui-selectable-panel:hover
   ) {
@@ -2437,10 +2649,29 @@
     .ui-alert-danger,
     .ui-alert-success,
     .ui-alert-warning,
-    .ui-alert-info
+    .ui-alert-info,
+    .ui-settings-panel-alert,
+    .ui-settings-route-alert,
+    .ui-settings-modal-alert
   ) {
     border-color: var(--ui-border-strong) !important;
     background-color: var(--ui-panel-strong) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-alert-danger {
+    color: rgb(253 164 175) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-alert-success {
+    color: rgb(134 239 172) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-alert-warning {
+    color: rgb(251 191 36) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-alert-info {
+    color: rgb(125 211 252) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
@@ -2657,6 +2888,8 @@
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
     .ui-empty-state,
+    .ui-settings-panel-state,
+    .ui-settings-empty-panel,
     .ui-filter-label
   ) {
     color: var(--ui-muted) !important;
@@ -3073,6 +3306,22 @@
     .ui-settings-panel,
     .ui-settings-panel-body,
     .ui-settings-panel-content,
+    .ui-settings-panel-state,
+    .ui-settings-panel-state-lg,
+    .ui-settings-list-row,
+    .ui-settings-list-row-lg,
+    .ui-settings-panel-alert,
+    .ui-settings-panel-alert-split,
+    .ui-settings-panel-footer,
+    .ui-settings-callout,
+    .ui-settings-route-alert,
+    .ui-settings-route-alert-centered,
+    .ui-settings-empty-panel,
+    .ui-settings-action-bar-inner,
+    .ui-settings-modal-panel,
+    .ui-settings-modal-header,
+    .ui-settings-modal-copy,
+    .ui-settings-modal-alert,
     .ui-dashboard-stat-card,
     .ui-dashboard-soft-icon,
     .ui-table-shell,

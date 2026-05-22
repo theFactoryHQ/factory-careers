@@ -228,7 +228,7 @@ function formatPrice(p: number | null): string {
 
     <div
       v-else-if="!canManageAi"
-      class="ui-alert ui-alert-warning p-5 flex items-start gap-3"
+      class="ui-alert ui-alert-warning ui-settings-route-alert"
     >
       <AlertTriangle class="size-5 shrink-0 mt-0.5" />
       <div>
@@ -246,7 +246,7 @@ function formatPrice(p: number | null): string {
     <!-- Empty state -->
     <div
       v-else-if="configs.length === 0"
-      class="ui-empty-panel ui-empty-panel-dashed p-10"
+      class="ui-empty-panel ui-empty-panel-dashed ui-settings-empty-panel"
     >
       <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile mx-auto size-12 mb-3">
         <Brain class="size-6" />
