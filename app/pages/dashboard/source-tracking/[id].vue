@@ -650,7 +650,7 @@ async function handleSidebarUpdated() {
       </div>
 
       <!-- ─── Attributed Applications Table ─── -->
-      <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+      <div class="ui-table-shell shadow-xs dark:shadow-none">
         <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
           <div class="flex items-center gap-2.5">
             <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
@@ -674,7 +674,7 @@ async function handleSidebarUpdated() {
         <div v-else class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="border-b border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/30">
+              <tr class="ui-table-header">
                 <th class="px-5 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Candidate</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Job</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Referrer</th>
@@ -683,11 +683,11 @@ async function handleSidebarUpdated() {
                 <th class="px-4 py-3 text-right text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Applied</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
+            <tbody>
               <tr
                 v-for="app in applications"
                 :key="app.applicationId"
-                class="cursor-pointer transition-all duration-150"
+                class="ui-table-row cursor-pointer transition-all duration-150"
                 :class="selectedAppId === app.applicationId
                   ? 'bg-brand-50/70 dark:bg-brand-950/20'
                   : 'hover:bg-surface-50 dark:hover:bg-surface-800/40'"

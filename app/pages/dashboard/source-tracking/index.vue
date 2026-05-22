@@ -623,7 +623,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
             <!-- ─── Conversion funnel by source ─── -->
             <div
               v-if="Object.keys(funnel).length > 0"
-              class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none"
+              class="ui-table-shell shadow-xs dark:shadow-none"
             >
               <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
                 <div class="flex items-center gap-2.5">
@@ -637,7 +637,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
               <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                   <thead>
-                    <tr class="border-b border-surface-100 dark:border-surface-800">
+                    <tr class="ui-table-header">
                       <th class="px-6 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Source</th>
                       <th class="px-3 py-3 text-center text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">New</th>
                       <th class="px-3 py-3 text-center text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Screening</th>
@@ -647,11 +647,11 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                       <th class="px-3 py-3 text-center text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Hire Rate</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
+                  <tbody>
                     <tr
                       v-for="(stages, channel) in funnel"
                       :key="channel"
-                      class="hover:bg-surface-50 dark:hover:bg-surface-800/40 cursor-pointer"
+                      class="ui-table-row cursor-pointer"
                       @click="selectedChannel = channel as string; showTab = 'table'"
                     >
                       <td class="px-6 py-3">
@@ -858,11 +858,11 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </div>
         </div>
 
-        <div v-else class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+        <div v-else class="ui-table-shell shadow-xs dark:shadow-none">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
-                <tr class="border-b border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/30">
+                <tr class="ui-table-header">
                   <th class="px-5 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider cursor-pointer select-none hover:text-surface-700 dark:hover:text-surface-200 transition-colors" @click="toggleLinkSort('name')">
                     <span class="inline-flex items-center gap-1">Name <component :is="linkSortKey === 'name' ? (linkSortAsc ? ChevronUp : ChevronDown) : ChevronDown" class="size-3" :class="linkSortKey === 'name' ? 'opacity-100' : 'opacity-0'" /></span>
                   </th>
@@ -885,8 +885,8 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                   <th class="px-4 py-3 text-right text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
-                <tr v-for="link in sortedLinks" :key="link.id" class="hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors group">
+              <tbody>
+                <tr v-for="link in sortedLinks" :key="link.id" class="ui-table-row group">
                   <!-- Name + URL -->
                   <td class="px-5 py-3.5">
                     <NuxtLink
@@ -1005,11 +1005,11 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </p>
         </div>
 
-        <div v-else class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+        <div v-else class="ui-table-shell shadow-xs dark:shadow-none">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
-                <tr class="border-b border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/30">
+                <tr class="ui-table-header">
                   <th class="px-5 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Candidate</th>
                   <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Job</th>
                   <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Source</th>
@@ -1018,8 +1018,8 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                   <th class="px-4 py-3 text-right text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Applied</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
-                <tr v-for="app in filteredAttributed" :key="app.applicationId" class="hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors">
+              <tbody>
+                <tr v-for="app in filteredAttributed" :key="app.applicationId" class="ui-table-row">
                   <!-- Candidate -->
                   <td class="px-5 py-3.5">
                     <NuxtLink

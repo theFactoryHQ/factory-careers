@@ -142,6 +142,8 @@ describe('brand-neutral theme variables', () => {
       'app/pages/dashboard/candidates/index.vue',
       'app/pages/dashboard/jobs/[id]/candidates.vue',
       'app/pages/dashboard/ai-analysis.vue',
+      'app/pages/dashboard/source-tracking/index.vue',
+      'app/pages/dashboard/source-tracking/[id].vue',
     ]
 
     for (const path of recipeUsage) {
