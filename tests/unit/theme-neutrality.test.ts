@@ -126,6 +126,14 @@ describe('brand-neutral theme variables', () => {
       '.ui-table-shell',
       '.ui-table-header',
       '.ui-table-row',
+      '.ui-dashboard-stat-card',
+      '.ui-dashboard-stat-card-brand',
+      '.ui-dashboard-stat-card-violet',
+      '.ui-dashboard-stat-card-teal',
+      '.ui-dashboard-stat-card-warning',
+      '.ui-dashboard-panel',
+      '.ui-dashboard-panel-header',
+      '.ui-dashboard-soft-icon',
     ]) {
       expect(css).toContain(recipe)
     }
@@ -261,6 +269,32 @@ describe('brand-neutral theme variables', () => {
       for (const recipe of recipes) {
         expect(source, `${path} should use ${recipe}`).toContain(recipe)
       }
+    }
+  })
+
+  it('applies shared UI recipes to dashboard home panels and cards', () => {
+    const source = readProjectFile('app/pages/dashboard/index.vue')
+
+    for (const recipe of [
+      'ui-dashboard-stat-card',
+      'ui-dashboard-stat-card-brand',
+      'ui-dashboard-stat-card-violet',
+      'ui-dashboard-stat-card-teal',
+      'ui-dashboard-stat-card-warning',
+      'ui-dashboard-panel',
+      'ui-dashboard-panel-header',
+      'ui-dashboard-soft-icon',
+      'ui-empty-panel',
+      'ui-alert-danger',
+      'ui-button-primary',
+      'ui-list-divider',
+      'ui-list-row',
+      'ui-pill',
+      'ui-pill-brand',
+      'ui-inline-link-brand',
+      'getApplicationStatusBadgeClass',
+    ]) {
+      expect(source, `dashboard home should use ${recipe}`).toContain(recipe)
     }
   })
 
@@ -764,6 +798,25 @@ describe('brand-neutral theme variables', () => {
       /border-t border-surface-200\/60 dark:border-surface-800\/40 bg-white\/80/,
     ]) {
       expect(source, `interview schedule sidebar should centralize ${pattern}`).not.toMatch(pattern)
+    }
+  })
+
+  it('keeps dashboard home panel and card choices behind shared recipes', () => {
+    const source = readProjectFile('app/pages/dashboard/index.vue')
+
+    for (const pattern of [
+      /const statusBadgeClasses/,
+      /rounded-2xl border border-surface-200(?:\/80)? dark:border-surface-800 bg-white dark:bg-surface-900/,
+      /group relative rounded-2xl bg-white dark:bg-surface-900/,
+      /rounded-3xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+      /rounded-2xl border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950\/60/,
+      /inline-flex items-center gap-2\.5 rounded-xl bg-brand-600/,
+      /inline-flex items-center gap-1\.5 sm:gap-2 rounded-xl bg-brand-600/,
+      /divide-y divide-surface-100 dark:divide-surface-800/,
+      /border-b border-surface-100 dark:border-surface-800/,
+      /text-brand-600 dark:text-brand-400 hover:text-brand-700/,
+    ]) {
+      expect(source, `dashboard home should centralize ${pattern}`).not.toMatch(pattern)
     }
   })
 })

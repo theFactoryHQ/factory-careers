@@ -5,6 +5,7 @@ import {
   Eye, UserPlus, ExternalLink,
   LayoutDashboard, Zap,
 } from 'lucide-vue-next'
+import { getApplicationStatusBadgeClass } from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -89,15 +90,6 @@ function getJobActiveTotal(job: (typeof topJobs.value)[number]): number {
     + getJobStageCount(job, 'offer')
 }
 
-const statusBadgeClasses: Record<string, string> = {
-  new: 'bg-blue-50 text-blue-700 ring-blue-200/60 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-800/40',
-  screening: 'bg-violet-50 text-violet-700 ring-violet-200/60 dark:bg-violet-950 dark:text-violet-400 dark:ring-violet-800/40',
-  interview: 'bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-800/40',
-  offer: 'bg-teal-50 text-teal-700 ring-teal-200/60 dark:bg-teal-950 dark:text-teal-400 dark:ring-teal-800/40',
-  hired: 'bg-green-50 text-green-700 ring-green-200/60 dark:bg-green-950 dark:text-green-400 dark:ring-green-800/40',
-  rejected: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
-}
-
 const interviewTypeLabels: Record<string, string> = {
   phone: 'Phone',
   video: 'Video',
@@ -158,20 +150,20 @@ const isEmpty = computed(() =>
       </div>
       <!-- Stats skeleton -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        <div v-for="i in 4" :key="i" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div v-for="i in 4" :key="i" class="ui-dashboard-panel p-6 animate-pulse">
           <div class="h-4 w-20 bg-surface-200 dark:bg-surface-700 rounded mb-4" />
           <div class="h-9 w-14 bg-surface-200 dark:bg-surface-700 rounded" />
         </div>
       </div>
       <!-- Content skeleton -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-dashboard-panel lg:col-span-2 p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-4">
             <div v-for="i in 3" :key="i" class="h-20 bg-surface-100 dark:bg-surface-800 rounded-xl" />
           </div>
         </div>
-        <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-dashboard-panel p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-3">
             <div v-for="i in 4" :key="i" class="h-14 bg-surface-100 dark:bg-surface-800 rounded-xl" />
@@ -183,7 +175,7 @@ const isEmpty = computed(() =>
     <!-- ─── Error ─── -->
     <div
       v-else-if="error"
-      class="rounded-2xl border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950/60 p-5 text-sm text-danger-700 dark:text-danger-400 flex items-center gap-3"
+      class="ui-alert ui-alert-danger flex items-center gap-3 p-5"
     >
       <AlertCircle class="size-5 shrink-0" />
       <span>Failed to load dashboard.</span>
@@ -192,8 +184,8 @@ const isEmpty = computed(() =>
 
     <!-- ─── Empty state (brand new org) ─── -->
     <div v-else-if="isEmpty" class="flex flex-col items-center justify-center py-24">
-      <div class="rounded-3xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-14 text-center max-w-md shadow-sm">
-        <div class="mx-auto mb-8 flex items-center justify-center size-18 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-lg shadow-brand-500/20">
+      <div class="ui-empty-panel max-w-md p-14">
+        <div class="ui-icon-state ui-icon-state-brand mx-auto mb-8 flex size-18 items-center justify-center">
           <LayoutDashboard class="size-9 text-white" />
         </div>
         <h2 class="text-2xl font-bold text-surface-900 dark:text-surface-100 mb-3 tracking-tight">
@@ -204,7 +196,7 @@ const isEmpty = computed(() =>
         </p>
         <NuxtLink
           :to="localePath('/dashboard/jobs/new')"
-          class="inline-flex items-center gap-2.5 rounded-xl bg-brand-600 px-7 py-3.5 text-sm font-semibold text-white hover:bg-brand-700 shadow-md shadow-brand-600/20 hover:shadow-lg hover:shadow-brand-600/25 transition-all no-underline"
+          class="ui-button ui-button-primary px-7 py-3.5 no-underline"
         >
           <Plus class="size-4" />
           Create Your First Job
@@ -224,7 +216,7 @@ const isEmpty = computed(() =>
         </div>
         <NuxtLink
           :to="localePath('/dashboard/jobs/new')"
-          class="inline-flex items-center gap-1.5 sm:gap-2 rounded-xl bg-brand-600 px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white hover:bg-brand-700 shadow-sm shadow-brand-600/15 hover:shadow-md hover:shadow-brand-600/20 transition-all no-underline shrink-0"
+          class="ui-button ui-button-primary shrink-0 px-3 py-2 text-xs no-underline sm:px-5 sm:py-2.5 sm:text-sm"
         >
           <Plus class="size-4" />
           New Job
@@ -236,7 +228,7 @@ const isEmpty = computed(() =>
         <!-- Open Jobs -->
         <NuxtLink
           :to="localePath('/dashboard/jobs')"
-          class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 no-underline overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-brand-500/25 dark:hover:ring-brand-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-500/[0.08]"
+          class="ui-dashboard-stat-card ui-dashboard-stat-card-brand group relative overflow-hidden isolate p-5 no-underline sm:p-6"
         >
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <Briefcase class="absolute -bottom-3 -right-3 size-24 text-brand-500/[0.03] dark:text-brand-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
@@ -257,7 +249,7 @@ const isEmpty = computed(() =>
         <!-- Total Candidates -->
         <NuxtLink
           :to="localePath('/dashboard/candidates')"
-          class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 no-underline overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-violet-500/25 dark:hover:ring-violet-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/[0.08]"
+          class="ui-dashboard-stat-card ui-dashboard-stat-card-violet group relative overflow-hidden isolate p-5 no-underline sm:p-6"
         >
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <Users class="absolute -bottom-3 -right-3 size-24 text-violet-500/[0.03] dark:text-violet-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
@@ -276,7 +268,7 @@ const isEmpty = computed(() =>
         <!-- Total Applications -->
         <NuxtLink
           :to="localePath('/dashboard/applications')"
-          class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 no-underline overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-teal-500/25 dark:hover:ring-teal-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-teal-500/[0.08]"
+          class="ui-dashboard-stat-card ui-dashboard-stat-card-teal group relative overflow-hidden isolate p-5 no-underline sm:p-6"
         >
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <FileText class="absolute -bottom-3 -right-3 size-24 text-teal-500/[0.03] dark:text-teal-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
@@ -295,10 +287,8 @@ const isEmpty = computed(() =>
         <!-- To Review -->
         <NuxtLink
           :to="localePath({ path: '/dashboard/applications', query: { status: 'new' } })"
-          class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 no-underline overflow-hidden isolate transition-all duration-300 hover:-translate-y-0.5"
-          :class="counts.newApplications > 0
-            ? 'ring-1 ring-warning-400/30 dark:ring-warning-500/20 hover:ring-warning-500/40 dark:hover:ring-warning-400/30 shadow-sm shadow-warning-500/[0.06] hover:shadow-lg hover:shadow-warning-500/[0.12]'
-            : 'ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-surface-300/50 dark:hover:ring-surface-600/30 hover:shadow-lg hover:shadow-surface-500/[0.04]'"
+          class="ui-dashboard-stat-card group relative overflow-hidden isolate p-5 no-underline sm:p-6"
+          :class="counts.newApplications > 0 ? 'ui-dashboard-stat-card-warning' : ''"
         >
           <div
             class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent transition-opacity duration-500"
@@ -335,17 +325,17 @@ const isEmpty = computed(() =>
         <!-- ─── Left column (2/3) ─── -->
         <div class="lg:col-span-2 space-y-6">
           <!-- ─── Pipeline overview (per job) ─── -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
+          <div class="ui-dashboard-panel">
+            <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
               <div class="flex items-center gap-2.5">
-                <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
-                  <TrendingUp class="size-3.5 text-surface-500 dark:text-surface-400" />
+                <div class="ui-dashboard-soft-icon flex size-7 items-center justify-center">
+                  <TrendingUp class="size-3.5" />
                 </div>
                 <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Hiring Pipeline</h2>
               </div>
               <NuxtLink
                 :to="localePath('/dashboard/jobs')"
-                class="text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 no-underline inline-flex items-center gap-1 group/link"
+                class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1 text-xs font-medium no-underline group/link"
               >
                 All jobs
                 <ArrowRight class="size-3 group-hover/link:translate-x-0.5 transition-transform" />
@@ -353,21 +343,21 @@ const isEmpty = computed(() =>
             </div>
 
             <div v-if="topJobs.length === 0" class="px-6 py-12 text-center">
-              <div class="mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl bg-surface-100 dark:bg-surface-800">
-                <Briefcase class="size-5 text-surface-400 dark:text-surface-500" />
+              <div class="ui-dashboard-soft-icon mx-auto mb-4 flex size-12 items-center justify-center">
+                <Briefcase class="size-5" />
               </div>
               <p class="text-sm font-medium text-surface-500 dark:text-surface-400 mb-1">No open jobs</p>
               <p class="text-xs text-surface-400 dark:text-surface-500 mb-4">Create your first job to see the pipeline</p>
               <NuxtLink
                 :to="localePath('/dashboard/jobs/new')"
-                class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 no-underline hover:text-brand-700 dark:hover:text-brand-300"
+                class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1.5 text-xs font-semibold no-underline"
               >
                 <Plus class="size-3.5" />
                 Create one
               </NuxtLink>
             </div>
 
-            <div v-else class="divide-y divide-surface-100 dark:divide-surface-800">
+            <div v-else class="ui-list-divider">
               <div v-for="j in topJobs" :key="j.id" class="px-6 py-5 group/job">
                 <!-- Job title row -->
                 <div class="flex items-center justify-between mb-3">
@@ -417,17 +407,17 @@ const isEmpty = computed(() =>
           </div>
 
           <!-- ─── Recent applications ─── -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
+          <div class="ui-dashboard-panel">
+            <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
               <div class="flex items-center gap-2.5">
-                <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
-                  <Clock class="size-3.5 text-surface-500 dark:text-surface-400" />
+                <div class="ui-dashboard-soft-icon flex size-7 items-center justify-center">
+                  <Clock class="size-3.5" />
                 </div>
                 <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Recent Applications</h2>
               </div>
               <NuxtLink
                 :to="localePath('/dashboard/applications')"
-                class="text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 no-underline inline-flex items-center gap-1 group/link"
+                class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1 text-xs font-medium no-underline group/link"
               >
                 View all
                 <ArrowRight class="size-3 group-hover/link:translate-x-0.5 transition-transform" />
@@ -435,18 +425,18 @@ const isEmpty = computed(() =>
             </div>
 
             <div v-if="recentApplications.length === 0" class="px-6 py-12 text-center">
-              <div class="mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl bg-surface-100 dark:bg-surface-800">
-                <FileText class="size-5 text-surface-400 dark:text-surface-500" />
+              <div class="ui-dashboard-soft-icon mx-auto mb-4 flex size-12 items-center justify-center">
+                <FileText class="size-5" />
               </div>
               <p class="text-sm font-medium text-surface-500 dark:text-surface-400">No applications yet</p>
             </div>
 
-            <div v-else class="divide-y divide-surface-100 dark:divide-surface-800">
+            <div v-else class="ui-list-divider">
               <NuxtLink
                 v-for="app in recentApplications"
                 :key="app.id"
                 :to="localePath(`/dashboard/applications/${app.id}`)"
-                class="flex items-center gap-4 px-6 py-3.5 hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors no-underline group"
+                class="ui-list-row flex items-center gap-4 px-6 py-3.5 no-underline group"
               >
                 <!-- Avatar -->
                 <div class="flex items-center justify-center size-9 rounded-full bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-900/80 dark:to-brand-800/80 shrink-0 ring-1 ring-brand-200/50 dark:ring-brand-800/50">
@@ -463,7 +453,7 @@ const isEmpty = computed(() =>
                     </span>
                     <span
                       class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize shrink-0 ring-1 ring-inset"
-                      :class="statusBadgeClasses[app.status] ?? 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400 ring-surface-200 dark:ring-surface-700'"
+                      :class="getApplicationStatusBadgeClass(app.status, 'subtle-ring')"
                     >
                       {{ app.status }}
                     </span>
@@ -485,17 +475,17 @@ const isEmpty = computed(() =>
         <!-- ─── Right column (1/3) ─── -->
         <div class="space-y-6">
           <!-- ─── Upcoming interviews ─── -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="flex items-center justify-between px-5 py-4 border-b border-surface-100 dark:border-surface-800">
+          <div class="ui-dashboard-panel">
+            <div class="ui-dashboard-panel-header flex items-center justify-between px-5 py-4">
               <div class="flex items-center gap-2.5">
-                <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
-                  <Calendar class="size-3.5 text-surface-500 dark:text-surface-400" />
+                <div class="ui-dashboard-soft-icon flex size-7 items-center justify-center">
+                  <Calendar class="size-3.5" />
                 </div>
                 <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Upcoming Interviews</h2>
               </div>
               <NuxtLink
                 :to="localePath('/dashboard/interviews')"
-                class="text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 no-underline inline-flex items-center gap-1 group/link"
+                class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1 text-xs font-medium no-underline group/link"
               >
                 All
                 <ArrowRight class="size-3 group-hover/link:translate-x-0.5 transition-transform" />
@@ -503,25 +493,25 @@ const isEmpty = computed(() =>
             </div>
 
             <div v-if="upcomingInterviews.length === 0" class="px-5 py-10 text-center">
-              <div class="mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl bg-surface-100 dark:bg-surface-800">
-                <Calendar class="size-5 text-surface-400 dark:text-surface-500" />
+              <div class="ui-dashboard-soft-icon mx-auto mb-4 flex size-12 items-center justify-center">
+                <Calendar class="size-5" />
               </div>
               <p class="text-sm font-medium text-surface-500 dark:text-surface-400 mb-0.5">No upcoming interviews</p>
               <p class="text-xs text-surface-400 dark:text-surface-500">Next 7 days</p>
             </div>
 
-            <div v-else class="divide-y divide-surface-100 dark:divide-surface-800">
+            <div v-else class="ui-list-divider">
               <NuxtLink
                 v-for="interview in upcomingInterviews"
                 :key="interview.id"
                 :to="localePath(`/dashboard/interviews/${interview.id}`)"
-                class="block px-5 py-3.5 hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors no-underline group"
+                class="ui-list-row block px-5 py-3.5 no-underline group"
               >
                 <div class="flex items-center justify-between mb-1.5">
                   <span class="text-sm font-medium text-surface-900 dark:text-surface-100 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                     {{ formatPersonName(interview.candidateFirstName, interview.candidateLastName) }}
                   </span>
-                  <span class="inline-flex items-center rounded-full bg-brand-50 dark:bg-brand-950/40 px-2 py-0.5 text-[10px] font-semibold text-brand-700 dark:text-brand-400 shrink-0 ml-2">
+                  <span class="ui-pill ui-pill-brand shrink-0 ml-2 px-2 py-0.5 text-[10px] font-semibold">
                     {{ formatRelativeDate(interview.scheduledAt) }}
                   </span>
                 </div>
@@ -549,10 +539,10 @@ const isEmpty = computed(() =>
           </div>
 
           <!-- ─── Quick actions ─── -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="flex items-center gap-2.5 px-5 py-4 border-b border-surface-100 dark:border-surface-800">
-              <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
-                <Zap class="size-3.5 text-surface-500 dark:text-surface-400" />
+          <div class="ui-dashboard-panel">
+            <div class="ui-dashboard-panel-header flex items-center gap-2.5 px-5 py-4">
+              <div class="ui-dashboard-soft-icon flex size-7 items-center justify-center">
+                <Zap class="size-3.5" />
               </div>
               <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Quick Actions</h2>
             </div>
