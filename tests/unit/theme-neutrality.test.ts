@@ -909,6 +909,59 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared UI recipes to the property schema editor drawer', () => {
+    const source = readProjectFile('app/components/PropertySchemaEditor.vue')
+
+    for (const recipe of [
+      'factory-dashboard-portal',
+      'ui-modal-backdrop',
+      'ui-drawer-panel',
+      'ui-drawer-header',
+      'ui-drawer-body',
+      'ui-list-divider',
+      'ui-list-row',
+      'ui-pill',
+      'ui-empty-state',
+      'ui-panel-muted',
+      'ui-panel-footer',
+      'ui-field',
+      'ui-feedback-danger',
+      'ui-button-primary',
+      'ui-button-secondary',
+      'ui-button-ghost',
+      'ui-button-ghost-danger',
+      'ui-button-danger',
+      'ui-inline-link-brand',
+      'ui-modal-panel',
+    ]) {
+      expect(source, `PropertySchemaEditor should use ${recipe}`).toContain(recipe)
+    }
+  })
+
+  it('keeps property schema editor surface and form choices behind shared recipes', () => {
+    const source = readProjectFile('app/components/PropertySchemaEditor.vue')
+
+    for (const pattern of [
+      /fixed inset-0 z-\[65\] bg-black\/40/,
+      /fixed right-0 top-0 z-\[70\] flex h-full w-full max-w-md flex-col border-l border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-2xl/,
+      /flex items-center justify-between border-b border-surface-200 dark:border-surface-800 px-5 py-4/,
+      /divide-y divide-surface-100 dark:divide-surface-800/,
+      /hover:bg-surface-50 dark:hover:bg-surface-800\/50/,
+      /rounded bg-surface-100 dark:bg-surface-800 px-1\.5 py-0\.5/,
+      /border-t border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-950\/50/,
+      /w-full rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900/,
+      /rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900/,
+      /focus:border-brand-500 focus:ring-2 focus:ring-brand-500\/20/,
+      /rounded bg-brand-600 px-3 py-1\.5/,
+      /inline-flex w-full items-center justify-center gap-1\.5 rounded-md border border-dashed border-surface-300/,
+      /absolute inset-0 bg-black\/50/,
+      /relative bg-white dark:bg-surface-900 rounded-xl shadow-xl/,
+      /rounded bg-danger-600 px-3 py-1\.5/,
+    ]) {
+      expect(source, `PropertySchemaEditor should centralize ${pattern}`).not.toMatch(pattern)
+    }
+  })
+
   it('applies shared UI recipes to filter drawers and drawer filter controls', () => {
     const css = readProjectFile('app/assets/css/main.css')
     const filterDrawer = readProjectFile('app/components/FilterDrawer.vue')
@@ -1181,6 +1234,13 @@ describe('brand-neutral theme variables', () => {
         new RegExp(`:where\\(\\.factory-dashboard-shell, \\.factory-dashboard-portal\\)[\\s\\S]*${recipe.replace('.', '\\.')}`),
       )
     }
+
+    expect(css, 'Factory portal recipes should be themed when the portal root is also the panel element').toMatch(
+      /:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\):is\([\s\S]*\.ui-drawer-panel/,
+    )
+    expect(css, 'Factory portal modal backdrops should keep backdrop styling on the scoped root').toMatch(
+      /:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\)\.ui-modal-backdrop/,
+    )
   })
 
   it('applies shared UI recipes to the settings route boundary', () => {

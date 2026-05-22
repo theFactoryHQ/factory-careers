@@ -206,33 +206,33 @@ const overlayTitle = computed(() => {
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="open" class="fixed inset-0 z-[65] bg-black/40" @click="emit('close')" />
+      <div v-if="open" class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-[65]" @click="emit('close')" />
     </Transition>
     <Transition name="slide-right">
       <aside
         v-if="open"
-        class="fixed right-0 top-0 z-[70] flex h-full w-full max-w-md flex-col border-l border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-2xl"
+        class="factory-dashboard-portal ui-drawer-panel fixed right-0 top-0 z-[70] flex h-full w-full max-w-md flex-col"
       >
-        <header class="flex items-center justify-between border-b border-surface-200 dark:border-surface-800 px-5 py-4">
+        <header class="ui-drawer-header flex items-center justify-between px-5 py-4">
           <div class="min-w-0">
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-50 truncate">{{ overlayTitle }}</h2>
             <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
               {{ jobId ? 'Visible only on applications to this job.' : 'Visible everywhere in your workspace.' }}
             </p>
           </div>
-          <button class="rounded p-1.5 text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer" @click="emit('close')">
+          <button class="ui-button ui-button-ghost p-1.5" @click="emit('close')">
             <X class="size-4" />
           </button>
         </header>
 
-        <div class="flex-1 overflow-y-auto">
+        <div class="ui-drawer-body flex-1 overflow-y-auto">
           <!-- List existing definitions -->
-          <ul class="divide-y divide-surface-100 dark:divide-surface-800">
+          <ul class="ui-list-divider">
             <li
               v-for="def in definitions"
               :key="def.id"
               draggable="true"
-              class="flex items-center gap-2 px-3 py-2 hover:bg-surface-50 dark:hover:bg-surface-800/50"
+              class="ui-list-row flex items-center gap-2 px-3 py-2"
               @dragstart="onDragStart(def.id)"
               @dragover.prevent
               @drop.prevent="onDrop(def.id)"
@@ -241,28 +241,28 @@ const overlayTitle = computed(() => {
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
                   <span class="text-sm font-medium text-surface-800 dark:text-surface-100 truncate">{{ def.name }}</span>
-                  <span class="rounded bg-surface-100 dark:bg-surface-800 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
+                  <span class="ui-pill px-1.5 py-0.5 text-[10px] font-medium uppercase text-surface-500 dark:text-surface-400">
                     {{ PROPERTY_TYPE_LABELS[def.type] }}
                   </span>
                 </div>
                 <p v-if="def.description" class="text-xs text-surface-500 dark:text-surface-400 truncate mt-0.5">{{ def.description }}</p>
               </div>
-              <button class="rounded p-1.5 text-surface-400 hover:text-surface-700 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer" @click="openEdit(def)">
+              <button class="ui-button ui-button-ghost p-1.5" @click="openEdit(def)">
                 <Pencil class="size-3.5" />
               </button>
-              <button class="rounded p-1.5 text-surface-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/30 cursor-pointer" @click="confirmDeleteId = def.id">
+              <button class="ui-button ui-button-ghost ui-button-ghost-danger p-1.5" @click="confirmDeleteId = def.id">
                 <Trash2 class="size-3.5" />
               </button>
             </li>
           </ul>
 
-          <div v-if="definitions.length === 0 && formMode !== 'create'" class="px-5 py-10 text-center">
-            <p class="text-sm text-surface-500 dark:text-surface-400">No properties yet.</p>
-            <p class="text-xs text-surface-400 dark:text-surface-500 mt-1">Add one to start tracking custom data.</p>
+          <div v-if="definitions.length === 0 && formMode !== 'create'" class="ui-empty-state px-5 py-10 text-center">
+            <p class="text-sm">No properties yet.</p>
+            <p class="text-xs mt-1">Add one to start tracking custom data.</p>
           </div>
 
           <!-- Add / edit form -->
-          <div v-if="formMode" class="border-t border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-950/50 px-5 py-4">
+          <div v-if="formMode" class="ui-panel-muted ui-panel-subsection px-5 py-4">
             <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-3">
               {{ formMode === 'create' ? 'New property' : 'Edit property' }}
             </h3>
@@ -274,7 +274,7 @@ const overlayTitle = computed(() => {
                   v-model="formName"
                   type="text"
                   maxlength="80"
-                  class="w-full rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2.5 py-1.5 text-sm text-surface-900 dark:text-surface-50 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                  class="ui-field px-2.5 py-1.5 text-sm"
                 />
               </div>
 
@@ -282,7 +282,7 @@ const overlayTitle = computed(() => {
                 <label class="block text-xs font-medium text-surface-600 dark:text-surface-300 mb-1">Type</label>
                 <select
                   v-model="formType"
-                  class="w-full rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2.5 py-1.5 text-sm text-surface-900 dark:text-surface-50 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                  class="ui-field px-2.5 py-1.5 text-sm"
                 >
                   <option v-for="t in PROPERTY_TYPES" :key="t" :value="t">{{ PROPERTY_TYPE_LABELS[t] }}</option>
                 </select>
@@ -295,7 +295,7 @@ const overlayTitle = computed(() => {
                   v-model="formDescription"
                   type="text"
                   maxlength="500"
-                  class="w-full rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2.5 py-1.5 text-sm text-surface-900 dark:text-surface-50 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                  class="ui-field px-2.5 py-1.5 text-sm"
                 />
               </div>
 
@@ -305,7 +305,7 @@ const overlayTitle = computed(() => {
                 <div class="flex items-center gap-2">
                   <select
                     v-model="formNumberFormat"
-                    class="rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                    class="ui-field w-auto px-2 py-1 text-sm"
                   >
                     <option value="plain">Plain</option>
                     <option value="percent">Percent</option>
@@ -317,7 +317,7 @@ const overlayTitle = computed(() => {
                     type="text"
                     maxlength="8"
                     placeholder="$"
-                    class="w-20 rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                    class="ui-field w-20 px-2 py-1 text-sm"
                   />
                 </div>
               </div>
@@ -329,7 +329,7 @@ const overlayTitle = computed(() => {
                   <li v-for="opt in formOptions" :key="opt.id" class="flex items-center gap-1.5">
                     <select
                       v-model="opt.color"
-                      class="shrink-0 rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-1 py-0.5 text-xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                      class="ui-field w-auto shrink-0 px-1 py-0.5 text-xs"
                     >
                       <option v-for="c in PROPERTY_OPTION_COLORS" :key="c" :value="c">{{ c }}</option>
                     </select>
@@ -337,38 +337,38 @@ const overlayTitle = computed(() => {
                       v-model="opt.label"
                       type="text"
                       maxlength="80"
-                      class="flex-1 min-w-0 rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                      class="ui-field flex-1 min-w-0 px-2 py-1 text-sm"
                       placeholder="Option label"
                     />
                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="PROPERTY_COLOR_CLASSES[opt.color as PropertyOptionColor].chip">
                       {{ opt.label || '—' }}
                     </span>
-                    <button class="rounded p-1 text-surface-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/30 cursor-pointer" @click="removeOption(opt.id)">
+                    <button class="ui-button ui-button-ghost ui-button-ghost-danger p-1" @click="removeOption(opt.id)">
                       <X class="size-3.5" />
                     </button>
                   </li>
                 </ul>
                 <button
                   type="button"
-                  class="mt-2 inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 cursor-pointer"
+                  class="ui-inline-link ui-inline-link-brand mt-2 inline-flex items-center gap-1 text-xs"
                   @click="addOption"
                 >
                   <Plus class="size-3.5" /> Add option
                 </button>
               </div>
 
-              <p v-if="formError" class="text-xs text-danger-600">{{ formError }}</p>
+              <p v-if="formError" class="ui-feedback-danger text-xs">{{ formError }}</p>
 
               <div class="flex items-center justify-end gap-2 pt-1">
                 <button
                   type="button"
-                  class="rounded px-3 py-1.5 text-xs text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer"
+                  class="ui-button ui-button-secondary px-3 py-1.5 text-xs"
                   @click="cancelForm"
                 >Cancel</button>
                 <button
                   type="button"
                   :disabled="isSaving"
-                  class="rounded bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  class="ui-button ui-button-primary px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                   @click="submitForm"
                 >{{ isSaving ? 'Saving…' : (formMode === 'create' ? 'Create' : 'Save') }}</button>
               </div>
@@ -376,10 +376,10 @@ const overlayTitle = computed(() => {
           </div>
         </div>
 
-        <footer v-if="!formMode" class="border-t border-surface-200 dark:border-surface-800 px-5 py-3">
+        <footer v-if="!formMode" class="ui-panel-footer px-5 py-3">
           <button
             type="button"
-            class="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm font-medium text-surface-600 dark:text-surface-300 hover:border-brand-400 hover:text-brand-700 dark:hover:text-brand-300 cursor-pointer"
+            class="ui-button ui-button-secondary w-full border-dashed px-3 py-2 text-sm"
             @click="openCreate"
           >
             <Plus class="size-4" /> Add property
@@ -390,21 +390,24 @@ const overlayTitle = computed(() => {
 
     <!-- Delete confirmation -->
     <Transition name="fade">
-      <div v-if="confirmDeleteId" class="fixed inset-0 z-[80] flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/50" @click="confirmDeleteId = null" />
-        <div class="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
+      <div
+        v-if="confirmDeleteId"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-[80] flex items-center justify-center"
+        @click.self="confirmDeleteId = null"
+      >
+        <div class="ui-modal-panel max-w-sm w-full mx-4 p-6">
           <h3 class="text-base font-semibold text-surface-900 dark:text-surface-50 mb-2">Delete property?</h3>
           <p class="text-sm text-surface-600 dark:text-surface-300 mb-4">
             This deletes the property and removes it from all rows. This cannot be undone.
           </p>
           <div class="flex justify-end gap-2">
             <button
-              class="rounded px-3 py-1.5 text-sm text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer"
+              class="ui-button ui-button-secondary px-3 py-1.5 text-sm"
               :disabled="isDeleting"
               @click="confirmDeleteId = null"
             >Cancel</button>
             <button
-              class="rounded bg-danger-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-danger-700 disabled:opacity-50 cursor-pointer"
+              class="ui-button ui-button-danger px-3 py-1.5 text-sm disabled:opacity-50"
               :disabled="isDeleting"
               @click="confirmDelete"
             >{{ isDeleting ? 'Deleting…' : 'Delete' }}</button>
