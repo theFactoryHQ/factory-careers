@@ -75,7 +75,7 @@ function isActive(to: string, exact: boolean) {
 
 <template>
   <aside
-    class="ui-nav-shell ui-nav-shell-side flex h-full w-56 min-w-56 flex-col overflow-y-auto overscroll-contain"
+    class="ui-nav-shell flex h-full w-56 min-w-56 flex-col border-r overflow-y-auto overscroll-contain"
   >
     <!-- Header -->
     <div class="px-4 pt-5 pb-4">
@@ -120,7 +120,7 @@ function isActive(to: string, exact: boolean) {
               <span class="truncate">{{ item.label }}</span>
               <span
                 v-if="item.badge"
-                class="ui-pill ui-pill-warning shrink-0 rounded-full px-1.5 py-0.5 text-[10px]"
+                class="shrink-0 inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
               >
                 {{ item.badge }}
               </span>
