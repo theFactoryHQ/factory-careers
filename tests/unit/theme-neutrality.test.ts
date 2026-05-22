@@ -173,11 +173,20 @@ describe('brand-neutral theme variables', () => {
     for (const required of [
       'factory-dashboard-shell',
       'factory-dashboard-portal',
+      'factory-dashboard-topbar',
+      'factory-form-select',
+      'factory-view-toggle',
+      'factory-pipeline-card',
       '--ui-bg',
       '--ui-panel',
       '--ui-border',
       '--ui-text',
       'ui-panel',
+      'ui-modal-backdrop',
+      'ui-drawer-panel',
+      'ui-dashboard-panel',
+      'ui-table-shell',
+      'ui-filter-chip',
       'ui-field',
       'ui-button',
       'Third-party brand colors',
@@ -186,7 +195,11 @@ describe('brand-neutral theme variables', () => {
     }
 
     expect(doc).toMatch(/Factory-facing classes/)
+    expect(doc).toMatch(/Product shell selectors/)
+    expect(doc).toMatch(/Product-specific adapters/)
+    expect(doc).toMatch(/Recipe families/)
     expect(doc).toMatch(/neutral .*variables/i)
+    expect(doc).toMatch(/Do not create `--factory-/)
   })
 
   it('applies shared UI recipes to invite and response surfaces', () => {
@@ -292,6 +305,7 @@ describe('brand-neutral theme variables', () => {
           'getSourceChannelBadgeClass',
           'getSourceChannelDotClass',
           'getSourceChannelLabel',
+          'factory-dashboard-portal',
           'ui-alert-danger',
           'ui-button-danger',
           'ui-button-ghost',
@@ -302,11 +316,13 @@ describe('brand-neutral theme variables', () => {
           'ui-dashboard-panel-header',
           'ui-dashboard-soft-icon',
           'ui-dashboard-stat-card',
+          'ui-disclosure-trigger',
           'ui-empty-panel',
           'ui-field',
           'ui-filter-chip',
           'ui-filter-chip-active',
           'ui-filter-chip-inactive',
+          'ui-icon-state-danger',
           'ui-list-divider',
           'ui-list-row',
           'ui-meter-fill',
@@ -329,6 +345,7 @@ describe('brand-neutral theme variables', () => {
           'getSourceChannelBadgeClass',
           'getSourceChannelDotClass',
           'getSourceChannelLabel',
+          'factory-dashboard-portal',
           'ui-alert-danger',
           'ui-button-ghost',
           'ui-button-primary',
@@ -338,6 +355,7 @@ describe('brand-neutral theme variables', () => {
           'ui-dashboard-panel-header',
           'ui-dashboard-soft-icon',
           'ui-dashboard-stat-card',
+          'ui-disclosure-trigger',
           'ui-empty-panel',
           'ui-field',
           'ui-filter-chip',
@@ -382,10 +400,15 @@ describe('brand-neutral theme variables', () => {
           /inline-flex items-center gap-1\.5 rounded-xl bg-brand-600/,
           /relative w-full max-w-(?:lg|sm) rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
           /w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800/,
+          /fixed inset-0 z-50 flex items-center justify-center p-4/,
+          /ui-modal-backdrop absolute inset-0/,
           /absolute inset-0 bg-black\/50/,
           /border-b border-surface-100 dark:border-surface-800/,
           /border-t border-surface-100 dark:border-surface-800/,
           /focus:ring-2 focus:ring-brand-500/,
+          /p-1\.5 rounded-lg text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors/,
+          /mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl bg-danger-50 dark:bg-danger-950\/40/,
+          /summary class="flex items-center gap-2 text-sm font-medium text-surface-500 dark:text-surface-400 cursor-pointer select-none hover:text-surface-700 dark:hover:text-surface-200 transition-colors"/,
         ],
       },
       {
@@ -399,10 +422,14 @@ describe('brand-neutral theme variables', () => {
           /rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50/,
           /relative w-full max-w-lg rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
           /w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800/,
+          /fixed inset-0 z-50 flex items-center justify-center p-4/,
+          /ui-modal-backdrop absolute inset-0/,
           /absolute inset-0 bg-black\/50/,
           /border-b border-surface-100 dark:border-surface-800/,
           /border-t border-surface-100 dark:border-surface-800/,
           /focus:ring-2 focus:ring-brand-500/,
+          /p-1\.5 rounded-lg text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors/,
+          /summary class="flex items-center gap-2 text-sm font-medium text-surface-500 dark:text-surface-400 cursor-pointer select-none hover:text-surface-700 dark:hover:text-surface-200 transition-colors"/,
         ],
       },
     ]
@@ -1171,6 +1198,8 @@ describe('brand-neutral theme variables', () => {
     const source = readProjectFile('app/components/InterviewScheduleSidebar.vue')
 
     for (const recipe of [
+      'factory-dashboard-portal',
+      'ui-modal-backdrop',
       'ui-drawer-panel',
       'ui-drawer-header',
       'ui-drawer-body',
@@ -1808,6 +1837,8 @@ describe('brand-neutral theme variables', () => {
     const source = readProjectFile('app/components/InterviewScheduleSidebar.vue')
 
     for (const pattern of [
+      /class="fixed inset-0 z-50 flex justify-end/,
+      /absolute inset-0 bg-black\/50 backdrop-blur-sm/,
       /relative w-full max-w-2xl bg-white dark:bg-surface-900 shadow-2xl/,
       /rounded-xl border border-danger-200\/60 bg-danger-50\/80/,
       /border border-surface-200 dark:border-surface-700\/80 bg-white dark:bg-surface-800/,

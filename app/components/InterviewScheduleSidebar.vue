@@ -352,19 +352,10 @@ async function handleMoveToInterview() {
 
 <template>
   <Teleport :to="teleportTarget">
-    <div class="fixed inset-0 z-50 flex justify-end">
-      <!-- Backdrop -->
-      <Transition
-        enter-active-class="transition duration-300 ease-out"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition duration-200 ease-in"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="emit('close')" />
-      </Transition>
-
+    <div
+      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 flex justify-end"
+      @click.self="emit('close')"
+    >
       <!-- Sidebar panel -->
       <Transition
         enter-active-class="transition duration-300 ease-out transform"

@@ -1009,14 +1009,17 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
     <!-- Modal: Create tracking link             -->
     <!-- ═══════════════════════════════════════ -->
     <Teleport to="body">
-      <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="ui-modal-backdrop absolute inset-0" @click="showCreateModal = false" />
+      <div
+        v-if="showCreateModal"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+        @click.self="showCreateModal = false"
+      >
         <div class="ui-modal-panel relative w-full max-w-lg">
           <!-- Header -->
           <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Create Tracking Link</h2>
             <button
-              class="p-1.5 rounded-lg text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              class="ui-button ui-button-ghost size-8 p-0"
               @click="showCreateModal = false"
             >
               <X class="size-4" />
@@ -1072,7 +1075,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
 
             <!-- UTM fields (collapsible) -->
             <details class="group">
-              <summary class="flex items-center gap-2 text-sm font-medium text-surface-500 dark:text-surface-400 cursor-pointer select-none hover:text-surface-700 dark:hover:text-surface-200 transition-colors">
+              <summary class="ui-disclosure-trigger -ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium cursor-pointer select-none">
                 <ChevronDown class="size-4 transition-transform group-open:rotate-180" />
                 UTM Parameters (optional)
               </summary>
@@ -1118,11 +1121,14 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
     <!-- Modal: Delete confirmation               -->
     <!-- ═══════════════════════════════════════ -->
     <Teleport to="body">
-      <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="ui-modal-backdrop absolute inset-0" @click="showDeleteConfirm = false" />
+      <div
+        v-if="showDeleteConfirm"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+        @click.self="showDeleteConfirm = false"
+      >
         <div class="ui-modal-panel relative w-full max-w-sm p-6 text-center">
-          <div class="mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl bg-danger-50 dark:bg-danger-950/40">
-            <Trash2 class="size-5 text-danger-600 dark:text-danger-400" />
+          <div class="ui-icon-state ui-icon-state-danger mx-auto mb-4 size-12">
+            <Trash2 class="size-5" />
           </div>
           <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Tracking Link?</h3>
           <p class="text-sm text-surface-500 dark:text-surface-400 mb-6">

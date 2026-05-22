@@ -758,14 +758,17 @@ async function handleSidebarUpdated() {
     <!-- Modal: Edit tracking link                -->
     <!-- ═══════════════════════════════════════ -->
     <Teleport to="body">
-      <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="ui-modal-backdrop absolute inset-0" @click="showEditModal = false" />
+      <div
+        v-if="showEditModal"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+        @click.self="showEditModal = false"
+      >
         <div class="ui-modal-panel relative w-full max-w-lg">
           <!-- Header -->
           <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Edit Tracking Link</h2>
             <button
-              class="p-1.5 rounded-lg text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              class="ui-button ui-button-ghost size-8 p-0"
               @click="showEditModal = false"
             >
               <X class="size-4" />
@@ -807,7 +810,7 @@ async function handleSidebarUpdated() {
 
             <!-- UTM fields -->
             <details class="group">
-              <summary class="flex items-center gap-2 text-sm font-medium text-surface-500 dark:text-surface-400 cursor-pointer select-none hover:text-surface-700 dark:hover:text-surface-200 transition-colors">
+              <summary class="ui-disclosure-trigger -ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium cursor-pointer select-none">
                 <ChevronDown class="size-4 transition-transform group-open:rotate-180" />
                 UTM Parameters
               </summary>
