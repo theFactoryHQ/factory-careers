@@ -1251,6 +1251,20 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('uses the complete Factory dashboard frame for settings panels', () => {
+    const source = readProjectFile('app/layouts/settings.vue')
+
+    expect(source, 'settings should use the same fixed Factory shell frame as dashboard pages').toMatch(
+      /class="factory-dashboard-shell flex h-screen flex-col overflow-hidden bg-black text-white"/,
+    )
+    expect(source, 'settings content should scroll inside the themed shell instead of falling back to page scroll').toMatch(
+      /class="flex flex-1 min-h-0 flex-col overflow-hidden lg:flex-row"/,
+    )
+    expect(source, 'settings panels should live in a themed scroll region').toMatch(
+      /class="relative flex-1 min-h-0 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8"/,
+    )
+  })
+
   it('keeps Settings portals and fixed panels inside the Factory theme scope', () => {
     const members = readProjectFile('app/pages/dashboard/settings/members.vue')
     const css = readProjectFile('app/assets/css/main.css')
