@@ -1418,6 +1418,83 @@
     text-decoration-color: var(--color-brand-400);
   }
 
+  .ui-dashboard-stat-card {
+    border-radius: 1rem;
+    background-color: #ffffff;
+    color: var(--color-surface-900);
+    outline: 1px solid color-mix(in srgb, var(--color-surface-950) 4%, transparent);
+    transition: transform 300ms ease, box-shadow 300ms ease, outline-color 300ms ease, color 300ms ease;
+  }
+
+  .ui-dashboard-stat-card:hover {
+    transform: translateY(-0.125rem);
+  }
+
+  .dark .ui-dashboard-stat-card {
+    background-color: var(--color-surface-900);
+    color: var(--color-surface-50);
+    outline-color: rgb(255 255 255 / 0.06);
+  }
+
+  .ui-dashboard-stat-card-brand:hover {
+    outline-color: color-mix(in srgb, var(--color-brand-500) 25%, transparent);
+    box-shadow: 0 18px 36px -28px color-mix(in srgb, var(--color-brand-500) 35%, transparent);
+  }
+
+  .ui-dashboard-stat-card-violet:hover {
+    outline-color: color-mix(in srgb, oklch(62.7% 0.265 303) 25%, transparent);
+    box-shadow: 0 18px 36px -28px color-mix(in srgb, oklch(62.7% 0.265 303) 35%, transparent);
+  }
+
+  .ui-dashboard-stat-card-teal:hover {
+    outline-color: color-mix(in srgb, oklch(70.4% 0.14 182) 25%, transparent);
+    box-shadow: 0 18px 36px -28px color-mix(in srgb, oklch(70.4% 0.14 182) 35%, transparent);
+  }
+
+  .ui-dashboard-stat-card-warning {
+    outline-color: color-mix(in srgb, var(--color-warning-500) 24%, transparent);
+    box-shadow: 0 10px 22px -20px color-mix(in srgb, var(--color-warning-500) 30%, transparent);
+  }
+
+  .ui-dashboard-stat-card-warning:hover {
+    outline-color: color-mix(in srgb, var(--color-warning-500) 40%, transparent);
+    box-shadow: 0 18px 36px -26px color-mix(in srgb, var(--color-warning-500) 42%, transparent);
+  }
+
+  .ui-dashboard-panel {
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--color-surface-200) 80%, transparent);
+    border-radius: 1rem;
+    background-color: #ffffff;
+    color: var(--color-surface-900);
+    box-shadow: 0 1px 2px 0 rgb(15 23 42 / 0.03);
+  }
+
+  .dark .ui-dashboard-panel {
+    border-color: var(--color-surface-800);
+    background-color: var(--color-surface-900);
+    color: var(--color-surface-100);
+    box-shadow: none;
+  }
+
+  .ui-dashboard-panel-header {
+    border-bottom: 1px solid var(--color-surface-100);
+  }
+
+  .dark .ui-dashboard-panel-header {
+    border-color: var(--color-surface-800);
+  }
+
+  .ui-dashboard-soft-icon {
+    background-color: var(--color-surface-100);
+    color: var(--color-surface-500);
+  }
+
+  .dark .ui-dashboard-soft-icon {
+    background-color: var(--color-surface-800);
+    color: var(--color-surface-400);
+  }
+
   .ui-table-shell {
     overflow: hidden;
     border: 1px solid var(--color-surface-200);
