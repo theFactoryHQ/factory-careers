@@ -807,6 +807,35 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('adapts neutral UI recipes inside the Factory dashboard shell', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+
+    for (const recipe of [
+      '.ui-panel',
+      '.ui-panel-brand',
+      '.ui-panel-danger',
+      '.ui-panel-muted',
+      '.ui-panel-header',
+      '.ui-panel-footer',
+      '.ui-field',
+      '.ui-button-secondary',
+      '.ui-selectable-panel',
+      '.ui-empty-panel',
+      '.ui-modal-panel',
+      '.ui-floating-menu',
+      '.ui-nav-shell',
+    ]) {
+      expect(css, `Factory shell should adapt ${recipe}`).toMatch(
+        new RegExp(`:where\\(\\.factory-dashboard-shell, \\.factory-dashboard-portal\\)[\\s\\S]*${recipe.replace('.', '\\.')}`),
+      )
+    }
+
+    expect(css).toContain('background-color: var(--ui-panel) !important;')
+    expect(css).toContain('background-color: var(--ui-panel-strong) !important;')
+    expect(css).toContain('border-color: var(--ui-border) !important;')
+    expect(css).toContain('color: var(--ui-text) !important;')
+  })
+
   it('applies shared UI recipes to Settings/member state surfaces', () => {
     const recipeUsage = [
       {
