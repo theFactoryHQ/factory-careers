@@ -63,9 +63,11 @@ async function applyCandidate(candidateId: string) {
 
 <template>
   <Teleport :to="teleportTarget">
-    <div class="fixed inset-0 z-50 flex items-center justify-center">
-      <div class="absolute inset-0 bg-black/50" @click="emit('close')" />
-      <div class="ui-modal-panel relative w-full max-w-md mx-4 max-h-[80vh] flex flex-col overflow-hidden">
+    <div
+      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+      @click.self="emit('close')"
+    >
+      <div class="ui-modal-panel relative w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden">
         <!-- Header -->
         <div class="ui-panel-header flex items-center justify-between px-5 py-4">
           <div class="flex items-center gap-2">
@@ -83,7 +85,7 @@ async function applyCandidate(candidateId: string) {
         <!-- Search -->
         <div class="px-5 pt-4">
           <div class="relative">
-            <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-surface-400" />
+            <Search class="ui-field-icon absolute left-3 top-1/2 -translate-y-1/2 size-4" />
             <input
               v-model="searchInput"
               type="text"
@@ -100,11 +102,11 @@ async function applyCandidate(candidateId: string) {
 
         <!-- Candidate list -->
         <div class="flex-1 overflow-y-auto px-5 py-3">
-          <div v-if="searchStatus === 'pending'" class="text-center py-6 text-surface-400 text-sm">
+          <div v-if="searchStatus === 'pending'" class="ui-empty-state py-6 text-sm">
             Searching…
           </div>
 
-          <div v-else-if="candidates.length === 0" class="text-center py-6 text-surface-400 text-sm">
+          <div v-else-if="candidates.length === 0" class="ui-empty-state py-6 text-sm">
             {{ debouncedSearch ? 'No candidates found.' : 'No candidates in your org yet.' }}
           </div>
 

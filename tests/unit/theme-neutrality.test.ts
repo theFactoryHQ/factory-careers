@@ -782,10 +782,13 @@ describe('brand-neutral theme variables', () => {
       {
         path: 'app/components/ApplyCandidateModal.vue',
         recipes: [
+          'factory-dashboard-portal',
+          'ui-modal-backdrop',
           'ui-modal-panel',
           'ui-panel-header',
           'ui-field',
           'ui-alert-danger',
+          'ui-empty-state',
           'ui-button-ghost',
           'ui-list-row',
           'ui-inline-link-brand',
@@ -1102,6 +1105,8 @@ describe('brand-neutral theme variables', () => {
     const source = readProjectFile('app/components/CandidateDetailSidebar.vue')
 
     for (const recipe of [
+      'factory-dashboard-portal',
+      'ui-modal-backdrop',
       'ui-drawer-panel',
       'ui-drawer-header',
       'ui-drawer-tabs',
@@ -1627,6 +1632,8 @@ describe('brand-neutral theme variables', () => {
       {
         path: 'app/components/ApplyCandidateModal.vue',
         patterns: [
+          /fixed inset-0 z-50 flex items-center justify-center/,
+          /absolute inset-0 bg-black\/50/,
           /bg-white dark:bg-surface-900 rounded-xl/,
           /border border-surface-200 dark:border-surface-700 bg-white/,
           /focus:ring-brand-500/,
@@ -1765,6 +1772,8 @@ describe('brand-neutral theme variables', () => {
       /rounded-lg border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-800/,
       /rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950/,
       /relative bg-white dark:bg-surface-900 rounded-2xl/,
+      /fixed inset-0 z-50 flex items-center justify-center/,
+      /absolute inset-0 bg-black\/50/,
       /bg-brand-600 px-3 py-1\.5/,
       /bg-danger-600 px-3 py-1\.5/,
       /text-brand-600 hover:text-brand-700 dark:text-brand-400/,
