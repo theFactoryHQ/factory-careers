@@ -30,6 +30,10 @@ describe('brand-neutral theme variables', () => {
 
     for (const recipe of [
       '.ui-panel',
+      '.ui-panel-brand',
+      '.ui-panel-brand-header',
+      '.ui-panel-danger',
+      '.ui-panel-footer',
       '.ui-panel-muted',
       '.ui-alert',
       '.ui-alert-danger',
@@ -72,7 +76,9 @@ describe('brand-neutral theme variables', () => {
       '.ui-pill-danger',
       '.ui-pill-info',
       '.ui-status-dot',
+      '.ui-status-dot-brand',
       '.ui-status-dot-success',
+      '.ui-status-dot-danger',
       '.ui-code',
       '.ui-step-marker',
       '.ui-meter-track',
@@ -309,6 +315,45 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared UI recipes to interview detail surfaces', () => {
+    const source = readProjectFile('app/pages/dashboard/interviews/[id].vue')
+
+    for (const recipe of [
+      'ui-panel',
+      'ui-panel-brand',
+      'ui-panel-brand-header',
+      'ui-panel-danger',
+      'ui-panel-footer',
+      'ui-panel-muted',
+      'ui-modal-panel',
+      'ui-alert-danger',
+      'ui-field',
+      'ui-button-primary',
+      'ui-button-secondary',
+      'ui-button-danger',
+      'ui-button-success',
+      'ui-button-ghost',
+      'ui-button-ghost-danger',
+      'ui-selectable-panel',
+      'ui-selectable-panel-active',
+      'ui-pill',
+      'ui-pill-brand',
+      'ui-pill-success',
+      'ui-pill-danger',
+      'ui-status-dot-brand',
+      'ui-status-dot-success',
+      'ui-status-dot-danger',
+      'ui-icon-state-brand',
+      'ui-icon-state-success',
+      'ui-inline-link-brand',
+      'ui-feedback-success',
+      'ui-feedback-danger',
+      'ui-required-marker',
+    ]) {
+      expect(source, `interview detail should use ${recipe}`).toContain(recipe)
+    }
+  })
+
   it('applies shared UI recipes to AI settings surfaces', () => {
     const recipeUsage = [
       {
@@ -419,6 +464,24 @@ describe('brand-neutral theme variables', () => {
       for (const pattern of patterns) {
         expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
       }
+    }
+  })
+
+  it('keeps interview detail surface choices behind shared recipes', () => {
+    const source = readProjectFile('app/pages/dashboard/interviews/[id].vue')
+
+    for (const pattern of [
+      /class: 'bg-brand-50 text-brand-700 ring-brand-200/,
+      /border border-surface-300 dark:border-surface-700 bg-white\/80/,
+      /rounded-xl border border-brand-200/,
+      /rounded-xl border border-surface-200 dark:border-surface-800 bg-white/,
+      /rounded-xl border border-danger-200\/60/,
+      /bg-white dark:bg-surface-900 rounded-2xl/,
+      /focus:ring-brand-500/,
+      /bg-emerald-/,
+      /text-emerald-/,
+    ]) {
+      expect(source, `interview detail should centralize ${pattern}`).not.toMatch(pattern)
     }
   })
 })
