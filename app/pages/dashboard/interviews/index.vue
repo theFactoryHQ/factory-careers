@@ -413,7 +413,7 @@ const statusCounts = computed(() => {
     <!-- Empty state -->
     <div
       v-else-if="filteredInterviews.length === 0"
-      class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-12 text-center"
+      class="ui-empty-panel"
     >
       <Calendar class="size-10 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
       <h3 class="text-base font-semibold text-surface-700 dark:text-surface-200 mb-1">
@@ -426,7 +426,7 @@ const statusCounts = computed(() => {
       </p>
       <button
         v-if="activeStatus || searchInput"
-        class="cursor-pointer rounded-lg border border-surface-200 dark:border-surface-700 px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+        class="ui-button ui-button-secondary"
         @click="activeStatus = undefined; searchInput = ''"
       >
         Clear filters

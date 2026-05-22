@@ -44,6 +44,7 @@ describe('brand-neutral theme variables', () => {
       '.ui-icon-state-success',
       '.ui-icon-state-brand',
       '.ui-empty-state',
+      '.ui-empty-panel',
       '.ui-selectable-panel',
       '.ui-selectable-panel-active',
       '.ui-pill',
@@ -141,6 +142,7 @@ describe('brand-neutral theme variables', () => {
       'app/pages/dashboard/applications/index.vue',
       'app/pages/dashboard/candidates/index.vue',
       'app/pages/dashboard/jobs/[id]/candidates.vue',
+      'app/pages/dashboard/jobs/index.vue',
       'app/pages/dashboard/ai-analysis.vue',
       'app/pages/dashboard/source-tracking/index.vue',
       'app/pages/dashboard/source-tracking/[id].vue',
@@ -150,6 +152,39 @@ describe('brand-neutral theme variables', () => {
       const source = readProjectFile(path)
 
       for (const recipe of ['ui-table-shell', 'ui-table-header', 'ui-table-row']) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
+  it('applies shared UI recipes to dashboard empty states', () => {
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/jobs/index.vue',
+        recipes: ['ui-empty-panel'],
+      },
+      {
+        path: 'app/pages/dashboard/applications/index.vue',
+        recipes: ['ui-empty-panel'],
+      },
+      {
+        path: 'app/pages/dashboard/candidates/index.vue',
+        recipes: ['ui-empty-panel'],
+      },
+      {
+        path: 'app/pages/dashboard/jobs/[id]/candidates.vue',
+        recipes: ['ui-empty-panel'],
+      },
+      {
+        path: 'app/pages/dashboard/interviews/index.vue',
+        recipes: ['ui-empty-panel', 'ui-button-secondary'],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
         expect(source, `${path} should use ${recipe}`).toContain(recipe)
       }
     }

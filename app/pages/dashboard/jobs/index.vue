@@ -390,7 +390,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
 
     <!-- ─── Empty state ─── -->
     <div v-else-if="isEmpty" class="flex flex-col items-center justify-center py-20">
-      <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-10 text-center max-w-md">
+      <div class="ui-empty-panel max-w-md">
         <Briefcase class="size-12 text-brand-400 mx-auto mb-4" />
         <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">
           Welcome to Factory Careers
@@ -618,7 +618,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
       <!-- ─── No-results state ─── -->
       <div
         v-if="noResults"
-        class="rounded-xl border border-dashed border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-10 text-center"
+        class="ui-empty-panel border-dashed"
       >
         <Search class="size-8 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
         <p class="text-sm text-surface-600 dark:text-surface-300 mb-1">No jobs match your search</p>
@@ -629,10 +629,10 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
            TABLE VIEW
       ════════════════════════════════════ -->
       <template v-else-if="viewMode === 'table'">
-        <div class="overflow-x-auto rounded-lg border border-surface-200 dark:border-surface-800">
+        <div class="ui-table-shell overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="bg-surface-50 dark:bg-surface-800/50 border-b border-surface-200 dark:border-surface-800">
+              <tr class="ui-table-header">
                 <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">
                   <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('title')">
                     Title
@@ -691,11 +691,11 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
+            <tbody>
               <tr
                 v-for="j in sortedJobs"
                 :key="j.id"
-                class="group bg-white dark:bg-surface-900 hover:bg-surface-50 dark:hover:bg-surface-800/60 transition-colors cursor-pointer"
+                class="ui-table-row group cursor-pointer"
                 @click="$router.push(localePath(`/dashboard/jobs/${j.id}`))"
               >
                 <td class="px-4 py-3">

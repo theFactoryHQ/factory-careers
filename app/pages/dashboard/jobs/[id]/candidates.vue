@@ -380,7 +380,7 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
       <!-- Empty state (no applications at all) -->
       <div
         v-if="applications.length === 0"
-        class="rounded-xl border border-surface-200/80 dark:border-surface-800/60 bg-white dark:bg-surface-900 p-12 text-center shadow-sm shadow-surface-900/[0.03] dark:shadow-none"
+        class="ui-empty-panel shadow-sm shadow-surface-900/[0.03] dark:shadow-none"
       >
         <div class="flex size-14 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-800/60 mx-auto mb-3">
           <Users class="size-6 text-surface-400 dark:text-surface-500" />

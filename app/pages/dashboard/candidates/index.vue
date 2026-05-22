@@ -466,7 +466,7 @@ const selectedCandidateId = ref<string | null>(null)
     <!-- Empty state -->
     <div
       v-else-if="candidates.length === 0"
-      class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-12 text-center"
+      class="ui-empty-panel"
     >
       <Users class="size-10 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
       <h3 class="text-base font-semibold text-surface-700 dark:text-surface-200 mb-1">
@@ -481,7 +481,7 @@ const selectedCandidateId = ref<string | null>(null)
       <NuxtLink
         v-if="!debouncedSearch"
         :to="$localePath('/dashboard/candidates/new')"
-        class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+        class="ui-button ui-button-primary"
       >
         <Plus class="size-4" />
         Add Candidate

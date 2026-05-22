@@ -512,7 +512,7 @@ const selectedApplicationId = ref<string | null>(null)
     <!-- Empty state -->
     <div
       v-else-if="applications.length === 0"
-      class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-16 text-center"
+      class="ui-empty-panel"
     >
       <FileText class="size-10 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
       <h3 class="text-base font-semibold text-surface-700 dark:text-surface-200 mb-1">No applications yet</h3>
@@ -524,7 +524,7 @@ const selectedApplicationId = ref<string | null>(null)
     <!-- No results after filtering -->
     <div
       v-else-if="filteredApplications.length === 0"
-      class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-12 text-center"
+      class="ui-empty-panel"
     >
       <Search class="size-8 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
       <h3 class="text-base font-semibold text-surface-700 dark:text-surface-200 mb-1">No matching applications</h3>
@@ -532,7 +532,7 @@ const selectedApplicationId = ref<string | null>(null)
         Try adjusting your search or filters.
       </p>
       <button
-        class="text-sm text-brand-600 hover:text-brand-700 font-medium transition-colors"
+        class="ui-button ui-button-secondary"
         @click="clearAllFilters"
       >
         Clear all filters
