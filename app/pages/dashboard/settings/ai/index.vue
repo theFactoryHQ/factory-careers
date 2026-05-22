@@ -238,7 +238,7 @@ function formatPrice(p: number | null): string {
     </div>
 
     <!-- Loading -->
-    <div v-else-if="isLoading" class="ui-panel p-8 text-center text-sm text-surface-500">
+    <div v-else-if="isLoading" class="ui-panel ui-dashboard-panel p-8 text-center text-sm text-surface-500">
       <Loader2 class="size-5 animate-spin mx-auto mb-2 text-surface-400" />
       Loading configurations…
     </div>
@@ -248,7 +248,7 @@ function formatPrice(p: number | null): string {
       v-else-if="configs.length === 0"
       class="ui-empty-panel ui-empty-panel-dashed p-10"
     >
-      <div class="ui-icon-state ui-icon-state-brand ui-icon-tile mx-auto size-12 mb-3">
+      <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile mx-auto size-12 mb-3">
         <Brain class="size-6" />
       </div>
       <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">No AI models configured yet</h2>
@@ -269,7 +269,7 @@ function formatPrice(p: number | null): string {
       <li
         v-for="c in configs"
         :key="c.id"
-        class="ui-panel overflow-hidden"
+        class="ui-panel ui-dashboard-panel overflow-hidden"
       >
         <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-4">
           <!-- Identity -->
