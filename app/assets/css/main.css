@@ -1806,6 +1806,301 @@
     color: var(--color-surface-400);
   }
 
+  .ui-detail-page {
+    width: 100%;
+    max-width: 48rem;
+    margin-inline: auto;
+    padding: 2rem 1.5rem;
+  }
+
+  .ui-detail-back-link {
+    margin-bottom: 1rem;
+    border-radius: 9999px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .ui-detail-loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-block: 5rem;
+  }
+
+  .ui-detail-header-card {
+    margin-bottom: 1rem;
+    padding: 1.25rem;
+  }
+
+  .ui-detail-action-strip {
+    margin-bottom: 1.5rem;
+    padding: 0.75rem;
+  }
+
+  .ui-detail-card-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .ui-detail-card {
+    padding: 1.25rem;
+  }
+
+  .ui-detail-card-compact {
+    padding: 1rem;
+  }
+
+  .ui-detail-card-spaced {
+    margin-block: 1rem;
+    padding: 1.25rem;
+  }
+
+  .ui-detail-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .ui-detail-danger-card {
+    padding: 1.25rem;
+  }
+
+  .ui-detail-inline-panel {
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+
+  .ui-detail-inline-panel-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1.5rem;
+  }
+
+  .ui-detail-inline-panel-header {
+    padding: 0.875rem 1.25rem;
+  }
+
+  .ui-detail-inline-panel-body {
+    padding: 1.25rem;
+  }
+
+  .ui-detail-inline-panel-footer {
+    padding: 1rem 1.25rem;
+  }
+
+  .ui-modal-content {
+    position: relative;
+    width: 100%;
+    padding: 1.5rem;
+  }
+
+  .ui-modal-content-sm {
+    max-width: 24rem;
+  }
+
+  .ui-modal-content-md {
+    max-width: 28rem;
+  }
+
+  .ui-modal-content-lg {
+    max-width: 32rem;
+  }
+
+  .ui-modal-content-scroll {
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .ui-modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+  }
+
+  .ui-modal-success-state {
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+  }
+
+  .ui-drawer-content {
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
+    padding: 1.25rem;
+  }
+
+  .ui-drawer-card {
+    padding: 1.25rem;
+  }
+
+  .ui-drawer-card-compact {
+    padding: 1rem;
+  }
+
+  .ui-drawer-action-strip {
+    padding: 0.75rem;
+  }
+
+  .ui-drawer-card-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .ui-drawer-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .ui-drawer-empty-action {
+    display: flex;
+    width: 100%;
+    cursor: pointer;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    text-align: left;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .ui-email-modal-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 42rem;
+    max-height: 90vh;
+    overflow: hidden;
+  }
+
+  .ui-email-modal-header {
+    flex-shrink: 0;
+    padding: 1rem;
+  }
+
+  .ui-email-modal-tabs {
+    flex-shrink: 0;
+    overflow-x: auto;
+    padding-inline: 1rem;
+  }
+
+  .ui-email-modal-body {
+    flex: 1 1 0%;
+    overflow-y: auto;
+    padding: 1.25rem 1rem;
+  }
+
+  .ui-email-modal-selectable {
+    width: 100%;
+    padding: 1rem;
+    text-align: left;
+  }
+
+  .ui-email-modal-preview {
+    margin-top: 0.75rem;
+    padding: 1rem;
+  }
+
+  .ui-email-modal-variable-panel {
+    padding: 0.875rem;
+  }
+
+  .ui-email-modal-template-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .ui-email-modal-template-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem;
+  }
+
+  .ui-email-modal-footer {
+    flex-shrink: 0;
+    padding: 1rem 1.5rem;
+  }
+
+  .ui-template-page {
+    width: 100%;
+    max-width: 64rem;
+    margin-inline: auto;
+    padding: 2rem 1.5rem;
+  }
+
+  .ui-template-page-narrow {
+    max-width: 56rem;
+  }
+
+  .ui-template-builder-grid {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .ui-template-preview-card {
+    overflow: hidden;
+  }
+
+  .ui-template-preview-footer {
+    padding: 0.625rem 1.25rem;
+  }
+
+  .ui-template-variable-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .ui-drawer-card-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ui-email-modal-header,
+    .ui-email-modal-tabs {
+      padding-inline: 1.5rem;
+    }
+
+    .ui-email-modal-body {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .ui-detail-card-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .ui-template-builder-grid-even {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ui-template-builder-grid-sidebar {
+      grid-template-columns: minmax(0, 1fr) 320px;
+    }
+  }
+
   .ui-settings-page {
     width: 100%;
     max-width: 42rem;
@@ -2559,6 +2854,13 @@
     .ui-menu-trigger,
     .ui-nav-shell,
     .ui-dashboard-panel,
+    .ui-detail-header-card,
+    .ui-detail-card,
+    .ui-detail-danger-card,
+    .ui-drawer-card,
+    .ui-email-modal-template-row,
+    .ui-template-preview-card,
+    .ui-template-variable-row,
     .ui-settings-panel,
     .ui-settings-panel-content,
     .ui-settings-modal-panel,
@@ -2577,6 +2879,13 @@
     .ui-menu-trigger,
     .ui-nav-shell,
     .ui-dashboard-panel,
+    .ui-detail-header-card,
+    .ui-detail-card,
+    .ui-detail-danger-card,
+    .ui-drawer-card,
+    .ui-email-modal-template-row,
+    .ui-template-preview-card,
+    .ui-template-variable-row,
     .ui-settings-panel,
     .ui-settings-panel-content,
     .ui-settings-modal-panel,
@@ -2596,6 +2905,10 @@
     .ui-filter-drawer-body,
     .ui-action-bar,
     .ui-settings-callout,
+    .ui-detail-inline-panel-footer,
+    .ui-email-modal-preview,
+    .ui-email-modal-variable-panel,
+    .ui-email-modal-template-form,
     .ui-empty-panel-dashed,
     .ui-selectable-panel:hover
   ) {
@@ -2618,6 +2931,12 @@
     .ui-drawer-tabs,
     .ui-filter-section,
     .ui-dashboard-panel-header,
+    .ui-detail-inline-panel-header,
+    .ui-detail-inline-panel-footer,
+    .ui-email-modal-header,
+    .ui-email-modal-tabs,
+    .ui-email-modal-footer,
+    .ui-template-preview-footer,
     .ui-settings-panel-header,
     .ui-list-divider > :not([hidden]) ~ :not([hidden]),
     .ui-menu-divider
@@ -3322,6 +3641,39 @@
     .ui-settings-modal-header,
     .ui-settings-modal-copy,
     .ui-settings-modal-alert,
+    .ui-detail-header-card,
+    .ui-detail-action-strip,
+    .ui-detail-card,
+    .ui-detail-card-compact,
+    .ui-detail-card-spaced,
+    .ui-detail-danger-card,
+    .ui-detail-inline-panel,
+    .ui-detail-inline-panel-state,
+    .ui-detail-inline-panel-header,
+    .ui-detail-inline-panel-body,
+    .ui-detail-inline-panel-footer,
+    .ui-modal-content,
+    .ui-modal-actions,
+    .ui-modal-success-state,
+    .ui-drawer-content,
+    .ui-drawer-card,
+    .ui-drawer-card-compact,
+    .ui-drawer-action-strip,
+    .ui-drawer-card-header,
+    .ui-drawer-empty-action,
+    .ui-email-modal-panel,
+    .ui-email-modal-header,
+    .ui-email-modal-tabs,
+    .ui-email-modal-body,
+    .ui-email-modal-selectable,
+    .ui-email-modal-preview,
+    .ui-email-modal-variable-panel,
+    .ui-email-modal-template-form,
+    .ui-email-modal-template-row,
+    .ui-email-modal-footer,
+    .ui-template-preview-card,
+    .ui-template-preview-footer,
+    .ui-template-variable-row,
     .ui-dashboard-stat-card,
     .ui-dashboard-soft-icon,
     .ui-table-shell,
