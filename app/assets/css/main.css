@@ -1910,6 +1910,49 @@
     padding: 3rem 1.5rem;
   }
 
+  .ui-modal-frame {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: 80vh;
+    overflow: hidden;
+  }
+
+  .ui-modal-frame-md {
+    max-width: 28rem;
+  }
+
+  .ui-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+  }
+
+  .ui-modal-search {
+    padding: 1rem 1.25rem 0;
+  }
+
+  .ui-modal-alert {
+    margin: 0.75rem 1.25rem 0;
+  }
+
+  .ui-modal-body {
+    flex: 1 1 0%;
+    overflow-y: auto;
+    padding: 0.75rem 1.25rem;
+  }
+
+  .ui-modal-list-row {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.625rem 0.75rem;
+    text-align: left;
+  }
+
   .ui-drawer-content {
     display: flex;
     flex: 1 1 0%;
@@ -2106,7 +2149,19 @@
   }
 
   .ui-settings-panel {
+    border: 1px solid color-mix(in srgb, var(--color-surface-200) 80%, transparent);
+    border-radius: 0.75rem;
+    background-color: #ffffff;
+    color: var(--color-surface-900);
     overflow: hidden;
+    box-shadow: 0 1px 2px 0 rgb(15 23 42 / 0.03);
+  }
+
+  .dark .ui-settings-panel {
+    border-color: var(--color-surface-800);
+    background-color: var(--color-surface-900);
+    color: var(--color-surface-100);
+    box-shadow: none;
   }
 
   .ui-settings-panel-spaced {
@@ -2653,6 +2708,7 @@
     .ui-empty-panel,
     .ui-selectable-panel,
     .ui-modal-panel,
+    .ui-modal-frame,
     .ui-drawer-panel,
     .ui-filter-drawer,
     .ui-floating-menu,
@@ -2667,7 +2723,11 @@
     .ui-template-preview-card,
     .ui-template-variable-row,
     .ui-settings-panel,
+    .ui-settings-panel-body,
     .ui-settings-panel-content,
+    .ui-settings-panel-state,
+    .ui-settings-list-row,
+    .ui-settings-empty-panel,
     .ui-settings-modal-panel,
     .ui-table-shell
   ),
@@ -2678,6 +2738,7 @@
     .ui-empty-panel,
     .ui-selectable-panel,
     .ui-modal-panel,
+    .ui-modal-frame,
     .ui-drawer-panel,
     .ui-filter-drawer,
     .ui-floating-menu,
@@ -2692,7 +2753,11 @@
     .ui-template-preview-card,
     .ui-template-variable-row,
     .ui-settings-panel,
+    .ui-settings-panel-body,
     .ui-settings-panel-content,
+    .ui-settings-panel-state,
+    .ui-settings-list-row,
+    .ui-settings-empty-panel,
     .ui-settings-modal-panel,
     .ui-table-shell
   ) {
@@ -2710,7 +2775,12 @@
     .ui-filter-drawer-body,
     .ui-action-bar,
     .ui-settings-callout,
+    .ui-settings-panel-header,
+    .ui-settings-panel-footer,
+    .ui-settings-action-bar-inner,
+    .ui-settings-modal-header,
     .ui-detail-inline-panel-footer,
+    .ui-modal-alert,
     .ui-email-modal-preview,
     .ui-email-modal-variable-panel,
     .ui-email-modal-template-form,
@@ -2738,11 +2808,15 @@
     .ui-dashboard-panel-header,
     .ui-detail-inline-panel-header,
     .ui-detail-inline-panel-footer,
+    .ui-modal-header,
     .ui-email-modal-header,
     .ui-email-modal-tabs,
     .ui-email-modal-footer,
     .ui-template-preview-footer,
     .ui-settings-panel-header,
+    .ui-settings-panel-footer,
+    .ui-settings-action-bar-inner,
+    .ui-settings-modal-header,
     .ui-list-divider > :not([hidden]) ~ :not([hidden]),
     .ui-menu-divider
   ) {
@@ -3140,6 +3214,12 @@
     .ui-modal-content,
     .ui-modal-actions,
     .ui-modal-success-state,
+    .ui-modal-frame,
+    .ui-modal-header,
+    .ui-modal-search,
+    .ui-modal-alert,
+    .ui-modal-body,
+    .ui-modal-list-row,
     .ui-drawer-content,
     .ui-drawer-card,
     .ui-drawer-card-compact,

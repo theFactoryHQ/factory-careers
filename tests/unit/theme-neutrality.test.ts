@@ -841,6 +841,33 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('defines Settings panel recipes as complete Factory-adapted surfaces', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+
+    expect(css).toMatch(/\.ui-settings-panel\s*\{[^}]*border: 1px solid[^}]*background-color:[^}]*color:[^}]*overflow: hidden;[^}]*\}/s)
+    expect(css).toMatch(/\.dark \.ui-settings-panel\s*\{[^}]*border-color:[^}]*background-color:[^}]*color:[^}]*\}/s)
+
+    for (const recipe of [
+      '.ui-settings-panel',
+      '.ui-settings-panel-header',
+      '.ui-settings-panel-body',
+      '.ui-settings-panel-content',
+      '.ui-settings-panel-state',
+      '.ui-settings-list-row',
+      '.ui-settings-panel-alert',
+      '.ui-settings-panel-footer',
+      '.ui-settings-callout',
+      '.ui-settings-empty-panel',
+      '.ui-settings-action-bar-inner',
+      '.ui-settings-modal-panel',
+      '.ui-settings-modal-header',
+      '.ui-settings-modal-copy',
+      '.ui-settings-modal-alert',
+    ]) {
+      expect(css, `Factory adaptation should mention ${recipe}`).toContain(recipe)
+    }
+  })
+
   it('keeps Settings and member surface choices behind shared recipes', () => {
     const paths = [
       'app/layouts/settings.vue',
@@ -1075,6 +1102,65 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('centralizes application detail page surfaces behind shared recipes', () => {
+    const source = readProjectFile('app/pages/dashboard/applications/[id].vue')
+
+    for (const recipe of [
+      'getApplicationStatusBadgeClass',
+      'getApplicationStatusLabel',
+      'getApplicationTransitionButtonClass',
+      'getApplicationTransitionDotClass',
+      'getApplicationTransitionLabel',
+      'ui-alert-danger',
+      'ui-button-primary',
+      'ui-button-secondary',
+      'ui-detail-action-strip',
+      'ui-detail-back-link',
+      'ui-detail-card',
+      'ui-detail-card-compact',
+      'ui-detail-card-grid',
+      'ui-detail-card-header',
+      'ui-detail-card-spaced',
+      'ui-detail-header-card',
+      'ui-detail-loading-state',
+      'ui-detail-page',
+      'ui-field',
+      'ui-inline-link-brand',
+      'ui-panel',
+      'ui-panel-divider',
+      'ui-pill',
+      'ui-status-dot',
+    ]) {
+      expect(source, `application detail should use ${recipe}`).toContain(recipe)
+    }
+
+    for (const pattern of [
+      /const transitionLabels:/,
+      /const transitionClasses:/,
+      /const transitionDotClasses:/,
+      /const statusBadgeClasses:/,
+      /class="mx-auto max-w-3xl"/,
+      /mb-4 inline-flex items-center gap-1 rounded-full border border-surface-200/,
+      /class="text-center py-12 text-surface-400"/,
+      /rounded-lg border border-danger-200 bg-danger-50 p-4/,
+      /rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5/,
+      /rounded-xl border border-surface-200 dark:border-surface-800 bg-white\/80 dark:bg-surface-900\/70 p-3/,
+      /inline-flex cursor-pointer items-center rounded-full px-3\.5 py-1\.5 text-sm font-medium/,
+      /inline-flex cursor-pointer items-center gap-1\.5 rounded-full border border-surface-300/,
+      /class="grid gap-4 md:grid-cols-2"/,
+      /rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-(?:4|5)/,
+      /mt-4 rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 mb-4/,
+      /w-full rounded-lg border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-800/,
+      /cursor-pointer rounded-lg bg-brand-600/,
+      /cursor-pointer rounded-lg border border-surface-300/,
+      /border-b border-surface-100 dark:border-surface-800 pb-3/,
+      /text-brand-600 hover:text-brand-700 dark:text-brand-400/,
+      /focus:ring-2 focus:ring-brand-500/,
+    ]) {
+      expect(source, `application detail should centralize ${pattern}`).not.toMatch(pattern)
+    }
+  })
+
   it('centralizes dashboard drawer and modal interior structure behind shared recipes', () => {
     const css = readProjectFile('app/assets/css/main.css')
 
@@ -1186,6 +1272,75 @@ describe('brand-neutral theme variables', () => {
           /ui-panel-muted p-4 space-y-3/,
           /ui-panel ui-list-row flex items-center justify-between p-3\.5/,
           /ui-panel-footer shrink-0 px-6 py-4/,
+        ],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
+    }
+  })
+
+  it('centralizes apply modal frame and list structure behind shared recipes', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+
+    for (const recipe of [
+      '.ui-modal-frame',
+      '.ui-modal-frame-md',
+      '.ui-modal-header',
+      '.ui-modal-body',
+      '.ui-modal-search',
+      '.ui-modal-alert',
+      '.ui-modal-list-row',
+    ]) {
+      expect(css, `Apply modal structural recipe ${recipe} should be defined`).toMatch(
+        new RegExp(`${recipe.replace('.', '\\.')}\\s*\\{`),
+      )
+    }
+
+    const recipeUsage = [
+      {
+        path: 'app/components/ApplyCandidateModal.vue',
+        recipes: ['ui-modal-frame', 'ui-modal-frame-md', 'ui-modal-header', 'ui-modal-search', 'ui-modal-alert', 'ui-modal-body', 'ui-modal-list-row'],
+      },
+      {
+        path: 'app/components/ApplyToJobModal.vue',
+        recipes: ['ui-modal-frame', 'ui-modal-frame-md', 'ui-modal-header', 'ui-modal-alert', 'ui-modal-body', 'ui-modal-list-row'],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/components/ApplyCandidateModal.vue',
+        patterns: [
+          /ui-modal-panel relative w-full max-w-md max-h-\[80vh\] flex flex-col overflow-hidden/,
+          /ui-panel-header flex items-center justify-between px-5 py-4/,
+          /class="px-5 pt-4"/,
+          /ui-alert ui-alert-danger mx-5 mt-3/,
+          /class="flex-1 overflow-y-auto px-5 py-3"/,
+          /ui-list-row w-full flex items-center justify-between rounded-lg px-3 py-2\.5 text-left disabled:opacity-50/,
+        ],
+      },
+      {
+        path: 'app/components/ApplyToJobModal.vue',
+        patterns: [
+          /ui-modal-panel relative w-full max-w-md max-h-\[80vh\] flex flex-col overflow-hidden/,
+          /ui-panel-header flex items-center justify-between px-5 py-4/,
+          /ui-alert ui-alert-danger mx-5 mt-3/,
+          /class="flex-1 overflow-y-auto px-5 py-3"/,
+          /ui-list-row w-full flex items-center justify-between rounded-lg px-3 py-2\.5 text-left disabled:opacity-50/,
         ],
       },
     ]

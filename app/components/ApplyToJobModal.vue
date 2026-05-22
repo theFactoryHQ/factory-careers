@@ -49,9 +49,9 @@ async function applyToJob(jobId: string) {
       class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
       @click.self="emit('close')"
     >
-      <div class="ui-modal-panel relative w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden">
+      <div class="ui-modal-panel ui-modal-frame ui-modal-frame-md">
         <!-- Header -->
-        <div class="ui-panel-header flex items-center justify-between px-5 py-4">
+        <div class="ui-panel-header ui-modal-header">
           <div class="flex items-center gap-2">
             <Briefcase class="ui-icon-brand size-5" />
             <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-50">Apply to Job</h3>
@@ -65,12 +65,12 @@ async function applyToJob(jobId: string) {
         </div>
 
         <!-- Error -->
-        <div v-if="applyError" class="ui-alert ui-alert-danger mx-5 mt-3">
+        <div v-if="applyError" class="ui-alert ui-alert-danger ui-modal-alert">
           {{ applyError }}
         </div>
 
         <!-- Job list -->
-        <div class="flex-1 overflow-y-auto px-5 py-3">
+        <div class="ui-modal-body">
           <div v-if="jobFetchStatus === 'pending'" class="ui-empty-state py-6 text-sm">
             Loading jobs…
           </div>
@@ -84,7 +84,7 @@ async function applyToJob(jobId: string) {
               v-for="j in jobs"
               :key="j.id"
               :disabled="isApplying"
-              class="ui-list-row w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-left disabled:opacity-50"
+              class="ui-list-row ui-modal-list-row disabled:opacity-50"
               @click="applyToJob(j.id)"
             >
               <div class="min-w-0">

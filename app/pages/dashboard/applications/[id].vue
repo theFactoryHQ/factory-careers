@@ -29,33 +29,6 @@ useSeoMeta({
 // ─────────────────────────────────────────────
 import { APPLICATION_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 
-const transitionLabels: Record<string, string> = {
-  new: 'Re-open',
-  screening: 'Move to Screening',
-  interview: 'Move to Interview',
-  offer: 'Make Offer',
-  hired: 'Mark Hired',
-  rejected: 'Reject',
-}
-
-const transitionClasses: Record<string, string> = {
-  new: 'border border-surface-300 dark:border-surface-700 bg-white/80 dark:bg-surface-900 text-surface-700 dark:text-surface-300 hover:border-surface-400 dark:hover:border-surface-600 hover:bg-surface-50 dark:hover:bg-surface-800',
-  screening: 'bg-violet-600 text-white shadow-sm shadow-violet-900/20 hover:bg-violet-700',
-  interview: 'bg-amber-600 text-white shadow-sm shadow-amber-900/20 hover:bg-amber-700',
-  offer: 'bg-teal-600 text-white shadow-sm shadow-teal-900/20 hover:bg-teal-700',
-  hired: 'bg-green-700 text-white shadow-sm shadow-green-900/30 hover:bg-green-800',
-  rejected: 'bg-danger-600 text-white shadow-sm shadow-danger-900/20 hover:bg-danger-700',
-}
-
-const transitionDotClasses: Record<string, string> = {
-  new: 'bg-surface-400 dark:bg-surface-500',
-  screening: 'bg-violet-200',
-  interview: 'bg-amber-200',
-  offer: 'bg-teal-200',
-  hired: 'bg-green-100',
-  rejected: 'bg-danger-200',
-}
-
 const allowedTransitions = computed(() => {
   if (!application.value) return []
   return APPLICATION_STATUS_TRANSITIONS[application.value.status] ?? []
@@ -102,19 +75,6 @@ async function saveNotes() {
   }
 }
 
-// ─────────────────────────────────────────────
-// Display helpers
-// ─────────────────────────────────────────────
-
-const statusBadgeClasses: Record<string, string> = {
-  new: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
-  screening: 'bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-400',
-  interview: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
-  offer: 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-400',
-  hired: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400',
-  rejected: 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400',
-}
-
 function formatResponseValue(value: unknown): string {
   if (Array.isArray(value)) return value.join(', ')
   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
@@ -123,34 +83,34 @@ function formatResponseValue(value: unknown): string {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl">
+  <div class="ui-detail-page">
     <!-- Back link -->
     <NuxtLink
       :to="$localePath('/dashboard/applications')"
-      class="mb-4 inline-flex items-center gap-1 rounded-full border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-3 py-1.5 text-sm text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+      class="ui-button ui-button-secondary ui-detail-back-link"
     >
       <ArrowLeft class="size-4" />
       Back to Applications
     </NuxtLink>
 
     <!-- Loading -->
-    <div v-if="fetchStatus === 'pending'" class="text-center py-12 text-surface-400">
+    <div v-if="fetchStatus === 'pending'" class="ui-detail-loading-state text-surface-400">
       Loading application…
     </div>
 
     <!-- Error / not found -->
     <div
       v-else-if="error"
-      class="rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700"
+      class="ui-alert ui-alert-danger ui-detail-card"
     >
       {{ error.statusCode === 404 ? 'Application not found.' : 'Failed to load application.' }}
-      <NuxtLink :to="$localePath('/dashboard/applications')" class="underline ml-1">Back to Applications</NuxtLink>
+      <NuxtLink :to="$localePath('/dashboard/applications')" class="ui-inline-link-brand ml-1 underline">Back to Applications</NuxtLink>
     </div>
 
     <!-- Application detail -->
     <template v-else-if="application">
       <!-- Header -->
-      <div class="mb-4 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
+      <div class="ui-panel ui-detail-header-card">
         <p class="mb-2 text-xs font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
           Application Overview
         </p>
@@ -161,17 +121,17 @@ function formatResponseValue(value: unknown): string {
           <span class="text-surface-400">→</span>
           <NuxtLink
             :to="$localePath(`/dashboard/jobs/${application.job.id}`)"
-            class="text-xl text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 truncate transition-colors"
+            class="ui-inline-link ui-inline-link-brand text-xl truncate"
           >
             {{ application.job.title }}
           </NuxtLink>
         </div>
         <div class="flex flex-wrap items-center gap-3">
           <span
-            class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
-            :class="statusBadgeClasses[application.status] ?? 'bg-surface-100 text-surface-600'"
+            class="ui-pill"
+            :class="getApplicationStatusBadgeClass(application.status, 'soft')"
           >
-            {{ application.status }}
+            {{ getApplicationStatusLabel(application.status) }}
           </span>
           <TimelineDateLink :date="application.createdAt" class="text-sm text-surface-500 dark:text-surface-400">
             Applied {{ new Date(application.createdAt).toLocaleDateString() }}
@@ -180,25 +140,25 @@ function formatResponseValue(value: unknown): string {
       </div>
 
       <!-- Quick actions -->
-      <div class="mb-6 rounded-xl border border-surface-200 dark:border-surface-800 bg-white/80 dark:bg-surface-900/70 p-3">
+      <div class="ui-panel ui-detail-action-strip">
         <div class="flex flex-wrap items-center gap-2">
-          <span class="inline-flex items-center rounded-full bg-surface-100 dark:bg-surface-800 px-2.5 py-1 text-xs font-medium text-surface-600 dark:text-surface-400">Quick actions</span>
+          <span class="ui-pill">Quick actions</span>
           <button
             v-for="nextStatus in allowedTransitions"
             :key="nextStatus"
             :disabled="isTransitioning"
-            class="inline-flex cursor-pointer items-center rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
-            :class="transitionClasses[nextStatus] ?? 'border border-surface-300 dark:border-surface-700 bg-white/80 dark:bg-surface-900 text-surface-700 dark:text-surface-300 hover:border-surface-400 dark:hover:border-surface-600 hover:bg-surface-50 dark:hover:bg-surface-800'"
+            class="ui-button rounded-full px-3.5 py-1.5 text-sm"
+            :class="getApplicationTransitionButtonClass(nextStatus, 'solid')"
             @click="handleTransition(nextStatus)"
           >
             <span
-              class="mr-2 inline-flex size-1.5 rounded-full"
-              :class="transitionDotClasses[nextStatus] ?? 'bg-surface-400 dark:bg-surface-500'"
+              class="ui-status-dot mr-2"
+              :class="getApplicationTransitionDotClass(nextStatus)"
             />
-            {{ transitionLabels[nextStatus] ?? nextStatus }}
+            {{ getApplicationTransitionLabel(nextStatus) }}
           </button>
           <button
-            class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-surface-300 dark:border-surface-700 bg-white/80 dark:bg-surface-900 px-3.5 py-1.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:border-brand-400 dark:hover:border-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/30 hover:text-brand-700 dark:hover:text-brand-300 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+            class="ui-button ui-button-secondary rounded-full px-3.5 py-1.5 text-sm"
             @click="showInterviewSidebar = true"
           >
             <Calendar class="size-3.5" />
@@ -207,10 +167,10 @@ function formatResponseValue(value: unknown): string {
         </div>
       </div>
 
-      <div class="grid gap-4 md:grid-cols-2">
+      <div class="ui-detail-card-grid">
         <!-- Candidate info -->
-        <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
-          <div class="flex items-center gap-2 mb-3">
+        <div class="ui-panel ui-detail-card">
+          <div class="ui-detail-card-header">
             <User class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Candidate</h2>
           </div>
@@ -220,7 +180,7 @@ function formatResponseValue(value: unknown): string {
               <dd class="text-surface-700 dark:text-surface-200 font-medium">
                 <NuxtLink
                   :to="$localePath(`/dashboard/candidates/${application.candidate.id}`)"
-                  class="text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
+                  class="ui-inline-link ui-inline-link-brand"
                 >
                   {{ formatCandidateName(application.candidate) }}
                 </NuxtLink>
@@ -232,7 +192,7 @@ function formatResponseValue(value: unknown): string {
                 <a
                   :href="`mailto:${application.candidate.email}`"
                   target="_blank"
-                  class="hover:text-brand-600 dark:hover:text-brand-400 hover:underline cursor-pointer transition-colors"
+                  class="ui-inline-link ui-inline-link-brand cursor-pointer"
                 >{{ application.candidate.email }}</a>
               </dd>
             </div>
@@ -244,8 +204,8 @@ function formatResponseValue(value: unknown): string {
         </div>
 
         <!-- Job info -->
-        <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
-          <div class="flex items-center gap-2 mb-3">
+        <div class="ui-panel ui-detail-card">
+          <div class="ui-detail-card-header">
             <Briefcase class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Job</h2>
           </div>
@@ -255,7 +215,7 @@ function formatResponseValue(value: unknown): string {
               <dd class="text-surface-700 dark:text-surface-200 font-medium">
                 <NuxtLink
                   :to="$localePath(`/dashboard/jobs/${application.job.id}`)"
-                  class="text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
+                  class="ui-inline-link ui-inline-link-brand"
                 >
                   {{ application.job.title }}
                 </NuxtLink>
@@ -269,8 +229,8 @@ function formatResponseValue(value: unknown): string {
         </div>
 
         <!-- Application details -->
-        <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 md:col-span-2">
-          <div class="flex items-center gap-2 mb-3">
+        <div class="ui-panel ui-detail-card md:col-span-2">
+          <div class="ui-detail-card-header">
             <Hash class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Details</h2>
           </div>
@@ -306,15 +266,15 @@ function formatResponseValue(value: unknown): string {
       </div>
 
       <!-- Notes -->
-      <div class="mt-4 rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 mb-4">
-        <div class="flex items-center justify-between mb-3">
+      <div class="ui-panel ui-detail-card-spaced">
+        <div class="ui-detail-card-header justify-between">
           <div class="flex items-center gap-2">
             <MessageSquare class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Notes</h2>
           </div>
           <button
             v-if="!isEditingNotes"
-            class="cursor-pointer text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors"
+            class="ui-inline-link ui-inline-link-brand cursor-pointer text-xs font-medium"
             @click="startEditNotes"
           >
             {{ application.notes ? 'Edit' : 'Add Notes' }}
@@ -326,18 +286,18 @@ function formatResponseValue(value: unknown): string {
             v-model="notesInput"
             rows="4"
             placeholder="Add notes about this application…"
-            class="w-full rounded-lg border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+            class="ui-field"
           />
           <div class="flex items-center gap-2 mt-2">
             <button
               :disabled="isSavingNotes"
-              class="cursor-pointer rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              class="ui-button ui-button-primary px-3 py-1.5 text-sm"
               @click="saveNotes"
             >
               {{ isSavingNotes ? 'Saving…' : 'Save' }}
             </button>
             <button
-              class="cursor-pointer rounded-lg border border-surface-300 dark:border-surface-600 px-3 py-1.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+              class="ui-button ui-button-secondary px-3 py-1.5 text-sm"
               @click="isEditingNotes = false"
             >
               Cancel
@@ -355,7 +315,7 @@ function formatResponseValue(value: unknown): string {
       </div>
 
       <!-- Custom properties (Notion-style) -->
-      <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-4 mb-4">
+      <div class="ui-panel ui-detail-card-compact mb-4">
         <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200 mb-2 px-2">Properties</h2>
         <PropertyBlock
           entity-type="application"
@@ -369,9 +329,9 @@ function formatResponseValue(value: unknown): string {
       <!-- Question Responses -->
       <div
         v-if="application.responses && application.responses.length > 0"
-        class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5"
+        class="ui-panel ui-detail-card"
       >
-        <div class="flex items-center gap-2 mb-3">
+        <div class="ui-detail-card-header">
           <FileText class="size-4 text-surface-500 dark:text-surface-400" />
           <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">
             Application Responses ({{ application.responses.length }})
@@ -381,7 +341,7 @@ function formatResponseValue(value: unknown): string {
           <div
             v-for="response in application.responses"
             :key="response.id"
-            class="border-b border-surface-100 dark:border-surface-800 pb-3 last:border-0 last:pb-0"
+            class="ui-panel-divider pb-3 last:border-0 last:pb-0"
           >
             <dt class="text-xs font-medium text-surface-500 dark:text-surface-400 mb-0.5">
               {{ response.question?.label ?? 'Unknown question' }}
