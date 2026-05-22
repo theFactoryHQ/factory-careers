@@ -94,17 +94,6 @@ describe('brand-neutral theme variables', () => {
       '.ui-meter-label-danger',
       '.ui-meter-label-brand',
       '.ui-meter-label-success',
-      '.ui-portal-panel',
-      '.ui-portal-header',
-      '.ui-portal-body',
-      '.ui-portal-card',
-      '.ui-portal-pill',
-      '.ui-portal-action',
-      '.ui-portal-field',
-      '.ui-portal-empty-action',
-      '.ui-portal-alert-danger',
-      '.ui-portal-divider',
-      '.ui-portal-link',
       '.ui-drawer-panel',
       '.ui-drawer-header',
       '.ui-drawer-tabs',
@@ -1085,20 +1074,26 @@ describe('brand-neutral theme variables', () => {
     const source = readProjectFile('app/components/ApplicationDetailDrawer.vue')
 
     for (const recipe of [
-      'ui-portal-panel',
-      'ui-portal-header',
-      'ui-portal-body',
-      'ui-portal-card',
-      'ui-portal-pill',
-      'ui-portal-action',
-      'ui-portal-field',
-      'ui-portal-empty-action',
-      'ui-portal-alert-danger',
-      'ui-portal-divider',
-      'ui-portal-link',
+      'factory-dashboard-portal',
+      'ui-modal-backdrop',
+      'ui-drawer-panel',
+      'ui-drawer-header',
+      'ui-drawer-body',
+      'ui-panel',
+      'ui-pill',
+      'ui-field',
+      'ui-empty-panel',
+      'ui-alert-danger',
+      'ui-panel-divider',
+      'ui-button-primary',
+      'ui-button-secondary',
+      'ui-button-ghost',
+      'ui-inline-link-brand',
     ]) {
       expect(source, `application drawer should use ${recipe}`).toContain(recipe)
     }
+
+    expect(source, 'application drawer should use the shared drawer recipes instead of legacy portal recipes').not.toMatch(/ui-portal-/)
   })
 
   it('applies shared UI recipes to candidate drawer surfaces', () => {
@@ -1732,6 +1727,7 @@ describe('brand-neutral theme variables', () => {
       /border border-danger-500\/45 bg-danger-500\/10/,
       /border border-white\/16 bg-black/,
       /border border-dashed border-white\/12 bg-black/,
+      /fixed inset-0 z-\[55\] bg-black\/75/,
       /focus:ring-brand-500\/40/,
       /placeholder:text-white\/34/,
       /border-b border-white\/10/,
