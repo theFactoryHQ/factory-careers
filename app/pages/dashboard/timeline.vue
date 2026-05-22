@@ -6,6 +6,7 @@ import {
   ChevronDown, ChevronRight, ArrowDown, Loader2,
   AlertCircle, History, ArrowRight, Search, X,
 } from 'lucide-vue-next'
+import { getApplicationStatusBadgeClass } from '~/utils/status-display'
 
 const NuxtLinkComponent = resolveComponent('NuxtLink')
 const route = useRoute()
@@ -347,19 +348,6 @@ function getPipelineStatusColors(status: string): { color: string, bg: string, r
   return map[status] ?? { color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/50', ring: 'ring-blue-200 dark:ring-blue-800' }
 }
 
-function getStatusBadgeClasses(status: string): string {
-  const s = status.toLowerCase()
-  const map: Record<string, string> = {
-    new: 'bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300',
-    screening: 'bg-violet-100 text-violet-700 dark:bg-violet-900/60 dark:text-violet-300',
-    interview: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
-    offer: 'bg-teal-100 text-teal-700 dark:bg-teal-900/60 dark:text-teal-300',
-    hired: 'bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300',
-    rejected: 'bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-300',
-  }
-  return map[s] ?? 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-300'
-}
-
 function getEventDescription(item: TimelineItem): string {
   const typeLabels: Record<string, string> = {
     job: 'Job',
@@ -406,7 +394,7 @@ function getEventDescription(item: TimelineItem): string {
         <!-- Scroll to today button -->
         <button
           v-if="dayGroups.length > 0 && !isLoading"
-          class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 transition-colors cursor-pointer"
+          class="ui-button ui-button-ghost gap-1.5 px-2.5 py-1 text-xs cursor-pointer"
           @click="scrollToToday"
         >
           <ArrowDown class="size-3" />
@@ -419,10 +407,8 @@ function getEventDescription(item: TimelineItem): string {
         <button
           v-for="f in filters"
           :key="f.key ?? 'all'"
-          class="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 cursor-pointer"
-          :class="activeFilter === f.key
-            ? 'bg-brand-600 text-white'
-            : 'text-surface-500 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-700 dark:hover:text-surface-300'"
+          class="ui-filter-chip"
+          :class="activeFilter === f.key ? 'ui-filter-chip-active' : 'ui-filter-chip-inactive'"
           @click="setFilter(f.key)"
         >
           <component :is="f.icon" class="size-3" />
@@ -438,7 +424,7 @@ function getEventDescription(item: TimelineItem): string {
             v-model="searchQuery"
             type="text"
             placeholder="Search by name, date, or keyword…"
-            class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 pl-8 pr-8 py-1.5 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-400 dark:focus:border-brand-600 transition-colors"
+            class="ui-field pl-8 pr-8 py-1.5"
           />
           <button
             v-if="searchQuery"
@@ -472,11 +458,11 @@ function getEventDescription(item: TimelineItem): string {
     <!-- ─── Error state ─── -->
     <div
       v-else-if="error"
-      class="rounded-lg border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950/60 p-4 text-sm text-danger-700 dark:text-danger-400 flex items-center gap-3"
+      class="ui-alert ui-alert-danger flex items-center gap-3 p-4"
     >
       <AlertCircle class="size-4 shrink-0" />
       <span>{{ error }}</span>
-      <button class="underline ml-auto font-medium cursor-pointer" @click="loadInitial(activeFilter)">
+      <button class="ui-inline-link ui-inline-link-brand ml-auto font-medium" @click="loadInitial(activeFilter)">
         Retry
       </button>
     </div>
@@ -486,9 +472,9 @@ function getEventDescription(item: TimelineItem): string {
       v-else-if="dayGroups.length === 0"
       class="flex flex-col items-center justify-center py-20"
     >
-      <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-10 text-center max-w-sm">
-        <div class="mx-auto mb-5 flex items-center justify-center size-12 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700">
-          <History class="size-6 text-white" />
+      <div class="ui-empty-panel max-w-sm p-10">
+        <div class="ui-icon-state ui-icon-state-brand mx-auto mb-5 size-12">
+          <History class="size-6" />
         </div>
         <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 mb-2 tracking-tight">
           No activity yet
@@ -498,7 +484,7 @@ function getEventDescription(item: TimelineItem): string {
         </p>
         <NuxtLink
           :to="localePath('/dashboard/jobs')"
-          class="mt-5 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors no-underline"
+          class="ui-button ui-button-primary mt-5 px-4 py-2 text-sm no-underline"
         >
           <Briefcase class="size-4" />
           Create your first job
@@ -519,7 +505,7 @@ function getEventDescription(item: TimelineItem): string {
         Try searching by name, date, or keyword
       </p>
       <button
-        class="mt-3 text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline cursor-pointer"
+        class="ui-inline-link ui-inline-link-brand mt-3 text-xs font-medium"
         @click="searchQuery = ''"
       >
         Clear search
@@ -529,7 +515,7 @@ function getEventDescription(item: TimelineItem): string {
     <!-- ─── Timeline ─── -->
     <div v-else class="relative">
       <!-- Vertical timeline line -->
-      <div class="absolute left-3.5 top-0 bottom-0 w-px bg-surface-200 dark:bg-surface-800" />
+      <div class="ui-timeline-line absolute left-3.5 top-0 bottom-0 w-px" />
 
       <div class="space-y-6">
         <div v-for="group in filteredDayGroups" :key="group.date">
@@ -537,7 +523,7 @@ function getEventDescription(item: TimelineItem): string {
           <div
             :ref="(el: any) => setDateRef(group.date, group.isToday, el)"
             class="relative flex items-center gap-3 mb-1 transition-colors duration-700 rounded-lg -mx-2 px-2 py-1"
-            :class="targetDate === group.date ? 'bg-brand-50/80 dark:bg-brand-950/30 ring-1 ring-brand-200 dark:ring-brand-800' : ''"
+            :class="targetDate === group.date ? 'ui-timeline-date-highlight' : ''"
           >
             <!-- Day dot on the timeline -->
             <div
@@ -589,10 +575,10 @@ function getEventDescription(item: TimelineItem): string {
 
           <!-- Events for this day, grouped by purpose -->
           <div class="ml-3.5 pl-5 space-y-3 mt-1">
-            <div v-for="section in group.sections" :key="section.jobId ?? section.type" class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/60 overflow-hidden">
+            <div v-for="section in group.sections" :key="section.jobId ?? section.type" class="ui-timeline-section">
               <!-- Section header (collapsible) -->
               <button
-                class="flex items-center gap-2 px-3 py-2 w-full border-b border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/40 cursor-pointer hover:bg-surface-100/60 dark:hover:bg-surface-800/60 transition-colors"
+                class="ui-timeline-section-header flex items-center gap-2 px-3 py-2 w-full cursor-pointer"
                 @click="toggleSection(sectionKey(group.date, section))"
               >
                 <ChevronRight
@@ -605,7 +591,7 @@ function getEventDescription(item: TimelineItem): string {
                   :to="section.jobUrl ? localePath(section.jobUrl) : undefined"
                   class="text-xs font-semibold tracking-wide no-underline truncate"
                   :class="section.type === 'job'
-                    ? 'text-surface-800 dark:text-surface-200 hover:text-brand-600 dark:hover:text-brand-400 transition-colors'
+                    ? 'ui-inline-link ui-inline-link-brand'
                     : 'text-surface-500 dark:text-surface-400 uppercase'"
                   @click.stop
                 >
@@ -619,14 +605,14 @@ function getEventDescription(item: TimelineItem): string {
               <!-- Section content (collapsible) -->
               <div v-if="!collapsedSections.has(sectionKey(group.date, section))">
                 <!-- Direct items (job-level events, team events, etc.) -->
-                <div v-if="section.directItems.length" class="divide-y divide-surface-100 dark:divide-surface-800/60">
+                <div v-if="section.directItems.length" class="ui-list-divider">
                   <component
                     :is="item.resourceUrl ? NuxtLinkComponent : 'div'"
                     v-for="item in section.directItems"
                     :key="item.id"
                     :to="item.resourceUrl ? localePath(item.resourceUrl) : undefined"
                     class="group relative flex items-center gap-2 py-2 px-3 transition-colors duration-150 no-underline"
-                    :class="[item.resourceUrl ? 'cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800/60' : '']"
+                    :class="[item.resourceUrl ? 'ui-list-row cursor-pointer' : '']"
                   >
                     <div class="flex items-center justify-center size-6 rounded shrink-0" :class="getActionStyle(item.action, item.resourceType, item.metadata).bg">
                       <component :is="getActionStyle(item.action, item.resourceType, item.metadata).icon" class="size-3" :class="getActionStyle(item.action, item.resourceType, item.metadata).color" />
@@ -635,9 +621,9 @@ function getEventDescription(item: TimelineItem): string {
                       <span class="text-[13px] font-medium text-surface-900 dark:text-surface-100 shrink-0">{{ getEventDescription(item) }}</span>
                       <span v-if="item.resourceName" class="text-[13px] text-surface-600 dark:text-surface-300 truncate group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">&mdash; {{ item.resourceName }}</span>
                       <template v-if="item.action === 'status_changed' && item.metadata">
-                        <span v-if="item.metadata.fromStatus || item.metadata.from" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getStatusBadgeClasses(String(item.metadata.fromStatus ?? item.metadata.from))">{{ item.metadata.fromStatus ?? item.metadata.from }}</span>
+                        <span v-if="item.metadata.fromStatus || item.metadata.from" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getApplicationStatusBadgeClass(String(item.metadata.fromStatus ?? item.metadata.from), 'soft')">{{ item.metadata.fromStatus ?? item.metadata.from }}</span>
                         <ArrowRight class="size-2.5 text-surface-400 dark:text-surface-500 shrink-0" />
-                        <span v-if="item.metadata.toStatus || item.metadata.to" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getStatusBadgeClasses(String(item.metadata.toStatus ?? item.metadata.to))">{{ item.metadata.toStatus ?? item.metadata.to }}</span>
+                        <span v-if="item.metadata.toStatus || item.metadata.to" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getApplicationStatusBadgeClass(String(item.metadata.toStatus ?? item.metadata.to), 'soft')">{{ item.metadata.toStatus ?? item.metadata.to }}</span>
                       </template>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
@@ -654,21 +640,21 @@ function getEventDescription(item: TimelineItem): string {
                 </div>
 
                 <!-- Candidate groups (flat list per candidate) -->
-                <div v-for="cGroup in section.candidateGroups" :key="cGroup.candidateId" class="border-t border-surface-100 dark:border-surface-800/60">
+                <div v-for="cGroup in section.candidateGroups" :key="cGroup.candidateId" class="ui-panel-divider">
                   <!-- Candidate label -->
                   <div class="flex items-center gap-2 px-3 py-1.5 pl-5">
                     <User class="size-3 text-surface-400 dark:text-surface-500 shrink-0" />
                     <component
                       :is="cGroup.candidateUrl ? NuxtLinkComponent : 'span'"
                       :to="cGroup.candidateUrl ? localePath(cGroup.candidateUrl) : undefined"
-                      class="text-[12px] font-semibold text-surface-700 dark:text-surface-300 no-underline truncate hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+                      class="ui-inline-link ui-inline-link-brand text-[12px] font-semibold no-underline truncate"
                     >
                       {{ cGroup.candidateName }}
                     </component>
                   </div>
 
                   <!-- Candidate events (flat) -->
-                  <div class="divide-y divide-surface-50 dark:divide-surface-800/40">
+                  <div class="ui-list-divider">
                     <component
                       :is="item.resourceUrl ? NuxtLinkComponent : 'div'"
                       v-for="item in cGroup.items"
@@ -676,7 +662,7 @@ function getEventDescription(item: TimelineItem): string {
                       :to="item.resourceUrl ? localePath(item.resourceUrl) : undefined"
                       class="group relative flex items-center gap-2 py-1.5 px-3 pl-6 transition-colors duration-150 no-underline"
                       :class="[
-                        item.resourceUrl ? 'cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800/60' : '',
+                        item.resourceUrl ? 'ui-list-row cursor-pointer' : '',
                         item.isUpcoming ? 'bg-accent-50/50 dark:bg-accent-950/20' : '',
                       ]"
                     >
@@ -687,9 +673,9 @@ function getEventDescription(item: TimelineItem): string {
                         <span class="text-[12px] font-medium shrink-0" :class="getActionStyle(item.action, item.resourceType, item.metadata).color">{{ getEventDescription(item) }}</span>
                         <span v-if="item.resourceName" class="text-[12px] text-surface-600 dark:text-surface-300 truncate group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">{{ item.resourceName }}</span>
                         <template v-if="item.action === 'status_changed' && item.metadata">
-                          <span v-if="item.metadata.fromStatus || item.metadata.from" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getStatusBadgeClasses(String(item.metadata.fromStatus ?? item.metadata.from))">{{ item.metadata.fromStatus ?? item.metadata.from }}</span>
+                          <span v-if="item.metadata.fromStatus || item.metadata.from" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getApplicationStatusBadgeClass(String(item.metadata.fromStatus ?? item.metadata.from), 'soft')">{{ item.metadata.fromStatus ?? item.metadata.from }}</span>
                           <ArrowRight class="size-2.5 text-surface-400 dark:text-surface-500 shrink-0" />
-                          <span v-if="item.metadata.toStatus || item.metadata.to" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getStatusBadgeClasses(String(item.metadata.toStatus ?? item.metadata.to))">{{ item.metadata.toStatus ?? item.metadata.to }}</span>
+                          <span v-if="item.metadata.toStatus || item.metadata.to" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getApplicationStatusBadgeClass(String(item.metadata.toStatus ?? item.metadata.to), 'soft')">{{ item.metadata.toStatus ?? item.metadata.to }}</span>
                         </template>
                         <span v-if="item.isUpcoming" class="text-[11px] font-medium text-accent-600 dark:text-accent-400 shrink-0">Upcoming</span>
                       </div>
@@ -720,7 +706,7 @@ function getEventDescription(item: TimelineItem): string {
         </div>
         <div v-else-if="hasMore" class="flex justify-center py-4">
           <button
-            class="inline-flex items-center gap-1.5 rounded-md border border-surface-200 dark:border-surface-800 px-3 py-1.5 text-xs font-medium text-surface-500 dark:text-surface-400 hover:text-brand-600 dark:hover:text-brand-400 hover:border-brand-300 dark:hover:border-brand-700 transition-colors cursor-pointer"
+            class="ui-button ui-button-secondary gap-1.5 px-3 py-1.5 text-xs cursor-pointer"
             @click="loadMore"
           >
             <ChevronDown class="size-3.5" />

@@ -212,7 +212,7 @@ function formatDate(dateString: string | null | undefined): string {
         <!-- Version badge -->
         <div
           v-if="currentVersion"
-          class="flex items-center gap-2 shrink-0 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2.5 shadow-sm"
+          class="ui-update-version-badge flex items-center gap-2 shrink-0 px-4 py-2.5"
         >
           <Package class="size-4 text-brand-500" />
           <div class="flex flex-col">
@@ -226,8 +226,8 @@ function formatDate(dateString: string | null | undefined): string {
     <!-- ═══════════════════════════════════════════ -->
     <!-- Version status card                        -->
     <!-- ═══════════════════════════════════════════ -->
-    <section class="mb-6 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-sm">
-      <div class="px-6 py-5 border-b border-surface-200 dark:border-surface-800">
+    <section class="ui-dashboard-panel mb-6">
+      <div class="ui-dashboard-panel-header px-6 py-5">
         <div class="flex items-center gap-3">
           <div
             class="flex items-center justify-center size-10 rounded-lg"
@@ -299,7 +299,7 @@ function formatDate(dateString: string | null | undefined): string {
         <div class="flex flex-wrap items-center gap-3 pt-2">
           <button
             :disabled="isChecking || versionLoading"
-            class="inline-flex items-center gap-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="ui-button ui-button-secondary px-4 py-2"
             @click="handleCheckUpdate"
           >
             <RefreshCw :class="['size-4', (isChecking || versionLoading) && 'animate-spin']" />
@@ -311,7 +311,7 @@ function formatDate(dateString: string | null | undefined): string {
             :href="versionInfo.releaseUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors no-underline"
+            class="ui-button ui-button-secondary px-4 py-2 no-underline"
           >
             <ExternalLink class="size-4" />
             View release notes
@@ -323,10 +323,10 @@ function formatDate(dateString: string | null | undefined): string {
     <!-- ═══════════════════════════════════════════ -->
     <!-- One-click update section (owner only)      -->
     <!-- ═══════════════════════════════════════════ -->
-    <section v-if="isOwner && versionInfo?.updateAvailable" class="mb-6 rounded-xl border border-brand-200 dark:border-brand-900 bg-white dark:bg-surface-900 overflow-hidden shadow-sm">
-      <div class="px-6 py-5 border-b border-brand-200 dark:border-brand-900 bg-brand-50/50 dark:bg-brand-950/20">
+    <section v-if="isOwner && versionInfo?.updateAvailable" class="ui-panel-brand mb-6 overflow-hidden shadow-sm">
+      <div class="ui-panel-brand-header px-6 py-5">
         <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-10 rounded-lg bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400">
+          <div class="ui-icon-state ui-icon-state-brand size-10 rounded-lg">
             <Download class="size-5" />
           </div>
           <div>
@@ -342,7 +342,7 @@ function formatDate(dateString: string | null | undefined): string {
 
       <div class="px-6 py-5 space-y-4">
         <!-- Safety info -->
-        <div class="flex items-start gap-3 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-800 px-4 py-3">
+        <div class="ui-panel-muted flex items-start gap-3 px-4 py-3">
           <Shield class="size-4 shrink-0 text-surface-500 mt-0.5" />
           <div class="text-sm text-surface-600 dark:text-surface-400">
             <p class="font-medium text-surface-700 dark:text-surface-300 mb-1">Before updating</p>
@@ -358,7 +358,7 @@ function formatDate(dateString: string | null | undefined): string {
         <div class="flex flex-wrap items-center gap-3">
           <button
             :disabled="isBackingUp"
-            class="inline-flex items-center gap-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="ui-button ui-button-secondary px-4 py-2"
             @click="handleBackup"
           >
             <Loader2 v-if="isBackingUp" class="size-4 animate-spin" />
@@ -370,10 +370,8 @@ function formatDate(dateString: string | null | undefined): string {
         <!-- Backup result -->
         <div
           v-if="backupResult"
-          class="rounded-lg px-4 py-3 text-sm"
-          :class="backupResult.success
-            ? 'bg-success-50 dark:bg-success-950/40 border border-success-200 dark:border-success-900 text-success-700 dark:text-success-400'
-            : 'bg-danger-50 dark:bg-danger-950/40 border border-danger-200 dark:border-danger-900 text-danger-700 dark:text-danger-400'"
+          class="ui-alert px-4 py-3"
+          :class="backupResult.success ? 'ui-alert-success' : 'ui-alert-danger'"
         >
           {{ backupResult.message }}
         </div>
@@ -382,7 +380,7 @@ function formatDate(dateString: string | null | undefined): string {
         <div v-if="!showUpdateConfirm">
           <button
             :disabled="isUpdating"
-            class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="ui-button ui-button-primary px-5 py-2.5"
             @click="showUpdateConfirm = true"
           >
             <Download class="size-4" />
@@ -397,14 +395,14 @@ function formatDate(dateString: string | null | undefined): string {
           enter-from-class="opacity-0 -translate-y-2"
           leave-to-class="opacity-0 -translate-y-2"
         >
-          <div v-if="showUpdateConfirm" class="rounded-lg border border-warning-200 dark:border-warning-800 bg-warning-50/50 dark:bg-warning-950/30 px-4 py-4 space-y-3">
+          <div v-if="showUpdateConfirm" class="ui-alert ui-alert-warning px-4 py-4 space-y-3">
             <p class="text-sm text-surface-700 dark:text-surface-300">
               This will update your Factory Careers instance from <strong>v{{ versionInfo.currentVersion }}</strong> to <strong>v{{ versionInfo.latestVersion }}</strong>. The app will restart during the update.
             </p>
             <div class="flex items-center gap-2">
               <button
                 :disabled="isUpdating"
-                class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                class="ui-button ui-button-primary px-4 py-2"
                 @click="handleApplyUpdate"
               >
                 <Loader2 v-if="isUpdating" class="size-4 animate-spin" />
@@ -413,7 +411,7 @@ function formatDate(dateString: string | null | undefined): string {
               </button>
               <button
                 :disabled="isUpdating"
-                class="rounded-lg px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-colors"
+                class="ui-button ui-button-ghost px-4 py-2"
                 @click="showUpdateConfirm = false"
               >
                 Cancel
@@ -425,10 +423,8 @@ function formatDate(dateString: string | null | undefined): string {
         <!-- Update result -->
         <div v-if="updateResult" class="space-y-3">
           <div
-            class="rounded-lg px-4 py-3 text-sm"
-            :class="updateResult.success
-              ? 'bg-success-50 dark:bg-success-950/40 border border-success-200 dark:border-success-900 text-success-700 dark:text-success-400'
-              : 'bg-danger-50 dark:bg-danger-950/40 border border-danger-200 dark:border-danger-900 text-danger-700 dark:text-danger-400'"
+            class="ui-alert px-4 py-3"
+            :class="updateResult.success ? 'ui-alert-success' : 'ui-alert-danger'"
           >
             {{ updateResult.message }}
           </div>
@@ -450,17 +446,17 @@ function formatDate(dateString: string | null | undefined): string {
     </section>
 
     <!-- Read-only notice for non-owner users -->
-    <div v-if="!isOwner && versionInfo?.updateAvailable" class="mb-6 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-800 px-4 py-3 text-sm text-surface-500 dark:text-surface-400">
+    <div v-if="!isOwner && versionInfo?.updateAvailable" class="ui-alert ui-alert-info mb-6 px-4 py-3">
       Only organization owners can apply updates. Contact the owner to update your instance.
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- System health                              -->
     <!-- ═══════════════════════════════════════════ -->
-    <section class="mb-6 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-sm">
-      <div class="px-6 py-5 border-b border-surface-200 dark:border-surface-800">
+    <section class="ui-dashboard-panel mb-6">
+      <div class="ui-dashboard-panel-header px-6 py-5">
         <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-10 rounded-lg bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400">
+          <div class="ui-dashboard-soft-icon flex items-center justify-center size-10 rounded-lg">
             <Server class="size-5" />
           </div>
           <div>
@@ -479,7 +475,7 @@ function formatDate(dateString: string | null | undefined): string {
         <!-- Service status grid -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <!-- App -->
-          <div class="rounded-lg border border-surface-200 dark:border-surface-800 px-4 py-3">
+          <div class="ui-panel-muted px-4 py-3">
             <div class="flex items-center gap-2 mb-1.5">
               <div class="size-2 rounded-full bg-success-500" />
               <span class="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide">App</span>
@@ -489,7 +485,7 @@ function formatDate(dateString: string | null | undefined): string {
           </div>
 
           <!-- Database -->
-          <div class="rounded-lg border border-surface-200 dark:border-surface-800 px-4 py-3">
+          <div class="ui-panel-muted px-4 py-3">
             <div class="flex items-center gap-2 mb-1.5">
               <div class="size-2 rounded-full" :class="systemInfo.database.connected ? 'bg-success-500' : 'bg-danger-500'" />
               <span class="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-wide">Database</span>
@@ -501,7 +497,7 @@ function formatDate(dateString: string | null | undefined): string {
           </div>
 
           <!-- Storage -->
-          <div class="rounded-lg border border-surface-200 dark:border-surface-800 px-4 py-3">
+          <div class="ui-panel-muted px-4 py-3">
             <div class="flex items-center gap-2 mb-1.5">
               <div class="size-2 rounded-full" :class="systemInfo.storage.connected ? 'bg-success-500' : 'bg-danger-500'" />
               <span class="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-wide">Storage</span>
@@ -587,7 +583,7 @@ function formatDate(dateString: string | null | undefined): string {
 
     <!-- Loading skeleton -->
     <div v-if="status === 'pending'" class="space-y-4">
-      <div v-for="i in 4" :key="i" class="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-5">
+      <div v-for="i in 4" :key="i" class="ui-dashboard-panel p-5">
         <div class="flex items-center gap-3 animate-pulse">
           <div class="size-8 rounded-lg bg-surface-100 dark:bg-surface-800" />
           <div class="flex-1 space-y-2">
@@ -601,7 +597,7 @@ function formatDate(dateString: string | null | undefined): string {
     <!-- Empty state -->
     <div
       v-else-if="entries.length === 0"
-      class="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-12 text-center"
+      class="ui-empty-panel p-12"
     >
       <RefreshCw class="size-8 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
       <div class="text-sm font-medium text-surface-500 dark:text-surface-400">No changelog entries found</div>
@@ -631,10 +627,8 @@ function formatDate(dateString: string | null | undefined): string {
 
           <!-- Entry card -->
           <div
-            class="ml-10 rounded-xl border transition-all duration-200"
-            :class="expandedEntries.has(idx)
-              ? 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-sm'
-              : 'border-transparent hover:border-surface-200 dark:hover:border-surface-700 bg-white/60 dark:bg-surface-900/60 hover:bg-white dark:hover:bg-surface-900 hover:shadow-sm'"
+            class="ui-update-card ml-10"
+            :class="expandedEntries.has(idx) ? 'ui-update-card-expanded' : 'ui-update-card-collapsed'"
           >
             <!-- Entry header -->
             <button
@@ -668,13 +662,13 @@ function formatDate(dateString: string | null | undefined): string {
                   </span>
                   <span
                     v-if="entry.version && entry.version === currentVersion"
-                    class="inline-flex items-center rounded-md bg-brand-50 dark:bg-brand-950/40 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700 dark:text-brand-300 ring-1 ring-inset ring-brand-200 dark:ring-brand-800"
+                    class="ui-pill ui-pill-brand px-1.5 py-0.5 text-[10px] font-semibold"
                   >
                     Current
                   </span>
                   <span
                     v-if="entry.title === 'Unreleased'"
-                    class="inline-flex items-center rounded-md bg-accent-50 dark:bg-accent-950/40 px-1.5 py-0.5 text-[10px] font-semibold text-accent-700 dark:text-accent-300 ring-1 ring-inset ring-accent-200 dark:ring-accent-800"
+                    class="ui-pill px-1.5 py-0.5 text-[10px] font-semibold"
                   >
                     Next
                   </span>
@@ -713,7 +707,7 @@ function formatDate(dateString: string | null | undefined): string {
               leave-to-class="opacity-0 max-h-0"
             >
               <div v-if="expandedEntries.has(idx)" class="overflow-hidden">
-                <div class="border-t border-surface-100 dark:border-surface-800 px-5 pb-5 pt-4 space-y-5">
+                <div class="ui-panel-divider px-5 pb-5 pt-4 space-y-5">
                   <div v-for="section in entry.sections" :key="section.heading">
                     <!-- Section heading -->
                     <div class="flex items-center gap-2 mb-3">
@@ -751,12 +745,12 @@ function formatDate(dateString: string | null | undefined): string {
                   </div>
 
                   <!-- View on GitHub link for versioned releases -->
-                  <div v-if="entry.link" class="pt-2 border-t border-surface-100 dark:border-surface-800">
+                  <div v-if="entry.link" class="ui-panel-divider pt-2">
                     <a
                       :href="entry.link"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors"
+                      class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1.5 text-xs font-medium"
                     >
                       View full release on GitHub
                       <ExternalLink class="size-3" />
@@ -778,10 +772,10 @@ function formatDate(dateString: string | null | undefined): string {
     <!-- ═══════════════════════════════════════════ -->
     <!-- Manual update instructions                 -->
     <!-- ═══════════════════════════════════════════ -->
-    <section class="mt-6 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-sm">
+    <section class="ui-dashboard-panel mt-6">
       <details class="group">
         <summary class="flex items-center gap-3 px-6 py-5 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
-          <div class="flex items-center justify-center size-10 rounded-lg bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400">
+          <div class="ui-dashboard-soft-icon flex items-center justify-center size-10 rounded-lg">
             <Info class="size-5" />
           </div>
           <div class="flex-1 min-w-0">
@@ -790,10 +784,10 @@ function formatDate(dateString: string | null | undefined): string {
           </div>
           <ChevronRight class="size-4 text-surface-400 transition-transform duration-200 group-open:rotate-90" />
         </summary>
-        <div class="border-t border-surface-100 dark:border-surface-800 px-6 py-5 space-y-4">
+        <div class="ui-panel-divider px-6 py-5 space-y-4">
           <div>
             <h4 class="text-sm font-semibold text-surface-800 dark:text-surface-200 mb-2">Docker Compose</h4>
-            <div class="rounded-lg bg-surface-900 dark:bg-surface-950 px-4 py-3 font-mono text-sm text-surface-100 space-y-1 overflow-x-auto">
+            <div class="ui-command-block px-4 py-3 font-mono text-sm space-y-1 overflow-x-auto">
               <p class="text-surface-500"># Pull the latest image and restart</p>
               <p>docker compose pull</p>
               <p>docker compose up -d</p>
@@ -801,7 +795,7 @@ function formatDate(dateString: string | null | undefined): string {
           </div>
           <div>
             <h4 class="text-sm font-semibold text-surface-800 dark:text-surface-200 mb-2">Manual / Git deployment</h4>
-            <div class="rounded-lg bg-surface-900 dark:bg-surface-950 px-4 py-3 font-mono text-sm text-surface-100 space-y-1 overflow-x-auto">
+            <div class="ui-command-block px-4 py-3 font-mono text-sm space-y-1 overflow-x-auto">
               <p class="text-surface-500"># Navigate to your Factory Careers directory</p>
               <p>cd /path/to/reqcore</p>
               <p class="text-surface-500 mt-3"># Pull the latest version</p>
@@ -823,7 +817,7 @@ function formatDate(dateString: string | null | undefined): string {
         href="https://github.com/caffeinebounce/factory-careers/releases"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline-flex items-center gap-1.5 text-xs font-medium text-surface-400 dark:text-surface-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+        class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1.5 text-xs font-medium"
       >
         View all releases on GitHub
         <ExternalLink class="size-3" />

@@ -134,6 +134,18 @@ describe('brand-neutral theme variables', () => {
       '.ui-dashboard-panel',
       '.ui-dashboard-panel-header',
       '.ui-dashboard-soft-icon',
+      '.ui-filter-chip',
+      '.ui-filter-chip-active',
+      '.ui-filter-chip-inactive',
+      '.ui-timeline-line',
+      '.ui-timeline-date-highlight',
+      '.ui-timeline-section',
+      '.ui-timeline-section-header',
+      '.ui-update-version-badge',
+      '.ui-update-card',
+      '.ui-update-card-expanded',
+      '.ui-update-card-collapsed',
+      '.ui-command-block',
     ]) {
       expect(css).toContain(recipe)
     }
@@ -295,6 +307,57 @@ describe('brand-neutral theme variables', () => {
       'getApplicationStatusBadgeClass',
     ]) {
       expect(source, `dashboard home should use ${recipe}`).toContain(recipe)
+    }
+  })
+
+  it('applies shared UI recipes to timeline and updates page-level surfaces', () => {
+    const timeline = readProjectFile('app/pages/dashboard/timeline.vue')
+    const updates = readProjectFile('app/pages/dashboard/updates.vue')
+
+    for (const recipe of [
+      'ui-field',
+      'ui-filter-chip',
+      'ui-filter-chip-active',
+      'ui-filter-chip-inactive',
+      'ui-alert-danger',
+      'ui-empty-panel',
+      'ui-button-primary',
+      'ui-button-secondary',
+      'ui-button-ghost',
+      'ui-timeline-line',
+      'ui-timeline-date-highlight',
+      'ui-timeline-section',
+      'ui-timeline-section-header',
+      'ui-list-divider',
+      'ui-list-row',
+      'ui-inline-link-brand',
+      'getApplicationStatusBadgeClass',
+    ]) {
+      expect(timeline, `timeline should use ${recipe}`).toContain(recipe)
+    }
+
+    for (const recipe of [
+      'ui-update-version-badge',
+      'ui-dashboard-panel',
+      'ui-dashboard-panel-header',
+      'ui-dashboard-soft-icon',
+      'ui-panel-brand',
+      'ui-panel-brand-header',
+      'ui-panel-muted',
+      'ui-alert-success',
+      'ui-alert-danger',
+      'ui-alert-warning',
+      'ui-button-primary',
+      'ui-button-secondary',
+      'ui-button-ghost',
+      'ui-empty-panel',
+      'ui-update-card',
+      'ui-update-card-expanded',
+      'ui-update-card-collapsed',
+      'ui-command-block',
+      'ui-inline-link-brand',
+    ]) {
+      expect(updates, `updates should use ${recipe}`).toContain(recipe)
     }
   })
 
@@ -817,6 +880,43 @@ describe('brand-neutral theme variables', () => {
       /text-brand-600 dark:text-brand-400 hover:text-brand-700/,
     ]) {
       expect(source, `dashboard home should centralize ${pattern}`).not.toMatch(pattern)
+    }
+  })
+
+  it('keeps timeline and updates page-level surface choices behind shared recipes', () => {
+    const timeline = readProjectFile('app/pages/dashboard/timeline.vue')
+    const updates = readProjectFile('app/pages/dashboard/updates.vue')
+
+    for (const pattern of [
+      /function getStatusBadgeClasses/,
+      /w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+      /rounded-lg border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950\/60/,
+      /rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+      /inline-flex items-center gap-2 rounded-lg bg-brand-600/,
+      /rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900\/60/,
+      /border-b border-surface-100 dark:border-surface-800 bg-surface-50\/50/,
+      /divide-y divide-surface-100 dark:divide-surface-800\/60/,
+      /border-t border-surface-100 dark:border-surface-800\/60/,
+      /text-brand-600 dark:text-brand-400 hover:underline/,
+    ]) {
+      expect(timeline, `timeline should centralize ${pattern}`).not.toMatch(pattern)
+    }
+
+    for (const pattern of [
+      /rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+      /rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900/,
+      /rounded-xl border border-brand-200 dark:border-brand-900 bg-white dark:bg-surface-900/,
+      /px-6 py-5 border-b border-surface-200 dark:border-surface-800/,
+      /inline-flex items-center gap-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800/,
+      /inline-flex items-center gap-2 rounded-lg bg-brand-600/,
+      /rounded-lg bg-surface-50 dark:bg-surface-800\/50 border border-surface-200 dark:border-surface-800/,
+      /ml-10 rounded-xl border transition-all duration-200/,
+      /border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-sm/,
+      /border-transparent hover:border-surface-200 dark:hover:border-surface-700 bg-white\/60/,
+      /border-t border-surface-100 dark:border-surface-800/,
+      /rounded-lg bg-surface-900 dark:bg-surface-950/,
+    ]) {
+      expect(updates, `updates should centralize ${pattern}`).not.toMatch(pattern)
     }
   })
 })
