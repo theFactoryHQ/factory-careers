@@ -1666,6 +1666,23 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('keeps Settings panel bodies on the same Factory surface as their panel frame', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+    const strongSurfaceBlocks = css.match(
+      /:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\)[^{]*\{[^}]*background-color: var\(--ui-panel-strong\) !important;[^}]*\}/g,
+    ) ?? []
+
+    expect(strongSurfaceBlocks.length, 'Factory shell should define strong surface adaptations').toBeGreaterThan(0)
+
+    for (const block of strongSurfaceBlocks) {
+      expect(block, 'Settings panel body should inherit the panel surface instead of forcing the strong surface').not.toContain('.ui-settings-panel-body')
+    }
+
+    expect(css, 'Settings panels should still receive the primary Factory panel surface').toMatch(
+      /:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) :is\([\s\S]*\.ui-settings-panel[\s\S]*\) \{\n\s*border-color: var\(--ui-border\) !important;\n\s*background-color: var\(--ui-panel\) !important;/,
+    )
+  })
+
   it('applies shared UI recipes to the settings route boundary', () => {
     const source = readProjectFile('app/pages/dashboard/settings.vue')
 

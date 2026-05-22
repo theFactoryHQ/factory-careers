@@ -2190,7 +2190,6 @@
     .ui-filter-drawer-body,
     .ui-action-bar,
     .ui-empty-panel-dashed,
-    .ui-settings-panel-body,
     .ui-selectable-panel:hover
   ) {
     border-color: var(--ui-border) !important;
