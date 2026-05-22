@@ -7,6 +7,7 @@ import { autoScoreApplication } from '../../../../utils/ai/autoScore'
 import { sendApplicationReceiptEmail, sendApplicationTeamAlertEmail } from '../../../../utils/email'
 import { parseDocument } from '../../../../utils/resume-parser'
 import { assertUploadContentLength } from '../../../../utils/uploadLimits'
+import { readPositiveIntegerEnv } from '../../../../utils/rateLimitConfig'
 import {
   ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE,
@@ -15,10 +16,19 @@ import {
   sanitizeFilename,
 } from '../../../../utils/schemas/document'
 
-/** Rate limit: max 5 applications per IP per 15 minutes */
+const APPLICATION_RATE_LIMIT_WINDOW_MS = readPositiveIntegerEnv(
+  'PUBLIC_APPLICATION_RATE_LIMIT_WINDOW_MS',
+  15 * 60 * 1000,
+)
+const APPLICATION_RATE_LIMIT_MAX_REQUESTS = readPositiveIntegerEnv(
+  'PUBLIC_APPLICATION_RATE_LIMIT_MAX_REQUESTS',
+  5,
+)
+
+/** Rate limit: max 5 applications per IP per 15 minutes by default. */
 const applyRateLimit = createRateLimiter({
-  windowMs: 15 * 60 * 1000,
-  maxRequests: 5,
+  windowMs: APPLICATION_RATE_LIMIT_WINDOW_MS,
+  maxRequests: APPLICATION_RATE_LIMIT_MAX_REQUESTS,
   message: 'Too many applications submitted. Please try again later.',
 })
 
@@ -49,8 +59,9 @@ const MAX_PUBLIC_APPLICATION_MULTIPART_BYTES = (MAX_DOCUMENTS_PER_CANDIDATE * MA
  */
 export default defineEventHandler(async (event) => {
   // Enforce rate limit before any processing.
-  // Skipped outside production so local dev and test environments are not
-  // throttled. Production rate limits must not be bypassed by CI-like env vars.
+  // Skipped outside production so local dev and test environments are not throttled.
+  // CI flags must not bypass this when NODE_ENV=production because several
+  // deployment platforms set them.
   if (process.env.NODE_ENV === 'production') {
     await applyRateLimit(event)
   }
@@ -496,7 +507,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const uploadedDocIds: string[] = []
+  const uploadedDocuments: { id: string; storageKey: string }[] = []
 
   for (const [questionId, file] of uploadedFiles) {
     const docId = crypto.randomUUID()
@@ -532,7 +543,7 @@ export default defineEventHandler(async (event) => {
         parsedContent: parsedContent as any,
       }).returning({ id: document.id })
 
-      uploadedDocIds.push(created!.id)
+      uploadedDocuments.push({ id: created!.id, storageKey })
 
       // Store a response linking the file_upload question to the document ID
       await db.insert(questionResponse).values({
@@ -557,7 +568,13 @@ export default defineEventHandler(async (event) => {
         question_id: questionId,
         error_message: uploadError instanceof Error ? uploadError.message : String(uploadError),
       })
-      // Continue processing — don't fail the entire application for a file upload error
+      await rollbackApplicationSubmission({
+        applicationId: newApplication!.id,
+        organizationId: orgId,
+        uploadedDocuments,
+      })
+
+      throw createError({ statusCode: 502, statusMessage: 'Failed to upload an application document. Please try again.' })
     }
   }
 
@@ -605,19 +622,11 @@ export default defineEventHandler(async (event) => {
         error_message: uploadError instanceof Error ? uploadError.message : String(uploadError),
       })
 
-      // Roll back: delete the application so the user can fix the file and retry
-      try {
-        // Delete question responses first (FK constraint)
-        await db.delete(questionResponse)
-          .where(eq(questionResponse.applicationId, newApplication!.id))
-        await db.delete(application)
-          .where(eq(application.id, newApplication!.id))
-      } catch (rollbackError) {
-        logError('application.rollback_failed', {
-          application_id: newApplication!.id,
-          error_message: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
-        })
-      }
+      await rollbackApplicationSubmission({
+        applicationId: newApplication!.id,
+        organizationId: orgId,
+        uploadedDocuments,
+      })
 
       throw createError({ statusCode: 502, statusMessage: 'Failed to upload your resume. Please try again.' })
     }
@@ -696,6 +705,52 @@ export default defineEventHandler(async (event) => {
   setResponseStatus(event, 201)
   return { success: true }
 })
+
+async function rollbackApplicationSubmission(params: {
+  applicationId: string
+  organizationId: string
+  uploadedDocuments: { id: string; storageKey: string }[]
+}): Promise<void> {
+  for (const doc of params.uploadedDocuments) {
+    try {
+      await deleteFromS3(doc.storageKey)
+    } catch (cleanupError) {
+      logWarn('application.rollback_s3_cleanup_failed', {
+        application_id: params.applicationId,
+        document_id: doc.id,
+        storage_key: doc.storageKey,
+        error_message: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+      })
+    }
+  }
+
+  try {
+    await db.delete(questionResponse)
+      .where(and(
+        eq(questionResponse.applicationId, params.applicationId),
+        eq(questionResponse.organizationId, params.organizationId),
+      ))
+
+    for (const doc of params.uploadedDocuments) {
+      await db.delete(document)
+        .where(and(
+          eq(document.id, doc.id),
+          eq(document.organizationId, params.organizationId),
+        ))
+    }
+
+    await db.delete(application)
+      .where(and(
+        eq(application.id, params.applicationId),
+        eq(application.organizationId, params.organizationId),
+      ))
+  } catch (rollbackError) {
+    logError('application.rollback_failed', {
+      application_id: params.applicationId,
+      error_message: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
+    })
+  }
+}
 
 // ─────────────────────────────────────────────
 // Source attribution helpers

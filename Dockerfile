@@ -1,5 +1,5 @@
 # ─── Stage 1: Build ─────────────────────────────────────────────────────────
-FROM node:24-alpine AS builder
+FROM node:22.22.0-alpine AS builder
 WORKDIR /app
 
 # Install dependencies first (layer-cached unless package.json changes)
@@ -24,7 +24,7 @@ ENV POSTHOG_HOST=${POSTHOG_HOST}
 RUN npm run build
 
 # ─── Stage 2: Run ────────────────────────────────────────────────────────────
-FROM node:24-alpine AS runner
+FROM node:22.22.0-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -54,5 +54,7 @@ COPY --chown=reqcore:reqcore --from=builder /app/server ./server
 USER reqcore
 
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 CMD node -e "fetch('http://127.0.0.1:3000/api/readyz',{signal:AbortSignal.timeout(4000)}).then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 CMD ["node", ".output/server/index.mjs"]

@@ -53,6 +53,23 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  if (!created) {
+    throw createError({ statusCode: 500, statusMessage: 'Failed to create tracking link' })
+  }
+
+  recordActivity({
+    organizationId: orgId,
+    actorId: userId,
+    action: 'created',
+    resourceType: 'trackingLink',
+    resourceId: created.id,
+    metadata: {
+      channel: created.channel,
+      jobId: created.jobId,
+      code: created.code,
+    },
+  })
+
   setResponseStatus(event, 201)
   return created
 })

@@ -27,5 +27,23 @@ export default defineEventHandler(async (event) => {
     .where(and(eq(trackingLink.id, id), eq(trackingLink.organizationId, orgId)))
     .returning()
 
+  if (!updated) {
+    throw createError({ statusCode: 404, statusMessage: 'Tracking link not found' })
+  }
+
+  recordActivity({
+    organizationId: orgId,
+    actorId: session.user.id,
+    action: 'updated',
+    resourceType: 'trackingLink',
+    resourceId: updated.id,
+    metadata: {
+      changedFields: Object.keys(body),
+      channel: updated.channel,
+      jobId: updated.jobId,
+      isActive: updated.isActive,
+    },
+  })
+
   return updated
 })

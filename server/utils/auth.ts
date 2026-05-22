@@ -6,10 +6,41 @@ import { eq } from "drizzle-orm";
 import { Buffer } from "node:buffer";
 import { ac, owner, admin, member } from "~~/shared/permissions";
 import { sendOrgInvitationEmail, sendPasswordResetEmail } from "./email";
+import { deleteFromS3 } from "./s3";
+import { readPositiveIntegerEnv } from "./rateLimitConfig";
 import * as schema from "../database/schema";
 
 type Auth = ReturnType<typeof betterAuth>;
 let _auth: Auth | undefined;
+
+const AUTH_RATE_LIMIT_WINDOW_SECONDS = readPositiveIntegerEnv(
+  "BETTER_AUTH_RATE_LIMIT_WINDOW_SECONDS",
+  60,
+);
+const AUTH_RATE_LIMIT_MAX_REQUESTS = readPositiveIntegerEnv(
+  "BETTER_AUTH_RATE_LIMIT_MAX_REQUESTS",
+  100,
+);
+
+const ORGANIZATION_DOCUMENT_DELETE_TTL_MS = 10 * 60 * 1000;
+
+type PendingOrganizationDocumentDelete = {
+  documents: Array<{ id: string; storageKey: string }>;
+  cleanupTimer: ReturnType<typeof setTimeout>;
+};
+
+const pendingOrganizationDocumentDeletes = new Map<
+  string,
+  PendingOrganizationDocumentDelete
+>();
+
+function clearPendingOrganizationDocumentDelete(organizationId: string): void {
+  const pending = pendingOrganizationDocumentDeletes.get(organizationId);
+  if (pending) {
+    clearTimeout(pending.cleanupTimer);
+    pendingOrganizationDocumentDeletes.delete(organizationId);
+  }
+}
 
 /**
  * Resolve trusted origins for CSRF checks and OIDC discovery.
@@ -186,12 +217,12 @@ function getAuth(): Auth {
       // state across instances (horizontal scaling).
       // Complements the external IP-based rate limiter in api-rate-limit.ts
       // with account-level throttling for auth-sensitive endpoints.
-      // Disabled in CI/test (GITHUB_ACTIONS or NODE_ENV !== 'production')
-      // to prevent E2E test flakiness.
+      // CI flags must not disable this when NODE_ENV=production because several
+      // deployment platforms set them.
       rateLimit: {
-        enabled: !process.env.CI && !process.env.GITHUB_ACTIONS,
-        window: 60,
-        max: 100,        // 100 requests per minute per IP — stops bots, not humans
+        enabled: process.env.NODE_ENV === "production",
+        window: AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        max: AUTH_RATE_LIMIT_MAX_REQUESTS, // 100 requests per minute per IP by default.
         storage: "database",
       },
 
@@ -252,6 +283,58 @@ function getAuth(): Auth {
           cancelPendingInvitationsOnReInvite: true,
           // 48 hours (default) — explicitly stated for auditability.
           invitationExpiresIn: 48 * 60 * 60,
+
+          organizationHooks: {
+            async beforeDeleteOrganization({ organization }) {
+              const documentsToDelete = await db.query.document.findMany({
+                where: eq(schema.document.organizationId, organization.id),
+                columns: {
+                  id: true,
+                  storageKey: true,
+                },
+              });
+
+              clearPendingOrganizationDocumentDelete(organization.id);
+
+              const cleanupTimer = setTimeout(() => {
+                pendingOrganizationDocumentDeletes.delete(organization.id);
+              }, ORGANIZATION_DOCUMENT_DELETE_TTL_MS);
+              (cleanupTimer as ReturnType<typeof setTimeout> & {
+                unref?: () => void;
+              }).unref?.();
+
+              pendingOrganizationDocumentDeletes.set(
+                organization.id,
+                {
+                  documents: documentsToDelete,
+                  cleanupTimer,
+                },
+              );
+            },
+
+            async afterDeleteOrganization({ organization }) {
+              const pending =
+                pendingOrganizationDocumentDeletes.get(organization.id);
+              clearPendingOrganizationDocumentDelete(organization.id);
+              const documentsToDelete = pending?.documents ?? [];
+
+              for (const doc of documentsToDelete) {
+                try {
+                  await deleteFromS3(doc.storageKey);
+                } catch (s3Error) {
+                  logWarn("organization.document_s3_delete_failed", {
+                    organization_id: organization.id,
+                    document_id: doc.id,
+                    storage_key: doc.storageKey,
+                    error_message:
+                      s3Error instanceof Error
+                        ? s3Error.message
+                        : String(s3Error),
+                  });
+                }
+              }
+            },
+          },
         }),
 
         // ── OIDC SSO (Keycloak, Authentik, Authelia, Okta, Azure AD, etc.) ──
