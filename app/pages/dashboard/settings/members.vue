@@ -566,7 +566,7 @@ onUnmounted(() => {
         enter-from-class="opacity-0 -translate-y-2"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-if="showInviteForm" class="ui-panel p-5">
+        <div v-if="showInviteForm" class="ui-panel ui-dashboard-panel p-5">
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
               <UserPlus class="ui-icon-brand size-5" />
@@ -656,10 +656,10 @@ onUnmounted(() => {
     </Transition>
 
     <!-- Pending invitations -->
-    <section v-if="canInvite && (isLoadingInvitations || pendingInvitations.length > 0)" class="ui-panel mb-6 overflow-hidden">
-      <div class="ui-panel-header px-4 sm:px-6 py-4">
+    <section v-if="canInvite && (isLoadingInvitations || pendingInvitations.length > 0)" class="ui-panel ui-dashboard-panel mb-6 overflow-hidden">
+      <div class="ui-panel-header ui-dashboard-panel-header px-4 sm:px-6 py-4">
         <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-icon-state-warning ui-icon-tile size-8">
+          <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-warning ui-icon-tile size-8">
             <Clock class="size-4" />
           </div>
           <div>
@@ -751,11 +751,11 @@ onUnmounted(() => {
     </section>
 
     <!-- Invite links section -->
-    <section v-if="canInvite" class="ui-panel mb-6 overflow-hidden">
-      <div class="ui-panel-header px-4 sm:px-6 py-4">
+    <section v-if="canInvite" class="ui-panel ui-dashboard-panel mb-6 overflow-hidden">
+      <div class="ui-panel-header ui-dashboard-panel-header px-4 sm:px-6 py-4">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-8 shrink-0">
+            <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-8 shrink-0">
               <Link2 class="size-4" />
             </div>
             <div class="min-w-0">
@@ -950,10 +950,10 @@ onUnmounted(() => {
     </section>
 
     <!-- Join requests section -->
-    <section v-if="canInvite && (isLoadingJoinRequests || joinRequests.length > 0)" class="ui-panel mb-6 overflow-hidden">
-      <div class="ui-panel-header px-4 sm:px-6 py-4">
+    <section v-if="canInvite && (isLoadingJoinRequests || joinRequests.length > 0)" class="ui-panel ui-dashboard-panel mb-6 overflow-hidden">
+      <div class="ui-panel-header ui-dashboard-panel-header px-4 sm:px-6 py-4">
         <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-icon-state-warning ui-icon-tile size-8">
+          <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-warning ui-icon-tile size-8">
             <UserCheck class="size-4" />
           </div>
           <div>
@@ -1051,11 +1051,11 @@ onUnmounted(() => {
     </section>
 
     <!-- Members list -->
-    <section class="ui-panel">
-      <div class="ui-panel-header px-4 sm:px-6 py-5">
+    <section class="ui-panel ui-dashboard-panel">
+      <div class="ui-panel-header ui-dashboard-panel-header px-4 sm:px-6 py-5">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="flex items-center gap-3">
-            <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-10 shrink-0">
+            <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-10 shrink-0">
               <Users class="size-5" />
             </div>
             <div>

@@ -80,10 +80,10 @@ const previewDateFormatted = computed(() => {
     </div>
 
     <!-- Settings card -->
-    <section class="ui-panel overflow-hidden">
-      <div class="ui-panel-header px-4 sm:px-6 py-5">
+    <section class="ui-panel ui-dashboard-panel overflow-hidden">
+      <div class="ui-panel-header ui-dashboard-panel-header px-4 sm:px-6 py-5">
         <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-10 shrink-0">
+          <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-10 shrink-0">
             <Globe class="size-5" />
           </div>
           <div>

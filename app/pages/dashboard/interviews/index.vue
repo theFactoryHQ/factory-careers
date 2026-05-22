@@ -685,9 +685,12 @@ const statusCounts = computed(() => {
 
     <!-- Edit Interview Modal -->
     <Teleport to="body">
-      <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="ui-modal-backdrop absolute inset-0" @click="cancelEdit" />
-        <div class="ui-modal-panel relative p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div
+        v-if="showEditModal"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+        @click.self="cancelEdit"
+      >
+        <div class="ui-modal-panel relative p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-5">Edit Interview</h3>
 
           <div v-if="editErrors.submit" class="ui-alert ui-alert-danger mb-4 p-3 text-sm">
@@ -815,9 +818,12 @@ const statusCounts = computed(() => {
 
     <!-- Delete Confirm Modal -->
     <Teleport to="body">
-      <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="ui-modal-backdrop absolute inset-0" @click="showDeleteConfirm = false" />
-        <div class="ui-modal-panel relative p-6 max-w-sm w-full mx-4">
+      <div
+        v-if="showDeleteConfirm"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+        @click.self="showDeleteConfirm = false"
+      >
+        <div class="ui-modal-panel relative p-6 max-w-sm w-full">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Interview</h3>
           <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
             Are you sure you want to delete <strong>{{ deletingInterview?.title }}</strong>? This action cannot be undone.

@@ -123,10 +123,10 @@ async function handleDisconnect() {
     </Transition>
 
     <!-- Calendar Integration Card -->
-    <div class="ui-panel overflow-hidden">
+    <div class="ui-panel ui-dashboard-panel overflow-hidden">
       <!-- Header -->
-      <div class="ui-panel-header flex items-center gap-4 px-4 sm:px-6 py-5">
-        <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-10">
+      <div class="ui-panel-header ui-dashboard-panel-header flex items-center gap-4 px-4 sm:px-6 py-5">
+        <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-10">
           <Calendar class="size-5" />
         </div>
         <div class="flex-1 min-w-0">

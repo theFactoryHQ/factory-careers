@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { FileText, Link2, ClipboardCopy, Check, Plus, Copy, CheckCircle2, XCircle, ToggleLeft, ToggleRight, Trash2, Radio, ChevronDown, X, ExternalLink } from 'lucide-vue-next'
+import { getSourceChannelLabel } from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -98,22 +99,6 @@ const newLink = ref({
   utmCampaign: '',
 })
 
-const channelLabels: Record<string, string> = {
-  linkedin: 'LinkedIn', indeed: 'Indeed', glassdoor: 'Glassdoor',
-  ziprecruiter: 'ZipRecruiter', monster: 'Monster', handshake: 'Handshake',
-  angellist: 'AngelList', wellfound: 'Wellfound', dice: 'Dice',
-  stackoverflow: 'Stack Overflow', weworkremotely: 'We Work Remotely',
-  remoteok: 'Remote OK', builtin: 'Built In', hired: 'Hired',
-  google_jobs: 'Google Jobs', facebook: 'Facebook', twitter: 'X / Twitter',
-  instagram: 'Instagram', tiktok: 'TikTok', reddit: 'Reddit',
-  referral: 'Referral', career_site: 'Career Site', email: 'Email',
-  event: 'Event', agency: 'Agency', direct: 'Direct', other: 'Other', custom: 'Custom',
-}
-
-function getChannelLabel(channel: string) {
-  return channelLabels[channel] ?? channel
-}
-
 async function handleCreateLink() {
   if (!newLink.value.name.trim()) return
   isCreatingLink.value = true
@@ -184,7 +169,7 @@ async function copyTrackingUrl(code: string) {
     <!-- Error -->
     <div
       v-else-if="error"
-      class="rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-4 text-sm text-danger-700 dark:text-danger-400"
+      class="ui-alert ui-alert-danger p-4 text-sm"
     >
       {{ error.statusCode === 404 ? 'Job not found.' : 'Failed to load job.' }}
       <NuxtLink :to="$localePath('/dashboard')" class="underline ml-1">Back to Jobs</NuxtLink>
@@ -200,7 +185,7 @@ async function copyTrackingUrl(code: string) {
       </div>
 
       <!-- Shareable application link (only when job is open) -->
-      <div v-if="job.status === 'open'" class="rounded-lg border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950 p-5 mb-6">
+      <div v-if="job.status === 'open'" class="ui-panel-brand p-5 mb-6">
         <div class="flex items-center gap-2 mb-2">
           <Link2 class="size-4 text-brand-600 dark:text-brand-400" />
           <h2 class="text-sm font-semibold text-brand-700 dark:text-brand-300">Application Link</h2>
@@ -213,10 +198,10 @@ async function copyTrackingUrl(code: string) {
             type="text"
             readonly
             :value="applicationUrl"
-            class="flex-1 rounded-lg border border-brand-200 dark:border-brand-800 bg-white dark:bg-surface-900 px-3 py-1.5 text-sm text-surface-700 dark:text-surface-300 select-all"
+            class="ui-field flex-1 px-3 py-1.5 text-sm select-all"
           />
           <button
-            class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+            class="ui-button ui-button-primary px-3 py-1.5 text-sm"
             @click="copyApplicationLink"
           >
             <ClipboardCopy class="size-3.5" />
@@ -225,12 +210,12 @@ async function copyTrackingUrl(code: string) {
         </div>
       </div>
 
-      <div v-else class="rounded-lg border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 p-4 mb-6 text-sm text-surface-500 dark:text-surface-400">
+      <div v-else class="ui-panel-muted p-4 mb-6 text-sm text-surface-500 dark:text-surface-400">
         The application link will be available when this job is published (status: <strong>open</strong>).
       </div>
 
       <!-- Application Requirements -->
-      <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 mb-6">
+      <div class="ui-panel p-5 mb-6">
         <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1">Application requirements</h2>
         <p class="text-xs text-surface-400 dark:text-surface-500 mb-4">
           Choose what candidates must provide when applying.
@@ -238,16 +223,16 @@ async function copyTrackingUrl(code: string) {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           <button
             type="button"
-            class="relative flex items-center gap-3 p-4 rounded-xl border text-left transition-colors"
+            class="ui-selectable-panel relative flex items-center gap-3 p-4 text-left transition-colors"
             :class="requireResume
-              ? 'border-brand-300 dark:border-brand-700 bg-brand-50/70 dark:bg-brand-950/30'
-              : 'border-surface-200 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/50'"
+              ? 'ui-selectable-panel-active'
+              : ''"
             :aria-pressed="requireResume"
             @click="requireResume = !requireResume"
           >
             <span
               v-if="requireResume"
-              class="absolute top-3 right-3 inline-flex items-center justify-center size-5 rounded-full bg-brand-600 text-white"
+              class="ui-pill ui-pill-brand absolute top-3 right-3 size-5 justify-center p-0"
               aria-hidden="true"
             >
               <Check class="size-3" />
@@ -259,16 +244,16 @@ async function copyTrackingUrl(code: string) {
           </button>
           <button
             type="button"
-            class="relative flex items-center gap-3 p-4 rounded-xl border text-left transition-colors"
+            class="ui-selectable-panel relative flex items-center gap-3 p-4 text-left transition-colors"
             :class="requireCoverLetter
-              ? 'border-brand-300 dark:border-brand-700 bg-brand-50/70 dark:bg-brand-950/30'
-              : 'border-surface-200 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/50'"
+              ? 'ui-selectable-panel-active'
+              : ''"
             :aria-pressed="requireCoverLetter"
             @click="requireCoverLetter = !requireCoverLetter"
           >
             <span
               v-if="requireCoverLetter"
-              class="absolute top-3 right-3 inline-flex items-center justify-center size-5 rounded-full bg-brand-600 text-white"
+              class="ui-pill ui-pill-brand absolute top-3 right-3 size-5 justify-center p-0"
               aria-hidden="true"
             >
               <Check class="size-3" />
@@ -282,7 +267,7 @@ async function copyTrackingUrl(code: string) {
         <button
           type="button"
           :disabled="isSavingRequirements"
-          class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 transition-colors"
+          class="ui-button ui-button-primary px-4 py-2 text-sm"
           @click="saveRequirements"
         >
           {{ requirementsSaved ? 'Saved!' : isSavingRequirements ? 'Saving…' : 'Save requirements' }}
@@ -293,7 +278,7 @@ async function copyTrackingUrl(code: string) {
       </div>
 
       <!-- Tracking Links for this Job -->
-      <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 mb-6">
+      <div class="ui-panel p-5 mb-6">
         <div class="flex items-center justify-between mb-1">
           <div class="flex items-center gap-2">
             <Radio class="size-4 text-surface-500 dark:text-surface-400" />
@@ -306,7 +291,7 @@ async function copyTrackingUrl(code: string) {
           </div>
           <button
             v-if="canManageLinks"
-            class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 transition-colors"
+            class="ui-button ui-button-primary px-3 py-1.5 text-xs"
             @click="showCreateLinkModal = true"
           >
             <Plus class="size-3.5" />
@@ -317,11 +302,11 @@ async function copyTrackingUrl(code: string) {
           Create unique tracking links for this job to measure where applications come from.
         </p>
 
-        <div v-if="linksStatus === 'pending'" class="py-6 text-center text-sm text-surface-400">
+        <div v-if="linksStatus === 'pending'" class="ui-empty-state py-6 text-sm">
           Loading…
         </div>
 
-        <div v-else-if="trackingLinks.length === 0" class="py-6 text-center">
+        <div v-else-if="trackingLinks.length === 0" class="ui-empty-state py-6">
           <Radio class="size-5 text-surface-300 dark:text-surface-600 mx-auto mb-2" />
           <p class="text-sm text-surface-400 dark:text-surface-500">No tracking links for this job yet.</p>
           <p class="text-xs text-surface-300 dark:text-surface-600 mt-1">Create one to start tracking where candidates find this position.</p>
@@ -331,7 +316,7 @@ async function copyTrackingUrl(code: string) {
           <div
             v-for="link in trackingLinks"
             :key="link.id"
-            class="flex items-center gap-3 rounded-lg border border-surface-100 dark:border-surface-800 px-4 py-3 group hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors"
+            class="ui-list-row flex items-center gap-3 px-4 py-3 group transition-colors"
           >
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2 mb-0.5">
@@ -345,13 +330,13 @@ async function copyTrackingUrl(code: string) {
                 <span
                   class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700"
                 >
-                  {{ getChannelLabel(link.channel) }}
+                  {{ getSourceChannelLabel(link.channel) }}
                 </span>
                 <span
-                  class="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
+                  class="ui-pill gap-0.5 px-1.5 py-0.5 text-[10px]"
                   :class="link.isActive
-                    ? 'bg-green-50 text-green-700 ring-green-200/60 dark:bg-green-950 dark:text-green-400 dark:ring-green-800/40'
-                    : 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700'"
+                    ? 'ui-pill-success'
+                    : ''"
                 >
                   <CheckCircle2 v-if="link.isActive" class="size-2.5" />
                   <XCircle v-else class="size-2.5" />
@@ -364,7 +349,7 @@ async function copyTrackingUrl(code: string) {
             </div>
             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
               <button
-                class="p-1.5 rounded-lg text-surface-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                class="ui-button ui-button-ghost p-1.5"
                 title="Copy tracking URL"
                 @click="copyTrackingUrl(link.code)"
               >
@@ -373,7 +358,7 @@ async function copyTrackingUrl(code: string) {
               </button>
               <button
                 v-if="canManageLinks"
-                class="p-1.5 rounded-lg text-surface-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                class="ui-button ui-button-ghost p-1.5"
                 :title="link.isActive ? 'Deactivate' : 'Activate'"
                 @click="toggleLink(link.id, !link.isActive)"
               >
@@ -382,7 +367,7 @@ async function copyTrackingUrl(code: string) {
               </button>
               <button
                 v-if="canManageLinks"
-                class="p-1.5 rounded-lg text-surface-400 hover:text-danger-600 dark:hover:text-danger-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                class="ui-button ui-button-ghost ui-button-ghost-danger p-1.5"
                 title="Delete"
                 @click="confirmDeleteLink(link.id)"
               >
@@ -394,7 +379,7 @@ async function copyTrackingUrl(code: string) {
       </div>
 
       <!-- Application Form Questions -->
-      <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
+      <div class="ui-panel p-5">
         <div class="flex items-center gap-2 mb-3">
           <FileText class="size-4 text-surface-500 dark:text-surface-400" />
           <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300">Custom Questions</h2>
@@ -410,13 +395,16 @@ async function copyTrackingUrl(code: string) {
     <!-- Modal: Create tracking link             -->
     <!-- ═══════════════════════════════════════ -->
     <Teleport to="body">
-      <div v-if="showCreateLinkModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/50 dark:bg-black/70" @click="showCreateLinkModal = false" />
-        <div class="relative w-full max-w-lg rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-2xl">
-          <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
+      <div
+        v-if="showCreateLinkModal"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+        @click.self="showCreateLinkModal = false"
+      >
+        <div class="ui-modal-panel relative w-full max-w-lg">
+          <div class="ui-panel-header flex items-center justify-between px-6 py-4">
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Create Tracking Link</h2>
             <button
-              class="p-1.5 rounded-lg text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              class="ui-button ui-button-ghost size-8 p-0"
               @click="showCreateLinkModal = false"
             >
               <X class="size-4" />
@@ -430,7 +418,7 @@ async function copyTrackingUrl(code: string) {
                 v-model="newLink.name"
                 type="text"
                 placeholder="e.g. LinkedIn Spring Campaign"
-                class="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                class="ui-field px-4 py-2.5 text-sm"
               />
             </div>
             <div>
@@ -438,43 +426,43 @@ async function copyTrackingUrl(code: string) {
               <select
                 id="link-channel"
                 v-model="newLink.channel"
-                class="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                class="ui-field px-4 py-2.5 text-sm"
               >
                 <optgroup label="Job Boards">
-                  <option v-for="ch in ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'google_jobs']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  <option v-for="ch in ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'google_jobs']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
                 </optgroup>
                 <optgroup label="Social Media">
-                  <option v-for="ch in ['facebook', 'twitter', 'instagram', 'tiktok', 'reddit']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  <option v-for="ch in ['facebook', 'twitter', 'instagram', 'tiktok', 'reddit']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
                 </optgroup>
                 <optgroup label="Other">
-                  <option v-for="ch in ['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  <option v-for="ch in ['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
                 </optgroup>
               </select>
             </div>
             <details class="group">
-              <summary class="flex items-center gap-2 text-sm font-medium text-surface-500 dark:text-surface-400 cursor-pointer select-none hover:text-surface-700 dark:hover:text-surface-200 transition-colors">
+              <summary class="ui-disclosure-trigger -ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium cursor-pointer select-none">
                 <ChevronDown class="size-4 transition-transform group-open:rotate-180" />
                 UTM Parameters (optional)
               </summary>
               <div class="mt-3 grid grid-cols-2 gap-3">
                 <div>
                   <label for="utm-source" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">utm_source</label>
-                  <input id="utm-source" v-model="newLink.utmSource" type="text" placeholder="linkedin" class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-xs text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+                  <input id="utm-source" v-model="newLink.utmSource" type="text" placeholder="linkedin" class="ui-field px-3 py-2 text-xs" />
                 </div>
                 <div>
                   <label for="utm-medium" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">utm_medium</label>
-                  <input id="utm-medium" v-model="newLink.utmMedium" type="text" placeholder="social" class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-xs text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+                  <input id="utm-medium" v-model="newLink.utmMedium" type="text" placeholder="social" class="ui-field px-3 py-2 text-xs" />
                 </div>
                 <div class="col-span-2">
                   <label for="utm-campaign" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">utm_campaign</label>
-                  <input id="utm-campaign" v-model="newLink.utmCampaign" type="text" placeholder="spring-hiring-2026" class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-xs text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+                  <input id="utm-campaign" v-model="newLink.utmCampaign" type="text" placeholder="spring-hiring-2026" class="ui-field px-3 py-2 text-xs" />
                 </div>
               </div>
             </details>
             <div class="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
-                class="rounded-xl px-4 py-2.5 text-sm font-medium text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                class="ui-button ui-button-secondary px-4 py-2.5 text-sm"
                 @click="showCreateLinkModal = false"
               >
                 Cancel
@@ -482,7 +470,7 @@ async function copyTrackingUrl(code: string) {
               <button
                 type="submit"
                 :disabled="!newLink.name.trim() || isCreatingLink"
-                class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 shadow-sm shadow-brand-600/15 transition-all"
+                class="ui-button ui-button-primary px-5 py-2.5"
               >
                 {{ isCreatingLink ? 'Creating…' : 'Create Link' }}
               </button>
@@ -496,11 +484,14 @@ async function copyTrackingUrl(code: string) {
     <!-- Modal: Delete tracking link confirmation -->
     <!-- ═══════════════════════════════════════ -->
     <Teleport to="body">
-      <div v-if="showDeleteLinkConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/50 dark:bg-black/70" @click="showDeleteLinkConfirm = false" />
-        <div class="relative w-full max-w-sm rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-2xl p-6 text-center">
-          <div class="mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl bg-danger-50 dark:bg-danger-950/40">
-            <Trash2 class="size-5 text-danger-600 dark:text-danger-400" />
+      <div
+        v-if="showDeleteLinkConfirm"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+        @click.self="showDeleteLinkConfirm = false"
+      >
+        <div class="ui-modal-panel relative w-full max-w-sm p-6 text-center">
+          <div class="ui-icon-state ui-icon-state-danger mx-auto mb-4 size-12">
+            <Trash2 class="size-5" />
           </div>
           <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Tracking Link?</h3>
           <p class="text-sm text-surface-500 dark:text-surface-400 mb-6">
@@ -508,13 +499,13 @@ async function copyTrackingUrl(code: string) {
           </p>
           <div class="flex items-center justify-center gap-3">
             <button
-              class="rounded-xl px-4 py-2.5 text-sm font-medium text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              class="ui-button ui-button-secondary px-4 py-2.5 text-sm"
               @click="showDeleteLinkConfirm = false"
             >
               Cancel
             </button>
             <button
-              class="rounded-xl bg-danger-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-danger-700 transition-colors"
+              class="ui-button ui-button-danger px-5 py-2.5"
               @click="handleDeleteLink"
             >
               Delete

@@ -236,7 +236,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
         Back to AI configuration
       </NuxtLink>
       <div class="flex items-center gap-2.5">
-        <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-9">
+        <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-9">
           <Brain class="size-5" />
         </div>
         <div>
@@ -254,7 +254,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
 
     <div class="space-y-5">
       <!-- 1. Provider -->
-      <section class="ui-panel p-5 sm:p-6">
+      <section class="ui-panel ui-dashboard-panel p-5 sm:p-6">
         <header class="mb-4">
           <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Provider</h2>
           <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
@@ -279,7 +279,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
       </section>
 
       <!-- 2. Model -->
-      <section v-if="selectedProvider" class="ui-panel p-5 sm:p-6">
+      <section v-if="selectedProvider" class="ui-panel ui-dashboard-panel p-5 sm:p-6">
         <header class="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Model</h2>
@@ -348,7 +348,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
       </section>
 
       <!-- 3. Connection -->
-      <section class="ui-panel p-5 sm:p-6">
+      <section class="ui-panel ui-dashboard-panel p-5 sm:p-6">
         <header class="mb-4">
           <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Connection</h2>
           <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
@@ -455,7 +455,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
       </section>
 
       <!-- Defaults (only when adding and not first) -->
-      <section v-if="!isEdit && !isFirst" class="ui-panel p-5 sm:p-6">
+      <section v-if="!isEdit && !isFirst" class="ui-panel ui-dashboard-panel p-5 sm:p-6">
         <header class="mb-4">
           <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Use as default</h2>
           <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
@@ -507,7 +507,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
       </p>
 
       <!-- Advanced -->
-      <section class="ui-panel overflow-hidden">
+      <section class="ui-panel ui-dashboard-panel overflow-hidden">
         <button
           type="button"
           class="ui-disclosure-trigger w-full px-5 sm:px-6 py-4 flex items-center justify-between text-left cursor-pointer"
@@ -524,7 +524,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
             :class="showAdvanced ? 'rotate-180' : ''"
           />
         </button>
-        <div v-if="showAdvanced" class="ui-panel-header border-b-0 px-5 sm:px-6 py-5 space-y-5">
+        <div v-if="showAdvanced" class="ui-panel-header ui-dashboard-panel-header border-b-0 px-5 sm:px-6 py-5 space-y-5">
           <!-- Max output tokens -->
           <div>
             <label class="block text-xs font-medium text-surface-700 dark:text-surface-300 mb-1.5">

@@ -212,7 +212,7 @@ async function copyCallbackUrl(providerId: string) {
         <div
           v-for="provider in providers"
           :key="provider.id"
-          class="ui-panel p-4"
+          class="ui-panel ui-dashboard-panel p-4"
         >
           <div class="flex items-start justify-between gap-4">
             <div class="flex-1 min-w-0">
@@ -295,7 +295,7 @@ async function copyCallbackUrl(providerId: string) {
         v-else-if="!showForm"
         class="ui-empty-panel ui-empty-panel-dashed p-8"
       >
-        <div class="ui-icon-state ui-icon-state-brand ui-icon-tile mx-auto size-12 mb-3">
+        <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile mx-auto size-12 mb-3">
           <ShieldCheck class="size-6" />
         </div>
         <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1">
@@ -327,7 +327,7 @@ async function copyCallbackUrl(providerId: string) {
 
       <!-- Registration form -->
       <Transition name="fade">
-        <div v-if="showForm" class="ui-panel p-5">
+        <div v-if="showForm" class="ui-panel ui-dashboard-panel p-5">
           <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
             Register OIDC SSO Provider
           </h3>

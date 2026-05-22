@@ -217,9 +217,12 @@ async function handleDelete() {
         leave-from-class="opacity-100"
         leave-to-class="opacity-0"
       >
-        <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div class="ui-modal-backdrop absolute inset-0" @click="showDeleteConfirm = false" />
-          <div class="ui-modal-panel relative w-full max-w-sm mx-4 mb-4 sm:mb-0 p-6">
+        <div
+          v-if="showDeleteConfirm"
+          class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+          @click.self="showDeleteConfirm = false"
+        >
+          <div class="ui-modal-panel relative w-full max-w-sm p-6">
             <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Template</h3>
             <p class="text-sm text-surface-600 dark:text-surface-400 mb-5">
               Are you sure you want to delete <strong>{{ templateToDelete?.name }}</strong>? This cannot be undone.

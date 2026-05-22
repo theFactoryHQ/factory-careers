@@ -1299,6 +1299,51 @@ describe('brand-neutral theme variables', () => {
     )
   })
 
+  it('uses dashboard panel recipes for Settings panel formatting', () => {
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/settings/index.vue',
+        recipes: ['ui-dashboard-panel', 'ui-dashboard-panel-header', 'ui-dashboard-soft-icon'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/account.vue',
+        recipes: ['ui-dashboard-panel', 'ui-dashboard-panel-header', 'ui-dashboard-soft-icon'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/localization.vue',
+        recipes: ['ui-dashboard-panel', 'ui-dashboard-panel-header', 'ui-dashboard-soft-icon'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/integrations.vue',
+        recipes: ['ui-dashboard-panel', 'ui-dashboard-panel-header', 'ui-dashboard-soft-icon'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/members.vue',
+        recipes: ['ui-dashboard-panel', 'ui-dashboard-panel-header', 'ui-dashboard-soft-icon'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/ai/index.vue',
+        recipes: ['ui-dashboard-panel', 'ui-dashboard-soft-icon'],
+      },
+      {
+        path: 'app/pages/dashboard/settings/sso.vue',
+        recipes: ['ui-dashboard-panel', 'ui-dashboard-soft-icon'],
+      },
+      {
+        path: 'app/components/AiConfigForm.vue',
+        recipes: ['ui-dashboard-panel', 'ui-dashboard-panel-header', 'ui-dashboard-soft-icon'],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
   it('keeps Settings portals and fixed panels inside the Factory theme scope', () => {
     const members = readProjectFile('app/pages/dashboard/settings/members.vue')
     const css = readProjectFile('app/assets/css/main.css')
@@ -1932,6 +1977,67 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared UI recipes to job application form surfaces', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
+
+    for (const recipe of [
+      'getSourceChannelLabel',
+      'factory-dashboard-portal',
+      'ui-alert-danger',
+      'ui-button-danger',
+      'ui-button-ghost',
+      'ui-button-ghost-danger',
+      'ui-button-primary',
+      'ui-button-secondary',
+      'ui-disclosure-trigger',
+      'ui-empty-state',
+      'ui-field',
+      'ui-icon-state-danger',
+      'ui-list-row',
+      'ui-modal-backdrop',
+      'ui-modal-panel',
+      'ui-panel',
+      'ui-panel-brand',
+      'ui-panel-muted',
+      'ui-pill',
+      'ui-pill-success',
+      'ui-selectable-panel',
+      'ui-selectable-panel-active',
+    ]) {
+      expect(source, `job application form should use ${recipe}`).toContain(recipe)
+    }
+  })
+
+  it('keeps job application form surface choices behind shared recipes', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
+
+    for (const pattern of [
+      /const channelLabels:/,
+      /function getChannelLabel/,
+      /rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950/,
+      /rounded-lg border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/,
+      /rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+      /rounded-lg border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/,
+      /relative flex items-center gap-3 p-4 rounded-xl border text-left transition-colors/,
+      /absolute top-3 right-3 inline-flex items-center justify-center size-5 rounded-full bg-brand-600 text-white/,
+      /flex items-center gap-3 rounded-lg border border-surface-100 dark:border-surface-800/,
+      /p-1\.5 rounded-lg text-surface-400 hover:text-/,
+      /fixed inset-0 z-50 flex items-center justify-center p-4/,
+      /absolute inset-0 bg-black\/50 dark:bg-black\/70/,
+      /relative w-full max-w-(?:lg|sm) rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+      /flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800/,
+      /w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800/,
+      /w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800/,
+      /summary class="flex items-center gap-2 text-sm font-medium text-surface-500 dark:text-surface-400 cursor-pointer select-none hover:text-surface-700 dark:hover:text-surface-200 transition-colors"/,
+      /rounded-xl px-4 py-2\.5 text-sm font-medium text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800/,
+      /inline-flex items-center gap-2 rounded-xl bg-brand-600/,
+      /rounded-xl bg-danger-600/,
+      /mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl bg-danger-50 dark:bg-danger-950\/40/,
+    ]) {
+      expect(source, `job application form should centralize ${pattern}`).not.toMatch(pattern)
+    }
+  })
+
   it('applies shared UI recipes to job detail pipeline surfaces', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
 
@@ -2129,6 +2235,7 @@ describe('brand-neutral theme variables', () => {
       'getInterviewStatusLabel',
       'getInterviewTransitionButtonClass',
       'getInterviewTransitionLabel',
+      'factory-dashboard-portal',
       'ui-alert-danger',
       'ui-button-danger',
       'ui-button-ghost',
@@ -2170,6 +2277,7 @@ describe('brand-neutral theme variables', () => {
           'ui-button-secondary',
           'ui-empty-panel',
           'ui-empty-panel-dashed',
+          'factory-dashboard-portal',
           'ui-icon-state',
           'ui-icon-tile',
           'ui-list-row',
@@ -2249,6 +2357,8 @@ describe('brand-neutral theme variables', () => {
           /rounded-lg bg-success-600/,
           /absolute right-0 top-full mt-1\.5 z-50 w-48 rounded-xl border border-surface-200/,
           /border-t border-surface-100 dark:border-surface-800/,
+          /fixed inset-0 z-50 flex items-center justify-center/,
+          /ui-modal-backdrop absolute inset-0/,
           /absolute inset-0 bg-black\/40 backdrop-blur-sm/,
           /relative bg-white dark:bg-surface-900 rounded-2xl/,
           /focus:ring-brand-500/,
@@ -2266,6 +2376,8 @@ describe('brand-neutral theme variables', () => {
           /inline-flex items-center gap-1 rounded-md bg-surface-100 dark:bg-surface-800/,
           /rounded-xl border-2 border-dashed border-surface-200/,
           /absolute inset-0 bg-black\/30 backdrop-blur/,
+          /fixed inset-0 z-50 flex items-end sm:items-center justify-center/,
+          /ui-modal-backdrop absolute inset-0/,
           /relative w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-2xl bg-white/,
           /cursor-pointer rounded-lg p-2 text-surface-400 hover:text-danger-600/,
           /border-2 border-brand-200 border-t-brand-600/,
