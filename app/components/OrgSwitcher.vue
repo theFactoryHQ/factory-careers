@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ChevronDown } from 'lucide-vue-next'
+
 const { orgs, activeOrg, switchOrg } = useCurrentOrg()
 const isOpen = ref(false)
 const isSwitching = ref(false)
@@ -33,39 +35,42 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
 <template>
   <div ref="switcherRoot" class="relative">
     <button
-      class="ui-menu-trigger flex w-full items-center justify-between px-3 py-2 text-[13px]"
+      class="flex h-8 items-center justify-between w-full border border-white/14 bg-black/35 px-3 text-left text-[13px] font-medium text-white/72 transition-colors cursor-pointer hover:border-brand-500/60 hover:text-white"
       @click="isOpen = !isOpen"
     >
       <ClientOnly fallback="Select org">
         <span class="truncate">{{ activeOrg?.name ?? 'Select org' }}</span>
       </ClientOnly>
-      <span class="text-[10px] text-surface-500 dark:text-surface-400">{{ isOpen ? '▲' : '▼' }}</span>
+      <ChevronDown class="ml-2 size-3 text-white/45 transition-transform duration-150" :class="{ 'rotate-180': isOpen }" />
     </button>
 
     <div
       v-if="isOpen"
-      class="ui-floating-menu absolute top-[calc(100%+4px)] left-0 min-w-full w-max z-50 overflow-hidden"
+      class="absolute top-[calc(100%+4px)] left-0 z-50 min-w-full w-max overflow-hidden border border-white/12 bg-black shadow-2xl shadow-black/50"
     >
-      <div v-if="isSwitching" class="px-3 py-3 text-center text-[13px] text-surface-500 dark:text-surface-400">
+      <div class="border-b border-white/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-white/38">
+        Organization
+      </div>
+
+      <div v-if="isSwitching" class="px-3 py-3 text-center text-[13px] text-white/50">
         Switching…
       </div>
       <template v-else>
         <button
           v-for="org in orgs"
           :key="org.id"
-          class="ui-menu-action block px-3 py-2 text-[13px]"
+          class="block w-full border-0 bg-transparent px-3 py-2 text-left text-[13px] text-white/68 transition-colors cursor-pointer hover:bg-white/[0.05] hover:text-white"
           :class="org.id === activeOrg?.id
-            ? 'ui-menu-action-active'
+            ? 'bg-brand-500/12 text-white font-medium'
             : ''"
           @click="handleSwitch(org.id)"
         >
           {{ org.name }}
         </button>
 
-        <div class="ui-menu-divider" />
         <NuxtLink
           :to="$localePath('/onboarding/create-org')"
-          class="ui-menu-action block px-3 py-2 text-xs no-underline"
+          class="block w-full border-t border-white/10 px-3 py-2 text-left text-xs text-white/45 no-underline transition-colors cursor-pointer hover:bg-white/[0.05] hover:text-white"
           @click="isOpen = false"
         >
           + Create organization

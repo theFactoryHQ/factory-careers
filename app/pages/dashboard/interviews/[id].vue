@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  ArrowLeft, Calendar, Clock, Video, Phone, Building2, Code2,
+  Calendar, Clock, Video, Phone, Building2, Code2,
   FileText, UsersRound, CheckCircle2, XCircle, AlertTriangle,
   UserRound, Briefcase, Pencil, MapPin, Users, MessageSquare,
   Save, X, Mail, Send, CheckCheck, ChevronDown, ExternalLink,
@@ -38,26 +38,26 @@ const statusConfig: Record<InterviewStatus, { label: string; icon: any; class: s
   scheduled: {
     label: 'Scheduled',
     icon: Calendar,
-    class: 'ui-pill-brand',
-    dot: 'ui-status-dot-brand',
+    class: 'bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-950/50 dark:text-brand-300 dark:ring-brand-800',
+    dot: 'bg-brand-500',
   },
   completed: {
     label: 'Completed',
     icon: CheckCircle2,
-    class: 'ui-pill-success',
-    dot: 'ui-status-dot-success',
+    class: 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/50 dark:text-success-300 dark:ring-success-800',
+    dot: 'bg-success-500',
   },
   cancelled: {
     label: 'Cancelled',
     icon: XCircle,
-    class: 'ui-pill',
-    dot: 'ui-status-dot',
+    class: 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:ring-surface-700',
+    dot: 'bg-surface-400',
   },
   no_show: {
     label: 'No Show',
     icon: AlertTriangle,
-    class: 'ui-pill-danger',
-    dot: 'ui-status-dot-danger',
+    class: 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950/50 dark:text-danger-300 dark:ring-danger-800',
+    dot: 'bg-danger-500',
   },
 }
 
@@ -83,10 +83,10 @@ const typeLabels: Record<string, string> = {
 import { INTERVIEW_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 
 const transitionClasses: Record<InterviewStatus, string> = {
-  scheduled: 'ui-button-secondary',
-  completed: 'ui-button-success',
-  cancelled: 'ui-button-secondary',
-  no_show: 'ui-button-danger',
+  scheduled: 'border border-surface-300 dark:border-surface-700 bg-white/80 dark:bg-surface-900 text-surface-700 dark:text-surface-300 hover:border-surface-400 dark:hover:border-surface-600 hover:bg-surface-50 dark:hover:bg-surface-800',
+  completed: 'bg-success-600 text-white shadow-sm shadow-success-900/20 hover:bg-success-700',
+  cancelled: 'bg-surface-500 text-white shadow-sm shadow-surface-900/20 hover:bg-surface-600',
+  no_show: 'bg-danger-600 text-white shadow-sm shadow-danger-900/20 hover:bg-danger-700',
 }
 
 const allowedTransitions = computed(() => {
@@ -351,35 +351,34 @@ const localePath = useLocalePath()
 </script>
 
 <template>
-  <div class="ui-detail-page">
+  <div class="mx-auto max-w-3xl px-6 py-8">
     <!-- Back link -->
-    <NuxtLink
+    <AppBackLink
       :to="$localePath('/dashboard/interviews')"
-      class="ui-button ui-button-secondary ui-detail-back-link"
+      class="mb-4"
     >
-      <ArrowLeft class="size-4" />
       Back to Interviews
-    </NuxtLink>
+    </AppBackLink>
 
     <!-- Loading -->
-    <div v-if="fetchStatus === 'pending'" class="ui-detail-loading-state">
-      <div class="ui-spinner-brand size-8 animate-spin rounded-full border-2" />
+    <div v-if="fetchStatus === 'pending'" class="flex flex-col items-center justify-center py-20">
+      <div class="size-8 rounded-full border-2 border-brand-200 border-t-brand-600 dark:border-brand-800 dark:border-t-brand-400 animate-spin" />
       <p class="mt-3 text-sm text-surface-400">Loading interview…</p>
     </div>
 
     <!-- Error -->
     <div
       v-else-if="error"
-      class="ui-alert ui-alert-danger ui-detail-card"
+      class="rounded-xl border border-danger-200 bg-danger-50 p-5 text-sm text-danger-700 dark:border-danger-800/60 dark:bg-danger-950/40 dark:text-danger-300"
     >
       {{ (error as any).statusCode === 404 ? 'Interview not found.' : 'Failed to load interview.' }}
-      <NuxtLink :to="$localePath('/dashboard/interviews')" class="ui-inline-link-brand ml-1 underline">Back to Interviews</NuxtLink>
+      <NuxtLink :to="$localePath('/dashboard/interviews')" class="underline ml-1">Back to Interviews</NuxtLink>
     </div>
 
     <!-- Interview detail -->
     <template v-else-if="interview">
       <!-- Header card -->
-      <div class="ui-panel ui-detail-header-card">
+      <div class="mb-4 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
         <div class="flex items-start justify-between gap-4">
           <div class="flex items-start gap-4 min-w-0">
             <div
@@ -396,17 +395,17 @@ const localePath = useLocalePath()
                   {{ interview.title }}
                 </h1>
                 <span
-                  class="ui-pill uppercase tracking-wide"
+                  class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ring-inset"
                   :class="statusConfig[interview.status as InterviewStatus]?.class"
                 >
-                  <span class="ui-status-dot" :class="statusConfig[interview.status as InterviewStatus]?.dot" />
+                  <span class="size-1.5 rounded-full" :class="statusConfig[interview.status as InterviewStatus]?.dot" />
                   {{ statusConfig[interview.status as InterviewStatus]?.label }}
                 </span>
               </div>
               <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm text-surface-500 dark:text-surface-400">
                 <NuxtLink
                   :to="$localePath(`/dashboard/candidates/${interview.candidateId}`)"
-                  class="ui-inline-link-brand group inline-flex items-center gap-1.5"
+                  class="inline-flex items-center gap-1.5 hover:text-brand-600 dark:hover:text-brand-400 transition-colors group"
                 >
                   <UserRound class="size-4" />
                   {{ formatPersonName(interview.candidateFirstName, interview.candidateLastName) }}
@@ -414,7 +413,7 @@ const localePath = useLocalePath()
                 </NuxtLink>
                 <NuxtLink
                   :to="$localePath(`/dashboard/jobs/${interview.jobId}`)"
-                  class="ui-inline-link-brand group inline-flex items-center gap-1.5"
+                  class="inline-flex items-center gap-1.5 hover:text-brand-600 dark:hover:text-brand-400 transition-colors group"
                 >
                   <Briefcase class="size-4" />
                   {{ interview.jobTitle }}
@@ -424,7 +423,7 @@ const localePath = useLocalePath()
             </div>
           </div>
           <button
-            class="ui-button ui-button-secondary p-2"
+            class="cursor-pointer rounded-lg border border-surface-200 dark:border-surface-700 p-2 text-surface-400 hover:text-surface-600 hover:bg-surface-50 dark:hover:text-surface-300 dark:hover:bg-surface-800 transition-all"
             @click="openEditDetails"
           >
             <Pencil class="size-4" />
@@ -433,15 +432,15 @@ const localePath = useLocalePath()
         <!-- Invitation status -->
         <div
           v-if="interview.invitationSentAt"
-          class="ui-feedback-success mt-3 text-xs"
+          class="mt-3 flex items-center gap-1.5 text-xs text-success-600 dark:text-success-400"
         >
           <CheckCheck class="size-3.5" />
-          Invitation sent <TimelineDateLink :date="interview.invitationSentAt">{{ formatDate(interview.invitationSentAt) }}</TimelineDateLink>
+          Invitation sent <TimelineDateLink :date="interview.invitationSentAt" class="text-success-600 dark:text-success-400">{{ formatDate(interview.invitationSentAt) }}</TimelineDateLink>
         </div>
-        <!-- Google Calendar sync status -->
+        <!-- Calendar sync status -->
         <div
           v-if="interview.googleCalendarEventId"
-          class="ui-feedback-success mt-2 text-xs"
+          class="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400"
         >
           <Calendar class="size-3.5" />
           <a
@@ -449,35 +448,35 @@ const localePath = useLocalePath()
             :href="interview.googleCalendarEventLink"
             target="_blank"
             rel="noopener noreferrer"
-            class="ui-inline-link-brand underline underline-offset-2"
-          >Open in Google Calendar</a>
-          <span v-else>Synced to Google Calendar</span>
+            class="underline underline-offset-2 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+          >Open in Calendar</a>
+          <span v-else>Synced to Calendar</span>
         </div>
       </div>
 
       <!-- Quick actions -->
       <div
         v-if="allowedTransitions.length > 0"
-        class="ui-panel ui-detail-action-strip"
+        class="mb-6 rounded-xl border border-surface-200 dark:border-surface-800 bg-white/80 dark:bg-surface-900/70 p-3"
       >
         <div class="flex flex-wrap items-center gap-2">
-          <span class="ui-pill rounded-full">Quick actions</span>
+          <span class="inline-flex items-center rounded-full bg-surface-100 dark:bg-surface-800 px-2.5 py-1 text-xs font-medium text-surface-600 dark:text-surface-400">Quick actions</span>
           <button
             v-for="nextStatus in allowedTransitions"
             :key="nextStatus"
             :disabled="isTransitioning"
-            class="ui-button rounded-full px-3.5 py-1.5 text-sm"
+            class="inline-flex cursor-pointer items-center rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
             :class="transitionClasses[nextStatus]"
             @click="handleTransition(nextStatus)"
           >
             <span
-              class="ui-status-dot mr-2"
-              :class="statusConfig[nextStatus]?.dot"
+              class="mr-2 inline-flex size-1.5 rounded-full"
+              :class="nextStatus === 'completed' ? 'bg-success-200' : nextStatus === 'cancelled' ? 'bg-surface-200' : nextStatus === 'no_show' ? 'bg-danger-200' : 'bg-brand-200'"
             />
             {{ nextStatus === 'scheduled' ? 'Re-schedule' : `Mark ${statusConfig[nextStatus]?.label}` }}
           </button>
           <button
-            class="ui-button ui-button-secondary rounded-full px-3.5 py-1.5 text-sm"
+            class="inline-flex cursor-pointer items-center rounded-full border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/30 px-3.5 py-1.5 text-sm font-medium text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-950/50 transition-all duration-150"
             @click="openReschedule"
           >
             <Calendar class="mr-1.5 size-3.5" />
@@ -485,7 +484,7 @@ const localePath = useLocalePath()
           </button>
           <button
             v-if="interview.status === 'scheduled'"
-            class="ui-button ui-button-success rounded-full px-3.5 py-1.5 text-sm"
+            class="inline-flex cursor-pointer items-center rounded-full border border-success-200 dark:border-success-800 bg-success-50 dark:bg-success-950/30 px-3.5 py-1.5 text-sm font-medium text-success-700 dark:text-success-300 hover:bg-success-100 dark:hover:bg-success-950/50 transition-all duration-150"
             @click="showSendInvitation = !showSendInvitation"
           >
             <Mail class="mr-1.5 size-3.5" />
@@ -504,11 +503,11 @@ const localePath = useLocalePath()
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-if="showSendInvitation" class="ui-panel-brand ui-detail-inline-panel">
+        <div v-if="showSendInvitation" class="mb-6 rounded-xl border border-brand-200 dark:border-brand-800/60 bg-white dark:bg-surface-900 overflow-hidden shadow-sm">
           <!-- Success state -->
-          <div v-if="sendEmailSuccess" class="ui-detail-inline-panel-state">
-            <div class="ui-icon-state ui-icon-state-success mb-3">
-              <Check class="size-6" />
+          <div v-if="sendEmailSuccess" class="flex flex-col items-center justify-center py-10 px-6">
+            <div class="flex size-12 items-center justify-center rounded-full bg-success-100 dark:bg-success-950/40 mb-3">
+              <Check class="size-6 text-success-600 dark:text-success-400" />
             </div>
             <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-1">Invitation Sent!</h3>
             <p class="text-sm text-surface-500 dark:text-surface-400">Email sent to {{ interview.candidateEmail }}</p>
@@ -516,11 +515,11 @@ const localePath = useLocalePath()
 
           <template v-else>
             <!-- Panel header -->
-            <div class="ui-panel-brand-header ui-detail-inline-panel-header">
+            <div class="border-b border-brand-100 dark:border-brand-900/40 bg-brand-50/50 dark:bg-brand-950/20 px-5 py-3.5">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
-                  <div class="ui-icon-state ui-icon-state-brand size-8 rounded-lg">
-                    <Mail class="size-4" />
+                  <div class="flex size-8 items-center justify-center rounded-lg bg-brand-100 dark:bg-brand-900/40">
+                    <Mail class="size-4 text-brand-600 dark:text-brand-400" />
                   </div>
                   <div>
                     <h3 class="text-sm font-semibold text-surface-800 dark:text-surface-200">Send Interview Invitation</h3>
@@ -528,7 +527,7 @@ const localePath = useLocalePath()
                   </div>
                 </div>
                 <button
-                  class="ui-button ui-button-ghost p-1.5"
+                  class="cursor-pointer rounded-lg p-1.5 text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:text-surface-300 dark:hover:bg-surface-800 transition-all"
                   @click="showSendInvitation = false"
                 >
                   <X class="size-4" />
@@ -537,18 +536,18 @@ const localePath = useLocalePath()
             </div>
 
             <!-- Error -->
-            <div v-if="sendEmailError" class="ui-alert ui-alert-danger mx-5 mt-4 flex items-start gap-2.5 p-3.5">
+            <div v-if="sendEmailError" class="mx-5 mt-4 flex items-start gap-2.5 rounded-xl border border-danger-200/80 bg-danger-50 p-3.5 text-sm text-danger-700 dark:border-danger-800/60 dark:bg-danger-950/40 dark:text-danger-300">
               <AlertCircle class="size-4 shrink-0 mt-0.5" />
               {{ sendEmailError }}
             </div>
 
             <!-- Template selection -->
-            <div class="ui-detail-inline-panel-body">
+            <div class="p-5">
               <div class="flex items-center justify-between mb-3">
                 <p class="text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">Choose a Template</p>
                 <NuxtLink
                   :to="localePath('/dashboard/interviews/templates')"
-                  class="ui-inline-link-brand inline-flex items-center gap-1 text-xs font-medium no-underline"
+                  class="inline-flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors no-underline"
                 >
                   Manage Templates
                   <ExternalLink class="size-3" />
@@ -560,10 +559,10 @@ const localePath = useLocalePath()
                   v-for="t in allTemplates"
                   :key="t.id"
                   type="button"
-                  class="ui-selectable-panel w-full p-3.5 text-left"
+                  class="w-full text-left rounded-xl border-2 p-3.5 transition-all duration-150 cursor-pointer"
                   :class="selectedTemplateId === t.id
-                    ? 'ui-selectable-panel-active'
-                    : ''"
+                    ? 'border-brand-500 bg-brand-50/50 dark:border-brand-400 dark:bg-brand-950/20 shadow-sm'
+                    : 'border-surface-200 dark:border-surface-700/80 hover:border-surface-300 dark:hover:border-surface-600 hover:bg-surface-50 dark:hover:bg-surface-800/40'"
                   @click="selectedTemplateId = t.id"
                 >
                   <div class="flex items-center justify-between mb-1">
@@ -580,7 +579,7 @@ const localePath = useLocalePath()
               <div v-if="selectedTemplate" class="mt-4">
                 <button
                   type="button"
-                  class="ui-inline-link-brand flex items-center gap-1.5 text-sm font-medium"
+                  class="flex items-center gap-1.5 text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors cursor-pointer"
                   @click="showEmailPreview = !showEmailPreview"
                 >
                   <component :is="showEmailPreview ? X : Mail" class="size-3.5" />
@@ -594,7 +593,7 @@ const localePath = useLocalePath()
                   leave-from-class="opacity-100"
                   leave-to-class="opacity-0"
                 >
-                  <div v-if="showEmailPreview" class="ui-panel-muted mt-3 p-4">
+                  <div v-if="showEmailPreview" class="mt-3 rounded-xl border border-surface-200 dark:border-surface-700/80 bg-surface-50 dark:bg-surface-800/40 p-4">
                     <div class="mb-3">
                       <span class="text-[10px] uppercase tracking-wider font-semibold text-surface-400">Subject</span>
                       <p class="text-sm font-semibold text-surface-800 dark:text-surface-200">{{ emailPreviewSubject }}</p>
@@ -609,11 +608,11 @@ const localePath = useLocalePath()
             </div>
 
             <!-- Send button -->
-            <div class="ui-panel-footer ui-detail-inline-panel-footer">
+            <div class="border-t border-surface-100 dark:border-surface-800 bg-surface-50/80 dark:bg-surface-950/40 px-5 py-4">
               <div class="flex items-center gap-3">
                 <button
                   type="button"
-                  class="ui-button ui-button-secondary flex-1 rounded-xl px-4 py-2.5"
+                  class="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all cursor-pointer"
                   @click="showSendInvitation = false"
                 >
                   Cancel
@@ -621,7 +620,7 @@ const localePath = useLocalePath()
                 <button
                   type="button"
                   :disabled="!selectedTemplateId || isSendingEmail"
-                  class="ui-button ui-button-primary flex-1 rounded-xl px-4 py-2.5 font-semibold"
+                  class="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer shadow-sm shadow-brand-500/20"
                   @click="handleSendInvitation"
                 >
                   <Send class="size-4" />
@@ -634,10 +633,10 @@ const localePath = useLocalePath()
       </Transition>
 
       <!-- Detail cards -->
-      <div class="ui-detail-card-grid">
+      <div class="grid gap-4 md:grid-cols-2">
         <!-- Schedule info -->
-        <div class="ui-panel ui-detail-card">
-          <div class="ui-detail-card-header">
+        <div class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
+          <div class="flex items-center gap-2 mb-3">
             <Calendar class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Schedule</h2>
           </div>
@@ -671,15 +670,15 @@ const localePath = useLocalePath()
                   :href="interview.googleCalendarEventLink"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="ui-pill ui-pill-success text-sm"
+                  class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors"
                 >
                   <CheckCircle2 class="size-3.5" />
-                  Open in Google Calendar
+                  Open in Calendar
                   <ExternalLink class="size-3" />
                 </a>
-                <span v-else class="ui-pill ui-pill-success text-sm">
+                <span v-else class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-sm font-medium text-emerald-700 dark:text-emerald-400">
                   <CheckCircle2 class="size-3.5" />
-                  Synced to Google Calendar
+                  Synced to Calendar
                 </span>
               </dd>
             </div>
@@ -687,15 +686,15 @@ const localePath = useLocalePath()
         </div>
 
         <!-- Candidate info -->
-        <div class="ui-panel ui-detail-card">
-          <div class="ui-detail-card-header justify-between">
+        <div class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
+          <div class="flex items-center justify-between gap-2 mb-3">
             <div class="flex items-center gap-2">
               <UserRound class="size-4 text-surface-500 dark:text-surface-400" />
               <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Candidate</h2>
             </div>
             <NuxtLink
               :to="$localePath(`/dashboard/candidates/${interview.candidateId}`)"
-              class="ui-inline-link-brand inline-flex items-center gap-1 text-xs font-medium"
+              class="inline-flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors"
             >
               View Profile
               <ExternalLink class="size-3" />
@@ -721,7 +720,7 @@ const localePath = useLocalePath()
               <dd>
                 <NuxtLink
                   :to="$localePath(`/dashboard/jobs/${interview.jobId}`)"
-                  class="ui-inline-link-brand inline-flex items-center gap-1 font-medium"
+                  class="inline-flex items-center gap-1 font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors"
                 >
                   {{ interview.jobTitle }}
                   <ExternalLink class="size-3" />
@@ -732,8 +731,8 @@ const localePath = useLocalePath()
         </div>
 
         <!-- Interviewers -->
-        <div v-if="interview.interviewers?.length" class="ui-panel ui-detail-card md:col-span-2">
-          <div class="ui-detail-card-header">
+        <div v-if="interview.interviewers?.length" class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 md:col-span-2">
+          <div class="flex items-center gap-2 mb-3">
             <Users class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Interviewers</h2>
           </div>
@@ -741,7 +740,7 @@ const localePath = useLocalePath()
             <span
               v-for="(interviewer, idx) in interview.interviewers"
               :key="idx"
-              class="ui-pill text-sm"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-1.5 text-sm text-surface-700 dark:text-surface-300"
             >
               <UserRound class="size-3.5 text-surface-400" />
               {{ interviewer }}
@@ -750,7 +749,7 @@ const localePath = useLocalePath()
         </div>
 
         <!-- Timestamps -->
-        <div class="ui-panel ui-detail-card md:col-span-2">
+        <div class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 md:col-span-2">
           <dl class="flex flex-wrap gap-x-8 gap-y-2 text-sm">
             <div>
               <dt class="text-surface-400 inline-flex items-center gap-1"><Clock class="size-3.5" /> Created</dt>
@@ -765,15 +764,15 @@ const localePath = useLocalePath()
       </div>
 
       <!-- Notes -->
-      <div class="ui-panel ui-detail-card-spaced">
-        <div class="ui-detail-card-header justify-between">
+      <div class="mt-4 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 mb-4">
+        <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-2">
             <MessageSquare class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Notes</h2>
           </div>
           <button
             v-if="!isEditingNotes"
-            class="ui-inline-link-brand text-xs font-medium"
+            class="cursor-pointer text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors"
             @click="startEditNotes"
           >
             {{ interview.notes ? 'Edit' : 'Add Notes' }}
@@ -785,18 +784,18 @@ const localePath = useLocalePath()
             v-model="notesInput"
             rows="5"
             placeholder="Add notes about this interview — topics to cover, feedback, impressions…"
-            class="ui-field resize-none"
+            class="w-full rounded-lg border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors resize-none"
           />
           <div class="flex items-center gap-2 mt-2">
             <button
               :disabled="isSavingNotes"
-              class="ui-button ui-button-primary px-3 py-1.5 text-sm"
+              class="cursor-pointer rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               @click="saveNotes"
             >
               {{ isSavingNotes ? 'Saving…' : 'Save' }}
             </button>
             <button
-              class="ui-button ui-button-secondary px-3 py-1.5 text-sm"
+              class="cursor-pointer rounded-lg border border-surface-300 dark:border-surface-600 px-3 py-1.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
               @click="isEditingNotes = false"
             >
               Cancel
@@ -814,11 +813,11 @@ const localePath = useLocalePath()
       </div>
 
       <!-- Danger zone -->
-      <div class="ui-panel-danger ui-detail-danger-card">
-        <h3 class="text-sm font-semibold mb-1">Danger Zone</h3>
-        <p class="text-xs opacity-80 mb-3">Permanently delete this interview. This action cannot be undone.</p>
+      <div class="rounded-xl border border-danger-200/60 dark:border-danger-900/40 bg-danger-50/30 dark:bg-danger-950/20 p-5">
+        <h3 class="text-sm font-semibold text-danger-700 dark:text-danger-400 mb-1">Danger Zone</h3>
+        <p class="text-xs text-danger-600/80 dark:text-danger-400/60 mb-3">Permanently delete this interview. This action cannot be undone.</p>
         <button
-          class="ui-button ui-button-danger px-3 py-1.5 text-sm"
+          class="cursor-pointer rounded-lg bg-danger-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-danger-700 transition-colors"
           @click="showDeleteConfirm = true"
         >
           Delete Interview
@@ -828,39 +827,36 @@ const localePath = useLocalePath()
 
     <!-- Reschedule Modal -->
     <Teleport to="body">
-      <div
-        v-if="showReschedule"
-        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-        @click.self="showReschedule = false"
-      >
-        <div class="ui-modal-panel ui-modal-content ui-modal-content-md">
+      <div v-if="showReschedule" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showReschedule = false" />
+        <div class="relative bg-white dark:bg-surface-900 rounded-2xl shadow-2xl shadow-surface-900/10 dark:shadow-black/30 ring-1 ring-surface-200/80 dark:ring-surface-700/60 p-6 max-w-md w-full mx-4">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-4">Reschedule Interview</h3>
 
-          <div v-if="rescheduleError" class="ui-alert ui-alert-danger mb-4">
+          <div v-if="rescheduleError" class="mb-4 rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-700 dark:border-danger-800 dark:bg-danger-950/40 dark:text-danger-300">
             {{ rescheduleError }}
           </div>
 
           <form class="space-y-4" @submit.prevent="handleReschedule">
             <div>
               <label for="reschedule-date" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                Date <span class="ui-required-marker">*</span>
+                Date <span class="text-danger-500">*</span>
               </label>
               <input
                 id="reschedule-date"
                 v-model="rescheduleForm.date"
                 type="date"
-                class="ui-field"
+                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
               />
             </div>
             <div>
               <label for="reschedule-time" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                Time <span class="ui-required-marker">*</span>
+                Time <span class="text-danger-500">*</span>
               </label>
               <input
                 id="reschedule-time"
                 v-model="rescheduleForm.time"
                 type="time"
-                class="ui-field"
+                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
               />
             </div>
             <div>
@@ -871,14 +867,14 @@ const localePath = useLocalePath()
                 type="number"
                 min="5"
                 max="480"
-                class="ui-field"
+                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
               />
             </div>
 
-            <div class="ui-modal-actions">
+            <div class="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
-                class="ui-button ui-button-secondary px-4 py-2 text-sm"
+                class="cursor-pointer rounded-lg border border-surface-300 dark:border-surface-700 px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
                 @click="showReschedule = false"
               >
                 Cancel
@@ -886,7 +882,7 @@ const localePath = useLocalePath()
               <button
                 type="submit"
                 :disabled="isRescheduling"
-                class="ui-button ui-button-primary px-4 py-2 text-sm"
+                class="cursor-pointer rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {{ isRescheduling ? 'Saving…' : 'Reschedule' }}
               </button>
@@ -898,31 +894,28 @@ const localePath = useLocalePath()
 
     <!-- Edit Details Modal -->
     <Teleport to="body">
-      <div
-        v-if="showEditDetails"
-        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-        @click.self="showEditDetails = false"
-      >
-        <div class="ui-modal-panel ui-modal-content ui-modal-content-lg ui-modal-content-scroll">
+      <div v-if="showEditDetails" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showEditDetails = false" />
+        <div class="relative bg-white dark:bg-surface-900 rounded-2xl shadow-2xl shadow-surface-900/10 dark:shadow-black/30 ring-1 ring-surface-200/80 dark:ring-surface-700/60 p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-5">Edit Interview Details</h3>
 
-          <div v-if="editErrors.submit" class="ui-alert ui-alert-danger mb-4">
+          <div v-if="editErrors.submit" class="mb-4 rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-700 dark:border-danger-800 dark:bg-danger-950/40 dark:text-danger-300">
             {{ editErrors.submit }}
           </div>
 
           <form class="space-y-4" @submit.prevent="handleSaveDetails">
             <div>
               <label for="edit-title" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                Title <span class="ui-required-marker">*</span>
+                Title <span class="text-danger-500">*</span>
               </label>
               <input
                 id="edit-title"
                 v-model="editForm.title"
                 type="text"
-                class="ui-field"
-                :class="editErrors.title ? 'border-danger-300 dark:border-danger-800' : ''"
+                class="w-full rounded-lg border px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                :class="editErrors.title ? 'border-danger-300' : 'border-surface-300 dark:border-surface-700'"
               />
-              <p v-if="editErrors.title" class="ui-feedback-danger mt-1 text-xs">{{ editErrors.title }}</p>
+              <p v-if="editErrors.title" class="mt-1 text-xs text-danger-600">{{ editErrors.title }}</p>
             </div>
 
             <div>
@@ -930,7 +923,7 @@ const localePath = useLocalePath()
               <select
                 id="edit-type"
                 v-model="editForm.type"
-                class="ui-field"
+                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
               >
                 <option value="video">Video</option>
                 <option value="phone">Phone</option>
@@ -948,7 +941,7 @@ const localePath = useLocalePath()
                 v-model="editForm.location"
                 type="text"
                 placeholder="Zoom link, office address…"
-                class="ui-field"
+                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
               />
             </div>
 
@@ -960,12 +953,12 @@ const localePath = useLocalePath()
                     v-model="editForm.interviewers[idx]"
                     type="text"
                     placeholder="Interviewer name"
-                    class="ui-field flex-1"
+                    class="flex-1 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
                   />
                   <button
                     v-if="editForm.interviewers.length > 1"
                     type="button"
-                    class="ui-button ui-button-ghost ui-button-ghost-danger p-2"
+                    class="cursor-pointer rounded-lg border border-surface-300 dark:border-surface-700 p-2 text-surface-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/30 transition-colors"
                     @click="editForm.interviewers.splice(idx, 1)"
                   >
                     <X class="size-4" />
@@ -974,7 +967,7 @@ const localePath = useLocalePath()
                 <button
                   v-if="editForm.interviewers.length < 20"
                   type="button"
-                  class="ui-inline-link-brand text-xs font-medium"
+                  class="cursor-pointer text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors"
                   @click="editForm.interviewers.push('')"
                 >
                   + Add interviewer
@@ -982,10 +975,10 @@ const localePath = useLocalePath()
               </div>
             </div>
 
-            <div class="ui-modal-actions">
+            <div class="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
-                class="ui-button ui-button-secondary px-4 py-2 text-sm"
+                class="cursor-pointer rounded-lg border border-surface-300 dark:border-surface-700 px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
                 @click="showEditDetails = false"
               >
                 Cancel
@@ -993,7 +986,7 @@ const localePath = useLocalePath()
               <button
                 type="submit"
                 :disabled="isSavingEdit"
-                class="ui-button ui-button-primary px-4 py-2 text-sm"
+                class="cursor-pointer rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {{ isSavingEdit ? 'Saving…' : 'Save Changes' }}
               </button>
@@ -1005,27 +998,24 @@ const localePath = useLocalePath()
 
     <!-- Delete Confirm Modal -->
     <Teleport to="body">
-      <div
-        v-if="showDeleteConfirm"
-        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-        @click.self="showDeleteConfirm = false"
-      >
-        <div class="ui-modal-panel ui-modal-content ui-modal-content-sm">
+      <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showDeleteConfirm = false" />
+        <div class="relative bg-white dark:bg-surface-900 rounded-2xl shadow-2xl shadow-surface-900/10 dark:shadow-black/30 ring-1 ring-surface-200/80 dark:ring-surface-700/60 p-6 max-w-sm w-full mx-4">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Interview</h3>
           <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
             Are you sure you want to delete <strong>{{ interview?.title }}</strong>? This action cannot be undone.
           </p>
-          <div class="ui-modal-actions">
+          <div class="flex justify-end gap-2">
             <button
               :disabled="isDeleting"
-              class="ui-button ui-button-secondary px-3 py-1.5 text-sm"
+              class="cursor-pointer rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
               @click="showDeleteConfirm = false"
             >
               Cancel
             </button>
             <button
               :disabled="isDeleting"
-              class="ui-button ui-button-danger px-3 py-1.5 text-sm"
+              class="cursor-pointer rounded-lg bg-danger-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-danger-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               @click="handleDelete"
             >
               {{ isDeleting ? 'Deleting…' : 'Delete' }}

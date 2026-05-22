@@ -17,7 +17,7 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
 </script>
 
 <template>
-  <div class="factory-dashboard-shell flex h-screen flex-col overflow-hidden bg-black text-white">
+  <div class="factory-dashboard-shell flex min-h-screen flex-col bg-black text-white">
     <!-- AppTopBar: desktop only -->
     <AppTopBar class="hidden lg:block" />
     <AppToasts />
@@ -26,37 +26,38 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
       <DemoUpsellBanner v-if="isDemoAccount" />
     </ClientOnly>
 
-    <div class="flex flex-1 min-h-0 flex-col overflow-hidden lg:flex-row">
+    <!-- Demo mode banner -->
+    <div
+      v-if="isDemo"
+      class="mx-auto mb-6 flex max-w-5xl items-center gap-3 border border-brand-500/35 bg-brand-500/10 px-4 py-2.5 text-sm text-white/74"
+    >
+      <Eye class="size-4 shrink-0" />
+      <span>
+        <strong>Demo mode</strong> — Explore freely with sample data. Editing is disabled here.
+        <a
+          href="https://github.com/caffeinebounce/factory-careers"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="ml-1 font-semibold text-brand-300 underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"
+        >View source →</a>
+      </span>
+    </div>
+
+    <div class="flex flex-1 flex-col lg:flex-row min-w-0">
       <!-- Desktop sidebar -->
-      <div class="hidden h-full shrink-0 lg:block">
+      <div class="hidden lg:block sticky top-16 h-[calc(100vh-4rem)] shrink-0 z-10">
         <SettingsSidebar />
       </div>
       <!-- Mobile top nav -->
-      <div class="shrink-0 lg:hidden">
+      <div class="lg:hidden sticky top-0 z-10">
         <SettingsMobileNav />
       </div>
       <!-- Page content -->
-      <main class="relative flex-1 min-h-0 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-        <!-- Demo mode banner -->
-        <div
-          v-if="isDemo"
-          class="ui-demo-banner mx-auto mb-6 flex max-w-4xl items-center gap-3 px-4 py-2.5 text-sm"
-        >
-          <Eye class="size-4 shrink-0" />
-          <span>
-            <strong>Demo mode</strong> — Explore freely with sample data. Editing is disabled here.
-            <a
-              href="https://github.com/caffeinebounce/factory-careers"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="ui-demo-link ml-1 font-semibold"
-            >View source →</a>
-          </span>
-        </div>
-
-        <div class="mx-auto w-full max-w-4xl">
+      <main class="flex flex-1 min-w-0 flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+        <div class="mx-auto w-full max-w-4xl flex-1">
           <slot />
         </div>
+        <AppDashboardFooter class="mx-auto w-full max-w-4xl" />
       </main>
     </div>
   </div>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  Building2, Users, UserCircle, ChevronLeft, Plug, Brain, ShieldCheck, Globe,
+  Building2, Users, UserCircle, Plug, Brain, ShieldCheck, Globe,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -59,16 +59,15 @@ function isActive(to: string, exact: boolean) {
 </script>
 
 <template>
-  <div class="ui-nav-shell ui-nav-shell-top">
+  <div class="ui-nav-shell border-b shadow-sm">
     <!-- Back link + title -->
     <div class="flex items-center gap-3 px-4 pt-3 pb-2">
-      <NuxtLink
+      <AppBackLink
         :to="$localePath('/dashboard')"
-        class="ui-inline-link inline-flex items-center gap-1 text-xs font-medium no-underline"
+        class="shrink-0"
       >
-        <ChevronLeft class="size-3.5" />
         Back
-      </NuxtLink>
+      </AppBackLink>
       <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">
         Settings
       </h2>

@@ -17,45 +17,47 @@ const { data: job } = useFetch(`/api/public/jobs/${jobSlug}`, {
 })
 
 useSeoMeta({
-  title: 'Application Submitted — Factory Careers',
+  title: 'Application Submitted',
   robots: 'noindex, nofollow',
 })
 </script>
 
 <template>
-  <div class="text-center py-12">
-    <div class="mx-auto mb-6 flex size-16 items-center justify-center rounded-full bg-success-100 dark:bg-success-900">
-      <CheckCircle class="size-8 text-success-600" />
-    </div>
+  <div class="py-12">
+    <div class="mx-auto max-w-2xl border border-white/10 bg-white/[0.03] px-6 py-10 text-center sm:px-10">
+      <div class="mx-auto mb-6 flex size-16 items-center justify-center border border-brand-500/35 bg-brand-500/10">
+        <CheckCircle class="size-8 text-brand-500" />
+      </div>
 
-    <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-100 mb-2">
-      Application Submitted!
-    </h1>
+      <h1 class="mb-3 text-4xl font-light leading-none tracking-tight text-white">
+        Application submitted
+      </h1>
 
-    <p class="text-surface-600 dark:text-surface-400 max-w-md mx-auto mb-2">
-      Thank you for applying
-      <template v-if="job">
-        for the <strong>{{ job.title }}</strong> position
-      </template>.
-    </p>
+      <p class="mx-auto mb-2 max-w-md text-white/62">
+        Thank you for applying
+        <template v-if="job">
+          for the <strong class="font-semibold text-white">{{ job.title }}</strong> position
+        </template>.
+      </p>
 
-    <p class="text-sm text-surface-400 max-w-md mx-auto mb-8">
-      Your application has been received. The hiring team will review it and get back to you if there&rsquo;s a match.
-    </p>
+      <p class="mx-auto mb-8 max-w-md text-sm text-white/42">
+        Your application has been received. The hiring team will review it and get back to you if there&rsquo;s a match.
+      </p>
 
-    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-      <NuxtLink
-        :to="$localePath('/jobs')"
-        class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
-      >
-        Browse more positions
-      </NuxtLink>
-      <a
-        :href="useRuntimeConfig().public.marketingUrl"
-        class="inline-flex items-center rounded-lg border border-surface-300 dark:border-surface-700 px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
-      >
-        Back to Home
-      </a>
+      <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <NuxtLink
+          :to="$localePath('/jobs')"
+          class="factory-button-cta factory-button-premium inline-flex h-[48px] min-h-[48px] items-center justify-center px-5 py-0 transition-colors"
+        >
+          Browse more positions
+        </NuxtLink>
+        <a
+          :href="useRuntimeConfig().public.marketingUrl"
+          class="factory-button-cta factory-button-outline inline-flex h-[48px] min-h-[48px] items-center justify-center px-5 py-0 transition-colors"
+        >
+          Back to Home
+        </a>
+      </div>
     </div>
   </div>
 </template>

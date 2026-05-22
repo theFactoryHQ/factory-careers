@@ -39,7 +39,7 @@ interface ProviderInfo {
   models: { id: string, label: string, description: string, inputPricePer1m?: number, outputPricePer1m?: number, badge?: 'recommended' | 'fast' | 'powerful' | 'cheap' }[]
 }
 
-const { allowed: canManageAi, isLoading: isPermissionLoading } = usePermission({ scoring: ['create'] })
+const { allowed: canManageAi, isLoading: isPermissionLoading } = usePermission({ aiConfig: ['create'] })
 
 const { data: configsData, status: configsStatus } = useFetch<AiConfigRow[]>('/api/ai-config', {
   key: 'ai-configs',
@@ -73,7 +73,7 @@ function onCancel() {
 
     <div
       v-else-if="!canManageAi"
-      class="ui-alert ui-alert-warning ui-settings-route-alert ui-settings-route-alert-centered"
+      class="ui-alert ui-alert-warning w-full p-5 flex items-start gap-3"
     >
       <AlertTriangle class="size-5 shrink-0 mt-0.5" />
       <div>

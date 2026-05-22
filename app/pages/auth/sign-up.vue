@@ -188,7 +188,7 @@ async function handleSocialSignUp(providerId: string) {
         <h2
             class="text-xl font-semibold text-center text-surface-900 dark:text-surface-100 mb-2"
         >
-            Create your account
+            Create account
         </h2>
 
         <div

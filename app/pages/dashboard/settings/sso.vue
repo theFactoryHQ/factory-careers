@@ -154,16 +154,11 @@ async function copyCallbackUrl(providerId: string) {
 </script>
 
 <template>
-  <div class="ui-settings-page ui-settings-page-wide">
-    <div class="ui-settings-page-header">
-      <div class="flex items-center gap-2">
-        <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-100">
-          Single Sign-On
-        </h1>
-        <span class="ui-pill ui-pill-warning rounded-full px-2 py-0.5 text-xs">
-          Beta
-        </span>
-      </div>
+  <div class="w-full">
+    <div class="mb-6">
+      <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-100">
+        Single Sign-On
+      </h1>
       <p class="mt-1 text-sm text-surface-500 dark:text-surface-400">
         Allow your team to sign in with their corporate identity provider (Okta, Azure AD, Google Workspace, etc.).
       </p>
@@ -179,7 +174,7 @@ async function copyCallbackUrl(providerId: string) {
         <p class="flex-1">
           {{ formSuccess }}
         </p>
-        <button class="ui-button ui-button-ghost p-1" @click="formSuccess = ''">
+        <button class="text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-200" @click="formSuccess = ''">
           <X class="size-4" />
         </button>
       </div>
@@ -194,7 +189,7 @@ async function copyCallbackUrl(providerId: string) {
         <p class="flex-1">
           {{ formError }}
         </p>
-        <button class="ui-button ui-button-ghost p-1" @click="formError = ''">
+        <button class="text-danger-400 hover:text-danger-600 dark:hover:text-danger-200" @click="formError = ''">
           <X class="size-4" />
         </button>
       </div>
@@ -212,16 +207,16 @@ async function copyCallbackUrl(providerId: string) {
         <div
           v-for="provider in providers"
           :key="provider.id"
-          class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-content"
+          class="ui-panel p-4"
         >
           <div class="flex items-start justify-between gap-4">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
-                <ShieldCheck class="ui-icon-success size-4 shrink-0" />
+                <ShieldCheck class="size-4 text-emerald-500 shrink-0" />
                 <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100 truncate">
                   {{ provider.providerId }}
                 </h3>
-                <span class="ui-pill ui-pill-success rounded-full px-2 py-0.5 text-xs">
+                <span class="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
                   Active
                 </span>
               </div>
@@ -250,7 +245,7 @@ async function copyCallbackUrl(providerId: string) {
                     title="Copy callback URL"
                     @click="copyCallbackUrl(provider.providerId)"
                   >
-                    <Check v-if="copiedProviderId === provider.providerId" class="ui-icon-success size-3.5" />
+                    <Check v-if="copiedProviderId === provider.providerId" class="size-3.5 text-emerald-500" />
                     <Copy v-else class="size-3.5" />
                   </button>
                 </div>
@@ -279,7 +274,7 @@ async function copyCallbackUrl(providerId: string) {
               </template>
               <button
                 v-else
-                class="ui-button ui-button-ghost ui-button-ghost-danger p-1.5"
+                class="ui-button ui-button-ghost p-1.5 hover:text-danger-500"
                 title="Remove SSO provider"
                 @click="confirmDeleteId = provider.id"
               >
@@ -293,11 +288,9 @@ async function copyCallbackUrl(providerId: string) {
       <!-- Empty state -->
       <div
         v-else-if="!showForm"
-        class="ui-empty-panel ui-empty-panel-dashed p-8"
+        class="ui-empty-panel border-dashed p-8"
       >
-        <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile mx-auto size-12 mb-3">
-          <ShieldCheck class="size-6" />
-        </div>
+        <ShieldCheck class="size-10 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
         <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1">
           No SSO provider configured
         </h3>
@@ -327,7 +320,7 @@ async function copyCallbackUrl(providerId: string) {
 
       <!-- Registration form -->
       <Transition name="fade">
-        <div v-if="showForm" class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-content">
+        <div v-if="showForm" class="ui-panel p-5">
           <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
             Register OIDC SSO Provider
           </h3>
@@ -335,7 +328,7 @@ async function copyCallbackUrl(providerId: string) {
           <form class="space-y-4" @submit.prevent="handleRegister">
             <!-- Domain -->
             <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-              <span>Email domain <span class="ui-required-marker">*</span></span>
+              <span>Email domain <span class="text-danger-500">*</span></span>
               <input
                 v-model="form.domain"
                 type="text"
@@ -348,7 +341,7 @@ async function copyCallbackUrl(providerId: string) {
 
             <!-- Issuer URL -->
             <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-              <span>Issuer URL <span class="ui-required-marker">*</span></span>
+              <span>Issuer URL <span class="text-danger-500">*</span></span>
               <input
                 v-model="form.issuer"
                 type="url"
@@ -364,7 +357,7 @@ async function copyCallbackUrl(providerId: string) {
 
             <!-- Provider ID -->
             <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-              <span>Provider ID <span class="ui-required-marker">*</span></span>
+              <span>Provider ID <span class="text-danger-500">*</span></span>
               <input
                 v-model="form.providerId"
                 type="text"
@@ -378,7 +371,7 @@ async function copyCallbackUrl(providerId: string) {
 
             <!-- Client ID -->
             <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-              <span>Client ID <span class="ui-required-marker">*</span></span>
+              <span>Client ID <span class="text-danger-500">*</span></span>
               <input
                 v-model="form.clientId"
                 type="text"
@@ -391,7 +384,7 @@ async function copyCallbackUrl(providerId: string) {
 
             <!-- Client Secret -->
             <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-              <span>Client Secret <span class="ui-required-marker">*</span></span>
+              <span>Client Secret <span class="text-danger-500">*</span></span>
               <input
                 v-model="form.clientSecret"
                 type="password"
@@ -425,13 +418,13 @@ async function copyCallbackUrl(providerId: string) {
           </form>
 
           <!-- Setup guide -->
-          <div class="ui-panel-divider mt-6 pt-4">
+          <div class="mt-6 border-t border-surface-100 dark:border-surface-800 pt-4">
             <h4 class="text-xs font-semibold text-surface-600 dark:text-surface-400 uppercase tracking-wider mb-2">
               Quick setup guide
             </h4>
             <ol class="text-xs text-surface-500 dark:text-surface-400 space-y-1.5 list-decimal list-inside">
               <li>Create an OIDC application in your identity provider (Okta, Azure AD, Google Workspace, etc.).</li>
-              <li>Set the <strong>Redirect URI</strong> to: <code class="ui-code">{{ `${siteOrigin}/api/auth/sso/callback/{provider-id}` }}</code></li>
+              <li>Set the <strong>Redirect URI</strong> to: <code class="bg-surface-100 dark:bg-surface-800 px-1 py-0.5 rounded text-xs">{{ `${siteOrigin}/api/auth/sso/callback/{provider-id}` }}</code></li>
               <li>Copy the <strong>Client ID</strong> and <strong>Client Secret</strong> from your IdP and paste them above.</li>
               <li>Enter the <strong>Issuer URL</strong> — Factory Careers will auto-discover all OIDC endpoints.</li>
             </ol>
@@ -441,7 +434,7 @@ async function copyCallbackUrl(providerId: string) {
                 href="https://developer.okta.com/docs/guides/sign-into-web-app-redirect/node-express/main/"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1 text-xs"
+                class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline"
               >
                 Okta guide <ExternalLink class="size-3" />
               </a>
@@ -449,7 +442,7 @@ async function copyCallbackUrl(providerId: string) {
                 href="https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1 text-xs"
+                class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline"
               >
                 Azure AD guide <ExternalLink class="size-3" />
               </a>
@@ -457,7 +450,7 @@ async function copyCallbackUrl(providerId: string) {
                 href="https://support.google.com/a/answer/60224"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1 text-xs"
+                class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline"
               >
                 Google Workspace guide <ExternalLink class="size-3" />
               </a>
@@ -467,21 +460,21 @@ async function copyCallbackUrl(providerId: string) {
       </Transition>
 
       <!-- How it works -->
-      <div class="ui-panel-muted ui-settings-callout">
+      <div v-if="!hasProvider" class="ui-panel-muted mt-8 p-5">
         <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3">
           How Enterprise SSO works
         </h3>
         <div class="space-y-3 text-xs text-surface-500 dark:text-surface-400">
           <div class="flex gap-3">
-            <div class="ui-step-marker">1</div>
+            <div class="flex items-center justify-center size-6 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 text-xs font-bold shrink-0">1</div>
             <p>You register your company's identity provider (IdP) — Okta, Azure AD, Google Workspace, or any OIDC-compliant provider.</p>
           </div>
           <div class="flex gap-3">
-            <div class="ui-step-marker">2</div>
+            <div class="flex items-center justify-center size-6 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 text-xs font-bold shrink-0">2</div>
             <p>Team members visit the sign-in page and enter their work email. Factory Careers detects the email domain and redirects to your IdP.</p>
           </div>
           <div class="flex gap-3">
-            <div class="ui-step-marker">3</div>
+            <div class="flex items-center justify-center size-6 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 text-xs font-bold shrink-0">3</div>
             <p>After authenticating with the IdP, users are automatically provisioned into your organization as members — no invitation needed.</p>
           </div>
         </div>

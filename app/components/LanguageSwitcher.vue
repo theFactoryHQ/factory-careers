@@ -159,7 +159,7 @@ const i18nProbeText = computed(() => t('common.language'))
 const isFactoryTone = computed(() => props.tone === 'factory')
 
 const triggerClasses = computed(() => isFactoryTone.value
-  ? 'flex h-8 items-center gap-1 border border-white/14 bg-black/35 px-2 text-xs font-medium lowercase text-white/70 outline-none transition-colors hover:border-brand-500/60 hover:text-white focus:border-brand-500 focus:text-white focus:ring-2 focus:ring-brand-500/25'
+  ? 'flex h-8 items-center gap-1 border-0 bg-transparent px-2 text-xs font-medium lowercase text-white/70 outline-none transition-colors hover:bg-white/[0.04] hover:text-white focus:text-white focus:ring-1 focus:ring-brand-500/60'
   : 'flex h-8 items-center gap-1 rounded-md border border-surface-300/45 dark:border-surface-700/55 bg-transparent px-2 text-xs font-medium lowercase text-surface-500 dark:text-surface-400 outline-none transition-colors hover:border-surface-400/60 hover:text-surface-700 dark:hover:border-surface-600 dark:hover:text-surface-200 focus:border-brand-500/70 focus:text-surface-800 dark:focus:text-surface-100')
 
 const dropdownClasses = computed(() => isFactoryTone.value

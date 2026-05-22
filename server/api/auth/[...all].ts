@@ -70,6 +70,22 @@ async function enforceFactoryAuthPolicy(event: H3Event) {
   }
 
   if (
+    env.FACTORY_ADMIN_SSO_ONLY &&
+    (
+      authPath.startsWith('/sign-in/email') ||
+      authPath.startsWith('/request-password-reset') ||
+      authPath.startsWith('/forget-password') ||
+      authPath.startsWith('/reset-password') ||
+      authPath.startsWith('/change-password')
+    )
+  ) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Factory Careers admin access uses Microsoft SSO only.',
+    })
+  }
+
+  if (
     env.FACTORY_DISABLE_PUBLIC_ORG_CREATION &&
     authPath.includes('/organization/create')
   ) {

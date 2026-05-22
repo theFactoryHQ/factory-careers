@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import {
-  User, Lock, Save, Loader2, Eye, EyeOff, Check,
-  KeyRound, Mail, Calendar,
+  User, Save, Loader2, Check, Mail,
 } from 'lucide-vue-next'
 
 definePageMeta({})
 
 useSeoMeta({
   title: 'Account Settings — Factory Careers',
-  description: 'Manage your personal account settings',
+  description: 'Manage your Factory Careers profile.',
 })
 
 const { data: session } = await authClient.useSession(useFetch)
@@ -49,66 +48,6 @@ async function handleSaveProfile() {
 }
 
 // ─────────────────────────────────────────────
-// Password change
-// ─────────────────────────────────────────────
-const currentPassword = ref('')
-const newPassword = ref('')
-const confirmPassword = ref('')
-const showCurrentPassword = ref(false)
-const showNewPassword = ref(false)
-const isChangingPassword = ref(false)
-const passwordSuccess = ref(false)
-const passwordError = ref('')
-
-const passwordsMatch = computed(() =>
-  newPassword.value === confirmPassword.value && newPassword.value.length > 0,
-)
-
-const passwordStrength = computed(() => {
-  const pw = newPassword.value
-  if (pw.length === 0) return { label: '', fillClass: '', textColor: '', width: '0%' }
-  if (pw.length < 8) return { label: 'Too short', fillClass: 'ui-meter-fill-danger', textColor: 'ui-meter-label-danger', width: '20%' }
-
-  let score = 0
-  if (pw.length >= 8) score++
-  if (pw.length >= 12) score++
-  if (/[A-Z]/.test(pw)) score++
-  if (/[0-9]/.test(pw)) score++
-  if (/[^A-Za-z0-9]/.test(pw)) score++
-
-  if (score <= 2) return { label: 'Weak', fillClass: 'ui-meter-fill-danger', textColor: 'ui-meter-label-danger', width: '40%' }
-  if (score <= 3) return { label: 'Fair', fillClass: 'ui-meter-fill-warning', textColor: 'ui-meter-label-warning', width: '60%' }
-  if (score <= 4) return { label: 'Good', fillClass: 'ui-meter-fill-brand', textColor: 'ui-meter-label-brand', width: '80%' }
-  return { label: 'Strong', fillClass: 'ui-meter-fill-success', textColor: 'ui-meter-label-success', width: '100%' }
-})
-
-async function handleChangePassword() {
-  if (!passwordsMatch.value || !currentPassword.value) return
-  isChangingPassword.value = true
-  passwordError.value = ''
-  passwordSuccess.value = false
-
-  try {
-    const result = await authClient.changePassword({
-      currentPassword: currentPassword.value,
-      newPassword: newPassword.value,
-    })
-    if (result.error) throw new Error(String(result.error.message ?? 'Failed to change password'))
-    passwordSuccess.value = true
-    currentPassword.value = ''
-    newPassword.value = ''
-    confirmPassword.value = ''
-    setTimeout(() => { passwordSuccess.value = false }, 3000)
-  }
-  catch (err: unknown) {
-    passwordError.value = err instanceof Error ? err.message : 'Failed to change password'
-  }
-  finally {
-    isChangingPassword.value = false
-  }
-}
-
-// ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
 function getInitials(name: string | undefined): string {
@@ -123,22 +62,22 @@ function getInitials(name: string | undefined): string {
 </script>
 
 <template>
-  <div class="ui-settings-page">
+  <div class="w-full">
     <!-- Page title -->
-    <div class="ui-settings-page-header">
+    <div class="mb-6">
       <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">
         Account
       </h1>
       <p class="text-sm text-surface-500 dark:text-surface-400 mt-0.5">
-        Manage your personal profile and security settings.
+        Manage your Factory Careers profile.
       </p>
     </div>
 
     <!-- Profile section -->
-    <section class="ui-panel ui-dashboard-panel ui-settings-panel">
-      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header">
+    <section class="ui-panel overflow-hidden">
+      <div class="ui-panel-header px-4 sm:px-6 py-5">
         <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-10 shrink-0">
+          <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
             <User class="size-5" />
           </div>
           <div>
@@ -148,15 +87,15 @@ function getInitials(name: string | undefined): string {
         </div>
       </div>
 
-      <div class="ui-settings-panel-body space-y-5">
+      <div class="px-4 sm:px-6 py-5 space-y-5">
         <!-- Avatar row -->
         <div class="flex items-center gap-4">
-          <div v-if="session?.user?.image" class="ui-avatar size-16">
+          <div v-if="session?.user?.image" class="size-16 rounded-full overflow-hidden ring-2 ring-surface-200 dark:ring-surface-700">
             <img :src="session.user.image" :alt="session.user.name" class="size-full object-cover" />
           </div>
           <div
             v-else
-            class="ui-avatar ui-avatar-brand size-16 text-lg font-bold"
+            class="size-16 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center text-lg font-bold text-brand-700 dark:text-brand-300 ring-2 ring-surface-200 dark:ring-surface-700"
           >
             {{ getInitials(session?.user?.name) }}
           </div>
@@ -165,7 +104,7 @@ function getInitials(name: string | undefined): string {
             <a
               :href="session?.user?.email ? `mailto:${session.user.email}` : undefined"
               target="_blank"
-              class="ui-inline-link inline-flex items-center gap-1.5 text-sm"
+              class="text-sm text-surface-500 dark:text-surface-400 flex items-center gap-1.5 hover:text-brand-600 dark:hover:text-brand-400 hover:underline cursor-pointer transition-colors"
             >
               <Mail class="size-3.5" />
               {{ session?.user?.email }}
@@ -187,19 +126,6 @@ function getInitials(name: string | undefined): string {
           />
         </div>
 
-        <!-- Email (read-only) -->
-        <div>
-          <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-            Email address
-          </label>
-          <div class="ui-panel-muted px-3 py-2 text-sm text-surface-500 dark:text-surface-400">
-            {{ session?.user?.email }}
-          </div>
-          <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">
-            Email cannot be changed at this time.
-          </p>
-        </div>
-
         <!-- Save button -->
         <div class="flex items-center gap-3 pt-2">
           <button
@@ -218,7 +144,7 @@ function getInitials(name: string | undefined): string {
             enter-from-class="opacity-0"
             leave-to-class="opacity-0"
           >
-            <span v-if="profileSuccess" class="ui-feedback-success text-sm">
+            <span v-if="profileSuccess" class="text-sm text-success-600 dark:text-success-400 font-medium flex items-center gap-1.5">
               <Check class="size-4" />
               Profile updated
             </span>
@@ -231,183 +157,5 @@ function getInitials(name: string | undefined): string {
       </div>
     </section>
 
-    <!-- Password section -->
-    <section class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-spaced">
-      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header">
-        <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-tile size-10 shrink-0">
-            <KeyRound class="size-5" />
-          </div>
-          <div>
-            <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Password</h2>
-            <p class="text-sm text-surface-500 dark:text-surface-400">Change your account password.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="ui-settings-panel-body space-y-5">
-        <!-- Current password -->
-        <div>
-          <label for="current-password" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-            Current password
-          </label>
-          <div class="relative">
-            <input
-              id="current-password"
-              v-model="currentPassword"
-              :type="showCurrentPassword ? 'text' : 'password'"
-              autocomplete="current-password"
-              class="ui-field pr-10"
-              placeholder="Enter current password"
-            />
-            <button
-              type="button"
-              class="ui-field-icon-button absolute right-2.5 top-1/2 -translate-y-1/2"
-              @click="showCurrentPassword = !showCurrentPassword"
-            >
-              <EyeOff v-if="showCurrentPassword" class="size-4" />
-              <Eye v-else class="size-4" />
-            </button>
-          </div>
-        </div>
-
-        <!-- New password -->
-        <div>
-          <label for="new-password" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-            New password
-          </label>
-          <div class="relative">
-            <input
-              id="new-password"
-              v-model="newPassword"
-              :type="showNewPassword ? 'text' : 'password'"
-              autocomplete="new-password"
-              class="ui-field pr-10"
-              placeholder="Enter new password"
-            />
-            <button
-              type="button"
-              class="ui-field-icon-button absolute right-2.5 top-1/2 -translate-y-1/2"
-              @click="showNewPassword = !showNewPassword"
-            >
-              <EyeOff v-if="showNewPassword" class="size-4" />
-              <Eye v-else class="size-4" />
-            </button>
-          </div>
-
-          <!-- Password strength meter -->
-          <div v-if="newPassword" class="mt-2">
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs text-surface-500 dark:text-surface-400">Password strength</span>
-              <span class="text-xs font-medium" :class="passwordStrength.textColor">
-                {{ passwordStrength.label }}
-              </span>
-            </div>
-            <div class="ui-meter-track h-1.5">
-              <div
-                class="ui-meter-fill"
-                :class="passwordStrength.fillClass"
-                :style="{ width: passwordStrength.width }"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Confirm password -->
-        <div>
-          <label for="confirm-password" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-            Confirm new password
-          </label>
-          <input
-            id="confirm-password"
-            v-model="confirmPassword"
-            type="password"
-            autocomplete="new-password"
-            class="ui-field"
-            placeholder="Confirm new password"
-          />
-          <p
-            v-if="confirmPassword && !passwordsMatch"
-            class="ui-feedback-danger mt-1.5 text-xs"
-          >
-            Passwords do not match.
-          </p>
-          <p
-            v-if="confirmPassword && passwordsMatch"
-            class="ui-feedback-success mt-1.5 text-xs"
-          >
-            <Check class="size-3" />
-            Passwords match
-          </p>
-        </div>
-
-        <!-- Save button -->
-        <div class="flex items-center gap-3 pt-2">
-          <button
-            :disabled="isChangingPassword || !passwordsMatch || !currentPassword"
-            class="ui-button ui-button-primary disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="handleChangePassword"
-          >
-            <Loader2 v-if="isChangingPassword" class="size-4 animate-spin" />
-            <Lock v-else class="size-4" />
-            {{ isChangingPassword ? 'Changing…' : 'Change password' }}
-          </button>
-
-          <Transition
-            enter-active-class="transition-opacity duration-300"
-            leave-active-class="transition-opacity duration-300"
-            enter-from-class="opacity-0"
-            leave-to-class="opacity-0"
-          >
-            <span v-if="passwordSuccess" class="ui-feedback-success text-sm">
-              <Check class="size-4" />
-              Password changed
-            </span>
-          </Transition>
-        </div>
-
-        <div v-if="passwordError" class="ui-alert ui-alert-danger">
-          {{ passwordError }}
-        </div>
-      </div>
-    </section>
-
-    <!-- Session info -->
-    <section class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-spaced">
-      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header">
-        <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-tile size-10 shrink-0">
-            <Calendar class="size-5" />
-          </div>
-          <div>
-            <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Session</h2>
-            <p class="text-sm text-surface-500 dark:text-surface-400">Your current login session details.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="ui-settings-panel-body">
-        <dl class="space-y-3">
-          <div class="flex items-center justify-between">
-            <dt class="text-sm text-surface-500 dark:text-surface-400">Session ID</dt>
-            <dd class="text-sm font-mono text-surface-700 dark:text-surface-300">
-              {{ session?.session?.id ? `${session.session.id.slice(0, 8)}…` : '—' }}
-            </dd>
-          </div>
-          <div class="flex items-center justify-between">
-            <dt class="text-sm text-surface-500 dark:text-surface-400">Created</dt>
-            <dd class="text-sm text-surface-700 dark:text-surface-300">
-              {{ session?.session?.createdAt ? new Date(session.session.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—' }}
-            </dd>
-          </div>
-          <div class="flex items-center justify-between">
-            <dt class="text-sm text-surface-500 dark:text-surface-400">Expires</dt>
-            <dd class="text-sm text-surface-700 dark:text-surface-300">
-              {{ session?.session?.expiresAt ? new Date(session.session.expiresAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—' }}
-            </dd>
-          </div>
-        </dl>
-      </div>
-    </section>
   </div>
 </template>

@@ -16,7 +16,7 @@ useSeoMeta({
 
 const { activeOrg } = useCurrentOrg()
 const { data: session } = await authClient.useSession(useFetch)
-const { allowed: canManageMembers } = usePermission({ member: ['create'] })
+const { allowed: canManageMembers, isLoading: isManageMembersPermissionLoading } = usePermission({ member: ['create'] })
 const { allowed: canInvite } = usePermission({ invitation: ['create'] })
 const { track } = useTrack()
 const { allowed: canCancelInvite } = usePermission({ invitation: ['cancel'] })
@@ -496,10 +496,10 @@ async function handleRemoveMember() {
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
-const roleConfig: Record<string, { label: string; pillClass: string; icon: Component }> = {
-  owner: { label: 'Owner', pillClass: 'ui-pill-warning', icon: Crown },
-  admin: { label: 'Admin', pillClass: 'ui-pill-brand', icon: ShieldCheck },
-  member: { label: 'Member', pillClass: '', icon: Shield },
+const roleConfig: Record<string, { label: string; color: string; bg: string; icon: Component }> = {
+  owner: { label: 'Owner', color: 'text-warning-700 dark:text-warning-400', bg: 'bg-warning-50 dark:bg-warning-950', icon: Crown },
+  admin: { label: 'Admin', color: 'text-brand-700 dark:text-brand-400', bg: 'bg-brand-50 dark:bg-brand-950', icon: ShieldCheck },
+  member: { label: 'Member', color: 'text-surface-700 dark:text-surface-300', bg: 'bg-surface-100 dark:bg-surface-800', icon: Shield },
 }
 
 function getRoleConfig(role: string) {
@@ -538,9 +538,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="ui-settings-page ui-settings-page-wide">
+  <div class="w-full">
     <!-- Page title -->
-    <div class="ui-settings-page-header">
+    <div class="mb-6">
       <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">
         Members
       </h1>
@@ -550,7 +550,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Invite member section -->
-    <section v-if="canInvite" class="ui-settings-panel-list">
+    <section v-if="canInvite" class="mb-6">
       <button
         v-if="!showInviteForm"
         class="ui-button ui-button-primary py-2.5"
@@ -566,10 +566,10 @@ onUnmounted(() => {
         enter-from-class="opacity-0 -translate-y-2"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-if="showInviteForm" class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-content">
+        <div v-if="showInviteForm" class="ui-panel p-5">
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
-              <UserPlus class="ui-icon-brand size-5" />
+              <UserPlus class="size-5 text-brand-600 dark:text-brand-400" />
               <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Invite a team member</h3>
             </div>
             <button
@@ -601,7 +601,7 @@ onUnmounted(() => {
                 <option value="member">Member</option>
                 <option value="admin">Admin</option>
               </select>
-              <ChevronDown class="ui-field-icon absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 pointer-events-none" />
+              <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-surface-400 pointer-events-none" />
             </div>
 
             <button
@@ -621,7 +621,7 @@ onUnmounted(() => {
             enter-from-class="opacity-0"
             leave-to-class="opacity-0"
           >
-            <div v-if="inviteSuccess" class="ui-feedback-success mt-3 text-sm">
+            <div v-if="inviteSuccess" class="mt-3 flex items-center gap-2 text-sm text-success-600 dark:text-success-400">
               <Check class="size-4" />
               {{ inviteSuccess }}
             </div>
@@ -637,7 +637,7 @@ onUnmounted(() => {
     <!-- Role update error banner -->
     <div v-if="roleUpdateError" class="ui-alert ui-alert-danger mb-4 flex items-center justify-between">
       <span>{{ roleUpdateError }}</span>
-      <button class="ui-button ui-button-ghost p-1" @click="roleUpdateError = ''">
+      <button class="text-danger-500 hover:text-danger-700 transition-colors" @click="roleUpdateError = ''">
         <X class="size-4" />
       </button>
     </div>
@@ -656,10 +656,10 @@ onUnmounted(() => {
     </Transition>
 
     <!-- Pending invitations -->
-    <section v-if="canInvite && (isLoadingInvitations || pendingInvitations.length > 0)" class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-list">
-      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header ui-settings-panel-header-sm">
+    <section v-if="canInvite && (isLoadingInvitations || pendingInvitations.length > 0)" class="ui-panel mb-6 overflow-hidden">
+      <div class="ui-panel-header px-4 sm:px-6 py-4">
         <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-warning ui-icon-tile size-8">
+          <div class="ui-icon-state ui-icon-state-warning flex items-center justify-center size-8 rounded-lg">
             <Clock class="size-4" />
           </div>
           <div>
@@ -672,31 +672,31 @@ onUnmounted(() => {
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoadingInvitations" class="ui-empty-state ui-settings-panel-state">
+      <div v-if="isLoadingInvitations" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
         <Loader2 class="size-4 animate-spin mx-auto mb-1.5" />
         Loading invitations…
       </div>
 
       <!-- Error state -->
-      <div v-else-if="invitationsError" class="ui-empty-state ui-settings-panel-state">
-        <AlertTriangle class="ui-icon-danger size-5 mx-auto mb-1.5" />
-        <p class="ui-feedback-danger mx-auto">{{ invitationsError }}</p>
-        <button class="ui-inline-link ui-inline-link-brand mt-1.5 text-sm" @click="fetchInvitations">
+      <div v-else-if="invitationsError" class="px-4 sm:px-6 py-6 text-center">
+        <AlertTriangle class="size-5 text-danger-400 mx-auto mb-1.5" />
+        <p class="text-sm text-danger-600 dark:text-danger-400">{{ invitationsError }}</p>
+        <button class="mt-1.5 text-sm text-brand-600 hover:text-brand-700 underline" @click="fetchInvitations">
           Retry
         </button>
       </div>
 
       <!-- Invitations list -->
-      <div v-else class="ui-list-divider">
+      <div v-else class="divide-y divide-surface-100 dark:divide-surface-800">
         <div
           v-for="inv in pendingInvitations"
           :key="inv.id"
-          class="ui-list-row ui-settings-list-row"
+          class="ui-list-row px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
         >
           <!-- Email icon + Info -->
           <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
             <div class="flex-shrink-0">
-              <div class="ui-icon-state size-9 rounded-full">
+              <div class="size-9 rounded-full bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-surface-400 dark:text-surface-500">
                 <Mail class="size-4" />
               </div>
             </div>
@@ -705,18 +705,18 @@ onUnmounted(() => {
                 <a
                   :href="`mailto:${inv.email}`"
                   target="_blank"
-                  class="ui-inline-link ui-inline-link-brand"
+                  class="hover:text-brand-600 dark:hover:text-brand-400 hover:underline cursor-pointer transition-colors"
                 >{{ inv.email }}</a>
               </div>
               <div class="flex items-center gap-2 text-xs text-surface-400 dark:text-surface-500">
                 <span
-                  :class="getRoleConfig(inv.role).pillClass"
-                  class="ui-pill rounded-full px-2 py-0.5 text-xs"
+                  :class="[getRoleConfig(inv.role).bg, getRoleConfig(inv.role).color]"
+                  class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
                 >
                   <component :is="getRoleConfig(inv.role).icon" class="size-2.5" />
                   {{ getRoleConfig(inv.role).label }}
                 </span>
-                <span :class="isExpired(inv.expiresAt) ? 'ui-feedback-danger' : ''">
+                <span :class="isExpired(inv.expiresAt) ? 'text-danger-500' : ''">
                   {{ formatExpiresAt(inv.expiresAt) }}
                 </span>
               </div>
@@ -751,11 +751,11 @@ onUnmounted(() => {
     </section>
 
     <!-- Invite links section -->
-    <section v-if="canInvite" class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-list">
-      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header ui-settings-panel-header-sm">
+    <section v-if="canInvite" class="ui-panel mb-6 overflow-hidden">
+      <div class="ui-panel-header px-4 sm:px-6 py-4">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-8 shrink-0">
+            <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-8 shrink-0 rounded-lg">
               <Link2 class="size-4" />
             </div>
             <div class="min-w-0">
@@ -783,7 +783,7 @@ onUnmounted(() => {
         enter-from-class="opacity-0 -translate-y-2"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-if="showCreateLinkForm" class="ui-panel-muted ui-panel-subsection ui-settings-panel-body">
+        <div v-if="showCreateLinkForm" class="ui-panel-muted rounded-none border-x-0 border-t-0 px-4 sm:px-6 py-4">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-sm font-medium text-surface-900 dark:text-surface-100">New invite link</h3>
             <button
@@ -805,7 +805,7 @@ onUnmounted(() => {
                   <option value="member">Member</option>
                   <option value="admin">Admin</option>
                 </select>
-                <ChevronDown class="ui-field-icon absolute right-2.5 top-1/2 -translate-y-1/2 size-3 pointer-events-none" />
+                <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 size-3 text-surface-400 pointer-events-none" />
               </div>
             </div>
 
@@ -820,7 +820,7 @@ onUnmounted(() => {
                     {{ opt.label }}
                   </option>
                 </select>
-                <ChevronDown class="ui-field-icon absolute right-2.5 top-1/2 -translate-y-1/2 size-3 pointer-events-none" />
+                <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 size-3 text-surface-400 pointer-events-none" />
               </div>
             </div>
 
@@ -845,7 +845,7 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <div v-if="createLinkError" class="ui-feedback-danger mt-2 text-xs">
+          <div v-if="createLinkError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">
             {{ createLinkError }}
           </div>
         </div>
@@ -858,45 +858,44 @@ onUnmounted(() => {
         enter-from-class="opacity-0"
         leave-to-class="opacity-0"
       >
-        <div v-if="createLinkSuccess" class="ui-alert ui-alert-success ui-panel-subsection ui-settings-panel-alert">
+        <div v-if="createLinkSuccess" class="ui-alert ui-alert-success rounded-none border-x-0 border-t-0 px-4 sm:px-6 py-2 flex items-center gap-2">
           <Check class="size-4" />
           {{ createLinkSuccess }}
         </div>
       </Transition>
 
       <!-- Loading state -->
-      <div v-if="isLoadingLinks" class="ui-empty-state ui-settings-panel-state">
+      <div v-if="isLoadingLinks" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
         <Loader2 class="size-4 animate-spin mx-auto mb-1.5" />
         Loading invite links…
       </div>
 
       <!-- Error state -->
-      <div v-else-if="linksError" class="ui-empty-state ui-settings-panel-state">
-        <AlertTriangle class="ui-icon-danger size-5 mx-auto mb-1.5" />
-        <p class="ui-feedback-danger mx-auto">{{ linksError }}</p>
-        <button class="ui-inline-link ui-inline-link-brand mt-1.5 text-sm" @click="fetchInviteLinks">
+      <div v-else-if="linksError" class="px-4 sm:px-6 py-6 text-center">
+        <AlertTriangle class="size-5 text-danger-400 mx-auto mb-1.5" />
+        <p class="text-sm text-danger-600 dark:text-danger-400">{{ linksError }}</p>
+        <button class="mt-1.5 text-sm text-brand-600 hover:text-brand-700 underline" @click="fetchInviteLinks">
           Retry
         </button>
       </div>
 
       <!-- Empty state -->
-      <div v-else-if="inviteLinks.length === 0 && !showCreateLinkForm" class="ui-empty-state ui-settings-panel-state">
+      <div v-else-if="inviteLinks.length === 0 && !showCreateLinkForm" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
         No active invite links. Create one to share with your team.
       </div>
 
       <!-- Links list -->
-      <div v-else-if="inviteLinks.length > 0" class="ui-list-divider">
+      <div v-else-if="inviteLinks.length > 0" class="divide-y divide-surface-100 dark:divide-surface-800">
         <div
           v-for="link in inviteLinks"
           :key="link.id"
-          class="ui-list-row ui-settings-list-row"
+          class="ui-list-row px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
           :class="{ 'opacity-50': !isLinkActive(link) }"
         >
           <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
             <div class="flex-shrink-0">
-              <div
-                class="ui-icon-state size-9 rounded-full"
-                :class="isLinkActive(link) ? 'ui-icon-state-brand' : ''"
+              <div class="size-9 rounded-full flex items-center justify-center"
+                :class="isLinkActive(link) ? 'bg-brand-100 dark:bg-brand-950 text-brand-600 dark:text-brand-400' : 'bg-surface-100 dark:bg-surface-800 text-surface-400'"
               >
                 <Link2 class="size-4" />
               </div>
@@ -905,17 +904,17 @@ onUnmounted(() => {
             <div class="min-w-0">
               <div class="flex items-center gap-2 text-sm font-medium text-surface-900 dark:text-surface-100">
                 <span
-                  :class="getRoleConfig(link.role).pillClass"
-                  class="ui-pill rounded-full px-2 py-0.5 text-xs"
+                  :class="[getRoleConfig(link.role).bg, getRoleConfig(link.role).color]"
+                  class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
                 >
                   <component :is="getRoleConfig(link.role).icon" class="size-2.5" />
                   {{ getRoleConfig(link.role).label }}
                 </span>
-                <span v-if="!isLinkActive(link)" class="ui-feedback-danger text-xs">Inactive</span>
+                <span v-if="!isLinkActive(link)" class="text-xs text-danger-500">Inactive</span>
               </div>
               <div class="flex items-center gap-3 text-xs text-surface-400 dark:text-surface-500 mt-0.5">
                 <span>{{ link.useCount }}{{ link.maxUses ? `/${link.maxUses}` : '' }} uses</span>
-                <span :class="isExpired(link.expiresAt) ? 'ui-feedback-danger' : ''">
+                <span :class="isExpired(link.expiresAt) ? 'text-danger-500' : ''">
                   {{ formatExpiresAt(link.expiresAt) }}
                 </span>
                 <span v-if="link.createdByName">by {{ link.createdByName }}</span>
@@ -930,7 +929,7 @@ onUnmounted(() => {
               :title="copiedLinkId === link.id ? 'Copied!' : 'Copy invite link'"
               @click="copyLinkToClipboard(link)"
             >
-              <Check v-if="copiedLinkId === link.id" class="ui-icon-success size-3" />
+              <Check v-if="copiedLinkId === link.id" class="size-3 text-success-500" />
               <Copy v-else class="size-3" />
               {{ copiedLinkId === link.id ? 'Copied' : 'Copy' }}
             </button>
@@ -950,10 +949,10 @@ onUnmounted(() => {
     </section>
 
     <!-- Join requests section -->
-    <section v-if="canInvite && (isLoadingJoinRequests || joinRequests.length > 0)" class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-list">
-      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header ui-settings-panel-header-sm">
+    <section v-if="canInvite && (isLoadingJoinRequests || joinRequests.length > 0)" class="ui-panel mb-6 overflow-hidden">
+      <div class="ui-panel-header px-4 sm:px-6 py-4">
         <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-warning ui-icon-tile size-8">
+          <div class="ui-icon-state ui-icon-state-warning flex items-center justify-center size-8 rounded-lg">
             <UserCheck class="size-4" />
           </div>
           <div>
@@ -966,34 +965,34 @@ onUnmounted(() => {
       </div>
 
       <!-- Join request action error -->
-      <div v-if="joinRequestActionError" class="ui-alert ui-alert-danger ui-panel-subsection ui-settings-panel-alert ui-settings-panel-alert-split">
+      <div v-if="joinRequestActionError" class="ui-alert ui-alert-danger rounded-none border-x-0 border-t-0 px-4 sm:px-6 py-2 flex items-center justify-between">
         <span>{{ joinRequestActionError }}</span>
-        <button class="ui-button ui-button-ghost p-1" @click="joinRequestActionError = ''">
+        <button class="text-danger-500 hover:text-danger-700 transition-colors" @click="joinRequestActionError = ''">
           <X class="size-4" />
         </button>
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoadingJoinRequests" class="ui-empty-state ui-settings-panel-state">
+      <div v-if="isLoadingJoinRequests" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
         <Loader2 class="size-4 animate-spin mx-auto mb-1.5" />
         Loading join requests…
       </div>
 
       <!-- Error state -->
-      <div v-else-if="joinRequestsError" class="ui-empty-state ui-settings-panel-state">
-        <AlertTriangle class="ui-icon-danger size-5 mx-auto mb-1.5" />
-        <p class="ui-feedback-danger mx-auto">{{ joinRequestsError }}</p>
-        <button class="ui-inline-link ui-inline-link-brand mt-1.5 text-sm" @click="fetchJoinRequests">
+      <div v-else-if="joinRequestsError" class="px-4 sm:px-6 py-6 text-center">
+        <AlertTriangle class="size-5 text-danger-400 mx-auto mb-1.5" />
+        <p class="text-sm text-danger-600 dark:text-danger-400">{{ joinRequestsError }}</p>
+        <button class="mt-1.5 text-sm text-brand-600 hover:text-brand-700 underline" @click="fetchJoinRequests">
           Retry
         </button>
       </div>
 
       <!-- Requests list -->
-      <div v-else class="ui-list-divider">
+      <div v-else class="divide-y divide-surface-100 dark:divide-surface-800">
         <div
           v-for="req in joinRequests"
           :key="req.id"
-          class="ui-list-row ui-settings-list-row"
+          class="ui-list-row px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
         >
           <!-- Avatar + Info -->
           <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
@@ -1002,9 +1001,9 @@ onUnmounted(() => {
                 v-if="req.userImage"
                 :src="req.userImage"
                 :alt="req.userName"
-                class="ui-avatar size-9 object-cover"
+                class="size-9 rounded-full object-cover ring-2 ring-surface-100 dark:ring-surface-800"
               />
-              <div v-else class="ui-avatar ui-avatar-brand size-9 text-xs">
+              <div v-else class="size-9 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center text-xs font-semibold text-brand-700 dark:text-brand-300 ring-2 ring-surface-100 dark:ring-surface-800">
                 {{ req.userName?.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase() || '?' }}
               </div>
             </div>
@@ -1051,11 +1050,11 @@ onUnmounted(() => {
     </section>
 
     <!-- Members list -->
-    <section class="ui-panel ui-dashboard-panel ui-settings-panel">
-      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header">
+    <section class="ui-panel">
+      <div class="ui-panel-header px-4 sm:px-6 py-5">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="flex items-center gap-3">
-            <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-10 shrink-0">
+            <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
               <Users class="size-5" />
             </div>
             <div>
@@ -1067,7 +1066,7 @@ onUnmounted(() => {
           </div>
           <div v-if="!isLoadingMembers && members.length > 5" class="flex-shrink-0">
             <div class="relative">
-              <Search class="ui-field-icon absolute left-3 top-1/2 -translate-y-1/2 size-3.5 pointer-events-none" />
+              <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-surface-400 pointer-events-none" />
               <input
                 v-model="memberSearch"
                 type="text"
@@ -1080,26 +1079,26 @@ onUnmounted(() => {
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoadingMembers" class="ui-empty-state ui-settings-panel-state ui-settings-panel-state-lg">
+      <div v-if="isLoadingMembers" class="ui-empty-state px-4 sm:px-6 py-8 text-sm">
         <Loader2 class="size-5 animate-spin mx-auto mb-2" />
         Loading members…
       </div>
 
       <!-- Error state -->
-      <div v-else-if="membersError" class="ui-empty-state ui-settings-panel-state ui-settings-panel-state-lg">
-        <AlertTriangle class="ui-icon-danger size-6 mx-auto mb-2" />
-        <p class="ui-feedback-danger mx-auto">{{ membersError }}</p>
-        <button class="ui-inline-link ui-inline-link-brand mt-2 text-sm" @click="fetchMembers">
+      <div v-else-if="membersError" class="px-4 sm:px-6 py-8 text-center">
+        <AlertTriangle class="size-6 text-danger-400 mx-auto mb-2" />
+        <p class="text-sm text-danger-600 dark:text-danger-400">{{ membersError }}</p>
+        <button class="mt-2 text-sm text-brand-600 hover:text-brand-700 underline" @click="fetchMembers">
           Retry
         </button>
       </div>
 
       <!-- Members list -->
-      <div v-else class="ui-list-divider">
+      <div v-else class="divide-y divide-surface-100 dark:divide-surface-800">
         <div
           v-for="m in visibleMembers"
           :key="m.id"
-          class="ui-list-row ui-settings-list-row ui-settings-list-row-lg"
+          class="ui-list-row px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
         >
           <!-- Avatar + Info row -->
           <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
@@ -1108,9 +1107,9 @@ onUnmounted(() => {
                 v-if="m.user.image"
                 :src="m.user.image"
                 :alt="m.user.name"
-                class="ui-avatar size-10 object-cover"
+                class="size-10 rounded-full object-cover ring-2 ring-surface-100 dark:ring-surface-800"
               />
-              <div v-else class="ui-avatar ui-avatar-brand size-10 text-sm">
+              <div v-else class="size-10 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center text-sm font-semibold text-brand-700 dark:text-brand-300 ring-2 ring-surface-100 dark:ring-surface-800">
                 {{ getInitials(m.user.name) }}
               </div>
             </div>
@@ -1126,7 +1125,7 @@ onUnmounted(() => {
                 <a
                   :href="`mailto:${m.user.email}`"
                   target="_blank"
-                  class="ui-inline-link ui-inline-link-brand"
+                  class="hover:text-brand-600 dark:hover:text-brand-400 hover:underline cursor-pointer transition-colors"
                 >{{ m.user.email }}</a>
               </div>
             </div>
@@ -1135,8 +1134,8 @@ onUnmounted(() => {
           <!-- Role badge + Actions -->
           <div class="flex items-center gap-2 pl-[3.25rem] sm:pl-0 flex-shrink-0">
             <span
-              :class="getRoleConfig(m.role).pillClass"
-              class="ui-pill rounded-full px-2.5 py-1 text-xs"
+              :class="[getRoleConfig(m.role).bg, getRoleConfig(m.role).color]"
+              class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
             >
               <component :is="getRoleConfig(m.role).icon" class="size-3" />
               {{ getRoleConfig(m.role).label }}
@@ -1159,29 +1158,29 @@ onUnmounted(() => {
             >
               <div
                 v-if="activeDropdown === m.id"
-                class="ui-panel ui-floating-menu absolute right-0 top-full mt-1 w-48 z-50 overflow-hidden"
+                class="ui-panel absolute right-0 top-full mt-1 w-48 shadow-lg z-50 overflow-hidden"
               >
                 <!-- Role options -->
-                <div class="ui-menu-divider py-1">
+                <div class="py-1 border-b border-surface-100 dark:border-surface-800">
                   <div class="px-3 py-1.5 text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-wider">
                     Change role
                   </div>
                   <button
                     v-if="m.role !== 'admin'"
                     :disabled="isUpdatingRole === m.id"
-                    class="ui-menu-action px-3 py-2 text-sm"
+                    class="ui-list-row w-full px-3 py-2 text-left text-sm text-surface-700 dark:text-surface-300 flex items-center gap-2 disabled:opacity-50 bg-transparent border-0 cursor-pointer"
                     @click="handleUpdateRole(m.id, 'admin')"
                   >
-                    <ShieldCheck class="ui-icon-brand size-3.5" />
+                    <ShieldCheck class="size-3.5 text-brand-500" />
                     Make admin
                   </button>
                   <button
                     v-if="m.role !== 'member'"
                     :disabled="isUpdatingRole === m.id"
-                    class="ui-menu-action px-3 py-2 text-sm"
+                    class="ui-list-row w-full px-3 py-2 text-left text-sm text-surface-700 dark:text-surface-300 flex items-center gap-2 disabled:opacity-50 bg-transparent border-0 cursor-pointer"
                     @click="handleUpdateRole(m.id, 'member')"
                   >
-                    <Shield class="size-3.5" />
+                    <Shield class="size-3.5 text-surface-400" />
                     Make member
                   </button>
                 </div>
@@ -1189,7 +1188,7 @@ onUnmounted(() => {
                 <!-- Remove -->
                 <div class="py-1">
                   <button
-                    class="ui-menu-action ui-menu-action-danger px-3 py-2 text-sm"
+                    class="ui-list-row w-full px-3 py-2 text-left text-sm text-danger-600 dark:text-danger-400 flex items-center gap-2 bg-transparent border-0 cursor-pointer"
                     @click="memberToRemove = { id: m.id, name: m.user.name }; closeDropdown()"
                   >
                     <Trash2 class="size-3.5" />
@@ -1202,15 +1201,15 @@ onUnmounted(() => {
 
           <!-- Loading indicator for role update -->
           <div v-if="isUpdatingRole === m.id" class="flex-shrink-0">
-            <Loader2 class="ui-icon-brand size-4 animate-spin" />
+            <Loader2 class="size-4 animate-spin text-brand-500" />
           </div>
           </div>
         </div>
 
         <!-- Show more button -->
-        <div v-if="hasMoreMembers" class="ui-panel-divider ui-settings-panel-footer">
+        <div v-if="hasMoreMembers" class="px-4 sm:px-6 py-3 text-center border-t border-surface-100 dark:border-surface-800">
           <button
-            class="ui-inline-link ui-inline-link-brand text-sm font-medium"
+            class="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors"
             @click="showMoreMembers"
           >
             Show {{ Math.min(membersPerPage, filteredMembers.length - visibleCount) }} more
@@ -1228,15 +1227,15 @@ onUnmounted(() => {
         enter-from-class="opacity-0"
         leave-to-class="opacity-0"
       >
-        <div v-if="memberToRemove" class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center" @click.self="memberToRemove = null">
+        <div v-if="memberToRemove" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm" @click.self="memberToRemove = null">
           <Transition
             enter-active-class="transition-all duration-200"
             leave-active-class="transition-all duration-150"
             enter-from-class="opacity-0 scale-95"
             leave-to-class="opacity-0 scale-95"
           >
-            <div v-if="memberToRemove" class="ui-modal-panel ui-settings-modal-panel w-full max-w-md">
-              <div class="ui-settings-modal-header">
+            <div v-if="memberToRemove" class="ui-modal-panel w-full max-w-md p-6">
+              <div class="flex items-center gap-3 mb-4">
                 <div class="ui-icon-state ui-icon-state-danger flex items-center justify-center size-10">
                   <AlertTriangle class="size-5" />
                 </div>
@@ -1246,13 +1245,13 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <p class="ui-settings-modal-copy text-sm text-surface-600 dark:text-surface-400">
+              <p class="text-sm text-surface-600 dark:text-surface-400 mb-5">
                 Are you sure you want to remove <strong class="text-surface-900 dark:text-surface-100">{{ memberToRemove.name }}</strong> from
                 <strong class="text-surface-900 dark:text-surface-100">{{ activeOrg?.name }}</strong>?
                 They will lose access to all organization data immediately.
               </p>
 
-              <div v-if="removeError" class="ui-alert ui-alert-danger ui-settings-modal-alert">
+              <div v-if="removeError" class="ui-alert ui-alert-danger mb-4 px-3 py-2">
                 {{ removeError }}
               </div>
 
@@ -1280,7 +1279,7 @@ onUnmounted(() => {
     </Teleport>
 
     <!-- Permissions notice for members -->
-    <div v-if="!canManageMembers" class="ui-alert ui-alert-info mt-6">
+    <div v-if="!isManageMembersPermissionLoading && !canManageMembers" class="ui-alert ui-alert-info mt-6">
       You don't have permission to manage team members. Contact an admin or owner to invite new members or change roles.
     </div>
   </div>

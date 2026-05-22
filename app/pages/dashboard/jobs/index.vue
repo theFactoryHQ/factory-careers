@@ -3,6 +3,7 @@ import {
   Briefcase, Bell, Plus, Kanban,
   MapPin, Search, SlidersHorizontal, X,
   LayoutGrid, List, Table2, ArrowUp, ArrowDown, ArrowUpDown,
+  Check, ChevronDown,
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -157,6 +158,71 @@ type SortDir = 'asc' | 'desc'
 
 const sortKey = ref<SortKey>('created')
 const sortDir = ref<SortDir>('desc')
+const sortKeyMenuOpen = ref(false)
+const sortDirMenuOpen = ref(false)
+const sortKeyMenuRef = ref<HTMLElement | null>(null)
+const sortDirMenuRef = ref<HTMLElement | null>(null)
+
+const sortKeyOptions: { value: SortKey, label: string }[] = [
+  { value: 'created', label: 'Date created' },
+  { value: 'title', label: 'Title' },
+  { value: 'status', label: 'Status' },
+  { value: 'type', label: 'Employment type' },
+  { value: 'location', label: 'Location' },
+  { value: 'new', label: 'New applicants' },
+  { value: 'active', label: 'Active candidates' },
+]
+
+const sortDirOptions: { value: SortDir, label: string }[] = [
+  { value: 'asc', label: 'Ascending' },
+  { value: 'desc', label: 'Descending' },
+]
+
+const selectedSortKeyLabel = computed(() =>
+  sortKeyOptions.find(option => option.value === sortKey.value)?.label ?? 'Date created',
+)
+const selectedSortDirLabel = computed(() =>
+  sortDirOptions.find(option => option.value === sortDir.value)?.label ?? 'Descending',
+)
+
+function closeSortMenus() {
+  sortKeyMenuOpen.value = false
+  sortDirMenuOpen.value = false
+}
+
+function toggleSortKeyMenu() {
+  sortKeyMenuOpen.value = !sortKeyMenuOpen.value
+  sortDirMenuOpen.value = false
+}
+
+function toggleSortDirMenu() {
+  sortDirMenuOpen.value = !sortDirMenuOpen.value
+  sortKeyMenuOpen.value = false
+}
+
+function selectSortKey(value: SortKey) {
+  sortKey.value = value
+  sortKeyMenuOpen.value = false
+}
+
+function selectSortDir(value: SortDir) {
+  sortDir.value = value
+  sortDirMenuOpen.value = false
+}
+
+function handleSortMenuOutside(e: MouseEvent) {
+  const target = e.target as Node
+  if (sortKeyMenuRef.value?.contains(target) || sortDirMenuRef.value?.contains(target)) return
+  closeSortMenus()
+}
+
+function handleSortMenuKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') closeSortMenus()
+}
+
+watch(drawerOpen, (open) => {
+  if (!open) closeSortMenus()
+})
 
 function toggleSort(key: SortKey) {
   if (sortKey.value === key) {
@@ -289,12 +355,19 @@ const {
 } = useSavedViews<JobsViewSettings>('jobs', defaultSettings)
 
 onMounted(() => {
+  document.addEventListener('mousedown', handleSortMenuOutside)
+  document.addEventListener('keydown', handleSortMenuKeydown)
   nextTick(() => {
     if (activeViewId.value) {
       const s = applyView(activeViewId.value)
       if (s) applySettings(s)
     }
   })
+})
+
+onUnmounted(() => {
+  document.removeEventListener('mousedown', handleSortMenuOutside)
+  document.removeEventListener('keydown', handleSortMenuKeydown)
 })
 
 function settingsEqual(a: JobsViewSettings, b: JobsViewSettings) {
@@ -342,20 +415,11 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
 <template>
   <div class="mx-auto max-w-6xl">
     <!-- ─── Header ─── -->
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50">My Jobs</h1>
-        <p v-if="activeOrg" class="text-sm text-surface-500 dark:text-surface-400 mt-1">
-          {{ activeOrg.name }}
-        </p>
-      </div>
-      <NuxtLink
-        :to="$localePath('/dashboard/jobs/new')"
-        class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors no-underline"
-      >
-        <Plus class="size-4" />
-        New Job
-      </NuxtLink>
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50">My Jobs</h1>
+      <p v-if="activeOrg" class="text-sm text-surface-500 dark:text-surface-400 mt-1">
+        {{ activeOrg.name }}
+      </p>
     </div>
 
     <!-- ─── Loading ─── -->
@@ -400,7 +464,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
         </p>
         <NuxtLink
           :to="$localePath('/dashboard/jobs/new')"
-          class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors no-underline"
+          class="factory-button-cta factory-button-premium inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-colors no-underline"
         >
           <Plus class="size-4" />
           Create Your First Job
@@ -411,7 +475,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
     <!-- ─── Jobs content ─── -->
     <template v-else>
       <!-- ─── Toolbar: Search + Views + Filters + View Toggle ─── -->
-      <div class="flex items-center gap-2 mb-4">
+      <div class="factory-dashboard-toolbar flex items-center gap-2 mb-4">
         <div class="relative flex-1">
           <Search class="size-4 text-surface-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
@@ -435,13 +499,11 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
         />
 
         <!-- View mode toggle -->
-        <div class="inline-flex rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
+        <div class="factory-view-toggle inline-flex rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
           <button
             type="button"
             class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors"
-            :class="viewMode === 'gallery'
-              ? 'bg-surface-100 dark:bg-surface-800 text-surface-900 dark:text-surface-100'
-              : 'text-surface-500 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'"
+            :class="{ 'is-active': viewMode === 'gallery' }"
             title="Gallery view"
             @click="viewMode = 'gallery'"
           >
@@ -450,9 +512,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           <button
             type="button"
             class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-l border-surface-200 dark:border-surface-800"
-            :class="viewMode === 'list'
-              ? 'bg-surface-100 dark:bg-surface-800 text-surface-900 dark:text-surface-100'
-              : 'text-surface-500 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'"
+            :class="{ 'is-active': viewMode === 'list' }"
             title="List view"
             @click="viewMode = 'list'"
           >
@@ -461,9 +521,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           <button
             type="button"
             class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-l border-surface-200 dark:border-surface-800"
-            :class="viewMode === 'table'
-              ? 'bg-surface-100 dark:bg-surface-800 text-surface-900 dark:text-surface-100'
-              : 'text-surface-500 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'"
+            :class="{ 'is-active': viewMode === 'table' }"
             title="Table view"
             @click="viewMode = 'table'"
           >
@@ -474,24 +532,22 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
         <!-- Filters button -->
         <button
           type="button"
-          class="ui-menu-trigger px-3 py-2 text-sm"
-          :class="activeFilterCount > 0
-            ? 'ui-menu-trigger-active'
-            : ''"
+          class="factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors cursor-pointer"
+          :class="{ 'is-active': activeFilterCount > 0 }"
           @click="drawerOpen = true"
         >
           <SlidersHorizontal class="size-4" />
           Filters
           <span
             v-if="activeFilterCount > 0"
-            class="ui-filter-count"
+            class="inline-flex items-center justify-center size-4 rounded-full bg-surface-700 dark:bg-surface-300 text-white dark:text-surface-900 text-xs font-semibold"
           >{{ activeFilterCount }}</span>
         </button>
 
         <!-- Clear filters -->
         <button
           v-if="activeFilterCount > 0"
-          class="ui-inline-link ui-inline-link-muted inline-flex items-center gap-1 text-xs"
+          class="factory-toolbar-button inline-flex items-center gap-1 border px-2 py-2 text-xs transition-colors"
           @click="clearFilters"
         >
           <X class="size-3" />
@@ -512,17 +568,15 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
       >
         <div class="space-y-6">
           <!-- Status -->
-          <div class="ui-filter-section">
-            <label class="ui-filter-label mb-2 block">Status</label>
+          <div class="factory-filter-section">
+            <label class="factory-filter-label block mb-2">Status</label>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="opt in statusOptions"
                 :key="opt.value"
                 type="button"
-                class="ui-filter-chip px-2.5 py-1 text-xs"
-                :class="statusFilter.includes(opt.value)
-                  ? 'ui-filter-chip-active'
-                  : 'ui-filter-chip-inactive'"
+                class="factory-filter-chip px-3 py-1.5 text-xs font-medium border transition-colors cursor-pointer"
+                :class="{ 'is-active': statusFilter.includes(opt.value) }"
                 @click="toggleStatus(opt.value)"
               >
                 {{ opt.label }}
@@ -531,17 +585,15 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           </div>
 
           <!-- Employment type -->
-          <div class="ui-filter-section">
-            <label class="ui-filter-label mb-2 block">Employment type</label>
+          <div class="factory-filter-section">
+            <label class="factory-filter-label block mb-2">Employment type</label>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="opt in typeOptions"
                 :key="opt.value"
                 type="button"
-                class="ui-filter-chip px-2.5 py-1 text-xs"
-                :class="typeFilter.includes(opt.value)
-                  ? 'ui-filter-chip-active'
-                  : 'ui-filter-chip-inactive'"
+                class="factory-filter-chip px-3 py-1.5 text-xs font-medium border transition-colors cursor-pointer"
+                :class="{ 'is-active': typeFilter.includes(opt.value) }"
                 @click="toggleType(opt.value)"
               >
                 {{ opt.label }}
@@ -550,17 +602,15 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           </div>
 
           <!-- Experience level -->
-          <div class="ui-filter-section">
-            <label class="ui-filter-label mb-2 block">Experience level</label>
+          <div class="factory-filter-section">
+            <label class="factory-filter-label block mb-2">Experience level</label>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="opt in experienceOptions"
                 :key="opt.value"
                 type="button"
-                class="ui-filter-chip px-2.5 py-1 text-xs"
-                :class="experienceFilter.includes(opt.value)
-                  ? 'ui-filter-chip-active'
-                  : 'ui-filter-chip-inactive'"
+                class="factory-filter-chip px-3 py-1.5 text-xs font-medium border transition-colors cursor-pointer"
+                :class="{ 'is-active': experienceFilter.includes(opt.value) }"
                 @click="toggleExperience(opt.value)"
               >
                 {{ opt.label }}
@@ -569,17 +619,15 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           </div>
 
           <!-- Work arrangement -->
-          <div class="ui-filter-section">
-            <label class="ui-filter-label mb-2 block">Work arrangement</label>
+          <div class="factory-filter-section">
+            <label class="factory-filter-label block mb-2">Work arrangement</label>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="opt in remoteOptions"
                 :key="opt.value"
                 type="button"
-                class="ui-filter-chip px-2.5 py-1 text-xs"
-                :class="remoteFilter.includes(opt.value)
-                  ? 'ui-filter-chip-active'
-                  : 'ui-filter-chip-inactive'"
+                class="factory-filter-chip px-3 py-1.5 text-xs font-medium border transition-colors cursor-pointer"
+                :class="{ 'is-active': remoteFilter.includes(opt.value) }"
                 @click="toggleRemote(opt.value)"
               >
                 {{ opt.label }}
@@ -588,28 +636,80 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           </div>
 
           <!-- Sort -->
-          <div class="ui-filter-section">
-            <label class="ui-filter-label mb-2 block">Sort by</label>
+          <div class="factory-filter-section">
+            <label class="factory-filter-label block mb-2">Sort by</label>
             <div class="flex gap-2">
-              <select
-                v-model="sortKey"
-                class="ui-field flex-1"
-              >
-                <option value="created">Date created</option>
-                <option value="title">Title</option>
-                <option value="status">Status</option>
-                <option value="type">Employment type</option>
-                <option value="location">Location</option>
-                <option value="new">New applicants</option>
-                <option value="active">Active candidates</option>
-              </select>
-              <select
-                v-model="sortDir"
-                class="ui-field w-32"
-              >
-                <option value="asc">Ascending</option>
-                <option value="desc">Descending</option>
-              </select>
+              <div ref="sortKeyMenuRef" class="factory-filter-dropdown relative flex-1">
+                <button
+                  type="button"
+                  class="factory-filter-select factory-filter-dropdown-trigger flex w-full items-center justify-between gap-2 border px-3 py-2 text-sm text-left focus:outline-none transition-colors"
+                  :aria-expanded="sortKeyMenuOpen"
+                  aria-haspopup="listbox"
+                  aria-label="Sort field"
+                  @click="toggleSortKeyMenu"
+                >
+                  <span class="truncate">{{ selectedSortKeyLabel }}</span>
+                  <ChevronDown
+                    class="size-3.5 shrink-0 transition-transform"
+                    :class="sortKeyMenuOpen ? 'rotate-180' : ''"
+                  />
+                </button>
+                <div
+                  v-if="sortKeyMenuOpen"
+                  class="factory-filter-dropdown-menu absolute left-0 right-0 top-full z-[70] mt-1 border py-1"
+                  role="listbox"
+                >
+                  <button
+                    v-for="opt in sortKeyOptions"
+                    :key="opt.value"
+                    type="button"
+                    class="factory-filter-dropdown-option flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors"
+                    :class="{ 'is-active': sortKey === opt.value }"
+                    role="option"
+                    :aria-selected="sortKey === opt.value"
+                    @click="selectSortKey(opt.value)"
+                  >
+                    <Check class="size-3.5 shrink-0" :class="sortKey === opt.value ? '' : 'opacity-0'" />
+                    <span class="truncate">{{ opt.label }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div ref="sortDirMenuRef" class="factory-filter-dropdown relative w-36">
+                <button
+                  type="button"
+                  class="factory-filter-select factory-filter-dropdown-trigger flex w-full items-center justify-between gap-2 border px-3 py-2 text-sm text-left focus:outline-none transition-colors"
+                  :aria-expanded="sortDirMenuOpen"
+                  aria-haspopup="listbox"
+                  aria-label="Sort direction"
+                  @click="toggleSortDirMenu"
+                >
+                  <span class="truncate">{{ selectedSortDirLabel }}</span>
+                  <ChevronDown
+                    class="size-3.5 shrink-0 transition-transform"
+                    :class="sortDirMenuOpen ? 'rotate-180' : ''"
+                  />
+                </button>
+                <div
+                  v-if="sortDirMenuOpen"
+                  class="factory-filter-dropdown-menu absolute left-0 right-0 top-full z-[70] mt-1 border py-1"
+                  role="listbox"
+                >
+                  <button
+                    v-for="opt in sortDirOptions"
+                    :key="opt.value"
+                    type="button"
+                    class="factory-filter-dropdown-option flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors"
+                    :class="{ 'is-active': sortDir === opt.value }"
+                    role="option"
+                    :aria-selected="sortDir === opt.value"
+                    @click="selectSortDir(opt.value)"
+                  >
+                    <Check class="size-3.5 shrink-0" :class="sortDir === opt.value ? '' : 'opacity-0'" />
+                    <span class="truncate">{{ opt.label }}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -709,7 +809,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
                     </NuxtLink>
                     <span
                       v-if="(j.pipeline?.new ?? 0) > 0"
-                      class="inline-flex items-center justify-center rounded-full bg-warning-100 dark:bg-warning-900/40 text-warning-700 dark:text-warning-400 text-[10px] font-bold px-1.5 py-0.5 shrink-0"
+                      class="factory-new-badge inline-flex items-center justify-center text-[10px] font-bold px-1.5 py-0.5 shrink-0"
                     >
                       {{ j.pipeline.new }} new
                     </span>
@@ -765,20 +865,22 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
       ════════════════════════════════════ -->
       <template v-else-if="viewMode === 'gallery'">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <NuxtLink
+          <div
             v-for="j in sortedJobs"
             :key="j.id"
-            :to="localePath(`/dashboard/jobs/${j.id}`)"
-            class="group rounded-xl border bg-white dark:bg-surface-900 p-4 flex flex-col gap-3 hover:shadow-md transition-all no-underline"
+            class="group rounded-xl border bg-white dark:bg-surface-900 p-4 flex flex-col gap-3 hover:shadow-md transition-all"
             :class="(j.pipeline?.new ?? 0) > 0
               ? 'border-warning-200 dark:border-warning-900/60 hover:border-warning-300 dark:hover:border-warning-800'
               : 'border-surface-200 dark:border-surface-800 hover:border-surface-300 dark:hover:border-surface-700'"
           >
             <!-- Card header: title + status -->
             <div class="flex items-start justify-between gap-2">
-              <span class="font-semibold text-sm text-surface-900 dark:text-surface-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors line-clamp-2 leading-snug">
+              <NuxtLink
+                :to="localePath(`/dashboard/jobs/${j.id}`)"
+                class="font-semibold text-sm text-surface-900 dark:text-surface-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors line-clamp-2 leading-snug no-underline"
+              >
                 {{ j.title }}
-              </span>
+              </NuxtLink>
               <span
                 class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0 capitalize mt-0.5"
                 :class="statusBadgeClasses[j.status] ?? 'bg-surface-100 text-surface-600'"
@@ -797,38 +899,42 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
             </div>
 
             <!-- Pipeline mini-stats -->
-            <div class="grid grid-cols-3 gap-1.5 mt-auto">
+            <div class="factory-job-mini-pipeline grid grid-cols-3 gap-1.5 mt-auto">
               <NuxtLink
                 v-for="stage in stageConfig"
                 :key="stage.key"
                 :to="localePath(`/dashboard/jobs/${j.id}?stage=${stage.key}`)"
-                class="rounded-lg px-1.5 py-1 text-center transition-colors no-underline hover:ring-1 hover:ring-brand-300 dark:hover:ring-brand-700"
-                :class="[stage.bgColor, getStageCount(j.pipeline, stage.key) > 0 ? 'cursor-pointer' : 'opacity-50']"
+                class="factory-job-stage-mini px-2 py-1.5 text-center transition-colors no-underline"
+                :class="[
+                  `factory-job-stage-mini-${stage.key}`,
+                  getStageCount(j.pipeline, stage.key) > 0 ? 'is-active cursor-pointer' : 'is-empty',
+                ]"
                 @click.stop
               >
-                <div class="text-xs font-bold tabular-nums" :class="stage.textColor">
+                <div class="factory-job-stage-mini-count text-xs font-semibold tabular-nums">
                   {{ getStageCount(j.pipeline, stage.key) }}
                 </div>
-                <div class="text-[9px] font-medium text-surface-500 dark:text-surface-400 leading-tight">
+                <div class="factory-job-stage-mini-label text-[10px] font-medium leading-tight">
                   {{ stage.label }}
                 </div>
               </NuxtLink>
             </div>
 
             <!-- Attention bar -->
-            <div
+            <NuxtLink
               v-if="(j.pipeline?.new ?? 0) > 0"
-              class="flex items-center justify-between gap-2 -mx-4 -mb-4 px-4 py-2 rounded-b-xl bg-warning-50/60 dark:bg-warning-950/30 border-t border-warning-100 dark:border-warning-900/30"
+              :to="localePath(`/dashboard/jobs/${j.id}?stage=new`)"
+              class="factory-new-alert flex items-center justify-between gap-2 -mx-4 -mb-4 px-4 py-2 rounded-b-xl"
             >
-              <span class="text-xs font-medium text-warning-700 dark:text-warning-400">
+              <span class="text-xs font-medium">
                 {{ j.pipeline.new }} new application{{ j.pipeline.new === 1 ? '' : 's' }}
               </span>
-              <span class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 font-medium">
+              <span class="factory-new-alert-action inline-flex items-center gap-1 text-xs font-medium">
                 <Kanban class="size-3" />
                 Review
               </span>
-            </div>
-          </NuxtLink>
+            </NuxtLink>
+          </div>
         </div>
       </template>
 
@@ -852,58 +958,61 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
             <div
               v-for="j in jobsNeedingAttention"
               :key="j.id"
-              class="rounded-xl border border-warning-200 dark:border-warning-900/50 bg-white dark:bg-surface-900 overflow-hidden"
+              class="group rounded-xl border bg-white dark:bg-surface-900 p-4 flex flex-col gap-3 hover:shadow-md transition-all"
+              :class="(j.pipeline?.new ?? 0) > 0
+                ? 'border-warning-200 dark:border-warning-900/60 hover:border-warning-300 dark:hover:border-warning-800'
+                : 'border-surface-200 dark:border-surface-800 hover:border-surface-300 dark:hover:border-surface-700'"
             >
               <!-- Card header — job info -->
-              <div class="px-5 pt-4 pb-3">
-                <div class="flex items-start justify-between mb-2">
-                  <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-2.5 mb-1">
-                      <NuxtLink
-                        :to="localePath(`/dashboard/jobs/${j.id}`)"
-                        class="text-base font-semibold text-surface-900 dark:text-surface-100 hover:text-brand-600 dark:hover:text-brand-400 transition-colors truncate no-underline"
-                      >
-                        {{ j.title }}
-                      </NuxtLink>
-                      <span
-                        class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0 capitalize"
-                        :class="statusBadgeClasses[j.status]"
-                      >
-                        {{ j.status }}
-                      </span>
-                    </div>
-                    <div class="flex items-center gap-3 text-xs text-surface-400">
-                      <span>{{ typeLabels[j.type] ?? j.type }}</span>
-                      <span v-if="j.location" class="inline-flex items-center gap-1">
-                        <MapPin class="size-3" />
-                        {{ j.location }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              <div class="flex items-start justify-between gap-2">
+                <NuxtLink
+                  :to="localePath(`/dashboard/jobs/${j.id}`)"
+                  class="font-semibold text-sm text-surface-900 dark:text-surface-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors line-clamp-2 leading-snug no-underline"
+                >
+                  {{ j.title }}
+                </NuxtLink>
+                <span
+                  class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0 capitalize mt-0.5"
+                  :class="statusBadgeClasses[j.status] ?? 'bg-surface-100 text-surface-600'"
+                >
+                  {{ j.status }}
+                </span>
+              </div>
 
-                <!-- Stage counts -->
-                <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-3">
-                  <NuxtLink
-                    v-for="stage in stageConfig"
-                    :key="stage.key"
-                    :to="localePath(`/dashboard/jobs/${j.id}?stage=${stage.key}`)"
-                    class="rounded-lg px-2 py-1.5 text-center transition-colors no-underline hover:ring-1 hover:ring-brand-300 dark:hover:ring-brand-700"
-                    :class="[stage.bgColor, getStageCount(j.pipeline, stage.key) > 0 ? 'cursor-pointer' : 'opacity-60']"
-                  >
-                    <div class="text-sm font-bold tabular-nums" :class="stage.textColor">
-                      {{ getStageCount(j.pipeline, stage.key) }}
-                    </div>
-                    <div class="text-[10px] font-medium text-surface-500 dark:text-surface-400">
-                      {{ stage.label }}
-                    </div>
-                  </NuxtLink>
-                </div>
+              <!-- Meta: type + location -->
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-surface-400 dark:text-surface-500">
+                <span>{{ typeLabels[j.type] ?? j.type }}</span>
+                <span v-if="j.location" class="inline-flex items-center gap-1">
+                  <MapPin class="size-3 shrink-0" />
+                  {{ j.location }}
+                </span>
+              </div>
+
+              <!-- Pipeline mini-stats -->
+              <div class="factory-job-mini-pipeline grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+                <NuxtLink
+                  v-for="stage in stageConfig"
+                  :key="stage.key"
+                  :to="localePath(`/dashboard/jobs/${j.id}?stage=${stage.key}`)"
+                  class="factory-job-stage-mini px-2 py-1.5 text-center transition-colors no-underline"
+                  :class="[
+                    `factory-job-stage-mini-${stage.key}`,
+                    getStageCount(j.pipeline, stage.key) > 0 ? 'is-active cursor-pointer' : 'is-empty',
+                  ]"
+                  @click.stop
+                >
+                  <div class="factory-job-stage-mini-count text-xs font-semibold tabular-nums">
+                    {{ getStageCount(j.pipeline, stage.key) }}
+                  </div>
+                  <div class="factory-job-stage-mini-label text-[10px] font-medium leading-tight">
+                    {{ stage.label }}
+                  </div>
+                </NuxtLink>
               </div>
 
               <!-- Action bar -->
-              <div class="flex items-center gap-2 px-5 py-3 bg-warning-50/50 dark:bg-warning-950/20 border-t border-warning-100 dark:border-warning-900/30">
-                <span class="text-xs font-medium text-warning-700 dark:text-warning-400 mr-auto">
+              <div class="factory-new-alert -mx-4 -mb-4 flex items-center justify-between gap-2 px-4 py-2">
+                <span class="text-xs font-medium mr-auto">
                   {{ j.pipeline.new }} new application{{ j.pipeline.new === 1 ? '' : 's' }} to review
                 </span>
                 <NuxtLink
@@ -934,27 +1043,27 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
             <div
               v-for="j in otherJobs"
               :key="j.id"
-              class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-5 py-4 hover:border-surface-300 dark:hover:border-surface-700 hover:shadow-sm transition-all"
+              class="group rounded-xl border border-surface-200 bg-white p-4 flex flex-col gap-3 hover:border-surface-300 hover:shadow-md transition-all dark:border-surface-800 dark:bg-surface-900 dark:hover:border-surface-700"
             >
               <!-- Job info -->
-              <div class="flex items-center gap-2.5 mb-1">
+              <div class="flex items-start justify-between gap-2">
                 <NuxtLink
                   :to="localePath(`/dashboard/jobs/${j.id}`)"
-                  class="text-sm font-semibold text-surface-900 dark:text-surface-100 hover:text-brand-600 dark:hover:text-brand-400 transition-colors truncate no-underline"
+                  class="font-semibold text-sm text-surface-900 dark:text-surface-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors line-clamp-2 leading-snug no-underline"
                 >
                   {{ j.title }}
                 </NuxtLink>
                 <span
-                  class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0 capitalize"
+                  class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0 capitalize mt-0.5"
                   :class="statusBadgeClasses[j.status] ?? 'bg-surface-100 text-surface-600'"
                 >
                   {{ j.status }}
                 </span>
               </div>
-              <div class="flex items-center gap-3 text-xs text-surface-400 mb-3">
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-surface-400 dark:text-surface-500">
                 <span>{{ typeLabels[j.type] ?? j.type }}</span>
                 <span v-if="j.location" class="inline-flex items-center gap-1">
-                  <MapPin class="size-3" />
+                  <MapPin class="size-3 shrink-0" />
                   {{ j.location }}
                 </span>
                 <span v-if="j.status === 'draft'" class="text-surface-400 italic">
@@ -963,18 +1072,22 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
               </div>
 
               <!-- Stage counts -->
-              <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              <div class="factory-job-mini-pipeline grid grid-cols-3 gap-1.5 sm:grid-cols-6">
                 <NuxtLink
                   v-for="stage in stageConfig"
                   :key="stage.key"
                   :to="localePath(`/dashboard/jobs/${j.id}?stage=${stage.key}`)"
-                  class="rounded-lg px-2 py-1.5 text-center transition-colors no-underline hover:ring-1 hover:ring-brand-300 dark:hover:ring-brand-700"
-                  :class="[stage.bgColor, getStageCount(j.pipeline, stage.key) > 0 ? 'cursor-pointer' : 'opacity-60']"
+                  class="factory-job-stage-mini px-2 py-1.5 text-center transition-colors no-underline"
+                  :class="[
+                    `factory-job-stage-mini-${stage.key}`,
+                    getStageCount(j.pipeline, stage.key) > 0 ? 'is-active cursor-pointer' : 'is-empty',
+                  ]"
+                  @click.stop
                 >
-                  <div class="text-sm font-bold tabular-nums" :class="stage.textColor">
+                  <div class="factory-job-stage-mini-count text-xs font-semibold tabular-nums">
                     {{ getStageCount(j.pipeline, stage.key) }}
                   </div>
-                  <div class="text-[10px] font-medium text-surface-500 dark:text-surface-400">
+                  <div class="factory-job-stage-mini-label text-[10px] font-medium leading-tight">
                     {{ stage.label }}
                   </div>
                 </NuxtLink>

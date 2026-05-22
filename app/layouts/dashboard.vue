@@ -27,7 +27,7 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
     <ClientOnly>
       <DemoUpsellBanner v-if="isDemoAccount" />
     </ClientOnly>
-    <main :class="['relative flex-1 min-h-0 overflow-y-auto', isFullbleed ? 'overflow-hidden' : 'px-4 py-6 sm:px-6 lg:px-8 lg:py-8']">
+    <main :class="['relative flex min-h-0 flex-1 flex-col overflow-y-auto', isFullbleed ? 'overflow-hidden' : 'px-4 py-6 sm:px-6 lg:px-6 lg:py-8']">
       <!-- Demo mode banner -->
       <div
         v-if="isDemo"
@@ -44,7 +44,10 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
           >View source →</a>
         </span>
       </div>
-      <slot />
+      <div :class="isFullbleed ? 'min-h-0 flex-1' : 'flex-1'">
+        <slot />
+      </div>
+      <AppDashboardFooter :class="isFullbleed ? 'px-4 pb-4 sm:px-6 lg:px-6' : 'mx-auto w-full max-w-6xl'" />
     </main>
   </div>
 </template>

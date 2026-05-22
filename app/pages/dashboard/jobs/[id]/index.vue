@@ -10,19 +10,6 @@ import {
 import type { PropertyEntry, PropertyFilter } from '~~/shared/properties'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 import { APPLICATION_STATUS_TRANSITIONS, INTERVIEW_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
-import {
-  getApplicationStatusBadgeClass,
-  getApplicationStatusDotClass,
-  getApplicationStatusLabel,
-  getApplicationTransitionButtonClass,
-  getApplicationTransitionLabel,
-  getInterviewStatusBadgeClass,
-  getInterviewStatusLabel,
-  getInterviewTransitionButtonClass,
-  getInterviewTransitionLabel,
-  getScoreBadgeClass,
-  getScoreTextClass,
-} from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -377,19 +364,28 @@ interface TimelineActionStyle {
 
 function getTimelineActionStyle(action: string): TimelineActionStyle {
   const map: Record<string, TimelineActionStyle> = {
-    created: { icon: Plus, color: 'ui-icon-success', bg: 'ui-icon-state-success' },
-    updated: { icon: Pencil, color: 'ui-icon-brand', bg: 'ui-icon-state-brand' },
-    deleted: { icon: Trash2, color: 'ui-icon-danger', bg: 'ui-icon-state-danger' },
+    created: { icon: Plus, color: 'text-success-600 dark:text-success-400', bg: 'bg-success-50 dark:bg-success-950/50' },
+    updated: { icon: Pencil, color: 'text-brand-600 dark:text-brand-400', bg: 'bg-brand-50 dark:bg-brand-950/50' },
+    deleted: { icon: Trash2, color: 'text-danger-600 dark:text-danger-400', bg: 'bg-danger-50 dark:bg-danger-950/50' },
     status_changed: { icon: ArrowRight, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/50' },
     comment_added: { icon: MessageSquare, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-950/50' },
     scored: { icon: Brain, color: 'text-accent-600 dark:text-accent-400', bg: 'bg-accent-50 dark:bg-accent-950/50' },
-    scheduled: { icon: Calendar, color: 'ui-icon-brand', bg: 'ui-icon-state-brand' },
+    scheduled: { icon: Calendar, color: 'text-brand-600 dark:text-brand-400', bg: 'bg-brand-50 dark:bg-brand-950/50' },
   }
-  return map[action] ?? { icon: Clock, color: '', bg: 'ui-icon-state' }
+  return map[action] ?? { icon: Clock, color: 'text-surface-500 dark:text-surface-400', bg: 'bg-surface-100 dark:bg-surface-800' }
 }
 
 function getTimelineStatusBadge(status: string): string {
-  return getApplicationStatusBadgeClass(status.toLowerCase(), 'soft')
+  const s = status.toLowerCase()
+  const map: Record<string, string> = {
+    new: 'bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300',
+    screening: 'bg-violet-100 text-violet-700 dark:bg-violet-900/60 dark:text-violet-300',
+    interview: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
+    offer: 'bg-teal-100 text-teal-700 dark:bg-teal-900/60 dark:text-teal-300',
+    hired: 'bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300',
+    rejected: 'bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-300',
+  }
+  return map[s] ?? 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-300'
 }
 
 function describeTimelineItem(item: TimelineEntry): string {
@@ -543,6 +539,37 @@ useSeoMeta({
 // Application status transitions
 // ─────────────────────────────────────────────
 
+const statusBadgeClasses: Record<string, string> = {
+  new: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
+  screening: 'bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-400',
+  interview: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
+  offer: 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-400',
+  hired: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400',
+  rejected: 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400',
+}
+
+const transitionLabels: Record<string, string> = {
+  new: 'Re-open',
+  screening: 'Screening',
+  interview: 'Interview',
+  offer: 'Offer',
+  hired: 'Hired',
+  rejected: 'Reject',
+}
+
+const transitionClasses: Record<string, string> = {
+  new: 'border border-surface-300 dark:border-surface-600 text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800',
+  screening: 'bg-violet-600 text-white hover:bg-violet-700',
+  interview: 'bg-amber-600 text-white hover:bg-amber-700',
+  offer: 'bg-teal-600 text-white hover:bg-teal-700',
+  hired: 'bg-green-700 text-white hover:bg-green-800',
+  rejected: 'bg-danger-600 text-white hover:bg-danger-700',
+}
+
+function formatStatusLabel(status: string) {
+  return status.charAt(0).toUpperCase() + status.slice(1)
+}
+
 function formatResponseValue(value: unknown): string {
   if (Array.isArray(value)) return value.join(', ')
   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
@@ -570,6 +597,12 @@ function timeAgo(date: string | Date) {
   const days = Math.floor(hrs / 24)
   if (days < 30) return `${days}d ago`
   return new Date(date).toLocaleDateString()
+}
+
+function scoreClass(score: number) {
+  if (score >= 75) return 'bg-success-50 text-success-700 dark:bg-success-950 dark:text-success-400'
+  if (score >= 40) return 'bg-warning-50 text-warning-700 dark:bg-warning-950 dark:text-warning-400'
+  return 'bg-danger-50 text-danger-700 dark:bg-danger-950 dark:text-danger-400'
 }
 
 const allowedTransitions = computed(() => {
@@ -683,6 +716,13 @@ const interviewTypeLabels: Record<string, string> = {
   take_home: 'Take Home',
 }
 
+const interviewStatusClasses: Record<string, string> = {
+  scheduled: 'bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-950/50 dark:text-brand-300 dark:ring-brand-800',
+  completed: 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/50 dark:text-success-300 dark:ring-success-800',
+  cancelled: 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:ring-surface-700',
+  no_show: 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950/50 dark:text-danger-300 dark:ring-danger-800',
+}
+
 function formatInterviewDateTime(dateStr: string) {
   const d = new Date(dateStr)
   return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
@@ -714,6 +754,20 @@ type InterviewStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show'
 
 function getAllowedInterviewTransitions(status: string): InterviewStatus[] {
   return (INTERVIEW_STATUS_TRANSITIONS[status] ?? []) as InterviewStatus[]
+}
+
+const interviewTransitionClasses: Record<InterviewStatus, string> = {
+  scheduled: 'border border-surface-300 dark:border-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800',
+  completed: 'bg-success-600 text-white hover:bg-success-700',
+  cancelled: 'bg-surface-500 text-white hover:bg-surface-600',
+  no_show: 'bg-danger-600 text-white hover:bg-danger-700',
+}
+
+const interviewTransitionLabels: Record<InterviewStatus, string> = {
+  scheduled: 'Re-schedule',
+  completed: 'Completed',
+  cancelled: 'Cancel',
+  no_show: 'No Show',
 }
 
 const interviewStatusIcons: Record<InterviewStatus, any> = {
@@ -1011,6 +1065,13 @@ onBeforeUnmount(() => {
 // Job status transitions (Publish, Close, etc.)
 // ─────────────────────────────────────────────
 
+const jobStatusBadgeClasses: Record<string, string> = {
+  draft: 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400',
+  open: 'bg-success-50 dark:bg-success-950 text-success-700 dark:text-success-400',
+  closed: 'bg-warning-50 dark:bg-warning-950 text-warning-700 dark:text-warning-400',
+  archived: 'bg-surface-100 dark:bg-surface-800 text-surface-400',
+}
+
 const isScoringIndividual = ref(false)
 
 async function scoreIndividualCandidate(applicationId: string) {
@@ -1100,17 +1161,17 @@ function closeDocPreview() {
   >
     <!-- Loading -->
     <div v-if="isLoading" class="flex flex-1 flex-col items-center justify-center gap-3">
-      <div class="ui-spinner-brand size-8 rounded-full border-2 animate-spin" />
+      <div class="size-8 rounded-full border-2 border-brand-200 border-t-brand-600 dark:border-brand-800 dark:border-t-brand-400 animate-spin" />
       <p class="text-sm font-medium text-surface-400 dark:text-surface-500">Loading pipeline…</p>
     </div>
 
     <!-- Error -->
     <div
       v-else-if="jobError || appError"
-      class="ui-alert ui-alert-danger m-6 p-5 text-sm"
+      class="m-6 rounded-xl border border-danger-200/80 bg-danger-50 p-5 text-sm text-danger-700 dark:border-danger-800/60 dark:bg-danger-950/40 dark:text-danger-300"
     >
       {{ jobError ? 'Job not found or failed to load.' : 'Failed to load applications.' }}
-      <NuxtLink :to="$localePath('/dashboard')" class="ui-inline-link ui-inline-link-brand ml-1 font-medium">Back to Jobs</NuxtLink>
+      <NuxtLink :to="$localePath('/dashboard')" class="ml-1 font-medium underline hover:no-underline">Back to Jobs</NuxtLink>
     </div>
 
     <template v-else-if="jobData">
@@ -1120,15 +1181,15 @@ function closeDocPreview() {
       <!-- Keyboard shortcut hints in sub-nav bar (pipeline-specific) -->
       <Teleport to="#job-sub-nav-actions">
         <div class="hidden sm:flex items-center gap-2 text-[10px] font-medium text-surface-400 dark:text-surface-500">
-          <div class="ui-code flex items-center gap-1 px-2 py-0.5">
+          <div class="flex items-center gap-1 rounded-md bg-surface-100/80 px-2 py-0.5 dark:bg-surface-800/60">
             <span class="font-mono text-[10px]">↑↓</span>
             <span>candidates</span>
           </div>
-          <div class="ui-code flex items-center gap-1 px-2 py-0.5">
+          <div class="flex items-center gap-1 rounded-md bg-surface-100/80 px-2 py-0.5 dark:bg-surface-800/60">
             <span class="font-mono text-[10px]">←→</span>
             <span>stages</span>
           </div>
-          <div class="ui-code flex items-center gap-1 px-2 py-0.5">
+          <div class="flex items-center gap-1 rounded-md bg-surface-100/80 px-2 py-0.5 dark:bg-surface-800/60">
             <span class="font-mono text-[10px]">1-9</span>
             <span>actions</span>
           </div>
@@ -1138,24 +1199,31 @@ function closeDocPreview() {
       <!-- ═══════════════════════════════════════ -->
       <!-- PIPELINE STATUS TABS                     -->
       <!-- ═══════════════════════════════════════ -->
-      <div class="ui-panel-header shrink-0 bg-white dark:bg-surface-900">
-        <div class="flex items-center gap-1 overflow-x-auto scrollbar-thin sm:scrollbar-none px-3 sm:px-5 py-2">
+      <div class="shrink-0 border-b border-surface-200/80 bg-white dark:border-surface-800/60 dark:bg-surface-900">
+        <div class="factory-dashboard-tabs flex items-center gap-1 overflow-x-auto scrollbar-thin sm:scrollbar-none px-3 sm:px-5 py-2">
           <button
             v-for="status in PIPELINE_STATUSES"
             :key="`tab-${status}`"
-            class="ui-filter-chip relative shrink-0 px-3.5 py-2 text-sm transition-all duration-200 focus:outline-none"
+            class="relative flex shrink-0 cursor-pointer items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 focus:outline-none"
             :class="isFocusStatus(status)
-              ? 'ui-filter-chip-active shadow-sm'
-              : 'ui-filter-chip-inactive'"
+              ? 'bg-brand-50 text-brand-700 shadow-sm ring-1 ring-brand-200/60 dark:bg-brand-950/40 dark:text-brand-300 dark:ring-brand-800/40'
+              : 'text-surface-500 hover:bg-surface-50 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-surface-800/60 dark:hover:text-surface-200'"
             @click="setFocusStatus(status)"
           >
-            <span class="pipeline-status-dot size-2 rounded-full" :class="getApplicationStatusDotClass(status)" />
-            {{ getApplicationStatusLabel(status) }}
+            <span class="pipeline-status-dot size-2 rounded-full" :class="{
+              'bg-blue-500 dark:bg-blue-400': status === 'new',
+              'bg-violet-500 dark:bg-violet-400': status === 'screening',
+              'bg-amber-500 dark:bg-amber-400': status === 'interview',
+              'bg-teal-500 dark:bg-teal-400': status === 'offer',
+              'bg-green-600 dark:bg-green-300': status === 'hired',
+              'bg-surface-400 dark:bg-surface-500': status === 'rejected',
+            }" />
+            {{ formatStatusLabel(status) }}
             <span
-              class="ui-pill min-w-[20px] justify-center px-1.5 py-0.5 text-[11px] tabular-nums transition-colors duration-200"
+              class="inline-flex min-w-[20px] items-center justify-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums transition-colors duration-200"
               :class="isFocusStatus(status)
-                ? 'ui-pill-brand'
-                : ''"
+                ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/50 dark:text-brand-300'
+                : 'bg-surface-100 text-surface-500 dark:bg-surface-800/80 dark:text-surface-400'"
             >
               {{ statusCounts[status] ?? 0 }}
             </span>
@@ -1163,7 +1231,7 @@ function closeDocPreview() {
 
           <!-- Fullscreen toggle -->
           <button
-            class="ui-button ui-button-ghost ml-auto shrink-0 p-2 transition-all duration-200 focus:outline-none"
+            class="ml-auto flex shrink-0 cursor-pointer items-center justify-center rounded-lg p-2 text-surface-400 hover:bg-surface-100 hover:text-surface-600 dark:text-surface-500 dark:hover:bg-surface-800 dark:hover:text-surface-300 transition-all duration-200 focus:outline-none"
             :title="isFullscreen ? 'Exit focus mode (Esc)' : 'Focus mode'"
             @click="toggleFullscreen"
           >
@@ -1180,7 +1248,7 @@ function closeDocPreview() {
 
         <!-- LEFT PANEL — Candidate list (desktop only; mobile uses bottom bar) -->
         <div
-          class="ui-nav-shell ui-nav-shell-side hidden md:flex md:w-72 md:shrink-0 flex-col"
+          class="hidden md:flex md:w-72 md:shrink-0 flex-col border-r border-surface-200/80 bg-white dark:border-surface-800/60 dark:bg-surface-900"
         >
           <!-- Search + Sort + Filter controls -->
           <div class="shrink-0 px-3.5 pt-3 pb-2 space-y-2 dark:border-surface-800">
@@ -1191,7 +1259,7 @@ function closeDocPreview() {
                 v-model="searchTerm"
                 type="text"
                 placeholder="Search candidates…"
-                class="ui-field py-2 pl-8 pr-3 transition-all duration-150"
+                class="w-full rounded-lg border border-surface-200/80 bg-surface-50/80 py-2 pl-8 pr-3 text-sm text-surface-900 placeholder:text-surface-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-surface-700/80 dark:bg-surface-800/60 dark:text-surface-100 dark:placeholder:text-surface-500 dark:focus:border-brand-500 dark:focus:ring-brand-500/20 transition-all duration-150"
                 @focus="closePanels"
               />
             </div>
@@ -1201,10 +1269,10 @@ function closeDocPreview() {
               <!-- Sort dropdown -->
               <div class="relative flex-1 min-w-0">
                 <button
-                  class="ui-filter-chip flex w-full items-center gap-1.5 px-2 py-1.5 text-left transition-all duration-150"
+                  class="flex w-full cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1.5 text-left transition-all duration-150"
                   :class="showSortPanel
-                    ? 'ui-filter-chip-active'
-                    : 'ui-filter-chip-inactive'"
+                    ? 'border-brand-300 bg-brand-50/50 text-brand-700 dark:border-brand-600 dark:bg-brand-950/30 dark:text-brand-300'
+                    : 'border-surface-200/80 bg-surface-50/50 text-surface-600 hover:border-surface-300 hover:bg-surface-50 dark:border-surface-700/80 dark:bg-surface-800/40 dark:text-surface-300 dark:hover:border-surface-600 dark:hover:bg-surface-800'"
                   @click="showSortPanel = !showSortPanel; showFilterPanel = false"
                 >
                   <ArrowUpDown class="size-3 shrink-0" />
@@ -1223,15 +1291,15 @@ function closeDocPreview() {
                 >
                   <div
                     v-if="showSortPanel"
-                    class="ui-panel ui-floating-menu absolute left-0 top-full z-50 mt-1 w-full origin-top overflow-hidden py-1"
+                    class="absolute left-0 top-full z-50 mt-1 w-full rounded-lg border border-surface-200 bg-white py-1 shadow-lg shadow-surface-900/5 dark:border-surface-700 dark:bg-surface-900 dark:shadow-black/20 origin-top"
                   >
                     <button
                       v-for="option in sortOptions"
                       :key="option.value"
-                      class="ui-menu-action px-3 py-1.5 text-[11px] font-medium"
+                      class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-[11px] font-medium transition-colors"
                       :class="sortBy === option.value
-                        ? 'ui-inline-link-brand'
-                        : ''"
+                        ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
+                        : 'text-surface-600 hover:bg-surface-50 dark:text-surface-300 dark:hover:bg-surface-800'"
                       @click="selectSort(option.value)"
                     >
                       <Check v-if="sortBy === option.value" class="size-3 shrink-0" />
@@ -1244,16 +1312,16 @@ function closeDocPreview() {
 
               <!-- Filter button -->
               <button
-                class="ui-filter-chip relative flex items-center gap-1 px-2 py-1.5 transition-all duration-150"
+                class="relative flex cursor-pointer items-center gap-1 rounded-md border px-2 py-1.5 transition-all duration-150"
                 :class="showFilterPanel || hasActiveFilters
-                  ? 'ui-filter-chip-active'
-                  : 'ui-filter-chip-inactive'"
+                  ? 'border-brand-300 bg-brand-50/50 text-brand-700 dark:border-brand-600 dark:bg-brand-950/30 dark:text-brand-300'
+                  : 'border-surface-200/80 bg-surface-50/50 text-surface-600 hover:border-surface-300 hover:bg-surface-50 dark:border-surface-700/80 dark:bg-surface-800/40 dark:text-surface-300 dark:hover:border-surface-600 dark:hover:bg-surface-800'"
                 @click="showFilterPanel = !showFilterPanel; showSortPanel = false"
               >
                 <ListFilter class="size-3" />
                 <span
                   v-if="activeFilterCount > 0"
-                  class="ui-pill ui-pill-brand flex size-3.5 items-center justify-center rounded-full p-0 text-[9px] font-bold"
+                  class="flex size-3.5 items-center justify-center rounded-full bg-brand-600 text-[9px] font-bold text-white dark:bg-brand-500"
                 >
                   {{ activeFilterCount }}
                 </span>
@@ -1271,7 +1339,7 @@ function closeDocPreview() {
             >
               <div
                 v-if="showFilterPanel"
-                class="ui-panel-muted p-2.5 space-y-2.5"
+                class="rounded-lg border border-surface-200/80 bg-surface-50/80 p-2.5 space-y-2.5 dark:border-surface-700/80 dark:bg-surface-800/40"
               >
                 <!-- Score filter -->
                 <div>
@@ -1280,10 +1348,10 @@ function closeDocPreview() {
                     <button
                       v-for="opt in scoreFilterOptions"
                       :key="opt.value"
-                      class="ui-filter-chip px-2 py-1 text-[11px] transition-all duration-150"
+                      class="cursor-pointer rounded-md px-2 py-1 text-[11px] font-medium transition-all duration-150"
                       :class="scoreFilter === opt.value
-                        ? 'ui-filter-chip-active shadow-sm'
-                        : 'ui-filter-chip-inactive'"
+                        ? 'bg-brand-600 text-white shadow-sm dark:bg-brand-500'
+                        : 'bg-white text-surface-600 ring-1 ring-inset ring-surface-200 hover:bg-surface-50 dark:bg-surface-800 dark:text-surface-300 dark:ring-surface-700 dark:hover:bg-surface-700'"
                       @click="scoreFilter = opt.value"
                     >
                       {{ opt.label }}
@@ -1298,10 +1366,10 @@ function closeDocPreview() {
                     <button
                       v-for="opt in interviewFilterOptions"
                       :key="opt.value"
-                      class="ui-filter-chip px-2 py-1 text-[11px] transition-all duration-150"
+                      class="cursor-pointer rounded-md px-2 py-1 text-[11px] font-medium transition-all duration-150"
                       :class="interviewFilter === opt.value
-                        ? 'ui-filter-chip-active shadow-sm'
-                        : 'ui-filter-chip-inactive'"
+                        ? 'bg-brand-600 text-white shadow-sm dark:bg-brand-500'
+                        : 'bg-white text-surface-600 ring-1 ring-inset ring-surface-200 hover:bg-surface-50 dark:bg-surface-800 dark:text-surface-300 dark:ring-surface-700 dark:hover:bg-surface-700'"
                       @click="interviewFilter = opt.value"
                     >
                       {{ opt.label }}
@@ -1322,7 +1390,7 @@ function closeDocPreview() {
                 <!-- Clear filters -->
                 <button
                   v-if="hasActiveFilters"
-                  class="ui-inline-link flex w-full items-center justify-center gap-1 rounded-md py-1 text-[11px] font-medium transition-colors"
+                  class="flex w-full cursor-pointer items-center justify-center gap-1 rounded-md py-1 text-[11px] font-medium text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200 transition-colors"
                   @click="clearFilters"
                 >
                   <X class="size-3" />
@@ -1346,20 +1414,20 @@ function closeDocPreview() {
           </div>
 
           <!-- Scrollable list -->
-          <div class="ui-panel-divider flex-1 overflow-y-auto scrollbar-thin">
+          <div class="flex-1 overflow-y-auto scrollbar-thin border-t border-surface-100 dark:border-surface-800/60">
             <div v-if="filteredApplications.length === 0" class="p-8 text-center">
-              <div class="ui-icon-state ui-icon-tile size-12 mx-auto mb-3">
+              <div class="flex size-12 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-800/60 mx-auto mb-3">
                 <UserRound class="size-5 text-surface-400 dark:text-surface-500" />
               </div>
               <p class="text-sm font-medium text-surface-600 dark:text-surface-300">
                 {{ (searchTerm.trim() || hasActiveFilters) ? 'No matching candidates' : `No candidates yet` }}
               </p>
               <p class="mt-1 text-xs text-surface-400 dark:text-surface-500">
-                {{ (searchTerm.trim() || hasActiveFilters) ? 'Try adjusting your search or filters.' : `No one in ${getApplicationStatusLabel(focusStatus)} stage.` }}
+                {{ (searchTerm.trim() || hasActiveFilters) ? 'Try adjusting your search or filters.' : `No one in ${formatStatusLabel(focusStatus)} stage.` }}
               </p>
               <button
                 v-if="hasActiveFilters"
-                class="ui-inline-link ui-inline-link-brand mt-2 text-xs font-medium"
+                class="mt-2 cursor-pointer text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
                 @click="clearFilters"
               >
                 Clear filters
@@ -1392,7 +1460,11 @@ function closeDocPreview() {
                   <span
                     v-if="app.score != null"
                     class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
-                    :class="getScoreBadgeClass(app.score, 'muted')"
+                    :class="{
+                      'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/60 dark:text-success-400 dark:ring-success-800': app.score >= 75,
+                      'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950/60 dark:text-warning-400 dark:ring-warning-800': app.score >= 40 && app.score < 75,
+                      'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950/60 dark:text-danger-400 dark:ring-danger-800': app.score < 40,
+                    }"
                   >
                     {{ app.score }} pts
                   </span>
@@ -1416,11 +1488,11 @@ function closeDocPreview() {
             v-if="!currentSummary"
             class="flex flex-1 flex-col items-center justify-center p-8 text-center"
           >
-            <div class="ui-icon-state ui-icon-tile size-16 mb-4">
+            <div class="flex size-16 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-800/60 mb-4">
               <UserRound class="size-7 text-surface-400 dark:text-surface-500" />
             </div>
             <p class="text-base font-semibold text-surface-700 dark:text-surface-200">
-              No candidates in {{ getApplicationStatusLabel(focusStatus) }}
+              No candidates in {{ formatStatusLabel(focusStatus) }}
             </p>
             <p class="mt-1.5 text-sm text-surface-500 dark:text-surface-400 max-w-xs">
               Switch to another pipeline stage to review candidates.
@@ -1429,17 +1501,17 @@ function closeDocPreview() {
 
           <template v-else>
             <!-- Sticky status transitions (stays visible on scroll) -->
-            <div v-if="allowedTransitions.length > 0" class="ui-panel-header shrink-0 bg-white/95 px-4 sm:px-6 py-2.5 dark:bg-surface-900/95">
+            <div v-if="allowedTransitions.length > 0" class="shrink-0 border-b border-surface-200/80 bg-white/95 backdrop-blur-sm px-4 sm:px-6 py-2.5 dark:border-surface-800/60 dark:bg-surface-900/95">
               <div class="mx-auto max-w-4xl flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <button
                   v-for="(nextStatus, idx) in allowedTransitions"
                   :key="nextStatus"
                   :disabled="isMutating"
-                  class="ui-button px-3 py-1.5 text-xs font-semibold shadow-sm"
-                  :class="getApplicationTransitionButtonClass(nextStatus)"
+                  class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm inline-flex items-center gap-1.5"
+                  :class="transitionClasses[nextStatus] ?? 'border border-surface-300 text-surface-600 hover:bg-surface-50'"
                   @click="nextStatus === 'interview' ? openInterviewScheduler() : changeStatus(nextStatus)"
                 >
-                  {{ getApplicationTransitionLabel(nextStatus) }}
+                  {{ transitionLabels[nextStatus] ?? nextStatus }}
                   <kbd class="inline-flex items-center justify-center rounded px-1 py-0.5 text-[10px] font-mono leading-none opacity-60 bg-black/10 dark:bg-white/10 min-w-[16px]">{{ idx + 1 }}</kbd>
                 </button>
               </div>
@@ -1449,7 +1521,7 @@ function closeDocPreview() {
             <div ref="detailScrollContainer" class="flex-1 overflow-y-auto scrollbar-thin pb-20 md:pb-0">
 
             <!-- Candidate header -->
-            <div class="ui-panel-header bg-surface-50 px-4 sm:px-6 py-4 sm:py-6 dark:bg-surface-900/80">
+            <div class="border-b border-surface-200 bg-surface-50 px-4 sm:px-6 py-4 sm:py-6 dark:border-surface-800 dark:bg-surface-900/80">
               <div class="mx-auto max-w-4xl">
               <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div class="flex items-start gap-4 min-w-0">
@@ -1463,16 +1535,23 @@ function closeDocPreview() {
                       </h2>
                       <span
                         class="inline-flex shrink-0 items-center rounded-lg px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset"
-                        :class="getApplicationStatusBadgeClass(currentSummary.status, 'ring')"
+                        :class="{
+                          'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-950/50 dark:text-blue-400 dark:ring-blue-800': currentSummary.status === 'new',
+                          'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-950/50 dark:text-violet-400 dark:ring-violet-800': currentSummary.status === 'screening',
+                          'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:ring-amber-800': currentSummary.status === 'interview',
+                          'bg-teal-50 text-teal-700 ring-teal-200 dark:bg-teal-950/50 dark:text-teal-400 dark:ring-teal-800': currentSummary.status === 'offer',
+                          'bg-green-50 text-green-700 ring-green-200 dark:bg-green-950/50 dark:text-green-400 dark:ring-green-800': currentSummary.status === 'hired',
+                          'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:ring-surface-700': currentSummary.status === 'rejected',
+                        }"
                       >
-                        {{ getApplicationStatusLabel(currentSummary.status) }}
+                        {{ currentSummary.status }}
                       </span>
                     </div>
                     <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-surface-500 dark:text-surface-400">
                       <a
                         :href="`mailto:${currentSummary.candidateEmail}`"
                         target="_blank"
-                        class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1.5 cursor-pointer transition-colors"
+                        class="inline-flex items-center gap-1.5 hover:text-brand-600 dark:hover:text-brand-400 hover:underline cursor-pointer transition-colors"
                       >
                         <Mail class="size-3.5" />
                         {{ currentSummary.candidateEmail }}
@@ -1486,16 +1565,20 @@ function closeDocPreview() {
                       <span
                         v-if="currentSummary.score != null"
                         class="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset"
-                        :class="getScoreBadgeClass(currentSummary.score, 'muted')"
+                        :class="{
+                          'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/60 dark:text-success-400 dark:ring-success-800': currentSummary.score >= 75,
+                          'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950/60 dark:text-warning-400 dark:ring-warning-800': currentSummary.score >= 40 && currentSummary.score < 75,
+                          'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950/60 dark:text-danger-400 dark:ring-danger-800': currentSummary.score < 40,
+                        }"
                       >
                         {{ currentSummary.score }} pts
                       </span>
                       <button
                         :disabled="isScoringIndividual"
-                        class="ui-button px-2 py-0.5 text-[11px] transition-all duration-150"
+                        class="inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                         :class="currentSummary.score != null
-                          ? 'ui-button-ghost'
-                          : 'ui-button-secondary ui-inline-link-brand'"
+                          ? 'text-surface-500 hover:text-brand-600 hover:bg-brand-50 dark:text-surface-400 dark:hover:text-brand-400 dark:hover:bg-brand-950/40'
+                          : 'text-brand-600 bg-brand-50 hover:bg-brand-100 dark:text-brand-400 dark:bg-brand-950/40 dark:hover:bg-brand-950/60 ring-1 ring-brand-200 dark:ring-brand-800'"
                         @click="scoreIndividualCandidate(currentSummary.id)"
                       >
                         <Loader2 v-if="isScoringIndividual" class="size-3 animate-spin" />
@@ -1516,7 +1599,7 @@ function closeDocPreview() {
                   <div class="flex items-center gap-1.5 mr-2">
                     <button
                       :disabled="currentIndex === 0"
-                      class="ui-button ui-button-secondary p-1.5 transition-all duration-150"
+                      class="flex cursor-pointer items-center justify-center rounded-lg border border-surface-200 p-1.5 text-surface-500 transition-all duration-150 hover:bg-white hover:border-surface-300 hover:text-surface-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:border-surface-600 dark:hover:text-surface-300"
                       @click="goToPreviousCard"
                     >
                       <ArrowLeft class="size-4" />
@@ -1526,7 +1609,7 @@ function closeDocPreview() {
                     </span>
                     <button
                       :disabled="currentIndex >= filteredApplications.length - 1"
-                      class="ui-button ui-button-secondary p-1.5 transition-all duration-150"
+                      class="flex cursor-pointer items-center justify-center rounded-lg border border-surface-200 p-1.5 text-surface-500 transition-all duration-150 hover:bg-white hover:border-surface-300 hover:text-surface-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:border-surface-600 dark:hover:text-surface-300"
                       @click="goToNextCard"
                     >
                       <ArrowRight class="size-4" />
@@ -1534,7 +1617,7 @@ function closeDocPreview() {
                   </div>
                   <NuxtLink
                     :to="$localePath(`/dashboard/applications/${currentSummary.id}`)"
-                    class="ui-button ui-button-secondary p-1.5 transition-all duration-150"
+                    class="flex items-center justify-center rounded-lg border border-surface-200 p-1.5 text-surface-500 transition-all duration-150 hover:bg-white hover:border-surface-300 hover:text-surface-700 dark:border-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:border-surface-600 dark:hover:text-surface-300"
                     title="Full application page"
                   >
                     <ExternalLink class="size-4" />
@@ -1545,14 +1628,17 @@ function closeDocPreview() {
             </div>
 
             <!-- Detail tabs -->
-            <div class="ui-panel-header bg-white px-4 sm:px-6 dark:bg-surface-900">
-              <div class="mx-auto max-w-4xl flex gap-1 -mb-px scrollbar-none whitespace-nowrap" :class="showOverviewDropdown ? '' : 'overflow-x-auto'">
+            <div class="border-b border-surface-200/80 bg-white px-4 sm:px-6 dark:border-surface-800/60 dark:bg-surface-900">
+              <div class="factory-dashboard-tabs mx-auto max-w-4xl flex gap-1 -mb-px scrollbar-none whitespace-nowrap" :class="showOverviewDropdown ? '' : 'overflow-x-auto'">
                 <div ref="overviewDropdownRef" class="relative">
-                  <div class="ui-tab flex items-center transition-all duration-150" :class="detailTab === 'overview'
-                    ? 'ui-tab-active'
-                    : 'ui-tab-inactive'">
+                  <div class="flex items-center border-b-2 transition-all duration-150" :class="detailTab === 'overview'
+                    ? 'border-brand-600 dark:border-brand-400'
+                    : 'border-transparent'">
                     <button
                       class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150"
+                      :class="detailTab === 'overview'
+                        ? 'text-brand-700 dark:text-brand-300'
+                        : 'text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-300'"
                       @click="detailTab = 'overview'"
                     >
                       Overview
@@ -1577,46 +1663,46 @@ function closeDocPreview() {
                   >
                     <div
                       v-if="showOverviewDropdown"
-                      class="ui-panel ui-floating-menu absolute left-0 top-full z-50 mt-1 w-44 overflow-hidden py-1.5 origin-top-left"
+                      class="factory-saved-views-panel absolute left-0 top-full z-50 mt-1 w-44 rounded-xl border py-1.5 origin-top-left"
                     >
                       <span class="block px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500">Sections</span>
-                      <label class="ui-menu-action gap-2.5 px-3.5 py-2 text-sm select-none">
-                        <input v-model="overviewSections.aiAnalysis" type="checkbox" class="ui-checkbox ui-checkbox-brand size-3.5" />
+                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
+                        <input v-model="overviewSections.aiAnalysis" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
                         AI Analysis
                       </label>
-                      <label class="ui-menu-action gap-2.5 px-3.5 py-2 text-sm select-none">
-                        <input v-model="overviewSections.interviews" type="checkbox" class="ui-checkbox ui-checkbox-brand size-3.5" />
+                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
+                        <input v-model="overviewSections.interviews" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
                         Interviews
                       </label>
-                      <label class="ui-menu-action gap-2.5 px-3.5 py-2 text-sm select-none">
-                        <input v-model="overviewSections.documents" type="checkbox" class="ui-checkbox ui-checkbox-brand size-3.5" />
+                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
+                        <input v-model="overviewSections.documents" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
                         Documents
                       </label>
-                      <label class="ui-menu-action gap-2.5 px-3.5 py-2 text-sm select-none">
-                        <input v-model="overviewSections.responses" type="checkbox" class="ui-checkbox ui-checkbox-brand size-3.5" />
+                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
+                        <input v-model="overviewSections.responses" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
                         Responses
                       </label>
-                      <label class="ui-menu-action gap-2.5 px-3.5 py-2 text-sm select-none">
-                        <input v-model="overviewSections.properties" type="checkbox" class="ui-checkbox ui-checkbox-brand size-3.5" />
+                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
+                        <input v-model="overviewSections.properties" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
                         Properties
                       </label>
                     </div>
                   </Transition>
                 </div>
                 <button
-                  class="ui-tab cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 -mb-px"
+                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
                   :class="detailTab === 'ai-analysis'
-                    ? 'ui-tab-active'
-                    : 'ui-tab-inactive'"
+                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
+                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
                   @click="detailTab = 'ai-analysis'"
                 >
                   AI Analysis
                 </button>
                 <button
-                  class="ui-tab cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 -mb-px"
+                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
                   :class="detailTab === 'interviews'
-                    ? 'ui-tab-active'
-                    : 'ui-tab-inactive'"
+                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
+                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
                   @click="detailTab = 'interviews'"
                 >
                   Interviews
@@ -1628,10 +1714,10 @@ function closeDocPreview() {
                   </span>
                 </button>
                 <button
-                  class="ui-tab cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 -mb-px"
+                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
                   :class="detailTab === 'documents'
-                    ? 'ui-tab-active'
-                    : 'ui-tab-inactive'"
+                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
+                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
                   @click="detailTab = 'documents'"
                 >
                   Documents
@@ -1643,10 +1729,10 @@ function closeDocPreview() {
                   </span>
                 </button>
                 <button
-                  class="ui-tab cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 -mb-px"
+                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
                   :class="detailTab === 'responses'
-                    ? 'ui-tab-active'
-                    : 'ui-tab-inactive'"
+                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
+                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
                   @click="detailTab = 'responses'"
                 >
                   Responses
@@ -1658,20 +1744,20 @@ function closeDocPreview() {
                   </span>
                 </button>
                 <button
-                  class="ui-tab cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 -mb-px flex items-center gap-1.5"
+                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px flex items-center gap-1.5"
                   :class="detailTab === 'timeline'
-                    ? 'ui-tab-active'
-                    : 'ui-tab-inactive'"
+                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
+                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
                   @click="detailTab = 'timeline'"
                 >
                   <History class="size-3.5" />
                   Timeline
                 </button>
                 <button
-                  class="ui-tab cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 -mb-px flex items-center gap-1.5"
+                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px flex items-center gap-1.5"
                   :class="detailTab === 'properties'
-                    ? 'ui-tab-active'
-                    : 'ui-tab-inactive'"
+                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
+                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
                   @click="detailTab = 'properties'"
                 >
                   <SlidersHorizontal class="size-3.5" />
@@ -1683,7 +1769,7 @@ function closeDocPreview() {
             <!-- Detail content -->
             <div class="bg-surface-50/80 dark:bg-surface-950/80 px-4 sm:px-6 py-5 sm:py-8">
               <div v-if="detailFetchStatus === 'pending' && !resolvedCurrentApplication" class="flex flex-col items-center justify-center py-12">
-                <div class="ui-spinner-brand size-8 rounded-full border-2 animate-spin" />
+                <div class="size-8 rounded-full border-2 border-brand-200 border-t-brand-600 dark:border-brand-800 dark:border-t-brand-400 animate-spin" />
                 <p class="mt-3 text-sm text-surface-400">Loading details…</p>
               </div>
 
@@ -1694,7 +1780,7 @@ function closeDocPreview() {
               <!-- PROFILE SECTION (overview only) -->
               <div v-if="showSection.profile" ref="overviewRef" class="space-y-5 max-w-4xl mx-auto">
                 <!-- Notes -->
-                <div class="ui-panel p-5 shadow-sm">
+                <div class="rounded-xl border border-surface-200/80 bg-white p-5 shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none">
                   <div class="flex items-center gap-2.5 mb-4">
                     <div class="flex size-7 items-center justify-center rounded-lg bg-warning-50 dark:bg-warning-950/40">
                       <MessageSquare class="size-3.5 text-warning-600 dark:text-warning-400" />
@@ -1710,7 +1796,7 @@ function closeDocPreview() {
                 <div class="flex items-center gap-4 pt-1">
                   <NuxtLink
                     :to="$localePath(`/dashboard/applications/${currentSummary.id}`)"
-                    class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1.5 text-sm font-medium transition-colors group"
+                    class="inline-flex items-center gap-1.5 text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors group"
                   >
                     <ExternalLink class="size-3.5 transition-transform group-hover:translate-x-0.5" />
                     Full application page
@@ -1735,7 +1821,7 @@ function closeDocPreview() {
                     Interviews
                   </h2>
                   <button
-                    class="ui-button ui-button-secondary px-2.5 py-1.5 text-xs transition-all duration-150"
+                    class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-700/80 px-2.5 py-1.5 text-xs font-medium text-surface-600 dark:text-surface-300 hover:bg-white hover:border-surface-300 dark:hover:bg-surface-800 dark:hover:border-surface-600 transition-all duration-150"
                     @click="openInterviewScheduler"
                   >
                     <Plus class="size-3.5" />
@@ -1747,10 +1833,10 @@ function closeDocPreview() {
                   <div
                     v-for="iv in currentApplicationInterviews"
                     :key="iv.id"
-                    class="ui-panel shadow-sm transition-all duration-200"
+                    class="rounded-xl border bg-white shadow-sm shadow-surface-900/[0.03] dark:bg-surface-900 dark:shadow-none transition-all duration-200"
                     :class="expandedInterviewId === iv.id
-                      ? 'ui-selectable-panel-active shadow-md'
-                      : 'hover:border-surface-300 dark:hover:border-surface-700'"
+                      ? 'border-brand-300 dark:border-brand-700 shadow-md'
+                      : 'border-surface-200/80 dark:border-surface-800/60 hover:border-surface-300 dark:hover:border-surface-700'"
                   >
                     <!-- Interview card header (always visible) -->
                     <button
@@ -1758,8 +1844,8 @@ function closeDocPreview() {
                       @click="toggleInterviewExpand(iv.id)"
                     >
                       <div class="flex items-center gap-3.5 min-w-0">
-                        <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-10 shrink-0">
-                          <component :is="interviewTypeIcons[iv.type] ?? Calendar" class="size-4.5" />
+                        <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 dark:bg-brand-950/40">
+                          <component :is="interviewTypeIcons[iv.type] ?? Calendar" class="size-4.5 text-brand-600 dark:text-brand-400" />
                         </div>
                         <div class="min-w-0">
                           <p class="text-sm font-medium text-surface-800 dark:text-surface-100 truncate">
@@ -1778,12 +1864,12 @@ function closeDocPreview() {
                               @click.stop
                             >
                               <Calendar class="size-2.5" />
-                              Google Calendar
+                              Calendar
                               <ExternalLink class="size-2" />
                             </a>
                             <span v-else class="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
                               <Calendar class="size-2.5" />
-                              Google Calendar
+                              Calendar
                             </span>
                           </div>
                         </div>
@@ -1791,10 +1877,10 @@ function closeDocPreview() {
                       <div class="flex items-center gap-2.5 shrink-0">
                         <span
                           class="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset"
-                          :class="getInterviewStatusBadgeClass(iv.status)"
+                          :class="interviewStatusClasses[iv.status] ?? 'bg-surface-100 text-surface-500 ring-surface-200'"
                         >
                           <component :is="interviewStatusIcons[iv.status as InterviewStatus] ?? Calendar" class="size-3" />
-                          {{ getInterviewStatusLabel(iv.status) }}
+                          {{ iv.status === 'no_show' ? 'No Show' : iv.status }}
                         </span>
                         <ChevronDown
                           class="size-4 text-surface-400 transition-transform duration-200"
@@ -1804,7 +1890,7 @@ function closeDocPreview() {
                     </button>
 
                     <!-- Expanded interview detail -->
-                    <div v-if="expandedInterviewId === iv.id" class="ui-panel-divider">
+                    <div v-if="expandedInterviewId === iv.id" class="border-t border-surface-200/80 dark:border-surface-800/60">
                       <!-- Status transition buttons -->
                       <div v-if="getAllowedInterviewTransitions(iv.status).length > 0" class="px-5 pt-4 pb-2">
                         <div class="flex flex-wrap items-center gap-2">
@@ -1813,17 +1899,17 @@ function closeDocPreview() {
                             v-for="nextStatus in getAllowedInterviewTransitions(iv.status)"
                             :key="nextStatus"
                             :disabled="isInterviewTransitioning"
-                            class="ui-button px-2.5 py-1 text-[11px] font-semibold transition-all duration-150"
-                            :class="getInterviewTransitionButtonClass(nextStatus)"
+                            class="cursor-pointer rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                            :class="interviewTransitionClasses[nextStatus]"
                             @click.stop="nextStatus === 'scheduled' ? openReschedule(iv) : handleInterviewTransition(iv.id, nextStatus)"
                           >
-                            {{ getInterviewTransitionLabel(nextStatus) }}
+                            {{ interviewTransitionLabels[nextStatus] }}
                           </button>
                         </div>
                       </div>
 
                       <!-- Reschedule form (inline) -->
-                      <div v-if="rescheduleInterviewId === iv.id" class="ui-panel-divider px-5 py-4">
+                      <div v-if="rescheduleInterviewId === iv.id" class="px-5 py-4 border-t border-surface-100 dark:border-surface-800/60">
                         <h4 class="text-xs font-semibold text-surface-700 dark:text-surface-300 mb-3 flex items-center gap-1.5">
                           <Calendar class="size-3.5" />
                           Reschedule Interview
@@ -1834,7 +1920,7 @@ function closeDocPreview() {
                             <input
                               v-model="rescheduleForm.date"
                               type="date"
-                              class="ui-field px-2.5 py-1.5"
+                              class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-2.5 py-1.5 text-sm text-surface-900 dark:text-surface-100 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                               @click.stop
                             />
                           </div>
@@ -1843,7 +1929,7 @@ function closeDocPreview() {
                             <input
                               v-model="rescheduleForm.time"
                               type="time"
-                              class="ui-field px-2.5 py-1.5"
+                              class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-2.5 py-1.5 text-sm text-surface-900 dark:text-surface-100 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                               @click.stop
                             />
                           </div>
@@ -1854,22 +1940,22 @@ function closeDocPreview() {
                               type="number"
                               min="5"
                               max="480"
-                              class="ui-field px-2.5 py-1.5"
+                              class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-2.5 py-1.5 text-sm text-surface-900 dark:text-surface-100 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                               @click.stop
                             />
                           </div>
                         </div>
-                        <p v-if="rescheduleError" class="ui-feedback-danger mt-2 text-xs">{{ rescheduleError }}</p>
+                        <p v-if="rescheduleError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">{{ rescheduleError }}</p>
                         <div class="flex items-center justify-end gap-2 mt-3">
                           <button
-                            class="ui-button ui-button-secondary px-3 py-1.5 text-xs transition-colors"
+                            class="cursor-pointer rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
                             @click.stop="cancelReschedule"
                           >
                             Cancel
                           </button>
                           <button
                             :disabled="isRescheduling"
-                            class="ui-button ui-button-primary px-3 py-1.5 text-xs transition-colors"
+                            class="cursor-pointer rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             @click.stop="handleReschedule"
                           >
                             {{ isRescheduling ? 'Saving…' : 'Reschedule' }}
@@ -1933,19 +2019,19 @@ function closeDocPreview() {
                                   class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-emerald-700 dark:text-emerald-400 font-medium hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors"
                                 >
                                   <Calendar class="size-3.5" />
-                                  Open in Google Calendar
+                                  Open in Calendar
                                   <ExternalLink class="size-3" />
                                 </a>
                                 <span v-else class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-emerald-700 dark:text-emerald-400 font-medium">
                                   <Calendar class="size-3.5" />
-                                  Synced to Google Calendar
+                                  Synced to Calendar
                                 </span>
                               </dd>
                             </div>
                           </dl>
-                          <div class="ui-panel-divider flex items-center gap-3 mt-4 pt-3">
+                          <div class="flex items-center gap-3 mt-4 pt-3 border-t border-surface-100 dark:border-surface-800/60">
                             <button
-                              class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1.5 text-xs font-medium transition-colors"
+                              class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
                               @click.stop="startInterviewEdit(iv)"
                             >
                               <Pencil class="size-3" />
@@ -1970,18 +2056,18 @@ function closeDocPreview() {
                               <input
                                 v-model="interviewEditForm.title"
                                 type="text"
-                                class="ui-field transition-colors"
-                                :class="interviewEditErrors.title ? 'ui-field-invalid' : ''"
+                                class="w-full rounded-lg border px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-colors"
+                                :class="interviewEditErrors.title ? 'border-danger-300 dark:border-danger-600' : 'border-surface-200 dark:border-surface-700'"
                                 @click.stop
                               />
-                              <p v-if="interviewEditErrors.title" class="ui-feedback-danger mt-1 text-[11px]">{{ interviewEditErrors.title }}</p>
+                              <p v-if="interviewEditErrors.title" class="mt-1 text-[11px] text-danger-600 dark:text-danger-400">{{ interviewEditErrors.title }}</p>
                             </div>
 
                             <div>
                               <label class="block text-[11px] font-medium text-surface-500 dark:text-surface-400 mb-1">Type</label>
                               <select
                                 v-model="interviewEditForm.type"
-                                class="ui-field transition-colors"
+                                class="w-full rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-colors"
                                 @click.stop
                               >
                                 <option value="video">Video Call</option>
@@ -1999,7 +2085,7 @@ function closeDocPreview() {
                                 v-model="interviewEditForm.location"
                                 type="text"
                                 placeholder="Zoom link, office address…"
-                                class="ui-field transition-colors"
+                                class="w-full rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-colors"
                                 @click.stop
                               />
                             </div>
@@ -2010,7 +2096,7 @@ function closeDocPreview() {
                                 v-model="interviewEditForm.notes"
                                 rows="3"
                                 placeholder="Interview notes…"
-                                class="ui-field transition-colors"
+                                class="w-full rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-colors"
                                 @click.stop
                               />
                             </div>
@@ -2023,12 +2109,12 @@ function closeDocPreview() {
                                     v-model="interviewEditForm.interviewers[idx]"
                                     type="text"
                                     placeholder="Name or email"
-                                    class="ui-field flex-1 px-3 py-1.5 transition-colors"
+                                    class="flex-1 rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-colors"
                                     @click.stop
                                   />
                                   <button
                                     v-if="interviewEditForm.interviewers.length > 1"
-                                    class="ui-button ui-button-ghost ui-button-ghost-danger p-1 transition-colors"
+                                    class="cursor-pointer rounded-md p-1 text-surface-400 hover:text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-950/40 transition-colors"
                                     @click.stop="removeEditInterviewer(idx)"
                                   >
                                     <X class="size-3.5" />
@@ -2036,7 +2122,7 @@ function closeDocPreview() {
                                 </div>
                               </div>
                               <button
-                                class="ui-inline-link ui-inline-link-brand mt-2 inline-flex items-center gap-1 text-[11px] font-medium transition-colors"
+                                class="mt-2 inline-flex cursor-pointer items-center gap-1 text-[11px] font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
                                 @click.stop="addEditInterviewer"
                               >
                                 <Plus class="size-3" />
@@ -2044,18 +2130,18 @@ function closeDocPreview() {
                               </button>
                             </div>
 
-                            <p v-if="interviewEditErrors.submit" class="ui-feedback-danger text-xs">{{ interviewEditErrors.submit }}</p>
+                            <p v-if="interviewEditErrors.submit" class="text-xs text-danger-600 dark:text-danger-400">{{ interviewEditErrors.submit }}</p>
 
                             <div class="flex items-center justify-end gap-2 pt-2">
                               <button
-                                class="ui-button ui-button-secondary px-3 py-1.5 text-xs transition-colors"
+                                class="cursor-pointer rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
                                 @click.stop="cancelInterviewEdit"
                               >
                                 Cancel
                               </button>
                               <button
                                 :disabled="isInterviewSaving"
-                                class="ui-button ui-button-primary px-3 py-1.5 text-xs transition-colors"
+                                class="cursor-pointer rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 @click.stop="saveInterviewEdit"
                               >
                                 {{ isInterviewSaving ? 'Saving…' : 'Save Changes' }}
@@ -2069,14 +2155,14 @@ function closeDocPreview() {
                 </div>
 
                 <!-- Empty state -->
-                <div v-else class="ui-empty-panel p-10 text-center">
-                  <div class="ui-icon-state ui-icon-tile size-14 mx-auto mb-3">
+                <div v-else class="rounded-xl border border-surface-200/80 bg-white p-10 text-center shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none">
+                  <div class="flex size-14 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-800/60 mx-auto mb-3">
                     <Calendar class="size-6 text-surface-400 dark:text-surface-500" />
                   </div>
                   <p class="text-sm font-medium text-surface-600 dark:text-surface-300">No interviews scheduled</p>
                   <p class="mt-1 text-xs text-surface-400 dark:text-surface-500">Schedule an interview to start the process.</p>
                   <button
-                    class="ui-button ui-button-primary mt-4 px-3.5 py-2 text-xs font-semibold transition-colors shadow-sm"
+                    class="mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-brand-700 transition-colors shadow-sm"
                     @click="openInterviewScheduler"
                   >
                     <Plus class="size-3.5" />
@@ -2095,10 +2181,10 @@ function closeDocPreview() {
                   <div
                     v-for="doc in resolvedCurrentApplication.candidate.documents"
                     :key="doc.id"
-                    class="ui-panel ui-list-row flex flex-wrap items-center justify-between gap-3 px-5 py-4 shadow-sm transition-colors"
+                    class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-surface-200/80 bg-white px-5 py-4 shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none transition-colors hover:border-surface-300 dark:hover:border-surface-700"
                   >
                     <div class="flex items-center gap-3.5 min-w-0">
-                      <div class="ui-icon-state ui-icon-tile size-10 shrink-0">
+                      <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-800/60">
                         <FileText class="size-4.5 text-surface-500 dark:text-surface-400" />
                       </div>
                       <div class="min-w-0">
@@ -2112,7 +2198,7 @@ function closeDocPreview() {
                     </div>
                     <div class="flex items-center gap-2">
                       <button
-                        class="ui-button ui-button-secondary px-3 py-1.5 text-xs transition-all duration-150"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 px-3 py-1.5 text-xs font-medium text-surface-600 hover:bg-surface-50 hover:border-surface-300 dark:border-surface-700 dark:text-surface-300 dark:hover:bg-surface-800 dark:hover:border-surface-600 transition-all duration-150"
                         @click="handleDocPreview(doc)"
                       >
                         <Eye class="size-3.5" />
@@ -2120,7 +2206,7 @@ function closeDocPreview() {
                       </button>
                       <a
                         :href="`/api/documents/${doc.id}/download`"
-                        class="ui-button ui-button-secondary px-3 py-1.5 text-xs transition-all duration-150"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 px-3 py-1.5 text-xs font-medium text-surface-600 hover:bg-surface-50 hover:border-surface-300 dark:border-surface-700 dark:text-surface-300 dark:hover:bg-surface-800 dark:hover:border-surface-600 transition-all duration-150"
                       >
                         <Download class="size-3.5" />
                         Download
@@ -2128,8 +2214,8 @@ function closeDocPreview() {
                     </div>
                   </div>
                 </div>
-                <div v-else class="ui-empty-panel p-10 text-center">
-                  <div class="ui-icon-state ui-icon-tile size-14 mx-auto mb-3">
+                <div v-else class="rounded-xl border border-surface-200/80 bg-white p-10 text-center shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none">
+                  <div class="flex size-14 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-800/60 mx-auto mb-3">
                     <FileText class="size-6 text-surface-400 dark:text-surface-500" />
                   </div>
                   <p class="text-sm font-medium text-surface-600 dark:text-surface-300">No documents uploaded</p>
@@ -2147,7 +2233,7 @@ function closeDocPreview() {
                     <div
                       v-for="response in resolvedCurrentApplication.responses"
                       :key="response.id"
-                      class="ui-panel p-5 shadow-sm"
+                      class="rounded-xl border border-surface-200/80 bg-white p-5 shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none"
                     >
                       <p class="text-xs font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-wider mb-2">
                         {{ response.question?.label ?? 'Unknown question' }}
@@ -2158,8 +2244,8 @@ function closeDocPreview() {
                     </div>
                   </div>
                 </template>
-                <div v-else class="ui-empty-panel p-10 text-center">
-                  <div class="ui-icon-state ui-icon-tile size-14 mx-auto mb-3">
+                <div v-else class="rounded-xl border border-surface-200/80 bg-white p-10 text-center shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none">
+                  <div class="flex size-14 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-800/60 mx-auto mb-3">
                     <MessageSquare class="size-6 text-surface-400 dark:text-surface-500" />
                   </div>
                   <p class="text-sm font-medium text-surface-600 dark:text-surface-300">No responses</p>
@@ -2169,10 +2255,10 @@ function closeDocPreview() {
 
               <!-- PROPERTIES SECTION -->
               <div v-if="showSection.properties && resolvedCurrentApplication" class="max-w-4xl mx-auto" :class="detailTab === 'overview' ? 'mt-10' : ''">
-                <div class="ui-panel p-5 shadow-sm">
+                <div class="rounded-xl border border-surface-200/80 bg-white p-5 shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none">
                   <div class="flex items-center gap-2.5 mb-4">
-                    <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-7">
-                      <SlidersHorizontal class="size-3.5" />
+                    <div class="flex size-7 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-950/40">
+                      <SlidersHorizontal class="size-3.5 text-brand-600 dark:text-brand-400" />
                     </div>
                     <h3 class="text-sm font-semibold text-surface-800 dark:text-surface-200">Properties</h3>
                   </div>
@@ -2195,19 +2281,19 @@ function closeDocPreview() {
 
                 <!-- Loading -->
                 <div v-if="timelineLoading" class="text-center py-12 text-surface-400">
-                  <div class="ui-spinner-brand size-6 rounded-full border-2 animate-spin mx-auto mb-3" />
+                  <div class="size-6 rounded-full border-2 border-brand-200 border-t-brand-600 dark:border-brand-800 dark:border-t-brand-400 animate-spin mx-auto mb-3" />
                   Loading timeline…
                 </div>
 
                 <!-- Error -->
                 <div
                   v-else-if="timelineError"
-                  class="ui-alert ui-alert-danger p-5 text-center"
+                  class="rounded-xl border border-danger-200/80 dark:border-danger-800/60 bg-danger-50 dark:bg-danger-950/40 p-5 text-center"
                 >
-                  <AlertTriangle class="ui-icon-danger size-6 mx-auto mb-2" />
-                  <p class="text-sm">{{ timelineError }}</p>
+                  <AlertTriangle class="size-6 text-danger-400 mx-auto mb-2" />
+                  <p class="text-sm text-danger-700 dark:text-danger-400">{{ timelineError }}</p>
                   <button
-                    class="ui-inline-link ui-inline-link-brand mt-3 text-sm font-medium"
+                    class="mt-3 text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 font-medium cursor-pointer"
                     @click="loadTimeline"
                   >
                     Retry
@@ -2217,9 +2303,9 @@ function closeDocPreview() {
                 <!-- Empty -->
                 <div
                   v-else-if="timelineItems.length === 0"
-                  class="ui-empty-panel p-10 text-center"
+                  class="rounded-xl border border-surface-200/80 bg-white p-10 text-center shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none"
                 >
-                  <div class="ui-icon-state ui-icon-tile size-14 mx-auto mb-3">
+                  <div class="flex size-14 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-800/60 mx-auto mb-3">
                     <History class="size-6 text-surface-400 dark:text-surface-500" />
                   </div>
                   <p class="text-sm font-medium text-surface-600 dark:text-surface-300">No activity recorded yet.</p>
@@ -2231,7 +2317,7 @@ function closeDocPreview() {
                   <div
                     v-for="(item, index) in timelineItems"
                     :key="item.id"
-                    class="ui-list-row group flex items-start gap-3 py-1.5 px-1 transition-colors duration-150 rounded-lg"
+                    class="group flex items-start gap-3 py-1.5 px-1 transition-colors duration-150 hover:bg-surface-50 dark:hover:bg-surface-800/40 rounded-lg"
                   >
                     <!-- Left column: icon + connector -->
                     <div class="flex flex-col items-center shrink-0">
@@ -2240,7 +2326,7 @@ function closeDocPreview() {
                       </div>
                       <div
                         v-if="index < timelineItems.length - 1"
-                        class="ui-timeline-line w-px flex-1 min-h-[10px] mt-0.5"
+                        class="w-px flex-1 min-h-[10px] bg-surface-200 dark:bg-surface-800 mt-0.5"
                       />
                     </div>
 
@@ -2263,7 +2349,7 @@ function closeDocPreview() {
                           <span class="text-[11px] text-surface-400 dark:text-surface-500 tabular-nums">{{ formatTimelineDate(item.createdAt) }}</span>
                           <span
                             v-if="item.jobTitle"
-                            class="ui-code text-[10px] truncate max-w-[140px]"
+                            class="text-[10px] text-surface-400 dark:text-surface-500 bg-surface-100 dark:bg-surface-800 rounded px-1.5 py-0.5 truncate max-w-[140px]"
                           >
                             {{ item.jobTitle }}
                           </span>
@@ -2287,7 +2373,7 @@ function closeDocPreview() {
       <!-- ═══════════════════════════════════════ -->
       <div
         v-if="filteredApplications.length > 0"
-        class="ui-action-bar md:hidden fixed bottom-0 left-0 right-0 z-30"
+        class="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-surface-200/80 bg-white dark:border-surface-800/60 dark:bg-surface-900"
         :style="{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }"
       >
         <!-- Horizontal scrollable candidate cards -->
@@ -2301,8 +2387,8 @@ function closeDocPreview() {
             :data-candidate-idx="idx"
             class="snap-center shrink-0 flex items-center gap-2.5 rounded-xl px-3 py-2 min-w-[130px] max-w-[180px] transition-all duration-150 cursor-pointer"
             :class="currentIndex === idx
-              ? 'ui-selectable-panel-active shadow-sm'
-              : 'ui-panel-muted hover:ring-1'"
+              ? 'bg-brand-50 ring-2 ring-brand-500 shadow-sm dark:bg-brand-950/30 dark:ring-brand-400'
+              : 'bg-surface-50 ring-1 ring-surface-200 hover:ring-surface-300 dark:bg-surface-800/60 dark:ring-surface-700 dark:hover:ring-surface-600'"
             @click="currentIndex = idx"
           >
             <div
@@ -2321,7 +2407,11 @@ function closeDocPreview() {
                 <span
                   v-if="app.score != null"
                   class="text-[10px] font-semibold"
-                  :class="getScoreTextClass(app.score)"
+                  :class="{
+                    'text-success-600 dark:text-success-400': app.score >= 75,
+                    'text-warning-600 dark:text-warning-400': app.score >= 40 && app.score < 75,
+                    'text-danger-600 dark:text-danger-400': app.score < 40,
+                  }"
                 >
                   {{ app.score }}pts
                 </span>
@@ -2341,11 +2431,11 @@ function closeDocPreview() {
       <!-- Mobile empty state for bottom bar -->
       <div
         v-else-if="focusedApplications.length === 0"
-        class="ui-action-bar md:hidden fixed bottom-0 left-0 right-0 z-30 px-4 py-3 text-center"
+        class="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-surface-200/80 bg-white dark:border-surface-800/60 dark:bg-surface-900 px-4 py-3 text-center"
         :style="{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }"
       >
         <p class="text-xs text-surface-400 dark:text-surface-500">
-          No candidates in {{ getApplicationStatusLabel(focusStatus) }}
+          No candidates in {{ formatStatusLabel(focusStatus) }}
         </p>
       </div>
     </template>
@@ -2367,14 +2457,11 @@ function closeDocPreview() {
 
     <!-- Document Preview Modal -->
     <Teleport :to="teleportTarget">
-      <div
-        v-if="showDocPreview"
-        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center px-4 py-6"
-        @click.self="closeDocPreview"
-      >
-        <div class="ui-modal-panel relative flex flex-col w-full max-w-4xl" style="height: calc(100vh - 3rem);">
+      <div v-if="showDocPreview" class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closeDocPreview" />
+        <div class="relative flex flex-col bg-white dark:bg-surface-900 rounded-2xl shadow-2xl shadow-surface-900/10 dark:shadow-black/30 ring-1 ring-surface-200/80 dark:ring-surface-700/60 w-full max-w-4xl" style="height: calc(100vh - 3rem);">
           <!-- Header -->
-          <div class="ui-panel-header flex items-center justify-between px-5 py-3 shrink-0">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-surface-200/80 dark:border-surface-800/60 shrink-0">
             <div class="flex items-center gap-2.5 min-w-0">
               <FileText class="size-4 text-surface-400 shrink-0" />
               <span class="text-sm font-medium text-surface-800 dark:text-surface-100 truncate">{{ docPreviewFilename }}</span>
@@ -2383,13 +2470,13 @@ function closeDocPreview() {
               <a
                 v-if="docPreviewDocId"
                 :href="`/api/documents/${docPreviewDocId}/download`"
-                class="ui-button ui-button-secondary px-2.5 py-1.5 text-xs transition-all duration-150"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 px-2.5 py-1.5 text-xs font-medium text-surface-600 hover:bg-surface-50 hover:border-surface-300 dark:border-surface-700 dark:text-surface-300 dark:hover:bg-surface-800 transition-all duration-150"
               >
                 <Download class="size-3.5" />
                 Download
               </a>
               <button
-                class="ui-button ui-button-ghost p-1.5 transition-colors"
+                class="rounded-lg p-1.5 text-surface-500 hover:text-surface-700 hover:bg-surface-100 dark:hover:text-surface-300 dark:hover:bg-surface-800 transition-colors"
                 title="Close"
                 @click="closeDocPreview"
               >
@@ -2412,7 +2499,7 @@ function closeDocPreview() {
               <a
                 v-if="docPreviewDocId"
                 :href="`/api/documents/${docPreviewDocId}/download`"
-                class="ui-inline-link ui-inline-link-brand mt-3 inline-flex items-center gap-1.5 text-sm font-medium"
+                class="mt-3 inline-flex items-center gap-1.5 text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 font-medium"
               >
                 <Download class="size-3.5" />
                 Download instead

@@ -198,8 +198,8 @@ export function useTimeline() {
         return bLatest - aLatest
       })
       for (const [jId, cluster] of sortedClusters) {
-        const directItems = cluster.items.filter(i => i.resourceType === 'job')
-        const candidateRelated = cluster.items.filter(i => i.resourceType !== 'job')
+        const directItems = cluster.items.filter(i => i.resourceType === 'job' || !i.candidateId)
+        const candidateRelated = cluster.items.filter(i => i.resourceType !== 'job' && i.candidateId)
         sections.push({
           type: 'job',
           label: cluster.name,

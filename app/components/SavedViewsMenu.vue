@@ -97,13 +97,11 @@ function onDelete(id: string, e: Event) {
 </script>
 
 <template>
-  <div ref="rootRef" class="relative inline-block">
+  <div ref="rootRef" class="factory-saved-views-menu relative inline-block">
     <button
       type="button"
-      class="ui-menu-trigger px-3 py-2 text-sm"
-      :class="activeViewId
-        ? 'ui-menu-trigger-active'
-        : ''"
+      class="factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+      :class="{ 'is-active': activeViewId }"
       :aria-expanded="open"
       aria-haspopup="menu"
       @click="toggle"
@@ -112,7 +110,7 @@ function onDelete(id: string, e: Event) {
       <span class="max-w-[160px] truncate">{{ buttonLabel }}</span>
       <span
         v-if="isDirty && activeViewId"
-        class="ui-status-dot ui-status-dot-warning"
+        class="size-1.5 rounded-full bg-amber-500"
         title="Unsaved changes"
       />
       <ChevronDown class="size-3.5 opacity-60" />
@@ -121,16 +119,14 @@ function onDelete(id: string, e: Event) {
     <!-- Dropdown -->
     <div
       v-if="open"
-      class="ui-floating-menu absolute left-0 top-full mt-1.5 z-30 w-72 overflow-hidden"
+      class="factory-saved-views-panel absolute left-0 top-full mt-1.5 z-30 w-72 rounded-xl border overflow-hidden"
       role="menu"
     >
       <!-- "All / no view" -->
       <button
         type="button"
-        class="ui-menu-action ui-menu-divider px-3 py-2 text-sm"
-        :class="!activeViewId
-          ? 'ui-menu-action-active'
-          : ''"
+        class="factory-saved-views-option w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors"
+        :class="{ 'is-active': !activeViewId }"
         @click="selectView(null)"
       >
         <Check class="size-3.5" :class="!activeViewId ? '' : 'opacity-0'" />
@@ -138,18 +134,17 @@ function onDelete(id: string, e: Event) {
       </button>
 
       <!-- Saved views -->
-      <div v-if="views.length > 0" class="max-h-72 overflow-y-auto">
+      <div v-if="views.length > 0" class="max-h-72 overflow-y-auto border-t border-surface-100 dark:border-surface-800">
         <div
           v-for="v in views"
           :key="v.id"
-          class="ui-menu-action group pl-3 pr-1.5 py-1.5 text-sm"
-          :class="activeViewId === v.id
-            ? 'ui-menu-action-active'
-            : ''"
+          class="factory-saved-views-row group flex items-center gap-1 pl-3 pr-1.5 py-1.5 text-sm transition-colors"
+          :class="{ 'is-active': activeViewId === v.id }"
         >
           <button
             type="button"
-            class="flex flex-1 items-center gap-2 text-left min-w-0 py-0.5"
+            class="factory-saved-views-option flex-1 flex items-center gap-2 text-left min-w-0 py-0.5"
+            :class="{ 'is-active': activeViewId === v.id }"
             @click="selectView(v.id)"
           >
             <Check class="size-3.5 shrink-0" :class="activeViewId === v.id ? '' : 'opacity-0'" />
@@ -165,7 +160,7 @@ function onDelete(id: string, e: Event) {
           <button
             v-if="activeViewId === v.id && isDirty"
             type="button"
-            class="ui-button ui-button-ghost p-1"
+            class="rounded p-1 text-surface-400 hover:text-success-600 hover:bg-success-50 dark:hover:bg-success-950 transition-colors"
             title="Save current changes to this view"
             @click="(e) => onUpdate(v.id, e)"
           >
@@ -174,8 +169,8 @@ function onDelete(id: string, e: Event) {
           <!-- Set default -->
           <button
             type="button"
-            class="ui-button ui-button-ghost p-1"
-            :class="v.isDefault ? 'text-amber-500' : 'opacity-0 group-hover:opacity-100'"
+            class="rounded p-1 text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+            :class="v.isDefault ? 'text-amber-500' : 'opacity-0 group-hover:opacity-100 hover:text-amber-500'"
             :title="v.isDefault ? 'Remove as default' : 'Set as default'"
             @click="(e) => onSetDefault(v.id, v.isDefault, e)"
           >
@@ -184,7 +179,7 @@ function onDelete(id: string, e: Event) {
           <!-- Delete -->
           <button
             type="button"
-            class="ui-button ui-button-ghost ui-button-ghost-danger p-1 opacity-0 group-hover:opacity-100"
+            class="rounded p-1 text-surface-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950 transition-colors opacity-0 group-hover:opacity-100"
             title="Delete view"
             @click="(e) => onDelete(v.id, e)"
           >
@@ -194,7 +189,7 @@ function onDelete(id: string, e: Event) {
       </div>
 
       <!-- Footer: save form -->
-      <div class="ui-panel-footer p-2">
+      <div class="factory-saved-views-footer border-t p-2">
         <form v-if="showSaveForm" class="flex items-center gap-1.5" @submit.prevent="submitSave">
           <input
             ref="nameInput"
@@ -202,19 +197,19 @@ function onDelete(id: string, e: Event) {
             type="text"
             placeholder="View name"
             maxlength="60"
-            class="ui-field flex-1 px-2.5 py-1.5"
+            class="flex-1 rounded-md border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2.5 py-1.5 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             @keydown.escape.prevent="showSaveForm = false; newName = ''"
           />
           <button
             type="submit"
             :disabled="!newName.trim()"
-            class="ui-button ui-button-primary px-3 py-1.5"
+            class="factory-button-cta factory-button-premium rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >Save</button>
         </form>
         <button
           v-else
           type="button"
-          class="ui-button ui-button-ghost w-full py-1.5"
+          class="factory-button-cta factory-toolbar-button w-full flex items-center justify-center gap-1.5 rounded-md border py-1.5 text-sm font-medium transition-colors"
           @click="openSaveForm"
         >
           <Plus class="size-3.5" />

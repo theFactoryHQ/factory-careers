@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ArrowLeft } from 'lucide-vue-next'
 import { z } from 'zod'
 
 definePageMeta({
@@ -101,13 +100,12 @@ async function handleSubmit() {
 <template>
   <div class="mx-auto max-w-2xl">
     <!-- Back link -->
-    <NuxtLink
+    <AppBackLink
       :to="$localePath('/dashboard/candidates')"
-      class="inline-flex items-center gap-1 text-sm text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 mb-6 transition-colors"
+      class="mb-6"
     >
-      <ArrowLeft class="size-4" />
       Back to Candidates
-    </NuxtLink>
+    </AppBackLink>
 
     <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-100 mb-6">Add Candidate</h1>
 

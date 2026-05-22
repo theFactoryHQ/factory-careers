@@ -63,68 +63,72 @@ async function applyCandidate(candidateId: string) {
 
 <template>
   <Teleport :to="teleportTarget">
-    <div
-      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-      @click.self="emit('close')"
-    >
-      <div class="ui-modal-panel ui-modal-frame ui-modal-frame-md">
+    <div class="fixed inset-0 z-50 flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/72 backdrop-blur-sm" @click="emit('close')" />
+      <div class="relative mx-4 flex max-h-[80vh] w-full max-w-md flex-col border border-white/10 bg-[#050505] text-white shadow-2xl shadow-black/60">
+        <div class="h-1 bg-brand-500" />
+
         <!-- Header -->
-        <div class="ui-panel-header ui-modal-header">
-          <div class="flex items-center gap-2">
-            <UserPlus class="ui-icon-brand size-5" />
-            <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-50">Add Candidate</h3>
+        <div class="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div class="flex items-center gap-3">
+            <div class="flex size-9 items-center justify-center border border-brand-500/40 bg-brand-500/10 text-brand-500">
+              <UserPlus class="size-4" />
+            </div>
+            <h3 class="text-lg font-light tracking-normal text-white">Add Candidate</h3>
           </div>
           <button
-            class="ui-button ui-button-ghost p-1"
+            type="button"
+            class="flex size-8 cursor-pointer items-center justify-center border border-transparent bg-transparent text-white/42 transition-colors hover:border-white/14 hover:bg-white/[0.06] hover:text-white"
+            aria-label="Close"
             @click="emit('close')"
           >
-            <X class="size-5" />
+            <X class="size-4" />
           </button>
         </div>
 
         <!-- Search -->
-        <div class="ui-modal-search">
+        <div class="px-5 pt-4">
           <div class="relative">
-            <Search class="ui-field-icon absolute left-3 top-1/2 -translate-y-1/2 size-4" />
+            <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/38" />
             <input
               v-model="searchInput"
               type="text"
               placeholder="Search candidates by name or email…"
-              class="ui-field pl-10"
+              class="h-11 w-full border border-white/14 bg-black/35 pl-10 pr-3 text-sm text-white outline-none transition-colors placeholder:text-white/38 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             />
           </div>
         </div>
 
         <!-- Error -->
-        <div v-if="applyError" class="ui-alert ui-alert-danger ui-modal-alert">
+        <div v-if="applyError" class="mx-5 mt-3 border border-danger-500/35 bg-danger-950/50 p-3 text-sm leading-6 text-danger-100">
           {{ applyError }}
         </div>
 
         <!-- Candidate list -->
-        <div class="ui-modal-body">
-          <div v-if="searchStatus === 'pending'" class="ui-empty-state py-6 text-sm">
+        <div class="flex-1 overflow-y-auto px-5 py-4">
+          <div v-if="searchStatus === 'pending'" class="border border-white/10 bg-white/[0.03] py-8 text-center text-sm text-white/45">
             Searching…
           </div>
 
-          <div v-else-if="candidates.length === 0" class="ui-empty-state py-6 text-sm">
+          <div v-else-if="candidates.length === 0" class="border border-white/10 bg-white/[0.03] py-8 text-center text-sm text-white/45">
             {{ debouncedSearch ? 'No candidates found.' : 'No candidates in your org yet.' }}
           </div>
 
-          <div v-else class="space-y-1">
+          <div v-else class="space-y-2">
             <button
               v-for="c in candidates"
               :key="c.id"
               :disabled="isApplying"
-              class="ui-list-row ui-modal-list-row disabled:opacity-50"
+              class="flex w-full cursor-pointer items-center justify-between border border-white/10 bg-white/[0.03] px-3 py-3 text-left transition-colors hover:border-brand-500/55 hover:bg-brand-500/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
               @click="applyCandidate(c.id)"
             >
               <div class="min-w-0">
-                <p class="text-sm font-medium text-surface-900 dark:text-surface-100 truncate">
+                <p class="truncate text-sm font-medium text-white">
                   {{ formatCandidateName(c) }}
                 </p>
-                <p class="text-xs text-surface-400 truncate">{{ c.email }}</p>
+                <p class="mt-1 truncate text-xs text-white/45">{{ c.email }}</p>
               </div>
-              <span class="ui-inline-link-brand text-xs font-medium shrink-0 ml-2">
+              <span class="ml-3 shrink-0 text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">
                 Apply
               </span>
             </button>

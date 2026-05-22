@@ -8,8 +8,8 @@
  * the API key panel only nudges users with the help they actually need.
  */
 import {
-  Brain, Sparkles, Eye, EyeOff, ExternalLink, Loader2, Check,
-  Save, Zap, Star, AlertTriangle, ChevronDown, KeyRound, ArrowLeft,
+  Sparkles, Eye, EyeOff, ExternalLink, Loader2, Check,
+  Save, Zap, Star, AlertTriangle, ChevronDown,
 } from 'lucide-vue-next'
 
 interface ModelInfo {
@@ -19,6 +19,11 @@ interface ModelInfo {
   inputPricePer1m?: number
   outputPricePer1m?: number
   badge?: 'recommended' | 'fast' | 'powerful' | 'cheap'
+  availability?: 'curated' | 'available' | 'not_returned' | 'discovered'
+  stale?: boolean
+  replacementId?: string
+  maxInputTokens?: number
+  maxOutputTokens?: number
 }
 
 interface ProviderInfo {
@@ -102,6 +107,10 @@ const selectedProvider = computed<ProviderInfo | null>(() =>
   props.providers?.[form.value.provider] ?? null,
 )
 
+const selectedModel = computed<ModelInfo | null>(() =>
+  selectedProvider.value?.models.find(m => m.id === form.value.model) ?? null,
+)
+
 const isCustomProvider = computed(() => form.value.provider === 'openai_compatible')
 
 function pickModel(m: ModelInfo) {
@@ -109,9 +118,22 @@ function pickModel(m: ModelInfo) {
   form.value.inputPricePer1m = m.inputPricePer1m ?? form.value.inputPricePer1m
   form.value.outputPricePer1m = m.outputPricePer1m ?? form.value.outputPricePer1m
   // Auto-set the friendly name only if the user hasn't customised it.
-  if (!form.value.name || /^(GPT|Claude|Gemini|Llama|Mistral|New configuration)/i.test(form.value.name)) {
+  if (!form.value.name || /^(GPT|Claude|Gemini|Grok|Llama|Mistral|New configuration)/i.test(form.value.name)) {
     form.value.name = m.label
   }
+}
+
+function pickModelById(modelId: string) {
+  const match = selectedProvider.value?.models.find(m => m.id === modelId)
+  if (match) {
+    pickModel(match)
+    return
+  }
+  form.value.model = modelId
+}
+
+function onModelSelect(event: Event) {
+  pickModelById((event.target as HTMLSelectElement).value)
 }
 
 function pickProvider(key: string) {
@@ -204,15 +226,6 @@ async function handleTest() {
   }
 }
 
-const badgeClass = (badge?: ModelInfo['badge']) => {
-  switch (badge) {
-    case 'recommended': return 'ui-pill-brand'
-    case 'fast': return 'ui-pill-success'
-    case 'powerful': return 'ui-pill-info'
-    case 'cheap': return 'ui-pill-success'
-    default: return 'hidden'
-  }
-}
 const badgeLabel = (badge?: ModelInfo['badge']) => {
   switch (badge) {
     case 'recommended': return 'Recommended'
@@ -222,22 +235,48 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
     default: return ''
   }
 }
+
+function modelOptionLabel(model: ModelInfo) {
+  const labels = [badgeLabel(model.badge)]
+  if (model.availability === 'discovered') labels.push('New')
+  if (model.stale) labels.push(model.replacementId ? `Try ${model.replacementId}` : 'Not returned')
+  const suffix = labels.filter(Boolean).join(', ')
+  return suffix ? `${model.label} - ${suffix}` : model.label
+}
+
+function modelPriceLabel(model: ModelInfo | null) {
+  if (!model) return ''
+  const parts: string[] = []
+  if (model.inputPricePer1m != null || model.outputPricePer1m != null) {
+    parts.push(`$${model.inputPricePer1m?.toFixed(2) ?? '-'} in · $${model.outputPricePer1m?.toFixed(2) ?? '-'} out / 1M tokens`)
+  }
+  if (model.maxInputTokens != null) {
+    parts.push(`${model.maxInputTokens.toLocaleString()} input tokens`)
+  }
+  if (model.maxOutputTokens != null) {
+    parts.push(`${model.maxOutputTokens.toLocaleString()} output tokens`)
+  }
+  return parts.join(' · ')
+}
+
+function providerShortName(key: string, name: string) {
+  return key === 'openai_compatible' ? 'Custom' : name
+}
 </script>
 
 <template>
-  <div class="ui-settings-page ui-settings-page-form">
+  <div class="w-full pb-32">
     <!-- Header -->
-    <div class="ui-settings-page-header">
-      <NuxtLink
+    <div class="mb-6">
+      <AppBackLink
         to="/dashboard/settings/ai"
-        class="ui-inline-link inline-flex items-center gap-1 text-xs font-medium mb-3"
+        class="mb-3"
       >
-        <ArrowLeft class="size-3.5" />
         Back to AI configuration
-      </NuxtLink>
+      </AppBackLink>
       <div class="flex items-center gap-2.5">
-        <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-9">
-          <Brain class="size-5" />
+        <div class="ui-icon-state ui-icon-state-brand flex size-9 items-center justify-center rounded-lg">
+          <AiProviderLogo :provider="form.provider" class="size-5" />
         </div>
         <div>
           <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">
@@ -254,82 +293,82 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
 
     <div class="space-y-5">
       <!-- 1. Provider -->
-      <section class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-content">
-        <header class="mb-4">
+      <section class="ui-panel p-5 sm:p-6">
+        <header class="mb-3">
           <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Provider</h2>
-          <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-            Choose where the model runs. We'll suggest the best models for that provider next.
-          </p>
         </header>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <button
             v-for="(info, key) in providers ?? {}"
             :key="key"
             type="button"
-            class="ui-selectable-panel flex flex-col items-start gap-1 px-3 py-2.5 text-left"
+            class="ui-selectable-panel flex h-20 flex-col items-center justify-center gap-2 px-2 text-center"
             :class="form.provider === key
-              ? 'ui-selectable-panel-active'
-              : ''"
+              ? 'ui-selectable-panel-active text-brand-600 dark:text-brand-300'
+              : 'text-surface-600 dark:text-surface-300'"
             @click="pickProvider(String(key))"
           >
-            <span class="text-sm font-semibold text-surface-900 dark:text-surface-100">{{ info.name }}</span>
-            <span class="text-[11px] text-surface-500 dark:text-surface-400 line-clamp-2">{{ info.tagline }}</span>
+            <span
+              class="flex size-7 items-center justify-center transition-colors"
+            >
+              <AiProviderLogo :provider="String(key)" class="max-h-5 max-w-6" />
+            </span>
+            <span class="text-xs font-semibold text-surface-900 dark:text-surface-100">{{ providerShortName(String(key), info.name) }}</span>
           </button>
         </div>
       </section>
 
       <!-- 2. Model -->
-      <section v-if="selectedProvider" class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-content">
+      <section v-if="selectedProvider" class="ui-panel p-5 sm:p-6">
         <header class="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Model</h2>
-            <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-              Pick a recommended model — or paste any model identifier the provider supports.
-            </p>
           </div>
           <a
             v-if="selectedProvider.modelsUrl"
             :href="selectedProvider.modelsUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1 text-xs shrink-0"
+            class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline shrink-0"
           >
             Browse all <ExternalLink class="size-3" />
           </a>
         </header>
 
-        <div v-if="selectedProvider.models.length" class="grid sm:grid-cols-2 gap-2">
-          <button
-            v-for="m in selectedProvider.models"
-            :key="m.id"
-            type="button"
-            class="ui-selectable-panel px-3 py-3 text-left"
-            :class="form.model === m.id
-              ? 'ui-selectable-panel-active'
-              : ''"
-            @click="pickModel(m)"
-          >
-            <div class="flex items-start justify-between gap-2 mb-1">
-              <span class="text-sm font-medium text-surface-900 dark:text-surface-100">{{ m.label }}</span>
-              <span
-                v-if="m.badge"
-                class="ui-pill rounded-full px-1.5 py-0.5 text-[10px] shrink-0"
-                :class="badgeClass(m.badge)"
+        <div v-if="selectedProvider.models.length" class="space-y-2">
+          <label class="block text-xs font-medium text-surface-700 dark:text-surface-300">
+            Recommended model
+          </label>
+          <div class="relative">
+            <select
+              :value="form.model"
+              class="ui-field appearance-none pr-10"
+              @change="onModelSelect"
+            >
+              <option v-if="form.model && !selectedModel" :value="form.model">
+                {{ form.model }} - Custom
+              </option>
+              <option
+                v-for="m in selectedProvider.models"
+                :key="m.id"
+                :value="m.id"
               >
-                <Star v-if="m.badge === 'recommended'" class="size-2.5" />
-                <Zap v-else-if="m.badge === 'fast'" class="size-2.5" />
-                {{ badgeLabel(m.badge) }}
-              </span>
-            </div>
-            <p class="text-[11px] text-surface-500 dark:text-surface-400 line-clamp-2">{{ m.description }}</p>
-            <div v-if="m.inputPricePer1m != null || m.outputPricePer1m != null" class="mt-2 text-[10px] text-surface-400">
-              ${{ m.inputPricePer1m?.toFixed(2) ?? '—' }} in · ${{ m.outputPricePer1m?.toFixed(2) ?? '—' }} out / 1M tokens
-            </div>
-          </button>
+                {{ modelOptionLabel(m) }}
+              </option>
+            </select>
+            <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
+          </div>
+          <p
+            v-if="selectedModel"
+            class="text-[11px] text-surface-500 dark:text-surface-400"
+          >
+            <span class="font-mono">{{ selectedModel.id }}</span>
+            <span v-if="modelPriceLabel(selectedModel)"> · {{ modelPriceLabel(selectedModel) }}</span>
+          </p>
         </div>
 
         <details class="mt-4">
-          <summary class="ui-disclosure-trigger text-xs cursor-pointer select-none inline-flex items-center gap-1">
+          <summary class="text-xs text-surface-500 dark:text-surface-400 cursor-pointer hover:text-surface-700 dark:hover:text-surface-200 select-none inline-flex items-center gap-1">
             <ChevronDown class="size-3 transition-transform group-open:rotate-180" />
             {{ selectedProvider.models.length ? 'Use a different model identifier' : 'Set the model identifier' }}
           </summary>
@@ -348,7 +387,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
       </section>
 
       <!-- 3. Connection -->
-      <section class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-content">
+      <section class="ui-panel p-5 sm:p-6">
         <header class="mb-4">
           <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Connection</h2>
           <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
@@ -401,7 +440,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
                 :href="selectedProvider.apiKeyUrl"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1 text-[11px]"
+                class="inline-flex items-center gap-1 text-[11px] text-brand-600 dark:text-brand-400 hover:underline"
               >
                 Get a key <ExternalLink class="size-3" />
               </a>
@@ -416,7 +455,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
               >
               <button
                 type="button"
-                class="ui-field-icon-button absolute inset-y-0 right-0 flex items-center px-3 cursor-pointer"
+                class="absolute inset-y-0 right-0 flex items-center px-3 text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 cursor-pointer"
                 :title="showApiKey ? 'Hide key' : 'Show key'"
                 @click="showApiKey = !showApiKey"
               >
@@ -440,13 +479,13 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
             </button>
             <span
               v-if="testResult?.success"
-              class="ui-feedback-success text-xs"
+              class="inline-flex items-center gap-1 text-xs text-success-600 dark:text-success-400"
             >
               <Check class="size-3.5" /> Connection verified.
             </span>
             <span
               v-else-if="testResult && !testResult.success"
-              class="ui-feedback-danger items-start text-xs"
+              class="inline-flex items-start gap-1 text-xs text-danger-600 dark:text-danger-400"
             >
               <AlertTriangle class="size-3.5 mt-px" /> {{ testResult.message }}
             </span>
@@ -455,7 +494,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
       </section>
 
       <!-- Defaults (only when adding and not first) -->
-      <section v-if="!isEdit && !isFirst" class="ui-panel ui-dashboard-panel ui-settings-panel ui-settings-panel-content">
+      <section v-if="!isEdit && !isFirst" class="ui-panel p-5 sm:p-6">
         <header class="mb-4">
           <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Use as default</h2>
           <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
@@ -467,11 +506,11 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
             <input
               v-model="form.isDefaultChatbot"
               type="checkbox"
-              class="ui-checkbox ui-checkbox-brand mt-0.5 size-4"
+              class="mt-0.5 size-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500"
             >
             <div class="flex-1">
               <div class="flex items-center gap-1.5 text-sm font-medium text-surface-900 dark:text-surface-100">
-                <Sparkles class="ui-icon-brand size-3.5" />
+                <Sparkles class="size-3.5 text-brand-500" />
                 Chatbot conversations
               </div>
               <p class="text-[11px] text-surface-500 dark:text-surface-400 mt-0.5">
@@ -483,11 +522,11 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
             <input
               v-model="form.isDefaultAnalysis"
               type="checkbox"
-              class="ui-checkbox ui-checkbox-warning mt-0.5 size-4"
+              class="mt-0.5 size-4 rounded border-surface-300 text-warning-600 focus:ring-warning-500"
             >
             <div class="flex-1">
               <div class="flex items-center gap-1.5 text-sm font-medium text-surface-900 dark:text-surface-100">
-                <Star class="ui-icon-warning size-3.5" />
+                <Star class="size-3.5 text-warning-500" />
                 Candidate analysis
               </div>
               <p class="text-[11px] text-surface-500 dark:text-surface-400 mt-0.5">
@@ -507,10 +546,10 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
       </p>
 
       <!-- Advanced -->
-      <section class="ui-panel ui-dashboard-panel ui-settings-panel">
+      <section class="ui-panel overflow-hidden">
         <button
           type="button"
-          class="ui-disclosure-trigger w-full px-5 sm:px-6 py-4 flex items-center justify-between text-left cursor-pointer"
+          class="w-full px-5 sm:px-6 py-4 flex items-center justify-between text-left cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors"
           @click="showAdvanced = !showAdvanced"
         >
           <div>
@@ -520,11 +559,11 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
             </p>
           </div>
           <ChevronDown
-            class="size-4 transition-transform"
+            class="size-4 text-surface-400 transition-transform"
             :class="showAdvanced ? 'rotate-180' : ''"
           />
         </button>
-        <div v-if="showAdvanced" class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-body border-b-0 space-y-5">
+        <div v-if="showAdvanced" class="ui-panel-header border-b-0 px-5 sm:px-6 py-5 space-y-5">
           <!-- Max output tokens -->
           <div>
             <label class="block text-xs font-medium text-surface-700 dark:text-surface-300 mb-1.5">
@@ -577,15 +616,11 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
         </div>
       </section>
 
-      <p class="text-[11px] text-surface-500 dark:text-surface-400 flex items-start gap-1.5">
-        <KeyRound class="size-3 mt-0.5 shrink-0" />
-        <span>API keys are encrypted at rest with AES-256-GCM and never returned to the browser.</span>
-      </p>
     </div>
 
     <!-- Sticky save bar -->
-    <div class="ui-action-bar fixed inset-x-0 bottom-0 z-20">
-      <div class="ui-settings-action-bar-inner">
+    <div class="fixed inset-x-0 bottom-0 z-20 border-t border-surface-200 dark:border-surface-800 bg-white/90 dark:bg-surface-950/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-surface-950/70 lg:left-56">
+      <div class="mx-auto max-w-4xl px-4 sm:px-6 py-3 flex items-center justify-end gap-2">
         <button
           type="button"
           class="ui-button ui-button-secondary"

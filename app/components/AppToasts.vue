@@ -14,29 +14,29 @@ function toggleDetails(id: string) {
   }
 }
 
-const typeConfig: Record<string, { icon: typeof AlertTriangle; containerClass: string; iconClass: string; accentClass: string }> = {
+const typeConfig: Record<string, { icon: typeof AlertTriangle; iconBoxClass: string; iconClass: string; accentClass: string }> = {
   error: {
     icon: AlertCircle,
-    containerClass: 'border-danger-200/60 dark:border-danger-800/60 bg-white dark:bg-surface-900 ring-1 ring-danger-100 dark:ring-danger-900/30',
-    iconClass: 'text-danger-500',
+    iconBoxClass: 'border-danger-500/40 bg-danger-500/12',
+    iconClass: 'text-danger-300',
     accentClass: 'bg-danger-500',
   },
   success: {
     icon: CheckCircle,
-    containerClass: 'border-success-200/60 dark:border-success-800/60 bg-white dark:bg-surface-900 ring-1 ring-success-100 dark:ring-success-900/30',
-    iconClass: 'text-success-500',
+    iconBoxClass: 'border-success-500/35 bg-success-500/12',
+    iconClass: 'text-success-300',
     accentClass: 'bg-success-500',
   },
   warning: {
     icon: AlertTriangle,
-    containerClass: 'border-warning-200/60 dark:border-warning-800/60 bg-white dark:bg-surface-900 ring-1 ring-warning-100 dark:ring-warning-900/30',
-    iconClass: 'text-warning-500',
+    iconBoxClass: 'border-warning-500/40 bg-warning-500/12',
+    iconClass: 'text-warning-300',
     accentClass: 'bg-warning-500',
   },
   info: {
     icon: Info,
-    containerClass: 'border-brand-200/60 dark:border-brand-800/60 bg-white dark:bg-surface-900 ring-1 ring-brand-100 dark:ring-brand-900/30',
-    iconClass: 'text-brand-500',
+    iconBoxClass: 'border-brand-500/45 bg-brand-500/14',
+    iconClass: 'text-brand-300',
     accentClass: 'bg-brand-500',
   },
 }
@@ -49,7 +49,7 @@ function getConfig(type: string) {
 <template>
   <Teleport to="body">
     <div
-      class="fixed bottom-4 right-4 z-[100] flex flex-col-reverse gap-3 max-w-md w-full pointer-events-none"
+      class="fixed bottom-4 right-4 z-[100] flex w-[calc(100vw-2rem)] max-w-[420px] flex-col-reverse gap-2.5 pointer-events-none sm:bottom-5 sm:right-5"
       aria-live="polite"
     >
       <TransitionGroup
@@ -63,15 +63,17 @@ function getConfig(type: string) {
         <div
           v-for="toast in toasts"
           :key="toast.id"
-          class="pointer-events-auto rounded-xl border shadow-xl overflow-hidden backdrop-blur-sm"
-          :class="getConfig(toast.type).containerClass"
+          class="pointer-events-auto overflow-hidden border border-white/14 bg-black shadow-2xl shadow-black/70"
         >
           <!-- Accent bar -->
-          <div class="h-0.5" :class="getConfig(toast.type).accentClass" />
+          <div class="h-1" :class="getConfig(toast.type).accentClass" />
 
           <div class="p-4">
             <div class="flex items-start gap-3">
-              <div class="flex items-center justify-center size-8 rounded-lg bg-surface-50 dark:bg-surface-800 shrink-0">
+              <div
+                class="flex size-8 shrink-0 items-center justify-center border"
+                :class="getConfig(toast.type).iconBoxClass"
+              >
                 <component
                   :is="getConfig(toast.type).icon"
                   class="size-4"
@@ -79,12 +81,12 @@ function getConfig(type: string) {
                 />
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-surface-900 dark:text-surface-100 leading-snug">
+                <p class="text-sm font-semibold leading-snug text-white">
                   {{ toast.title }}
                 </p>
                 <p
                   v-if="toast.message"
-                  class="mt-1 text-xs text-surface-500 dark:text-surface-400 leading-relaxed"
+                  class="mt-1 text-xs leading-relaxed text-white/58"
                 >
                   {{ toast.message }}
                 </p>
@@ -93,7 +95,7 @@ function getConfig(type: string) {
                 <button
                   v-if="toast.details"
                   type="button"
-                  class="mt-2 inline-flex items-center gap-1 text-xs font-medium text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 transition-colors"
+                  class="mt-2 inline-flex items-center gap-1 border-0 bg-transparent p-0 text-xs font-medium text-white/50 transition-colors hover:text-white"
                   @click="toggleDetails(toast.id)"
                 >
                   <ChevronDown
@@ -106,7 +108,7 @@ function getConfig(type: string) {
                 <!-- Expanded details -->
                 <div
                   v-if="toast.details && expandedToasts.has(toast.id)"
-                  class="mt-2 rounded-lg bg-surface-50 dark:bg-surface-800/80 border border-surface-200 dark:border-surface-700 p-2.5 text-[11px] font-mono text-surface-600 dark:text-surface-400 leading-relaxed break-all max-h-40 overflow-y-auto"
+                  class="mt-2 max-h-40 overflow-y-auto border border-white/12 bg-white/[0.04] p-2.5 font-mono text-[11px] leading-relaxed text-white/56 break-all"
                 >
                   {{ toast.details }}
                 </div>
@@ -116,7 +118,7 @@ function getConfig(type: string) {
                     :href="toast.link.href"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="inline-flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors"
+                    class="inline-flex items-center gap-1 text-xs font-semibold text-brand-300 transition-colors hover:text-brand-200"
                   >
                     {{ toast.link.label }}
                     <ExternalLink class="size-3" />
@@ -125,7 +127,7 @@ function getConfig(type: string) {
               </div>
               <button
                 type="button"
-                class="shrink-0 rounded-lg p-1 text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                class="shrink-0 border border-transparent bg-transparent p-1 text-white/42 transition-colors hover:border-white/12 hover:bg-white/[0.04] hover:text-white"
                 @click="remove(toast.id)"
               >
                 <X class="size-4" />

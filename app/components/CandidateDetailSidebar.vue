@@ -759,7 +759,7 @@ function formatInterviewDate(dateStr: string) {
                       class="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors"
                     >
                       <Calendar class="size-2.5" />
-                      Open in Google Calendar
+                      Open in Calendar
                       <ExternalLink class="size-2" />
                     </a>
                   </div>

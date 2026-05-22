@@ -7,12 +7,6 @@ import {
   Copy, ToggleLeft, ToggleRight,
   Trash2, ChevronDown, ChevronUp, X,
 } from 'lucide-vue-next'
-import {
-  getApplicationStatusBadgeClass,
-  getSourceChannelBadgeClass,
-  getSourceChannelDotClass,
-  getSourceChannelLabel,
-} from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -178,6 +172,92 @@ async function copyTrackingUrl(code: string) {
 // Display helpers
 // ─────────────────────────────────────────────
 
+const channelLabels: Record<string, string> = {
+  linkedin: 'LinkedIn',
+  indeed: 'Indeed',
+  glassdoor: 'Glassdoor',
+  ziprecruiter: 'ZipRecruiter',
+  monster: 'Monster',
+  handshake: 'Handshake',
+  angellist: 'AngelList',
+  wellfound: 'Wellfound',
+  dice: 'Dice',
+  stackoverflow: 'Stack Overflow',
+  weworkremotely: 'We Work Remotely',
+  remoteok: 'Remote OK',
+  builtin: 'Built In',
+  hired: 'Hired',
+  lever: 'Lever',
+  greenhouse_board: 'Greenhouse',
+  google_jobs: 'Google Jobs',
+  facebook: 'Facebook',
+  twitter: 'X / Twitter',
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
+  reddit: 'Reddit',
+  referral: 'Referral',
+  career_site: 'Career Site',
+  email: 'Email',
+  event: 'Event',
+  agency: 'Agency',
+  direct: 'Direct',
+  other: 'Other',
+  custom: 'Custom',
+}
+
+const channelColors: Record<string, string> = {
+  linkedin: 'bg-blue-500',
+  indeed: 'bg-indigo-500',
+  glassdoor: 'bg-emerald-500',
+  ziprecruiter: 'bg-green-600',
+  monster: 'bg-violet-500',
+  google_jobs: 'bg-red-500',
+  facebook: 'bg-blue-600',
+  twitter: 'bg-surface-700 dark:bg-surface-300',
+  instagram: 'bg-pink-500',
+  tiktok: 'bg-surface-900 dark:bg-surface-100',
+  reddit: 'bg-orange-500',
+  referral: 'bg-amber-500',
+  career_site: 'bg-brand-500',
+  email: 'bg-teal-500',
+  direct: 'bg-surface-400',
+  other: 'bg-surface-300 dark:bg-surface-600',
+  custom: 'bg-brand-400',
+  event: 'bg-cyan-500',
+  agency: 'bg-rose-500',
+}
+
+const channelBadgeClasses: Record<string, string> = {
+  linkedin: 'bg-blue-50 text-blue-700 ring-blue-200/60 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-800/40',
+  indeed: 'bg-indigo-50 text-indigo-700 ring-indigo-200/60 dark:bg-indigo-950 dark:text-indigo-400 dark:ring-indigo-800/40',
+  glassdoor: 'bg-emerald-50 text-emerald-700 ring-emerald-200/60 dark:bg-emerald-950 dark:text-emerald-400 dark:ring-emerald-800/40',
+  referral: 'bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-800/40',
+  direct: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
+  career_site: 'bg-brand-50 text-brand-700 ring-brand-200/60 dark:bg-brand-950 dark:text-brand-400 dark:ring-brand-800/40',
+  email: 'bg-teal-50 text-teal-700 ring-teal-200/60 dark:bg-teal-950 dark:text-teal-400 dark:ring-teal-800/40',
+}
+
+function getChannelBadge(channel: string) {
+  return channelBadgeClasses[channel] ?? 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700'
+}
+
+function getChannelColor(channel: string) {
+  return channelColors[channel] ?? 'bg-surface-400 dark:bg-surface-500'
+}
+
+function getChannelLabel(channel: string) {
+  return channelLabels[channel] ?? channel
+}
+
+const statusBadgeClasses: Record<string, string> = {
+  new: 'bg-blue-50 text-blue-700 ring-blue-200/60 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-800/40',
+  screening: 'bg-violet-50 text-violet-700 ring-violet-200/60 dark:bg-violet-950 dark:text-violet-400 dark:ring-violet-800/40',
+  interview: 'bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-800/40',
+  offer: 'bg-teal-50 text-teal-700 ring-teal-200/60 dark:bg-teal-950 dark:text-teal-400 dark:ring-teal-800/40',
+  hired: 'bg-green-50 text-green-700 ring-green-200/60 dark:bg-green-950 dark:text-green-400 dark:ring-green-800/40',
+  rejected: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
+}
+
 const totalApplications = computed(() =>
   channelBreakdown.value.reduce((sum, c) => sum + c.count, 0),
 )
@@ -271,7 +351,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
 </script>
 
 <template>
-  <div class="ui-dashboard-page">
+  <div class="mx-auto max-w-6xl">
     <!-- ─── Loading skeleton ─── -->
     <div v-if="statsStatus === 'pending'">
       <div class="mb-10">
@@ -279,19 +359,19 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
         <div class="h-4 w-72 bg-surface-200 dark:bg-surface-700 rounded animate-pulse" />
       </div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        <div v-for="i in 4" :key="i" class="ui-dashboard-panel ui-dashboard-panel-content animate-pulse">
+        <div v-for="i in 4" :key="i" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
           <div class="h-4 w-20 bg-surface-200 dark:bg-surface-700 rounded mb-4" />
           <div class="h-9 w-14 bg-surface-200 dark:bg-surface-700 rounded" />
         </div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 ui-dashboard-panel ui-dashboard-panel-content animate-pulse">
+        <div class="lg:col-span-2 rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-4">
             <div v-for="i in 5" :key="i" class="h-10 bg-surface-100 dark:bg-surface-800 rounded-xl" />
           </div>
         </div>
-        <div class="ui-dashboard-panel ui-dashboard-panel-content animate-pulse">
+        <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-3">
             <div v-for="i in 4" :key="i" class="h-14 bg-surface-100 dark:bg-surface-800 rounded-xl" />
@@ -303,7 +383,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
     <!-- ─── Error ─── -->
     <div
       v-else-if="statsError"
-      class="ui-alert ui-alert-danger p-5 text-sm flex items-center gap-3"
+      class="rounded-2xl border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950/60 p-5 text-sm text-danger-700 dark:text-danger-400 flex items-center gap-3"
     >
       <AlertCircle class="size-5 shrink-0" />
       <span>Failed to load source tracking data.</span>
@@ -313,7 +393,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
     <!-- ─── Main content ─── -->
     <template v-else>
       <!-- ─── Header ─── -->
-      <div class="ui-dashboard-page-header ui-dashboard-page-header-split">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-10">
         <div>
           <h1 class="text-xl sm:text-2xl font-bold text-surface-900 dark:text-surface-50 tracking-tight">Source Tracking</h1>
           <p class="text-sm text-surface-400 dark:text-surface-500 mt-1">
@@ -322,14 +402,14 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
         </div>
         <div class="flex items-center gap-2">
           <!-- Date range pill -->
-          <div class="ui-panel inline-flex p-0.5">
+          <div class="inline-flex rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-0.5">
             <button
               v-for="range in (['7d', '30d', '90d', 'all'] as const)"
               :key="range"
-              class="ui-filter-chip px-3 py-1.5 text-xs"
+              class="px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
               :class="dateRange === range
-                ? 'ui-filter-chip-active'
-                : 'ui-filter-chip-inactive'"
+                ? 'bg-brand-600 text-white shadow-sm'
+                : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200'"
               @click="dateRange = range"
             >
               {{ range === 'all' ? 'All time' : range.toUpperCase() }}
@@ -340,7 +420,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           <div class="relative">
             <select
               v-model="selectedJobId"
-              class="ui-field appearance-none pl-3 pr-8 py-2 text-xs font-medium cursor-pointer"
+              class="appearance-none rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 pl-3 pr-8 py-2 text-xs font-medium text-surface-700 dark:text-surface-300 cursor-pointer"
             >
               <option :value="undefined">All jobs</option>
               <option v-for="j in jobs" :key="j.id" :value="j.id">{{ j.title }}</option>
@@ -351,7 +431,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           <!-- Create link button -->
           <button
             v-if="canManageLinks"
-            class="ui-button ui-button-primary px-4 py-2 text-xs sm:text-sm font-semibold"
+            class="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-brand-700 shadow-sm shadow-brand-600/15 hover:shadow-md hover:shadow-brand-600/20 transition-all"
             @click="showCreateModal = true"
           >
             <Plus class="size-4" />
@@ -361,7 +441,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
       </div>
 
       <!-- ─── Tab navigation ─── -->
-      <div class="ui-panel-divider flex items-center gap-1 mb-6">
+      <div class="flex items-center gap-1 mb-6 border-b border-surface-200 dark:border-surface-800">
         <button
           v-for="tab in [
             { key: 'overview', label: 'Overview', icon: BarChart3 },
@@ -369,20 +449,20 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
             { key: 'table', label: 'Attribution Log', icon: Users },
           ] as const"
           :key="tab.key"
-          class="ui-tab flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium -mb-px"
+          class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors"
           :class="showTab === tab.key
-            ? 'ui-tab-active'
-            : 'ui-tab-inactive'"
+            ? 'border-brand-600 text-brand-600 dark:text-brand-400 dark:border-brand-400'
+            : 'border-transparent text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200'"
           @click="showTab = tab.key; if (tab.key !== 'table') selectedChannel = undefined"
         >
           <component :is="tab.icon" class="size-4" />
           {{ tab.label }}
           <span
             v-if="tab.key === 'links'"
-            class="ui-pill ml-1 min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold tabular-nums"
+            class="ml-1 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[10px] font-bold tabular-nums"
             :class="showTab === 'links'
-              ? 'ui-pill-brand'
-              : ''"
+              ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400'
+              : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'"
           >
             {{ totalLinks }}
           </span>
@@ -396,7 +476,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
         <!-- ─── Stat cards ─── -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-10">
           <!-- Tracked Applications -->
-          <div class="ui-dashboard-stat-card ui-dashboard-stat-card-brand ui-dashboard-stat-card-content group relative overflow-hidden isolate">
+          <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-brand-500/25 dark:hover:ring-brand-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-500/[0.08]">
             <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <Target class="absolute -bottom-3 -right-3 size-24 text-brand-500/[0.03] dark:text-brand-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
             <div class="relative">
@@ -412,7 +492,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </div>
 
           <!-- Attribution Rate -->
-          <div class="ui-dashboard-stat-card ui-dashboard-stat-card-teal ui-dashboard-stat-card-content group relative overflow-hidden isolate">
+          <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-teal-500/25 dark:hover:ring-teal-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-teal-500/[0.08]">
             <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <Activity class="absolute -bottom-3 -right-3 size-24 text-teal-500/[0.03] dark:text-teal-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
             <div class="relative">
@@ -428,7 +508,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </div>
 
           <!-- Active Links -->
-          <div class="ui-dashboard-stat-card ui-dashboard-stat-card-violet ui-dashboard-stat-card-content group relative overflow-hidden isolate">
+          <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-violet-500/25 dark:hover:ring-violet-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/[0.08]">
             <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <Link2 class="absolute -bottom-3 -right-3 size-24 text-violet-500/[0.03] dark:text-violet-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
             <div class="relative">
@@ -445,10 +525,10 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
 
           <!-- Untracked -->
           <div
-            class="ui-dashboard-stat-card ui-dashboard-stat-card-content group relative overflow-hidden isolate"
+            class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate transition-all duration-300 hover:-translate-y-0.5"
             :class="summary.totalUntracked > 0
-              ? 'ui-dashboard-stat-card-warning'
-              : ''"
+              ? 'ring-1 ring-warning-400/30 dark:ring-warning-500/20 hover:ring-warning-500/40 dark:hover:ring-warning-400/30 shadow-sm shadow-warning-500/[0.06] hover:shadow-lg hover:shadow-warning-500/[0.12]'
+              : 'ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-surface-300/50 dark:hover:ring-surface-600/30 hover:shadow-lg hover:shadow-surface-500/[0.04]'"
           >
             <div
               class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent transition-opacity duration-500"
@@ -485,10 +565,10 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           <!-- ─── Left (2/3): Channel breakdown ─── -->
           <div class="lg:col-span-2 space-y-6">
             <!-- Channel breakdown -->
-            <div class="ui-dashboard-panel">
-              <div class="ui-dashboard-panel-header ui-dashboard-panel-header-lg ui-dashboard-panel-header-split">
+            <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+              <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
                 <div class="flex items-center gap-2.5">
-                  <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
+                  <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                     <BarChart3 class="size-3.5 text-surface-500 dark:text-surface-400" />
                   </div>
                   <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Applications by Source</h2>
@@ -496,8 +576,8 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                 <span class="text-xs text-surface-400 tabular-nums font-medium">{{ totalApplications }} total</span>
               </div>
 
-              <div v-if="channelBreakdown.length === 0" class="ui-dashboard-panel-empty-lg">
-                <div class="ui-dashboard-soft-icon mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl">
+              <div v-if="channelBreakdown.length === 0" class="px-6 py-12 text-center">
+                <div class="mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl bg-surface-100 dark:bg-surface-800">
                   <BarChart3 class="size-5 text-surface-400 dark:text-surface-500" />
                 </div>
                 <p class="text-sm font-medium text-surface-500 dark:text-surface-400 mb-1">No attributed applications yet</p>
@@ -506,7 +586,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                 </p>
               </div>
 
-              <div v-else class="ui-dashboard-panel-body-lg space-y-4">
+              <div v-else class="px-6 py-5 space-y-4">
                 <button
                   v-for="item in channelBreakdown"
                   :key="item.channel"
@@ -515,9 +595,9 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                 >
                   <div class="flex items-center justify-between mb-1.5">
                     <div class="flex items-center gap-2">
-                      <div class="size-2.5 rounded-full" :class="getSourceChannelDotClass(item.channel)" />
+                      <div class="size-2.5 rounded-full" :class="getChannelColor(item.channel)" />
                       <span class="text-sm font-medium text-surface-700 dark:text-surface-200">
-                        {{ getSourceChannelLabel(item.channel) }}
+                        {{ getChannelLabel(item.channel) }}
                       </span>
                     </div>
                     <div class="flex items-center gap-3">
@@ -529,10 +609,10 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                       </span>
                     </div>
                   </div>
-                  <div class="ui-meter-track h-2">
+                  <div class="h-2 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden">
                     <div
-                      class="ui-meter-fill"
-                      :class="getSourceChannelDotClass(item.channel)"
+                      class="h-full rounded-full transition-all duration-700 ease-out"
+                      :class="getChannelColor(item.channel)"
                       :style="{ width: `${(item.count / maxChannelCount) * 100}%` }"
                     />
                   </div>
@@ -545,9 +625,9 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
               v-if="Object.keys(funnel).length > 0"
               class="ui-table-shell shadow-xs dark:shadow-none"
             >
-              <div class="ui-dashboard-panel-header ui-dashboard-panel-header-lg ui-dashboard-panel-header-split">
+              <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
                 <div class="flex items-center gap-2.5">
-                  <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
+                  <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                     <TrendingUp class="size-3.5 text-surface-500 dark:text-surface-400" />
                   </div>
                   <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Conversion by Source</h2>
@@ -576,8 +656,8 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                     >
                       <td class="px-6 py-3">
                         <div class="flex items-center gap-2">
-                          <div class="size-2 rounded-full" :class="getSourceChannelDotClass(channel as string)" />
-                          <span class="font-medium text-surface-800 dark:text-surface-200">{{ getSourceChannelLabel(channel as string) }}</span>
+                          <div class="size-2 rounded-full" :class="getChannelColor(channel as string)" />
+                          <span class="font-medium text-surface-800 dark:text-surface-200">{{ getChannelLabel(channel as string) }}</span>
                         </div>
                       </td>
                       <td class="px-3 py-3 text-center tabular-nums text-surface-600 dark:text-surface-300">{{ stages.new ?? 0 }}</td>
@@ -589,10 +669,10 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                       </td>
                       <td class="px-3 py-3 text-center">
                         <span
-                          class="ui-pill px-2 py-0.5 text-[10px] font-bold tabular-nums"
+                          class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums ring-1 ring-inset"
                           :class="conversionRate(channel as string) > 0
-                            ? 'ui-pill-success'
-                            : ''"
+                            ? 'bg-green-50 text-green-700 ring-green-200/60 dark:bg-green-950 dark:text-green-400 dark:ring-green-800/40'
+                            : 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700'"
                         >
                           {{ conversionRate(channel as string) }}%
                         </span>
@@ -607,10 +687,10 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           <!-- ─── Right (1/3): Side panels ─── -->
           <div class="space-y-6">
             <!-- Top tracking links -->
-            <div class="ui-dashboard-panel">
-              <div class="ui-dashboard-panel-header ui-dashboard-panel-header-md ui-dashboard-panel-header-split">
+            <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+              <div class="flex items-center justify-between px-5 py-4 border-b border-surface-100 dark:border-surface-800">
                 <div class="flex items-center gap-2.5">
-                  <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
+                  <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                     <Link2 class="size-3.5 text-surface-500 dark:text-surface-400" />
                   </div>
                   <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Top Links</h2>
@@ -624,27 +704,27 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                 </button>
               </div>
 
-              <div v-if="topLinks.length === 0" class="ui-panel-muted ui-dashboard-panel-inset-empty">
-                <div class="ui-dashboard-soft-icon mx-auto mb-3 flex items-center justify-center size-10 rounded-2xl">
+              <div v-if="topLinks.length === 0" class="px-5 py-10 text-center">
+                <div class="mx-auto mb-3 flex items-center justify-center size-10 rounded-2xl bg-surface-100 dark:bg-surface-800">
                   <Link2 class="size-4 text-surface-400 dark:text-surface-500" />
                 </div>
                 <p class="text-xs font-medium text-surface-500 dark:text-surface-400">No links created yet</p>
               </div>
 
-              <div v-else class="ui-list-divider">
+              <div v-else class="divide-y divide-surface-100 dark:divide-surface-800">
                 <NuxtLink
                   v-for="link in topLinks.slice(0, 5)"
                   :key="link.id"
                   :to="localePath(`/dashboard/source-tracking/${link.id}`)"
-                  class="ui-list-row block px-5 py-3.5 cursor-pointer"
+                  class="block px-5 py-3.5 hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors cursor-pointer"
                 >
                   <div class="flex items-center justify-between mb-1">
                     <span class="text-sm font-medium text-surface-800 dark:text-surface-200 truncate hover:text-brand-600 dark:hover:text-brand-400 transition-colors">{{ link.name }}</span>
                     <span
                       class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset shrink-0 ml-2"
-                      :class="getSourceChannelBadgeClass(link.channel)"
+                      :class="getChannelBadge(link.channel)"
                     >
-                      {{ getSourceChannelLabel(link.channel) }}
+                      {{ getChannelLabel(link.channel) }}
                     </span>
                   </div>
                   <div class="flex items-center gap-4 text-xs text-surface-400">
@@ -665,24 +745,24 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
             </div>
 
             <!-- Top referrer domains -->
-            <div class="ui-dashboard-panel">
-              <div class="ui-dashboard-panel-header ui-dashboard-panel-header-md ui-dashboard-panel-header-split">
+            <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+              <div class="flex items-center justify-between px-5 py-4 border-b border-surface-100 dark:border-surface-800">
                 <div class="flex items-center gap-2.5">
-                  <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
+                  <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                     <Globe class="size-3.5 text-surface-500 dark:text-surface-400" />
                   </div>
                   <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Top Referrers</h2>
                 </div>
               </div>
 
-              <div v-if="topReferrerDomains.length === 0" class="ui-dashboard-panel-empty-md">
-                <div class="ui-dashboard-soft-icon mx-auto mb-3 flex items-center justify-center size-10 rounded-2xl">
+              <div v-if="topReferrerDomains.length === 0" class="px-5 py-10 text-center">
+                <div class="mx-auto mb-3 flex items-center justify-center size-10 rounded-2xl bg-surface-100 dark:bg-surface-800">
                   <Globe class="size-4 text-surface-400 dark:text-surface-500" />
                 </div>
                 <p class="text-xs font-medium text-surface-500 dark:text-surface-400">No referrer data yet</p>
               </div>
 
-              <div v-else class="ui-dashboard-panel-body-md space-y-3">
+              <div v-else class="px-5 py-4 space-y-3">
                 <div
                   v-for="ref in topReferrerDomains"
                   :key="ref.domain ?? 'unknown'"
@@ -700,10 +780,10 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
             </div>
 
             <!-- Recent attributed -->
-            <div class="ui-dashboard-panel">
-              <div class="ui-dashboard-panel-header ui-dashboard-panel-header-md ui-dashboard-panel-header-split">
+            <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+              <div class="flex items-center justify-between px-5 py-4 border-b border-surface-100 dark:border-surface-800">
                 <div class="flex items-center gap-2.5">
-                  <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
+                  <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                     <Clock class="size-3.5 text-surface-500 dark:text-surface-400" />
                   </div>
                   <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Recent Attributed</h2>
@@ -717,16 +797,16 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                 </button>
               </div>
 
-              <div v-if="recentAttributed.length === 0" class="ui-dashboard-panel-empty-md">
+              <div v-if="recentAttributed.length === 0" class="px-5 py-10 text-center">
                 <p class="text-xs text-surface-400">No attributed applications yet</p>
               </div>
 
-              <div v-else class="ui-list-divider">
+              <div v-else class="divide-y divide-surface-100 dark:divide-surface-800">
                 <NuxtLink
                   v-for="app in recentAttributed.slice(0, 5)"
                   :key="app.applicationId"
                   :to="localePath(`/dashboard/jobs/${app.jobId}/candidates`)"
-                  class="ui-list-row flex items-center gap-3 px-5 py-3 group"
+                  class="flex items-center gap-3 px-5 py-3 hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors group"
                 >
                   <div class="flex items-center justify-center size-8 rounded-full bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-900/80 dark:to-brand-800/80 shrink-0 ring-1 ring-brand-200/50 dark:ring-brand-800/50">
                     <span class="text-[10px] font-bold text-brand-700 dark:text-brand-300">
@@ -741,9 +821,9 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                   </div>
                   <span
                     class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset shrink-0"
-                    :class="getSourceChannelBadgeClass(app.channel)"
+                    :class="getChannelBadge(app.channel)"
                   >
-                    {{ getSourceChannelLabel(app.channel) }}
+                    {{ getChannelLabel(app.channel) }}
                   </span>
                 </NuxtLink>
               </div>
@@ -757,7 +837,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
       <!-- ═══════════════════════════════════════ -->
       <div v-if="showTab === 'links'">
         <div v-if="links.length === 0" class="flex flex-col items-center justify-center py-20">
-          <div class="ui-empty-panel max-w-md">
+          <div class="rounded-3xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-14 text-center max-w-md shadow-sm">
             <div class="mx-auto mb-8 flex items-center justify-center size-18 rounded-2xl bg-gradient-to-br from-brand-500 to-violet-600 shadow-lg shadow-brand-500/20">
               <Link2 class="size-9 text-white" />
             </div>
@@ -769,7 +849,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
             </p>
             <button
               v-if="canManageLinks"
-              class="ui-button ui-button-primary px-7 py-3.5"
+              class="inline-flex items-center gap-2.5 rounded-xl bg-brand-600 px-7 py-3.5 text-sm font-semibold text-white hover:bg-brand-700 shadow-md shadow-brand-600/20 hover:shadow-lg hover:shadow-brand-600/25 transition-all"
               @click="showCreateModal = true"
             >
               <Plus class="size-4" />
@@ -815,7 +895,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                     >
                       {{ link.name }}
                     </NuxtLink>
-                    <div class="ui-code truncate max-w-[200px]">
+                    <div class="text-[11px] text-surface-400 dark:text-surface-500 font-mono truncate max-w-[200px]">
                       ?ref={{ link.code }}
                     </div>
                   </td>
@@ -823,9 +903,9 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                   <td class="px-4 py-3.5">
                     <span
                       class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
-                      :class="getSourceChannelBadgeClass(link.channel)"
+                      :class="getChannelBadge(link.channel)"
                     >
-                      {{ getSourceChannelLabel(link.channel) }}
+                      {{ getChannelLabel(link.channel) }}
                     </span>
                   </td>
                   <!-- Job -->
@@ -849,10 +929,10 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                   <!-- Status -->
                   <td class="px-4 py-3.5 text-center">
                     <span
-                      class="ui-pill gap-1 px-2 py-0.5 text-[10px]"
+                      class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
                       :class="link.isActive
-                        ? 'ui-pill-success'
-                        : ''"
+                        ? 'bg-green-50 text-green-700 ring-green-200/60 dark:bg-green-950 dark:text-green-400 dark:ring-green-800/40'
+                        : 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700'"
                     >
                       <CheckCircle2 v-if="link.isActive" class="size-3" />
                       <XCircle v-else class="size-3" />
@@ -863,7 +943,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                   <td class="px-4 py-3.5 text-right">
                     <div class="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        class="ui-button ui-button-secondary size-7 p-0"
+                        class="p-1.5 rounded-lg text-surface-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                         title="Copy tracking URL"
                         @click="copyTrackingUrl(link.code)"
                       >
@@ -872,7 +952,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                       </button>
                       <button
                         v-if="canManageLinks"
-                        class="ui-button ui-button-ghost size-7 p-0"
+                        class="p-1.5 rounded-lg text-surface-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                         :title="link.isActive ? 'Deactivate' : 'Activate'"
                         @click="toggleLink(link.id, !link.isActive)"
                       >
@@ -881,7 +961,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                       </button>
                       <button
                         v-if="canManageLinks"
-                        class="ui-button ui-button-ghost ui-button-ghost-danger size-7 p-0"
+                        class="p-1.5 rounded-lg text-surface-400 hover:text-danger-600 dark:hover:text-danger-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                         title="Delete"
                         @click="confirmDelete(link.id)"
                       >
@@ -904,19 +984,19 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
         <div v-if="selectedChannel" class="mb-4 flex items-center gap-2">
           <span class="text-xs text-surface-500 dark:text-surface-400">Filtered by:</span>
           <span
-            class="ui-filter-chip ui-filter-chip-active px-2.5 py-1 text-xs font-semibold"
-            :class="getSourceChannelBadgeClass(selectedChannel)"
+            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
+            :class="getChannelBadge(selectedChannel)"
           >
-            <span class="size-1.5 rounded-full" :class="getSourceChannelDotClass(selectedChannel)" />
-            {{ getSourceChannelLabel(selectedChannel) }}
+            <span class="size-1.5 rounded-full" :class="getChannelColor(selectedChannel)" />
+            {{ getChannelLabel(selectedChannel) }}
             <button class="ml-0.5 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="selectedChannel = undefined">
               <X class="size-3" />
             </button>
           </span>
         </div>
 
-        <div v-if="filteredAttributed.length === 0" class="ui-empty-panel mx-auto max-w-md">
-          <div class="ui-dashboard-soft-icon mx-auto mb-4 flex items-center justify-center size-14 rounded-2xl">
+        <div v-if="filteredAttributed.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
+          <div class="mx-auto mb-4 flex items-center justify-center size-14 rounded-2xl bg-surface-100 dark:bg-surface-800">
             <Users class="size-6 text-surface-400 dark:text-surface-500" />
           </div>
           <p class="text-sm font-medium text-surface-500 dark:text-surface-400 mb-1">No attributed applications</p>
@@ -968,9 +1048,9 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                     <div class="flex items-center gap-2">
                       <span
                         class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
-                        :class="getSourceChannelBadgeClass(app.channel)"
+                        :class="getChannelBadge(app.channel)"
                       >
-                        {{ getSourceChannelLabel(app.channel) }}
+                        {{ getChannelLabel(app.channel) }}
                       </span>
                     </div>
                     <div v-if="app.trackingLinkName" class="text-[11px] text-surface-400 mt-0.5 truncate max-w-[140px]">
@@ -988,7 +1068,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                   <td class="px-4 py-3.5 text-center">
                     <span
                       class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ring-1 ring-inset"
-                      :class="getApplicationStatusBadgeClass(app.status, 'subtle-ring')"
+                      :class="statusBadgeClasses[app.status] ?? 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400 ring-surface-200 dark:ring-surface-700'"
                     >
                       {{ app.status }}
                     </span>
@@ -1009,17 +1089,16 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
     <!-- Modal: Create tracking link             -->
     <!-- ═══════════════════════════════════════ -->
     <Teleport to="body">
-      <div
-        v-if="showCreateModal"
-        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-        @click.self="showCreateModal = false"
-      >
-        <div class="ui-modal-panel relative w-full max-w-lg">
+      <div v-if="showCreateModal" class="factory-dashboard-portal fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/85 backdrop-blur-sm" @click="showCreateModal = false" />
+        <div class="relative w-full max-w-xl max-h-[calc(100vh-2rem)] overflow-y-auto border border-white/15 bg-black text-white">
           <!-- Header -->
-          <div class="ui-dashboard-panel-header ui-dashboard-panel-header-lg ui-dashboard-panel-header-split">
-            <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Create Tracking Link</h2>
+          <div class="flex items-center justify-between border-b border-white/12 bg-[#050505] px-6 py-5">
+            <h2 class="text-xl font-semibold text-white">Create Tracking Link</h2>
             <button
-              class="ui-button ui-button-ghost size-8 p-0"
+              type="button"
+              aria-label="Close create tracking link form"
+              class="inline-flex size-9 items-center justify-center border border-white/15 bg-transparent text-white/60 transition-colors hover:border-brand-500 hover:bg-brand-500 hover:text-white"
               @click="showCreateModal = false"
             >
               <X class="size-4" />
@@ -1027,79 +1106,87 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </div>
 
           <!-- Body -->
-          <form class="ui-dashboard-modal-body" @submit.prevent="handleCreateLink">
+          <form class="space-y-5 px-6 py-5" @submit.prevent="handleCreateLink">
             <!-- Name -->
             <div>
-              <label for="link-name" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Link Name</label>
+              <label for="link-name" class="mb-2 block text-xs font-semibold uppercase text-white/55">Link Name</label>
               <input
                 id="link-name"
                 v-model="newLink.name"
                 type="text"
                 placeholder="e.g. LinkedIn Spring Campaign"
-                class="ui-field px-4 py-2.5"
+                class="w-full border border-white/15 bg-[#050505] px-4 py-3 text-sm text-white placeholder:text-white/35 outline-none transition-all focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25"
               />
             </div>
 
             <!-- Channel -->
             <div>
-              <label for="link-channel" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Source Channel</label>
-              <select
-                id="link-channel"
-                v-model="newLink.channel"
-                class="ui-field px-4 py-2.5"
-              >
-                <optgroup label="Job Boards">
-                  <option v-for="ch in ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
-                </optgroup>
-                <optgroup label="Social Media">
-                  <option v-for="ch in ['facebook', 'twitter', 'instagram', 'tiktok', 'reddit']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
-                </optgroup>
-                <optgroup label="Other">
-                  <option v-for="ch in ['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
-                </optgroup>
-              </select>
+              <label for="link-channel" class="mb-2 block text-xs font-semibold uppercase text-white/55">Source Channel</label>
+              <div class="relative">
+                <select
+                  id="link-channel"
+                  v-model="newLink.channel"
+                  class="w-full appearance-none border border-white/15 bg-[#050505] px-4 py-3 pr-10 text-sm text-white outline-none transition-all [color-scheme:dark] focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25"
+                >
+                  <optgroup label="Job Boards">
+                    <option v-for="ch in ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  </optgroup>
+                  <optgroup label="Social Media">
+                    <option v-for="ch in ['facebook', 'twitter', 'instagram', 'tiktok', 'reddit']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  </optgroup>
+                  <optgroup label="Other">
+                    <option v-for="ch in ['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  </optgroup>
+                </select>
+                <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-brand-500" />
+              </div>
             </div>
 
             <!-- Job (optional) -->
             <div>
-              <label for="link-job" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Scope to Job <span class="text-surface-400 font-normal">(optional)</span></label>
-              <select
-                id="link-job"
-                v-model="newLink.jobId"
-                class="ui-field px-4 py-2.5"
-              >
-                <option value="">All jobs (org-wide)</option>
-                <option v-for="j in jobs" :key="j.id" :value="j.id">{{ j.title }}</option>
-              </select>
+              <label for="link-job" class="mb-2 block text-xs font-semibold uppercase text-white/55">
+                Scope to Job <span class="font-normal text-white/35">(optional)</span>
+              </label>
+              <div class="relative">
+                <select
+                  id="link-job"
+                  v-model="newLink.jobId"
+                  class="w-full appearance-none border border-white/15 bg-[#050505] px-4 py-3 pr-10 text-sm text-white outline-none transition-all [color-scheme:dark] focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25"
+                >
+                  <option value="">All jobs (org-wide)</option>
+                  <option v-for="j in jobs" :key="j.id" :value="j.id">{{ j.title }}</option>
+                </select>
+                <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-brand-500" />
+              </div>
             </div>
 
             <!-- UTM fields (collapsible) -->
-            <details class="group">
-              <summary class="ui-disclosure-trigger -ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium cursor-pointer select-none">
-                <ChevronDown class="size-4 transition-transform group-open:rotate-180" />
+            <details class="group border border-white/12 bg-[#050505] p-4">
+              <summary class="flex cursor-pointer select-none items-center gap-2 text-xs font-semibold uppercase text-white/55 transition-colors hover:text-brand-400">
+                <ChevronDown class="size-4 text-brand-500 transition-transform group-open:rotate-180" />
                 UTM Parameters (optional)
               </summary>
-              <div class="mt-3 grid grid-cols-2 gap-3">
+              <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label for="utm-source" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">utm_source</label>
-                  <input id="utm-source" v-model="newLink.utmSource" type="text" placeholder="linkedin" class="ui-field px-3 py-2 text-xs" />
+                  <label for="utm-source" class="mb-1.5 block text-xs font-semibold uppercase text-white/45">utm_source</label>
+                  <input id="utm-source" v-model="newLink.utmSource" type="text" placeholder="linkedin" class="w-full border border-white/15 bg-black px-3 py-2.5 text-xs text-white placeholder:text-white/30 outline-none transition-all focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25" />
                 </div>
                 <div>
-                  <label for="utm-medium" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">utm_medium</label>
-                  <input id="utm-medium" v-model="newLink.utmMedium" type="text" placeholder="social" class="ui-field px-3 py-2 text-xs" />
+                  <label for="utm-medium" class="mb-1.5 block text-xs font-semibold uppercase text-white/45">utm_medium</label>
+                  <input id="utm-medium" v-model="newLink.utmMedium" type="text" placeholder="social" class="w-full border border-white/15 bg-black px-3 py-2.5 text-xs text-white placeholder:text-white/30 outline-none transition-all focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25" />
                 </div>
-                <div class="col-span-2">
-                  <label for="utm-campaign" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">utm_campaign</label>
-                  <input id="utm-campaign" v-model="newLink.utmCampaign" type="text" placeholder="spring-hiring-2026" class="ui-field px-3 py-2 text-xs" />
+                <div class="sm:col-span-2">
+                  <label for="utm-campaign" class="mb-1.5 block text-xs font-semibold uppercase text-white/45">utm_campaign</label>
+                  <input id="utm-campaign" v-model="newLink.utmCampaign" type="text" placeholder="spring-hiring-2026" class="w-full border border-white/15 bg-black px-3 py-2.5 text-xs text-white placeholder:text-white/30 outline-none transition-all focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25" />
                 </div>
               </div>
             </details>
 
             <!-- Footer -->
-            <div class="flex items-center justify-end gap-3 pt-2">
+            <div class="flex items-center justify-end gap-3 border-t border-white/12 pt-5">
               <button
                 type="button"
-                class="ui-button ui-button-secondary px-4 py-2.5 text-sm"
+                class="border border-white/15 bg-transparent px-4 py-2.5 text-sm font-normal uppercase text-white/70 transition-colors hover:border-white hover:bg-white hover:text-black"
                 @click="showCreateModal = false"
               >
                 Cancel
@@ -1107,9 +1194,12 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
               <button
                 type="submit"
                 :disabled="!newLink.name.trim() || isCreating"
-                class="ui-button ui-button-primary px-5 py-2.5"
+                class="inline-flex items-center gap-2 border px-5 py-2.5 text-sm font-normal uppercase transition-colors disabled:pointer-events-none"
+                :class="!newLink.name.trim() || isCreating
+                  ? 'border-brand-500/35 bg-brand-500/30 text-white/65'
+                  : 'border-brand-500 bg-brand-500 text-white hover:border-white hover:bg-white hover:text-black'"
               >
-                {{ isCreating ? 'Creating…' : 'Create Link' }}
+                {{ isCreating ? 'Creating...' : 'Create Link' }}
               </button>
             </div>
           </form>
@@ -1121,14 +1211,11 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
     <!-- Modal: Delete confirmation               -->
     <!-- ═══════════════════════════════════════ -->
     <Teleport to="body">
-      <div
-        v-if="showDeleteConfirm"
-        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-        @click.self="showDeleteConfirm = false"
-      >
-        <div class="ui-modal-panel relative w-full max-w-sm p-6 text-center">
-          <div class="ui-icon-state ui-icon-state-danger mx-auto mb-4 size-12">
-            <Trash2 class="size-5" />
+      <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50 dark:bg-black/70" @click="showDeleteConfirm = false" />
+        <div class="relative w-full max-w-sm rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-2xl p-6 text-center">
+          <div class="mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl bg-danger-50 dark:bg-danger-950/40">
+            <Trash2 class="size-5 text-danger-600 dark:text-danger-400" />
           </div>
           <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Tracking Link?</h3>
           <p class="text-sm text-surface-500 dark:text-surface-400 mb-6">
@@ -1136,13 +1223,13 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </p>
           <div class="flex items-center justify-center gap-3">
             <button
-              class="ui-button ui-button-ghost px-4 py-2.5 text-sm"
+              class="rounded-xl px-4 py-2.5 text-sm font-medium text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
               @click="showDeleteConfirm = false"
             >
               Cancel
             </button>
             <button
-              class="ui-button ui-button-danger px-5 py-2.5"
+              class="rounded-xl bg-danger-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-danger-700 transition-colors"
               @click="handleDelete"
             >
               Delete

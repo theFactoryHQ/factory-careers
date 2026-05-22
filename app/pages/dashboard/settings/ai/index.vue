@@ -7,7 +7,7 @@
  */
 import {
   Brain, Plus, Loader2, AlertTriangle, Sparkles, BarChart3, Star,
-  Pencil, Trash2, Zap, Check, KeyRound, Server,
+  Pencil, Trash2, Zap, Check, Server, RefreshCw,
 } from 'lucide-vue-next'
 
 definePageMeta({})
@@ -41,10 +41,25 @@ interface ProviderInfo {
   signupUrl?: string
   supportsBaseUrl: boolean
   defaultModel: string
-  models: { id: string, label: string, description: string, inputPricePer1m?: number, outputPricePer1m?: number, badge?: 'recommended' | 'fast' | 'powerful' | 'cheap' }[]
+  catalogRefreshedAt?: string
+  catalogCacheExpiresAt?: string
+  catalogError?: string
+  models: {
+    id: string
+    label: string
+    description: string
+    inputPricePer1m?: number
+    outputPricePer1m?: number
+    badge?: 'recommended' | 'fast' | 'powerful' | 'cheap'
+    availability?: 'curated' | 'available' | 'not_returned' | 'discovered'
+    stale?: boolean
+    replacementId?: string
+    maxInputTokens?: number
+    maxOutputTokens?: number
+  }[]
 }
 
-const { allowed: canManageAi, isLoading: isPermissionLoading } = usePermission({ scoring: ['create'] })
+const { allowed: canManageAi, isLoading: isPermissionLoading } = usePermission({ aiConfig: ['create'] })
 const toast = useToast()
 
 const { data: configsData, refresh: refreshConfigs, status: configsStatus } = useFetch<AiConfigRow[]>('/api/ai-config', {
@@ -124,9 +139,51 @@ async function deleteConfig(c: AiConfigRow) {
   }
 }
 
+const isRefreshingModels = ref(false)
+async function refreshModelCatalog() {
+  isRefreshingModels.value = true
+  try {
+    const result = await $fetch<{
+      providers: Record<string, ProviderInfo>
+      refreshedProviders: Array<{ provider: string, modelCount: number }>
+      errors: Array<{ provider: string, message: string }>
+    }>('/api/ai-config/providers/refresh', {
+      method: 'POST',
+      body: { force: true },
+      headers: useRequestHeaders(['cookie']),
+    })
+    providers.value = result.providers
+
+    if (result.refreshedProviders.length > 0) {
+      toast.success(
+        'Model catalog refreshed',
+        `${result.refreshedProviders.length} provider${result.refreshedProviders.length === 1 ? '' : 's'} updated.`,
+      )
+    }
+    else if (result.errors.length > 0) {
+      toast.error('Refresh did not complete', { message: result.errors[0]?.message ?? 'No provider models were refreshed.' })
+    }
+    else {
+      toast.info('No providers refreshed', 'Add a provider API key before refreshing the model catalog.')
+    }
+  }
+  catch (err: any) {
+    const message = err?.data?.statusMessage ?? err?.message ?? 'Failed to refresh model catalog.'
+    toast.error('Refresh failed', { message })
+  }
+  finally {
+    isRefreshingModels.value = false
+  }
+}
+
 function providerLabel(key: string): string {
   return providers.value?.[key]?.name ?? key
 }
+
+function modelMeta(c: AiConfigRow) {
+  return providers.value?.[c.provider]?.models.find(model => model.id === c.model) ?? null
+}
+
 function formatPrice(p: number | null): string {
   if (p == null) return '—'
   return `$${p.toFixed(2)}`
@@ -134,23 +191,34 @@ function formatPrice(p: number | null): string {
 </script>
 
 <template>
-  <div class="ui-settings-page ui-settings-page-wide">
+  <div class="w-full">
     <!-- Page header -->
-    <div class="ui-settings-page-header ui-settings-page-header-split">
+    <div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
       <div>
         <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">AI Configuration</h1>
         <p class="text-sm text-surface-500 dark:text-surface-400 mt-0.5">
           Add as many providers and models as you like. Pick which one powers the chatbot and which one scores candidates.
         </p>
       </div>
-      <NuxtLink
-        v-if="canManageAi"
-        to="/dashboard/settings/ai/new"
-        class="ui-button ui-button-primary px-3 py-1.5"
-      >
-        <Plus class="size-4" />
-        Add a model
-      </NuxtLink>
+      <div v-if="canManageAi" class="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          :disabled="isRefreshingModels"
+          class="ui-button ui-button-secondary h-9 px-3.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+          @click="refreshModelCatalog"
+        >
+          <Loader2 v-if="isRefreshingModels" class="size-3.5 animate-spin" />
+          <RefreshCw v-else class="size-3.5" />
+          Refresh models
+        </button>
+        <NuxtLink
+          to="/dashboard/settings/ai/new"
+          class="ui-button ui-button-primary h-9 px-3.5 text-xs no-underline"
+        >
+          <Plus class="size-4" />
+          Add a model
+        </NuxtLink>
+      </div>
     </div>
 
     <!-- Permission guard -->
@@ -160,7 +228,7 @@ function formatPrice(p: number | null): string {
 
     <div
       v-else-if="!canManageAi"
-      class="ui-alert ui-alert-warning ui-settings-route-alert"
+      class="ui-alert ui-alert-warning p-5 flex items-start gap-3"
     >
       <AlertTriangle class="size-5 shrink-0 mt-0.5" />
       <div>
@@ -170,7 +238,7 @@ function formatPrice(p: number | null): string {
     </div>
 
     <!-- Loading -->
-    <div v-else-if="isLoading" class="ui-panel ui-dashboard-panel ui-settings-panel-body text-center text-sm text-surface-500">
+    <div v-else-if="isLoading" class="ui-panel p-8 text-center text-sm text-surface-500">
       <Loader2 class="size-5 animate-spin mx-auto mb-2 text-surface-400" />
       Loading configurations…
     </div>
@@ -178,9 +246,9 @@ function formatPrice(p: number | null): string {
     <!-- Empty state -->
     <div
       v-else-if="configs.length === 0"
-      class="ui-empty-panel ui-empty-panel-dashed ui-settings-empty-panel"
+      class="ui-empty-panel border-dashed p-10"
     >
-      <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile mx-auto size-12 mb-3">
+      <div class="ui-icon-state ui-icon-state-brand mx-auto flex size-12 items-center justify-center mb-3">
         <Brain class="size-6" />
       </div>
       <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">No AI models configured yet</h2>
@@ -201,35 +269,43 @@ function formatPrice(p: number | null): string {
       <li
         v-for="c in configs"
         :key="c.id"
-        class="ui-panel ui-dashboard-panel ui-settings-panel"
+        class="ui-panel overflow-hidden"
       >
-        <div class="ui-settings-panel-body flex flex-col sm:flex-row sm:items-start gap-4">
+        <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-4">
           <!-- Identity -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
               <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 truncate">{{ c.name }}</h3>
-              <span class="ui-pill rounded-full px-2 py-0.5 text-[11px]">
+              <span class="inline-flex items-center gap-1 rounded-full bg-surface-50 dark:bg-surface-800 px-2 py-0.5 text-[11px] font-medium text-surface-700 dark:text-surface-300">
                 {{ providerLabel(c.provider) }}
               </span>
               <span
                 v-if="c.isDefaultChatbot"
-                class="ui-pill ui-pill-brand rounded-full px-2 py-0.5 text-[11px]"
+                class="inline-flex items-center gap-1 rounded-full bg-brand-50 dark:bg-brand-950/50 px-2 py-0.5 text-[11px] font-medium text-brand-700 dark:text-brand-300"
                 title="Default for the chatbot"
               >
                 <Sparkles class="size-3" /> Chatbot default
               </span>
               <span
                 v-if="c.isDefaultAnalysis"
-                class="ui-pill ui-pill-warning rounded-full px-2 py-0.5 text-[11px]"
+                class="inline-flex items-center gap-1 rounded-full bg-warning-50 dark:bg-warning-950/50 px-2 py-0.5 text-[11px] font-medium text-warning-700 dark:text-warning-300"
                 title="Default for candidate analysis"
               >
                 <Star class="size-3" /> Analysis default
               </span>
               <span
                 v-if="!c.hasApiKey"
-                class="ui-pill ui-pill-danger rounded-full px-2 py-0.5 text-[11px]"
+                class="inline-flex items-center gap-1 rounded-full bg-danger-50 dark:bg-danger-950/50 px-2 py-0.5 text-[11px] font-medium text-danger-700 dark:text-danger-300"
               >
                 <AlertTriangle class="size-3" /> Missing API key
+              </span>
+              <span
+                v-if="modelMeta(c)?.stale"
+                class="inline-flex items-center gap-1 bg-brand-500/10 px-2 py-0.5 text-[11px] font-medium text-brand-300"
+                title="The provider model-list API did not return this configured model on the latest refresh."
+              >
+                <AlertTriangle class="size-3" />
+                {{ modelMeta(c)?.replacementId ? `Try ${modelMeta(c)?.replacementId}` : 'Not returned by provider' }}
               </span>
             </div>
             <div class="mt-1 flex items-center gap-2 flex-wrap text-xs text-surface-500">
@@ -247,13 +323,13 @@ function formatPrice(p: number | null): string {
             <div v-if="testResults[c.id]" class="mt-2">
               <span
                 v-if="testResults[c.id]?.success"
-                class="ui-feedback-success text-[11px]"
+                class="inline-flex items-center gap-1 text-[11px] text-success-600 dark:text-success-400"
               >
                 <Check class="size-3" /> Connection verified.
               </span>
               <span
                 v-else
-                class="ui-feedback-danger items-start text-[11px]"
+                class="inline-flex items-start gap-1 text-[11px] text-danger-600 dark:text-danger-400"
               >
                 <AlertTriangle class="size-3 mt-px" /> {{ testResults[c.id]?.message }}
               </span>
@@ -317,10 +393,5 @@ function formatPrice(p: number | null): string {
       </li>
     </ul>
 
-    <!-- Footer hint -->
-    <p v-if="canManageAi && configs.length > 0" class="mt-4 text-xs text-surface-500 dark:text-surface-400 flex items-start gap-1.5">
-      <KeyRound class="size-3.5 mt-0.5 shrink-0" />
-      <span>API keys are encrypted at rest with AES-256-GCM and never returned to the browser. Need a free key? OpenAI, Anthropic, and Google all offer trial credits.</span>
-    </p>
   </div>
 </template>

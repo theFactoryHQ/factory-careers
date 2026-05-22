@@ -27,7 +27,11 @@ services:
         value: thefactoryhq.com
       - key: FACTORY_CAREERS_HIRING_INBOX
         sync: false
+      - key: FACTORY_CAREERS_CALENDAR_EMAIL
+        value: careers@thefactoryhq.com
       - key: FACTORY_DISABLE_PUBLIC_SIGNUP
+        value: "true"
+      - key: FACTORY_ADMIN_SSO_ONLY
         value: "true"
       - key: FACTORY_DISABLE_PUBLIC_ORG_CREATION
         value: "true"
@@ -52,6 +56,12 @@ services:
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: MICROSOFT_CALENDAR_CLIENT_ID
+        sync: false
+      - key: MICROSOFT_CALENDAR_CLIENT_SECRET
+        sync: false
+      - key: MICROSOFT_CALENDAR_TENANT_ID
         sync: false
       - key: AUTH_MICROSOFT_CLIENT_ID
         sync: false

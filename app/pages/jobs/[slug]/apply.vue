@@ -26,7 +26,7 @@ const { data: job, status: fetchStatus, error: fetchError } = useFetch(
 )
 
 useSeoMeta({
-  title: computed(() => job.value ? `Apply — ${job.value.title}` : 'Apply — Factory Careers'),
+  title: computed(() => job.value ? `Apply — ${job.value.title}` : 'Apply'),
   description: computed(() => job.value?.description?.slice(0, 160) ?? 'Submit your application'),
   robots: 'noindex, nofollow',
 })
@@ -56,6 +56,23 @@ const coverLetterText = ref('')
 const isSubmitting = ref(false)
 const errors = ref<Record<string, string>>({})
 const submitError = ref<string | null>(null)
+
+const labelClass = 'mb-1.5 block text-sm font-medium text-white/70'
+const errorMessageClass = 'mt-1.5 flex items-center gap-1 text-xs text-danger-300'
+
+function fieldClass(hasError?: boolean) {
+  return [
+    'w-full border bg-black/35 px-3.5 py-2.5 text-sm text-white placeholder:text-white/38 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25',
+    hasError ? 'border-danger-500/70 focus:border-danger-500 focus:ring-danger-500/25' : 'border-white/14',
+  ]
+}
+
+function fileDropClass(hasError?: boolean) {
+  return [
+    'relative flex items-center gap-3 border border-dashed px-4 py-3 transition-colors',
+    hasError ? 'border-danger-500/70 bg-danger-500/10' : 'border-white/14 bg-black/35',
+  ]
+}
 
 /** Whether the form has any file_upload type questions OR built-in document fields */
 const hasFileQuestions = computed(() => {
@@ -261,24 +278,24 @@ const typeLabels: Record<string, string> = {
   <div>
     <!-- Loading skeleton -->
     <div v-if="fetchStatus === 'pending'" class="animate-pulse space-y-4">
-      <div class="h-7 w-48 bg-surface-200 dark:bg-surface-800 rounded-lg" />
-      <div class="h-5 w-32 bg-surface-200 dark:bg-surface-800 rounded-full" />
-      <div class="h-4 w-64 bg-surface-200 dark:bg-surface-800 rounded" />
-      <div class="mt-8 h-48 bg-surface-200 dark:bg-surface-800 rounded-xl" />
+      <div class="h-7 w-48 bg-white/10" />
+      <div class="h-5 w-32 bg-white/10" />
+      <div class="h-4 w-64 bg-white/10" />
+      <div class="mt-8 h-48 border border-white/10 bg-white/[0.03]" />
     </div>
 
     <!-- Not found / not open -->
     <div v-else-if="fetchError" class="flex flex-col items-center justify-center py-20 text-center">
-      <div class="mb-5 flex size-16 items-center justify-center rounded-full bg-surface-100 dark:bg-surface-800">
-        <Briefcase class="size-7 text-surface-400" />
+      <div class="mb-5 flex size-16 items-center justify-center border border-white/10 bg-white/[0.03]">
+        <Briefcase class="size-7 text-brand-500" />
       </div>
-      <h1 class="text-xl font-bold text-surface-900 dark:text-surface-100 mb-2">Position Not Found</h1>
-      <p class="text-sm text-surface-500 mb-6 max-w-xs">
+      <h1 class="mb-2 text-xl font-semibold text-white">Position Not Found</h1>
+      <p class="mb-6 max-w-xs text-sm text-white/50">
         This position may have been filled or is no longer accepting applications.
       </p>
       <a
         :href="useRuntimeConfig().public.marketingUrl"
-        class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors shadow-sm"
+        class="factory-button-cta factory-button-premium inline-flex h-[48px] min-h-[48px] items-center justify-center gap-2 px-5 py-0 transition-colors"
       >
         Back to Home
       </a>
@@ -290,7 +307,7 @@ const typeLabels: Record<string, string> = {
       <!-- Back link -->
       <NuxtLink
         :to="$localePath(`/jobs/${jobSlug}`)"
-        class="inline-flex items-center gap-1.5 text-sm text-surface-500 hover:text-surface-800 dark:hover:text-surface-200 transition-colors mb-6 group"
+        class="group mb-6 inline-flex items-center gap-1.5 text-sm text-white/45 transition-colors hover:text-brand-500"
       >
         <svg class="size-3.5 transition-transform group-hover:-translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="m15 18-6-6 6-6"/>
@@ -299,56 +316,56 @@ const typeLabels: Record<string, string> = {
       </NuxtLink>
 
       <!-- Job hero card -->
-      <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-sm overflow-hidden mb-6">
+      <div class="mb-6 overflow-hidden border border-white/10 bg-white/[0.03]">
         <!-- Accent bar -->
-        <div class="h-1 bg-gradient-to-r from-brand-500 to-brand-400" />
+        <div class="h-1 bg-brand-500" />
 
         <div class="p-6 sm:p-8">
           <!-- Meta chips -->
-          <div class="flex flex-wrap items-center gap-2 mb-4">
+          <div class="mb-5 flex flex-wrap items-center gap-2">
             <span
               v-if="job.organizationName"
-              class="inline-flex items-center gap-1.5 rounded-full border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-1 text-xs font-medium text-surface-700 dark:text-surface-300"
+              class="inline-flex items-center gap-1.5 border border-white/10 bg-black/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/52"
             >
-              <Building2 class="size-3.5 text-surface-400" />
+              <Building2 class="size-3.5 text-brand-500" />
               {{ job.organizationName }}
             </span>
-            <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-50 dark:bg-brand-950 border border-brand-100 dark:border-brand-900 px-3 py-1 text-xs font-medium text-brand-700 dark:text-brand-300">
+            <span class="inline-flex items-center gap-1.5 border border-brand-500/45 bg-brand-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">
               <Briefcase class="size-3.5" />
               {{ typeLabels[job.type] ?? job.type }}
             </span>
             <span
               v-if="job.location"
-              class="inline-flex items-center gap-1.5 rounded-full border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-1 text-xs font-medium text-surface-600 dark:text-surface-400"
+              class="inline-flex items-center gap-1.5 border border-white/10 bg-black/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/52"
             >
-              <MapPin class="size-3.5 text-surface-400" />
+              <MapPin class="size-3.5 text-brand-500" />
               {{ job.location }}
             </span>
           </div>
 
-          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-surface-900 dark:text-surface-50">
+          <h1 class="text-4xl font-light leading-none tracking-tight text-white sm:text-5xl">
             {{ job.title }}
           </h1>
 
-          <div v-if="job.description" class="mt-5 border-t border-surface-100 dark:border-surface-800 pt-5">
+          <div v-if="job.description" class="mt-6 border-t border-white/10 pt-5">
             <MarkdownDescription :value="job.description" />
           </div>
         </div>
       </div>
 
       <!-- Application form card -->
-      <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-sm overflow-hidden">
+      <div class="overflow-hidden border border-white/10 bg-white/[0.03]">
         <!-- Card header -->
-        <div class="border-b border-surface-100 dark:border-surface-800 px-6 sm:px-8 py-5">
-          <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Your application</h2>
-          <p class="mt-0.5 text-sm text-surface-500">Fields marked with <span class="text-danger-500">*</span> are required.</p>
+        <div class="border-b border-white/10 px-6 py-5 sm:px-8">
+          <h2 class="text-base font-semibold text-white">Your application</h2>
+          <p class="mt-0.5 text-sm text-white/50">Fields marked with <span class="text-danger-300">*</span> are required.</p>
         </div>
 
-        <div class="px-6 sm:px-8 py-6 sm:py-8">
+        <div class="px-6 py-6 sm:px-8 sm:py-8">
           <!-- Server error banner -->
           <div
             v-if="submitError"
-            class="rounded-xl border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950/50 px-4 py-3 text-sm text-danger-700 dark:text-danger-400 mb-6 flex items-start gap-3"
+            class="mb-6 flex items-start gap-3 border border-danger-500/35 bg-danger-500/10 px-4 py-3 text-sm text-danger-200"
             role="alert"
           >
             <svg class="mt-0.5 size-4 shrink-0 text-danger-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -368,8 +385,8 @@ const typeLabels: Record<string, string> = {
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <!-- First Name -->
               <div>
-                <label for="firstName" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-                  First Name <span class="text-danger-500">*</span>
+                <label for="firstName" :class="labelClass">
+                  First Name <span class="text-danger-300">*</span>
                 </label>
                 <input
                   id="firstName"
@@ -377,10 +394,9 @@ const typeLabels: Record<string, string> = {
                   type="text"
                   placeholder="Jane"
                   autocomplete="given-name"
-                  class="w-full rounded-xl border px-3.5 py-2.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                  :class="errors.firstName ? 'border-danger-300 dark:border-danger-700 focus:ring-danger-500 focus:border-danger-500' : 'border-surface-300 dark:border-surface-700'"
+                  :class="fieldClass(!!errors.firstName)"
                 />
-                <p v-if="errors.firstName" class="mt-1.5 flex items-center gap-1 text-xs text-danger-600 dark:text-danger-400">
+                <p v-if="errors.firstName" :class="errorMessageClass">
                   <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   {{ errors.firstName }}
                 </p>
@@ -388,8 +404,8 @@ const typeLabels: Record<string, string> = {
 
               <!-- Last Name -->
               <div>
-                <label for="lastName" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-                  Last Name <span class="text-danger-500">*</span>
+                <label for="lastName" :class="labelClass">
+                  Last Name <span class="text-danger-300">*</span>
                 </label>
                 <input
                   id="lastName"
@@ -397,10 +413,9 @@ const typeLabels: Record<string, string> = {
                   type="text"
                   placeholder="Doe"
                   autocomplete="family-name"
-                  class="w-full rounded-xl border px-3.5 py-2.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                  :class="errors.lastName ? 'border-danger-300 dark:border-danger-700 focus:ring-danger-500 focus:border-danger-500' : 'border-surface-300 dark:border-surface-700'"
+                  :class="fieldClass(!!errors.lastName)"
                 />
-                <p v-if="errors.lastName" class="mt-1.5 flex items-center gap-1 text-xs text-danger-600 dark:text-danger-400">
+                <p v-if="errors.lastName" :class="errorMessageClass">
                   <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   {{ errors.lastName }}
                 </p>
@@ -409,8 +424,8 @@ const typeLabels: Record<string, string> = {
 
             <!-- Email -->
             <div>
-              <label for="email" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-                Email <span class="text-danger-500">*</span>
+              <label for="email" :class="labelClass">
+                Email <span class="text-danger-300">*</span>
               </label>
               <input
                 id="email"
@@ -418,10 +433,9 @@ const typeLabels: Record<string, string> = {
                 type="email"
                 placeholder="you@example.com"
                 autocomplete="email"
-                class="w-full rounded-xl border px-3.5 py-2.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                :class="errors.email ? 'border-danger-300 dark:border-danger-700 focus:ring-danger-500 focus:border-danger-500' : 'border-surface-300 dark:border-surface-700'"
+                :class="fieldClass(!!errors.email)"
               />
-              <p v-if="errors.email" class="mt-1.5 flex items-center gap-1 text-xs text-danger-600 dark:text-danger-400">
+              <p v-if="errors.email" :class="errorMessageClass">
                 <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 {{ errors.email }}
               </p>
@@ -429,8 +443,8 @@ const typeLabels: Record<string, string> = {
 
             <!-- Phone -->
             <div>
-              <label for="phone" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-                Phone <span class="text-surface-400 font-normal text-xs">(optional)</span>
+              <label for="phone" :class="labelClass">
+                Phone <span class="text-xs font-normal text-white/38">(optional)</span>
               </label>
               <input
                 id="phone"
@@ -438,36 +452,32 @@ const typeLabels: Record<string, string> = {
                 type="tel"
                 placeholder="+1 (555) 123-4567"
                 autocomplete="tel"
-                class="w-full rounded-xl border border-surface-300 dark:border-surface-700 px-3.5 py-2.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                :class="fieldClass(false)"
               />
             </div>
 
             <!-- Resume / Cover Letter uploads -->
             <template v-if="job.requireResume || job.requireCoverLetter">
-              <div class="border-t border-surface-100 dark:border-surface-800 pt-5 space-y-5">
+              <div class="space-y-5 border-t border-white/10 pt-5">
                 <!-- Resume -->
                 <div v-if="job.requireResume">
-                  <label for="resume" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-                    Resume / CV <span class="text-danger-500">*</span>
+                  <label for="resume" :class="labelClass">
+                    Resume / CV <span class="text-danger-300">*</span>
                   </label>
                   <div
-                    class="relative flex items-center gap-3 rounded-xl border border-dashed px-4 py-3 transition-colors"
-                    :class="errors.resume
-                      ? 'border-danger-300 dark:border-danger-700 bg-danger-50/50 dark:bg-danger-950/20'
-                      : 'border-surface-300 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50'
-                    "
+                    :class="fileDropClass(!!errors.resume)"
                   >
-                    <svg class="size-5 shrink-0 text-surface-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg class="size-5 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
                       <polyline points="14 2 14 8 20 8"/>
                     </svg>
                     <div class="flex-1 min-w-0">
-                      <p v-if="resumeFile" class="text-sm text-surface-900 dark:text-surface-100 truncate">{{ resumeFile.name }}</p>
-                      <p v-else class="text-sm text-surface-500">PDF, DOC, or DOCX — max 10 MB</p>
+                      <p v-if="resumeFile" class="truncate text-sm text-white">{{ resumeFile.name }}</p>
+                      <p v-else class="text-sm text-white/50">PDF, DOC, or DOCX — max 10 MB</p>
                     </div>
                     <label
                       for="resume"
-                      class="shrink-0 cursor-pointer rounded-lg bg-white dark:bg-surface-700 border border-surface-200 dark:border-surface-600 px-3 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-600 transition-colors"
+                      class="factory-button-cta factory-button-cta-sm factory-button-outline inline-flex h-8 shrink-0 cursor-pointer items-center justify-center px-3 py-0 transition-colors"
                     >
                       {{ resumeFile ? 'Change' : 'Choose file' }}
                     </label>
@@ -479,7 +489,7 @@ const typeLabels: Record<string, string> = {
                       @change="(e: Event) => { const t = e.target as HTMLInputElement; resumeFile = t.files?.[0] ?? null; delete errors.resume }"
                     />
                   </div>
-                  <p v-if="errors.resume" class="mt-1.5 flex items-center gap-1 text-xs text-danger-600 dark:text-danger-400">
+                  <p v-if="errors.resume" :class="errorMessageClass">
                     <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     {{ errors.resume }}
                   </p>
@@ -487,8 +497,8 @@ const typeLabels: Record<string, string> = {
 
                 <!-- Cover Letter -->
                 <div v-if="job.requireCoverLetter">
-                  <label for="coverLetterText" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-                    Cover Letter <span class="text-danger-500">*</span>
+                  <label for="coverLetterText" :class="labelClass">
+                    Cover Letter <span class="text-danger-300">*</span>
                   </label>
                   <textarea
                     id="coverLetterText"
@@ -496,23 +506,22 @@ const typeLabels: Record<string, string> = {
                     rows="6"
                     maxlength="10000"
                     placeholder="Tell us why you're interested in this role…"
-                    class="w-full rounded-xl border px-4 py-3 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                    :class="errors.coverLetter ? 'border-danger-300 dark:border-danger-700' : 'border-surface-300 dark:border-surface-700'"
+                    :class="fieldClass(!!errors.coverLetter)"
                     @input="delete errors.coverLetter"
                   />
-                  <p v-if="errors.coverLetter" class="mt-1.5 flex items-center gap-1 text-xs text-danger-600 dark:text-danger-400">
+                  <p v-if="errors.coverLetter" :class="errorMessageClass">
                     <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     {{ errors.coverLetter }}
                   </p>
-                  <p v-else class="mt-1.5 text-xs text-surface-500">Max 10,000 characters.</p>
+                  <p v-else class="mt-1.5 text-xs text-white/40">Max 10,000 characters.</p>
                 </div>
               </div>
             </template>
 
             <!-- Custom questions -->
             <template v-if="job.questions && job.questions.length > 0">
-              <div class="border-t border-surface-100 dark:border-surface-800 pt-5">
-                <p class="text-sm font-medium text-surface-700 dark:text-surface-300 mb-4">Additional questions</p>
+              <div class="border-t border-white/10 pt-5">
+                <p class="mb-4 text-sm font-medium text-white">Additional questions</p>
                 <div class="space-y-5">
                   <DynamicField
                     v-for="q in job.questions"
@@ -527,11 +536,11 @@ const typeLabels: Record<string, string> = {
             </template>
 
             <!-- Submit row -->
-            <div class="border-t border-surface-100 dark:border-surface-800 pt-5 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div class="flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center">
               <button
                 type="submit"
                 :disabled="isSubmitting"
-                class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                class="factory-button-cta factory-button-premium inline-flex h-[48px] min-h-[48px] items-center justify-center gap-2 px-7 py-0 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <!-- Spinner -->
                 <svg
@@ -546,7 +555,7 @@ const typeLabels: Record<string, string> = {
                 </svg>
                 {{ isSubmitting ? 'Submitting…' : 'Submit Application' }}
               </button>
-              <p class="text-xs text-surface-400">Your information is kept confidential.</p>
+              <p class="text-xs text-white/42">Your information is kept confidential.</p>
             </div>
           </form>
         </div>

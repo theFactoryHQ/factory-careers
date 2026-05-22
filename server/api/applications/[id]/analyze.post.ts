@@ -193,6 +193,7 @@ export default defineEventHandler(async (event) => {
       provider: config.provider,
       model: config.model,
       criteriaSnapshot: criteriaDefinitions as any,
+      rawResponse: result.scoring as any,
       compositeScore,
       promptTokens: result.usage.promptTokens,
       completionTokens: result.usage.completionTokens,

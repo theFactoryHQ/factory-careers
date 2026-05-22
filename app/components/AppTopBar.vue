@@ -233,35 +233,57 @@ onUnmounted(() => {
               v-for="item in primaryNavItems"
               :key="item.to"
               :to="$localePath(item.to)"
-              class="relative flex h-9 items-center gap-1.5 border px-3 text-[13px] font-medium transition-all duration-200 no-underline"
+              class="group relative flex h-9 items-center gap-1.5 border px-3 text-[13px] font-medium transition-all duration-200 no-underline"
+              :aria-label="item.label"
               :class="isActiveRoute(item.to, item.exact)
                 ? 'border-brand-500/50 bg-brand-500/12 text-white'
-                : 'border-transparent text-white/58 hover:bg-white/[0.04] hover:text-white'"
+                : 'border-transparent text-white/58 hover:text-white'"
             >
               <component :is="item.icon" class="size-4" />
               <span class="hidden xl:inline">{{ item.label }}</span>
+              <span class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 translate-y-1 whitespace-nowrap border border-white/12 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white opacity-0 shadow-xl shadow-black/40 transition-all duration-150 xl:hidden group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
+                {{ item.label }}
+              </span>
+            </NuxtLink>
+
+            <NuxtLink
+              v-for="item in moreNavItems"
+              :key="item.to"
+              :to="$localePath(item.to)"
+              class="group relative hidden h-9 items-center gap-1.5 border px-3 text-[13px] font-medium transition-all duration-200 no-underline lg:flex"
+              :aria-label="item.label"
+              :class="isActiveRoute(item.to, item.exact)
+                ? 'border-brand-500/50 bg-brand-500/12 text-white'
+                : 'border-transparent text-white/58 hover:text-white'"
+            >
+              <component :is="item.icon" class="size-4" />
+              <span class="hidden 2xl:inline">{{ item.label }}</span>
+              <span class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 translate-y-1 whitespace-nowrap border border-white/12 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white opacity-0 shadow-xl shadow-black/40 transition-all duration-150 2xl:hidden group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
+                {{ item.label }}
+              </span>
             </NuxtLink>
 
             <!-- More nav dropdown -->
             <div
               v-if="moreNavItems.length"
-              class="relative"
+              class="relative lg:hidden"
               @mouseenter="showMoreNav = true"
               @mouseleave="showMoreNav = false"
             >
               <button
-                class="relative flex h-9 items-center gap-1.5 border px-3 text-[13px] font-medium transition-all duration-200 cursor-pointer bg-transparent"
+                class="group relative flex h-9 items-center gap-1.5 border px-3 text-[13px] font-medium transition-all duration-200 cursor-pointer bg-transparent"
+                aria-label="More"
                 :class="moreNavItems.some(i => isActiveRoute(i.to, i.exact))
                   ? 'border-brand-500/50 bg-brand-500/12 text-white'
-                  : 'border-transparent text-white/58 hover:bg-white/[0.04] hover:text-white'"
+                  : 'border-transparent text-white/58 hover:text-white'"
               >
-                <MoreHorizontal class="size-4 xl:hidden" />
-                <span class="hidden xl:inline">More</span>
-                <ChevronDown
-                  class="size-3 opacity-60 transition-transform duration-200"
-                  :class="showMoreNav ? 'rotate-180' : ''"
-                />
-              </button>
+                  <MoreHorizontal class="size-4 xl:hidden" />
+                  <span class="hidden xl:inline">More</span>
+                  <ChevronDown
+                    class="size-3 opacity-60 transition-transform duration-200"
+                    :class="showMoreNav ? 'rotate-180' : ''"
+                  />
+                </button>
               <Transition
                 enter-active-class="transition duration-150 ease-out"
                 enter-from-class="opacity-0 scale-95 -translate-y-1"
@@ -282,7 +304,7 @@ onUnmounted(() => {
                       class="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors no-underline"
                       :class="isActiveRoute(item.to, item.exact)
                         ? 'bg-brand-500/12 text-white'
-                        : 'text-white/62 hover:bg-white/[0.05] hover:text-white'"
+                        : 'text-white/62 hover:text-white'"
                     >
                       <component :is="item.icon" class="size-4" />
                       {{ item.label }}
@@ -366,16 +388,6 @@ onUnmounted(() => {
             New Job
           </button>
 
-          <!-- Org Switcher -->
-          <div class="hidden xl:block ml-1 min-w-28">
-            <OrgSwitcher />
-          </div>
-
-          <!-- Language Switcher -->
-          <div class="hidden xl:block">
-            <LanguageSwitcher tone="factory" />
-          </div>
-
           <!-- More actions dropdown -->
           <div
             ref="moreActionsMenuRoot"
@@ -405,30 +417,20 @@ onUnmounted(() => {
                 class="absolute right-0 top-full z-50 pt-1.5"
               >
                 <div class="w-64 border border-white/12 bg-black shadow-2xl shadow-black/50 overflow-visible py-1">
-                  <div class="xl:hidden border-b border-white/10 p-2 space-y-2">
-                    <div class="space-y-1.5">
-                      <p class="px-1 text-[10px] font-semibold uppercase tracking-wide text-white/38">Organization</p>
-                      <OrgSwitcher />
-                    </div>
-                    <div class="space-y-1.5">
-                      <p class="px-1 text-[10px] font-semibold uppercase tracking-wide text-white/38">Language</p>
-                      <LanguageSwitcher tone="factory" />
-                    </div>
-                  </div>
                   <div class="py-1">
                     <NuxtLink
                       :to="$localePath('/dashboard/updates')"
                       class="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors no-underline"
                       :class="isActiveRoute('/dashboard/updates', false)
                         ? 'bg-brand-500/12 text-white'
-                        : 'text-white/62 hover:bg-white/[0.05] hover:text-white'"
+                        : 'text-white/62 hover:text-white'"
                     >
                       <ArrowUpCircle class="size-4" />
                       Updates & changelog
                     </NuxtLink>
                     <button
                       v-if="isFeedbackEnabled"
-                      class="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] font-medium text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-left"
+                      class="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] font-medium text-white/62 hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-left"
                       @click="showFeedbackModal = true; showMoreActions = false"
                     >
                       <MessageSquarePlus class="size-4" />
@@ -446,16 +448,16 @@ onUnmounted(() => {
           <!-- User menu -->
           <div ref="userMenuRoot" class="relative">
             <button
-              class="flex h-9 items-center gap-2 border-0 bg-transparent px-2 transition-colors duration-200 cursor-pointer hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500/60"
+              class="flex h-9 items-center gap-1.5 border-0 bg-transparent px-0 transition-colors duration-200 cursor-pointer hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500/60"
               @click="showUserMenu = !showUserMenu"
             >
               <img
                 v-if="userImage"
                 :src="userImage"
                 :alt="userName"
-                class="size-7 object-cover"
+                class="size-9 object-cover"
               />
-              <div v-else class="flex items-center justify-center size-7 bg-brand-500 text-white text-[11px] font-bold">
+              <div v-else class="flex size-9 items-center justify-center bg-brand-500 text-[11px] font-bold text-white">
                 {{ userInitials }}
               </div>
               <ChevronDown
@@ -483,6 +485,18 @@ onUnmounted(() => {
                   <div class="text-xs text-white/48 truncate mt-0.5">{{ userEmail }}</div>
                 </div>
 
+                <!-- Account context -->
+                <div class="border-b border-white/10 p-2 space-y-2">
+                  <div class="space-y-1.5">
+                    <p class="px-1 text-[10px] font-semibold uppercase tracking-wide text-white/38">Organization</p>
+                    <OrgSwitcher />
+                  </div>
+                  <div class="space-y-1.5">
+                    <p class="px-1 text-[10px] font-semibold uppercase tracking-wide text-white/38">Language</p>
+                    <LanguageSwitcher tone="factory" />
+                  </div>
+                </div>
+
                 <!-- Mobile-only items -->
                 <div class="md:hidden border-b border-white/10 py-1">
                   <NuxtLink
@@ -501,12 +515,6 @@ onUnmounted(() => {
                       Soon
                     </span>
                   </NuxtLink>
-                </div>
-
-                <!-- Org switcher (mobile) -->
-                <div class="lg:hidden border-b border-white/10 p-2">
-                  <p class="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-wide text-white/38">Organization</p>
-                  <OrgSwitcher />
                 </div>
 
                 <!-- Actions -->
@@ -658,16 +666,6 @@ onUnmounted(() => {
           </template>
         </nav>
 
-        <div class="px-4 pb-3 flex flex-col gap-3 border-t border-white/10 pt-3 lg:hidden">
-          <div class="space-y-1.5">
-            <p class="px-1 text-[10px] font-semibold uppercase tracking-wide text-white/38">Organization</p>
-            <OrgSwitcher />
-          </div>
-          <div class="space-y-1.5">
-            <p class="px-1 text-[10px] font-semibold uppercase tracking-wide text-white/38">Language</p>
-            <LanguageSwitcher drop-up tone="factory" />
-          </div>
-        </div>
       </div>
     </Transition>
   </header>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  Save, Trash2, ArrowLeft, ExternalLink, Link2, ClipboardCopy,
+  Save, Trash2, ArrowLeft, ExternalLink, Link2, ClipboardCopy, ChevronDown,
 } from 'lucide-vue-next'
 import { z } from 'zod'
 
@@ -252,12 +252,10 @@ function onSalaryMaxChange(e: Event) {
     <!-- Error -->
     <div
       v-else-if="fetchError"
-      class="ui-alert ui-alert-danger"
+      class="rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-4 text-sm text-danger-700 dark:text-danger-400"
     >
       {{ fetchError.statusCode === 404 ? 'Job not found.' : 'Failed to load job.' }}
-      <NuxtLink :to="$localePath('/dashboard/jobs')" class="ui-inline-link ui-inline-link-brand ml-1">
-        Back to Jobs
-      </NuxtLink>
+      <NuxtLink :to="$localePath('/dashboard/jobs')" class="underline ml-1">Back to Jobs</NuxtLink>
     </div>
 
     <template v-else-if="job">
@@ -273,22 +271,22 @@ function onSalaryMaxChange(e: Event) {
         <!-- ═══════════════════════════════════════ -->
         <!-- SECTION: Basic Details                   -->
         <!-- ═══════════════════════════════════════ -->
-        <section class="ui-panel p-6">
+        <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6">
           <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-5">Basic Details</h2>
           <div class="space-y-4">
             <!-- Title -->
             <div>
               <label for="settings-title" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                Title <span class="ui-required-marker">*</span>
+                Title <span class="text-danger-500">*</span>
               </label>
               <input
                 id="settings-title"
                 v-model="form.title"
                 type="text"
-                class="ui-field"
-                :class="errors.title ? 'ui-field-invalid' : ''"
+                class="w-full rounded-lg border px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                :class="errors.title ? 'border-danger-300' : 'border-surface-300 dark:border-surface-700'"
               />
-              <p v-if="errors.title" class="ui-feedback-danger mt-1 text-xs">{{ errors.title }}</p>
+              <p v-if="errors.title" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ errors.title }}</p>
             </div>
 
             <!-- Description -->
@@ -301,7 +299,7 @@ function onSalaryMaxChange(e: Event) {
                 v-model="form.description"
                 rows="6"
                 placeholder="Describe the role, responsibilities, and requirements…"
-                class="ui-field"
+                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
               />
             </div>
 
@@ -316,22 +314,25 @@ function onSalaryMaxChange(e: Event) {
                   v-model="form.location"
                   type="text"
                   placeholder="e.g. Oslo, Norway"
-                  class="ui-field"
+                  class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
                 />
               </div>
               <div>
                 <label for="settings-type" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                   Employment Type
                 </label>
-                <select
-                  id="settings-type"
-                  v-model="form.type"
-                  class="ui-field"
-                >
-                  <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </option>
-                </select>
+                <div class="relative">
+                  <select
+                    id="settings-type"
+                    v-model="form.type"
+                    class="factory-form-select"
+                  >
+                    <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                  <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
+                </div>
               </div>
             </div>
 
@@ -340,15 +341,18 @@ function onSalaryMaxChange(e: Event) {
               <label for="settings-remote" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                 Work Arrangement
               </label>
-              <select
-                id="settings-remote"
-                v-model="form.remoteStatus"
-                class="ui-field"
-              >
-                <option v-for="opt in remoteOptions" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
+              <div class="relative">
+                <select
+                  id="settings-remote"
+                  v-model="form.remoteStatus"
+                  class="factory-form-select"
+                >
+                  <option v-for="opt in remoteOptions" :key="opt.value" :value="opt.value">
+                    {{ opt.label }}
+                  </option>
+                </select>
+                <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
+              </div>
             </div>
 
             <!-- Experience Level -->
@@ -356,15 +360,18 @@ function onSalaryMaxChange(e: Event) {
               <label for="settings-experience-level" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                 Experience Level
               </label>
-              <select
-                id="settings-experience-level"
-                v-model="form.experienceLevel"
-                class="ui-field"
-              >
-                <option v-for="opt in experienceLevelOptions" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
+              <div class="relative">
+                <select
+                  id="settings-experience-level"
+                  v-model="form.experienceLevel"
+                  class="factory-form-select"
+                >
+                  <option v-for="opt in experienceLevelOptions" :key="opt.value" :value="opt.value">
+                    {{ opt.label }}
+                  </option>
+                </select>
+                <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
+              </div>
             </div>
 
             <!-- Slug -->
@@ -377,7 +384,7 @@ function onSalaryMaxChange(e: Event) {
                 v-model="form.slug"
                 type="text"
                 placeholder="auto-generated-from-title"
-                class="ui-field font-mono text-xs"
+                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors font-mono text-xs"
               />
               <p class="mt-1 text-xs text-surface-400 dark:text-surface-500">
                 Used in the public application URL. Leave blank to auto-generate from title.
@@ -389,7 +396,7 @@ function onSalaryMaxChange(e: Event) {
         <!-- ═══════════════════════════════════════ -->
         <!-- SECTION: Salary & Compensation           -->
         <!-- ═══════════════════════════════════════ -->
-        <section class="ui-panel p-6">
+        <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6">
           <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-1">Salary & Compensation</h2>
           <p class="text-xs text-surface-400 dark:text-surface-500 mb-5">
             Adding salary information improves visibility on Google Jobs.
@@ -400,7 +407,7 @@ function onSalaryMaxChange(e: Event) {
               <input
                 v-model="form.salaryNegotiable"
                 type="checkbox"
-                class="ui-checkbox ui-checkbox-brand size-4"
+                class="size-4 rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500"
               />
               <div>
                 <span class="text-sm font-medium text-surface-900 dark:text-surface-100">Salary is negotiable</span>
@@ -423,7 +430,7 @@ function onSalaryMaxChange(e: Event) {
                     type="number"
                     min="0"
                     placeholder="e.g. 50000"
-                    class="ui-field"
+                    class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
                     @change="onSalaryMinChange"
                   />
                 </div>
@@ -437,7 +444,7 @@ function onSalaryMaxChange(e: Event) {
                     type="number"
                     min="0"
                     placeholder="e.g. 80000"
-                    class="ui-field"
+                    class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
                     @change="onSalaryMaxChange"
                   />
                 </div>
@@ -453,22 +460,25 @@ function onSalaryMaxChange(e: Event) {
                     type="text"
                     maxlength="3"
                     placeholder="e.g. USD, EUR, NOK"
-                    class="ui-field uppercase"
+                    class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors uppercase"
                   />
                 </div>
                 <div>
                   <label for="settings-salary-unit" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                     Pay Period
                   </label>
-                  <select
-                    id="settings-salary-unit"
-                    v-model="form.salaryUnit"
-                    class="ui-field"
-                  >
-                    <option v-for="opt in salaryUnitOptions" :key="opt.value" :value="opt.value">
-                      {{ opt.label }}
-                    </option>
-                  </select>
+                  <div class="relative">
+                    <select
+                      id="settings-salary-unit"
+                      v-model="form.salaryUnit"
+                      class="factory-form-select"
+                    >
+                      <option v-for="opt in salaryUnitOptions" :key="opt.value" :value="opt.value">
+                        {{ opt.label }}
+                      </option>
+                    </select>
+                    <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
+                  </div>
                 </div>
               </div>
             </template>
@@ -478,7 +488,7 @@ function onSalaryMaxChange(e: Event) {
         <!-- ═══════════════════════════════════════ -->
         <!-- SECTION: Application Options             -->
         <!-- ═══════════════════════════════════════ -->
-        <section class="ui-panel p-6">
+        <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6">
           <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-1">Application Options</h2>
           <p class="text-xs text-surface-400 dark:text-surface-500 mb-5">
             Control what candidates must provide when applying.
@@ -488,7 +498,7 @@ function onSalaryMaxChange(e: Event) {
               <input
                 v-model="form.requireResume"
                 type="checkbox"
-                class="ui-checkbox ui-checkbox-brand size-4"
+                class="size-4 rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500"
               />
               <div>
                 <span class="text-sm font-medium text-surface-900 dark:text-surface-100">Require resume/CV</span>
@@ -499,7 +509,7 @@ function onSalaryMaxChange(e: Event) {
               <input
                 v-model="form.requireCoverLetter"
                 type="checkbox"
-                class="ui-checkbox ui-checkbox-brand size-4"
+                class="size-4 rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500"
               />
               <div>
                 <span class="text-sm font-medium text-surface-900 dark:text-surface-100">Ask for cover letter</span>
@@ -510,7 +520,7 @@ function onSalaryMaxChange(e: Event) {
               <input
                 v-model="form.autoScoreOnApply"
                 type="checkbox"
-                class="ui-checkbox ui-checkbox-brand size-4"
+                class="size-4 rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500"
               />
               <div>
                 <span class="text-sm font-medium text-surface-900 dark:text-surface-100">Auto-score on apply</span>
@@ -523,7 +533,7 @@ function onSalaryMaxChange(e: Event) {
         <!-- ═══════════════════════════════════════ -->
         <!-- SECTION: Listing Expiry                  -->
         <!-- ═══════════════════════════════════════ -->
-        <section class="ui-panel p-6">
+        <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6">
           <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-1">Listing Expiry</h2>
           <p class="text-xs text-surface-400 dark:text-surface-500 mb-5">
             Set when this job posting automatically expires. Required for Google Jobs rich results.
@@ -537,12 +547,12 @@ function onSalaryMaxChange(e: Event) {
                 id="settings-valid-through"
                 v-model="form.validThrough"
                 type="date"
-                class="ui-field sm:w-64"
+                class="w-full sm:w-64 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
               />
               <button
                 v-if="form.validThrough"
                 type="button"
-                class="ui-button ui-button-ghost ui-button-ghost-danger shrink-0 px-2 py-1 text-xs"
+                class="text-xs text-surface-400 hover:text-danger-500 dark:hover:text-danger-400 transition-colors underline shrink-0"
                 @click="form.validThrough = ''"
               >
                 Clear
@@ -555,10 +565,10 @@ function onSalaryMaxChange(e: Event) {
         <!-- ═══════════════════════════════════════ -->
         <!-- SECTION: Application Link                -->
         <!-- ═══════════════════════════════════════ -->
-        <section v-if="job.status === 'open'" class="ui-panel-brand p-6">
+        <section v-if="job.status === 'open'" class="rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50/50 dark:bg-brand-950/30 p-6">
           <div class="flex items-center gap-2 mb-2">
-            <Link2 class="ui-icon-brand size-4" />
-            <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Application Link</h2>
+            <Link2 class="size-4 text-brand-600 dark:text-brand-400" />
+            <h2 class="text-base font-semibold text-brand-700 dark:text-brand-300">Application Link</h2>
           </div>
           <p class="text-xs text-surface-600 dark:text-surface-400 mb-3">
             Share this link with candidates so they can apply to this position.
@@ -568,11 +578,11 @@ function onSalaryMaxChange(e: Event) {
               type="text"
               readonly
               :value="applicationUrl"
-              class="ui-field min-w-0 flex-1 px-3 py-1.5 text-sm select-all"
+              class="flex-1 rounded-lg border border-brand-200 dark:border-brand-800 bg-white dark:bg-surface-900 px-3 py-1.5 text-sm text-surface-700 dark:text-surface-300 select-all"
             />
             <button
               type="button"
-              class="ui-button ui-button-primary gap-1.5 px-3 py-1.5 text-sm"
+              class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
               @click="copyApplicationLink"
             >
               <ClipboardCopy class="size-3.5" />
@@ -588,7 +598,7 @@ function onSalaryMaxChange(e: Event) {
           <button
             type="submit"
             :disabled="isSaving"
-            class="ui-button ui-button-primary cursor-pointer gap-2 px-5 py-2.5 text-sm font-semibold"
+            class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Save class="size-4" />
             {{ saved ? 'Saved!' : isSaving ? 'Saving…' : 'Save Changes' }}
@@ -599,16 +609,16 @@ function onSalaryMaxChange(e: Event) {
       <!-- ═══════════════════════════════════════ -->
       <!-- DANGER ZONE                              -->
       <!-- ═══════════════════════════════════════ -->
-      <section class="ui-panel-danger p-6 mb-12">
-        <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-1">Danger Zone</h2>
-        <p class="text-xs text-surface-500 dark:text-surface-400 mb-4">
+      <section class="factory-danger-zone rounded-xl border p-6 mb-12">
+        <h2 class="factory-danger-zone-title text-base font-semibold mb-1">Danger Zone</h2>
+        <p class="factory-danger-zone-copy text-xs mb-4">
           Permanently delete this job and all associated applications.
         </p>
 
         <div v-if="!showDeleteConfirm">
           <button
             type="button"
-            class="ui-button ui-button-danger-outline cursor-pointer gap-2 px-4 py-2 text-sm"
+            class="factory-button-cta factory-danger-button inline-flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
             @click="showDeleteConfirm = true"
           >
             <Trash2 class="size-4" />
@@ -616,7 +626,7 @@ function onSalaryMaxChange(e: Event) {
           </button>
         </div>
 
-        <div v-else class="ui-panel-muted p-4">
+        <div v-else class="factory-danger-confirm rounded-lg border p-4">
           <p class="text-sm text-surface-700 dark:text-surface-300 mb-3">
             Are you sure you want to delete <strong>{{ job.title }}</strong>? This will also delete all associated applications. This action cannot be undone.
           </p>
@@ -624,7 +634,7 @@ function onSalaryMaxChange(e: Event) {
             <button
               type="button"
               :disabled="isDeleting"
-              class="ui-button ui-button-danger cursor-pointer gap-1.5 px-4 py-2 text-sm"
+              class="factory-button-cta inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-danger-600 px-4 py-2 text-sm font-medium text-white hover:bg-danger-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               @click="handleDelete"
             >
               {{ isDeleting ? 'Deleting…' : 'Yes, Delete' }}
@@ -632,7 +642,7 @@ function onSalaryMaxChange(e: Event) {
             <button
               type="button"
               :disabled="isDeleting"
-              class="ui-button ui-button-secondary cursor-pointer gap-1.5 px-4 py-2 text-sm"
+              class="factory-button-cta factory-toolbar-button inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
               @click="showDeleteConfirm = false"
             >
               Cancel

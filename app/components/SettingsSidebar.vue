@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 import {
-  Building2, Users, UserCircle, ChevronLeft, Settings, Plug, Brain, ShieldCheck, Globe,
+  Building2, Users, UserCircle, Settings, Plug, Brain, ShieldCheck, Globe,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -56,7 +56,6 @@ const settingsNav: Array<{
     to: '/dashboard/settings/sso',
     icon: ShieldCheck,
     exact: true,
-    badge: 'Beta',
   },
   {
     label: 'Account',
@@ -76,17 +75,16 @@ function isActive(to: string, exact: boolean) {
 
 <template>
   <aside
-    class="ui-nav-shell ui-nav-shell-side flex h-full w-56 min-w-56 flex-col overflow-y-auto overscroll-contain"
+    class="ui-nav-shell flex h-full w-56 min-w-56 flex-col border-r overflow-y-auto overscroll-contain"
   >
     <!-- Header -->
     <div class="px-4 pt-5 pb-4">
-      <NuxtLink
+      <AppBackLink
         :to="$localePath('/dashboard')"
-        class="ui-inline-link inline-flex items-center gap-1.5 text-xs font-medium no-underline mb-3"
+        class="mb-3"
       >
-        <ChevronLeft class="size-3.5" />
-        Back to jobs
-      </NuxtLink>
+        Back to Jobs
+      </AppBackLink>
       <div class="flex items-center gap-2.5">
         <div class="ui-nav-icon flex items-center justify-center size-8 rounded-lg">
           <Settings class="size-4" />
@@ -122,16 +120,16 @@ function isActive(to: string, exact: boolean) {
               <span class="truncate">{{ item.label }}</span>
               <span
                 v-if="item.badge"
-                class="ui-pill ui-pill-warning shrink-0 rounded-full px-1.5 py-0.5 text-[10px]"
+                class="shrink-0 inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
               >
                 {{ item.badge }}
               </span>
             </div>
             <div
-              class="ui-nav-description text-[11px] leading-tight mt-0.5 truncate"
+              class="text-[11px] leading-tight mt-0.5 truncate"
               :class="isActive(item.to, item.exact)
-                ? 'ui-nav-description-active'
-                : ''"
+                ? 'text-brand-500/70 dark:text-brand-400/60'
+                : 'text-surface-400 dark:text-surface-500'"
             >
               {{ item.description }}
             </div>

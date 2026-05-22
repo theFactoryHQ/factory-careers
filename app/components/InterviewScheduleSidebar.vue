@@ -26,7 +26,8 @@ const showSuccess = ref(false)
 const createdInterview = ref<{ id: string; googleCalendarEventLink?: string | null } | null>(null)
 
 // ─── Calendar integration status ──────────────────────────────────
-const { isConnected: calendarConnected } = useCalendarIntegration()
+const { calendarStatus, isConnected: calendarConnected } = useCalendarIntegration()
+const calendarProviderLabel = computed(() => calendarStatus.value.providerLabel || 'Microsoft Calendar')
 
 // ─── Form state ───────────────────────────────────────────────────
 const form = reactive({
@@ -48,7 +49,7 @@ const isMoving = ref(false)
 const notifyViaEmail = ref(false)
 const notifyViaCalendar = ref(false)
 
-// ─── Google Calendar event customization ──────────────────────────
+// ─── Calendar event customization ─────────────────────────────────
 const calendarCustomization = reactive({
   eventTitle: '',
   eventDescription: '',
@@ -87,7 +88,7 @@ onMounted(() => {
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   form.date = toDateString(tomorrow)
-  // Auto-enable Google Calendar if connected
+  // Auto-enable calendar sync if connected
   if (calendarConnected.value) {
     notifyViaCalendar.value = true
   }
@@ -352,10 +353,19 @@ async function handleMoveToInterview() {
 
 <template>
   <Teleport :to="teleportTarget">
-    <div
-      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 flex justify-end"
-      @click.self="emit('close')"
-    >
+    <div class="fixed inset-0 z-50 flex justify-end">
+      <!-- Backdrop -->
+      <Transition
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="emit('close')" />
+      </Transition>
+
       <!-- Sidebar panel -->
       <Transition
         enter-active-class="transition duration-300 ease-out transform"
@@ -365,18 +375,18 @@ async function handleMoveToInterview() {
         leave-from-class="translate-x-0"
         leave-to-class="translate-x-full"
       >
-        <div class="ui-drawer-panel relative w-full max-w-2xl overflow-hidden flex flex-col">
+        <div class="relative w-full max-w-2xl bg-white dark:bg-surface-900 shadow-2xl overflow-hidden flex flex-col border-l border-surface-200/40 dark:border-surface-800/60">
           <!-- Header -->
-          <div class="ui-drawer-header shrink-0 px-6 pt-5 pb-4">
+          <div class="shrink-0 px-6 pt-5 pb-4">
             <div class="flex items-start justify-between">
               <div class="min-w-0">
                 <div class="flex items-center gap-2.5 mb-1">
                   <div
-                    class="ui-icon-state size-8 rounded-xl"
-                    :class="showSuccess ? 'ui-icon-state-success' : 'ui-icon-state-brand'"
+                    class="flex size-8 items-center justify-center rounded-xl"
+                    :class="showSuccess ? 'bg-emerald-50 dark:bg-emerald-950/40' : 'bg-brand-50 dark:bg-brand-950/40'"
                   >
-                    <CheckCircle2 v-if="showSuccess" class="size-4" />
-                    <Calendar v-else class="size-4" />
+                    <CheckCircle2 v-if="showSuccess" class="size-4 text-emerald-600 dark:text-emerald-400" />
+                    <Calendar v-else class="size-4 text-brand-600 dark:text-brand-400" />
                   </div>
                   <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-50 tracking-tight">
                     {{ showSuccess ? 'Interview Scheduled' : 'Schedule Interview' }}
@@ -387,7 +397,7 @@ async function handleMoveToInterview() {
                 </p>
               </div>
               <button
-                class="ui-button ui-button-ghost p-2 -mr-1.5 -mt-0.5"
+                class="flex items-center justify-center rounded-lg p-2 -mr-1.5 -mt-0.5 text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:text-surface-500 dark:hover:text-surface-300 dark:hover:bg-surface-800 transition-colors cursor-pointer"
                 @click="showSuccess ? emit('scheduled', createdInterview ?? undefined) : emit('close')"
               >
                 <X class="size-4" />
@@ -395,12 +405,14 @@ async function handleMoveToInterview() {
             </div>
           </div>
 
+          <div class="h-px bg-gradient-to-r from-transparent via-surface-200 to-transparent dark:via-surface-700/60" />
+
           <!-- ─── Success view ─────────────────────────────────── -->
           <template v-if="showSuccess">
-            <div class="ui-drawer-body flex-1 overflow-y-auto px-6 py-8 flex flex-col items-center">
+            <div class="flex-1 overflow-y-auto px-6 py-8 flex flex-col items-center">
               <!-- Success icon -->
-              <div class="ui-icon-state ui-icon-state-success size-16 rounded-2xl mb-5">
-                <CheckCircle2 class="size-8" />
+              <div class="flex size-16 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 mb-5">
+                <CheckCircle2 class="size-8 text-emerald-500 dark:text-emerald-400" />
               </div>
 
               <h3 class="text-base font-semibold text-surface-900 dark:text-surface-50 mb-1.5 text-center">
@@ -412,11 +424,11 @@ async function handleMoveToInterview() {
 
               <!-- Notification summary -->
               <div v-if="notifyViaEmail || notifyViaCalendar" class="flex flex-wrap items-center justify-center gap-2 mb-6">
-                <span v-if="notifyViaEmail" class="ui-pill ui-pill-brand gap-1.5">
+                <span v-if="notifyViaEmail" class="inline-flex items-center gap-1.5 rounded-full bg-brand-50 dark:bg-brand-950/30 px-2.5 py-1 text-xs font-medium text-brand-700 dark:text-brand-400">
                   <Mail class="size-3" />
                   Email sent
                 </span>
-                <span v-if="notifyViaCalendar" class="ui-pill ui-pill-success gap-1.5">
+                <span v-if="notifyViaCalendar" class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
                   <Calendar class="size-3" />
                   Calendar event created
                 </span>
@@ -428,29 +440,29 @@ async function handleMoveToInterview() {
                   Quick links
                 </p>
 
-                <!-- Google Calendar link -->
+                <!-- Calendar link -->
                 <a
                   v-if="createdInterview?.googleCalendarEventLink"
                   :href="createdInterview.googleCalendarEventLink"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="ui-panel flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all group"
+                  class="flex items-center gap-3 rounded-xl border border-surface-200 dark:border-surface-700/80 bg-white dark:bg-surface-800/40 px-4 py-3 text-sm font-medium text-surface-700 dark:text-surface-300 hover:border-emerald-300 hover:bg-emerald-50/50 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/20 transition-all group"
                 >
-                  <div class="ui-icon-state ui-icon-state-success size-8 rounded-lg">
-                    <Calendar class="size-4" />
+                  <div class="flex size-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
+                    <Calendar class="size-4 text-emerald-600 dark:text-emerald-400" />
                   </div>
-                  <span class="flex-1">Open in Google Calendar</span>
+                  <span class="flex-1">Open in {{ calendarProviderLabel }}</span>
                   <ExternalLink class="size-3.5 text-surface-400 group-hover:text-emerald-500 transition-colors" />
                 </a>
 
                 <!-- View application -->
                 <NuxtLink
                   :to="`/dashboard/applications/${applicationId}`"
-                  class="ui-panel flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all group"
+                  class="flex items-center gap-3 rounded-xl border border-surface-200 dark:border-surface-700/80 bg-white dark:bg-surface-800/40 px-4 py-3 text-sm font-medium text-surface-700 dark:text-surface-300 hover:border-brand-300 hover:bg-brand-50/50 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-all group"
                   @click="emit('scheduled', createdInterview ?? undefined)"
                 >
-                  <div class="ui-icon-state ui-icon-state-brand size-8 rounded-lg">
-                    <Eye class="size-4" />
+                  <div class="flex size-8 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-950/30">
+                    <Eye class="size-4 text-brand-600 dark:text-brand-400" />
                   </div>
                   <span class="flex-1">View application</span>
                   <ArrowRight class="size-3.5 text-surface-400 group-hover:text-brand-500 transition-colors" />
@@ -459,7 +471,7 @@ async function handleMoveToInterview() {
                 <!-- Schedule another -->
                 <button
                   type="button"
-                  class="ui-panel flex w-full items-center gap-3 px-4 py-3 text-sm font-medium transition-all group cursor-pointer"
+                  class="flex w-full items-center gap-3 rounded-xl border border-surface-200 dark:border-surface-700/80 bg-white dark:bg-surface-800/40 px-4 py-3 text-sm font-medium text-surface-700 dark:text-surface-300 hover:border-surface-300 hover:bg-surface-50 dark:hover:border-surface-600 dark:hover:bg-surface-800 transition-all group cursor-pointer"
                   @click="showSuccess = false; createdInterview = null"
                 >
                   <div class="flex size-8 items-center justify-center rounded-lg bg-surface-100 dark:bg-surface-800">
@@ -472,10 +484,10 @@ async function handleMoveToInterview() {
             </div>
 
             <!-- Success footer -->
-            <div class="ui-panel-footer shrink-0 px-6 py-4">
+            <div class="shrink-0 border-t border-surface-200/60 dark:border-surface-800/40 bg-white/80 dark:bg-surface-900/80 backdrop-blur-sm px-6 py-4">
               <button
                 type="button"
-                class="ui-button ui-button-primary w-full px-4 py-2.5 text-sm font-semibold"
+                class="w-full rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-500 transition-colors cursor-pointer shadow-sm shadow-brand-600/20 dark:shadow-brand-500/10"
                 @click="emit('scheduled', createdInterview ?? undefined)"
               >
                 Done
@@ -486,9 +498,9 @@ async function handleMoveToInterview() {
           <!-- ─── Form view ────────────────────────────────────── -->
           <template v-else>
           <!-- Form content -->
-          <div class="ui-drawer-body flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
             <!-- Error banner -->
-            <div v-if="errors.submit" class="ui-alert ui-alert-danger flex items-start gap-2.5 p-3.5 text-sm">
+            <div v-if="errors.submit" class="flex items-start gap-2.5 rounded-xl border border-danger-200/60 bg-danger-50/80 p-3.5 text-sm text-danger-700 dark:border-danger-800/40 dark:bg-danger-950/30 dark:text-danger-300">
               <AlertCircle class="size-4 shrink-0 mt-0.5" />
               {{ errors.submit }}
             </div>
@@ -502,12 +514,12 @@ async function handleMoveToInterview() {
 
               <div class="space-y-2">
                 <!-- Option: Standard email -->
-                <div class="ui-selectable-panel transition-all" :class="notifyViaEmail ? 'ui-selectable-panel-active' : ''">
+                <div class="rounded-xl border transition-all" :class="notifyViaEmail ? 'border-brand-300 dark:border-brand-700 bg-brand-50/30 dark:bg-brand-950/10' : 'border-surface-200 dark:border-surface-700/80'">
                   <label class="flex items-center gap-3 cursor-pointer px-3.5 py-3 group">
                     <input
                       v-model="notifyViaEmail"
                       type="checkbox"
-                      class="ui-checkbox ui-checkbox-brand size-4 cursor-pointer"
+                      class="size-4 rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500/20 focus:ring-offset-0 cursor-pointer"
                     />
                     <Mail class="size-4 shrink-0 transition-colors" :class="notifyViaEmail ? 'text-brand-600 dark:text-brand-400' : 'text-surface-400 dark:text-surface-500'" />
                     <div class="min-w-0 flex-1">
@@ -528,7 +540,7 @@ async function handleMoveToInterview() {
                       </label>
                       <button
                         type="button"
-                        class="ui-field flex items-center justify-between px-3 py-2 text-sm text-left cursor-pointer"
+                        class="w-full flex items-center justify-between rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-left transition-all hover:border-surface-300 dark:hover:border-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 cursor-pointer"
                         @click="showTemplateDropdown = !showTemplateDropdown"
                       >
                         <span class="truncate text-surface-800 dark:text-surface-200">{{ selectedTemplateName }}</span>
@@ -544,7 +556,7 @@ async function handleMoveToInterview() {
                         leave-from-class="opacity-100 translate-y-0"
                         leave-to-class="opacity-0 -translate-y-1"
                       >
-                        <div v-if="showTemplateDropdown" class="ui-panel absolute z-10 mt-1 w-full overflow-hidden">
+                        <div v-if="showTemplateDropdown" class="absolute z-10 mt-1 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-lg shadow-surface-900/10 dark:shadow-black/20 overflow-hidden">
                           <!-- System templates -->
                           <div class="px-2.5 pt-2 pb-1">
                             <span class="text-[10px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500">Built-in</span>
@@ -594,19 +606,19 @@ async function handleMoveToInterview() {
                   </div>
                 </div>
 
-                <!-- Option: Google Calendar -->
-                <div class="ui-selectable-panel transition-all" :class="notifyViaCalendar ? 'ui-selectable-panel-active' : ''">
+                <!-- Option: Calendar sync -->
+                <div class="rounded-xl border transition-all" :class="notifyViaCalendar ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50/30 dark:bg-emerald-950/10' : 'border-surface-200 dark:border-surface-700/80'">
                   <label class="flex items-center gap-3 px-3.5 py-3 group" :class="calendarConnected ? 'cursor-pointer' : 'cursor-default'">
                     <input
                       v-model="notifyViaCalendar"
                       type="checkbox"
                       :disabled="!calendarConnected"
-                      class="ui-checkbox size-4 text-emerald-600 cursor-pointer disabled:cursor-not-allowed"
+                      class="size-4 rounded border-surface-300 dark:border-surface-600 text-emerald-600 focus:ring-emerald-500/20 focus:ring-offset-0 cursor-pointer disabled:cursor-not-allowed"
                     />
                     <Calendar class="size-4 shrink-0 transition-colors" :class="notifyViaCalendar ? 'text-emerald-600 dark:text-emerald-400' : 'text-surface-400 dark:text-surface-500'" />
                     <div class="min-w-0 flex-1">
                       <p class="text-[13px] font-medium transition-colors" :class="notifyViaCalendar ? 'text-surface-900 dark:text-surface-100' : 'text-surface-600 dark:text-surface-400'">
-                        Google Calendar
+                        {{ calendarProviderLabel }}
                       </p>
                       <p class="text-[11px] text-surface-400 dark:text-surface-500">
                         <template v-if="calendarConnected">Create calendar event with invite</template>
@@ -620,7 +632,7 @@ async function handleMoveToInterview() {
                     <button
                       v-if="notifyViaCalendar && calendarConnected"
                       type="button"
-                      class="ui-button ui-button-ghost shrink-0 p-1.5"
+                      class="shrink-0 rounded-lg p-1.5 text-surface-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-400 dark:hover:bg-emerald-950/30 transition-colors cursor-pointer"
                       title="Customize event"
                       @click.prevent="calendarCustomization.showCustomize = !calendarCustomization.showCustomize"
                     >
@@ -628,7 +640,7 @@ async function handleMoveToInterview() {
                     </button>
                   </label>
 
-                  <!-- Google Calendar event customization (expanded) -->
+                  <!-- Calendar event customization (expanded) -->
                   <div v-if="notifyViaCalendar && calendarCustomization.showCustomize" class="px-3.5 pb-3.5 pt-0 space-y-3 border-t border-emerald-200/60 dark:border-emerald-800/30 mt-0">
                     <!-- Event title -->
                     <div>
@@ -640,7 +652,7 @@ async function handleMoveToInterview() {
                         v-model="calendarCustomization.eventTitle"
                         type="text"
                         placeholder="Defaults to interview title"
-                        class="ui-field px-3 py-1.5 text-[13px]"
+                        class="w-full rounded-lg border border-surface-200 dark:border-surface-700/80 bg-white dark:bg-surface-800 px-3 py-1.5 text-[13px] text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all"
                       />
                     </div>
 
@@ -654,7 +666,7 @@ async function handleMoveToInterview() {
                         v-model="calendarCustomization.eventDescription"
                         rows="3"
                         placeholder="Leave empty to auto-generate from interview details"
-                        class="ui-field px-3 py-1.5 text-[13px] resize-none"
+                        class="w-full rounded-lg border border-surface-200 dark:border-surface-700/80 bg-white dark:bg-surface-800 px-3 py-1.5 text-[13px] text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all resize-none"
                       />
                     </div>
 
@@ -664,7 +676,7 @@ async function handleMoveToInterview() {
                         <input
                           v-model="calendarCustomization.addCandidateAttendee"
                           type="checkbox"
-                          class="ui-checkbox size-3.5 text-emerald-600 cursor-pointer"
+                          class="size-3.5 rounded border-surface-300 dark:border-surface-600 text-emerald-600 focus:ring-emerald-500/20 focus:ring-offset-0 cursor-pointer"
                         />
                         <UserPlus class="size-3.5 text-surface-400" />
                         <span class="text-[12px] text-surface-600 dark:text-surface-400">Add candidate as attendee</span>
@@ -673,10 +685,10 @@ async function handleMoveToInterview() {
                         <input
                           v-model="calendarCustomization.sendNotifications"
                           type="checkbox"
-                          class="ui-checkbox size-3.5 text-emerald-600 cursor-pointer"
+                          class="size-3.5 rounded border-surface-300 dark:border-surface-600 text-emerald-600 focus:ring-emerald-500/20 focus:ring-offset-0 cursor-pointer"
                         />
                         <Bell class="size-3.5 text-surface-400" />
-                        <span class="text-[12px] text-surface-600 dark:text-surface-400">Send Google Calendar notifications</span>
+                        <span class="text-[12px] text-surface-600 dark:text-surface-400">Send calendar notifications</span>
                       </label>
                     </div>
                   </div>
@@ -699,7 +711,7 @@ async function handleMoveToInterview() {
                 v-model="form.title"
                 type="text"
                 placeholder="e.g., Technical Interview Round 1"
-                class="ui-field px-4 py-2.5 text-sm"
+                class="w-full rounded-xl border bg-surface-50/50 dark:bg-surface-800/50 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 focus:bg-white dark:focus:bg-surface-800 transition-all"
                 :class="errors.title ? 'border-danger-300 dark:border-danger-700' : 'border-surface-200 dark:border-surface-700/80'"
               />
               <p v-if="errors.title" class="mt-1.5 text-xs text-danger-600 dark:text-danger-400">{{ errors.title }}</p>
@@ -712,12 +724,12 @@ async function handleMoveToInterview() {
               </label>
               <div class="flex items-stretch gap-3 h-80">
                 <!-- Calendar Date Picker -->
-                <div class="ui-panel flex-1 overflow-hidden min-w-0 flex flex-col">
+                <div class="flex-1 rounded-xl border border-surface-200/80 dark:border-surface-700/60 bg-white dark:bg-surface-800/40 overflow-hidden min-w-0 flex flex-col">
                   <!-- Month navigation -->
                   <div class="flex items-center justify-between px-3 py-2.5">
                     <button
                       type="button"
-                      class="ui-button ui-button-ghost p-1.5"
+                      class="flex items-center justify-center rounded-lg p-1.5 text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:text-surface-300 dark:hover:bg-surface-700 transition-colors cursor-pointer"
                       @click="prevMonth"
                     >
                       <ChevronLeft class="size-4" />
@@ -725,7 +737,7 @@ async function handleMoveToInterview() {
                     <span class="text-sm font-semibold text-surface-800 dark:text-surface-200">{{ calendarMonthLabel }}</span>
                     <button
                       type="button"
-                      class="ui-button ui-button-ghost p-1.5"
+                      class="flex items-center justify-center rounded-lg p-1.5 text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:text-surface-300 dark:hover:bg-surface-700 transition-colors cursor-pointer"
                       @click="nextMonth"
                     >
                       <ChevronRight class="size-4" />
@@ -765,7 +777,7 @@ async function handleMoveToInterview() {
                 </div>
 
                 <!-- Time Picker -->
-                <div class="ui-panel w-[96px] shrink-0 overflow-hidden flex flex-col">
+                <div class="w-[96px] shrink-0 rounded-xl border border-surface-200/80 dark:border-surface-700/60 bg-white dark:bg-surface-800/40 overflow-hidden flex flex-col">
                   <!-- Time header -->
                   <div class="flex items-center justify-center px-3 py-2.5 shrink-0">
                     <span class="text-sm font-semibold text-surface-800 dark:text-surface-200">Time</span>
@@ -828,7 +840,7 @@ async function handleMoveToInterview() {
                 <select
                   id="interview-timezone"
                   v-model="form.timezone"
-                  class="ui-field px-3 py-1.5 text-[13px] cursor-pointer"
+                  class="w-full rounded-lg border border-surface-200 dark:border-surface-700/80 bg-surface-50/50 dark:bg-surface-800/50 px-3 py-1.5 text-[13px] text-surface-700 dark:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all cursor-pointer"
                 >
                   <option v-for="tz in commonTimezones" :key="tz" :value="tz">{{ tz }}</option>
                 </select>
@@ -846,7 +858,7 @@ async function handleMoveToInterview() {
                 v-model="form.location"
                 type="text"
                 placeholder="Zoom link, office address…"
-                class="ui-field px-4 py-2.5 text-sm"
+                class="w-full rounded-xl border border-surface-200 dark:border-surface-700/80 bg-surface-50/50 dark:bg-surface-800/50 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 focus:bg-white dark:focus:bg-surface-800 transition-all"
               />
             </div>
 
@@ -864,12 +876,12 @@ async function handleMoveToInterview() {
                     type="email"
                     :placeholder="`interviewer${idx + 1}@example.com`"
                     :class="errors.interviewers && email.trim() && !EMAIL_RE.test(email.trim()) ? 'border-danger-300 dark:border-danger-700' : 'border-surface-200 dark:border-surface-700/80'"
-                    class="ui-field flex-1 px-4 py-2 text-sm"
+                    class="flex-1 rounded-xl border bg-surface-50/50 dark:bg-surface-800/50 px-4 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 focus:bg-white dark:focus:bg-surface-800 transition-all"
                   />
                   <button
                     v-if="form.interviewers.length > 1"
                     type="button"
-                    class="ui-button ui-button-ghost ui-button-ghost-danger p-1.5"
+                    class="flex items-center justify-center rounded-lg p-1.5 text-surface-400 hover:text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-950/30 transition-colors cursor-pointer"
                     @click="removeInterviewer(idx)"
                   >
                     <X class="size-3.5" />
@@ -877,7 +889,7 @@ async function handleMoveToInterview() {
                 </div>
                 <button
                   type="button"
-                  class="ui-button ui-button-ghost gap-1.5 px-2.5 py-1.5 text-[13px]"
+                  class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-950/20 transition-colors cursor-pointer"
                   @click="addInterviewer"
                 >
                   <Plus class="size-3.5" />
@@ -898,14 +910,14 @@ async function handleMoveToInterview() {
                 v-model="form.notes"
                 rows="2"
                 placeholder="Topics to cover, preparation notes…"
-                class="ui-field px-4 py-2.5 text-sm resize-none"
+                class="w-full rounded-xl border border-surface-200 dark:border-surface-700/80 bg-surface-50/50 dark:bg-surface-800/50 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 focus:bg-white dark:focus:bg-surface-800 transition-all resize-none"
               />
             </div>
 
           </div>
 
           <!-- Footer with preview + submit -->
-          <div class="ui-panel-footer shrink-0 px-6 py-4">
+          <div class="shrink-0 border-t border-surface-200/60 dark:border-surface-800/40 bg-white/80 dark:bg-surface-900/80 backdrop-blur-sm px-6 py-4">
             <!-- Preview -->
             <div v-if="form.date && form.time" class="mb-3 flex items-center gap-2 min-w-0">
               <Calendar class="size-3.5 shrink-0 text-brand-500 dark:text-brand-400" />
@@ -916,20 +928,20 @@ async function handleMoveToInterview() {
 
             <!-- Notification summary -->
             <div v-if="notifyViaEmail || notifyViaCalendar" class="mb-3 flex flex-wrap items-center gap-1.5">
-              <span v-if="notifyViaEmail" class="ui-pill ui-pill-brand gap-1">
+              <span v-if="notifyViaEmail" class="inline-flex items-center gap-1 rounded-full bg-brand-50 dark:bg-brand-950/30 px-2 py-0.5 text-[11px] font-medium text-brand-700 dark:text-brand-400">
                 <Mail class="size-3" />
                 Email
               </span>
-              <span v-if="notifyViaCalendar" class="ui-pill ui-pill-success gap-1">
+              <span v-if="notifyViaCalendar" class="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
                 <Calendar class="size-3" />
-                Google Calendar
+                {{ calendarProviderLabel }}
               </span>
             </div>
 
             <div class="flex items-center gap-3">
               <button
                 type="button"
-                class="ui-button ui-button-secondary flex-1 px-4 py-2.5 text-sm"
+                class="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-800 hover:bg-surface-50 dark:hover:text-surface-200 dark:hover:bg-surface-800 transition-colors cursor-pointer"
                 :disabled="isSubmitting || isMoving"
                 @click="emit('close')"
               >
@@ -938,7 +950,7 @@ async function handleMoveToInterview() {
               <button
                 type="button"
                 :disabled="isSubmitting || isMoving"
-                class="ui-button ui-button-primary flex-[1.5] px-4 py-2.5 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                class="flex-[1.5] rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-sm shadow-brand-600/20 dark:shadow-brand-500/10"
                 @click="handleSubmit"
               >
                 {{ isSubmitting ? 'Scheduling…' : 'Schedule Interview' }}
@@ -948,7 +960,7 @@ async function handleMoveToInterview() {
               <button
                 type="button"
                 :disabled="isSubmitting || isMoving"
-                class="ui-inline-link text-[12px] disabled:opacity-50 disabled:cursor-not-allowed"
+                class="text-[12px] text-surface-400 hover:text-surface-600 dark:text-surface-500 dark:hover:text-surface-300 underline underline-offset-2 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 @click="handleMoveToInterview"
               >
                 {{ isMoving ? 'Moving…' : 'Skip scheduling — just move to interview stage' }}

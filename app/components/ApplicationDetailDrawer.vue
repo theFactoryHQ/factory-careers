@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { X, ExternalLink, User, Briefcase, Calendar, Clock, Hash, FileText, MessageSquare } from 'lucide-vue-next'
+import { X, ExternalLink, User, Briefcase, Calendar, Clock, FileText, MessageSquare, Brain, Loader2 } from 'lucide-vue-next'
 import { APPLICATION_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 import {
@@ -22,6 +22,7 @@ const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 const toast = useToast()
 
 const { application, status: fetchStatus, error, refresh, updateApplication } = useApplication(() => props.applicationId)
+const { isScoringApplication, scoreApplicationCandidate } = useApplicationScoring()
 const { formatCandidateName } = useOrgSettings()
 
 // ─── Status transitions ───────────────────────────────────────────────────────
@@ -73,6 +74,15 @@ async function saveNotes() {
   }
 }
 
+async function scoreCurrentApplication() {
+  if (!application.value) return
+  await scoreApplicationCandidate(props.applicationId, {
+    refresh,
+    jobId: application.value.job.id,
+    source: 'application_detail_drawer',
+  })
+}
+
 // ─── Display helpers ──────────────────────────────────────────────────────────
 
 function formatResponseValue(value: unknown): string {
@@ -108,7 +118,7 @@ onUnmounted(() => {
       leave-to-class="opacity-0"
     >
       <div
-        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-[55]"
+        class="fixed inset-0 z-[55] bg-black/75 backdrop-blur-[1px]"
         @click="emit('close')"
       />
     </Transition>
@@ -121,24 +131,24 @@ onUnmounted(() => {
       leave-to-class="translate-x-full"
     >
       <aside
-        class="factory-dashboard-portal ui-drawer-panel fixed inset-y-0 right-0 z-[60] w-full max-w-2xl flex flex-col"
+        class="factory-dashboard-portal fixed inset-y-0 right-0 z-[60] w-full max-w-2xl flex flex-col border-l border-white/12 bg-black text-white shadow-none"
         role="dialog"
         aria-modal="true"
         aria-label="Application detail"
       >
         <!-- Header -->
-        <header class="ui-drawer-header flex items-center justify-between gap-3 px-5 py-4 shrink-0">
-          <span class="truncate text-sm font-semibold">Application detail</span>
+        <header class="flex items-center justify-between gap-3 border-b border-white/10 bg-white/[0.035] px-5 py-4 shrink-0">
+          <span class="truncate text-sm font-semibold text-white">Application detail</span>
           <div class="flex items-center gap-2 shrink-0">
             <NuxtLink
               :to="localePath(`/dashboard/applications/${applicationId}`)"
-              class="ui-button ui-button-secondary px-3 py-1.5 text-xs"
+              class="factory-toolbar-button inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-medium uppercase text-white/78 hover:text-white transition-colors"
             >
               <ExternalLink class="size-3.5" />
               Open full page
             </NuxtLink>
             <button
-              class="ui-button ui-button-ghost p-1.5"
+              class="factory-toolbar-button p-1.5 text-white/58 hover:text-white transition-colors"
               @click="emit('close')"
             >
               <X class="size-4" />
@@ -147,84 +157,102 @@ onUnmounted(() => {
         </header>
 
         <!-- Scrollable body -->
-        <div class="ui-drawer-body ui-drawer-content">
+        <div class="flex-1 overflow-y-auto bg-black p-5 space-y-4">
           <!-- Loading -->
-          <div v-if="fetchStatus === 'pending'" class="ui-empty-state py-12 text-sm">
+          <div v-if="fetchStatus === 'pending'" class="text-center py-12 text-surface-400">
             Loading application…
           </div>
 
           <!-- Error -->
           <div
             v-else-if="error"
-            class="ui-alert ui-alert-danger p-4 text-sm"
+            class="border border-danger-500/45 bg-danger-500/10 p-4 text-sm text-danger-200"
           >
             {{ error.statusCode === 404 ? 'Application not found.' : 'Failed to load application.' }}
           </div>
 
           <template v-else-if="application">
             <!-- Header card -->
-            <div class="ui-panel ui-drawer-card">
-              <p class="mb-2 text-xs font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
-                Application Overview
-              </p>
-              <div class="mb-2 flex flex-wrap items-center gap-2 text-surface-400">
-                <h2 class="text-2xl font-bold text-surface-900 dark:text-surface-50 truncate">
-                  {{ formatCandidateName(application.candidate) }}
-                </h2>
-                <span class="text-surface-400">→</span>
-                <NuxtLink
-                  :to="localePath(`/dashboard/jobs/${application.job.id}`)"
-                  class="ui-inline-link ui-inline-link-brand text-xl truncate"
-                >
-                  {{ application.job.title }}
-                </NuxtLink>
-              </div>
-              <div class="flex flex-wrap items-center gap-3">
-                <span
-                  class="inline-flex items-center border px-2.5 py-0.5 text-xs font-semibold uppercase"
-                  :class="getApplicationStatusBadgeClass(application.status, 'factory')"
-                >
-                  {{ application.status }}
-                </span>
-                <TimelineDateLink :date="application.createdAt" class="text-sm text-surface-500 dark:text-surface-400">
-                  Applied {{ new Date(application.createdAt).toLocaleDateString() }}
-                </TimelineDateLink>
+            <div class="relative border border-white/12 bg-white/[0.025] p-5">
+              <div class="flex flex-col gap-4 sm:pr-56">
+                <div class="min-w-0">
+                  <p class="mb-2 text-xs font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
+                    Application Overview
+                  </p>
+                  <div class="mb-3 flex flex-wrap items-center gap-2 text-surface-400">
+                    <h2 class="truncate text-2xl font-bold text-surface-900 dark:text-surface-50">
+                      {{ formatCandidateName(application.candidate) }}
+                    </h2>
+                    <span class="text-surface-400">→</span>
+                    <NuxtLink
+                      :to="localePath(`/dashboard/jobs/${application.job.id}`)"
+                      class="truncate text-xl text-brand-600 transition-colors hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+                    >
+                      {{ application.job.title }}
+                    </NuxtLink>
+                  </div>
+                  <span
+                    class="inline-flex items-center border px-2.5 py-1 text-xs font-semibold uppercase"
+                    :class="getApplicationStatusBadgeClass(application.status, 'factory')"
+                  >
+                    {{ application.status }}
+                  </span>
+                </div>
+
+                <div class="flex shrink-0 flex-wrap gap-x-3 gap-y-1 text-xs sm:absolute sm:right-5 sm:top-5 sm:flex-col sm:items-end">
+                  <TimelineDateLink
+                    :date="application.createdAt"
+                    class="inline-flex items-center gap-1.5 text-xs font-medium text-white/58 no-underline transition-colors hover:text-white"
+                  >
+                    <Calendar class="size-3.5 text-brand-500" />
+                    <span class="uppercase text-white/36">Applied</span>
+                    <span class="text-white/78">{{ new Date(application.createdAt).toLocaleDateString() }}</span>
+                  </TimelineDateLink>
+                  <TimelineDateLink
+                    :date="application.updatedAt"
+                    class="inline-flex items-center gap-1.5 text-xs font-medium text-white/58 no-underline transition-colors hover:text-white"
+                  >
+                    <Clock class="size-3.5 text-brand-500" />
+                    <span class="uppercase text-white/36">Updated</span>
+                    <span class="text-white/78">{{ new Date(application.updatedAt).toLocaleDateString() }}</span>
+                  </TimelineDateLink>
+                </div>
               </div>
             </div>
 
             <!-- Quick actions -->
-            <div class="ui-panel ui-drawer-action-strip">
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="ui-pill">Quick actions</span>
+            <div class="border border-white/12 bg-white/[0.025] p-3">
+              <div class="flex flex-nowrap items-center gap-1.5 overflow-x-auto">
+                <span class="inline-flex shrink-0 items-center whitespace-nowrap bg-white/[0.04] px-2 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal text-white/58">Quick actions</span>
                 <button
                   v-for="nextStatus in allowedTransitions"
                   :key="nextStatus"
                   :disabled="isTransitioning"
-                  class="inline-flex cursor-pointer items-center px-3.5 py-1.5 text-xs font-semibold uppercase transition-all duration-150 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  class="inline-flex shrink-0 cursor-pointer items-center whitespace-nowrap px-2.5 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
                   :class="getApplicationTransitionButtonClass(nextStatus, 'factory')"
                   @click="handleTransition(nextStatus)"
                 >
                   <span
-                    class="mr-2 inline-flex size-1.5 rounded-full"
+                    class="mr-1.5 inline-flex size-1 rounded-full"
                     :class="getApplicationTransitionDotClass(nextStatus)"
                   />
                   {{ getApplicationTransitionLabel(nextStatus) }}
                 </button>
                 <button
-                  class="ui-button ui-button-secondary px-3.5 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                  class="inline-flex shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap border border-white/16 bg-black px-2.5 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal text-white/80 hover:border-brand-500 hover:bg-brand-500/12 hover:text-white transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
                   @click="showInterviewSidebar = true"
                 >
-                  <Calendar class="size-3.5" />
+                  <Calendar class="size-3" />
                   Schedule Interview
                 </button>
               </div>
             </div>
 
             <!-- Candidate & Job cards -->
-            <div class="ui-drawer-card-grid">
+            <div class="grid gap-4 sm:grid-cols-2">
               <!-- Candidate info -->
-              <div class="ui-panel ui-drawer-card">
-                <div class="ui-drawer-card-header">
+              <div class="border border-white/12 bg-white/[0.025] p-5">
+                <div class="flex items-center gap-2 mb-3">
                   <User class="size-4 text-surface-500 dark:text-surface-400" />
                   <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Candidate</h3>
                 </div>
@@ -234,7 +262,7 @@ onUnmounted(() => {
                     <dd class="text-surface-700 dark:text-surface-200 font-medium">
                       <NuxtLink
                         :to="localePath(`/dashboard/candidates/${application.candidate.id}`)"
-                        class="ui-inline-link ui-inline-link-brand"
+                        class="text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
                       >
                         {{ formatCandidateName(application.candidate) }}
                       </NuxtLink>
@@ -246,7 +274,7 @@ onUnmounted(() => {
                       <a
                         :href="`mailto:${application.candidate.email}`"
                         target="_blank"
-                        class="ui-inline-link ui-inline-link-brand"
+                        class="hover:text-brand-600 dark:hover:text-brand-400 hover:underline cursor-pointer transition-colors"
                       >{{ application.candidate.email }}</a>
                     </dd>
                   </div>
@@ -258,8 +286,8 @@ onUnmounted(() => {
               </div>
 
               <!-- Job info -->
-              <div class="ui-panel ui-drawer-card">
-                <div class="ui-drawer-card-header">
+              <div class="border border-white/12 bg-white/[0.025] p-5">
+                <div class="flex items-center gap-2 mb-3">
                   <Briefcase class="size-4 text-surface-500 dark:text-surface-400" />
                   <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Job</h3>
                 </div>
@@ -269,7 +297,7 @@ onUnmounted(() => {
                     <dd class="text-surface-700 dark:text-surface-200 font-medium">
                       <NuxtLink
                         :to="localePath(`/dashboard/jobs/${application.job.id}`)"
-                        class="ui-inline-link ui-inline-link-brand"
+                        class="text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
                       >
                         {{ application.job.title }}
                       </NuxtLink>
@@ -283,44 +311,36 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Application details -->
-            <div class="ui-panel ui-drawer-card">
-              <div class="ui-drawer-card-header">
-                <Hash class="size-4 text-surface-500 dark:text-surface-400" />
-                <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Details</h3>
+            <!-- Application scoring -->
+            <div class="border border-white/12 bg-white/[0.025] p-5">
+              <div class="flex items-center gap-2 mb-3">
+                <Brain class="size-4 text-surface-500 dark:text-surface-400" />
+                <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Scoring</h3>
               </div>
-              <dl class="grid grid-cols-2 gap-3 text-sm">
+              <dl class="grid grid-cols-1 gap-4 text-sm">
                 <div>
                   <dt class="text-surface-400">Score</dt>
-                  <dd class="text-surface-700 dark:text-surface-200 font-medium">{{ application.score ?? '—' }}</dd>
-                </div>
-                <div>
-                  <dt class="text-surface-400">Status</dt>
-                  <dd class="text-surface-700 dark:text-surface-200 font-medium capitalize">{{ application.status }}</dd>
-                </div>
-                <div>
-                  <dt class="text-surface-400 inline-flex items-center gap-1">
-                    <Calendar class="size-3.5" />
-                    Applied
-                  </dt>
-                  <dd class="text-surface-700 dark:text-surface-200 font-medium">
-                    <TimelineDateLink :date="application.createdAt">{{ new Date(application.createdAt).toLocaleDateString() }}</TimelineDateLink>
-                  </dd>
-                </div>
-                <div>
-                  <dt class="text-surface-400 inline-flex items-center gap-1">
-                    <Clock class="size-3.5" />
-                    Updated
-                  </dt>
-                  <dd class="text-surface-700 dark:text-surface-200 font-medium">
-                    <TimelineDateLink :date="application.updatedAt">{{ new Date(application.updatedAt).toLocaleDateString() }}</TimelineDateLink>
+                  <dd class="mt-1 flex flex-wrap items-center gap-2">
+                    <span class="text-surface-700 dark:text-surface-200 font-medium">
+                      {{ application.score != null ? `${application.score} pts` : 'Not scored' }}
+                    </span>
+                    <button
+                      type="button"
+                      :disabled="isScoringApplication"
+                      class="factory-button-cta factory-button-premium inline-flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1.5 px-2.5 py-0 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                      @click="scoreCurrentApplication"
+                    >
+                      <Loader2 v-if="isScoringApplication" class="size-3 animate-spin" />
+                      <Brain v-else class="size-3" />
+                      {{ isScoringApplication ? 'Scoring...' : (application.score != null ? 'Re-score' : 'Run Analysis') }}
+                    </button>
                   </dd>
                 </div>
               </dl>
             </div>
 
             <!-- Notes -->
-            <div class="ui-panel ui-drawer-card">
+            <div class="border border-white/12 bg-white/[0.025] p-5">
               <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-2">
                   <MessageSquare class="size-4 text-surface-500 dark:text-surface-400" />
@@ -328,7 +348,7 @@ onUnmounted(() => {
                 </div>
                 <button
                   v-if="!isEditingNotes && application.notes"
-                  class="ui-inline-link ui-inline-link-brand text-xs font-medium"
+                  class="cursor-pointer text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors"
                   @click="startEditNotes"
                 >
                   Edit
@@ -341,18 +361,18 @@ onUnmounted(() => {
                   v-model="notesInput"
                   rows="4"
                   placeholder="Add notes about this application…"
-                  class="ui-field"
+                  class="w-full border border-white/16 bg-black/45 px-3 py-2 text-sm text-white placeholder:text-white/34 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
                 />
                 <div class="flex items-center gap-2 mt-2">
                   <button
                     :disabled="isSavingNotes"
-                    class="ui-button ui-button-primary px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="factory-button-cta factory-button-premium cursor-pointer px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     @click="saveNotes"
                   >
                     {{ isSavingNotes ? 'Saving…' : 'Save' }}
                   </button>
                   <button
-                    class="ui-button ui-button-secondary px-3 py-1.5 text-xs"
+                    class="factory-toolbar-button cursor-pointer border px-3 py-1.5 text-xs font-medium text-white/78 hover:text-white transition-colors"
                     @click="isEditingNotes = false"
                   >
                     Cancel
@@ -368,16 +388,16 @@ onUnmounted(() => {
               <button
                 v-else
                 type="button"
-                class="ui-empty-panel ui-drawer-empty-action group"
+                class="group flex w-full cursor-pointer items-center justify-between border border-dashed border-white/12 bg-black px-3 py-3 text-left text-sm text-surface-400 transition-colors hover:border-brand-500/70 hover:bg-brand-500/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40"
                 @click="startEditNotes"
               >
                 <span class="italic">No notes yet.</span>
-                <span class="ui-inline-link ui-inline-link-brand text-xs font-semibold uppercase">Add Notes</span>
+                <span class="text-xs font-semibold uppercase text-brand-400 transition-colors group-hover:text-brand-300">Add Notes</span>
               </button>
             </div>
 
             <!-- Properties -->
-            <div class="ui-panel ui-drawer-card-compact">
+            <div class="border border-white/12 bg-white/[0.025] p-4">
               <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200 mb-2 px-2">Properties</h3>
               <PropertyBlock
                 entity-type="application"
@@ -391,9 +411,9 @@ onUnmounted(() => {
             <!-- Question Responses -->
             <div
               v-if="application.responses && application.responses.length > 0"
-              class="ui-panel ui-drawer-card"
+              class="border border-white/12 bg-white/[0.025] p-5"
             >
-              <div class="ui-drawer-card-header">
+              <div class="flex items-center gap-2 mb-3">
                 <FileText class="size-4 text-surface-500 dark:text-surface-400" />
                 <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">
                   Application Responses ({{ application.responses.length }})
@@ -403,7 +423,7 @@ onUnmounted(() => {
                 <div
                   v-for="response in application.responses"
                   :key="response.id"
-                  class="ui-panel-divider pt-3 first:border-t-0 first:pt-0"
+                  class="border-b border-white/10 pb-3 last:border-0 last:pb-0"
                 >
                   <dt class="text-xs font-medium text-surface-500 dark:text-surface-400 mb-0.5">
                     {{ response.question?.label ?? 'Unknown question' }}
