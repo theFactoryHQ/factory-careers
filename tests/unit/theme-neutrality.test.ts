@@ -919,6 +919,286 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('centralizes interview detail and template panel structure behind shared recipes', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+
+    for (const recipe of [
+      '.ui-detail-page',
+      '.ui-detail-back-link',
+      '.ui-detail-loading-state',
+      '.ui-detail-header-card',
+      '.ui-detail-action-strip',
+      '.ui-detail-card-grid',
+      '.ui-detail-card',
+      '.ui-detail-card-compact',
+      '.ui-detail-card-spaced',
+      '.ui-detail-card-header',
+      '.ui-detail-danger-card',
+      '.ui-detail-inline-panel',
+      '.ui-detail-inline-panel-state',
+      '.ui-detail-inline-panel-header',
+      '.ui-detail-inline-panel-body',
+      '.ui-detail-inline-panel-footer',
+      '.ui-template-page',
+      '.ui-template-builder-grid',
+      '.ui-template-preview-card',
+      '.ui-template-preview-footer',
+      '.ui-template-variable-row',
+    ]) {
+      expect(css, `Detail structural recipe ${recipe} should be defined`).toMatch(
+        new RegExp(`${recipe.replace('.', '\\.')}\\s*\\{`),
+      )
+    }
+
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/interviews/[id].vue',
+        recipes: [
+          'ui-detail-page',
+          'ui-detail-back-link',
+          'ui-detail-loading-state',
+          'ui-detail-header-card',
+          'ui-detail-action-strip',
+          'ui-detail-card-grid',
+          'ui-detail-card',
+          'ui-detail-card-spaced',
+          'ui-detail-card-header',
+          'ui-detail-danger-card',
+          'ui-detail-inline-panel',
+          'ui-detail-inline-panel-state',
+          'ui-detail-inline-panel-header',
+          'ui-detail-inline-panel-body',
+          'ui-detail-inline-panel-footer',
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/interviews/templates/index.vue',
+        recipes: ['ui-template-page', 'ui-detail-back-link', 'ui-detail-card', 'ui-detail-loading-state'],
+      },
+      {
+        path: 'app/pages/dashboard/interviews/templates/new.vue',
+        recipes: [
+          'ui-template-page',
+          'ui-detail-back-link',
+          'ui-template-builder-grid',
+          'ui-detail-card',
+          'ui-template-preview-card',
+          'ui-template-preview-footer',
+          'ui-template-variable-row',
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/interviews/templates/[id].vue',
+        recipes: [
+          'ui-template-page',
+          'ui-detail-back-link',
+          'ui-template-builder-grid',
+          'ui-detail-card',
+          'ui-detail-danger-card',
+          'ui-template-preview-card',
+          'ui-template-preview-footer',
+          'ui-template-variable-row',
+        ],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/pages/dashboard/interviews/[id].vue',
+        patterns: [
+          /class="mx-auto max-w-3xl px-6 py-8"/,
+          /class="ui-button ui-button-secondary mb-4 rounded-full px-3 py-1\.5 text-sm"/,
+          /class="flex flex-col items-center justify-center py-20"/,
+          /ui-panel mb-4 p-5/,
+          /ui-panel mb-6 p-3/,
+          /ui-panel-brand mb-6 overflow-hidden shadow-sm/,
+          /flex flex-col items-center justify-center py-10 px-6/,
+          /ui-panel-brand-header px-5 py-3\.5/,
+          /class="p-5"/,
+          /ui-panel-footer px-5 py-4/,
+          /class="grid gap-4 md:grid-cols-2"/,
+          /ui-panel p-5/,
+          /ui-panel mt-4 mb-4 p-5/,
+          /ui-panel-danger p-5/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/interviews/templates/index.vue',
+        patterns: [
+          /class="mx-auto max-w-4xl px-6 py-8"/,
+          /class="ui-button ui-button-secondary mb-6 rounded-full px-3 py-1\.5 text-sm no-underline"/,
+          /ui-panel-brand ui-list-row group relative p-5 no-underline/,
+          /ui-panel flex items-center gap-3 p-8 justify-center/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/interviews/templates/new.vue',
+        patterns: [
+          /class="mx-auto max-w-5xl px-6 py-8"/,
+          /class="ui-button ui-button-secondary mb-6 rounded-full px-3 py-1\.5 text-sm no-underline"/,
+          /class="grid gap-6" :class="showPreview \? 'lg:grid-cols-2' : 'lg:grid-cols-\[1fr_320px\]'"/,
+          /ui-panel p-5/,
+          /ui-panel-brand overflow-hidden/,
+          /ui-panel-footer px-5 py-2\.5/,
+          /ui-panel-muted flex items-center justify-between px-3 py-2/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/interviews/templates/[id].vue',
+        patterns: [
+          /class="mx-auto max-w-5xl px-6 py-8"/,
+          /class="ui-button ui-button-secondary mb-6 rounded-full px-3 py-1\.5 text-sm no-underline"/,
+          /class="grid gap-6" :class="showPreview \? 'lg:grid-cols-2' : 'lg:grid-cols-\[1fr_320px\]'"/,
+          /ui-panel p-5/,
+          /ui-panel-danger p-5/,
+          /ui-panel-brand overflow-hidden/,
+          /ui-panel-footer px-5 py-2\.5/,
+          /ui-panel-muted flex items-center justify-between px-3 py-2/,
+        ],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
+    }
+  })
+
+  it('centralizes dashboard drawer and modal interior structure behind shared recipes', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+
+    for (const recipe of [
+      '.ui-modal-content',
+      '.ui-modal-content-sm',
+      '.ui-modal-content-md',
+      '.ui-modal-content-lg',
+      '.ui-modal-content-scroll',
+      '.ui-modal-actions',
+      '.ui-modal-success-state',
+      '.ui-drawer-content',
+      '.ui-drawer-card',
+      '.ui-drawer-card-compact',
+      '.ui-drawer-action-strip',
+      '.ui-drawer-card-grid',
+      '.ui-drawer-card-header',
+      '.ui-drawer-empty-action',
+      '.ui-email-modal-panel',
+      '.ui-email-modal-header',
+      '.ui-email-modal-tabs',
+      '.ui-email-modal-body',
+      '.ui-email-modal-preview',
+      '.ui-email-modal-variable-panel',
+      '.ui-email-modal-template-form',
+      '.ui-email-modal-template-row',
+      '.ui-email-modal-footer',
+    ]) {
+      expect(css, `Modal/drawer structural recipe ${recipe} should be defined`).toMatch(
+        new RegExp(`${recipe.replace('.', '\\.')}\\s*\\{`),
+      )
+    }
+
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/interviews/[id].vue',
+        recipes: ['ui-modal-content', 'ui-modal-content-sm', 'ui-modal-content-md', 'ui-modal-content-lg', 'ui-modal-content-scroll', 'ui-modal-actions'],
+      },
+      {
+        path: 'app/components/ApplicationDetailDrawer.vue',
+        recipes: [
+          'ui-drawer-content',
+          'ui-drawer-card',
+          'ui-drawer-card-compact',
+          'ui-drawer-action-strip',
+          'ui-drawer-card-grid',
+          'ui-drawer-card-header',
+          'ui-drawer-empty-action',
+        ],
+      },
+      {
+        path: 'app/components/InterviewEmailModal.vue',
+        recipes: [
+          'ui-email-modal-panel',
+          'ui-email-modal-header',
+          'ui-email-modal-tabs',
+          'ui-email-modal-body',
+          'ui-email-modal-preview',
+          'ui-email-modal-variable-panel',
+          'ui-email-modal-template-form',
+          'ui-email-modal-template-row',
+          'ui-email-modal-footer',
+          'ui-modal-success-state',
+        ],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/pages/dashboard/interviews/[id].vue',
+        patterns: [
+          /ui-modal-panel relative w-full max-w-md p-6/,
+          /ui-modal-panel relative w-full max-w-lg max-h-\[90vh\] overflow-y-auto p-6/,
+          /ui-modal-panel relative w-full max-w-sm p-6/,
+          /flex items-center justify-end gap-3 pt-2/,
+          /flex justify-end gap-2/,
+        ],
+      },
+      {
+        path: 'app/components/ApplicationDetailDrawer.vue',
+        patterns: [
+          /ui-drawer-body flex-1 overflow-y-auto p-5 space-y-4/,
+          /ui-panel p-5/,
+          /ui-panel p-4/,
+          /ui-panel p-3/,
+          /grid gap-4 sm:grid-cols-2/,
+          /ui-empty-panel group flex w-full cursor-pointer items-center justify-between p-3 text-left text-sm/,
+        ],
+      },
+      {
+        path: 'app/components/InterviewEmailModal.vue',
+        patterns: [
+          /ui-modal-panel relative w-full max-w-2xl max-h-\[90vh\] flex flex-col overflow-hidden/,
+          /ui-panel-header shrink-0 px-4 sm:px-6 py-4/,
+          /ui-panel-header shrink-0 px-4 sm:px-6 overflow-x-auto scrollbar-none/,
+          /flex-1 flex flex-col items-center justify-center py-12 px-6/,
+          /flex-1 overflow-y-auto px-4 sm:px-6 py-5/,
+          /ui-selectable-panel w-full p-4 text-left/,
+          /ui-panel-muted mt-3 p-4/,
+          /ui-panel-muted p-3\.5/,
+          /ui-panel-muted p-4 space-y-3/,
+          /ui-panel ui-list-row flex items-center justify-between p-3\.5/,
+          /ui-panel-footer shrink-0 px-6 py-4/,
+        ],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
+    }
+  })
+
   it('applies shared UI recipes to modal form surfaces', () => {
     const recipeUsage = [
       {

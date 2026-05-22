@@ -81,11 +81,11 @@ async function handleCreate() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl px-6 py-8">
+  <div class="ui-template-page">
     <!-- Breadcrumb -->
     <NuxtLink
       :to="localePath('/dashboard/interviews/templates')"
-      class="ui-button ui-button-secondary mb-6 rounded-full px-3 py-1.5 text-sm no-underline"
+      class="ui-button ui-button-secondary ui-detail-back-link no-underline"
     >
       <ArrowLeft class="size-4" />
       All Templates
@@ -131,11 +131,11 @@ async function handleCreate() {
       {{ saveError }}
     </div>
 
-    <div class="grid gap-6" :class="showPreview ? 'lg:grid-cols-2' : 'lg:grid-cols-[1fr_320px]'">
+    <div class="ui-template-builder-grid" :class="showPreview ? 'ui-template-builder-grid-even' : 'ui-template-builder-grid-sidebar'">
       <!-- Editor panel -->
       <div class="space-y-5">
         <!-- Name -->
-        <div class="ui-panel p-5">
+        <div class="ui-panel ui-detail-card">
           <label for="template-name" class="block text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-2">
             Template Name
           </label>
@@ -149,7 +149,7 @@ async function handleCreate() {
         </div>
 
         <!-- Subject -->
-        <div class="ui-panel p-5">
+        <div class="ui-panel ui-detail-card">
           <label for="template-subject" class="block text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-2">
             Subject Line
           </label>
@@ -163,7 +163,7 @@ async function handleCreate() {
         </div>
 
         <!-- Body -->
-        <div class="ui-panel p-5">
+        <div class="ui-panel ui-detail-card">
           <label for="template-body" class="block text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-2">
             Email Body
           </label>
@@ -188,14 +188,14 @@ async function handleCreate() {
           leave-from-class="opacity-100 translate-y-0"
           leave-to-class="opacity-0 translate-y-2"
         >
-          <div v-if="showPreview" class="ui-panel-brand overflow-hidden">
-            <div class="ui-panel-brand-header px-5 py-3">
+          <div v-if="showPreview" class="ui-panel-brand ui-template-preview-card">
+            <div class="ui-panel-brand-header ui-detail-inline-panel-header">
               <div class="flex items-center gap-2">
                 <Mail class="ui-icon-brand size-4" />
                 <span class="ui-inline-link-brand text-xs font-semibold uppercase tracking-wider no-underline">Live Preview</span>
               </div>
             </div>
-            <div class="p-5 space-y-4">
+            <div class="ui-detail-inline-panel-body space-y-4">
               <div>
                 <span class="text-[10px] uppercase tracking-wider font-semibold text-surface-400 block mb-1">Subject</span>
                 <p class="text-sm font-semibold text-surface-800 dark:text-surface-200">
@@ -209,7 +209,7 @@ async function handleCreate() {
                 </div>
               </div>
             </div>
-            <div class="ui-panel-footer px-5 py-2.5">
+            <div class="ui-panel-footer ui-template-preview-footer">
               <p class="text-[11px] text-surface-400 dark:text-surface-500 italic">
                 Preview uses sample data. Actual values are populated when sending.
               </p>
@@ -218,7 +218,7 @@ async function handleCreate() {
         </Transition>
 
         <!-- Variable reference -->
-        <div class="ui-panel p-5">
+        <div class="ui-panel ui-detail-card">
           <h3 class="text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-3">
             Available Variables
           </h3>
@@ -229,7 +229,7 @@ async function handleCreate() {
             <div
               v-for="v in AVAILABLE_VARIABLES"
               :key="v.key"
-              class="ui-panel-muted flex items-center justify-between px-3 py-2"
+              class="ui-panel-muted ui-template-variable-row"
             >
               <code class="ui-code select-all">{{ v.key }}</code>
               <span class="text-[11px] text-surface-400 dark:text-surface-500">{{ v.desc }}</span>

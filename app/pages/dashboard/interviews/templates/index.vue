@@ -45,11 +45,11 @@ async function handleDelete() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl px-6 py-8">
+  <div class="ui-template-page ui-template-page-narrow">
     <!-- Back to interviews -->
     <NuxtLink
       :to="localePath('/dashboard/interviews')"
-      class="ui-button ui-button-secondary mb-6 rounded-full px-3 py-1.5 text-sm no-underline"
+      class="ui-button ui-button-secondary ui-detail-back-link no-underline"
     >
       <ArrowLeft class="size-4" />
       Back to Interviews
@@ -92,7 +92,7 @@ async function handleDelete() {
           v-for="t in SYSTEM_TEMPLATES"
           :key="t.id"
           :to="localePath(`/dashboard/interviews/templates/${t.id}`)"
-          class="ui-panel-brand ui-list-row group relative p-5 no-underline"
+          class="ui-panel-brand ui-list-row ui-detail-card group relative no-underline"
         >
           <div class="flex items-start justify-between mb-3">
             <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-9">
@@ -135,7 +135,7 @@ async function handleDelete() {
       </div>
 
       <!-- Loading state -->
-      <div v-if="fetchStatus === 'pending'" class="ui-panel flex items-center gap-3 p-8 justify-center">
+      <div v-if="fetchStatus === 'pending'" class="ui-panel ui-detail-loading-state">
         <div class="ui-spinner-brand size-5 rounded-full border-2 animate-spin" />
         <span class="text-sm text-surface-400">Loading templates…</span>
       </div>
@@ -222,7 +222,7 @@ async function handleDelete() {
           class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
           @click.self="showDeleteConfirm = false"
         >
-          <div class="ui-modal-panel relative w-full max-w-sm p-6">
+          <div class="ui-modal-panel ui-modal-content ui-modal-content-sm">
             <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Template</h3>
             <p class="text-sm text-surface-600 dark:text-surface-400 mb-5">
               Are you sure you want to delete <strong>{{ templateToDelete?.name }}</strong>? This cannot be undone.

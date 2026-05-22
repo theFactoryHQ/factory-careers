@@ -159,9 +159,9 @@ const canSend = computed(() => {
       @click.self="emit('close')"
     >
       <!-- Modal -->
-      <div class="ui-modal-panel relative w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="ui-modal-panel ui-email-modal-panel">
         <!-- Header -->
-        <div class="ui-panel-header shrink-0 px-4 sm:px-6 py-4">
+        <div class="ui-panel-header ui-email-modal-header">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
               <div class="ui-icon-state ui-icon-state-brand size-9 rounded-lg">
@@ -186,7 +186,7 @@ const canSend = computed(() => {
         </div>
 
         <!-- Success state -->
-        <div v-if="sendSuccess" class="flex-1 flex flex-col items-center justify-center py-12 px-6">
+        <div v-if="sendSuccess" class="ui-modal-success-state">
           <div class="ui-icon-state ui-icon-state-success size-14 mb-4">
             <Check class="size-7" />
           </div>
@@ -199,7 +199,7 @@ const canSend = computed(() => {
         <!-- Main content -->
         <template v-else>
           <!-- Tabs -->
-          <div class="ui-panel-header shrink-0 px-4 sm:px-6 overflow-x-auto scrollbar-none">
+          <div class="ui-panel-header ui-email-modal-tabs scrollbar-none">
             <div class="flex gap-1">
               <button
                 v-for="tab in ([
@@ -227,7 +227,7 @@ const canSend = computed(() => {
           </div>
 
           <!-- Tab content -->
-          <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
+          <div class="ui-email-modal-body">
             <!-- Template Selection Tab -->
             <div v-if="activeTab === 'template'" class="space-y-3">
               <p class="text-xs text-surface-500 dark:text-surface-400 mb-3">
@@ -237,7 +237,7 @@ const canSend = computed(() => {
                 v-for="t in allTemplates"
                 :key="t.id"
                 type="button"
-                class="ui-selectable-panel w-full p-4 text-left"
+                class="ui-selectable-panel ui-email-modal-selectable"
                 :class="selectedTemplateId === t.id
                   ? 'ui-selectable-panel-active'
                   : ''"
@@ -268,7 +268,7 @@ const canSend = computed(() => {
                     :class="showPreview ? 'rotate-180' : ''"
                   />
                 </button>
-                <div v-if="showPreview" class="ui-panel-muted mt-3 p-4">
+                <div v-if="showPreview" class="ui-panel-muted ui-email-modal-preview">
                   <div class="mb-2">
                     <span class="text-[10px] uppercase tracking-wider font-semibold text-surface-400">Subject</span>
                     <p class="text-sm font-semibold text-surface-800 dark:text-surface-200">{{ previewSubject }}</p>
@@ -310,7 +310,7 @@ const canSend = computed(() => {
               </div>
 
               <!-- Variable reference -->
-              <div class="ui-panel-muted p-3.5">
+              <div class="ui-panel-muted ui-email-modal-variable-panel">
                 <p class="text-[10px] uppercase tracking-wider font-semibold text-surface-400 mb-2">Available Variables</p>
                 <div class="flex flex-wrap gap-1.5">
                   <span
@@ -334,7 +334,7 @@ const canSend = computed(() => {
                   <Eye class="size-3.5" />
                   {{ showPreview ? 'Hide Preview' : 'Preview with Real Data' }}
                 </button>
-                <div v-if="showPreview" class="ui-panel-muted mt-3 p-4">
+                <div v-if="showPreview" class="ui-panel-muted ui-email-modal-preview">
                   <div class="mb-2">
                     <span class="text-[10px] uppercase tracking-wider font-semibold text-surface-400">Subject</span>
                     <p class="text-sm font-semibold text-surface-800 dark:text-surface-200">{{ previewSubject }}</p>
@@ -365,7 +365,7 @@ const canSend = computed(() => {
               </div>
 
               <!-- New template form -->
-              <div v-if="showNewTemplateForm" class="ui-panel-muted p-4 space-y-3">
+              <div v-if="showNewTemplateForm" class="ui-panel-muted ui-email-modal-template-form">
                 <h4 class="text-sm font-semibold text-surface-800 dark:text-surface-200">Create Template</h4>
                 <div v-if="templateSaveError" class="ui-alert ui-alert-danger p-2.5 text-xs">
                   {{ templateSaveError }}
@@ -414,7 +414,7 @@ const canSend = computed(() => {
                 <div
                   v-for="t in templates"
                   :key="t.id"
-                  class="ui-panel ui-list-row flex items-center justify-between p-3.5"
+                  class="ui-panel ui-list-row ui-email-modal-template-row"
                 >
                   <div class="min-w-0 flex-1">
                     <p class="text-sm font-semibold text-surface-800 dark:text-surface-200 truncate">{{ t.name }}</p>
@@ -436,7 +436,7 @@ const canSend = computed(() => {
               </div>
 
               <!-- Variable reference -->
-              <div class="ui-panel-muted p-3.5">
+              <div class="ui-panel-muted ui-email-modal-variable-panel">
                 <p class="text-[10px] uppercase tracking-wider font-semibold text-surface-400 mb-2">Available Variables</p>
                 <div class="flex flex-wrap gap-1.5">
                   <span
@@ -453,7 +453,7 @@ const canSend = computed(() => {
           </div>
 
           <!-- Footer -->
-          <div v-if="activeTab !== 'manage'" class="ui-panel-footer shrink-0 px-6 py-4">
+          <div v-if="activeTab !== 'manage'" class="ui-panel-footer ui-email-modal-footer">
             <div class="flex items-center gap-3">
               <button
                 type="button"

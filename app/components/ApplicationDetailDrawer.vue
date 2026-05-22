@@ -147,7 +147,7 @@ onUnmounted(() => {
         </header>
 
         <!-- Scrollable body -->
-        <div class="ui-drawer-body flex-1 overflow-y-auto p-5 space-y-4">
+        <div class="ui-drawer-body ui-drawer-content">
           <!-- Loading -->
           <div v-if="fetchStatus === 'pending'" class="ui-empty-state py-12 text-sm">
             Loading application…
@@ -163,7 +163,7 @@ onUnmounted(() => {
 
           <template v-else-if="application">
             <!-- Header card -->
-            <div class="ui-panel p-5">
+            <div class="ui-panel ui-drawer-card">
               <p class="mb-2 text-xs font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
                 Application Overview
               </p>
@@ -193,7 +193,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Quick actions -->
-            <div class="ui-panel p-3">
+            <div class="ui-panel ui-drawer-action-strip">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="ui-pill">Quick actions</span>
                 <button
@@ -221,10 +221,10 @@ onUnmounted(() => {
             </div>
 
             <!-- Candidate & Job cards -->
-            <div class="grid gap-4 sm:grid-cols-2">
+            <div class="ui-drawer-card-grid">
               <!-- Candidate info -->
-              <div class="ui-panel p-5">
-                <div class="flex items-center gap-2 mb-3">
+              <div class="ui-panel ui-drawer-card">
+                <div class="ui-drawer-card-header">
                   <User class="size-4 text-surface-500 dark:text-surface-400" />
                   <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Candidate</h3>
                 </div>
@@ -258,8 +258,8 @@ onUnmounted(() => {
               </div>
 
               <!-- Job info -->
-              <div class="ui-panel p-5">
-                <div class="flex items-center gap-2 mb-3">
+              <div class="ui-panel ui-drawer-card">
+                <div class="ui-drawer-card-header">
                   <Briefcase class="size-4 text-surface-500 dark:text-surface-400" />
                   <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Job</h3>
                 </div>
@@ -284,8 +284,8 @@ onUnmounted(() => {
             </div>
 
             <!-- Application details -->
-            <div class="ui-panel p-5">
-              <div class="flex items-center gap-2 mb-3">
+            <div class="ui-panel ui-drawer-card">
+              <div class="ui-drawer-card-header">
                 <Hash class="size-4 text-surface-500 dark:text-surface-400" />
                 <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Details</h3>
               </div>
@@ -320,7 +320,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Notes -->
-            <div class="ui-panel p-5">
+            <div class="ui-panel ui-drawer-card">
               <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-2">
                   <MessageSquare class="size-4 text-surface-500 dark:text-surface-400" />
@@ -368,7 +368,7 @@ onUnmounted(() => {
               <button
                 v-else
                 type="button"
-                class="ui-empty-panel group flex w-full cursor-pointer items-center justify-between p-3 text-left text-sm"
+                class="ui-empty-panel ui-drawer-empty-action group"
                 @click="startEditNotes"
               >
                 <span class="italic">No notes yet.</span>
@@ -377,7 +377,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Properties -->
-            <div class="ui-panel p-4">
+            <div class="ui-panel ui-drawer-card-compact">
               <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200 mb-2 px-2">Properties</h3>
               <PropertyBlock
                 entity-type="application"
@@ -391,9 +391,9 @@ onUnmounted(() => {
             <!-- Question Responses -->
             <div
               v-if="application.responses && application.responses.length > 0"
-              class="ui-panel p-5"
+              class="ui-panel ui-drawer-card"
             >
-              <div class="flex items-center gap-2 mb-3">
+              <div class="ui-drawer-card-header">
                 <FileText class="size-4 text-surface-500 dark:text-surface-400" />
                 <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">
                   Application Responses ({{ application.responses.length }})

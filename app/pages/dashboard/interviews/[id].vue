@@ -351,18 +351,18 @@ const localePath = useLocalePath()
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl px-6 py-8">
+  <div class="ui-detail-page">
     <!-- Back link -->
     <NuxtLink
       :to="$localePath('/dashboard/interviews')"
-      class="ui-button ui-button-secondary mb-4 rounded-full px-3 py-1.5 text-sm"
+      class="ui-button ui-button-secondary ui-detail-back-link"
     >
       <ArrowLeft class="size-4" />
       Back to Interviews
     </NuxtLink>
 
     <!-- Loading -->
-    <div v-if="fetchStatus === 'pending'" class="flex flex-col items-center justify-center py-20">
+    <div v-if="fetchStatus === 'pending'" class="ui-detail-loading-state">
       <div class="ui-spinner-brand size-8 animate-spin rounded-full border-2" />
       <p class="mt-3 text-sm text-surface-400">Loading interview…</p>
     </div>
@@ -370,7 +370,7 @@ const localePath = useLocalePath()
     <!-- Error -->
     <div
       v-else-if="error"
-      class="ui-alert ui-alert-danger p-5"
+      class="ui-alert ui-alert-danger ui-detail-card"
     >
       {{ (error as any).statusCode === 404 ? 'Interview not found.' : 'Failed to load interview.' }}
       <NuxtLink :to="$localePath('/dashboard/interviews')" class="ui-inline-link-brand ml-1 underline">Back to Interviews</NuxtLink>
@@ -379,7 +379,7 @@ const localePath = useLocalePath()
     <!-- Interview detail -->
     <template v-else-if="interview">
       <!-- Header card -->
-      <div class="ui-panel mb-4 p-5">
+      <div class="ui-panel ui-detail-header-card">
         <div class="flex items-start justify-between gap-4">
           <div class="flex items-start gap-4 min-w-0">
             <div
@@ -458,7 +458,7 @@ const localePath = useLocalePath()
       <!-- Quick actions -->
       <div
         v-if="allowedTransitions.length > 0"
-        class="ui-panel mb-6 p-3"
+        class="ui-panel ui-detail-action-strip"
       >
         <div class="flex flex-wrap items-center gap-2">
           <span class="ui-pill rounded-full">Quick actions</span>
@@ -504,9 +504,9 @@ const localePath = useLocalePath()
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-if="showSendInvitation" class="ui-panel-brand mb-6 overflow-hidden shadow-sm">
+        <div v-if="showSendInvitation" class="ui-panel-brand ui-detail-inline-panel">
           <!-- Success state -->
-          <div v-if="sendEmailSuccess" class="flex flex-col items-center justify-center py-10 px-6">
+          <div v-if="sendEmailSuccess" class="ui-detail-inline-panel-state">
             <div class="ui-icon-state ui-icon-state-success mb-3">
               <Check class="size-6" />
             </div>
@@ -516,7 +516,7 @@ const localePath = useLocalePath()
 
           <template v-else>
             <!-- Panel header -->
-            <div class="ui-panel-brand-header px-5 py-3.5">
+            <div class="ui-panel-brand-header ui-detail-inline-panel-header">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                   <div class="ui-icon-state ui-icon-state-brand size-8 rounded-lg">
@@ -543,7 +543,7 @@ const localePath = useLocalePath()
             </div>
 
             <!-- Template selection -->
-            <div class="p-5">
+            <div class="ui-detail-inline-panel-body">
               <div class="flex items-center justify-between mb-3">
                 <p class="text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">Choose a Template</p>
                 <NuxtLink
@@ -609,7 +609,7 @@ const localePath = useLocalePath()
             </div>
 
             <!-- Send button -->
-            <div class="ui-panel-footer px-5 py-4">
+            <div class="ui-panel-footer ui-detail-inline-panel-footer">
               <div class="flex items-center gap-3">
                 <button
                   type="button"
@@ -634,10 +634,10 @@ const localePath = useLocalePath()
       </Transition>
 
       <!-- Detail cards -->
-      <div class="grid gap-4 md:grid-cols-2">
+      <div class="ui-detail-card-grid">
         <!-- Schedule info -->
-        <div class="ui-panel p-5">
-          <div class="flex items-center gap-2 mb-3">
+        <div class="ui-panel ui-detail-card">
+          <div class="ui-detail-card-header">
             <Calendar class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Schedule</h2>
           </div>
@@ -687,8 +687,8 @@ const localePath = useLocalePath()
         </div>
 
         <!-- Candidate info -->
-        <div class="ui-panel p-5">
-          <div class="flex items-center justify-between gap-2 mb-3">
+        <div class="ui-panel ui-detail-card">
+          <div class="ui-detail-card-header justify-between">
             <div class="flex items-center gap-2">
               <UserRound class="size-4 text-surface-500 dark:text-surface-400" />
               <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Candidate</h2>
@@ -732,8 +732,8 @@ const localePath = useLocalePath()
         </div>
 
         <!-- Interviewers -->
-        <div v-if="interview.interviewers?.length" class="ui-panel p-5 md:col-span-2">
-          <div class="flex items-center gap-2 mb-3">
+        <div v-if="interview.interviewers?.length" class="ui-panel ui-detail-card md:col-span-2">
+          <div class="ui-detail-card-header">
             <Users class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Interviewers</h2>
           </div>
@@ -750,7 +750,7 @@ const localePath = useLocalePath()
         </div>
 
         <!-- Timestamps -->
-        <div class="ui-panel p-5 md:col-span-2">
+        <div class="ui-panel ui-detail-card md:col-span-2">
           <dl class="flex flex-wrap gap-x-8 gap-y-2 text-sm">
             <div>
               <dt class="text-surface-400 inline-flex items-center gap-1"><Clock class="size-3.5" /> Created</dt>
@@ -765,8 +765,8 @@ const localePath = useLocalePath()
       </div>
 
       <!-- Notes -->
-      <div class="ui-panel mt-4 mb-4 p-5">
-        <div class="flex items-center justify-between mb-3">
+      <div class="ui-panel ui-detail-card-spaced">
+        <div class="ui-detail-card-header justify-between">
           <div class="flex items-center gap-2">
             <MessageSquare class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Notes</h2>
@@ -814,7 +814,7 @@ const localePath = useLocalePath()
       </div>
 
       <!-- Danger zone -->
-      <div class="ui-panel-danger p-5">
+      <div class="ui-panel-danger ui-detail-danger-card">
         <h3 class="text-sm font-semibold mb-1">Danger Zone</h3>
         <p class="text-xs opacity-80 mb-3">Permanently delete this interview. This action cannot be undone.</p>
         <button
@@ -833,7 +833,7 @@ const localePath = useLocalePath()
         class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
         @click.self="showReschedule = false"
       >
-        <div class="ui-modal-panel relative w-full max-w-md p-6">
+        <div class="ui-modal-panel ui-modal-content ui-modal-content-md">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-4">Reschedule Interview</h3>
 
           <div v-if="rescheduleError" class="ui-alert ui-alert-danger mb-4">
@@ -875,7 +875,7 @@ const localePath = useLocalePath()
               />
             </div>
 
-            <div class="flex items-center justify-end gap-3 pt-2">
+            <div class="ui-modal-actions">
               <button
                 type="button"
                 class="ui-button ui-button-secondary px-4 py-2 text-sm"
@@ -903,7 +903,7 @@ const localePath = useLocalePath()
         class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
         @click.self="showEditDetails = false"
       >
-        <div class="ui-modal-panel relative w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+        <div class="ui-modal-panel ui-modal-content ui-modal-content-lg ui-modal-content-scroll">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-5">Edit Interview Details</h3>
 
           <div v-if="editErrors.submit" class="ui-alert ui-alert-danger mb-4">
@@ -982,7 +982,7 @@ const localePath = useLocalePath()
               </div>
             </div>
 
-            <div class="flex items-center justify-end gap-3 pt-2">
+            <div class="ui-modal-actions">
               <button
                 type="button"
                 class="ui-button ui-button-secondary px-4 py-2 text-sm"
@@ -1010,12 +1010,12 @@ const localePath = useLocalePath()
         class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
         @click.self="showDeleteConfirm = false"
       >
-        <div class="ui-modal-panel relative w-full max-w-sm p-6">
+        <div class="ui-modal-panel ui-modal-content ui-modal-content-sm">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Interview</h3>
           <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
             Are you sure you want to delete <strong>{{ interview?.title }}</strong>? This action cannot be undone.
           </p>
-          <div class="flex justify-end gap-2">
+          <div class="ui-modal-actions">
             <button
               :disabled="isDeleting"
               class="ui-button ui-button-secondary px-3 py-1.5 text-sm"
