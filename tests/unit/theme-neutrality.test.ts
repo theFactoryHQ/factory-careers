@@ -472,6 +472,34 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared UI recipes to interview scheduling sidebar surfaces', () => {
+    const source = readProjectFile('app/components/InterviewScheduleSidebar.vue')
+
+    for (const recipe of [
+      'ui-drawer-panel',
+      'ui-drawer-header',
+      'ui-drawer-body',
+      'ui-panel',
+      'ui-panel-footer',
+      'ui-alert-danger',
+      'ui-field',
+      'ui-checkbox',
+      'ui-checkbox-brand',
+      'ui-selectable-panel',
+      'ui-selectable-panel-active',
+      'ui-button-primary',
+      'ui-button-secondary',
+      'ui-button-ghost',
+      'ui-icon-state-brand',
+      'ui-icon-state-success',
+      'ui-pill-brand',
+      'ui-pill-success',
+      'ui-inline-link',
+    ]) {
+      expect(source, `interview schedule sidebar should use ${recipe}`).toContain(recipe)
+    }
+  })
+
   it('applies shared UI recipes to AI settings surfaces', () => {
     const recipeUsage = [
       {
@@ -673,6 +701,23 @@ describe('brand-neutral theme variables', () => {
       /focus:ring-brand-500/,
     ]) {
       expect(source, `candidate drawer should centralize ${pattern}`).not.toMatch(pattern)
+    }
+  })
+
+  it('keeps interview scheduling sidebar surface choices behind shared recipes', () => {
+    const source = readProjectFile('app/components/InterviewScheduleSidebar.vue')
+
+    for (const pattern of [
+      /relative w-full max-w-2xl bg-white dark:bg-surface-900 shadow-2xl/,
+      /rounded-xl border border-danger-200\/60 bg-danger-50\/80/,
+      /border border-surface-200 dark:border-surface-700\/80 bg-white dark:bg-surface-800/,
+      /border border-surface-200\/80 dark:border-surface-700\/60 bg-white dark:bg-surface-800\/40/,
+      /rounded-xl bg-brand-600 px-4/,
+      /focus:ring-brand-500\/20/,
+      /focus:ring-brand-500\/30/,
+      /border-t border-surface-200\/60 dark:border-surface-800\/40 bg-white\/80/,
+    ]) {
+      expect(source, `interview schedule sidebar should centralize ${pattern}`).not.toMatch(pattern)
     }
   })
 })
