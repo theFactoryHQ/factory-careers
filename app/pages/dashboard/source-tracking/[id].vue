@@ -252,19 +252,19 @@ async function handleSidebarUpdated() {
         <div class="h-4 w-48 bg-surface-200 dark:bg-surface-700 rounded animate-pulse" />
       </div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div v-for="i in 4" :key="i" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div v-for="i in 4" :key="i" class="ui-dashboard-panel p-6 animate-pulse">
           <div class="h-4 w-20 bg-surface-200 dark:bg-surface-700 rounded mb-4" />
           <div class="h-9 w-14 bg-surface-200 dark:bg-surface-700 rounded" />
         </div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="lg:col-span-2 ui-dashboard-panel p-6 animate-pulse">
           <div class="h-5 w-40 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-4">
             <div v-for="i in 5" :key="i" class="h-10 bg-surface-100 dark:bg-surface-800 rounded-xl" />
           </div>
         </div>
-        <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-dashboard-panel p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-3">
             <div v-for="i in 4" :key="i" class="h-14 bg-surface-100 dark:bg-surface-800 rounded-xl" />
@@ -276,7 +276,7 @@ async function handleSidebarUpdated() {
     <!-- ─── Error ─── -->
     <div
       v-else-if="fetchError"
-      class="rounded-2xl border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950/60 p-5 text-sm text-danger-700 dark:text-danger-400 flex items-center gap-3"
+      class="ui-alert ui-alert-danger p-5 text-sm flex items-center gap-3"
     >
       <AlertCircle class="size-5 shrink-0" />
       <span>{{ fetchError?.statusCode === 404 ? 'Tracking link not found.' : 'Failed to load link details.' }}</span>
@@ -313,10 +313,10 @@ async function handleSidebarUpdated() {
                 {{ getSourceChannelLabel(link.channel) }}
               </span>
               <span
-                class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
+                class="ui-pill gap-1 px-2 py-0.5 text-[10px]"
                 :class="link.isActive
-                  ? 'bg-green-50 text-green-700 ring-green-200/60 dark:bg-green-950 dark:text-green-400 dark:ring-green-800/40'
-                  : 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700'"
+                  ? 'ui-pill-success'
+                  : ''"
               >
                 <CheckCircle2 v-if="link.isActive" class="size-3" />
                 <XCircle v-else class="size-3" />
@@ -341,14 +341,14 @@ async function handleSidebarUpdated() {
 
           <div class="flex items-center gap-2">
             <!-- Date range pill -->
-            <div class="inline-flex rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-0.5">
+            <div class="ui-panel inline-flex p-0.5">
               <button
                 v-for="range in (['7d', '30d', '90d', 'all'] as const)"
                 :key="range"
-                class="px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
+                class="ui-filter-chip px-3 py-1.5 text-xs"
                 :class="dateRange === range
-                  ? 'bg-brand-600 text-white shadow-sm'
-                  : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200'"
+                  ? 'ui-filter-chip-active'
+                  : 'ui-filter-chip-inactive'"
                 @click="dateRange = range"
               >
                 {{ range === 'all' ? 'All time' : range.toUpperCase() }}
@@ -357,7 +357,7 @@ async function handleSidebarUpdated() {
 
             <!-- Edit -->
             <button
-              class="inline-flex items-center gap-1.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-xs font-medium text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+              class="ui-button ui-button-secondary px-3 py-2 text-xs"
               @click="openEditModal"
             >
               <Pencil class="size-3.5" />
@@ -366,7 +366,7 @@ async function handleSidebarUpdated() {
 
             <!-- Copy URL -->
             <button
-              class="inline-flex items-center gap-1.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-xs font-medium text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+              class="ui-button ui-button-secondary px-3 py-2 text-xs"
               @click="copyTrackingUrl"
             >
               <Copy v-if="!copied" class="size-3.5" />
@@ -378,13 +378,13 @@ async function handleSidebarUpdated() {
       </div>
 
       <!-- ─── Tracking URL display ─── -->
-      <div class="mb-6 sm:mb-8 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50 px-4 py-3 flex items-center gap-3">
+      <div class="ui-panel-muted mb-6 sm:mb-8 px-4 py-3 flex items-center gap-3">
         <Link2 class="size-4 text-surface-400 shrink-0" />
-        <code class="text-xs text-surface-600 dark:text-surface-300 font-mono truncate flex-1">
+        <code class="ui-code truncate flex-1">
           {{ buildTrackingUrl(link.code) }}
         </code>
         <button
-          class="shrink-0 text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors"
+          class="ui-button ui-button-ghost shrink-0 px-2 py-1 text-xs"
           @click="copyTrackingUrl"
         >
           {{ copied ? 'Copied!' : 'Copy' }}
@@ -394,7 +394,7 @@ async function handleSidebarUpdated() {
       <!-- ─── Stat cards ─── -->
       <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <!-- Clicks -->
-        <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-blue-500/25 dark:hover:ring-blue-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/[0.08]">
+        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-brand group relative p-5 sm:p-6 overflow-hidden isolate">
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <MousePointerClick class="absolute -bottom-3 -right-3 size-24 text-blue-500/[0.03] dark:text-blue-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
           <div class="relative">
@@ -410,7 +410,7 @@ async function handleSidebarUpdated() {
         </div>
 
         <!-- Applications -->
-        <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-brand-500/25 dark:hover:ring-brand-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-500/[0.08]">
+        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-brand group relative p-5 sm:p-6 overflow-hidden isolate">
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <Users class="absolute -bottom-3 -right-3 size-24 text-brand-500/[0.03] dark:text-brand-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
           <div class="relative">
@@ -426,7 +426,7 @@ async function handleSidebarUpdated() {
         </div>
 
         <!-- CVR -->
-        <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-teal-500/25 dark:hover:ring-teal-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-teal-500/[0.08]">
+        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-teal group relative p-5 sm:p-6 overflow-hidden isolate">
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <Target class="absolute -bottom-3 -right-3 size-24 text-teal-500/[0.03] dark:text-teal-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
           <div class="relative">
@@ -442,7 +442,7 @@ async function handleSidebarUpdated() {
         </div>
 
         <!-- Hire Rate -->
-        <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-green-500/25 dark:hover:ring-green-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-green-500/[0.08]">
+        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-teal group relative p-5 sm:p-6 overflow-hidden isolate">
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <CheckCircle2 class="absolute -bottom-3 -right-3 size-24 text-green-500/[0.03] dark:text-green-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
           <div class="relative">
@@ -458,7 +458,7 @@ async function handleSidebarUpdated() {
         </div>
 
         <!-- Attributed -->
-        <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-violet-500/25 dark:hover:ring-violet-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/[0.08]">
+        <div class="ui-dashboard-stat-card ui-dashboard-stat-card-violet group relative p-5 sm:p-6 overflow-hidden isolate">
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <Activity class="absolute -bottom-3 -right-3 size-24 text-violet-500/[0.03] dark:text-violet-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
           <div class="relative">
@@ -479,10 +479,10 @@ async function handleSidebarUpdated() {
         <!-- ─── Left: Pipeline funnel ─── -->
         <div class="lg:col-span-2 space-y-6">
           <!-- Pipeline funnel -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
+          <div class="ui-dashboard-panel">
+            <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
               <div class="flex items-center gap-2.5">
-                <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
+                <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
                   <TrendingUp class="size-3.5 text-surface-500 dark:text-surface-400" />
                 </div>
                 <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Application Pipeline</h2>
@@ -491,7 +491,7 @@ async function handleSidebarUpdated() {
             </div>
 
             <div v-if="funnelTotal === 0" class="px-6 py-12 text-center">
-              <div class="mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl bg-surface-100 dark:bg-surface-800">
+              <div class="ui-dashboard-soft-icon mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl">
                 <TrendingUp class="size-5 text-surface-400 dark:text-surface-500" />
               </div>
               <p class="text-sm font-medium text-surface-500 dark:text-surface-400 mb-1">No applications yet</p>
@@ -507,9 +507,9 @@ async function handleSidebarUpdated() {
                     <span class="text-sm font-bold text-surface-900 dark:text-surface-100 tabular-nums w-8 text-right">{{ s.count }}</span>
                   </div>
                 </div>
-                <div class="h-2 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden">
+                <div class="ui-meter-track h-2">
                   <div
-                    class="h-full rounded-full transition-all duration-700 ease-out"
+                    class="ui-meter-fill"
                     :class="{
                       'bg-blue-500': s.stage === 'new',
                       'bg-violet-500': s.stage === 'screening',
@@ -529,9 +529,9 @@ async function handleSidebarUpdated() {
         <!-- ─── Right: UTM params + Referrers ─── -->
         <div class="space-y-6">
           <!-- UTM Parameters -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="flex items-center gap-2.5 px-5 py-4 border-b border-surface-100 dark:border-surface-800">
-              <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
+          <div class="ui-dashboard-panel">
+            <div class="ui-dashboard-panel-header flex items-center gap-2.5 px-5 py-4">
+              <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
                 <Tag class="size-3.5 text-surface-500 dark:text-surface-400" />
               </div>
               <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Link Configuration</h2>
@@ -547,7 +547,7 @@ async function handleSidebarUpdated() {
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-surface-500 dark:text-surface-400">Code</span>
-                <code class="text-xs font-mono text-surface-700 dark:text-surface-300 bg-surface-100 dark:bg-surface-800 px-2 py-0.5 rounded">{{ link.code }}</code>
+                <code class="ui-code">{{ link.code }}</code>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-surface-500 dark:text-surface-400">Job Scope</span>
@@ -555,34 +555,34 @@ async function handleSidebarUpdated() {
               </div>
 
               <template v-if="utmParams.length > 0">
-                <div class="border-t border-surface-100 dark:border-surface-800 pt-3 mt-3">
+                <div class="ui-panel-divider pt-3 mt-3">
                   <span class="text-[10px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-2 block">UTM Parameters</span>
                   <div class="space-y-2">
                     <div v-for="p in utmParams" :key="p.label" class="flex items-center justify-between">
                       <span class="text-xs text-surface-500 dark:text-surface-400">{{ p.label }}</span>
-                      <code class="text-xs font-mono text-surface-700 dark:text-surface-300 bg-surface-100 dark:bg-surface-800 px-2 py-0.5 rounded truncate max-w-[140px]">{{ p.value }}</code>
+                      <code class="ui-code truncate max-w-[140px]">{{ p.value }}</code>
                     </div>
                   </div>
                 </div>
               </template>
 
-              <div v-else class="border-t border-surface-100 dark:border-surface-800 pt-3 mt-3">
+              <div v-else class="ui-panel-divider pt-3 mt-3">
                 <p class="text-xs text-surface-400 dark:text-surface-500 text-center">No UTM parameters configured</p>
               </div>
             </div>
           </div>
 
           <!-- Referrer domains -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="flex items-center gap-2.5 px-5 py-4 border-b border-surface-100 dark:border-surface-800">
-              <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
+          <div class="ui-dashboard-panel">
+            <div class="ui-dashboard-panel-header flex items-center gap-2.5 px-5 py-4">
+              <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
                 <Globe class="size-3.5 text-surface-500 dark:text-surface-400" />
               </div>
               <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Referrer Domains</h2>
             </div>
 
             <div v-if="referrerDomains.length === 0" class="px-5 py-10 text-center">
-              <div class="mx-auto mb-3 flex items-center justify-center size-10 rounded-2xl bg-surface-100 dark:bg-surface-800">
+              <div class="ui-dashboard-soft-icon mx-auto mb-3 flex items-center justify-center size-10 rounded-2xl">
                 <Globe class="size-4 text-surface-400 dark:text-surface-500" />
               </div>
               <p class="text-xs font-medium text-surface-500 dark:text-surface-400">No referrer data</p>
@@ -592,7 +592,7 @@ async function handleSidebarUpdated() {
               <div
                 v-for="ref in referrerDomains"
                 :key="ref.domain ?? 'unknown'"
-                class="flex items-center justify-between"
+                class="ui-list-row flex items-center justify-between"
               >
                 <div class="flex items-center gap-2 min-w-0">
                   <div class="size-5 rounded bg-surface-100 dark:bg-surface-800 flex items-center justify-center shrink-0">
@@ -608,10 +608,10 @@ async function handleSidebarUpdated() {
       </div>
 
       <!-- ─── Applications Over Time (full width) ─── -->
-      <div class="mb-6 rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
+      <div class="mb-6 ui-dashboard-panel">
+        <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
           <div class="flex items-center gap-2.5">
-            <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
+            <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
               <BarChart3 class="size-3.5 text-surface-500 dark:text-surface-400" />
             </div>
             <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Applications Over Time</h2>
@@ -619,7 +619,7 @@ async function handleSidebarUpdated() {
         </div>
 
         <div v-if="dailyTrend.length === 0" class="px-6 py-12 text-center">
-          <div class="mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl bg-surface-100 dark:bg-surface-800">
+          <div class="ui-dashboard-soft-icon mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl">
             <BarChart3 class="size-5 text-surface-400 dark:text-surface-500" />
           </div>
           <p class="text-sm font-medium text-surface-500 dark:text-surface-400 mb-1">No trend data yet</p>
@@ -651,9 +651,9 @@ async function handleSidebarUpdated() {
 
       <!-- ─── Attributed Applications Table ─── -->
       <div class="ui-table-shell shadow-xs dark:shadow-none">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
+        <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
           <div class="flex items-center gap-2.5">
-            <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
+            <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
               <Users class="size-3.5 text-surface-500 dark:text-surface-400" />
             </div>
             <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Attributed Applications</h2>
@@ -661,8 +661,8 @@ async function handleSidebarUpdated() {
           <span class="text-xs text-surface-400 tabular-nums font-medium">{{ applications.length }} shown</span>
         </div>
 
-        <div v-if="applications.length === 0" class="px-6 py-12 text-center">
-          <div class="mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl bg-surface-100 dark:bg-surface-800">
+        <div v-if="applications.length === 0" class="ui-empty-panel mx-auto my-6 max-w-md">
+          <div class="ui-dashboard-soft-icon mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl">
             <Users class="size-5 text-surface-400 dark:text-surface-500" />
           </div>
           <p class="text-sm font-medium text-surface-500 dark:text-surface-400 mb-1">No applications attributed</p>
@@ -759,10 +759,10 @@ async function handleSidebarUpdated() {
     <!-- ═══════════════════════════════════════ -->
     <Teleport to="body">
       <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/50 dark:bg-black/70" @click="showEditModal = false" />
-        <div class="relative w-full max-w-lg rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-2xl">
+        <div class="ui-modal-backdrop absolute inset-0" @click="showEditModal = false" />
+        <div class="ui-modal-panel relative w-full max-w-lg">
           <!-- Header -->
-          <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
+          <div class="ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Edit Tracking Link</h2>
             <button
               class="p-1.5 rounded-lg text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
@@ -781,7 +781,7 @@ async function handleSidebarUpdated() {
                 id="edit-link-name"
                 v-model="editForm.name"
                 type="text"
-                class="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                class="ui-field px-4 py-2.5"
               />
             </div>
 
@@ -791,7 +791,7 @@ async function handleSidebarUpdated() {
               <select
                 id="edit-link-channel"
                 v-model="editForm.channel"
-                class="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                class="ui-field px-4 py-2.5"
               >
                 <optgroup label="Job Boards">
                   <option v-for="ch in ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
@@ -814,23 +814,23 @@ async function handleSidebarUpdated() {
               <div class="mt-3 grid grid-cols-2 gap-3">
                 <div>
                   <label for="edit-utm-source" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">utm_source</label>
-                  <input id="edit-utm-source" v-model="editForm.utmSource" type="text" placeholder="linkedin" class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-xs text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+                  <input id="edit-utm-source" v-model="editForm.utmSource" type="text" placeholder="linkedin" class="ui-field px-3 py-2 text-xs" />
                 </div>
                 <div>
                   <label for="edit-utm-medium" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">utm_medium</label>
-                  <input id="edit-utm-medium" v-model="editForm.utmMedium" type="text" placeholder="social" class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-xs text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+                  <input id="edit-utm-medium" v-model="editForm.utmMedium" type="text" placeholder="social" class="ui-field px-3 py-2 text-xs" />
                 </div>
                 <div>
                   <label for="edit-utm-campaign" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">utm_campaign</label>
-                  <input id="edit-utm-campaign" v-model="editForm.utmCampaign" type="text" placeholder="spring-hiring" class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-xs text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+                  <input id="edit-utm-campaign" v-model="editForm.utmCampaign" type="text" placeholder="spring-hiring" class="ui-field px-3 py-2 text-xs" />
                 </div>
                 <div>
                   <label for="edit-utm-term" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">utm_term</label>
-                  <input id="edit-utm-term" v-model="editForm.utmTerm" type="text" placeholder="keyword" class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-xs text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+                  <input id="edit-utm-term" v-model="editForm.utmTerm" type="text" placeholder="keyword" class="ui-field px-3 py-2 text-xs" />
                 </div>
                 <div class="col-span-2">
                   <label for="edit-utm-content" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">utm_content</label>
-                  <input id="edit-utm-content" v-model="editForm.utmContent" type="text" placeholder="banner-ad" class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-xs text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+                  <input id="edit-utm-content" v-model="editForm.utmContent" type="text" placeholder="banner-ad" class="ui-field px-3 py-2 text-xs" />
                 </div>
               </div>
             </details>
@@ -839,7 +839,7 @@ async function handleSidebarUpdated() {
             <div class="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
-                class="rounded-xl px-4 py-2.5 text-sm font-medium text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                class="ui-button ui-button-secondary px-4 py-2.5 text-sm"
                 @click="showEditModal = false"
               >
                 Cancel
@@ -847,7 +847,7 @@ async function handleSidebarUpdated() {
               <button
                 type="submit"
                 :disabled="!editForm.name.trim() || isSaving"
-                class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 shadow-sm shadow-brand-600/15 transition-all"
+                class="ui-button ui-button-primary px-5 py-2.5"
               >
                 {{ isSaving ? 'Saving…' : 'Save Changes' }}
               </button>

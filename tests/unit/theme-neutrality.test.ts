@@ -259,6 +259,139 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('applies shared UI recipes to source tracking surfaces', () => {
+    const recipeUsage = [
+      {
+        path: 'app/pages/dashboard/source-tracking/index.vue',
+        recipes: [
+          'getApplicationStatusBadgeClass',
+          'getSourceChannelBadgeClass',
+          'getSourceChannelDotClass',
+          'getSourceChannelLabel',
+          'ui-alert-danger',
+          'ui-button-danger',
+          'ui-button-ghost',
+          'ui-button-primary',
+          'ui-button-secondary',
+          'ui-code',
+          'ui-dashboard-panel',
+          'ui-dashboard-panel-header',
+          'ui-dashboard-soft-icon',
+          'ui-dashboard-stat-card',
+          'ui-empty-panel',
+          'ui-field',
+          'ui-filter-chip',
+          'ui-filter-chip-active',
+          'ui-filter-chip-inactive',
+          'ui-list-divider',
+          'ui-list-row',
+          'ui-meter-fill',
+          'ui-meter-track',
+          'ui-modal-backdrop',
+          'ui-modal-panel',
+          'ui-panel',
+          'ui-panel-divider',
+          'ui-panel-muted',
+          'ui-pill',
+          'ui-tab',
+          'ui-tab-active',
+          'ui-tab-inactive',
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/source-tracking/[id].vue',
+        recipes: [
+          'getApplicationStatusBadgeClass',
+          'getSourceChannelBadgeClass',
+          'getSourceChannelDotClass',
+          'getSourceChannelLabel',
+          'ui-alert-danger',
+          'ui-button-ghost',
+          'ui-button-primary',
+          'ui-button-secondary',
+          'ui-code',
+          'ui-dashboard-panel',
+          'ui-dashboard-panel-header',
+          'ui-dashboard-soft-icon',
+          'ui-dashboard-stat-card',
+          'ui-empty-panel',
+          'ui-field',
+          'ui-filter-chip',
+          'ui-filter-chip-active',
+          'ui-filter-chip-inactive',
+          'ui-list-row',
+          'ui-meter-fill',
+          'ui-meter-track',
+          'ui-modal-backdrop',
+          'ui-modal-panel',
+          'ui-panel',
+          'ui-panel-divider',
+          'ui-panel-muted',
+          'ui-pill',
+        ],
+      },
+    ]
+
+    for (const { path, recipes } of recipeUsage) {
+      const source = readProjectFile(path)
+
+      for (const recipe of recipes) {
+        expect(source, `${path} should use ${recipe}`).toContain(recipe)
+      }
+    }
+  })
+
+  it('keeps source tracking surface choices behind shared recipes', () => {
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/pages/dashboard/source-tracking/index.vue',
+        patterns: [
+          /const channelLabels:/,
+          /const channelColors:/,
+          /const channelBadgeClasses:/,
+          /const statusBadgeClasses:/,
+          /rounded-2xl border border-surface-200(?:\/80)? dark:border-surface-800 bg-white dark:bg-surface-900/,
+          /group relative rounded-2xl bg-white dark:bg-surface-900/,
+          /rounded-2xl border border-danger-200 dark:border-danger-900 bg-danger-50/,
+          /inline-flex rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900/,
+          /appearance-none rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900/,
+          /inline-flex items-center gap-1\.5 rounded-xl bg-brand-600/,
+          /relative w-full max-w-(?:lg|sm) rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+          /w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800/,
+          /absolute inset-0 bg-black\/50/,
+          /border-b border-surface-100 dark:border-surface-800/,
+          /border-t border-surface-100 dark:border-surface-800/,
+          /focus:ring-2 focus:ring-brand-500/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/source-tracking/[id].vue',
+        patterns: [
+          /rounded-2xl border border-surface-200(?:\/80)? dark:border-surface-800 bg-white dark:bg-surface-900/,
+          /group relative rounded-2xl bg-white dark:bg-surface-900/,
+          /rounded-2xl border border-danger-200 dark:border-danger-900 bg-danger-50/,
+          /inline-flex rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900/,
+          /inline-flex items-center gap-1\.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900/,
+          /rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50/,
+          /relative w-full max-w-lg rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
+          /w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800/,
+          /absolute inset-0 bg-black\/50/,
+          /border-b border-surface-100 dark:border-surface-800/,
+          /border-t border-surface-100 dark:border-surface-800/,
+          /focus:ring-2 focus:ring-brand-500/,
+        ],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
+    }
+  })
+
   it('applies shared UI recipes to dashboard empty states', () => {
     const recipeUsage = [
       {
