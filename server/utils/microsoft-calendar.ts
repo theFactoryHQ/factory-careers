@@ -288,7 +288,7 @@ async function microsoftGraphFetchWithAccessToken<T>(
     body?: unknown
   } = {},
 ): Promise<T> {
-  return await $fetch<T>(`https://graph.microsoft.com/v1.0${path}`, {
+  const response = await $fetch<T>(`https://graph.microsoft.com/v1.0${path}`, {
     method: init.method,
     headers: {
       authorization: `Bearer ${accessToken}`,
@@ -296,6 +296,7 @@ async function microsoftGraphFetchWithAccessToken<T>(
     },
     ...(init.body ? { body: init.body } : {}),
   })
+  return response as T
 }
 
 async function getMicrosoftApplicationAccessToken(): Promise<string> {
@@ -575,7 +576,7 @@ export async function createMicrosoftCalendarEvents(
   if (destinations.length === 0) {
     logWarn('calendar.microsoft_no_destinations_configured', {
       posthog_distinct_id: userId,
-      org_id: organizationId,
+      org_id: organizationId ?? undefined,
     })
     return []
   }
@@ -588,7 +589,7 @@ export async function createMicrosoftCalendarEvents(
     const message = err instanceof Error ? err.message : String(err)
     logError('calendar.microsoft_app_token_failed', {
       posthog_distinct_id: userId,
-      org_id: organizationId,
+      org_id: organizationId ?? undefined,
       error_message: message,
     })
     return destinations.map(destination => ({
@@ -631,7 +632,7 @@ export async function createMicrosoftCalendarEvents(
       const message = err instanceof Error ? err.message : String(err)
       logError('calendar.microsoft_create_mailbox_event_failed', {
         posthog_distinct_id: userId,
-        org_id: organizationId,
+        org_id: organizationId ?? undefined,
         destination_email: destination.email,
         destination_type: destination.type,
         error_message: message,

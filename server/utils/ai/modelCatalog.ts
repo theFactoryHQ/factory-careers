@@ -229,7 +229,7 @@ async function fetchOpenAiModels(options: { apiKey: string, baseUrl?: string | n
       createdAt: epochSecondsToIso(model.created),
       source: 'provider',
     }))
-    .filter((model) => shouldShowModel(model.id, options.baseUrl ? 'openai_compatible' : 'openai'))
+    .filter((model: DiscoveredModelInfo) => shouldShowModel(model.id, options.baseUrl ? 'openai_compatible' : 'openai'))
 }
 
 async function fetchAnthropicModels(options: { apiKey: string, fetchImpl: typeof fetch }) {
@@ -253,7 +253,7 @@ async function fetchAnthropicModels(options: { apiKey: string, fetchImpl: typeof
       supports: normalizeCapabilities(model.capabilities),
       source: 'provider',
     }))
-    .filter((model) => shouldShowModel(model.id, 'anthropic'))
+    .filter((model: DiscoveredModelInfo) => shouldShowModel(model.id, 'anthropic'))
 }
 
 async function fetchGoogleModels(options: { apiKey: string, fetchImpl: typeof fetch }) {
@@ -280,7 +280,7 @@ async function fetchGoogleModels(options: { apiKey: string, fetchImpl: typeof fe
         source: 'provider',
       }
     })
-    .filter((model) => shouldShowModel(model.id, 'google'))
+    .filter((model: DiscoveredModelInfo) => shouldShowModel(model.id, 'google'))
 }
 
 async function fetchXaiModels(options: { apiKey: string, fetchImpl: typeof fetch }) {
@@ -316,7 +316,7 @@ async function fetchXaiModels(options: { apiKey: string, fetchImpl: typeof fetch
         source: 'provider',
       }
     })
-    .filter((model) => shouldShowModel(model.id, 'xai'))
+    .filter((model: DiscoveredModelInfo) => shouldShowModel(model.id, 'xai'))
 }
 
 async function parseProviderResponse(response: Response, providerLabel: string): Promise<any> {

@@ -60,7 +60,7 @@ export function usePermission(permissions: PermissionRequest) {
 
   const role = computed<RoleName | null>(() => {
     const user = sessionState.value.data?.user
-    const members = (activeOrgState.value.data?.members ?? []) as ActiveOrganizationMember[]
+    const members = (activeOrgState.value.data?.members ?? []) as readonly ActiveOrganizationMember[]
 
     const currentMember = members.find((member) => {
       if (member.userId && member.userId === user?.id) return true

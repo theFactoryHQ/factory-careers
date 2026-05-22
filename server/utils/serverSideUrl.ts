@@ -47,7 +47,8 @@ function isBlockedIpv4(hostname: string): boolean {
   const parts = parseIpv4Parts(hostname)
   if (!parts) return true
 
-  const [a, b] = parts
+  const a = parts[0]!
+  const b = parts[1]!
 
   if (a === 0) return true
   if (a === 10) return true
@@ -205,7 +206,7 @@ export async function assertSafeServerSideUrl(
   const hostname = normalizeHostname(shape.url.hostname)
   if (isIP(hostname)) return
 
-  let addresses: Awaited<ReturnType<typeof lookup>>
+  let addresses: Array<{ address: string, family: number }>
   try {
     addresses = await lookup(hostname, { all: true, verbatim: true })
   } catch (err) {

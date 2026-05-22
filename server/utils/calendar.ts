@@ -128,16 +128,15 @@ export async function createConnectedCalendarEvents(
   }
 
   const integration = await resolveCalendarIntegration(userId, organizationId)
-  const provider = integration?.provider ?? null
-  if (provider === 'microsoft') {
+  if (integration?.provider === 'microsoft') {
     const results = await createMicrosoftCalendarEvents(integration.userId, integration.organizationId, data)
-    return results.map(result => ({ ...result, provider }))
+    return results.map(result => ({ ...result, provider: 'microsoft' }))
   }
-  if (provider === 'google') {
+  if (integration?.provider === 'google') {
     const result = await createGoogleCalendarEvent(integration.userId, data)
     return result
       ? [{
-          provider,
+          provider: 'google',
           destinationType: 'connected_calendar',
           destinationEmail: null,
           isPrimary: true,
@@ -158,9 +157,8 @@ export async function updateConnectedCalendarEvent(
   provider?: CalendarProvider | null,
 ): Promise<string | null> {
   const integration = await resolveCalendarIntegration(userId, organizationId, provider)
-  const resolvedProvider = integration?.provider ?? null
-  if (resolvedProvider === 'microsoft') return await updateMicrosoftCalendarEvent(integration.userId, integration.organizationId, eventId, data)
-  if (resolvedProvider === 'google') return await updateGoogleCalendarEvent(integration.userId, eventId, data)
+  if (integration?.provider === 'microsoft') return await updateMicrosoftCalendarEvent(integration.userId, integration.organizationId, eventId, data)
+  if (integration?.provider === 'google') return await updateGoogleCalendarEvent(integration.userId, eventId, data)
   return null
 }
 
@@ -171,9 +169,8 @@ export async function cancelConnectedCalendarEvent(
   provider?: CalendarProvider | null,
 ): Promise<boolean> {
   const integration = await resolveCalendarIntegration(userId, organizationId, provider)
-  const resolvedProvider = integration?.provider ?? null
-  if (resolvedProvider === 'microsoft') return await cancelMicrosoftCalendarEvent(integration.userId, integration.organizationId, eventId)
-  if (resolvedProvider === 'google') return await cancelGoogleCalendarEvent(integration.userId, eventId)
+  if (integration?.provider === 'microsoft') return await cancelMicrosoftCalendarEvent(integration.userId, integration.organizationId, eventId)
+  if (integration?.provider === 'google') return await cancelGoogleCalendarEvent(integration.userId, eventId)
   return false
 }
 
@@ -244,8 +241,7 @@ export async function removeConnectedCalendarIntegration(userId: string, organiz
 
 export async function setupConnectedCalendarWebhook(userId: string, organizationId?: string | null, provider?: CalendarProvider | null): Promise<boolean> {
   const integration = await resolveCalendarIntegration(userId, organizationId, provider)
-  const resolvedProvider = integration?.provider ?? null
-  if (resolvedProvider === 'google') return await setupGoogleCalendarWebhook(integration.userId)
+  if (integration?.provider === 'google') return await setupGoogleCalendarWebhook(integration.userId)
 
   // Microsoft Graph event creation/update/delete works without a webhook.
   // RSVP/back-sync via Graph change subscriptions can be added later without
