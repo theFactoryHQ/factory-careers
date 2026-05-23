@@ -31,13 +31,13 @@ ALTER TABLE "calendar_integration" ALTER COLUMN "user_id" DROP NOT NULL;--> stat
 ALTER TABLE "calendar_integration" ALTER COLUMN "access_token_encrypted" DROP NOT NULL;--> statement-breakpoint
 ALTER TABLE "calendar_integration" ALTER COLUMN "refresh_token_encrypted" DROP NOT NULL;--> statement-breakpoint
 ALTER TABLE "calendar_integration" ADD COLUMN IF NOT EXISTS "organization_id" text;--> statement-breakpoint
-ALTER TABLE "interview" ADD COLUMN "calendar_event_provider" "calendar_provider";--> statement-breakpoint
-ALTER TABLE "interview_calendar_event" ADD CONSTRAINT "interview_calendar_event_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "interview_calendar_event" ADD CONSTRAINT "interview_calendar_event_interview_id_interview_id_fk" FOREIGN KEY ("interview_id") REFERENCES "public"."interview"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "interview_calendar_event_org_idx" ON "interview_calendar_event" USING btree ("organization_id");--> statement-breakpoint
-CREATE INDEX "interview_calendar_event_interview_idx" ON "interview_calendar_event" USING btree ("interview_id");--> statement-breakpoint
-CREATE INDEX "interview_calendar_event_event_idx" ON "interview_calendar_event" USING btree ("provider","event_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "interview_calendar_event_destination_idx" ON "interview_calendar_event" USING btree ("interview_id","provider","destination_type","destination_email");--> statement-breakpoint
+ALTER TABLE "interview" ADD COLUMN IF NOT EXISTS "calendar_event_provider" "calendar_provider";--> statement-breakpoint
+DO $$ BEGIN ALTER TABLE "interview_calendar_event" ADD CONSTRAINT "interview_calendar_event_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action; EXCEPTION WHEN duplicate_object THEN null; END $$;--> statement-breakpoint
+DO $$ BEGIN ALTER TABLE "interview_calendar_event" ADD CONSTRAINT "interview_calendar_event_interview_id_interview_id_fk" FOREIGN KEY ("interview_id") REFERENCES "public"."interview"("id") ON DELETE cascade ON UPDATE no action; EXCEPTION WHEN duplicate_object THEN null; END $$;--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "interview_calendar_event_org_idx" ON "interview_calendar_event" USING btree ("organization_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "interview_calendar_event_interview_idx" ON "interview_calendar_event" USING btree ("interview_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "interview_calendar_event_event_idx" ON "interview_calendar_event" USING btree ("provider","event_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "interview_calendar_event_destination_idx" ON "interview_calendar_event" USING btree ("interview_id","provider","destination_type","destination_email");--> statement-breakpoint
 DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'calendar_integration_organization_id_organization_id_fk') THEN ALTER TABLE "calendar_integration" ADD CONSTRAINT "calendar_integration_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action; END IF; END $$;--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "calendar_integration_org_provider_idx" ON "calendar_integration" USING btree ("organization_id","provider");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "calendar_integration_organization_id_idx" ON "calendar_integration" USING btree ("organization_id");
