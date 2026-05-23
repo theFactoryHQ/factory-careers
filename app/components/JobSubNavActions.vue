@@ -210,7 +210,7 @@ function openPropertyEditor(scope: 'org' | 'job') {
       <!-- Add Candidate -->
       <button
         type="button"
-        class="factory-button-cta factory-button-cta-sm factory-toolbar-button hidden h-7 min-h-7 cursor-pointer items-center gap-1.5 border px-2.5 py-0 text-[11px] transition-all duration-150 sm:inline-flex"
+        class="factory-button-cta factory-button-cta-sm factory-toolbar-button hidden h-8 min-h-8 cursor-pointer items-center gap-1.5 border px-2.5 py-0 text-[11px] transition-all duration-150 sm:inline-flex"
         @click="showApplyModal = true"
       >
         <UserPlus class="size-3" />
@@ -221,7 +221,7 @@ function openPropertyEditor(scope: 'org' | 'job') {
       <button
         v-if="primaryJobTransition"
         :disabled="isJobTransitioning"
-        class="factory-button-cta factory-button-cta-sm factory-job-status-action inline-flex cursor-pointer items-center gap-1.5 border px-2.5 py-0 text-[11px] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="factory-button-cta factory-button-cta-sm factory-job-status-action inline-flex h-8 min-h-8 cursor-pointer items-center gap-1.5 border px-2.5 py-0 text-[11px] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
         :class="jobTransitionClasses[primaryJobTransition] ?? 'factory-job-status-action-secondary'"
         :title="jobTransitionTooltips[primaryJobTransition] ?? `Change job status to ${primaryJobTransition}`"
         :aria-label="jobTransitionTooltips[primaryJobTransition] ?? `Change job status to ${primaryJobTransition}`"
@@ -233,7 +233,7 @@ function openPropertyEditor(scope: 'org' | 'job') {
       <!-- More menu -->
       <div ref="moreMenuRef">
         <button
-          class="factory-job-more-button inline-flex cursor-pointer items-center justify-center border p-1 transition-all duration-150"
+          class="factory-job-more-button inline-flex h-8 min-h-8 w-8 cursor-pointer items-center justify-center border p-1 transition-all duration-150"
           type="button"
           title="Job actions"
           aria-label="Job actions"
