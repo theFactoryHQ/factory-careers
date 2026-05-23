@@ -47,6 +47,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Interview not found' })
   }
 
+  const calendarEventFilters = [
+    eq(interviewCalendarEvent.interviewId, id),
+    // Tenant isolation: only return calendar events belonging to the same organization
+    // as the interview (prevents cross-org leakage even if interviewId is guessed).
+    eq(interviewCalendarEvent.organizationId, orgId),
+  ]
+  if (data.calendarEventProvider) {
+    calendarEventFilters.push(eq(interviewCalendarEvent.provider, data.calendarEventProvider))
+  }
+
   const calendarEvents = await db
     .select({
       id: interviewCalendarEvent.id,
@@ -60,17 +70,7 @@ export default defineEventHandler(async (event) => {
       createdAt: interviewCalendarEvent.createdAt,
     })
     .from(interviewCalendarEvent)
-    .where(
-      and(
-        eq(interviewCalendarEvent.interviewId, id),
-        // Tenant isolation: only return calendar events belonging to the same organization
-        // as the interview (prevents cross-org leakage even if interviewId is guessed).
-        eq(interviewCalendarEvent.organizationId, orgId),
-        data.calendarEventProvider
-          ? eq(interviewCalendarEvent.provider, data.calendarEventProvider)
-          : undefined
-      )
-    )
+    .where(and(...calendarEventFilters))
     .orderBy(interviewCalendarEvent.isPrimary, interviewCalendarEvent.createdAt)
 
   return {
