@@ -32,11 +32,16 @@ describe('job subnav actions', () => {
     const css = readProjectFile('app/assets/css/main.css')
     const menuRule = css.match(/\.factory-job-more-menu\s*\{[^}]+\}/)?.[0] ?? ''
     const itemRule = css.match(/\.factory-job-more-menu \.factory-job-more-menu-item\s*\{[^}]+\}/)?.[0] ?? ''
+    const globalItemSvgRule = css.match(/\.factory-job-more-menu \.factory-job-more-menu-item svg\s*\{[^}]+\}/)?.[0] ?? ''
+    const scopedItemSvgRule = css.match(/:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) \.factory-job-more-menu-item svg\s*\{[^}]+\}/)?.[0] ?? ''
+    const globalItemHoverRule = css.match(/\.factory-job-more-menu \.factory-job-more-menu-item:hover\s*\{[^}]+\}/)?.[0] ?? ''
+    const scopedItemHoverRule = css.match(/:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) \.factory-job-more-menu-item:hover\s*\{[^}]+\}/)?.[0] ?? ''
 
     expect(actions).toContain('class="factory-job-more-menu z-[200] w-64 border border-white/12 bg-black py-1 shadow-2xl shadow-black/50 overflow-hidden origin-top-right"')
     expect(actions).toContain('px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white')
     expect(actions).toContain('Job properties')
     expect(actions).toContain('Org properties')
+    expect(actions).not.toContain('factory-job-more-menu-divider')
     expect(actions).not.toContain('Manage job-specific properties')
     expect(actions).not.toContain('Manage org-wide application properties')
     expect(actions).not.toContain('w-56 border py-1.5')
@@ -48,6 +53,14 @@ describe('job subnav actions', () => {
     expect(itemRule).toContain('color: rgb(255 255 255 / 0.62) !important')
     expect(itemRule).toContain('text-align: left !important')
     expect(itemRule).toContain('white-space: nowrap !important')
+    for (const rule of [globalItemSvgRule, scopedItemSvgRule]) {
+      expect(rule).toContain('color: currentColor !important')
+      expect(rule).not.toContain('var(--color-brand-400)')
+    }
+    for (const rule of [globalItemHoverRule, scopedItemHoverRule]) {
+      expect(rule).toContain('background-color: rgb(255 255 255 / 0.05) !important')
+      expect(rule).not.toContain('color-mix(in srgb, var(--color-brand-500) 14%, transparent)')
+    }
   })
 
   it('labels pipeline stage chips and keeps their strip compact', () => {

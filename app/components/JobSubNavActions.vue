@@ -272,7 +272,6 @@ function openPropertyEditor(scope: 'org' | 'job') {
                 <UserPlus class="size-3.5" />
                 Add Candidate
               </button>
-              <div class="factory-job-more-menu-divider my-1 mx-2 border-t border-white/10" />
               <button
                 :disabled="isScoringAll"
                 class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors disabled:opacity-50"
@@ -296,7 +295,6 @@ function openPropertyEditor(scope: 'org' | 'job') {
                 Org properties
               </button>
               <template v-if="secondaryJobTransitions.length > 0">
-                <div class="factory-job-more-menu-divider my-1 mx-2 border-t border-white/10" />
                 <button
                   v-for="t in secondaryJobTransitions"
                   :key="t"
@@ -307,7 +305,6 @@ function openPropertyEditor(scope: 'org' | 'job') {
                   {{ jobTransitionLabels[t] ?? t }}
                 </button>
               </template>
-              <div class="factory-job-more-menu-divider my-1 mx-2 border-t border-white/10" />
               <button
                 class="factory-job-more-menu-item factory-job-more-menu-danger flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-sm hover:bg-white/[0.05] hover:text-white transition-colors"
                 @click="showDeleteConfirm = true; showMoreMenu = false"
