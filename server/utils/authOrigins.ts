@@ -69,14 +69,6 @@ export function collectRequestTrustedOrigins(request?: Request): string[] {
     if (origin) origins.add(origin)
   }
 
-  const headerOrigin =
-    originFromUrl(request.headers.get('origin')) ??
-    originFromUrl(request.headers.get('referer'))
-
-  if (headerOrigin && origins.has(headerOrigin)) {
-    origins.add(headerOrigin)
-  }
-
   return [...origins]
 }
 
