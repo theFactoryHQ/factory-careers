@@ -63,6 +63,11 @@ watch(scoreData, (val) => {
 const resolvedScoreData = computed(() => scoreData.value ?? cachedScoreData.value)
 const hasScores = computed(() => (resolvedScoreData.value?.scores?.length ?? 0) > 0)
 const isInitialLoad = computed(() => status.value === 'pending' && !cachedScoreData.value)
+const scoringSummary = computed(() => {
+  const summary = resolvedScoreData.value?.latestRun?.summary
+  return typeof summary === 'string' ? summary.trim() : ''
+})
+const scoringSummaryFallback = 'No AI summary was stored for this score. Re-score to generate one.'
 
 function confidenceLabel(confidence: number): string {
   if (confidence >= 80) return 'High'
@@ -205,6 +210,24 @@ async function retryParse() {
             {{ resolvedScoreData!.latestRun?.compositeScore ?? '—' }}
           </span>
           <span class="text-sm text-surface-400">/ 100</span>
+        </div>
+
+        <div class="mt-4">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-500 dark:text-surface-500">
+            AI summary
+          </p>
+          <p
+            v-if="scoringSummary"
+            class="mt-2 max-w-3xl text-sm leading-6 text-surface-700 dark:text-surface-300"
+          >
+            {{ scoringSummary }}
+          </p>
+          <p
+            v-else
+            class="mt-2 max-w-3xl text-sm leading-6 text-surface-500 dark:text-surface-500"
+          >
+            {{ scoringSummaryFallback }}
+          </p>
         </div>
 
         <!-- Run metadata -->

@@ -7,6 +7,15 @@ function readProjectFile(path: string) {
 }
 
 describe('score breakdown actions', () => {
+  it('renders the AI summary from the latest scoring run', () => {
+    const source = readProjectFile('app/components/ScoreBreakdown.vue')
+
+    expect(source).toContain('const scoringSummary = computed')
+    expect(source).toContain('AI summary')
+    expect(source).toContain('{{ scoringSummary }}')
+    expect(source).toContain('No AI summary was stored for this score. Re-score to generate one.')
+  })
+
   it('uses the shared Factory button recipe for the re-score action', () => {
     const source = readProjectFile('app/components/ScoreBreakdown.vue')
 
