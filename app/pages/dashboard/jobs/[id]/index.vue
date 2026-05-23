@@ -1106,7 +1106,7 @@ function closeDocPreview() {
           <button
             v-for="status in PIPELINE_STATUSES"
             :key="`tab-${status}`"
-            class="ui-filter-chip factory-pipeline-status-chip relative flex h-[38px] shrink-0 cursor-pointer items-center gap-2 px-3.5 text-[11px] !font-light uppercase leading-none tracking-normal transition-all duration-200 focus:outline-none"
+            class="ui-filter-chip factory-pipeline-status-chip relative flex h-[38px] shrink-0 cursor-pointer items-center gap-2 px-3.5 text-xs !font-light uppercase leading-none tracking-normal transition-all duration-200 focus:outline-none"
             :class="[
               isFocusStatus(status) ? 'ui-filter-chip-active factory-pipeline-status-chip-active' : 'ui-filter-chip-inactive',
               `factory-pipeline-status-chip-${status}`,
@@ -1124,7 +1124,7 @@ function closeDocPreview() {
             }" />
             {{ formatStatusLabel(status) }}
             <span
-              class="tabular-nums text-[10px] font-normal transition-colors duration-200"
+              class="tabular-nums text-xs font-normal transition-colors duration-200"
               :class="isFocusStatus(status)
                 ? 'text-brand-600 dark:text-brand-400'
                 : 'text-surface-400 dark:text-surface-500'"
