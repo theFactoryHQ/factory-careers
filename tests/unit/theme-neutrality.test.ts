@@ -110,6 +110,16 @@ describe('brand-neutral theme variables', () => {
     expect(css).toMatch(/\.ui-filter-chip\s*\{[\s\S]*min-height:\s*2\.375rem;[\s\S]*border:\s*1px solid/)
     expect(css).toMatch(/\.factory-dashboard-shell,[\s\S]*\.factory-dashboard-portal\)[\s\S]*\.ui-filter-chip\s*\{[\s\S]*min-height:\s*38px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important/)
     expect(css).toMatch(/\.factory-job-subnav-tab\s*\{[\s\S]*min-height:\s*32px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important/)
+    expect(css).toMatch(/\.factory-job-status-action\s*\{[\s\S]*height:\s*28px;[\s\S]*font-weight:\s*400 !important/)
+  })
+
+  it('explains job status actions with tooltips', () => {
+    const actions = readProjectFile('app/components/JobSubNavActions.vue')
+
+    expect(actions).toContain('factory-job-status-action')
+    expect(actions).toContain('Publish this job so candidates can apply.')
+    expect(actions).toContain(':title="jobTransitionTooltips[primaryJobTransition]')
+    expect(actions).toContain(':aria-label="jobTransitionTooltips[primaryJobTransition]')
   })
 
   it('uses the shared filter chip recipe for job pipeline stage tabs', () => {

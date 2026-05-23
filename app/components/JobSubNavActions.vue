@@ -24,11 +24,18 @@ const jobTransitionLabels: Record<string, string> = {
   archived: 'Archive',
 }
 
+const jobTransitionTooltips: Record<string, string> = {
+  draft: 'Move this job back to draft so it is no longer published.',
+  open: 'Publish this job so candidates can apply.',
+  closed: 'Close this job so new candidates can no longer apply.',
+  archived: 'Archive this job and remove it from active hiring workflows.',
+}
+
 const jobTransitionClasses: Record<string, string> = {
-  open: 'bg-success-600 text-white hover:bg-success-700',
-  closed: 'factory-button-cta factory-button-premium',
-  draft: 'border border-surface-300 dark:border-surface-600 text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800',
-  archived: 'border border-surface-300 dark:border-surface-600 text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800',
+  open: 'factory-job-status-action-open',
+  closed: 'factory-job-status-action-closed',
+  draft: 'factory-job-status-action-secondary',
+  archived: 'factory-job-status-action-secondary',
 }
 
 const allowedJobTransitions = computed(() => {
@@ -214,8 +221,10 @@ function openPropertyEditor(scope: 'org' | 'job') {
       <button
         v-if="primaryJobTransition"
         :disabled="isJobTransitioning"
-        class="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-        :class="jobTransitionClasses[primaryJobTransition] ?? 'border border-surface-300 text-surface-600 hover:bg-surface-50'"
+        class="factory-button-cta factory-button-cta-sm factory-job-status-action inline-flex cursor-pointer items-center gap-1.5 border px-2.5 py-0 text-[11px] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+        :class="jobTransitionClasses[primaryJobTransition] ?? 'factory-job-status-action-secondary'"
+        :title="jobTransitionTooltips[primaryJobTransition] ?? `Change job status to ${primaryJobTransition}`"
+        :aria-label="jobTransitionTooltips[primaryJobTransition] ?? `Change job status to ${primaryJobTransition}`"
         @click="handleJobTransition(primaryJobTransition)"
       >
         {{ jobTransitionLabels[primaryJobTransition] ?? primaryJobTransition }}

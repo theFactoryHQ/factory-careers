@@ -2222,6 +2222,43 @@
     color: #ffffff !important;
   }
 
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-status-action {
+    height: 28px;
+    min-height: 28px;
+    border-color: var(--ui-border-strong) !important;
+    background-color: rgb(0 0 0 / 0.45) !important;
+    color: rgb(255 255 255 / 0.72) !important;
+    font-weight: 400 !important;
+    letter-spacing: 0 !important;
+    line-height: 1 !important;
+    text-transform: uppercase !important;
+    box-shadow: none !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-status-action:hover:not(:disabled) {
+    border-color: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #080808 !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-status-action-open {
+    border-color: color-mix(in srgb, var(--color-success-500) 70%, transparent) !important;
+    background-color: color-mix(in srgb, var(--color-success-500) 22%, #000000) !important;
+    color: rgb(187 247 208) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-status-action-closed {
+    border-color: color-mix(in srgb, var(--color-brand-500) 75%, transparent) !important;
+    background-color: color-mix(in srgb, var(--color-brand-500) 92%, #000000) !important;
+    color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-status-action-secondary {
+    border-color: var(--ui-border-strong) !important;
+    background-color: rgb(0 0 0 / 0.45) !important;
+    color: rgb(255 255 255 / 0.72) !important;
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-more-button {
     height: 28px;
     width: 28px;
