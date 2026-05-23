@@ -203,15 +203,16 @@ jobs:
             local label="$1" url="$2" expected="$3"
             local actual
             actual="$(curl -s -o /dev/null -w "%{http_code}" "$url")"
-            if [ "$actual" = "$expected" ]; then
+            # Support multiple acceptable codes for home (some setups redirect root → /jobs)
+            if [[ ",$expected," == *",$actual,"* ]]; then
               echo "✅ $label → $actual"
             else
-              echo "❌ $label → expected $expected, got $actual"
+              echo "❌ $label → expected one of [$expected], got $actual"
               fail=1
             fi
           }
 
-          check "Home page"               "http://localhost:3000"                "200"
+          check "Home page"               "http://localhost:3000"                "200,301,302"
           check "Sign-in page"            "http://localhost:3000/auth/sign-in"   "200"
           check "Sign-up page"            "http://localhost:3000/auth/sign-up"   "200"
           check "Public job board"        "http://localhost:3000/jobs"           "200"
@@ -239,7 +240,7 @@ jobs:
           set -euo pipefail
           response="$(curl -s -X POST http://localhost:3000/api/auth/sign-in/email \
             -H "Content-Type: application/json" \
-            -d '{"email":"demo@reqcore.com","password":"demo1234"}' \
+            -d '{"email":"demo@thefactoryhq.com","password":"demo1234"}' \
             -w "\n%{http_code}")"
           body="$(echo "$response" | head -n -1)"
           status="$(echo "$response" | tail -n 1)"
@@ -249,7 +250,7 @@ jobs:
             echo "❌ Sign-in failed — expected 200, got $status"
             exit 1
           fi
-          if ! echo "$body" | grep -q "demo@reqcore.com"; then
+          if ! echo "$body" | grep -q "demo@thefactoryhq.com"; then
             echo "❌ Response body does not contain expected email"
             exit 1
           fi

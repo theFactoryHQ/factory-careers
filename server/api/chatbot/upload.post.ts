@@ -7,6 +7,7 @@ import {
   CHATBOT_MAX_UPLOAD_BYTES,
   type ChatbotAttachment,
 } from '../../../shared/chatbot'
+import { assertUploadContentLength } from '../../utils/uploadLimits'
 
 /**
  * POST /api/chatbot/upload
@@ -29,9 +30,14 @@ const PARSEABLE_MIME = new Set([
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ])
 
+const MULTIPART_OVERHEAD_BYTES = 256 * 1024
+const MAX_CHATBOT_UPLOAD_BODY_BYTES = CHATBOT_MAX_UPLOAD_BYTES + MULTIPART_OVERHEAD_BYTES
+
 export default defineEventHandler(async (event) => {
   await limiter(event)
   const session = await requireChatbotAccess(event)
+
+  assertUploadContentLength(event, MAX_CHATBOT_UPLOAD_BODY_BYTES)
 
   const form = await readMultipartFormData(event)
   const filePart = form?.find((p) => p.name === 'file')

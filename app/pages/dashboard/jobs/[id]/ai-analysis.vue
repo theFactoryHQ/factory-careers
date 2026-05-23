@@ -17,7 +17,7 @@ const { job, status: jobFetchStatus, error: jobError, updateJob } = useJob(jobId
 
 useSeoMeta({
   title: computed(() =>
-    job.value ? `AI Analysis — ${job.value.title} — Reqcore` : 'AI Analysis — Reqcore',
+    job.value ? `AI Analysis — ${job.value.title} — Factory Careers` : 'AI Analysis — Factory Careers',
   ),
   robots: 'noindex, nofollow',
 })
@@ -66,27 +66,42 @@ const { data: criteriaData, status: criteriaFetchStatus, refresh: refreshCriteri
 )
 
 const scoringCriteria = ref<ScoringCriterionDraft[]>([])
-const hasUnsavedChanges = ref(false)
+const cleanCriteriaSnapshot = ref(serializeCriteria([]))
+
+function normalizeCriteria(criteria: any[] | undefined): ScoringCriterionDraft[] {
+  return (criteria ?? []).map((c: any) => ({
+    key: c.key,
+    name: c.name,
+    description: c.description ?? '',
+    category: c.category ?? 'custom',
+    maxScore: c.maxScore ?? 10,
+    weight: c.weight ?? 50,
+  }))
+}
+
+function serializeCriteria(criteria: ScoringCriterionDraft[]): string {
+  return JSON.stringify(criteria.map(c => ({
+    key: c.key,
+    name: c.name,
+    description: c.description ?? '',
+    category: c.category ?? 'custom',
+    maxScore: c.maxScore ?? 10,
+    weight: c.weight ?? 50,
+  })))
+}
+
+function markCriteriaClean(criteria = scoringCriteria.value) {
+  cleanCriteriaSnapshot.value = serializeCriteria(criteria)
+}
+
+const hasUnsavedChanges = computed(() => serializeCriteria(scoringCriteria.value) !== cleanCriteriaSnapshot.value)
 
 // Sync fetched criteria into editable state
 watch(criteriaData, (data) => {
-  if (data?.criteria) {
-    scoringCriteria.value = data.criteria.map((c: any) => ({
-      key: c.key,
-      name: c.name,
-      description: c.description ?? '',
-      category: c.category ?? 'custom',
-      maxScore: c.maxScore ?? 10,
-      weight: c.weight ?? 50,
-    }))
-    hasUnsavedChanges.value = false
-  }
+  const nextCriteria = normalizeCriteria(data?.criteria)
+  scoringCriteria.value = nextCriteria
+  markCriteriaClean(nextCriteria)
 }, { immediate: true })
-
-// Track changes
-watch(scoringCriteria, () => {
-  hasUnsavedChanges.value = true
-}, { deep: true })
 
 // ─────────────────────────────────────────────
 // Auto-score toggle
@@ -266,7 +281,7 @@ async function saveCriteria() {
         })),
       },
     })
-    hasUnsavedChanges.value = false
+    markCriteriaClean()
     track('scoring_criteria_saved', { job_id: jobId, criteria_count: scoringCriteria.value.length })
     toast.success('Criteria saved', `${scoringCriteria.value.length} scoring criteria updated.`)
     await refreshCriteria()
@@ -278,19 +293,9 @@ async function saveCriteria() {
 }
 
 function resetCriteria() {
-  if (criteriaData.value?.criteria) {
-    scoringCriteria.value = criteriaData.value.criteria.map((c: any) => ({
-      key: c.key,
-      name: c.name,
-      description: c.description ?? '',
-      category: c.category ?? 'custom',
-      maxScore: c.maxScore ?? 10,
-      weight: c.weight ?? 50,
-    }))
-  } else {
-    scoringCriteria.value = []
-  }
-  hasUnsavedChanges.value = false
+  const nextCriteria = normalizeCriteria(criteriaData.value?.criteria)
+  scoringCriteria.value = nextCriteria
+  markCriteriaClean(nextCriteria)
 }
 </script>
 
@@ -330,8 +335,8 @@ function resetCriteria() {
             class="relative flex flex-col items-start gap-3 p-5 rounded-xl border-2 text-left transition-all hover:shadow-md border-surface-200 dark:border-surface-800 hover:border-surface-300 dark:hover:border-surface-700"
             @click="selectedTemplate = 'standard'"
           >
-            <div class="inline-flex items-center justify-center size-10 rounded-lg bg-brand-100 dark:bg-brand-900/50">
-              <Brain class="size-5 text-brand-600 dark:text-brand-400" />
+            <div class="inline-flex items-center justify-center text-brand-500 dark:text-brand-400">
+              <Brain class="size-6" />
             </div>
             <div>
               <span class="block text-sm font-semibold text-surface-900 dark:text-surface-100">Pre-made templates</span>
@@ -347,8 +352,8 @@ function resetCriteria() {
             class="relative flex flex-col items-start gap-3 p-5 rounded-xl border-2 text-left transition-all hover:shadow-md border-surface-200 dark:border-surface-800 hover:border-surface-300 dark:hover:border-surface-700"
             @click="generateAiCriteria()"
           >
-            <div class="inline-flex items-center justify-center size-10 rounded-lg bg-purple-100 dark:bg-purple-900/50">
-              <Sparkles class="size-5 text-purple-600 dark:text-purple-400" />
+            <div class="inline-flex items-center justify-center text-brand-500 dark:text-brand-400">
+              <Sparkles class="size-6" />
             </div>
             <div>
               <span class="block text-sm font-semibold text-surface-900 dark:text-surface-100">Generate from job description</span>
@@ -357,7 +362,7 @@ function resetCriteria() {
               </span>
             </div>
             <span v-if="isGeneratingCriteria" class="absolute top-3 right-3">
-              <Loader2 class="size-4 text-purple-600 animate-spin" />
+              <Loader2 class="size-4 text-brand-500 animate-spin dark:text-brand-400" />
             </span>
           </button>
 
@@ -367,8 +372,8 @@ function resetCriteria() {
             class="relative flex flex-col items-start gap-3 p-5 rounded-xl border-2 text-left transition-all hover:shadow-md border-surface-200 dark:border-surface-800 hover:border-surface-300 dark:hover:border-surface-700"
             @click="showCustomForm = true"
           >
-            <div class="inline-flex items-center justify-center size-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
-              <SlidersHorizontal class="size-5 text-emerald-600 dark:text-emerald-400" />
+            <div class="inline-flex items-center justify-center text-brand-500 dark:text-brand-400">
+              <SlidersHorizontal class="size-6" />
             </div>
             <div>
               <span class="block text-sm font-semibold text-surface-900 dark:text-surface-100">Write your own</span>

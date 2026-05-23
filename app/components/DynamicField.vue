@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Upload, X } from 'lucide-vue-next'
+import { ChevronDown, Upload, X } from 'lucide-vue-next'
 
 /**
  * Renders a custom question as the appropriate form field based on its type.
@@ -106,16 +106,16 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-const inputClasses = 'w-full rounded-lg border px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors'
-const errorBorderClass = 'border-danger-300 dark:border-danger-700'
-const normalBorderClass = 'border-surface-300 dark:border-surface-700'
+const inputClasses = 'w-full border bg-black/35 px-3.5 py-2.5 text-sm text-white placeholder:text-white/38 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25'
+const errorBorderClass = 'border-danger-500/70 focus:border-danger-500 focus:ring-danger-500/25'
+const normalBorderClass = 'border-white/14'
 </script>
 
 <template>
   <div>
-    <label :for="`q-${question.id}`" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+    <label :for="`q-${question.id}`" class="mb-1.5 block text-sm font-medium text-white/70">
       {{ question.label }}
-      <span v-if="question.required" class="text-danger-500">*</span>
+      <span v-if="question.required" class="text-danger-300">*</span>
     </label>
 
     <!-- Short Text -->
@@ -124,7 +124,6 @@ const normalBorderClass = 'border-surface-300 dark:border-surface-700'
       :id="`q-${question.id}`"
       v-model="stringModel"
       type="text"
-      :required="question.required"
       :class="[inputClasses, error ? errorBorderClass : normalBorderClass]"
     />
 
@@ -134,38 +133,38 @@ const normalBorderClass = 'border-surface-300 dark:border-surface-700'
       :id="`q-${question.id}`"
       v-model="stringModel"
       rows="4"
-      :required="question.required"
       :class="[inputClasses, error ? errorBorderClass : normalBorderClass]"
     />
 
     <!-- Single Select -->
-    <select
-      v-else-if="question.type === 'single_select'"
-      :id="`q-${question.id}`"
-      v-model="stringModel"
-      :required="question.required"
-      :class="[inputClasses, 'bg-white dark:bg-surface-900', error ? errorBorderClass : normalBorderClass]"
-    >
-      <option value="" disabled>Select an option…</option>
-      <option v-for="opt in question.options" :key="opt" :value="opt">
-        {{ opt }}
-      </option>
-    </select>
+    <div v-else-if="question.type === 'single_select'" class="relative">
+      <select
+        :id="`q-${question.id}`"
+        v-model="stringModel"
+        :class="[inputClasses, 'appearance-none pr-9', error ? errorBorderClass : normalBorderClass]"
+      >
+        <option value="" disabled>Select an option…</option>
+        <option v-for="opt in question.options" :key="opt" :value="opt">
+          {{ opt }}
+        </option>
+      </select>
+      <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-brand-500" />
+    </div>
 
     <!-- Multi Select (checkboxes) -->
-    <div v-else-if="question.type === 'multi_select'" class="space-y-2 mt-1">
+    <div v-else-if="question.type === 'multi_select'" class="mt-1 space-y-2">
       <label
         v-for="opt in question.options"
         :key="opt"
-        class="flex items-center gap-2 cursor-pointer"
+        class="flex cursor-pointer items-center gap-2"
       >
         <input
           type="checkbox"
           :checked="isOptionSelected(opt)"
-          class="size-4 rounded border-surface-300 dark:border-surface-700 text-brand-600 focus:ring-brand-500"
+          class="size-4 rounded-none border-white/20 bg-black text-brand-500 focus:ring-brand-500"
           @change="toggleMultiOption(opt)"
         />
-        <span class="text-sm text-surface-700 dark:text-surface-300">{{ opt }}</span>
+        <span class="text-sm text-white/70">{{ opt }}</span>
       </label>
     </div>
 
@@ -175,7 +174,6 @@ const normalBorderClass = 'border-surface-300 dark:border-surface-700'
       :id="`q-${question.id}`"
       v-model="numberModel"
       type="number"
-      :required="question.required"
       :class="[inputClasses, error ? errorBorderClass : normalBorderClass]"
     />
 
@@ -185,7 +183,6 @@ const normalBorderClass = 'border-surface-300 dark:border-surface-700'
       :id="`q-${question.id}`"
       v-model="stringModel"
       type="date"
-      :required="question.required"
       :class="[inputClasses, error ? errorBorderClass : normalBorderClass]"
     />
 
@@ -196,19 +193,18 @@ const normalBorderClass = 'border-surface-300 dark:border-surface-700'
       v-model="stringModel"
       type="url"
       placeholder="https://…"
-      :required="question.required"
       :class="[inputClasses, error ? errorBorderClass : normalBorderClass]"
     />
 
     <!-- Checkbox (boolean) -->
-    <label v-else-if="question.type === 'checkbox'" class="flex items-center gap-2 mt-1 cursor-pointer">
+    <label v-else-if="question.type === 'checkbox'" class="mt-1 flex cursor-pointer items-center gap-2">
       <input
         :id="`q-${question.id}`"
         v-model="booleanModel"
         type="checkbox"
-        class="size-4 rounded border-surface-300 dark:border-surface-700 text-brand-600 focus:ring-brand-500"
+        class="size-4 rounded-none border-white/20 bg-black text-brand-500 focus:ring-brand-500"
       />
-      <span class="text-sm text-surface-700 dark:text-surface-300">Yes</span>
+      <span class="text-sm text-white/70">Yes</span>
     </label>
 
     <!-- File Upload -->
@@ -225,8 +221,8 @@ const normalBorderClass = 'border-surface-300 dark:border-surface-700'
       <button
         v-if="!selectedFileName"
         type="button"
-        class="flex items-center gap-2 rounded-lg border border-dashed px-4 py-3 text-sm transition-colors w-full justify-center"
-        :class="error ? 'border-danger-300 dark:border-danger-700 text-danger-600 dark:text-danger-400' : 'border-surface-300 dark:border-surface-700 text-surface-500 dark:text-surface-400 hover:border-brand-400 dark:hover:border-brand-600 hover:text-brand-600 dark:hover:text-brand-400'"
+        class="factory-button-cta flex h-[48px] min-h-[48px] w-full items-center justify-center gap-2 border border-dashed px-4 py-0 transition-colors"
+        :class="error ? 'border-danger-500/70 bg-danger-500/10 text-danger-300' : 'border-white/14 bg-black/35 text-white/50 hover:border-brand-500/60 hover:text-brand-500'"
         @click="fileInputRef?.click()"
       >
         <Upload class="size-4" />
@@ -236,13 +232,13 @@ const normalBorderClass = 'border-surface-300 dark:border-surface-700'
       <!-- File selected -->
       <div
         v-else
-        class="flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm"
-        :class="error ? 'border-danger-300 dark:border-danger-700' : 'border-surface-300 dark:border-surface-700'"
+        class="flex items-center justify-between border bg-black/35 px-4 py-2.5 text-sm"
+        :class="error ? 'border-danger-500/70' : 'border-white/14'"
       >
-        <span class="text-surface-700 dark:text-surface-300 truncate mr-2">{{ selectedFileName }}</span>
+        <span class="mr-2 truncate text-white">{{ selectedFileName }}</span>
         <button
           type="button"
-          class="shrink-0 rounded p-0.5 text-surface-400 hover:text-danger-600 transition-colors"
+          class="shrink-0 p-0.5 text-white/45 transition-colors hover:text-danger-300"
           @click="clearFile"
         >
           <X class="size-4" />
@@ -251,11 +247,11 @@ const normalBorderClass = 'border-surface-300 dark:border-surface-700'
     </div>
 
     <!-- Help text -->
-    <p v-if="question.description" class="mt-1 text-xs text-surface-400">
+    <p v-if="question.description" class="mt-1.5 text-xs text-white/40">
       {{ question.description }}
     </p>
 
     <!-- Error message -->
-    <p v-if="error" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ error }}</p>
+    <p v-if="error" class="mt-1.5 text-xs text-danger-300">{{ error }}</p>
   </div>
 </template>

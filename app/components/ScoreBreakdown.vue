@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Brain, Sparkles, AlertTriangle, ChevronDown, ChevronUp, Loader2, BarChart3, RefreshCw } from 'lucide-vue-next'
+import { getScoreBarClass, getScoreTextClass } from '~/utils/status-display'
 
 interface AiConfigOption {
   id: string
@@ -58,20 +59,6 @@ watch(scoreData, (val) => {
 const resolvedScoreData = computed(() => scoreData.value ?? cachedScoreData.value)
 const hasScores = computed(() => (resolvedScoreData.value?.scores?.length ?? 0) > 0)
 const isInitialLoad = computed(() => status.value === 'pending' && !cachedScoreData.value)
-
-function scoreColor(score: number, max: number): string {
-  const pct = (score / max) * 100
-  if (pct >= 75) return 'text-success-600 dark:text-success-400'
-  if (pct >= 40) return 'text-warning-600 dark:text-warning-400'
-  return 'text-danger-600 dark:text-danger-400'
-}
-
-function barColor(score: number, max: number): string {
-  const pct = (score / max) * 100
-  if (pct >= 75) return 'bg-success-500'
-  if (pct >= 40) return 'bg-warning-500'
-  return 'bg-danger-500'
-}
 
 function confidenceLabel(confidence: number): string {
   if (confidence >= 80) return 'High'
@@ -210,7 +197,7 @@ async function retryParse() {
         <div class="flex items-baseline gap-2">
           <span
             class="text-3xl font-bold tabular-nums"
-            :class="scoreColor(resolvedScoreData!.latestRun?.compositeScore ?? 0, 100)"
+            :class="getScoreTextClass(resolvedScoreData!.latestRun?.compositeScore ?? 0)"
           >
             {{ resolvedScoreData!.latestRun?.compositeScore ?? '—' }}
           </span>
@@ -254,11 +241,11 @@ async function retryParse() {
                 <div class="flex-1 h-1.5 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
                   <div
                     class="h-full rounded-full transition-all"
-                    :class="barColor(cs.score, cs.maxScore)"
+                    :class="getScoreBarClass(cs.score, cs.maxScore)"
                     :style="{ width: `${(cs.score / cs.maxScore) * 100}%` }"
                   />
                 </div>
-                <span class="text-xs font-semibold tabular-nums shrink-0" :class="scoreColor(cs.score, cs.maxScore)">
+                <span class="text-xs font-semibold tabular-nums shrink-0" :class="getScoreTextClass(cs.score, cs.maxScore)">
                   {{ cs.score }}/{{ cs.maxScore }}
                 </span>
               </div>

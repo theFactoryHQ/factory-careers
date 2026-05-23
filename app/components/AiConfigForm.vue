@@ -8,8 +8,8 @@
  * the API key panel only nudges users with the help they actually need.
  */
 import {
-  Brain, Sparkles, Eye, EyeOff, ExternalLink, Loader2, Check,
-  Save, Zap, Star, AlertTriangle, ChevronDown, KeyRound, ArrowLeft,
+  Sparkles, Eye, EyeOff, ExternalLink, Loader2, Check,
+  Save, Zap, Star, AlertTriangle, ChevronDown,
 } from 'lucide-vue-next'
 
 interface ModelInfo {
@@ -19,6 +19,11 @@ interface ModelInfo {
   inputPricePer1m?: number
   outputPricePer1m?: number
   badge?: 'recommended' | 'fast' | 'powerful' | 'cheap'
+  availability?: 'curated' | 'available' | 'not_returned' | 'discovered'
+  stale?: boolean
+  replacementId?: string
+  maxInputTokens?: number
+  maxOutputTokens?: number
 }
 
 interface ProviderInfo {
@@ -102,6 +107,10 @@ const selectedProvider = computed<ProviderInfo | null>(() =>
   props.providers?.[form.value.provider] ?? null,
 )
 
+const selectedModel = computed<ModelInfo | null>(() =>
+  selectedProvider.value?.models.find(m => m.id === form.value.model) ?? null,
+)
+
 const isCustomProvider = computed(() => form.value.provider === 'openai_compatible')
 
 function pickModel(m: ModelInfo) {
@@ -109,9 +118,22 @@ function pickModel(m: ModelInfo) {
   form.value.inputPricePer1m = m.inputPricePer1m ?? form.value.inputPricePer1m
   form.value.outputPricePer1m = m.outputPricePer1m ?? form.value.outputPricePer1m
   // Auto-set the friendly name only if the user hasn't customised it.
-  if (!form.value.name || /^(GPT|Claude|Gemini|Llama|Mistral|New configuration)/i.test(form.value.name)) {
+  if (!form.value.name || /^(GPT|Claude|Gemini|Grok|Llama|Mistral|New configuration)/i.test(form.value.name)) {
     form.value.name = m.label
   }
+}
+
+function pickModelById(modelId: string) {
+  const match = selectedProvider.value?.models.find(m => m.id === modelId)
+  if (match) {
+    pickModel(match)
+    return
+  }
+  form.value.model = modelId
+}
+
+function onModelSelect(event: Event) {
+  pickModelById((event.target as HTMLSelectElement).value)
 }
 
 function pickProvider(key: string) {
@@ -204,15 +226,6 @@ async function handleTest() {
   }
 }
 
-const badgeClass = (badge?: ModelInfo['badge']) => {
-  switch (badge) {
-    case 'recommended': return 'bg-brand-50 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300 border-brand-200 dark:border-brand-800'
-    case 'fast': return 'bg-success-50 text-success-700 dark:bg-success-950/50 dark:text-success-300 border-success-200 dark:border-success-800'
-    case 'powerful': return 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200 dark:border-purple-800'
-    case 'cheap': return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-    default: return 'hidden'
-  }
-}
 const badgeLabel = (badge?: ModelInfo['badge']) => {
   switch (badge) {
     case 'recommended': return 'Recommended'
@@ -222,22 +235,48 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
     default: return ''
   }
 }
+
+function modelOptionLabel(model: ModelInfo) {
+  const labels = [badgeLabel(model.badge)]
+  if (model.availability === 'discovered') labels.push('New')
+  if (model.stale) labels.push(model.replacementId ? `Try ${model.replacementId}` : 'Not returned')
+  const suffix = labels.filter(Boolean).join(', ')
+  return suffix ? `${model.label} - ${suffix}` : model.label
+}
+
+function modelPriceLabel(model: ModelInfo | null) {
+  if (!model) return ''
+  const parts: string[] = []
+  if (model.inputPricePer1m != null || model.outputPricePer1m != null) {
+    parts.push(`$${model.inputPricePer1m?.toFixed(2) ?? '-'} in · $${model.outputPricePer1m?.toFixed(2) ?? '-'} out / 1M tokens`)
+  }
+  if (model.maxInputTokens != null) {
+    parts.push(`${model.maxInputTokens.toLocaleString()} input tokens`)
+  }
+  if (model.maxOutputTokens != null) {
+    parts.push(`${model.maxOutputTokens.toLocaleString()} output tokens`)
+  }
+  return parts.join(' · ')
+}
+
+function providerShortName(key: string, name: string) {
+  return key === 'openai_compatible' ? 'Custom' : name
+}
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl pb-32">
+  <div class="w-full pb-32">
     <!-- Header -->
     <div class="mb-6">
-      <NuxtLink
+      <AppBackLink
         to="/dashboard/settings/ai"
-        class="inline-flex items-center gap-1 text-xs font-medium text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200 transition-colors mb-3"
+        class="mb-3"
       >
-        <ArrowLeft class="size-3.5" />
         Back to AI configuration
-      </NuxtLink>
+      </AppBackLink>
       <div class="flex items-center gap-2.5">
-        <div class="flex size-9 items-center justify-center rounded-xl bg-brand-50 dark:bg-brand-950/50 text-brand-600 dark:text-brand-400">
-          <Brain class="size-5" />
+        <div class="ui-icon-state ui-icon-state-brand flex size-9 items-center justify-center rounded-lg">
+          <AiProviderLogo :provider="form.provider" class="size-5" />
         </div>
         <div>
           <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">
@@ -254,38 +293,36 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
 
     <div class="space-y-5">
       <!-- 1. Provider -->
-      <section class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 sm:p-6">
-        <header class="mb-4">
+      <section class="ui-panel p-5 sm:p-6">
+        <header class="mb-3">
           <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Provider</h2>
-          <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-            Choose where the model runs. We'll suggest the best models for that provider next.
-          </p>
         </header>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <button
             v-for="(info, key) in providers ?? {}"
             :key="key"
             type="button"
-            class="flex flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left transition-colors cursor-pointer"
+            class="ui-selectable-panel flex h-20 flex-col items-center justify-center gap-2 px-2 text-center"
             :class="form.provider === key
-              ? 'border-brand-500 bg-brand-50/60 dark:bg-brand-950/30 ring-1 ring-brand-500/30'
-              : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 hover:border-brand-300 dark:hover:border-brand-700'"
+              ? 'ui-selectable-panel-active text-brand-600 dark:text-brand-300'
+              : 'text-surface-600 dark:text-surface-300'"
             @click="pickProvider(String(key))"
           >
-            <span class="text-sm font-semibold text-surface-900 dark:text-surface-100">{{ info.name }}</span>
-            <span class="text-[11px] text-surface-500 dark:text-surface-400 line-clamp-2">{{ info.tagline }}</span>
+            <span
+              class="flex size-7 items-center justify-center transition-colors"
+            >
+              <AiProviderLogo :provider="String(key)" class="max-h-5 max-w-6" />
+            </span>
+            <span class="text-xs font-semibold text-surface-900 dark:text-surface-100">{{ providerShortName(String(key), info.name) }}</span>
           </button>
         </div>
       </section>
 
       <!-- 2. Model -->
-      <section v-if="selectedProvider" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 sm:p-6">
+      <section v-if="selectedProvider" class="ui-panel p-5 sm:p-6">
         <header class="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Model</h2>
-            <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-              Pick a recommended model — or paste any model identifier the provider supports.
-            </p>
           </div>
           <a
             v-if="selectedProvider.modelsUrl"
@@ -298,34 +335,36 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
           </a>
         </header>
 
-        <div v-if="selectedProvider.models.length" class="grid sm:grid-cols-2 gap-2">
-          <button
-            v-for="m in selectedProvider.models"
-            :key="m.id"
-            type="button"
-            class="rounded-xl border px-3 py-3 text-left transition-colors cursor-pointer"
-            :class="form.model === m.id
-              ? 'border-brand-500 bg-brand-50/60 dark:bg-brand-950/30 ring-1 ring-brand-500/30'
-              : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 hover:border-brand-300 dark:hover:border-brand-700'"
-            @click="pickModel(m)"
-          >
-            <div class="flex items-start justify-between gap-2 mb-1">
-              <span class="text-sm font-medium text-surface-900 dark:text-surface-100">{{ m.label }}</span>
-              <span
-                v-if="m.badge"
-                class="inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[10px] font-medium shrink-0"
-                :class="badgeClass(m.badge)"
+        <div v-if="selectedProvider.models.length" class="space-y-2">
+          <label class="block text-xs font-medium text-surface-700 dark:text-surface-300">
+            Recommended model
+          </label>
+          <div class="relative">
+            <select
+              :value="form.model"
+              class="ui-field appearance-none pr-10"
+              @change="onModelSelect"
+            >
+              <option v-if="form.model && !selectedModel" :value="form.model">
+                {{ form.model }} - Custom
+              </option>
+              <option
+                v-for="m in selectedProvider.models"
+                :key="m.id"
+                :value="m.id"
               >
-                <Star v-if="m.badge === 'recommended'" class="size-2.5" />
-                <Zap v-else-if="m.badge === 'fast'" class="size-2.5" />
-                {{ badgeLabel(m.badge) }}
-              </span>
-            </div>
-            <p class="text-[11px] text-surface-500 dark:text-surface-400 line-clamp-2">{{ m.description }}</p>
-            <div v-if="m.inputPricePer1m != null || m.outputPricePer1m != null" class="mt-2 text-[10px] text-surface-400">
-              ${{ m.inputPricePer1m?.toFixed(2) ?? '—' }} in · ${{ m.outputPricePer1m?.toFixed(2) ?? '—' }} out / 1M tokens
-            </div>
-          </button>
+                {{ modelOptionLabel(m) }}
+              </option>
+            </select>
+            <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
+          </div>
+          <p
+            v-if="selectedModel"
+            class="text-[11px] text-surface-500 dark:text-surface-400"
+          >
+            <span class="font-mono">{{ selectedModel.id }}</span>
+            <span v-if="modelPriceLabel(selectedModel)"> · {{ modelPriceLabel(selectedModel) }}</span>
+          </p>
         </div>
 
         <details class="mt-4">
@@ -338,7 +377,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
               v-model="form.model"
               type="text"
               placeholder="e.g. gpt-4.1-mini, llama-3.1-70b, mistral-large-latest"
-              class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors font-mono"
+              class="ui-field font-mono"
             >
             <p class="mt-1 text-[11px] text-surface-500">
               The exact string the provider expects in API calls.
@@ -348,7 +387,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
       </section>
 
       <!-- 3. Connection -->
-      <section class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 sm:p-6">
+      <section class="ui-panel p-5 sm:p-6">
         <header class="mb-4">
           <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Connection</h2>
           <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
@@ -366,7 +405,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
               v-model="form.name"
               type="text"
               placeholder="e.g. GPT-4o (production)"
-              class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+              class="ui-field"
             >
             <p class="mt-1 text-[11px] text-surface-500">
               Shown in the model picker. Use something memorable.
@@ -382,7 +421,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
               v-model="form.baseUrl"
               type="url"
               placeholder="https://api.example.com/v1"
-              class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors font-mono"
+              class="ui-field font-mono"
             >
             <p class="mt-1 text-[11px] text-surface-500">
               Any OpenAI-compatible endpoint (Ollama, vLLM, OpenRouter, etc).
@@ -412,7 +451,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
                 :type="showApiKey ? 'text' : 'password'"
                 :placeholder="isEdit ? '••••••••••••' : 'sk-…'"
                 autocomplete="off"
-                class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 pr-10 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors font-mono"
+                class="ui-field pr-10 font-mono"
               >
               <button
                 type="button"
@@ -431,7 +470,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
             <button
               type="button"
               :disabled="isTesting"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              class="ui-button ui-button-secondary px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               @click="handleTest"
             >
               <Loader2 v-if="isTesting" class="size-3.5 animate-spin" />
@@ -455,7 +494,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
       </section>
 
       <!-- Defaults (only when adding and not first) -->
-      <section v-if="!isEdit && !isFirst" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 sm:p-6">
+      <section v-if="!isEdit && !isFirst" class="ui-panel p-5 sm:p-6">
         <header class="mb-4">
           <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Use as default</h2>
           <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
@@ -463,7 +502,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
           </p>
         </header>
         <div class="space-y-2">
-          <label class="flex items-start gap-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 cursor-pointer hover:border-brand-300 dark:hover:border-brand-700 transition-colors">
+          <label class="ui-selectable-panel flex items-start gap-3 px-4 py-3">
             <input
               v-model="form.isDefaultChatbot"
               type="checkbox"
@@ -479,7 +518,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
               </p>
             </div>
           </label>
-          <label class="flex items-start gap-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 cursor-pointer hover:border-warning-300 dark:hover:border-warning-700 transition-colors">
+          <label class="ui-selectable-panel flex items-start gap-3 px-4 py-3">
             <input
               v-model="form.isDefaultAnalysis"
               type="checkbox"
@@ -500,14 +539,14 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
 
       <p
         v-if="!isEdit && isFirst"
-        class="rounded-xl border border-brand-200 dark:border-brand-900 bg-brand-50/70 dark:bg-brand-950/30 px-4 py-3 text-xs text-brand-700 dark:text-brand-300 flex items-start gap-2"
+        class="ui-alert ui-alert-info px-4 py-3 text-xs flex items-start gap-2"
       >
         <Sparkles class="size-3.5 mt-0.5 shrink-0" />
         This is your first model — it will automatically become the default for both the chatbot and candidate analysis.
       </p>
 
       <!-- Advanced -->
-      <section class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
+      <section class="ui-panel overflow-hidden">
         <button
           type="button"
           class="w-full px-5 sm:px-6 py-4 flex items-center justify-between text-left cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors"
@@ -524,7 +563,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
             :class="showAdvanced ? 'rotate-180' : ''"
           />
         </button>
-        <div v-if="showAdvanced" class="border-t border-surface-200 dark:border-surface-800 px-5 sm:px-6 py-5 space-y-5">
+        <div v-if="showAdvanced" class="ui-panel-header border-b-0 px-5 sm:px-6 py-5 space-y-5">
           <!-- Max output tokens -->
           <div>
             <label class="block text-xs font-medium text-surface-700 dark:text-surface-300 mb-1.5">
@@ -536,7 +575,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
               min="256"
               max="200000"
               step="256"
-              class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors font-mono"
+              class="ui-field font-mono"
             >
             <p class="mt-1 text-[11px] text-surface-500">
               Maximum tokens the model can generate per response. Range: 256 – 200,000. Defaults to {{ DEFAULT_MAX_TOKENS.toLocaleString() }}.
@@ -558,7 +597,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
                   min="0"
                   step="0.01"
                   placeholder="0.00"
-                  class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors font-mono"
+                  class="ui-field font-mono"
                 >
               </div>
               <div>
@@ -569,7 +608,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
                   min="0"
                   step="0.01"
                   placeholder="0.00"
-                  class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors font-mono"
+                  class="ui-field font-mono"
                 >
               </div>
             </div>
@@ -577,18 +616,14 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
         </div>
       </section>
 
-      <p class="text-[11px] text-surface-500 dark:text-surface-400 flex items-start gap-1.5">
-        <KeyRound class="size-3 mt-0.5 shrink-0" />
-        <span>API keys are encrypted at rest with AES-256-GCM and never returned to the browser.</span>
-      </p>
     </div>
 
     <!-- Sticky save bar -->
-    <div class="fixed inset-x-0 bottom-0 z-20 border-t border-surface-200 dark:border-surface-800 bg-white/90 dark:bg-surface-950/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-surface-950/70">
-      <div class="mx-auto max-w-3xl px-4 sm:px-6 py-3 flex items-center justify-end gap-2">
+    <div class="fixed inset-x-0 bottom-0 z-20 border-t border-surface-200 dark:border-surface-800 bg-white/90 dark:bg-surface-950/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-surface-950/70 lg:left-56">
+      <div class="mx-auto max-w-4xl px-4 sm:px-6 py-3 flex items-center justify-end gap-2">
         <button
           type="button"
-          class="rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors cursor-pointer"
+          class="ui-button ui-button-secondary"
           @click="emit('cancel')"
         >
           Cancel
@@ -596,7 +631,7 @@ const badgeLabel = (badge?: ModelInfo['badge']) => {
         <button
           type="button"
           :disabled="!canSave || isSaving"
-          class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          class="ui-button ui-button-primary disabled:opacity-50 disabled:cursor-not-allowed"
           @click="handleSave"
         >
           <Loader2 v-if="isSaving" class="size-4 animate-spin" />

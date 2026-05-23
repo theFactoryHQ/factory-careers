@@ -13,7 +13,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Interviews — Reqcore',
+  title: 'Interviews — Factory Careers',
   description: 'Manage all scheduled interviews',
   robots: 'noindex, nofollow',
 })
@@ -302,7 +302,7 @@ const statusCounts = computed(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl">
+  <div class="mx-auto max-w-6xl">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -321,9 +321,9 @@ const statusCounts = computed(() => {
     </div>
 
     <!-- Status filter pills + search -->
-    <div class="flex flex-wrap items-center gap-3 mb-5">
+    <div class="flex flex-col gap-3 mb-4 lg:flex-row lg:items-center lg:gap-2">
       <!-- Search -->
-      <div class="relative flex-1 min-w-[200px] max-w-sm">
+      <div class="relative w-full flex-1">
         <Search class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
         <input
           v-model="searchInput"
@@ -341,11 +341,11 @@ const statusCounts = computed(() => {
       </div>
 
       <!-- Status pills -->
-      <div class="flex items-center gap-1.5">
+      <div class="flex shrink-0 items-center gap-1.5">
         <button
           v-for="s in STATUS_OPTIONS"
           :key="s"
-          class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-150 cursor-pointer border"
+          class="inline-flex h-[38px] items-center gap-1.5 rounded-full border px-3 py-0 text-xs font-medium transition-all duration-150 cursor-pointer"
           :class="activeStatus === s
             ? 'border-brand-500 bg-brand-50 text-brand-700 dark:border-brand-400 dark:bg-brand-950/40 dark:text-brand-300 shadow-sm'
             : 'border-surface-200 dark:border-surface-700/80 bg-white dark:bg-surface-900 text-surface-600 dark:text-surface-400 hover:border-surface-300 dark:hover:border-surface-600'"
@@ -358,25 +358,25 @@ const statusCounts = computed(() => {
       </div>
 
       <!-- View toggle -->
-      <div class="flex rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden ml-auto">
+      <div class="flex shrink-0 overflow-hidden rounded-lg border border-surface-200 dark:border-surface-700">
         <button
-          class="px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
+          class="h-[38px] px-3 py-0 text-xs !font-semibold uppercase tracking-normal transition-all cursor-pointer"
           :class="activeView === 'list'
             ? 'bg-brand-600 text-white'
             : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'"
           @click="activeView = 'list'"
         >
-          List
+          <span style="font-weight: 600">List</span>
         </button>
         <button
-          class="px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
+          class="h-[38px] px-3 py-0 text-xs !font-semibold uppercase tracking-normal transition-all cursor-pointer"
           :class="activeView === 'calendar'
             ? 'bg-brand-600 text-white'
             : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'"
           @click="activeView = 'calendar'"
         >
           <CalendarDays class="inline size-3.5 mr-1 -mt-0.5" />
-          Timeline
+          <span style="font-weight: 600">Timeline</span>
         </button>
       </div>
     </div>
@@ -413,7 +413,7 @@ const statusCounts = computed(() => {
     <!-- Empty state -->
     <div
       v-else-if="filteredInterviews.length === 0"
-      class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-12 text-center"
+      class="ui-empty-panel"
     >
       <Calendar class="size-10 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
       <h3 class="text-base font-semibold text-surface-700 dark:text-surface-200 mb-1">
@@ -426,7 +426,7 @@ const statusCounts = computed(() => {
       </p>
       <button
         v-if="activeStatus || searchInput"
-        class="cursor-pointer rounded-lg border border-surface-200 dark:border-surface-700 px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+        class="ui-button ui-button-secondary"
         @click="activeStatus = undefined; searchInput = ''"
       >
         Clear filters
@@ -515,12 +515,12 @@ const statusCounts = computed(() => {
                     @click.stop
                   >
                     <Calendar class="size-3" />
-                    Google Calendar
+                    Calendar
                     <ExternalLink class="size-2.5" />
                   </a>
                   <span v-else-if="interviewItem.googleCalendarEventId" class="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
                     <Calendar class="size-3" />
-                    Google Calendar
+                    Calendar
                   </span>
                 </div>
               </div>

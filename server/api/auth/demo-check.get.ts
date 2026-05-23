@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     return { hasSession: false, isDemo: false }
   }
 
-  const demoEmail = (useRuntimeConfig().public.liveDemoEmail as string) || 'demo@reqcore.com'
+  const demoEmail = (useRuntimeConfig().public.liveDemoEmail as string) || 'demo@thefactoryhq.com'
 
   return { hasSession: true, isDemo: session.user.email === demoEmail }
 })

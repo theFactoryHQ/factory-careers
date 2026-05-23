@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { aiConfig } from '../../database/schema'
 import { createAiConfigSchema } from '../../utils/schemas/scoring'
 import { encrypt } from '../../utils/encryption'
+import { assertSafeServerSideUrl } from '../../utils/serverSideUrl'
 
 /**
  * POST /api/ai-config
@@ -12,9 +13,13 @@ import { encrypt } from '../../utils/encryption'
  * inside the same transaction so exactly one default exists per purpose.
  */
 export default defineEventHandler(async (event) => {
-  const session = await requirePermission(event, { organization: ['update'] })
+  const session = await requirePermission(event, { aiConfig: ['create'] })
   const orgId = session.session.activeOrganizationId
   const body = await readValidatedBody(event, createAiConfigSchema.parse)
+
+  if (body.baseUrl) {
+    await assertSafeServerSideUrl(body.baseUrl)
+  }
 
   const apiKeyEncrypted = encrypt(body.apiKey, env.BETTER_AUTH_SECRET)
 

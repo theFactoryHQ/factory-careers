@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import {
-  ArrowLeft, Link2, Globe, BarChart3, Users,
+  Link2, Globe, BarChart3, Users,
   MousePointerClick, Target, Activity, TrendingUp,
   CheckCircle2, XCircle, Copy, Clock,
   ExternalLink, AlertCircle, CalendarDays,
   Hash, Tag, Layers, Pencil, X, ChevronDown,
 } from 'lucide-vue-next'
+import {
+  getApplicationStatusBadgeClass,
+  getSourceChannelBadgeClass,
+  getSourceChannelDotClass,
+  getSourceChannelLabel,
+} from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -21,7 +27,7 @@ const { formatPersonName } = useOrgSettings()
 const linkId = computed(() => route.params.id as string)
 
 useSeoMeta({
-  title: 'Link Details — Source Tracking — Reqcore',
+  title: 'Link Details — Source Tracking — Factory Careers',
   description: 'Detailed analytics for a tracking link',
 })
 
@@ -92,60 +98,6 @@ async function copyTrackingUrl() {
 // ─────────────────────────────────────────────
 // Display helpers
 // ─────────────────────────────────────────────
-
-const channelLabels: Record<string, string> = {
-  linkedin: 'LinkedIn', indeed: 'Indeed', glassdoor: 'Glassdoor',
-  ziprecruiter: 'ZipRecruiter', monster: 'Monster', handshake: 'Handshake',
-  angellist: 'AngelList', wellfound: 'Wellfound', dice: 'Dice',
-  stackoverflow: 'Stack Overflow', weworkremotely: 'We Work Remotely',
-  remoteok: 'Remote OK', builtin: 'Built In', hired: 'Hired',
-  lever: 'Lever', greenhouse_board: 'Greenhouse', google_jobs: 'Google Jobs',
-  facebook: 'Facebook', twitter: 'X / Twitter', instagram: 'Instagram',
-  tiktok: 'TikTok', reddit: 'Reddit', referral: 'Referral',
-  career_site: 'Career Site', email: 'Email', event: 'Event',
-  agency: 'Agency', direct: 'Direct', other: 'Other', custom: 'Custom',
-}
-
-const channelColors: Record<string, string> = {
-  linkedin: 'bg-blue-500', indeed: 'bg-indigo-500', glassdoor: 'bg-emerald-500',
-  ziprecruiter: 'bg-green-600', monster: 'bg-violet-500', google_jobs: 'bg-red-500',
-  facebook: 'bg-blue-600', twitter: 'bg-surface-700 dark:bg-surface-300',
-  instagram: 'bg-pink-500', tiktok: 'bg-surface-900 dark:bg-surface-100',
-  reddit: 'bg-orange-500', referral: 'bg-amber-500', career_site: 'bg-brand-500',
-  email: 'bg-teal-500', direct: 'bg-surface-400', other: 'bg-surface-300 dark:bg-surface-600',
-  custom: 'bg-brand-400', event: 'bg-cyan-500', agency: 'bg-rose-500',
-}
-
-const channelBadgeClasses: Record<string, string> = {
-  linkedin: 'bg-blue-50 text-blue-700 ring-blue-200/60 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-800/40',
-  indeed: 'bg-indigo-50 text-indigo-700 ring-indigo-200/60 dark:bg-indigo-950 dark:text-indigo-400 dark:ring-indigo-800/40',
-  glassdoor: 'bg-emerald-50 text-emerald-700 ring-emerald-200/60 dark:bg-emerald-950 dark:text-emerald-400 dark:ring-emerald-800/40',
-  referral: 'bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-800/40',
-  direct: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
-  career_site: 'bg-brand-50 text-brand-700 ring-brand-200/60 dark:bg-brand-950 dark:text-brand-400 dark:ring-brand-800/40',
-  email: 'bg-teal-50 text-teal-700 ring-teal-200/60 dark:bg-teal-950 dark:text-teal-400 dark:ring-teal-800/40',
-}
-
-const statusBadgeClasses: Record<string, string> = {
-  new: 'bg-blue-50 text-blue-700 ring-blue-200/60 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-800/40',
-  screening: 'bg-violet-50 text-violet-700 ring-violet-200/60 dark:bg-violet-950 dark:text-violet-400 dark:ring-violet-800/40',
-  interview: 'bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-800/40',
-  offer: 'bg-teal-50 text-teal-700 ring-teal-200/60 dark:bg-teal-950 dark:text-teal-400 dark:ring-teal-800/40',
-  hired: 'bg-green-50 text-green-700 ring-green-200/60 dark:bg-green-950 dark:text-green-400 dark:ring-green-800/40',
-  rejected: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
-}
-
-function getChannelBadge(channel: string) {
-  return channelBadgeClasses[channel] ?? 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700'
-}
-
-function getChannelColor(channel: string) {
-  return channelColors[channel] ?? 'bg-surface-400 dark:bg-surface-500'
-}
-
-function getChannelLabel(channel: string) {
-  return channelLabels[channel] ?? channel
-}
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr)
@@ -300,19 +252,19 @@ async function handleSidebarUpdated() {
         <div class="h-4 w-48 bg-surface-200 dark:bg-surface-700 rounded animate-pulse" />
       </div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div v-for="i in 4" :key="i" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div v-for="i in 4" :key="i" class="ui-dashboard-stat-card p-6 animate-pulse">
           <div class="h-4 w-20 bg-surface-200 dark:bg-surface-700 rounded mb-4" />
           <div class="h-9 w-14 bg-surface-200 dark:bg-surface-700 rounded" />
         </div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="lg:col-span-2 ui-panel ui-dashboard-panel p-6 animate-pulse">
           <div class="h-5 w-40 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-4">
             <div v-for="i in 5" :key="i" class="h-10 bg-surface-100 dark:bg-surface-800 rounded-xl" />
           </div>
         </div>
-        <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-panel ui-dashboard-panel p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-3">
             <div v-for="i in 4" :key="i" class="h-14 bg-surface-100 dark:bg-surface-800 rounded-xl" />
@@ -340,13 +292,12 @@ async function handleSidebarUpdated() {
     <template v-else-if="link">
       <!-- ─── Back + Header ─── -->
       <div class="mb-6 sm:mb-8">
-        <NuxtLink
+        <AppBackLink
           :to="localePath('/dashboard/source-tracking')"
-          class="inline-flex items-center gap-1.5 text-sm text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 transition-colors mb-4"
+          class="mb-4"
         >
-          <ArrowLeft class="size-4" />
           Back to Source Tracking
-        </NuxtLink>
+        </AppBackLink>
 
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
@@ -356,9 +307,9 @@ async function handleSidebarUpdated() {
               </h1>
               <span
                 class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset"
-                :class="getChannelBadge(link.channel)"
+                :class="getSourceChannelBadgeClass(link.channel)"
               >
-                {{ getChannelLabel(link.channel) }}
+                {{ getSourceChannelLabel(link.channel) }}
               </span>
               <span
                 class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
@@ -527,7 +478,7 @@ async function handleSidebarUpdated() {
         <!-- ─── Left: Pipeline funnel ─── -->
         <div class="lg:col-span-2 space-y-6">
           <!-- Pipeline funnel -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+          <div class="ui-panel ui-dashboard-panel overflow-hidden shadow-xs dark:shadow-none">
             <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
               <div class="flex items-center gap-2.5">
                 <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
@@ -577,7 +528,7 @@ async function handleSidebarUpdated() {
         <!-- ─── Right: UTM params + Referrers ─── -->
         <div class="space-y-6">
           <!-- UTM Parameters -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+          <div class="ui-panel ui-dashboard-panel overflow-hidden shadow-xs dark:shadow-none">
             <div class="flex items-center gap-2.5 px-5 py-4 border-b border-surface-100 dark:border-surface-800">
               <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                 <Tag class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -589,8 +540,8 @@ async function handleSidebarUpdated() {
               <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-surface-500 dark:text-surface-400">Channel</span>
                 <span class="inline-flex items-center gap-1.5 text-sm font-medium text-surface-800 dark:text-surface-200">
-                  <span class="size-2 rounded-full" :class="getChannelColor(link.channel)" />
-                  {{ getChannelLabel(link.channel) }}
+                  <span class="size-2 rounded-full" :class="getSourceChannelDotClass(link.channel)" />
+                  {{ getSourceChannelLabel(link.channel) }}
                 </span>
               </div>
               <div class="flex items-center justify-between">
@@ -621,7 +572,7 @@ async function handleSidebarUpdated() {
           </div>
 
           <!-- Referrer domains -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+          <div class="ui-panel ui-dashboard-panel overflow-hidden shadow-xs dark:shadow-none">
             <div class="flex items-center gap-2.5 px-5 py-4 border-b border-surface-100 dark:border-surface-800">
               <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                 <Globe class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -656,7 +607,7 @@ async function handleSidebarUpdated() {
       </div>
 
       <!-- ─── Applications Over Time (full width) ─── -->
-      <div class="mb-6 rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+      <div class="mb-6 ui-panel ui-dashboard-panel overflow-hidden shadow-xs dark:shadow-none">
         <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
           <div class="flex items-center gap-2.5">
             <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
@@ -698,7 +649,7 @@ async function handleSidebarUpdated() {
       </div>
 
       <!-- ─── Attributed Applications Table ─── -->
-      <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+      <div class="ui-table-shell shadow-xs dark:shadow-none">
         <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
           <div class="flex items-center gap-2.5">
             <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
@@ -722,7 +673,7 @@ async function handleSidebarUpdated() {
         <div v-else class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="border-b border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/30">
+              <tr class="ui-table-header">
                 <th class="px-5 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Candidate</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Job</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Referrer</th>
@@ -731,11 +682,11 @@ async function handleSidebarUpdated() {
                 <th class="px-4 py-3 text-right text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Applied</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
+            <tbody>
               <tr
                 v-for="app in applications"
                 :key="app.applicationId"
-                class="cursor-pointer transition-all duration-150"
+                class="ui-table-row cursor-pointer transition-all duration-150"
                 :class="selectedAppId === app.applicationId
                   ? 'bg-brand-50/70 dark:bg-brand-950/20'
                   : 'hover:bg-surface-50 dark:hover:bg-surface-800/40'"
@@ -777,7 +728,7 @@ async function handleSidebarUpdated() {
                 <td class="px-4 py-3.5 text-center">
                   <span
                     class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ring-1 ring-inset"
-                    :class="statusBadgeClasses[app.status] ?? 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400 ring-surface-200 dark:ring-surface-700'"
+                    :class="getApplicationStatusBadgeClass(app.status, 'subtle-ring')"
                   >
                     {{ app.status }}
                   </span>
@@ -806,9 +757,8 @@ async function handleSidebarUpdated() {
     <!-- Modal: Edit tracking link                -->
     <!-- ═══════════════════════════════════════ -->
     <Teleport to="body">
-      <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/50 dark:bg-black/70" @click="showEditModal = false" />
-        <div class="relative w-full max-w-lg rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-2xl">
+      <div v-if="showEditModal" class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="ui-modal-panel relative w-full max-w-lg shadow-2xl">
           <!-- Header -->
           <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Edit Tracking Link</h2>
@@ -842,13 +792,13 @@ async function handleSidebarUpdated() {
                 class="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
               >
                 <optgroup label="Job Boards">
-                  <option v-for="ch in ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  <option v-for="ch in ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
                 </optgroup>
                 <optgroup label="Social Media">
-                  <option v-for="ch in ['facebook', 'twitter', 'instagram', 'tiktok', 'reddit']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  <option v-for="ch in ['facebook', 'twitter', 'instagram', 'tiktok', 'reddit']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
                 </optgroup>
                 <optgroup label="Other">
-                  <option v-for="ch in ['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  <option v-for="ch in ['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
                 </optgroup>
               </select>
             </div>

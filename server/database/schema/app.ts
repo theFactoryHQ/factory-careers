@@ -327,25 +327,26 @@ export const joinRequest = pgTable('join_request', {
 // Calendar Integrations
 // ─────────────────────────────────────────────
 
-export const calendarProviderEnum = pgEnum('calendar_provider', ['google'])
+export const calendarProviderEnum = pgEnum('calendar_provider', ['google', 'microsoft'])
 
 /**
- * Per-user calendar integration credentials.
+ * Calendar integration credentials.
  * Tokens are encrypted at rest with AES-256-GCM derived from BETTER_AUTH_SECRET.
- * Each user can connect one calendar provider. The `calendarId` is the target
- * calendar for interview events (defaults to 'primary').
+ * Factory uses an organization-level connection for the shared careers calendar.
+ * User-scoped rows are kept for compatibility with upstream/self-hosted installs.
  */
 export const calendarIntegration = pgTable('calendar_integration', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  organizationId: text('organization_id').references(() => organization.id, { onDelete: 'cascade' }),
   provider: calendarProviderEnum('provider').notNull().default('google'),
-  /** AES-256-GCM encrypted Google OAuth2 access token */
+  /** AES-256-GCM encrypted provider OAuth2 access token */
   accessTokenEncrypted: text('access_token_encrypted').notNull(),
-  /** AES-256-GCM encrypted Google OAuth2 refresh token */
+  /** AES-256-GCM encrypted provider OAuth2 refresh token */
   refreshTokenEncrypted: text('refresh_token_encrypted').notNull(),
-  /** Google Calendar ID to create events in (defaults to 'primary') */
+  /** Calendar ID to create events in (defaults to 'primary') */
   calendarId: text('calendar_id').notNull().default('primary'),
-  /** Email address of the connected Google account */
+  /** Email address of the connected account */
   accountEmail: text('account_email'),
   /** Google push notification channel ID for two-way sync */
   webhookChannelId: text('webhook_channel_id'),
@@ -359,7 +360,38 @@ export const calendarIntegration = pgTable('calendar_integration', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => ([
   uniqueIndex('calendar_integration_user_provider_idx').on(t.userId, t.provider),
+  uniqueIndex('calendar_integration_org_provider_idx').on(t.organizationId, t.provider),
+  index('calendar_integration_organization_id_idx').on(t.organizationId),
   index('calendar_integration_webhook_channel_idx').on(t.webhookChannelId),
+]))
+
+/**
+ * Individual calendar event copies created for an interview.
+ *
+ * App-only Microsoft sync can write the same interview to several mailbox
+ * calendars. The legacy interview.googleCalendarEvent* fields keep exposing
+ * the primary event link; this table tracks every destination for updates,
+ * cancellations, and partial failure reporting.
+ */
+export const interviewCalendarEvent = pgTable('interview_calendar_event', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  interviewId: text('interview_id').notNull().references(() => interview.id, { onDelete: 'cascade' }),
+  provider: calendarProviderEnum('provider').notNull(),
+  destinationType: text('destination_type').notNull(),
+  destinationEmail: text('destination_email'),
+  eventId: text('event_id'),
+  eventLink: text('event_link'),
+  isPrimary: boolean('is_primary').notNull().default(false),
+  syncStatus: text('sync_status').notNull().default('synced'),
+  lastError: text('last_error'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  index('interview_calendar_event_org_idx').on(t.organizationId),
+  index('interview_calendar_event_interview_idx').on(t.interviewId),
+  index('interview_calendar_event_event_idx').on(t.provider, t.eventId),
+  uniqueIndex('interview_calendar_event_destination_idx').on(t.interviewId, t.provider, t.destinationType, t.destinationEmail),
 ]))
 
 // ─────────────────────────────────────────────
@@ -399,9 +431,11 @@ export const interview = pgTable('interview', {
   invitationSentAt: timestamp('invitation_sent_at'),
   candidateResponse: candidateResponseEnum('candidate_response').notNull().default('pending'),
   candidateRespondedAt: timestamp('candidate_responded_at'),
-  /** Google Calendar event ID for two-way sync (null = not synced) */
+  /** Calendar provider used for this synced event (null = legacy Google event or unsynced) */
+  calendarEventProvider: calendarProviderEnum('calendar_event_provider'),
+  /** Calendar event ID for sync (legacy column name retained for compatibility) */
   googleCalendarEventId: text('google_calendar_event_id'),
-  /** Direct link to the Google Calendar event (htmlLink from Google API) */
+  /** Direct link to the calendar event (legacy column name retained for compatibility) */
   googleCalendarEventLink: text('google_calendar_event_link'),
   /** IANA timezone for the scheduled time (e.g. 'America/New_York') */
   timezone: text('timezone').notNull().default('UTC'),
@@ -778,10 +812,16 @@ export const joinRequestRelations = relations(joinRequest, ({ one }) => ({
   reviewedBy: one(user, { fields: [joinRequest.reviewedById], references: [user.id] }),
 }))
 
-export const interviewRelations = relations(interview, ({ one }) => ({
+export const interviewRelations = relations(interview, ({ one, many }) => ({
   organization: one(organization, { fields: [interview.organizationId], references: [organization.id] }),
   application: one(application, { fields: [interview.applicationId], references: [application.id] }),
   createdBy: one(user, { fields: [interview.createdById], references: [user.id] }),
+  calendarEvents: many(interviewCalendarEvent),
+}))
+
+export const interviewCalendarEventRelations = relations(interviewCalendarEvent, ({ one }) => ({
+  organization: one(organization, { fields: [interviewCalendarEvent.organizationId], references: [organization.id] }),
+  interview: one(interview, { fields: [interviewCalendarEvent.interviewId], references: [interview.id] }),
 }))
 
 export const emailTemplateRelations = relations(emailTemplate, ({ one }) => ({
@@ -791,6 +831,7 @@ export const emailTemplateRelations = relations(emailTemplate, ({ one }) => ({
 
 export const calendarIntegrationRelations = relations(calendarIntegration, ({ one }) => ({
   user: one(user, { fields: [calendarIntegration.userId], references: [user.id] }),
+  organization: one(organization, { fields: [calendarIntegration.organizationId], references: [organization.id] }),
 }))
 
 // ─── AI Scoring Relations ──────────────────────────────────────────

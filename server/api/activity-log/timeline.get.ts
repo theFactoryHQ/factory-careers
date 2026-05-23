@@ -29,7 +29,9 @@ export default defineEventHandler(async (event) => {
 
   const conditions = [eq(activityLog.organizationId, orgId)]
 
-  if (query.resourceType) {
+  if (query.resourceType === 'job') {
+    conditions.push(inArray(activityLog.resourceType, ['job', 'application', 'interview', 'scoringCriteria']))
+  } else if (query.resourceType) {
     conditions.push(eq(activityLog.resourceType, query.resourceType))
   }
 
@@ -75,6 +77,7 @@ export default defineEventHandler(async (event) => {
   for (const item of items) {
     switch (item.resourceType) {
       case 'job': jobIds.add(item.resourceId); break
+      case 'scoringCriteria': jobIds.add(item.resourceId); break
       case 'candidate': candidateIds.add(item.resourceId); break
       case 'application': applicationIds.add(item.resourceId); break
       case 'interview': interviewIds.add(item.resourceId); break
@@ -172,6 +175,13 @@ export default defineEventHandler(async (event) => {
         jobName = resourceName
         break
       }
+      case 'scoringCriteria': {
+        resourceName = jobMap.get(item.resourceId) ?? null
+        resourceUrl = `/dashboard/jobs/${item.resourceId}/ai-analysis`
+        jobId = item.resourceId
+        jobName = resourceName
+        break
+      }
       case 'candidate': {
         resourceName = candidateMap.get(item.resourceId) ?? null
         resourceUrl = `/dashboard/candidates/${item.resourceId}`
@@ -215,10 +225,10 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  // Fetch upcoming interviews as future "planned" events
-  // Only include when no filter is active, or when filtering specifically for interviews
+  // Fetch upcoming interviews as future "planned" events.
+  // Jobs is a grouped activity view, so interviews belong there too.
   let upcoming: Array<Record<string, unknown>> = []
-  if (!query.before && !query.after && (!query.resourceType || query.resourceType === 'interview')) {
+  if (!query.before && !query.after && (!query.resourceType || query.resourceType === 'job' || query.resourceType === 'interview')) {
     const upcomingInterviews = await db
       .select({
         id: interview.id,

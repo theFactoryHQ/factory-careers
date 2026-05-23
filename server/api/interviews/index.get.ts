@@ -43,6 +43,7 @@ export default defineEventHandler(async (event) => {
         invitationSentAt: interview.invitationSentAt,
         candidateResponse: interview.candidateResponse,
         candidateRespondedAt: interview.candidateRespondedAt,
+        calendarEventProvider: interview.calendarEventProvider,
         googleCalendarEventId: interview.googleCalendarEventId,
         googleCalendarEventLink: interview.googleCalendarEventLink,
         createdAt: interview.createdAt,

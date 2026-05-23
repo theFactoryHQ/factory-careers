@@ -1,68 +1,22 @@
-import { z } from 'zod'
 import { eq, and, ne } from 'drizzle-orm'
 import { ssoProvider } from '~~/server/database/schema'
-import { prefetchOidcEndpointOrigins } from '~~/server/utils/auth'
+import {
+  discoverOidcRegistrationConfig,
+  registerSsoSchema,
+} from '~~/server/utils/ssoSecurity'
 
-// Hostname/IP ranges that must never be contacted server-side (SSRF prevention)
-const BLOCKED_ISSUER_HOSTNAMES = new Set([
-  'localhost',
-  '169.254.169.254',          // AWS / Azure / DigitalOcean IMDS
-  'metadata.google.internal', // GCP IMDS
-  'metadata.internal',
-  'instance-data',
-])
-
-function isBlockedIssuerUrl(url: string): boolean {
-  let hostname: string
+function getOidcScopesForIssuer(issuer: string): string[] {
+  const scopes = ['openid', 'email', 'profile']
   try {
-    hostname = new URL(url).hostname.toLowerCase()
+    const hostname = new URL(issuer).hostname.toLowerCase()
+    if (hostname === 'login.microsoftonline.com' || hostname === 'sts.windows.net') {
+      scopes.push('User.Read')
+    }
   } catch {
-    return true
+    // Validation has already checked issuer shape; keep default scopes here.
   }
-  if (BLOCKED_ISSUER_HOSTNAMES.has(hostname)) return true
-  const ipv4 = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
-  if (ipv4) {
-    const [a, b] = [Number(ipv4[1]), Number(ipv4[2])]
-    if (a === 127 || a === 0) return true
-    if (a === 10) return true
-    if (a === 172 && b >= 16 && b <= 31) return true
-    if (a === 192 && b === 168) return true
-    if (a === 100 && b >= 64 && b <= 127) return true
-    if (a === 169 && b === 254) return true
-  }
-  if (hostname === '::1') return true
-  if (hostname.startsWith('fe80:')) return true
-  return false
+  return scopes
 }
-
-function isAllowedIssuerProtocol(url: string): boolean {
-  try {
-    const protocol = new URL(url).protocol
-    if (protocol === 'https:') return true
-    return protocol === 'http:' && process.env.NODE_ENV !== 'production'
-  } catch {
-    return false
-  }
-}
-
-const registerSsoSchema = z.object({
-  providerId: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/, 'Only lowercase alphanumeric and hyphens'),
-  issuer: z.string().url()
-    .refine(
-      isAllowedIssuerProtocol,
-      'Issuer URL must use HTTPS in production. HTTP is only allowed for local development.',
-    )
-    .refine(
-      (url) => !isBlockedIssuerUrl(url),
-      'Issuer URL must not target internal or private network addresses',
-    ),
-  domain: z.string().min(1).max(253).regex(
-    /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/,
-    'Must be a valid domain (e.g. company.com)',
-  ),
-  clientId: z.string().min(1),
-  clientSecret: z.string().min(1),
-})
 
 /**
  * POST /api/sso/providers — register an OIDC SSO provider for the current org.
@@ -104,10 +58,9 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // Pre-discover OIDC endpoint origins so better-auth trusts them during
-    // registration. IdPs like Google use separate domains for token/userinfo
-    // endpoints (oauth2.googleapis.com) vs their issuer (accounts.google.com).
-    await prefetchOidcEndpointOrigins(body.issuer)
+    const discoveredOidcConfig = await discoverOidcRegistrationConfig(body.issuer, {
+      allowLocalHttp: process.env.NODE_ENV !== 'production',
+    })
 
     const result = await (auth.api as any).registerSSOProvider({
       headers: event.headers,
@@ -119,7 +72,8 @@ export default defineEventHandler(async (event) => {
         oidcConfig: {
           clientId: body.clientId,
           clientSecret: body.clientSecret,
-          scopes: ['openid', 'email', 'profile'],
+          ...discoveredOidcConfig,
+          scopes: getOidcScopesForIssuer(body.issuer),
           pkce: true,
         },
       },

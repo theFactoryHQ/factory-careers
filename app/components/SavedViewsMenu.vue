@@ -97,13 +97,11 @@ function onDelete(id: string, e: Event) {
 </script>
 
 <template>
-  <div ref="rootRef" class="relative inline-block">
+  <div ref="rootRef" class="factory-saved-views-menu relative inline-block">
     <button
       type="button"
-      class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
-      :class="activeViewId
-        ? 'border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-700 dark:bg-brand-950 dark:text-brand-300'
-        : 'border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'"
+      class="factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+      :class="{ 'is-active': activeViewId }"
       :aria-expanded="open"
       aria-haspopup="menu"
       @click="toggle"
@@ -121,16 +119,14 @@ function onDelete(id: string, e: Event) {
     <!-- Dropdown -->
     <div
       v-if="open"
-      class="absolute left-0 top-full mt-1.5 z-30 w-72 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-xl overflow-hidden"
+      class="factory-saved-views-panel absolute left-0 top-full mt-1.5 z-30 w-72 rounded-xl border overflow-hidden"
       role="menu"
     >
       <!-- "All / no view" -->
       <button
         type="button"
-        class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors"
-        :class="!activeViewId
-          ? 'bg-brand-50 dark:bg-brand-950 text-brand-700 dark:text-brand-300'
-          : 'text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800'"
+        class="factory-saved-views-option w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors"
+        :class="{ 'is-active': !activeViewId }"
         @click="selectView(null)"
       >
         <Check class="size-3.5" :class="!activeViewId ? '' : 'opacity-0'" />
@@ -142,15 +138,13 @@ function onDelete(id: string, e: Event) {
         <div
           v-for="v in views"
           :key="v.id"
-          class="group flex items-center gap-1 pl-3 pr-1.5 py-1.5 text-sm transition-colors"
-          :class="activeViewId === v.id
-            ? 'bg-brand-50 dark:bg-brand-950'
-            : 'hover:bg-surface-50 dark:hover:bg-surface-800'"
+          class="factory-saved-views-row group flex items-center gap-1 pl-3 pr-1.5 py-1.5 text-sm transition-colors"
+          :class="{ 'is-active': activeViewId === v.id }"
         >
           <button
             type="button"
-            class="flex-1 flex items-center gap-2 text-left min-w-0 py-0.5"
-            :class="activeViewId === v.id ? 'text-brand-700 dark:text-brand-300' : 'text-surface-700 dark:text-surface-300'"
+            class="factory-saved-views-option flex-1 flex items-center gap-2 text-left min-w-0 py-0.5"
+            :class="{ 'is-active': activeViewId === v.id }"
             @click="selectView(v.id)"
           >
             <Check class="size-3.5 shrink-0" :class="activeViewId === v.id ? '' : 'opacity-0'" />
@@ -195,7 +189,7 @@ function onDelete(id: string, e: Event) {
       </div>
 
       <!-- Footer: save form -->
-      <div class="border-t border-surface-100 dark:border-surface-800 bg-surface-50/60 dark:bg-surface-800/40 p-2">
+      <div class="factory-saved-views-footer border-t p-2">
         <form v-if="showSaveForm" class="flex items-center gap-1.5" @submit.prevent="submitSave">
           <input
             ref="nameInput"
@@ -209,13 +203,13 @@ function onDelete(id: string, e: Event) {
           <button
             type="submit"
             :disabled="!newName.trim()"
-            class="rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="factory-button-cta factory-button-premium rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >Save</button>
         </form>
         <button
           v-else
           type="button"
-          class="w-full flex items-center justify-center gap-1.5 rounded-md py-1.5 text-sm font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950 transition-colors"
+          class="factory-button-cta factory-toolbar-button w-full flex items-center justify-center gap-1.5 rounded-md border py-1.5 text-sm font-medium transition-colors"
           @click="openSaveForm"
         >
           <Plus class="size-3.5" />

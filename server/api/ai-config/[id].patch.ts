@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { aiConfig } from '../../database/schema'
 import { updateAiConfigSchema } from '../../utils/schemas/scoring'
 import { encrypt } from '../../utils/encryption'
+import { assertSafeServerSideUrl } from '../../utils/serverSideUrl'
 
 const paramsSchema = z.object({ id: z.string().min(1) })
 
@@ -13,10 +14,14 @@ const paramsSchema = z.object({ id: z.string().min(1) })
  * so users can edit name / model / pricing without re-entering credentials.
  */
 export default defineEventHandler(async (event) => {
-  const session = await requirePermission(event, { organization: ['update'] })
+  const session = await requirePermission(event, { aiConfig: ['update'] })
   const orgId = session.session.activeOrganizationId
   const { id } = await getValidatedRouterParams(event, paramsSchema.parse)
   const body = await readValidatedBody(event, updateAiConfigSchema.parse)
+
+  if (body.baseUrl) {
+    await assertSafeServerSideUrl(body.baseUrl)
+  }
 
   const existing = await db.query.aiConfig.findFirst({
     where: and(eq(aiConfig.id, id), eq(aiConfig.organizationId, orgId)),

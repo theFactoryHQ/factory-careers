@@ -6,8 +6,8 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Join Organization — Reqcore',
-  description: 'Accept an invitation to join an organization on Reqcore',
+  title: 'Join Organization — Factory Careers',
+  description: 'Accept an invitation to join an organization on Factory Careers',
   robots: 'noindex, nofollow',
 })
 
@@ -108,7 +108,7 @@ function getRoleIcon(role: string) {
 
   <!-- Error state (invalid/expired link) -->
   <div v-else-if="error && !linkInfo" class="flex flex-col items-center gap-4 py-6">
-    <div class="flex items-center justify-center size-12 rounded-full bg-danger-100 dark:bg-danger-950 text-danger-600 dark:text-danger-400">
+    <div class="ui-icon-state ui-icon-state-danger">
       <AlertTriangle class="size-6" />
     </div>
     <div class="text-center">
@@ -125,7 +125,7 @@ function getRoleIcon(role: string) {
 
   <!-- Success state -->
   <div v-else-if="success" class="flex flex-col items-center gap-4 py-6">
-    <div class="flex items-center justify-center size-12 rounded-full bg-success-100 dark:bg-success-950 text-success-600 dark:text-success-400">
+    <div class="ui-icon-state ui-icon-state-success">
       <Check class="size-6" />
     </div>
     <div class="text-center">
@@ -140,13 +140,13 @@ function getRoleIcon(role: string) {
   <div v-else-if="linkInfo" class="flex flex-col gap-5">
     <div class="text-center">
       <h2 class="text-xl font-semibold text-surface-900 dark:text-surface-100 mb-1">Join organization</h2>
-      <p class="text-sm text-surface-500 dark:text-surface-400">You've been invited to join a team on Reqcore.</p>
+      <p class="text-sm text-surface-500 dark:text-surface-400">You've been invited to join a team on Factory Careers.</p>
     </div>
 
     <!-- Org info card -->
-    <div class="rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-800/50 p-5">
+    <div class="ui-panel-muted p-5">
       <div class="flex items-center gap-3 mb-3">
-        <div class="flex items-center justify-center size-10 rounded-lg bg-brand-100 dark:bg-brand-950 text-brand-600 dark:text-brand-400">
+        <div class="ui-icon-state ui-icon-state-brand size-10 rounded-lg">
           <Building2 class="size-5" />
         </div>
         <div>
@@ -168,7 +168,7 @@ function getRoleIcon(role: string) {
     </div>
 
     <!-- Error banner -->
-    <div v-if="error" class="rounded-md border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-3 text-sm text-danger-700 dark:text-danger-400">
+    <div v-if="error" class="ui-alert ui-alert-danger">
       {{ error }}
     </div>
 
@@ -180,13 +180,13 @@ function getRoleIcon(role: string) {
       <div class="flex gap-3">
         <NuxtLink
           :to="localePath('/auth/sign-in')"
-          class="flex-1 text-center px-4 py-2.5 bg-brand-600 text-white rounded-md text-sm font-medium hover:bg-brand-700 transition-colors no-underline"
+          class="ui-button ui-button-primary flex-1"
         >
           Sign in
         </NuxtLink>
         <NuxtLink
           :to="localePath('/auth/sign-up')"
-          class="flex-1 text-center px-4 py-2.5 border border-surface-300 dark:border-surface-700 text-surface-700 dark:text-surface-300 rounded-md text-sm font-medium hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors no-underline"
+          class="ui-button ui-button-secondary flex-1"
         >
           Create account
         </NuxtLink>
@@ -197,7 +197,7 @@ function getRoleIcon(role: string) {
     <button
       v-else
       :disabled="isAccepting"
-      class="w-full px-4 py-2.5 bg-brand-600 text-white rounded-md text-sm font-medium hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+      class="ui-button ui-button-primary w-full"
       @click="handleAccept"
     >
       <Loader2 v-if="isAccepting" class="size-4 animate-spin" />

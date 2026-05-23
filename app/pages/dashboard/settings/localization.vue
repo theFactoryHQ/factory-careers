@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Globe, Save, Check, Loader2 } from 'lucide-vue-next'
+import { Globe, Save, Check, Loader2, ChevronDown } from 'lucide-vue-next'
 
 definePageMeta({})
 
 useSeoMeta({
-  title: 'Localization Settings — Reqcore',
+  title: 'Localization Settings — Factory Careers',
   description: 'Configure name display format and date format for your organization',
 })
 
@@ -14,6 +14,25 @@ const { track } = useTrack()
 
 const localNameFormat = ref<'first_last' | 'last_first'>('first_last')
 const localDateFormat = ref<'mdy' | 'dmy' | 'ymd'>('mdy')
+
+const nameFormatOptions = [
+  { value: 'first_last', label: 'First Last', example: 'Jane Doe' },
+  { value: 'last_first', label: 'Last First', example: 'Doe Jane' },
+] as const
+
+const dateFormatOptions = [
+  { value: 'mdy', label: 'MM/DD/YYYY', example: 'United States' },
+  { value: 'dmy', label: 'DD/MM/YYYY', example: 'Europe, Vietnam & most regions' },
+  { value: 'ymd', label: 'YYYY-MM-DD', example: 'ISO 8601 / East Asia' },
+] as const
+
+const selectedNameFormatOption = computed(() =>
+  nameFormatOptions.find(option => option.value === localNameFormat.value) ?? nameFormatOptions[0],
+)
+
+const selectedDateFormatOption = computed(() =>
+  dateFormatOptions.find(option => option.value === localDateFormat.value) ?? dateFormatOptions[0],
+)
 
 // Sync from loaded settings
 watch([nameDisplayFormat, dateFormat], ([nf, df]) => {
@@ -68,9 +87,9 @@ const previewDateFormatted = computed(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl">
+  <div class="ui-settings-page">
     <!-- Page title -->
-    <div class="mb-6">
+    <div class="ui-settings-page-header">
       <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">
         Localization
       </h1>
@@ -80,10 +99,10 @@ const previewDateFormatted = computed(() => {
     </div>
 
     <!-- Settings card -->
-    <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
-      <div class="px-4 sm:px-6 py-5 border-b border-surface-200 dark:border-surface-800">
+    <section class="ui-panel ui-settings-panel">
+      <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-10 shrink-0 rounded-lg bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400">
+          <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
             <Globe class="size-5" />
           </div>
           <div>
@@ -93,123 +112,65 @@ const previewDateFormatted = computed(() => {
         </div>
       </div>
 
-      <div class="px-4 sm:px-6 py-5 space-y-6">
-        <!-- Name display format -->
-        <div>
-          <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-            Name display format
-          </label>
-          <p class="text-xs text-surface-400 dark:text-surface-500 mb-3">
-            Choose how candidate names are displayed throughout the application. You can always override this on individual candidates using the Display Name field.
-          </p>
-          <div class="flex flex-col sm:flex-row gap-3">
-            <label
-              class="flex items-start gap-3 flex-1 rounded-lg border p-3.5 cursor-pointer transition-colors"
-              :class="localNameFormat === 'first_last'
-                ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 dark:border-brand-600'
-                : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600'"
-            >
-              <input
-                v-model="localNameFormat"
-                type="radio"
-                value="first_last"
-                class="mt-0.5 accent-brand-600"
-                :disabled="!canUpdateOrg"
-              />
-              <div>
-                <span class="block text-sm font-medium text-surface-800 dark:text-surface-200">First Last</span>
-                <span class="block text-xs text-surface-400 mt-0.5">e.g. Jane Doe</span>
-              </div>
+      <div class="ui-settings-panel-body space-y-6">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <!-- Name display format -->
+          <div>
+            <label for="localization-name-format" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+              Name display format
             </label>
-            <label
-              class="flex items-start gap-3 flex-1 rounded-lg border p-3.5 cursor-pointer transition-colors"
-              :class="localNameFormat === 'last_first'
-                ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 dark:border-brand-600'
-                : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600'"
-            >
-              <input
+            <div class="relative">
+              <select
+                id="localization-name-format"
                 v-model="localNameFormat"
-                type="radio"
-                value="last_first"
-                class="mt-0.5 accent-brand-600"
+                class="ui-field h-11 appearance-none pr-10 font-medium disabled:cursor-not-allowed disabled:opacity-50"
                 :disabled="!canUpdateOrg"
-              />
-              <div>
-                <span class="block text-sm font-medium text-surface-800 dark:text-surface-200">Last First</span>
-                <span class="block text-xs text-surface-400 mt-0.5">e.g. Doe Jane</span>
-              </div>
-            </label>
+              >
+                <option
+                  v-for="option in nameFormatOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }} - {{ option.example }}
+                </option>
+              </select>
+              <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
+            </div>
+            <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">
+              Currently: {{ selectedNameFormatOption.example }}
+            </p>
           </div>
-        </div>
 
-        <!-- Date format -->
-        <div>
-          <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-            Date format
-          </label>
-          <p class="text-xs text-surface-400 dark:text-surface-500 mb-3">
-            Controls how dates (e.g. date of birth) are displayed.
-          </p>
-          <div class="flex flex-col sm:flex-row gap-3">
-            <label
-              class="flex items-start gap-3 flex-1 rounded-lg border p-3.5 cursor-pointer transition-colors"
-              :class="localDateFormat === 'mdy'
-                ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 dark:border-brand-600'
-                : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600'"
-            >
-              <input
-                v-model="localDateFormat"
-                type="radio"
-                value="mdy"
-                class="mt-0.5 accent-brand-600"
-                :disabled="!canUpdateOrg"
-              />
-              <div>
-                <span class="block text-sm font-medium text-surface-800 dark:text-surface-200">MM/DD/YYYY</span>
-                <span class="block text-xs text-surface-400 mt-0.5">United States</span>
-              </div>
+          <!-- Date format -->
+          <div>
+            <label for="localization-date-format" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+              Date format
             </label>
-            <label
-              class="flex items-start gap-3 flex-1 rounded-lg border p-3.5 cursor-pointer transition-colors"
-              :class="localDateFormat === 'dmy'
-                ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 dark:border-brand-600'
-                : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600'"
-            >
-              <input
+            <div class="relative">
+              <select
+                id="localization-date-format"
                 v-model="localDateFormat"
-                type="radio"
-                value="dmy"
-                class="mt-0.5 accent-brand-600"
+                class="ui-field h-11 appearance-none pr-10 font-medium disabled:cursor-not-allowed disabled:opacity-50"
                 :disabled="!canUpdateOrg"
-              />
-              <div>
-                <span class="block text-sm font-medium text-surface-800 dark:text-surface-200">DD/MM/YYYY</span>
-                <span class="block text-xs text-surface-400 mt-0.5">Europe, Vietnam & most regions</span>
-              </div>
-            </label>
-            <label
-              class="flex items-start gap-3 flex-1 rounded-lg border p-3.5 cursor-pointer transition-colors"
-              :class="localDateFormat === 'ymd'
-                ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 dark:border-brand-600'
-                : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600'"
-            >
-              <input
-                v-model="localDateFormat"
-                type="radio"
-                value="ymd"
-                class="mt-0.5 accent-brand-600"
-                :disabled="!canUpdateOrg"
-              />
-              <div>
-                <span class="block text-sm font-medium text-surface-800 dark:text-surface-200">YYYY-MM-DD</span>
-                <span class="block text-xs text-surface-400 mt-0.5">ISO 8601 / East Asia</span>
-              </div>
-            </label>
+              >
+                <option
+                  v-for="option in dateFormatOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }} - {{ option.example }}
+                </option>
+              </select>
+              <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
+            </div>
+            <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">
+              {{ selectedDateFormatOption.example }}
+            </p>
           </div>
         </div>
 
         <!-- Live preview -->
-        <div class="rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50 p-4">
+        <div class="ui-panel-muted p-4">
           <p class="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide mb-2">Preview</p>
           <div class="flex flex-col sm:flex-row sm:items-center gap-3 text-sm">
             <div class="flex items-center gap-2">
@@ -227,7 +188,7 @@ const previewDateFormatted = computed(() => {
         <!-- Error -->
         <div
           v-if="saveError"
-          class="rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 px-4 py-3 text-sm text-danger-700 dark:text-danger-400"
+          class="ui-alert ui-alert-danger"
         >
           {{ saveError }}
         </div>
@@ -236,7 +197,7 @@ const previewDateFormatted = computed(() => {
         <div class="flex items-center gap-3">
           <button
             :disabled="!canUpdateOrg || isSaving"
-            class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="ui-button ui-button-primary disabled:opacity-50 disabled:cursor-not-allowed"
             @click="handleSave"
           >
             <Check v-if="saveSuccess" class="size-4" />

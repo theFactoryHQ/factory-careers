@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
-import { interview, application, candidate, job, organization } from '../../database/schema'
+import { interview, interviewCalendarEvent, application, candidate, job, organization } from '../../database/schema'
 import { createInterviewSchema } from '../../utils/schemas/interview'
-import { createCalendarEvent } from '../../utils/google-calendar'
+import { createConnectedCalendarEvents } from '../../utils/calendar'
 
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { interview: ['create'] })
@@ -44,9 +44,10 @@ export default defineEventHandler(async (event) => {
 
   if (!created) throw createError({ statusCode: 500, statusMessage: 'Failed to create interview' })
 
-  // Sync to Google Calendar only when explicitly requested
+  // Sync to the connected calendar provider only when explicitly requested
   let calendarEventLink: string | null = null
   let calendarEventId: string | null = null
+  let calendarEventProvider: 'google' | 'microsoft' | null = null
 
   if (body.calendarSync !== false && app.candidate && app.job) {
     const org = await db.query.organization.findFirst({
@@ -64,13 +65,13 @@ export default defineEventHandler(async (event) => {
       ...(body.location ? [`Location: ${body.location}`] : []),
       ...(body.notes ? [`\nNotes: ${body.notes}`] : []),
       '',
-      `Scheduled via ${org?.name || 'Reqcore'}`,
+      `Scheduled via ${org?.name || 'Factory Careers'}`,
     ].join('\n')
     const addCandidate = body.calendarAddCandidateAttendee !== false
     const sendUpdates = body.calendarSendUpdates !== false
 
     try {
-      const result = await createCalendarEvent(session.user.id, {
+      const results = await createConnectedCalendarEvents(session.user.id, orgId, {
         title: calendarTitle,
         description: calendarDescription,
         startTime: new Date(body.scheduledAt),
@@ -83,11 +84,34 @@ export default defineEventHandler(async (event) => {
         sendUpdates,
       })
 
-      if (result) {
-        calendarEventId = result.id
-        calendarEventLink = result.htmlLink
+      if (results.length > 0) {
+        await db.insert(interviewCalendarEvent).values(results.map(result => ({
+          organizationId: orgId,
+          interviewId: created.id,
+          provider: result.provider,
+          destinationType: result.destinationType,
+          destinationEmail: result.destinationEmail,
+          eventId: result.id,
+          eventLink: result.htmlLink,
+          isPrimary: result.isPrimary,
+          syncStatus: result.success ? 'synced' : 'failed',
+          lastError: result.error ?? null,
+        })))
+      }
+
+      const primaryResult = results.find(result => result.success && result.isPrimary && result.id && result.htmlLink)
+        ?? results.find(result => result.success && result.id && result.htmlLink)
+
+      if (primaryResult?.id && primaryResult.htmlLink) {
+        calendarEventId = primaryResult.id
+        calendarEventLink = primaryResult.htmlLink
+        calendarEventProvider = primaryResult.provider
         await db.update(interview)
-          .set({ googleCalendarEventId: result.id, googleCalendarEventLink: result.htmlLink })
+          .set({
+            calendarEventProvider: primaryResult.provider,
+            googleCalendarEventId: primaryResult.id,
+            googleCalendarEventLink: primaryResult.htmlLink,
+          })
           .where(eq(interview.id, created.id))
       }
     } catch (err) {
@@ -134,5 +158,6 @@ export default defineEventHandler(async (event) => {
     ...created,
     ...(calendarEventId && { googleCalendarEventId: calendarEventId }),
     ...(calendarEventLink && { googleCalendarEventLink: calendarEventLink }),
+    ...(calendarEventProvider && { calendarEventProvider }),
   }
 })

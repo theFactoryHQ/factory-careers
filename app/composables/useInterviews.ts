@@ -13,6 +13,7 @@ export interface Interview {
   invitationSentAt: string | null
   candidateResponse: 'pending' | 'accepted' | 'declined' | 'tentative'
   candidateRespondedAt: string | null
+  calendarEventProvider: 'google' | 'microsoft' | null
   googleCalendarEventId: string | null
   googleCalendarEventLink: string | null
   timezone: string

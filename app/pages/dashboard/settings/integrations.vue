@@ -7,7 +7,7 @@ import {
 definePageMeta({})
 
 useSeoMeta({
-  title: 'Integrations — Reqcore',
+  title: 'Integrations — Factory Careers',
   description: 'Connect your calendar and other services',
 })
 
@@ -16,6 +16,15 @@ const { calendarStatus, isConnected, isAvailable, connect, disconnect, refresh, 
 
 const isDisconnecting = ref(false)
 const showDisconnectConfirm = ref(false)
+const calendarProviderLabel = computed(() => calendarStatus.value.providerLabel || 'Microsoft Calendar')
+const selectedCalendarProvider = computed(() => calendarStatus.value.provider || calendarStatus.value.availableProvider || 'microsoft')
+const isMicrosoftCalendar = computed(() => selectedCalendarProvider.value === 'microsoft')
+const isAdminManagedCalendar = computed(() => calendarStatus.value.managedByAdmin)
+const calendarProviderName = computed(() => isMicrosoftCalendar.value ? 'Microsoft Calendar' : 'Google Calendar')
+const calendarSyncLabel = computed(() => isAdminManagedCalendar.value ? 'Mailbox sync' : (isMicrosoftCalendar.value ? 'Event sync' : 'Two-way sync'))
+const sharedCalendarEmail = computed(() => calendarStatus.value.expectedAccountEmail || 'interviews@thefactoryhq.com')
+const calendarDestinations = computed(() => calendarStatus.value.destinations ?? [])
+const destinationTypeLabel = (type: string) => type === 'shared_mailbox' ? 'Shared mailbox' : 'User mailbox'
 
 // Handle OAuth callback query params
 const successMessage = ref('')
@@ -26,14 +35,17 @@ onMounted(() => {
   const error = route.query.error as string | undefined
 
   if (success === 'connected') {
-    successMessage.value = 'Google Calendar connected successfully! Your interviews will now sync automatically.'
+    successMessage.value = `${calendarProviderLabel.value} connected successfully! Your interviews will now sync automatically.`
     refresh()
   }
   else if (error === 'consent_denied') {
     errorMessage.value = 'Calendar connection was cancelled. You can try again anytime.'
   }
   else if (error === 'oauth_failed') {
-    errorMessage.value = 'Failed to connect Google Calendar. Please try again.'
+    errorMessage.value = `Failed to connect ${calendarProviderName.value}. Please try again.`
+  }
+  else if (error === 'account_mismatch' || error === 'calendar_not_accessible') {
+    errorMessage.value = `Could not access ${sharedCalendarEmail.value}. Sign in with a Factory Microsoft account that can access that mailbox.`
   }
 
   // Clear query params after reading
@@ -41,6 +53,7 @@ onMounted(() => {
     const newQuery = { ...route.query }
     delete newQuery.success
     delete newQuery.error
+    delete newQuery.provider
     navigateTo({ query: newQuery }, { replace: true })
   }
 })
@@ -50,7 +63,7 @@ async function handleDisconnect() {
   try {
     await disconnect()
     showDisconnectConfirm.value = false
-    successMessage.value = 'Google Calendar disconnected.'
+    successMessage.value = `${calendarProviderName.value} disconnected.`
   }
   catch {
     errorMessage.value = 'Failed to disconnect. Please try again.'
@@ -62,8 +75,8 @@ async function handleDisconnect() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl">
-    <div class="mb-6">
+  <div class="ui-settings-page ui-settings-page-wide">
+    <div class="ui-settings-page-header">
       <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-100">
         Integrations
       </h1>
@@ -76,14 +89,14 @@ async function handleDisconnect() {
     <Transition name="fade">
       <div
         v-if="successMessage"
-        class="mb-4 flex items-center gap-3 rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3"
+        class="ui-alert ui-alert-success mb-4 flex items-center gap-3"
       >
-        <Check class="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-        <p class="text-sm text-emerald-700 dark:text-emerald-300 flex-1">
+        <Check class="size-4 shrink-0" />
+        <p class="flex-1">
           {{ successMessage }}
         </p>
         <button
-          class="text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-200"
+          class="ui-button ui-button-ghost p-1"
           @click="successMessage = ''"
         >
           <X class="size-4" />
@@ -94,14 +107,14 @@ async function handleDisconnect() {
     <Transition name="fade">
       <div
         v-if="errorMessage"
-        class="mb-4 flex items-center gap-3 rounded-lg border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950/30 px-4 py-3"
+        class="ui-alert ui-alert-danger mb-4 flex items-center gap-3"
       >
-        <AlertTriangle class="size-4 text-danger-500 shrink-0" />
-        <p class="text-sm text-danger-700 dark:text-danger-300 flex-1">
+        <AlertTriangle class="size-4 shrink-0" />
+        <p class="flex-1">
           {{ errorMessage }}
         </p>
         <button
-          class="text-danger-400 hover:text-danger-600 dark:hover:text-danger-200"
+          class="ui-button ui-button-ghost p-1"
           @click="errorMessage = ''"
         >
           <X class="size-4" />
@@ -109,40 +122,40 @@ async function handleDisconnect() {
       </div>
     </Transition>
 
-    <!-- Google Calendar Integration Card -->
-    <div class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
+    <!-- Calendar Integration Card -->
+    <div class="ui-panel ui-dashboard-panel ui-settings-panel">
       <!-- Header -->
-      <div class="flex items-center gap-4 px-4 sm:px-6 py-5 border-b border-surface-100 dark:border-surface-800">
-        <div class="flex items-center justify-center size-10 rounded-lg bg-brand-50 dark:bg-brand-950/40">
-          <Calendar class="size-5 text-brand-600 dark:text-brand-400" />
+      <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header flex items-center gap-4">
+        <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-10">
+          <Calendar class="size-5" />
         </div>
         <div class="flex-1 min-w-0">
           <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">
-            Google Calendar
+            {{ calendarProviderName }}
           </h2>
           <p class="text-sm text-surface-500 dark:text-surface-400">
-            Two-way sync for interview scheduling
+            Organization-wide interview calendar
           </p>
         </div>
 
         <!-- Status Badge -->
         <div
           v-if="isConnected"
-          class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+          class="ui-pill ui-pill-success rounded-full px-2.5 py-1 text-xs"
         >
-          <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          Connected
+          <span class="ui-status-dot ui-status-dot-success animate-pulse" />
+          {{ isAdminManagedCalendar ? 'Configured' : 'Connected' }}
         </div>
         <div
           v-else-if="!isAvailable"
-          class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400"
+          class="ui-pill rounded-full px-2.5 py-1 text-xs"
         >
           Not configured
         </div>
       </div>
 
       <!-- Body -->
-      <div class="px-4 sm:px-6 py-5">
+      <div class="ui-settings-panel-body">
         <!-- Loading state -->
         <div v-if="status === 'pending'" class="flex items-center justify-center py-4">
           <Loader2 class="size-5 text-surface-400 animate-spin" />
@@ -151,29 +164,29 @@ async function handleDisconnect() {
         <!-- Not configured (admin needs to set env vars) -->
         <div v-else-if="!isAvailable" class="space-y-3">
           <p class="text-sm text-surface-600 dark:text-surface-400">
-            Google Calendar integration requires server configuration. A server administrator must set the
-            <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1.5 py-0.5 rounded font-mono">GOOGLE_CLIENT_ID</code>
+            Microsoft Calendar integration requires server configuration. A server administrator must set the
+            <code class="ui-code">MICROSOFT_CALENDAR_CLIENT_ID</code>
             and
-            <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1.5 py-0.5 rounded font-mono">GOOGLE_CLIENT_SECRET</code>
+            <code class="ui-code">MICROSOFT_CALENDAR_CLIENT_SECRET</code>
             environment variables before users can connect.
           </p>
           <div class="flex items-center gap-4">
             <a
-              :href="`${useRuntimeConfig().public.marketingUrl}/docs/features/google-calendar`"
+              href="https://learn.microsoft.com/en-us/graph/outlook-calendar-concept-overview"
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center gap-1.5 text-sm text-brand-600 dark:text-brand-400 hover:underline"
+              class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1.5 text-sm"
             >
-              Setup guide
+              Microsoft Graph Calendar
               <ExternalLink class="size-3.5" />
             </a>
             <a
-              href="https://console.cloud.google.com/apis/credentials"
+              href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade"
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center gap-1.5 text-sm text-surface-500 dark:text-surface-400 hover:underline"
+              class="ui-inline-link ui-inline-link-muted inline-flex items-center gap-1.5 text-sm"
             >
-              Google Cloud Console
+              Azure App registrations
               <ExternalLink class="size-3.5" />
             </a>
           </div>
@@ -184,18 +197,18 @@ async function handleDisconnect() {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-1">
               <div class="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-wider">
-                Account
+                Default calendar
               </div>
               <div class="text-sm text-surface-900 dark:text-surface-100">
-                {{ calendarStatus.accountEmail || 'Unknown' }}
+                {{ sharedCalendarEmail }}
               </div>
             </div>
             <div class="space-y-1">
               <div class="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-wider">
-                Calendar
+                {{ isAdminManagedCalendar ? 'Managed by' : 'Connected by' }}
               </div>
               <div class="text-sm text-surface-900 dark:text-surface-100">
-                {{ calendarStatus.calendarId === 'primary' ? 'Primary calendar' : calendarStatus.calendarId }}
+                {{ calendarStatus.accountEmail || 'Unknown' }}
               </div>
             </div>
           </div>
@@ -204,33 +217,65 @@ async function handleDisconnect() {
           <div class="flex items-center gap-2 text-sm">
             <RefreshCw class="size-3.5 text-surface-400" />
             <span class="text-surface-600 dark:text-surface-400">
-              Two-way sync:
+              {{ calendarSyncLabel }}:
               <span
-                :class="calendarStatus.webhookActive
-                  ? 'text-emerald-600 dark:text-emerald-400 font-medium'
-                  : 'text-amber-600 dark:text-amber-400'"
+                :class="isMicrosoftCalendar || calendarStatus.webhookActive
+                  ? 'ui-feedback-success'
+                  : 'ui-feedback-warning'"
               >
-                {{ calendarStatus.webhookActive ? 'Active' : 'Pending setup' }}
+                {{ isMicrosoftCalendar ? 'Active' : (calendarStatus.webhookActive ? 'Active' : 'Pending setup') }}
               </span>
             </span>
           </div>
 
+          <div v-if="isAdminManagedCalendar" class="ui-panel-muted p-4 space-y-3">
+            <div v-if="calendarDestinations.length > 0" class="space-y-2">
+              <div
+                v-for="destination in calendarDestinations"
+                :key="`${destination.type}:${destination.email}`"
+                class="flex items-center justify-between gap-3 text-sm"
+              >
+                <div class="min-w-0">
+                  <div class="truncate font-medium text-surface-800 dark:text-surface-200">
+                    {{ destination.email }}
+                  </div>
+                  <div class="text-xs text-surface-500 dark:text-surface-400">
+                    {{ destinationTypeLabel(destination.type) }}
+                  </div>
+                </div>
+                <span
+                  v-if="destination.isPrimary"
+                  class="ui-pill ui-pill-brand shrink-0 rounded-full px-2 py-0.5 text-xs"
+                >
+                  Primary
+                </span>
+              </div>
+            </div>
+            <div
+              v-if="calendarStatus.syncInterviewers"
+              class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400"
+            >
+              <Check class="ui-icon-success size-4 shrink-0" />
+              Interviewer mailboxes are included automatically
+            </div>
+          </div>
+
           <!-- Features list -->
-          <div class="rounded-lg bg-surface-50 dark:bg-surface-800/50 p-4 space-y-2">
+          <div class="ui-panel-muted p-4 space-y-2">
             <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-              <Check class="size-4 text-emerald-500 shrink-0" />
-              Interviews automatically appear in your Google Calendar
+              <Check class="ui-icon-success size-4 shrink-0" />
+              Interviews automatically appear on configured mailbox calendars
             </div>
             <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-              <Check class="size-4 text-emerald-500 shrink-0" />
+              <Check class="ui-icon-success size-4 shrink-0" />
               Candidates receive calendar invites as attendees
             </div>
             <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-              <Check class="size-4 text-emerald-500 shrink-0" />
-              RSVP responses sync back automatically
+              <Check class="ui-icon-success size-4 shrink-0" />
+              Events are created on {{ sharedCalendarEmail }}
             </div>
             <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-              <Clock class="size-4 text-emerald-500 shrink-0" />
+              <Clock class="ui-icon-success size-4 shrink-0" />
               Timezone-aware scheduling
             </div>
           </div>
@@ -239,13 +284,13 @@ async function handleDisconnect() {
           <div class="flex items-center justify-between pt-2">
             <div class="flex items-center gap-1.5 text-xs text-surface-400 dark:text-surface-500">
               <Shield class="size-3.5" />
-              Tokens encrypted at rest
+              {{ isAdminManagedCalendar ? 'App credentials managed by server configuration' : 'Tokens encrypted at rest' }}
             </div>
 
-            <div class="flex items-center gap-2">
+            <div v-if="!isAdminManagedCalendar" class="flex items-center gap-2">
               <button
                 v-if="!showDisconnectConfirm"
-                class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950/30 transition-colors"
+                class="ui-button ui-button-danger-outline px-3 py-1.5"
                 @click="showDisconnectConfirm = true"
               >
                 <Unplug class="size-3.5" />
@@ -256,14 +301,14 @@ async function handleDisconnect() {
                 <span class="text-sm text-surface-500 dark:text-surface-400">Are you sure?</span>
                 <button
                   :disabled="isDisconnecting"
-                  class="inline-flex items-center gap-1.5 rounded-lg bg-danger-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-danger-700 disabled:opacity-50 transition-colors"
+                  class="ui-button ui-button-danger px-3 py-1.5 disabled:opacity-50"
                   @click="handleDisconnect"
                 >
                   <Loader2 v-if="isDisconnecting" class="size-3.5 animate-spin" />
                   Yes, disconnect
                 </button>
                 <button
-                  class="rounded-lg px-3 py-1.5 text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                  class="ui-button ui-button-secondary px-3 py-1.5"
                   @click="showDisconnectConfirm = false"
                 >
                   Cancel
@@ -277,38 +322,39 @@ async function handleDisconnect() {
         <div v-else class="space-y-4">
           <div class="space-y-3">
             <p class="text-sm text-surface-600 dark:text-surface-400">
-              Connect your Google Calendar to automatically sync interview schedules.
-              Both you and the candidate will see the event in your calendars, with
-              two-way RSVP tracking.
+              Connect with a Factory Microsoft account that can access {{ sharedCalendarEmail }}.
+              Interview schedules will sync to that shared interview mailbox calendar.
+              Candidates will see the event in their calendars, with
+              attendee notifications handled by the calendar provider.
             </p>
 
             <!-- Features preview -->
-            <div class="rounded-lg bg-surface-50 dark:bg-surface-800/50 p-4 space-y-2">
+            <div class="ui-panel-muted p-4 space-y-2">
               <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-                <Calendar class="size-4 text-brand-500 shrink-0" />
-                Auto-create calendar events for scheduled interviews
+                <Calendar class="ui-icon-brand size-4 shrink-0" />
+                Auto-create events on the Factory shared calendar
               </div>
               <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-                <RefreshCw class="size-4 text-brand-500 shrink-0" />
-                Two-way sync — changes in either system stay in sync
+                <RefreshCw class="ui-icon-brand size-4 shrink-0" />
+                Interview event creation, updates, and cancellation sync
               </div>
               <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-                <Clock class="size-4 text-brand-500 shrink-0" />
+                <Clock class="ui-icon-brand size-4 shrink-0" />
                 Proper timezone handling — no more scheduling confusion
               </div>
               <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-                <Shield class="size-4 text-brand-500 shrink-0" />
+                <Shield class="ui-icon-brand size-4 shrink-0" />
                 OAuth tokens encrypted at rest — revoke anytime
               </div>
             </div>
           </div>
 
           <button
-            class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+            class="ui-button ui-button-primary py-2.5"
             @click="connect"
           >
             <Calendar class="size-4" />
-            Connect Google Calendar
+            Connect shared calendar
           </button>
         </div>
       </div>

@@ -77,7 +77,7 @@ onUnmounted(() => {
     >
       <div
         v-if="modelValue"
-        class="fixed inset-0 z-[55] bg-surface-900/40"
+        class="ui-modal-backdrop fixed inset-0 z-[55]"
         @click="close"
       />
     </Transition>
@@ -90,19 +90,19 @@ onUnmounted(() => {
     >
       <aside
         v-if="modelValue"
-        class="fixed inset-y-0 right-0 z-[60] w-full max-w-md flex flex-col bg-white dark:bg-surface-900 shadow-2xl border-l border-surface-200 dark:border-surface-800"
+        class="factory-dashboard-portal ui-drawer-panel ui-filter-drawer fixed inset-y-0 right-0 z-[60] w-full max-w-md flex flex-col"
         role="dialog"
         aria-modal="true"
         :aria-label="title || 'Filters'"
       >
         <!-- Header -->
-        <header class="flex items-start justify-between gap-3 px-5 py-4 border-b border-surface-200 dark:border-surface-800">
+        <header class="ui-drawer-header flex items-start justify-between gap-3 px-5 py-4">
           <div class="min-w-0">
-            <h2 class="text-base font-semibold text-surface-900 dark:text-surface-50 flex items-center gap-2">
+            <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 flex items-center gap-2">
               {{ title || 'Filters' }}
               <span
                 v-if="activeCount && activeCount > 0"
-                class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-brand-600 text-white text-xs font-semibold"
+                class="ui-filter-count"
               >{{ activeCount }}</span>
             </h2>
             <p v-if="description" class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
@@ -111,7 +111,7 @@ onUnmounted(() => {
           </div>
           <button
             type="button"
-            class="shrink-0 rounded-md p-1.5 text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+            class="ui-button ui-button-ghost shrink-0 p-1.5"
             aria-label="Close"
             @click="close"
           >
@@ -120,29 +120,29 @@ onUnmounted(() => {
         </header>
 
         <!-- Body (scrollable) -->
-        <div class="flex-1 overflow-y-auto px-5 py-4">
+        <div class="ui-drawer-body ui-filter-drawer-body flex-1 overflow-y-auto px-5 py-4">
           <slot />
         </div>
 
         <!-- Footer -->
-        <footer class="border-t border-surface-200 dark:border-surface-800 bg-surface-50/60 dark:bg-surface-800/40">
+        <footer class="ui-panel-footer">
           <!-- Inline save-view form -->
-          <div v-if="saveable && showSaveForm" class="flex items-center gap-2 px-5 py-3 border-b border-surface-200 dark:border-surface-800">
-            <Bookmark class="size-4 text-brand-600 shrink-0" />
+          <div v-if="saveable && showSaveForm" class="ui-panel-divider flex items-center gap-2 px-5 py-3">
+            <Bookmark class="ui-icon-brand size-4 shrink-0" />
             <input
               ref="nameInput"
               v-model="newName"
               type="text"
               placeholder="Name this view"
               maxlength="60"
-              class="flex-1 rounded-md border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2.5 py-1.5 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              class="ui-field flex-1 px-2.5 py-1.5 text-sm"
               @keydown.enter.prevent="submitSave"
               @keydown.escape.prevent="showSaveForm = false; newName = ''"
             />
             <button
               type="button"
               :disabled="!newName.trim()"
-              class="inline-flex items-center gap-1 rounded-md bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              class="ui-button ui-button-primary px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               @click="submitSave"
             >
               <Check class="size-3.5" />
@@ -150,7 +150,7 @@ onUnmounted(() => {
             </button>
             <button
               type="button"
-              class="rounded-md p-1.5 text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              class="ui-button ui-button-ghost p-1.5"
               aria-label="Cancel"
               @click="showSaveForm = false; newName = ''"
             >
@@ -161,7 +161,7 @@ onUnmounted(() => {
           <div class="flex items-center justify-between gap-2 px-5 py-3">
             <button
               type="button"
-              class="inline-flex items-center gap-1.5 text-xs font-medium text-surface-500 dark:text-surface-400 hover:text-danger-600 dark:hover:text-danger-400 transition-colors"
+              class="ui-inline-link ui-inline-link-muted inline-flex items-center gap-1.5 text-xs font-medium"
               @click="emit('reset')"
             >
               <RotateCcw class="size-3.5" />
@@ -171,7 +171,7 @@ onUnmounted(() => {
               <button
                 v-if="saveable && !showSaveForm"
                 type="button"
-                class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+                class="ui-button ui-button-secondary px-3 py-2 text-sm"
                 @click="openSaveForm"
               >
                 <Plus class="size-3.5" />
@@ -180,7 +180,7 @@ onUnmounted(() => {
               <slot name="footer">
                 <button
                   type="button"
-                  class="rounded-lg bg-surface-900 dark:bg-surface-100 px-4 py-2 text-sm font-medium text-white dark:text-surface-900 hover:opacity-90 transition-opacity"
+                  class="ui-button ui-button-primary px-4 py-2 text-sm"
                   @click="close"
                 >
                   Done

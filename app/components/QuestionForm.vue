@@ -109,14 +109,14 @@ const isEditing = computed(() => !!props.question)
 </script>
 
 <template>
-  <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 p-4">
+  <div class="ui-panel-muted p-4">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-300">
         {{ isEditing ? 'Edit Question' : 'Add Question' }}
       </h3>
       <button
         type="button"
-        class="rounded p-1 text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+        class="ui-button ui-button-ghost p-1"
         @click="emit('cancel')"
       >
         <X class="size-4" />
@@ -127,17 +127,17 @@ const isEditing = computed(() => !!props.question)
       <!-- Label -->
       <div>
         <label for="q-label" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-          Question <span class="text-danger-500">*</span>
+          Question <span class="ui-required-marker">*</span>
         </label>
         <input
           id="q-label"
           v-model="form.label"
           type="text"
           placeholder="e.g. How many years of experience do you have?"
-          class="w-full rounded-lg border px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
-          :class="errors.label ? 'border-danger-300' : 'border-surface-300 dark:border-surface-700'"
+          class="ui-field"
+          :class="errors.label ? 'ui-field-invalid' : ''"
         />
-        <p v-if="errors.label" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ errors.label }}</p>
+        <p v-if="errors.label" class="ui-feedback-danger mt-1 text-xs">{{ errors.label }}</p>
       </div>
 
       <!-- Type -->
@@ -148,7 +148,7 @@ const isEditing = computed(() => !!props.question)
         <select
           id="q-type"
           v-model="form.type"
-          class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors bg-white dark:bg-surface-800"
+          class="ui-field"
         >
           <option v-for="qt in questionTypes" :key="qt.value" :value="qt.value">
             {{ qt.label }}
@@ -166,14 +166,14 @@ const isEditing = computed(() => !!props.question)
           v-model="form.description"
           type="text"
           placeholder="Additional context shown below the field"
-          class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
+          class="ui-field"
         />
       </div>
 
       <!-- Options (for select types) -->
       <div v-if="isSelectType">
         <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-          Options <span class="text-danger-500">*</span>
+          Options <span class="ui-required-marker">*</span>
         </label>
         <div class="space-y-2">
           <div v-for="(_, index) in form.options" :key="index" class="flex items-center gap-2">
@@ -181,11 +181,11 @@ const isEditing = computed(() => !!props.question)
               v-model="form.options[index]"
               type="text"
               :placeholder="`Option ${index + 1}`"
-              class="flex-1 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
+              class="ui-field flex-1 py-1.5"
             />
             <button
               type="button"
-              class="rounded p-1 text-surface-400 hover:text-danger-600 transition-colors disabled:opacity-30"
+              class="ui-button ui-button-ghost ui-button-ghost-danger p-1 disabled:opacity-30"
               :disabled="form.options.length <= 1"
               @click="removeOption(index)"
             >
@@ -195,13 +195,13 @@ const isEditing = computed(() => !!props.question)
         </div>
         <button
           type="button"
-          class="mt-2 inline-flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700 transition-colors"
+          class="ui-inline-link ui-inline-link-brand mt-2 inline-flex items-center gap-1 text-sm"
           @click="addOption"
         >
           <Plus class="size-3.5" />
           Add option
         </button>
-        <p v-if="errors.options" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ errors.options }}</p>
+        <p v-if="errors.options" class="ui-feedback-danger mt-1 text-xs">{{ errors.options }}</p>
       </div>
 
       <!-- Required -->
@@ -209,7 +209,7 @@ const isEditing = computed(() => !!props.question)
         <input
           v-model="form.required"
           type="checkbox"
-          class="size-4 rounded border-surface-300 dark:border-surface-700 text-brand-600 focus:ring-brand-500"
+          class="ui-checkbox ui-checkbox-brand size-4"
         />
         <span class="text-sm text-surface-700 dark:text-surface-300">Required</span>
       </label>
@@ -218,13 +218,13 @@ const isEditing = computed(() => !!props.question)
       <div class="flex items-center gap-2 pt-1">
         <button
           type="submit"
-          class="inline-flex items-center rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+          class="ui-button ui-button-primary px-3 py-1.5"
         >
           {{ isEditing ? 'Update' : 'Add Question' }}
         </button>
         <button
           type="button"
-          class="rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+          class="ui-button ui-button-secondary px-3 py-1.5"
           @click="emit('cancel')"
         >
           Cancel

@@ -1,5 +1,5 @@
 /**
- * 301 redirect from the legacy applirank.com domain to reqcore.com.
+ * 301 redirect from the legacy applirank.com domain to thefactoryhq.com.
  *
  * If the old domain's DNS still points to this server (via Cloudflare or Railway),
  * this middleware redirects all traffic to the new domain with a permanent 301,
@@ -8,7 +8,7 @@
  * Also handles non-www → www normalization if ever needed, and ensures HTTPS.
  */
 const LEGACY_HOSTS = new Set(['applirank.com', 'www.applirank.com'])
-const CANONICAL_ORIGIN = 'https://reqcore.com'
+const CANONICAL_ORIGIN = 'https://thefactoryhq.com'
 
 export default defineEventHandler((event) => {
   const host = getRequestHeader(event, 'host')?.split(':')[0]?.toLowerCase()

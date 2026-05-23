@@ -1,12 +1,20 @@
 <script setup lang="ts">
+import type { Component } from 'vue'
 import {
-  Building2, Users, UserCircle, ChevronLeft, Settings, Plug, Brain, ShieldCheck, Globe,
+  Building2, Users, UserCircle, Settings, Plug, Brain, ShieldCheck, Globe,
 } from 'lucide-vue-next'
 
 const route = useRoute()
 const localePath = useLocalePath()
 
-const settingsNav = [
+const settingsNav: Array<{
+  label: string
+  description: string
+  to: string
+  icon: Component
+  exact: boolean
+  badge?: string
+}> = [
   {
     label: 'General',
     description: 'Organization profile',
@@ -48,7 +56,6 @@ const settingsNav = [
     to: '/dashboard/settings/sso',
     icon: ShieldCheck,
     exact: true,
-    badge: 'Beta',
   },
   {
     label: 'Account',
@@ -68,19 +75,18 @@ function isActive(to: string, exact: boolean) {
 
 <template>
   <aside
-    class="flex h-full w-56 min-w-56 flex-col border-r border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-y-auto overscroll-contain"
+    class="ui-nav-shell flex h-full w-56 min-w-56 flex-col border-r overflow-y-auto overscroll-contain"
   >
     <!-- Header -->
     <div class="px-4 pt-5 pb-4">
-      <NuxtLink
+      <AppBackLink
         :to="$localePath('/dashboard')"
-        class="inline-flex items-center gap-1.5 text-xs font-medium text-surface-400 dark:text-surface-500 hover:text-surface-600 dark:hover:text-surface-300 transition-colors no-underline mb-3"
+        class="mb-3"
       >
-        <ChevronLeft class="size-3.5" />
-        Back to jobs
-      </NuxtLink>
+        Back to Jobs
+      </AppBackLink>
       <div class="flex items-center gap-2.5">
-        <div class="flex items-center justify-center size-8 rounded-lg bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400">
+        <div class="ui-nav-icon flex items-center justify-center size-8 rounded-lg">
           <Settings class="size-4" />
         </div>
         <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">
@@ -96,16 +102,16 @@ function isActive(to: string, exact: boolean) {
           v-for="item in settingsNav"
           :key="item.to"
           :to="$localePath(item.to)"
-          class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all no-underline"
+          class="ui-nav-link group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm no-underline"
           :class="isActive(item.to, item.exact)
-            ? 'bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 font-medium'
-            : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800/60 hover:text-surface-900 dark:hover:text-surface-100'"
+            ? 'ui-nav-link-active'
+            : ''"
         >
           <div
-            class="flex items-center justify-center size-8 rounded-md transition-colors"
+            class="ui-nav-icon flex items-center justify-center size-8 rounded-md"
             :class="isActive(item.to, item.exact)
-              ? 'bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400'
-              : 'bg-surface-100 dark:bg-surface-800 text-surface-400 dark:text-surface-500 group-hover:text-surface-600 dark:group-hover:text-surface-300'"
+              ? 'ui-nav-icon-active'
+              : ''"
           >
             <component :is="item.icon" class="size-4" />
           </div>

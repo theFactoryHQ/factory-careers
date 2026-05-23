@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  ArrowLeft,
   Check,
   Plus,
   Pencil,
@@ -44,7 +43,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Create Job — Reqcore',
+  title: 'Create Job — Factory Careers',
   description: 'Create a new job posting',
 })
 
@@ -642,9 +641,8 @@ async function copyApplicationLink() {
 }
 
 async function handleSubmit(mode: 'publish' | 'draft' = publishChoice.value) {
-  // Ensure step 1 is valid before submit
-  if (!validateStep1()) {
-    currentStep.value = 1
+  // Ensure step 1 is valid before submit (only enforce when still on step 1)
+  if (currentStep.value === 1 && !validateStep1()) {
     return
   }
 
@@ -782,32 +780,31 @@ const questionTypeLabels: Record<QuestionType, string> = {
     <!-- Header with top actions -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
       <div>
-        <NuxtLink
+        <AppBackLink
           :to="$localePath('/dashboard/jobs')"
-          class="inline-flex items-center gap-1 text-sm text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 mb-2 transition-colors"
+          class="mb-2"
         >
-          <ArrowLeft class="size-4" />
           Back to Jobs
-        </NuxtLink>
+        </AppBackLink>
         <h1 class="text-3xl font-bold text-surface-900 dark:text-surface-100">New Job</h1>
       </div>
       <div v-if="!isPublished" class="flex items-center gap-3">
         <button
           type="button"
-          class="px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 rounded-lg hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+          class="factory-button-cta factory-toolbar-button inline-flex h-10 min-h-10 items-center px-4 py-0 text-[12px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           @click="handleSubmit('draft')"
           :disabled="isSubmitting"
         >
-          Save draft
+          Save Draft
         </button>
         <button
           v-if="currentStep < 4"
           type="button"
           :disabled="!canGoNext"
           @click="nextStep"
-          class="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+          class="factory-button-cta factory-button-premium inline-flex h-10 min-h-10 items-center px-4 py-0 text-[12px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Save & continue
+          Save & Continue
         </button>
       </div>
     </div>

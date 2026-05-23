@@ -188,12 +188,54 @@ describe('P0 tenant-isolation route coverage', () => {
   })
 
   it('requires HTTPS SSO issuer URLs in production', () => {
-    const source = read('server/api/sso/providers.post.ts')
+    const routeSource = read('server/api/sso/providers.post.ts')
+    const securitySource = read('server/utils/ssoSecurity.ts')
 
-    expect(source).toContain('function isAllowedIssuerProtocol')
-    expect(source).toContain("protocol === 'https:'")
-    expect(source).toContain("protocol === 'http:' && process.env.NODE_ENV !== 'production'")
-    expect(source).toContain('Issuer URL must use HTTPS in production')
+    expect(routeSource).toContain('discoverOidcRegistrationConfig(body.issuer')
+    expect(routeSource).toContain("allowLocalHttp: process.env.NODE_ENV !== 'production'")
+    expect(securitySource).toContain("allowedProtocols: allowLocalHttp ? ['https:', 'http:'] : ['https:']")
+    expect(securitySource).toContain('isLocalhostUrl(value)')
+    expect(securitySource).toContain('Issuer URL must use HTTPS')
+    expect(securitySource).toContain('assertSafeServerSideUrl')
+  })
+
+  it('validates discovered SSO endpoints with DNS checks and blocks redirects', () => {
+    const securitySource = read('server/utils/ssoSecurity.ts')
+
+    expect(securitySource).toContain('async function validateDiscoveryEndpoint')
+    expect(securitySource).toContain('await assertSafeServerSideUrl(value')
+    expect(securitySource).toContain("redirect: 'error'")
+  })
+
+  it('uses the dedicated AI config read permission for config-management reads', () => {
+    const guardedRoutes = [
+      'server/api/ai-config/index.get.ts',
+      'server/api/ai-config/[id].get.ts',
+      'server/api/ai-config/providers.get.ts',
+    ]
+
+    for (const path of guardedRoutes) {
+      expect(read(path), `${path} must require aiConfig:read`).toContain("requirePermission(event, { aiConfig: ['read'] })")
+    }
+  })
+
+  it('performs DNS-backed custom AI base URL validation before direct chatbot model use', () => {
+    const source = read('server/api/chatbot/chat.post.ts')
+    const assertionIndex = source.indexOf('await assertSafeServerSideUrl(config.baseUrl)')
+    const modelIndex = source.indexOf('const model = createLanguageModel')
+
+    expect(source).toContain("from '../../utils/serverSideUrl'")
+    expect(assertionIndex).toBeGreaterThanOrEqual(0)
+    expect(modelIndex).toBeGreaterThan(assertionIndex)
+  })
+
+  it('uses byte-safe OAuth state comparison for Microsoft calendar callbacks', () => {
+    const source = read('server/api/calendar/microsoft/callback.get.ts')
+
+    expect(source).toContain("from '../../../utils/secureCompare'")
+    expect(source).toContain('timingSafeStringEqual(storedState, state)')
+    expect(source).not.toContain('timingSafeEqual(')
+    expect(source).not.toContain('storedState.length !== state.length')
   })
 
   it('rolls back public applications when required document upload fails', () => {

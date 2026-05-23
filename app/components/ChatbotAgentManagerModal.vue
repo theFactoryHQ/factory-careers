@@ -109,23 +109,23 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
       @click.self="emit('close')"
     >
-      <div class="flex h-[80vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white dark:bg-surface-950 shadow-2xl">
+      <div class="ui-modal-panel flex h-[80vh] w-full max-w-4xl flex-col overflow-hidden">
         <!-- Header -->
-        <div class="flex items-center justify-between border-b border-surface-200 dark:border-surface-800 px-5 py-3.5">
+        <div class="ui-panel-header flex items-center justify-between px-5 py-3.5">
           <div class="flex items-center gap-2">
             <Sparkles class="size-5 text-brand-500" />
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-50">
               Manage agents
             </h2>
-            <span class="rounded-full bg-surface-100 dark:bg-surface-800 px-2 py-0.5 text-[11px] text-surface-600 dark:text-surface-300">
+            <span class="ui-pill px-2 py-0.5 text-[11px]">
               {{ agents.length }} / {{ CHATBOT_AGENT_MAX_PER_USER }}
             </span>
           </div>
           <button
-            class="inline-flex size-8 items-center justify-center rounded-lg text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
+            class="ui-button ui-button-ghost size-8 p-0"
             @click="emit('close')"
           >
             <X class="size-4" />
@@ -137,7 +137,7 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
           <!-- Agent list -->
           <div class="w-64 shrink-0 overflow-y-auto border-r border-surface-200 dark:border-surface-800 p-3">
             <button
-              class="mb-2 inline-flex w-full items-center gap-2 rounded-lg border border-dashed border-brand-300 dark:border-brand-700 px-3 py-2 text-sm font-medium text-brand-700 dark:text-brand-300 hover:bg-brand-50 dark:hover:bg-brand-950/30 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 bg-transparent transition-colors"
+              class="ui-button ui-button-secondary mb-2 w-full justify-start border-dashed px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="atCap"
               :title="atCap ? 'Agent limit reached' : 'New agent'"
               @click="newAgent"
@@ -149,10 +149,10 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
               <li
                 v-for="a in agents"
                 :key="a.id"
-                class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors"
+                class="ui-list-row flex cursor-pointer items-center gap-2 px-2 py-1.5 text-sm"
                 :class="draft.id === a.id
-                  ? 'bg-brand-50 text-brand-900 dark:bg-brand-950/40 dark:text-brand-100'
-                  : 'text-surface-700 hover:bg-surface-100 dark:text-surface-300 dark:hover:bg-surface-800/60'"
+                  ? 'ui-menu-action-active'
+                  : 'text-surface-700 dark:text-surface-300'"
                 @click="selectAgent(a)"
               >
                 <Sparkles class="size-3.5 shrink-0 opacity-60" />
@@ -161,7 +161,7 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
               </li>
               <li
                 v-if="agents.length === 0"
-                class="px-2 py-2 text-xs italic text-surface-400"
+                class="ui-empty-state px-2 py-2 text-xs italic"
               >
                 No agents yet — pick "New agent" to get started.
               </li>
@@ -180,7 +180,7 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
                   type="text"
                   maxlength="80"
                   placeholder="e.g. Recruiter coach"
-                  class="w-full rounded-lg border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  class="ui-field"
                 >
               </div>
 
@@ -193,7 +193,7 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
                   type="text"
                   maxlength="200"
                   placeholder="e.g. Reviews resumes against a job"
-                  class="w-full rounded-lg border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  class="ui-field"
                 >
               </div>
 
@@ -208,10 +208,10 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
                   v-model="draft.systemPrompt"
                   rows="10"
                   placeholder="Describe how this agent should behave. The default Reqcore tooling instructions are always prepended automatically."
-                  class="w-full rounded-lg border bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-1 font-mono"
+                  class="ui-field font-mono"
                   :class="promptTooLong
-                    ? 'border-danger-400 focus:border-danger-500 focus:ring-danger-500'
-                    : 'border-surface-300 dark:border-surface-700 focus:border-brand-500 focus:ring-brand-500'"
+                    ? 'ui-field-invalid'
+                    : ''"
                 />
               </div>
 
@@ -227,7 +227,7 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
                     min="0"
                     max="2"
                     placeholder="—"
-                    class="w-full rounded-lg border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    class="ui-field"
                   >
                 </div>
                 <div>
@@ -239,7 +239,7 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
                     type="text"
                     maxlength="40"
                     placeholder="sparkles"
-                    class="w-full rounded-lg border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    class="ui-field"
                   >
                 </div>
               </div>
@@ -248,7 +248,7 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
                 <input
                   v-model="draft.isDefault"
                   type="checkbox"
-                  class="size-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500"
+                  class="ui-checkbox ui-checkbox-brand size-4"
                 >
                 Use this agent by default for new conversations
               </label>
@@ -257,10 +257,10 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
         </div>
 
         <!-- Footer -->
-        <div class="flex items-center justify-between border-t border-surface-200 dark:border-surface-800 px-5 py-3">
+        <div class="ui-panel-footer flex items-center justify-between px-5 py-3">
           <button
             v-if="draft.id"
-            class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/30 cursor-pointer border-0 bg-transparent"
+            class="ui-button ui-button-ghost ui-button-ghost-danger"
             @click="remove"
           >
             <Trash2 class="size-4" />
@@ -270,13 +270,13 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
 
           <div class="flex items-center gap-2">
             <button
-              class="rounded-lg px-3 py-2 text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
+              class="ui-button ui-button-secondary"
               @click="emit('close')"
             >
               Close
             </button>
             <button
-              class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer transition-colors"
+              class="ui-button ui-button-primary disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="!canSave"
               @click="save"
             >

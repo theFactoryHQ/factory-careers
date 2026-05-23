@@ -4,6 +4,15 @@ import { z } from 'zod'
 
 const paramsSchema = z.object({ id: z.string().min(1) })
 
+function extractAnalysisSummary(rawResponse: unknown) {
+  if (!rawResponse || typeof rawResponse !== 'object') {
+    return null
+  }
+
+  const summary = (rawResponse as { summary?: unknown }).summary
+  return typeof summary === 'string' && summary.trim() ? summary.trim() : null
+}
+
 /**
  * GET /api/applications/:id/scores
  * Get the score breakdown for an application, including individual criterion scores
@@ -55,6 +64,7 @@ export default defineEventHandler(async (event) => {
     compositeScore: analysisRun.compositeScore,
     promptTokens: analysisRun.promptTokens,
     completionTokens: analysisRun.completionTokens,
+    rawResponse: analysisRun.rawResponse,
     createdAt: analysisRun.createdAt,
   })
     .from(analysisRun)
@@ -68,6 +78,18 @@ export default defineEventHandler(async (event) => {
   return {
     compositeScore: app.score,
     scores: rawScores,
-    latestRun: latestRun ?? null,
+    latestRun: latestRun
+      ? {
+          id: latestRun.id,
+          status: latestRun.status,
+          provider: latestRun.provider,
+          model: latestRun.model,
+          compositeScore: latestRun.compositeScore,
+          promptTokens: latestRun.promptTokens,
+          completionTokens: latestRun.completionTokens,
+          createdAt: latestRun.createdAt,
+          summary: extractAnalysisSummary(latestRun.rawResponse),
+        }
+      : null,
   }
 })

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  ArrowLeft, Save, Eye, EyeOff, Copy, Trash2, Lock,
+  Save, Eye, EyeOff, Copy, Trash2, Lock,
   FileText, Mail, AlertCircle,
 } from 'lucide-vue-next'
 
@@ -150,7 +150,7 @@ const previewSubject = computed(() => renderTemplatePreview(form.subject, sample
 const previewBody = computed(() => renderTemplatePreview(form.body, sampleVariables))
 
 useSeoMeta({
-  title: computed(() => form.name ? `${form.name} — Email Templates — Reqcore` : 'Email Template — Reqcore'),
+  title: computed(() => form.name ? `${form.name} — Email Templates — Factory Careers` : 'Email Template — Factory Careers'),
   robots: 'noindex, nofollow',
 })
 </script>
@@ -158,13 +158,12 @@ useSeoMeta({
 <template>
   <div class="mx-auto max-w-5xl px-6 py-8">
     <!-- Breadcrumb -->
-    <NuxtLink
+    <AppBackLink
       :to="localePath('/dashboard/interviews/templates')"
-      class="mb-6 inline-flex items-center gap-1 rounded-full border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-3 py-1.5 text-sm text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors no-underline"
+      class="mb-6"
     >
-      <ArrowLeft class="size-4" />
       All Templates
-    </NuxtLink>
+    </AppBackLink>
 
     <!-- Not found -->
     <div v-if="notFound" class="rounded-xl border border-danger-200 bg-danger-50 p-8 text-center dark:border-danger-800/60 dark:bg-danger-950/40">

@@ -13,17 +13,17 @@ import { createAiConfigSchema, updateAiConfigSchema } from '../../server/utils/s
 describe('createAiConfigSchema', () => {
   it('accepts openai_compatible provider with baseUrl', () => {
     const result = createAiConfigSchema.safeParse({
-      name: 'Local Llama',
+      name: 'Hosted Llama',
       provider: 'openai_compatible',
       model: 'llama-3.1-8b',
       apiKey: 'test-key',
-      baseUrl: 'http://localhost:11434/v1',
+      baseUrl: 'https://llm.example.com/v1',
       maxTokens: 4096,
     })
 
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.baseUrl).toBe('http://localhost:11434/v1')
+      expect(result.data.baseUrl).toBe('https://llm.example.com/v1')
       expect(result.data.maxTokens).toBe(4096)
     }
   })
@@ -183,4 +183,3 @@ describe('updateAiConfigSchema', () => {
     expect(result.success).toBe(false)
   })
 })
-

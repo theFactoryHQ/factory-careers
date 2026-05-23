@@ -13,11 +13,11 @@ const isDemo = computed(() => {
   return slug && activeOrg.value?.slug === slug
 })
 
-const isDemoAccount = computed(() => session.value?.user?.email === 'demo@reqcore.com')
+const isDemoAccount = computed(() => session.value?.user?.email === config.public.liveDemoEmail)
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-surface-50 dark:bg-surface-950">
+  <div class="factory-dashboard-shell flex min-h-screen flex-col bg-black text-white">
     <!-- AppTopBar: desktop only -->
     <AppTopBar class="hidden lg:block" />
     <AppToasts />
@@ -29,23 +29,23 @@ const isDemoAccount = computed(() => session.value?.user?.email === 'demo@reqcor
     <!-- Demo mode banner -->
     <div
       v-if="isDemo"
-      class="mx-auto mb-6 flex max-w-5xl items-center gap-3 rounded-lg border border-brand-200 dark:border-brand-900 bg-brand-50 dark:bg-brand-950/40 px-4 py-2.5 text-sm text-brand-700 dark:text-brand-300"
+      class="mx-auto mb-6 flex max-w-5xl items-center gap-3 border border-brand-500/35 bg-brand-500/10 px-4 py-2.5 text-sm text-white/74"
     >
       <Eye class="size-4 shrink-0" />
       <span>
-        <strong>Live demo</strong> — Explore freely with sample data. Editing is disabled here.
+        <strong>Demo mode</strong> — Explore freely with sample data. Editing is disabled here.
         <a
-          href="https://github.com/reqcore-inc/reqcore#quick-start"
+          href="https://github.com/caffeinebounce/factory-careers"
           target="_blank"
           rel="noopener noreferrer"
-          class="ml-1 font-semibold underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"
-        >Deploy your own free instance →</a>
+          class="ml-1 font-semibold text-brand-300 underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"
+        >View source →</a>
       </span>
     </div>
 
     <div class="flex flex-1 flex-col lg:flex-row min-w-0">
       <!-- Desktop sidebar -->
-      <div class="hidden lg:block sticky top-14 h-[calc(100vh-3.5rem)] shrink-0 z-10">
+      <div class="hidden lg:block sticky top-16 h-[calc(100vh-4rem)] shrink-0 z-10">
         <SettingsSidebar />
       </div>
       <!-- Mobile top nav -->
@@ -53,8 +53,11 @@ const isDemoAccount = computed(() => session.value?.user?.email === 'demo@reqcor
         <SettingsMobileNav />
       </div>
       <!-- Page content -->
-      <main class="flex-1 min-w-0 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-        <slot />
+      <main class="flex flex-1 min-w-0 flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+        <div class="mx-auto w-full max-w-4xl flex-1">
+          <slot />
+        </div>
+        <AppDashboardFooter class="mx-auto w-full max-w-4xl" />
       </main>
     </div>
   </div>

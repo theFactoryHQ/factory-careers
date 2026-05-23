@@ -11,6 +11,10 @@ import {
   sanitizeFilename,
 } from '../../../../utils/schemas/document'
 import { parseDocument } from '../../../../utils/resume-parser'
+import { assertUploadContentLength } from '../../../../utils/uploadLimits'
+
+const MULTIPART_OVERHEAD_BYTES = 1024 * 1024
+const MAX_DOCUMENT_UPLOAD_BODY_BYTES = MAX_FILE_SIZE + MULTIPART_OVERHEAD_BYTES
 
 /**
  * POST /api/candidates/:id/documents
@@ -53,6 +57,8 @@ export default defineEventHandler(async (event) => {
   // ─────────────────────────────────────────────
   // 2. Read multipart form data
   // ─────────────────────────────────────────────
+
+  assertUploadContentLength(event, MAX_DOCUMENT_UPLOAD_BODY_BYTES)
 
   const formData = await readMultipartFormData(event)
   if (!formData) {

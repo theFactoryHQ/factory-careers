@@ -10,6 +10,24 @@ type PermissionRequest = {
   [K in keyof typeof statements]?: ReadonlyArray<(typeof statements)[K][number]>
 }
 
+type RoleName = 'owner' | 'admin' | 'member'
+
+type ActiveOrganizationMember = {
+  userId?: string | null
+  role?: string | null
+  user?: {
+    id?: string | null
+    email?: string | null
+  } | null
+}
+
+const roleNames: readonly RoleName[] = ['owner', 'admin', 'member']
+
+function normalizeRole(value: string | null | undefined): RoleName | null {
+  if (!value) return null
+  return roleNames.includes(value as RoleName) ? value as RoleName : null
+}
+
 /**
  * ─────────────────────────────────────────────
  * usePermission — client-side permission gating
@@ -37,41 +55,36 @@ type PermissionRequest = {
  * ```
  */
 export function usePermission(permissions: PermissionRequest) {
-  const role = ref<string | null>(null)
-  const isLoading = ref(true)
-
-  // Fetch the active member's role and re-fetch when org changes
+  const sessionState = authClient.useSession()
   const activeOrgState = authClient.useActiveOrganization()
 
-  async function fetchRole() {
-    // Reset immediately to avoid stale role from previous org (race condition)
-    role.value = null
-    isLoading.value = true
+  const role = computed<RoleName | null>(() => {
+    const user = sessionState.value.data?.user
+    const members = (activeOrgState.value.data?.members ?? []) as readonly ActiveOrganizationMember[]
 
-    const { data, error } = await authClient.organization.getActiveMemberRole()
-    if (!error) {
-      role.value = data?.role ?? null
-    }
-    isLoading.value = false
-  }
+    const currentMember = members.find((member) => {
+      if (member.userId && member.userId === user?.id) return true
+      if (member.user?.id && member.user.id === user?.id) return true
+      return Boolean(
+        user?.email
+        && member.user?.email
+        && member.user.email.toLowerCase() === user.email.toLowerCase(),
+      )
+    })
 
-  // Only fetch on the client — during SSR there is no window.location,
-  // so the Better Auth client cannot resolve relative API URLs.
-  // Permission checks are cosmetic (UI gating); real enforcement is server-side.
-  if (import.meta.client) {
-    watch(
-      () => activeOrgState.value.data?.id,
-      () => fetchRole(),
-      { immediate: true },
-    )
-  }
+    return normalizeRole(currentMember?.role)
+  })
+
+  const isLoading = computed(() =>
+    Boolean(sessionState.value.isPending || activeOrgState.value.isPending),
+  )
 
   const allowed = computed(() => {
     if (!role.value) return false
 
     return authClient.organization.checkRolePermission({
       permissions: permissions as Record<string, string[]>,
-      role: role.value as 'owner' | 'admin' | 'member',
+      role: role.value,
     })
   })
 

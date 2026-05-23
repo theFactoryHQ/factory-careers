@@ -7,14 +7,15 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Create Organization — Reqcore',
-  description: 'Create your organization to start recruiting',
+  title: 'Join Factory — Factory Careers',
+  description: 'Join the Factory Careers workspace',
   robots: 'noindex, nofollow',
 })
 
 const { orgs, isOrgsLoading, switchOrg, createOrg, activeOrg } = useCurrentOrg()
 const { acceptInviteLink } = useInviteLinks()
 const localePath = useLocalePath()
+const config = useRuntimeConfig()
 const { track } = useTrack()
 
 onMounted(() => track('onboarding_viewed', { mode: viewMode.value }))
@@ -25,6 +26,9 @@ const slugEdited = ref(false)
 const error = ref('')
 const isLoading = ref(false)
 const showCreateForm = ref(false)
+const publicOrgCreationEnabled = computed(
+  () => config.public.factoryPublicOrgCreationEnabled === true,
+)
 
 // ─────────────────────────────────────────────
 // View mode: 'picker' | 'create' | 'join'
@@ -87,6 +91,11 @@ function onSlugInput() {
 
 async function handleCreateOrg() {
   error.value = ''
+
+  if (!publicOrgCreationEnabled.value) {
+    error.value = 'Factory Careers uses a single Factory organization. Ask an administrator for an invitation.'
+    return
+  }
 
   if (!orgName.value.trim()) {
     error.value = 'Organization name is required.'
@@ -263,7 +272,7 @@ async function handleSubmitJoinRequest() {
 
   <!-- Invite code accepted success -->
   <div v-else-if="inviteCodeSuccess" class="flex flex-col items-center gap-4 py-6">
-    <div class="flex items-center justify-center size-12 rounded-full bg-success-100 dark:bg-success-950 text-success-600 dark:text-success-400">
+    <div class="ui-icon-state ui-icon-state-success">
       <Check class="size-6" />
     </div>
     <div class="text-center">
@@ -282,7 +291,7 @@ async function handleSubmitJoinRequest() {
     <button
       v-for="org in orgs"
       :key="org.id"
-      class="flex items-center gap-3 px-4 py-3 border border-surface-300 dark:border-surface-700 rounded-md text-left text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-colors cursor-pointer"
+      class="ui-selectable-panel flex items-center gap-3 px-4 py-3 text-left text-sm"
       @click="handleSwitchOrg(org.id)"
     >
       <Building2 class="size-5 text-surface-400" />
@@ -294,6 +303,7 @@ async function handleSubmitJoinRequest() {
 
     <div class="flex flex-col gap-2 mt-2 pt-2 border-t border-surface-200 dark:border-surface-800">
       <button
+        v-if="publicOrgCreationEnabled"
         class="text-sm text-brand-600 dark:text-brand-400 hover:underline"
         @click="viewMode = 'create'"
       >
@@ -318,7 +328,7 @@ async function handleSubmitJoinRequest() {
     </div>
 
     <!-- Invite code input -->
-    <div class="rounded-lg border border-surface-200 dark:border-surface-800 p-4 bg-white dark:bg-surface-800/50">
+    <div class="ui-panel p-4">
       <div class="flex items-center gap-2 mb-3">
         <Link2 class="size-4 text-brand-600 dark:text-brand-400" />
         <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Have an invite link?</h3>
@@ -328,12 +338,12 @@ async function handleSubmitJoinRequest() {
           v-model="inviteCode"
           type="text"
           placeholder="Paste invite link or code"
-          class="flex-1 px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
+          class="ui-field flex-1"
           @keydown.enter="handleAcceptInviteCode"
         />
         <button
           :disabled="isAcceptingCode || !inviteCode.trim()"
-          class="px-4 py-2 bg-brand-600 text-white rounded-md text-sm font-medium hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+          class="ui-button ui-button-primary px-4 py-2"
           @click="handleAcceptInviteCode"
         >
           <Loader2 v-if="isAcceptingCode" class="size-4 animate-spin" />
@@ -351,7 +361,7 @@ async function handleSubmitJoinRequest() {
     </div>
 
     <!-- Org search -->
-    <div class="rounded-lg border border-surface-200 dark:border-surface-800 p-4 bg-white dark:bg-surface-800/50">
+    <div class="ui-panel p-4">
       <div class="flex items-center gap-2 mb-3">
         <Search class="size-4 text-brand-600 dark:text-brand-400" />
         <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Request to join</h3>
@@ -365,7 +375,7 @@ async function handleSubmitJoinRequest() {
           v-model="orgSearch"
           type="text"
           placeholder="Search organizations…"
-          class="w-full px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 pl-9"
+          class="ui-field pl-9"
         />
         <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-surface-400" />
         <Loader2 v-if="isSearching" class="absolute right-3 top-1/2 -translate-y-1/2 size-4 animate-spin text-surface-400" />
@@ -389,12 +399,12 @@ async function handleSubmitJoinRequest() {
         </button>
       </div>
 
-      <div v-if="orgSearch.trim().length >= 2 && !isSearching && orgSearchResults.length === 0 && !selectedOrg" class="mt-2 text-xs text-surface-500 dark:text-surface-400 text-center py-2">
+      <div v-if="orgSearch.trim().length >= 2 && !isSearching && orgSearchResults.length === 0 && !selectedOrg" class="ui-empty-state mt-2 text-xs">
         No organizations found
       </div>
 
       <!-- Selected org — request form -->
-      <div v-if="selectedOrg" class="mt-3 rounded-md border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/30 p-3">
+      <div v-if="selectedOrg" class="ui-panel-muted ui-selectable-panel-active mt-3 p-3">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2">
             <Building2 class="size-4 text-brand-600 dark:text-brand-400" />
@@ -415,13 +425,13 @@ async function handleSubmitJoinRequest() {
             placeholder="Tell the admin why you'd like to join…"
             rows="2"
             maxlength="500"
-            class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 resize-none"
+            class="ui-field resize-none"
           />
         </label>
 
         <button
           :disabled="isSubmittingRequest"
-          class="mt-2 w-full px-4 py-2 bg-brand-600 text-white rounded-md text-sm font-medium hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
+          class="ui-button ui-button-primary mt-2 w-full"
           @click="handleSubmitJoinRequest"
         >
           <Loader2 v-if="isSubmittingRequest" class="size-4 animate-spin" />
@@ -433,7 +443,7 @@ async function handleSubmitJoinRequest() {
       <div v-if="requestError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">{{ requestError }}</div>
 
       <!-- Request success -->
-      <div v-if="requestSuccess" class="mt-2 rounded-md bg-success-50 dark:bg-success-950/40 border border-success-200 dark:border-success-900 p-3 text-xs text-success-700 dark:text-success-400 flex items-center gap-2">
+      <div v-if="requestSuccess" class="ui-alert ui-alert-success mt-2 flex items-center gap-2 text-xs">
         <Check class="size-4 flex-shrink-0" />
         {{ requestSuccess }}
       </div>
@@ -443,21 +453,21 @@ async function handleSubmitJoinRequest() {
     <div class="flex flex-col items-center gap-2">
       <button
         class="text-sm text-brand-600 dark:text-brand-400 hover:underline"
-        @click="viewMode = orgs.length > 0 ? 'picker' : 'create'"
+        @click="viewMode = orgs.length > 0 ? 'picker' : (publicOrgCreationEnabled ? 'create' : 'join')"
       >
-        {{ orgs.length > 0 ? 'Back to organization list' : 'Create a new organization instead' }}
+        {{ orgs.length > 0 ? 'Back to organization list' : (publicOrgCreationEnabled ? 'Create a new organization instead' : 'Use an invite link instead') }}
       </button>
     </div>
   </div>
 
   <!-- Create org form -->
-  <form v-else class="flex flex-col gap-4" @submit.prevent="handleCreateOrg">
+  <form v-else-if="publicOrgCreationEnabled" class="flex flex-col gap-4" @submit.prevent="handleCreateOrg">
     <h2 class="text-xl font-semibold text-center text-surface-900 dark:text-surface-100">Create your organization</h2>
     <p class="text-sm text-surface-500 dark:text-surface-400 text-center mb-2">
       Set up your workspace to start managing candidates and jobs.
     </p>
 
-    <div v-if="error" class="rounded-md border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-3 text-sm text-danger-700 dark:text-danger-400">{{ error }}</div>
+    <div v-if="error" class="ui-alert ui-alert-danger">{{ error }}</div>
 
     <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
       <span>Organization name</span>
@@ -466,7 +476,7 @@ async function handleSubmitJoinRequest() {
         type="text"
         placeholder="Acme Corp"
         required
-        class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
+        class="ui-field"
       />
     </label>
 
@@ -477,7 +487,7 @@ async function handleSubmitJoinRequest() {
         type="text"
         placeholder="acme-corp"
         required
-        class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
+        class="ui-field"
         @input="onSlugInput"
       />
       <span class="text-xs font-normal text-surface-400">Used in URLs. Lowercase letters, numbers, and hyphens only.</span>
@@ -486,7 +496,7 @@ async function handleSubmitJoinRequest() {
     <button
       type="submit"
       :disabled="isLoading"
-      class="mt-2 px-4 py-2.5 bg-brand-600 text-white rounded-md text-sm font-medium hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+      class="ui-button ui-button-primary mt-2"
     >
       {{ isLoading ? 'Creating…' : 'Create organization' }}
     </button>
@@ -509,4 +519,19 @@ async function handleSubmitJoinRequest() {
       </button>
     </div>
   </form>
+
+  <div v-else class="flex flex-col gap-5 text-center">
+    <div>
+      <h2 class="text-xl font-semibold text-surface-900 dark:text-surface-100">Join Factory Careers</h2>
+      <p class="mt-2 text-sm leading-6 text-surface-500 dark:text-surface-400">
+        This workspace is managed by Factory. Use an invite link or request access so an administrator can approve you.
+      </p>
+    </div>
+    <button
+      class="ui-button ui-button-primary"
+      @click="viewMode = 'join'"
+    >
+      Enter invite or request access
+    </button>
+  </div>
 </template>

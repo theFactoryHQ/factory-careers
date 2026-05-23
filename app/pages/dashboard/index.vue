@@ -12,7 +12,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Dashboard — Reqcore',
+  title: 'Dashboard — Factory Careers',
   description: 'Your recruiting command center',
 })
 
@@ -59,12 +59,12 @@ const { interviews: upcomingInterviews } = useInterviews({
 // ─────────────────────────────────────────────
 
 const stageConfig = [
-  { key: 'new', label: 'New', color: 'bg-blue-500', textColor: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-950/40' },
-  { key: 'screening', label: 'Screening', color: 'bg-violet-500', textColor: 'text-violet-600 dark:text-violet-400', bgColor: 'bg-violet-50 dark:bg-violet-950/40' },
-  { key: 'interview', label: 'Interview', color: 'bg-amber-500', textColor: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/40' },
-  { key: 'offer', label: 'Offer', color: 'bg-teal-500', textColor: 'text-teal-600 dark:text-teal-400', bgColor: 'bg-teal-50 dark:bg-teal-950/40' },
-  { key: 'hired', label: 'Hired', color: 'bg-green-600', textColor: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-50 dark:bg-green-950/40' },
-  { key: 'rejected', label: 'Rejected', color: 'bg-surface-400', textColor: 'text-surface-500 dark:text-surface-400', bgColor: 'bg-surface-100 dark:bg-surface-800' },
+  { key: 'new', label: 'New', segmentClass: 'factory-pipeline-segment-new', stageClass: 'factory-pipeline-stage-new' },
+  { key: 'screening', label: 'Screening', segmentClass: 'factory-pipeline-segment-screening', stageClass: 'factory-pipeline-stage-screening' },
+  { key: 'interview', label: 'Interview', segmentClass: 'factory-pipeline-segment-interview', stageClass: 'factory-pipeline-stage-interview' },
+  { key: 'offer', label: 'Offer', segmentClass: 'factory-pipeline-segment-offer', stageClass: 'factory-pipeline-stage-offer' },
+  { key: 'hired', label: 'Hired', segmentClass: 'factory-pipeline-segment-hired', stageClass: 'factory-pipeline-stage-hired' },
+  { key: 'rejected', label: 'Rejected', segmentClass: 'factory-pipeline-segment-rejected', stageClass: 'factory-pipeline-stage-rejected' },
 ] as const
 
 const stageCountKeys: Record<string, string> = {
@@ -158,20 +158,20 @@ const isEmpty = computed(() =>
       </div>
       <!-- Stats skeleton -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        <div v-for="i in 4" :key="i" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div v-for="i in 4" :key="i" class="ui-dashboard-stat-card p-6 animate-pulse">
           <div class="h-4 w-20 bg-surface-200 dark:bg-surface-700 rounded mb-4" />
           <div class="h-9 w-14 bg-surface-200 dark:bg-surface-700 rounded" />
         </div>
       </div>
       <!-- Content skeleton -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-panel ui-dashboard-panel lg:col-span-2 p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-4">
             <div v-for="i in 3" :key="i" class="h-20 bg-surface-100 dark:bg-surface-800 rounded-xl" />
           </div>
         </div>
-        <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-panel ui-dashboard-panel p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-3">
             <div v-for="i in 4" :key="i" class="h-14 bg-surface-100 dark:bg-surface-800 rounded-xl" />
@@ -183,7 +183,7 @@ const isEmpty = computed(() =>
     <!-- ─── Error ─── -->
     <div
       v-else-if="error"
-      class="rounded-2xl border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950/60 p-5 text-sm text-danger-700 dark:text-danger-400 flex items-center gap-3"
+      class="ui-alert ui-alert-danger flex items-center gap-3 p-5"
     >
       <AlertCircle class="size-5 shrink-0" />
       <span>Failed to load dashboard.</span>
@@ -192,19 +192,19 @@ const isEmpty = computed(() =>
 
     <!-- ─── Empty state (brand new org) ─── -->
     <div v-else-if="isEmpty" class="flex flex-col items-center justify-center py-24">
-      <div class="rounded-3xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-14 text-center max-w-md shadow-sm">
+      <div class="ui-empty-panel max-w-md p-14 shadow-sm">
         <div class="mx-auto mb-8 flex items-center justify-center size-18 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-lg shadow-brand-500/20">
           <LayoutDashboard class="size-9 text-white" />
         </div>
         <h2 class="text-2xl font-bold text-surface-900 dark:text-surface-100 mb-3 tracking-tight">
-          Welcome to Reqcore
+          Welcome to Factory Careers
         </h2>
         <p class="text-sm text-surface-500 dark:text-surface-400 mb-10 leading-relaxed max-w-sm mx-auto">
           Your recruiting command center. Create your first job posting to start building your hiring pipeline.
         </p>
         <NuxtLink
           :to="localePath('/dashboard/jobs/new')"
-          class="inline-flex items-center gap-2.5 rounded-xl bg-brand-600 px-7 py-3.5 text-sm font-semibold text-white hover:bg-brand-700 shadow-md shadow-brand-600/20 hover:shadow-lg hover:shadow-brand-600/25 transition-all no-underline"
+          class="factory-button-cta factory-button-premium inline-flex items-center gap-2.5 rounded-xl px-7 py-3.5 text-sm font-semibold transition-all no-underline"
         >
           <Plus class="size-4" />
           Create Your First Job
@@ -222,13 +222,6 @@ const isEmpty = computed(() =>
             {{ activeOrg.name }}
           </p>
         </div>
-        <NuxtLink
-          :to="localePath('/dashboard/jobs/new')"
-          class="inline-flex items-center gap-1.5 sm:gap-2 rounded-xl bg-brand-600 px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white hover:bg-brand-700 shadow-sm shadow-brand-600/15 hover:shadow-md hover:shadow-brand-600/20 transition-all no-underline shrink-0"
-        >
-          <Plus class="size-4" />
-          New Job
-        </NuxtLink>
       </div>
 
       <!-- ─── Stat cards ─── -->
@@ -236,16 +229,16 @@ const isEmpty = computed(() =>
         <!-- Open Jobs -->
         <NuxtLink
           :to="localePath('/dashboard/jobs')"
-          class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 no-underline overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-brand-500/25 dark:hover:ring-brand-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-500/[0.08]"
+          class="group ui-dashboard-stat-card p-5 sm:p-6 no-underline ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-brand-500/25 dark:hover:ring-brand-400/25 hover:shadow-lg hover:shadow-brand-500/[0.08]"
         >
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <Briefcase class="absolute -bottom-3 -right-3 size-24 text-brand-500/[0.03] dark:text-brand-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
+          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+          <Briefcase class="absolute -bottom-3 -right-3 size-24 text-brand-500/[0.05] dark:text-brand-400/[0.085] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
           <div class="relative">
             <div class="flex items-baseline gap-2">
               <span class="text-3xl sm:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-brand-600 dark:group-hover:text-brand-400">
                 {{ counts.openJobs }}
               </span>
-              <span class="size-1.5 rounded-full bg-brand-500 shrink-0 mb-1" />
+              <span class="factory-dashboard-stat-dot bg-brand-500 shrink-0 mb-1" />
             </div>
             <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Open Jobs</span>
             <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">
@@ -257,16 +250,16 @@ const isEmpty = computed(() =>
         <!-- Total Candidates -->
         <NuxtLink
           :to="localePath('/dashboard/candidates')"
-          class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 no-underline overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-violet-500/25 dark:hover:ring-violet-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/[0.08]"
+          class="group ui-dashboard-stat-card p-5 sm:p-6 no-underline ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-violet-500/25 dark:hover:ring-violet-400/25 hover:shadow-lg hover:shadow-violet-500/[0.08]"
         >
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <Users class="absolute -bottom-3 -right-3 size-24 text-violet-500/[0.03] dark:text-violet-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
+          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+          <Users class="absolute -bottom-3 -right-3 size-24 text-violet-500/[0.05] dark:text-violet-400/[0.085] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
           <div class="relative">
             <div class="flex items-baseline gap-2">
               <span class="text-3xl sm:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-violet-600 dark:group-hover:text-violet-400">
                 {{ counts.totalCandidates }}
               </span>
-              <span class="size-1.5 rounded-full bg-violet-500 shrink-0 mb-1" />
+              <span class="factory-dashboard-stat-dot bg-violet-500 shrink-0 mb-1" />
             </div>
             <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Candidates</span>
             <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">Talent pool</p>
@@ -276,16 +269,16 @@ const isEmpty = computed(() =>
         <!-- Total Applications -->
         <NuxtLink
           :to="localePath('/dashboard/applications')"
-          class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 no-underline overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-teal-500/25 dark:hover:ring-teal-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-teal-500/[0.08]"
+          class="group ui-dashboard-stat-card p-5 sm:p-6 no-underline ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-teal-500/25 dark:hover:ring-teal-400/25 hover:shadow-lg hover:shadow-teal-500/[0.08]"
         >
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <FileText class="absolute -bottom-3 -right-3 size-24 text-teal-500/[0.03] dark:text-teal-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
+          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+          <FileText class="absolute -bottom-3 -right-3 size-24 text-teal-500/[0.05] dark:text-teal-400/[0.085] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
           <div class="relative">
             <div class="flex items-baseline gap-2">
               <span class="text-3xl sm:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-teal-600 dark:group-hover:text-teal-400">
                 {{ counts.totalApplications }}
               </span>
-              <span class="size-1.5 rounded-full bg-teal-500 shrink-0 mb-1" />
+              <span class="factory-dashboard-stat-dot bg-teal-500 shrink-0 mb-1" />
             </div>
             <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Applications</span>
             <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">Total received</p>
@@ -295,7 +288,7 @@ const isEmpty = computed(() =>
         <!-- To Review -->
         <NuxtLink
           :to="localePath({ path: '/dashboard/applications', query: { status: 'new' } })"
-          class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 no-underline overflow-hidden isolate transition-all duration-300 hover:-translate-y-0.5"
+          class="group ui-dashboard-stat-card p-5 sm:p-6 no-underline"
           :class="counts.newApplications > 0
             ? 'ring-1 ring-warning-400/30 dark:ring-warning-500/20 hover:ring-warning-500/40 dark:hover:ring-warning-400/30 shadow-sm shadow-warning-500/[0.06] hover:shadow-lg hover:shadow-warning-500/[0.12]'
             : 'ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-surface-300/50 dark:hover:ring-surface-600/30 hover:shadow-lg hover:shadow-surface-500/[0.04]'"
@@ -304,9 +297,9 @@ const isEmpty = computed(() =>
             class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent transition-opacity duration-500"
             :class="counts.newApplications > 0
               ? 'via-warning-500 opacity-60 group-hover:opacity-100'
-              : 'via-surface-400 opacity-0 group-hover:opacity-40'"
+              : 'via-surface-400 opacity-40 group-hover:opacity-70'"
           />
-          <AlertCircle class="absolute -bottom-3 -right-3 size-24 rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" :class="counts.newApplications > 0 ? 'text-warning-500/[0.04] dark:text-warning-400/[0.06]' : 'text-surface-400/[0.03] dark:text-surface-500/[0.05]'" />
+          <AlertCircle class="absolute -bottom-3 -right-3 size-24 rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" :class="counts.newApplications > 0 ? 'text-warning-500/[0.06] dark:text-warning-400/[0.095]' : 'text-surface-400/[0.05] dark:text-surface-500/[0.085]'" />
           <div class="relative">
             <div class="flex items-baseline gap-2">
               <span
@@ -318,8 +311,8 @@ const isEmpty = computed(() =>
                 {{ counts.newApplications }}
               </span>
               <span class="relative shrink-0 mb-1">
-                <span class="size-1.5 rounded-full block" :class="counts.newApplications > 0 ? 'bg-warning-500' : 'bg-surface-300 dark:bg-surface-600'" />
-                <span v-if="counts.newApplications > 0" class="absolute inset-0 size-1.5 rounded-full bg-warning-500 animate-ping" />
+                <span class="factory-dashboard-stat-dot" :class="counts.newApplications > 0 ? 'bg-warning-500' : 'bg-surface-300 dark:bg-surface-600'" />
+                <span v-if="counts.newApplications > 0" class="factory-dashboard-stat-dot factory-dashboard-stat-dot-ping absolute inset-0 bg-warning-500 animate-ping" />
               </span>
             </div>
             <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">To Review</span>
@@ -335,20 +328,20 @@ const isEmpty = computed(() =>
         <!-- ─── Left column (2/3) ─── -->
         <div class="lg:col-span-2 space-y-6">
           <!-- ─── Pipeline overview (per job) ─── -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
-              <div class="flex items-center gap-2.5">
-                <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
-                  <TrendingUp class="size-3.5 text-surface-500 dark:text-surface-400" />
+          <div class="ui-panel ui-dashboard-panel factory-pipeline-card shadow-xs dark:shadow-none">
+            <div class="ui-panel-header ui-dashboard-panel-header factory-pipeline-card-header flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="factory-pipeline-icon flex items-center justify-center size-9 rounded-lg bg-surface-100 dark:bg-surface-800">
+                  <TrendingUp class="size-4" />
                 </div>
-                <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Hiring Pipeline</h2>
+                <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-100">Hiring Pipeline</h2>
               </div>
               <NuxtLink
                 :to="localePath('/dashboard/jobs')"
-                class="text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 no-underline inline-flex items-center gap-1 group/link"
+                class="factory-pipeline-all-link text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 no-underline inline-flex items-center gap-1.5 group/link"
               >
                 All jobs
-                <ArrowRight class="size-3 group-hover/link:translate-x-0.5 transition-transform" />
+                <ArrowRight class="size-4 group-hover/link:translate-x-0.5 transition-transform" />
               </NuxtLink>
             </div>
 
@@ -368,46 +361,46 @@ const isEmpty = computed(() =>
             </div>
 
             <div v-else class="divide-y divide-surface-100 dark:divide-surface-800">
-              <div v-for="j in topJobs" :key="j.id" class="px-6 py-5 group/job">
+              <div v-for="j in topJobs" :key="j.id" class="factory-pipeline-job px-6 py-6 group/job">
                 <!-- Job title row -->
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between mb-4">
                   <NuxtLink
                     :to="localePath(`/dashboard/jobs/${j.id}`)"
-                    class="text-sm font-semibold text-surface-900 dark:text-surface-100 hover:text-brand-600 dark:hover:text-brand-400 transition-colors no-underline truncate"
+                    class="text-lg font-semibold text-surface-900 dark:text-surface-100 hover:text-brand-600 dark:hover:text-brand-400 transition-colors no-underline truncate"
                   >
                     {{ j.title }}
                   </NuxtLink>
-                  <span class="text-xs text-surface-400 dark:text-surface-500 shrink-0 ml-3 tabular-nums font-medium">
+                  <span class="factory-pipeline-total text-sm text-surface-400 dark:text-surface-500 shrink-0 tabular-nums font-medium">
                     {{ j.applicationCount }} total
                   </span>
                 </div>
 
                 <!-- Pipeline bar for this job -->
-                <div v-if="j.applicationCount > 0" class="mb-3.5">
-                  <div class="flex h-1.5 rounded-full overflow-hidden bg-surface-100 dark:bg-surface-800">
+                <div v-if="j.applicationCount > 0" class="mb-5">
+                  <div class="factory-pipeline-track flex h-2 overflow-hidden bg-surface-100 dark:bg-surface-800">
                     <div
                       v-for="stage in stageConfig.filter(s => getJobStageCount(j, s.key) > 0)"
                       :key="stage.key"
-                      class="transition-all duration-500"
-                      :class="stage.color"
+                      class="factory-pipeline-segment transition-all duration-500"
+                      :class="stage.segmentClass"
                       :style="{ width: `${(getJobStageCount(j, stage.key) / j.applicationCount) * 100}%` }"
                     />
                   </div>
                 </div>
 
                 <!-- Stage counts for this job -->
-                <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
                   <NuxtLink
                     v-for="stage in stageConfig"
                     :key="stage.key"
                     :to="localePath(`/dashboard/jobs/${j.id}?stage=${stage.key}`)"
-                    class="rounded-lg px-2 py-1.5 text-center transition-all duration-150 no-underline hover:ring-1 hover:ring-brand-300/50 dark:hover:ring-brand-700/50 hover:shadow-sm"
-                    :class="[stage.bgColor, getJobStageCount(j, stage.key) > 0 ? 'cursor-pointer' : 'opacity-50']"
+                    class="factory-pipeline-stage rounded-lg px-2 py-3 text-center transition-all duration-150 no-underline hover:ring-1 hover:ring-brand-300/50 dark:hover:ring-brand-700/50 hover:shadow-sm"
+                    :class="[stage.stageClass, getJobStageCount(j, stage.key) > 0 ? 'is-active cursor-pointer' : 'is-empty']"
                   >
-                    <div class="text-sm font-bold tabular-nums" :class="stage.textColor">
+                    <div class="factory-pipeline-stage-count text-lg font-semibold tabular-nums">
                       {{ getJobStageCount(j, stage.key) }}
                     </div>
-                    <div class="text-[10px] font-medium text-surface-500 dark:text-surface-400 leading-tight">
+                    <div class="factory-pipeline-stage-label text-xs font-medium text-surface-500 dark:text-surface-400 leading-tight">
                       {{ stage.label }}
                     </div>
                   </NuxtLink>
@@ -417,8 +410,8 @@ const isEmpty = computed(() =>
           </div>
 
           <!-- ─── Recent applications ─── -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
+          <div class="ui-panel ui-dashboard-panel shadow-xs dark:shadow-none">
+            <div class="ui-panel-header ui-dashboard-panel-header flex items-center justify-between">
               <div class="flex items-center gap-2.5">
                 <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                   <Clock class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -485,8 +478,8 @@ const isEmpty = computed(() =>
         <!-- ─── Right column (1/3) ─── -->
         <div class="space-y-6">
           <!-- ─── Upcoming interviews ─── -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="flex items-center justify-between px-5 py-4 border-b border-surface-100 dark:border-surface-800">
+          <div class="ui-panel ui-dashboard-panel shadow-xs dark:shadow-none">
+            <div class="ui-panel-header ui-dashboard-panel-header flex items-center justify-between">
               <div class="flex items-center gap-2.5">
                 <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                   <Calendar class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -540,7 +533,7 @@ const isEmpty = computed(() =>
                     @click.stop
                   >
                     <Calendar class="size-2.5" />
-                    Google Calendar
+                    Calendar
                     <ExternalLink class="size-2" />
                   </a>
                 </div>
@@ -549,8 +542,8 @@ const isEmpty = computed(() =>
           </div>
 
           <!-- ─── Quick actions ─── -->
-          <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-            <div class="flex items-center gap-2.5 px-5 py-4 border-b border-surface-100 dark:border-surface-800">
+          <div class="ui-panel ui-dashboard-panel shadow-xs dark:shadow-none">
+            <div class="ui-panel-header ui-dashboard-panel-header flex items-center gap-2.5">
               <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                 <Zap class="size-3.5 text-surface-500 dark:text-surface-400" />
               </div>
@@ -560,37 +553,37 @@ const isEmpty = computed(() =>
             <div class="p-2.5 space-y-0.5">
               <NuxtLink
                 :to="localePath('/dashboard/jobs/new')"
-                class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-brand-50 dark:hover:bg-brand-950/30 hover:text-brand-700 dark:hover:text-brand-300 transition-all no-underline group/action"
+                class="factory-dashboard-quick-action flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium transition-all no-underline"
               >
-                <div class="flex items-center justify-center size-8 rounded-lg bg-brand-50 dark:bg-brand-950/40 group-hover/action:bg-brand-100 dark:group-hover/action:bg-brand-950/60 transition-colors">
-                  <Plus class="size-4 text-brand-600 dark:text-brand-400" />
+                <div class="factory-dashboard-quick-action-icon flex items-center justify-center size-8 transition-colors">
+                  <Plus class="size-4" />
                 </div>
                 Create new job
               </NuxtLink>
               <NuxtLink
                 :to="localePath('/dashboard/candidates/new')"
-                class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 hover:text-violet-700 dark:hover:text-violet-300 transition-all no-underline group/action"
+                class="factory-dashboard-quick-action flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium transition-all no-underline"
               >
-                <div class="flex items-center justify-center size-8 rounded-lg bg-violet-50 dark:bg-violet-950/40 group-hover/action:bg-violet-100 dark:group-hover/action:bg-violet-950/60 transition-colors">
-                  <UserPlus class="size-4 text-violet-600 dark:text-violet-400" />
+                <div class="factory-dashboard-quick-action-icon flex items-center justify-center size-8 transition-colors">
+                  <UserPlus class="size-4" />
                 </div>
                 Add candidate
               </NuxtLink>
               <NuxtLink
                 :to="localePath('/dashboard/applications')"
-                class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-teal-50 dark:hover:bg-teal-950/30 hover:text-teal-700 dark:hover:text-teal-300 transition-all no-underline group/action"
+                class="factory-dashboard-quick-action flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium transition-all no-underline"
               >
-                <div class="flex items-center justify-center size-8 rounded-lg bg-teal-50 dark:bg-teal-950/40 group-hover/action:bg-teal-100 dark:group-hover/action:bg-teal-950/60 transition-colors">
-                  <Eye class="size-4 text-teal-600 dark:text-teal-400" />
+                <div class="factory-dashboard-quick-action-icon flex items-center justify-center size-8 transition-colors">
+                  <Eye class="size-4" />
                 </div>
                 Review applications
               </NuxtLink>
               <NuxtLink
                 :to="localePath('/dashboard/interviews')"
-                class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-700 dark:hover:text-amber-300 transition-all no-underline group/action"
+                class="factory-dashboard-quick-action flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium transition-all no-underline"
               >
-                <div class="flex items-center justify-center size-8 rounded-lg bg-amber-50 dark:bg-amber-950/40 group-hover/action:bg-amber-100 dark:group-hover/action:bg-amber-950/60 transition-colors">
-                  <Calendar class="size-4 text-amber-600 dark:text-amber-400" />
+                <div class="factory-dashboard-quick-action-icon flex items-center justify-center size-8 transition-colors">
+                  <Calendar class="size-4" />
                 </div>
                 View interviews
               </NuxtLink>

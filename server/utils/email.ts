@@ -120,7 +120,7 @@ async function sendEmail(msg: EmailMessage): Promise<void> {
   }
 
   // 3. No provider configured — dev/test fallback
-  console.info(`[Reqcore] ${msg.logFallback}`)
+  console.info(`[Factory Careers] ${msg.logFallback}`)
 }
 
 // ─── Public send functions ────────────────────────────────────────────────────
@@ -138,7 +138,7 @@ export async function sendVerificationEmail(data: {
   try {
     await sendEmail({
       to: data.user.email,
-      subject: 'Verify your email address — Reqcore',
+      subject: 'Verify your email address — Factory Careers',
       html: buildVerificationHtml({ url: data.url }),
       text: buildVerificationText({ url: data.url }),
       resendTags: [{ name: 'category', value: 'verification' }],
@@ -164,7 +164,7 @@ export async function sendPasswordResetEmail(data: {
   try {
     await sendEmail({
       to: data.user.email,
-      subject: 'Reset your password — Reqcore',
+      subject: 'Reset your password — Factory Careers',
       html: buildPasswordResetHtml({ url: data.url }),
       text: buildPasswordResetText({ url: data.url }),
       resendTags: [{ name: 'category', value: 'password-reset' }],
@@ -190,7 +190,7 @@ export async function sendOrgInvitationEmail(data: {
 }, inviteLink: string): Promise<void> {
   await sendEmail({
     to: data.email,
-    subject: `You're invited to join ${data.organization.name} on Reqcore`,
+    subject: `You're invited to join ${data.organization.name} on Factory Careers`,
     html: buildInvitationHtml({
       inviteeName: data.email,
       inviterName: data.inviter.user.name,
@@ -219,9 +219,194 @@ export async function sendOrgInvitationEmail(data: {
   })
 }
 
+export async function sendApplicationReceiptEmail(data: {
+  candidateEmail: string
+  candidateName: string
+  jobTitle: string
+  organizationName: string
+}): Promise<void> {
+  await sendEmail({
+    to: data.candidateEmail,
+    subject: `We received your application for ${data.jobTitle}`,
+    html: buildApplicationReceiptHtml(data),
+    text: buildApplicationReceiptText(data),
+    resendTags: [
+      { name: 'category', value: 'application-receipt' },
+      { name: 'job', value: data.jobTitle.slice(0, 256).replace(/[^a-zA-Z0-9_-]/g, '_') },
+    ],
+    logFallback:
+      `Application receipt email → ${data.candidateEmail} | ` +
+      `Candidate: ${data.candidateName} | Job: ${data.jobTitle}`,
+    errorCategory: 'email.application_receipt_send_failed',
+  })
+}
+
+export async function sendApplicationTeamAlertEmail(data: {
+  candidateEmail: string
+  candidateName: string
+  jobTitle: string
+  applicationUrl: string
+  hasResume: boolean
+}): Promise<void> {
+  await sendEmail({
+    to: env.FACTORY_CAREERS_HIRING_INBOX,
+    subject: `New Factory Careers application: ${data.jobTitle}`,
+    html: buildApplicationTeamAlertHtml(data),
+    text: buildApplicationTeamAlertText(data),
+    resendTags: [
+      { name: 'category', value: 'application-team-alert' },
+      { name: 'job', value: data.jobTitle.slice(0, 256).replace(/[^a-zA-Z0-9_-]/g, '_') },
+    ],
+    logFallback:
+      `Hiring team alert → ${env.FACTORY_CAREERS_HIRING_INBOX} | ` +
+      `Candidate: ${data.candidateName} (${data.candidateEmail}) | ` +
+      `Job: ${data.jobTitle} | Dashboard: ${data.applicationUrl}`,
+    errorCategory: 'email.application_team_alert_send_failed',
+  })
+}
+
 // ─────────────────────────────────────────────
 // Email templates
 // ─────────────────────────────────────────────
+
+function buildApplicationReceiptHtml(data: {
+  candidateName: string
+  jobTitle: string
+  organizationName: string
+}): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Application received</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e4e4e7;">
+          <tr>
+            <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f4f4f5;">
+              <h1 style="margin:0;font-size:20px;font-weight:700;color:#09090b;">Factory Careers</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <h2 style="margin:0 0 16px;font-size:18px;font-weight:600;color:#09090b;">Application received</h2>
+              <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#3f3f46;">
+                Hi ${escapeHtml(data.candidateName)}, thanks for applying for <strong>${escapeHtml(data.jobTitle)}</strong> at ${escapeHtml(data.organizationName)}.
+              </p>
+              <p style="margin:0;font-size:14px;line-height:1.6;color:#3f3f46;">
+                We have your application and will review it carefully. If there is a potential fit, the hiring team will reach out with next steps.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 32px;text-align:center;border-top:1px solid #f4f4f5;background-color:#fafafa;">
+              <p style="margin:0;font-size:12px;color:#a1a1aa;">Sent by Factory Careers</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
+function buildApplicationReceiptText(data: {
+  candidateName: string
+  jobTitle: string
+  organizationName: string
+}): string {
+  return [
+    'Application received',
+    '',
+    `Hi ${data.candidateName}, thanks for applying for ${data.jobTitle} at ${data.organizationName}.`,
+    '',
+    'We have your application and will review it carefully. If there is a potential fit, the hiring team will reach out with next steps.',
+    '',
+    '— Factory Careers',
+  ].join('\n')
+}
+
+function buildApplicationTeamAlertHtml(data: {
+  candidateEmail: string
+  candidateName: string
+  jobTitle: string
+  applicationUrl: string
+  hasResume: boolean
+}): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New application</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e4e4e7;">
+          <tr>
+            <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f4f4f5;">
+              <h1 style="margin:0;font-size:20px;font-weight:700;color:#09090b;">Factory Careers</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <h2 style="margin:0 0 16px;font-size:18px;font-weight:600;color:#09090b;">New application</h2>
+              <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#3f3f46;">
+                <strong>${escapeHtml(data.candidateName)}</strong> applied for <strong>${escapeHtml(data.jobTitle)}</strong>.
+              </p>
+              <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#3f3f46;">
+                Email: ${escapeHtml(data.candidateEmail)}<br />
+                Resume uploaded: ${data.hasResume ? 'Yes' : 'No'}
+              </p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${escapeHtml(data.applicationUrl)}" target="_blank" rel="noopener noreferrer"
+                       style="display:inline-block;padding:12px 32px;background-color:#f97316;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;border-radius:8px;line-height:1;">
+                      Open in dashboard
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:24px 0 0;font-size:12px;line-height:1.5;color:#71717a;">
+                Resumes and documents are not attached to this email. Open the authenticated dashboard record to review private files.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
+function buildApplicationTeamAlertText(data: {
+  candidateEmail: string
+  candidateName: string
+  jobTitle: string
+  applicationUrl: string
+  hasResume: boolean
+}): string {
+  return [
+    'New Factory Careers application',
+    '',
+    `${data.candidateName} applied for ${data.jobTitle}.`,
+    `Email: ${data.candidateEmail}`,
+    `Resume uploaded: ${data.hasResume ? 'yes' : 'no'}`,
+    '',
+    `Open in dashboard: ${data.applicationUrl}`,
+    '',
+    'Resumes and documents are not attached to this email. Open the authenticated dashboard record to review private files.',
+  ].join('\n')
+}
 
 function buildInvitationHtml(params: {
   inviteeName: string
@@ -248,7 +433,7 @@ function buildInvitationHtml(params: {
           <!-- Header -->
           <tr>
             <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f4f4f5;">
-              <h1 style="margin:0;font-size:20px;font-weight:600;color:#09090b;">Reqcore</h1>
+              <h1 style="margin:0;font-size:20px;font-weight:600;color:#09090b;">Factory Careers</h1>
             </td>
           </tr>
           <!-- Body -->
@@ -282,7 +467,7 @@ function buildInvitationHtml(params: {
           <tr>
             <td style="padding:16px 32px;text-align:center;border-top:1px solid #f4f4f5;background-color:#fafafa;">
               <p style="margin:0;font-size:12px;color:#a1a1aa;">
-                Sent by Reqcore &mdash; Open-source applicant tracking
+                Sent by Factory Careers &mdash; Open-source applicant tracking
               </p>
             </td>
           </tr>
@@ -311,7 +496,7 @@ function buildInvitationText(params: {
     'This invitation expires in 48 hours.',
     'If you didn\'t expect this email, you can safely ignore it.',
     '',
-    '— Reqcore',
+    '— Factory Careers',
   ].join('\n')
 }
 
@@ -346,7 +531,7 @@ function buildVerificationHtml(params: { url: string }): string {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e4e4e7;">
           <tr>
             <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f4f4f5;">
-              <h1 style="margin:0;font-size:20px;font-weight:600;color:#09090b;">Reqcore</h1>
+              <h1 style="margin:0;font-size:20px;font-weight:600;color:#09090b;">Factory Careers</h1>
             </td>
           </tr>
           <tr>
@@ -372,7 +557,7 @@ function buildVerificationHtml(params: { url: string }): string {
           </tr>
           <tr>
             <td style="padding:16px 32px;text-align:center;border-top:1px solid #f4f4f5;background-color:#fafafa;">
-              <p style="margin:0;font-size:12px;color:#a1a1aa;">Sent by Reqcore &mdash; Open-source applicant tracking</p>
+              <p style="margin:0;font-size:12px;color:#a1a1aa;">Sent by Factory Careers &mdash; Open-source applicant tracking</p>
             </td>
           </tr>
         </table>
@@ -387,12 +572,12 @@ function buildVerificationText(params: { url: string }): string {
   return [
     'Verify your email address',
     '',
-    'Click the link below to verify your email and activate your Reqcore account:',
+    'Click the link below to verify your email and activate your Factory Careers account:',
     params.url,
     '',
     'If you didn\'t create an account, you can safely ignore this email.',
     '',
-    '— Reqcore',
+    '— Factory Careers',
   ].join('\n')
 }
 
@@ -411,7 +596,7 @@ function buildPasswordResetHtml(params: { url: string }): string {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e4e4e7;">
           <tr>
             <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f4f4f5;">
-              <h1 style="margin:0;font-size:20px;font-weight:600;color:#09090b;">Reqcore</h1>
+              <h1 style="margin:0;font-size:20px;font-weight:600;color:#09090b;">Factory Careers</h1>
             </td>
           </tr>
           <tr>
@@ -437,7 +622,7 @@ function buildPasswordResetHtml(params: { url: string }): string {
           </tr>
           <tr>
             <td style="padding:16px 32px;text-align:center;border-top:1px solid #f4f4f5;background-color:#fafafa;">
-              <p style="margin:0;font-size:12px;color:#a1a1aa;">Sent by Reqcore &mdash; Open-source applicant tracking</p>
+              <p style="margin:0;font-size:12px;color:#a1a1aa;">Sent by Factory Careers &mdash; Open-source applicant tracking</p>
             </td>
           </tr>
         </table>
@@ -452,12 +637,12 @@ function buildPasswordResetText(params: { url: string }): string {
   return [
     'Reset your password',
     '',
-    'Click the link below to reset your Reqcore password:',
+    'Click the link below to reset your Factory Careers password:',
     params.url,
     '',
     'If you didn\'t request this, you can safely ignore this email.',
     '',
-    '— Reqcore',
+    '— Factory Careers',
   ].join('\n')
 }
 
@@ -627,7 +812,7 @@ function buildInterviewInvitationHtml(subject: string, bodyText: string, data: I
           <tr>
             <td style="padding:16px 32px;text-align:center;border-top:1px solid #f4f4f5;background-color:#fafafa;">
               <p style="margin:0;font-size:12px;color:#a1a1aa;">
-                Sent by ${escapeHtml(data.organizationName)} via Reqcore
+                Sent by ${escapeHtml(data.organizationName)} via Factory Careers
               </p>
             </td>
           </tr>

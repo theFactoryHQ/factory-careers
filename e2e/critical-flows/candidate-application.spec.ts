@@ -188,8 +188,10 @@ test.describe('Candidate Application Flow — All Custom Question Field Types', 
     await publishButton.waitFor({ state: 'visible', timeout: 10_000 })
     await publishButton.click()
 
-    // Wait for the success state ("Your job is live!")
-    await expect(page.getByRole('heading', { name: 'Your job is live!' })).toBeVisible({ timeout: 20_000 })
+    // Wait for the API response and the success state ("Your job is live!")
+    await page.waitForResponse((resp) => resp.url().includes('/api/jobs') && [201, 200].includes(resp.status()), { timeout: 30_000 }).catch(() => {})
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {})
+    await expect(page.getByRole('heading', { name: 'Your job is live!' })).toBeVisible({ timeout: 30_000 })
 
     // Read the application link from the readonly input in the success card.
     // The link has the form: https://<host>/jobs/<slug>/apply
@@ -505,7 +507,11 @@ test.describe('Candidate Application — Required Cover Letter Validation', () =
     await page.locator('form').getByRole('button', { name: /Publish & copy link/i })
       .waitFor({ state: 'visible', timeout: 10_000 })
     await page.locator('form').getByRole('button', { name: /Publish & copy link/i }).click()
-    await expect(page.getByRole('heading', { name: 'Your job is live!' })).toBeVisible({ timeout: 20_000 })
+
+    // Wait for the API response and the success state ("Your job is live!")
+    await page.waitForResponse((resp) => resp.url().includes('/api/jobs') && [201, 200].includes(resp.status()), { timeout: 30_000 }).catch(() => {})
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {})
+    await expect(page.getByRole('heading', { name: 'Your job is live!' })).toBeVisible({ timeout: 30_000 })
 
     // Capture the application link
     const applicationLink = await page.locator('input[readonly]').inputValue()

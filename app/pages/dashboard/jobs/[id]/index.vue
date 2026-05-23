@@ -530,7 +530,7 @@ watch([detailTab, timelineCandidateId], () => {
 
 useSeoMeta({
   title: computed(() =>
-    jobData.value ? `Pipeline — ${jobData.value.title} — Reqcore` : 'Pipeline — Reqcore',
+    jobData.value ? `Pipeline — ${jobData.value.title} — Factory Careers` : 'Pipeline — Factory Careers',
   ),
   robots: 'noindex, nofollow',
 })
@@ -1200,7 +1200,7 @@ function closeDocPreview() {
       <!-- PIPELINE STATUS TABS                     -->
       <!-- ═══════════════════════════════════════ -->
       <div class="shrink-0 border-b border-surface-200/80 bg-white dark:border-surface-800/60 dark:bg-surface-900">
-        <div class="flex items-center gap-1 overflow-x-auto scrollbar-thin sm:scrollbar-none px-3 sm:px-5 py-2">
+        <div class="factory-dashboard-tabs flex items-center gap-1 overflow-x-auto scrollbar-thin sm:scrollbar-none px-3 sm:px-5 py-2">
           <button
             v-for="status in PIPELINE_STATUSES"
             :key="`tab-${status}`"
@@ -1629,7 +1629,7 @@ function closeDocPreview() {
 
             <!-- Detail tabs -->
             <div class="border-b border-surface-200/80 bg-white px-4 sm:px-6 dark:border-surface-800/60 dark:bg-surface-900">
-              <div class="mx-auto max-w-4xl flex gap-1 -mb-px scrollbar-none whitespace-nowrap" :class="showOverviewDropdown ? '' : 'overflow-x-auto'">
+              <div class="factory-dashboard-tabs mx-auto max-w-4xl flex gap-1 -mb-px scrollbar-none whitespace-nowrap" :class="showOverviewDropdown ? '' : 'overflow-x-auto'">
                 <div ref="overviewDropdownRef" class="relative">
                   <div class="flex items-center border-b-2 transition-all duration-150" :class="detailTab === 'overview'
                     ? 'border-brand-600 dark:border-brand-400'
@@ -1663,7 +1663,7 @@ function closeDocPreview() {
                   >
                     <div
                       v-if="showOverviewDropdown"
-                      class="absolute left-0 top-full z-50 mt-1 w-44 rounded-xl border border-surface-200 dark:border-surface-700/80 bg-white dark:bg-surface-900 shadow-xl shadow-surface-900/5 dark:shadow-black/20 py-1.5 origin-top-left"
+                      class="factory-saved-views-panel absolute left-0 top-full z-50 mt-1 w-44 rounded-xl border py-1.5 origin-top-left"
                     >
                       <span class="block px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500">Sections</span>
                       <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
@@ -1864,12 +1864,12 @@ function closeDocPreview() {
                               @click.stop
                             >
                               <Calendar class="size-2.5" />
-                              Google Calendar
+                              Calendar
                               <ExternalLink class="size-2" />
                             </a>
                             <span v-else class="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
                               <Calendar class="size-2.5" />
-                              Google Calendar
+                              Calendar
                             </span>
                           </div>
                         </div>
@@ -2019,12 +2019,12 @@ function closeDocPreview() {
                                   class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-emerald-700 dark:text-emerald-400 font-medium hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors"
                                 >
                                   <Calendar class="size-3.5" />
-                                  Open in Google Calendar
+                                  Open in Calendar
                                   <ExternalLink class="size-3" />
                                 </a>
                                 <span v-else class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-emerald-700 dark:text-emerald-400 font-medium">
                                   <Calendar class="size-3.5" />
-                                  Synced to Google Calendar
+                                  Synced to Calendar
                                 </span>
                               </dd>
                             </div>

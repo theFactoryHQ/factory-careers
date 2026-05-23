@@ -5,8 +5,8 @@ definePageMeta({
 });
 
 useSeoMeta({
-    title: "Forgot Password — Reqcore",
-    description: "Reset your Reqcore account password",
+    title: "Forgot Password — Factory Careers",
+    description: "Reset your Factory Careers account password",
     robots: "noindex, nofollow",
 });
 

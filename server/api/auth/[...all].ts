@@ -1,4 +1,9 @@
+import type { H3Event } from 'h3'
+import { isFactoryInitialOwnerEmail } from '../../utils/factoryAccess'
+
 export default defineEventHandler(async (event) => {
+  await enforceFactoryAuthPolicy(event)
+
   try {
     return await auth.handler(toWebRequest(event))
   } catch (error) {
@@ -43,8 +48,54 @@ export default defineEventHandler(async (event) => {
         code: 'AUTH_HANDLER_ERROR',
         message: exposeDetails
           ? details
-          : 'Authentication failed. If you are self-hosting, verify that the BETTER_AUTH_URL environment variable matches your deployment domain (e.g. "https://your-app.up.railway.app") and redeploy.',
+          : 'Authentication failed. Verify that BETTER_AUTH_URL matches your deployment domain (for Factory, "https://careers.thefactoryhq.com") and redeploy.',
       },
     })
   }
 })
+
+async function enforceFactoryAuthPolicy(event: H3Event) {
+  if (event.method !== 'POST') return
+
+  const requestUrl = getRequestURL(event)
+  const authPath = requestUrl.pathname
+    .replace(/^\/api\/auth/, '')
+    .replace(/\/+$/, '')
+
+  if (env.FACTORY_DISABLE_PUBLIC_SIGNUP && authPath.startsWith('/sign-up')) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Factory Careers account creation is invitation-only. Sign in with Microsoft or use an invitation link.',
+    })
+  }
+
+  if (
+    env.FACTORY_ADMIN_SSO_ONLY &&
+    (
+      authPath.startsWith('/sign-in/email') ||
+      authPath.startsWith('/request-password-reset') ||
+      authPath.startsWith('/forget-password') ||
+      authPath.startsWith('/reset-password') ||
+      authPath.startsWith('/change-password')
+    )
+  ) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Factory Careers admin access uses Microsoft SSO only.',
+    })
+  }
+
+  if (
+    env.FACTORY_DISABLE_PUBLIC_ORG_CREATION &&
+    authPath.includes('/organization/create')
+  ) {
+    const session = await auth.api.getSession({ headers: event.headers })
+
+    if (!session || !isFactoryInitialOwnerEmail(session.user.email)) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Factory Careers uses a single Factory organization. Ask an administrator for an invitation.',
+      })
+    }
+  }
+}

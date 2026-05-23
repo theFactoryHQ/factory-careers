@@ -173,7 +173,7 @@ const showableDefs = computed(() => definitions.value)
       class="relative"
     >
       <div
-        class="inline-flex items-center rounded-full border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/40 text-xs font-medium text-brand-700 dark:text-brand-200 hover:bg-brand-100 dark:hover:bg-brand-950"
+        class="ui-filter-chip ui-filter-chip-active text-xs"
       >
         <button
           type="button"
@@ -185,7 +185,7 @@ const showableDefs = computed(() => definitions.value)
         </button>
         <button
           type="button"
-          class="pr-2 pl-1 py-1 text-brand-500 hover:text-brand-700 cursor-pointer"
+          class="pr-2 pl-1 py-1 cursor-pointer"
           :aria-label="`Remove filter: ${summarizeFilter(f)}`"
           @click.stop="removeFilter(idx)"
         >
@@ -197,16 +197,16 @@ const showableDefs = computed(() => definitions.value)
       <div
         v-if="editingIdx === idx"
         :ref="(el) => setEditElRef(el, idx)"
-        class="absolute left-0 top-full z-30 mt-1 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-3 shadow-lg"
+        class="ui-floating-menu absolute left-0 top-full z-30 mt-1 w-80 max-w-[calc(100vw-2rem)] p-3"
       >
         <template v-if="definitionMap.get(f.propertyDefinitionId) as PropertyDefinition">
           <div class="space-y-2">
-            <div class="text-xs font-semibold text-surface-700 dark:text-surface-200">
+            <div class="ui-menu-divider pb-2 text-xs font-semibold text-surface-700 dark:text-surface-200">
               {{ definitionMap.get(f.propertyDefinitionId)!.name }}
             </div>
             <select
               :value="f.op"
-              class="w-full rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1 text-sm text-surface-900 dark:text-surface-50 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+              class="ui-field px-2 py-1"
               @change="(e) => patchFilter(idx, { op: (e.target as HTMLSelectElement).value as PropertyOperator })"
             >
               <option v-for="op in operatorsFor(definitionMap.get(f.propertyDefinitionId)!)" :key="op" :value="op">
@@ -220,7 +220,7 @@ const showableDefs = computed(() => definitions.value)
               <select
                 v-if="definitionMap.get(f.propertyDefinitionId)!.type === 'select' && f.op === 'equals'"
                 :value="(f.value as string) ?? ''"
-                class="w-full rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                class="ui-field px-2 py-1"
                 @change="(e) => patchFilter(idx, { value: (e.target as HTMLSelectElement).value || null })"
               >
                 <option value="">—</option>
@@ -250,7 +250,7 @@ const showableDefs = computed(() => definitions.value)
               <select
                 v-else-if="definitionMap.get(f.propertyDefinitionId)!.type === 'checkbox'"
                 :value="String(f.value ?? false)"
-                class="w-full rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                class="ui-field px-2 py-1"
                 @change="(e) => patchFilter(idx, { value: (e.target as HTMLSelectElement).value === 'true' })"
               >
                 <option value="true">checked</option>
@@ -262,7 +262,7 @@ const showableDefs = computed(() => definitions.value)
                 v-else-if="definitionMap.get(f.propertyDefinitionId)!.type === 'date' && f.op === 'equals'"
                 type="date"
                 :value="(f.value as string) ?? ''"
-                class="w-full rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                class="ui-field px-2 py-1"
                 @change="(e) => patchFilter(idx, { value: (e.target as HTMLInputElement).value || null })"
               />
               <input
@@ -270,7 +270,7 @@ const showableDefs = computed(() => definitions.value)
                 type="number"
                 step="any"
                 :value="(f.value as number) ?? ''"
-                class="w-full rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                class="ui-field px-2 py-1"
                 @input="(e) => { const v = (e.target as HTMLInputElement).value; patchFilter(idx, { value: v === '' ? null : Number(v) }) }"
               />
 
@@ -280,7 +280,7 @@ const showableDefs = computed(() => definitions.value)
                 type="text"
                 :value="(f.value as string) ?? ''"
                 placeholder="Value"
-                class="w-full rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                class="ui-field px-2 py-1"
                 @input="(e) => patchFilter(idx, { value: (e.target as HTMLInputElement).value })"
               />
             </template>
@@ -293,7 +293,7 @@ const showableDefs = computed(() => definitions.value)
     <div class="relative" ref="pickerEl">
       <button
         type="button"
-        class="inline-flex items-center gap-1 rounded-full border border-dashed border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2.5 py-1 text-xs font-medium text-surface-500 hover:text-surface-800 hover:border-surface-400 dark:hover:text-surface-100 cursor-pointer"
+        class="ui-button ui-button-secondary px-2.5 py-1 text-xs"
         @click="pickerOpen = !pickerOpen"
       >
         <component :is="modelValue.length === 0 ? Filter : Plus" class="size-3.5" />
@@ -301,14 +301,14 @@ const showableDefs = computed(() => definitions.value)
       </button>
       <div
         v-if="pickerOpen"
-        class="absolute left-0 top-full z-30 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg"
+        class="ui-floating-menu absolute left-0 top-full z-30 mt-1 w-64 max-w-[calc(100vw-2rem)]"
       >
         <div class="max-h-72 overflow-y-auto py-1">
           <button
             v-for="def in showableDefs"
             :key="def.id"
             type="button"
-            class="flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-sm hover:bg-surface-100 dark:hover:bg-surface-800"
+            class="ui-menu-action justify-between px-3 py-1.5 text-sm"
             @click="addFilter(def)"
           >
             <span class="truncate text-surface-800 dark:text-surface-100">{{ def.name }}</span>
@@ -324,7 +324,7 @@ const showableDefs = computed(() => definitions.value)
     <button
       v-if="modelValue.length > 0"
       type="button"
-      class="text-xs text-surface-500 hover:text-surface-800 dark:hover:text-surface-100 cursor-pointer"
+      class="ui-filter-chip ui-filter-chip-inactive"
       @click="clearAll"
     >Clear all</button>
   </div>
