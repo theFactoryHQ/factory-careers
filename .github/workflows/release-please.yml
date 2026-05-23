@@ -8,7 +8,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  issues: write
 
 jobs:
   release-please:
@@ -26,7 +25,7 @@ jobs:
           {
             echo "## Release Please skipped"
             echo ""
-            echo "The workflow needs RELEASE_PLEASE_TOKEN or repo settings that allow Actions to create pull requests."
+            echo "The workflow needs RELEASE_PLEASE_TOKEN before it can create or update release PRs."
             echo ""
             echo "Tracking issue: https://github.com/theFactoryHQ/factory-careers/issues/27"
           } >> "$GITHUB_STEP_SUMMARY"
