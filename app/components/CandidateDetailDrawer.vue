@@ -341,7 +341,7 @@ onUnmounted(() => {
                       Schedule
                     </button>
                     <span
-                      class="inline-flex shrink-0 items-center border px-2 py-0.5 text-[10px] font-semibold uppercase"
+                      class="inline-flex h-8 min-h-8 shrink-0 items-center border px-2.5 py-0 text-[10px] font-semibold uppercase"
                       :class="getApplicationStatusBadgeClass(app.status, 'factory')"
                     >
                       {{ app.status }}
