@@ -14,7 +14,7 @@ defineEmits<{
   click: [event: MouseEvent]
 }>()
 
-const baseClass = 'inline-flex h-10 min-h-10 items-center gap-2 border border-white/16 bg-black px-4 py-0 text-xs font-medium uppercase tracking-normal text-white/62 transition-colors no-underline hover:border-brand-500 hover:text-white'
+const baseClass = 'inline-flex h-10 min-h-10 items-center gap-2 border border-white/16 bg-black px-4 py-0 text-xs font-medium uppercase tracking-normal text-white/62 transition-colors no-underline hover:border-white hover:bg-white hover:text-black'
 </script>
 
 <template>

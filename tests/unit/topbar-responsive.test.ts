@@ -4,6 +4,7 @@ import { join } from 'node:path'
 
 describe('dashboard top bar responsiveness', () => {
   const source = readFileSync(join(process.cwd(), 'app/components/AppTopBar.vue'), 'utf8')
+  const backLinkSource = readFileSync(join(process.cwd(), 'app/components/AppBackLink.vue'), 'utf8')
 
   it('delays full nav labels until there is room for the desktop actions', () => {
     expect(source).toContain('hidden min-[1500px]:inline')
@@ -27,5 +28,10 @@ describe('dashboard top bar responsiveness', () => {
     expect(source).toContain('factory-job-subnav-tab-active')
     expect(source).toContain('factory-job-subnav-tab-inactive')
     expect(source).not.toContain('border-transparent text-white/50')
+  })
+
+  it('uses white-fill hover treatment for dashboard back links', () => {
+    expect(backLinkSource).toContain('hover:border-white hover:bg-white hover:text-black')
+    expect(backLinkSource).not.toContain('hover:border-brand-500')
   })
 })
