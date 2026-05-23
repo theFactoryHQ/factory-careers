@@ -145,7 +145,7 @@ function formatDate(dateStr: string) {
         class="flex-1"
         placeholder="Search jobs by title or location…"
         reserve-expanded-space
-        size="lg"
+        size="md"
         tone="inverse"
       />
 
@@ -153,7 +153,7 @@ function formatDate(dateStr: string) {
       <div ref="typeDropdownRef" class="relative sm:w-40">
         <button
           type="button"
-          class="flex w-full items-center justify-between border border-white/14 bg-black/35 px-3 py-3 text-left text-sm text-white outline-none transition-colors hover:border-brand-500/60 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25"
+          class="flex h-10 min-h-10 w-full items-center justify-between border border-white/14 bg-black/35 px-3 py-0 text-left text-sm text-white outline-none transition-colors hover:border-brand-500/60 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25"
           :aria-expanded="typeDropdownOpen"
           aria-haspopup="listbox"
           @click="typeDropdownOpen = !typeDropdownOpen"

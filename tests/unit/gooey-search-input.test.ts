@@ -89,4 +89,16 @@ describe('search bar call sites', () => {
       expect(source, relativePath).toMatch(/<GooeySearchInput[\s\S]*class="[^"]*min-w-0[^"]*flex-1[^"]*sm:max-w-sm/)
     }
   })
+
+  it('keeps the public jobs search aligned to 40px toolbar controls', () => {
+    const source = readFileSync(join(process.cwd(), 'app/pages/jobs/index.vue'), 'utf8')
+    const publicJobsSearch = source.match(/<GooeySearchInput[\s\S]*?\/>/)?.[0] ?? ''
+    const typeDropdownButton = source.match(/<button[\s\S]*aria-haspopup="listbox"[\s\S]*?>/)?.[0] ?? ''
+
+    expect(publicJobsSearch).toContain('size="md"')
+    expect(publicJobsSearch).not.toContain('size="lg"')
+    expect(typeDropdownButton).toContain('h-10 min-h-10')
+    expect(typeDropdownButton).toContain('py-0')
+    expect(typeDropdownButton).not.toContain('py-3')
+  })
 })
