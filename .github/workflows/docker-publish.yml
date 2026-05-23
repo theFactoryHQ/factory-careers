@@ -69,8 +69,8 @@ jobs:
         with:
           context: .
           push: true
-          # Keep the main publish path fast. Restore multi-arch once issue #29
-          # is solved without QEMU-heavy builds on every push.
+          # Keep publish runs fast for main and tag events. Restore multi-arch
+          # once issue #29 is solved without QEMU-heavy builds.
           platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
