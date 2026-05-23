@@ -231,7 +231,7 @@ onUnmounted(() => {
           </NuxtLink>
 
           <!-- Desktop nav links -->
-          <nav class="hidden md:flex items-center gap-0.5">
+          <nav class="hidden md:flex min-w-0 items-center gap-0.5 overflow-visible">
             <NuxtLink
               v-for="item in primaryNavItems"
               :key="item.to"
@@ -243,8 +243,8 @@ onUnmounted(() => {
                 : 'border-transparent text-white/58 hover:text-white'"
             >
               <component :is="item.icon" class="size-4" />
-              <span class="hidden xl:inline">{{ item.label }}</span>
-              <span class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 translate-y-1 whitespace-nowrap border border-white/12 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white opacity-0 shadow-xl shadow-black/40 transition-all duration-150 xl:hidden group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
+              <span class="hidden min-[1500px]:inline">{{ item.label }}</span>
+              <span class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 translate-y-1 whitespace-nowrap border border-white/12 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white opacity-0 shadow-xl shadow-black/40 transition-all duration-150 min-[1500px]:hidden group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
                 {{ item.label }}
               </span>
             </NuxtLink>
@@ -260,8 +260,8 @@ onUnmounted(() => {
                 : 'border-transparent text-white/58 hover:text-white'"
             >
               <component :is="item.icon" class="size-4" />
-              <span class="hidden 2xl:inline">{{ item.label }}</span>
-              <span class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 translate-y-1 whitespace-nowrap border border-white/12 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white opacity-0 shadow-xl shadow-black/40 transition-all duration-150 2xl:hidden group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
+              <span class="hidden min-[1800px]:inline">{{ item.label }}</span>
+              <span class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 translate-y-1 whitespace-nowrap border border-white/12 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white opacity-0 shadow-xl shadow-black/40 transition-all duration-150 min-[1800px]:hidden group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
                 {{ item.label }}
               </span>
             </NuxtLink>
@@ -320,7 +320,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Right: Actions -->
-        <div class="flex items-center gap-1 lg:gap-1.5">
+        <div class="flex shrink-0 items-center gap-1 pl-2 lg:gap-1.5 lg:pl-3 xl:pl-4">
           <!-- Get Started CTA (demo mode only) -->
           <div v-if="isDemo" ref="getStartedMenuRoot" class="relative hidden sm:block">
             <button
@@ -384,7 +384,7 @@ onUnmounted(() => {
 
           <!-- New Job button (desktop) -->
           <button
-            class="factory-button-cta factory-button-premium hidden h-9 items-center gap-1.5 px-3.5 text-[13px] sm:inline-flex"
+            class="factory-button-cta factory-button-premium mx-1 hidden h-9 items-center gap-1.5 px-3.5 text-[13px] sm:inline-flex"
             @click="handleNewJobClick"
           >
             <Plus class="size-3.5" />
