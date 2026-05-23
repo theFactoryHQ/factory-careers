@@ -572,8 +572,6 @@ export async function removeMicrosoftCalendarIntegration(userId: string, organiz
  * No user tokens are stored; the system uses client_credentials from the pre-configured app registration.
  */
 export async function enableMicrosoftCalendarAppIntegration(organizationId: string): Promise<void> {
-  const secret = env.BETTER_AUTH_SECRET
-
   // Obtain an app token to resolve the target calendar/group
   let accessToken: string
   try {
