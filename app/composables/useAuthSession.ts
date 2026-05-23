@@ -13,30 +13,23 @@
  * - Easy to extend later with stronger SWR / TTL if needed.
  *
  * Usage in middleware (async context):
- *   const { session } = useAuthSession()
+ *   const { session } = await useAuthSession()
  *   if (!session.value) { ... }
- *
- * Usage in pages/composables:
- *   const { session } = useAuthSession()
  */
 import { authClient } from '~/utils/auth-client'
 
-export function useAuthSession() {
+export async function useAuthSession() {
   // The official Better Auth Vue composable already does excellent
   // client-side caching and reactive updates. We pass useFetch so it
   // integrates with Nuxt's SSR + payload transfer.
-  //
-  // We cast to any because vue-tsc / the current @better-auth/vue types
-  // sometimes infer the return as Promise<...> during `nuxi typecheck`,
-  // even though runtime returns the reactive state object.
-  const session = authClient.useSession(useFetch) as any
+  const session = await authClient.useSession(useFetch)
 
   return {
     /** Reactive session data (Ref) */
     session: session.data,
-    /** Force refresh the session (useful after login/org switch) */
-    refresh: session.refresh,
-    /** 'loading' | 'authenticated' | 'unauthenticated' etc. */
-    status: session.status,
+    /** Whether Better Auth is still resolving the Nuxt useFetch session request */
+    isPending: session.isPending,
+    /** Reactive fetch error from the session request */
+    error: session.error,
   }
 }
