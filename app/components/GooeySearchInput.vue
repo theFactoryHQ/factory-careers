@@ -417,11 +417,6 @@ function handleKeydown(event: KeyboardEvent) {
   box-shadow: none !important;
 }
 
-:global(.factory-dashboard-shell) .gooey-search-surface:hover .gooey-search-outline,
-:global(.factory-dashboard-portal) .gooey-search-surface:hover .gooey-search-outline {
-  border-color: #ffffff !important;
-}
-
 :global(.factory-dashboard-shell) .gooey-search-surface:focus-within .gooey-search-outline,
 :global(.factory-dashboard-portal) .gooey-search-surface:focus-within .gooey-search-outline {
   border-color: var(--color-brand-500) !important;
