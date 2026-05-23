@@ -1991,7 +1991,7 @@
     border-color: color-mix(in srgb, var(--color-brand-500) 62%, transparent) !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(input, textarea, select) {
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(input:not(.gooey-search-field), textarea, select) {
     border-color: var(--ui-border-strong) !important;
     border-radius: 0 !important;
     background-color: rgb(0 0 0 / 0.45) !important;
@@ -1999,11 +1999,11 @@
     box-shadow: none !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(input, textarea, select)::placeholder {
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(input:not(.gooey-search-field), textarea, select)::placeholder {
     color: var(--ui-faint) !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(input, textarea, select):focus {
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(input:not(.gooey-search-field), textarea, select):focus {
     border-color: color-mix(in srgb, var(--color-brand-500) 75%, transparent) !important;
     outline: none !important;
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-500) 20%, transparent) !important;
@@ -2065,7 +2065,7 @@
     border-radius: 0 !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(button, a):focus-visible {
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(button:not(.gooey-search-trigger):not(.gooey-search-clear), a):focus-visible {
     outline: 2px solid color-mix(in srgb, var(--color-brand-500) 62%, transparent) !important;
     outline-offset: 2px;
   }

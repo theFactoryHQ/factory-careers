@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const componentPath = join(process.cwd(), 'app/components/GooeySearchInput.vue')
+const dashboardCssPath = join(process.cwd(), 'app/assets/css/main.css')
 
 describe('GooeySearchInput component source', () => {
   const source = readFileSync(componentPath, 'utf8')
@@ -120,5 +121,18 @@ describe('search bar call sites', () => {
     expect(typeDropdownButton).toContain('h-10 min-h-10')
     expect(typeDropdownButton).toContain('py-0')
     expect(typeDropdownButton).not.toContain('py-3')
+  })
+})
+
+describe('dashboard global search focus cascade', () => {
+  const source = readFileSync(dashboardCssPath, 'utf8')
+
+  it('keeps dashboard-wide focus overrides off GooeySearchInput internals', () => {
+    expect(source).toMatch(/:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) :is\(input:not\(\.gooey-search-field\), textarea, select\) \{/)
+    expect(source).toMatch(/:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) :is\(input:not\(\.gooey-search-field\), textarea, select\)::placeholder \{/)
+    expect(source).toMatch(/:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) :is\(input:not\(\.gooey-search-field\), textarea, select\):focus \{/)
+    expect(source).toMatch(/:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) :is\(button:not\(\.gooey-search-trigger\):not\(\.gooey-search-clear\), a\):focus-visible \{/)
+    expect(source).not.toMatch(/:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) :is\(input, textarea, select\):focus/)
+    expect(source).not.toMatch(/:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) :is\(button, a\):focus-visible/)
   })
 })
