@@ -34,7 +34,6 @@ const commaList = (defaultValue: string[] = []) =>
       : defaultValue,
   );
 
-<<<<<<< HEAD
 const commaEmailList = (defaultValue: string[] = []) =>
   z.preprocess(
     (val) => (typeof val === "string" && val.trim() === "" ? undefined : val),
@@ -48,8 +47,6 @@ const commaEmailList = (defaultValue: string[] = []) =>
       : defaultValue,
   ).pipe(z.array(z.email()));
 
-=======
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
 /**
  * Detect whether the current Railway environment is a PR/preview environment.
  * Production and long-lived environments must provide explicit BETTER_AUTH_URL.
@@ -127,13 +124,10 @@ export const envSchema = z
     ),
     /** Supabase's S3-compatible endpoint does not support bucket-policy APIs. */
     S3_SKIP_BUCKET_POLICY: envFlag(false),
-<<<<<<< HEAD
     /** Temporarily skip S3 bucket startup checks for scaffold services before storage is provisioned. */
     S3_SKIP_BUCKET_INIT: envFlag(false),
     /** Temporarily skip runtime migrations before the production database is provisioned. */
     SKIP_RUNTIME_MIGRATIONS: envFlag(false),
-=======
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
     /** IP address of the trusted reverse proxy (e.g., Render, Cloudflare). When set, X-Forwarded-For is trusted for rate limiting. */
     TRUSTED_PROXY_IP: z.string().min(1).optional(),
     /** Slug of the demo organization. When set, write operations are blocked for this org. */
@@ -250,7 +244,6 @@ export const envSchema = z
       .pipe(z.string().min(1))
       .optional()
       .default("careers@thefactoryhq.com"),
-<<<<<<< HEAD
     /** Shared mailbox or user mailbox email used for organization-wide interview scheduling. */
     FACTORY_CAREERS_CALENDAR_EMAIL: emptyToUndefined
       .pipe(z.string().email())
@@ -274,12 +267,6 @@ export const envSchema = z
     FACTORY_DISABLE_PUBLIC_ORG_CREATION: envFlag(true),
     /** Hide the "Help us improve with analytics" consent banner (Factory uses SSO + cookieless PostHog). */
     FACTORY_DISABLE_ANALYTICS_CONSENT_BANNER: envFlag(true),
-=======
-    /** Disable public email/password account creation for staff access. */
-    FACTORY_DISABLE_PUBLIC_SIGNUP: envFlag(true),
-    /** Disable arbitrary organization creation; the Factory org is seeded. */
-    FACTORY_DISABLE_PUBLIC_ORG_CREATION: envFlag(true),
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
   })
   .superRefine((data, ctx) => {
     // BETTER_AUTH_URL is explicit on Render; Railway preview compatibility is
@@ -362,6 +349,18 @@ export const envSchema = z
         });
       }
     }
+
+    // GITHUB_FEEDBACK_TOKEN and GITHUB_FEEDBACK_REPO must both be set or both absent.
+    const hasFeedbackToken = !!data.GITHUB_FEEDBACK_TOKEN;
+    const hasFeedbackRepo = !!data.GITHUB_FEEDBACK_REPO;
+    if (hasFeedbackToken !== hasFeedbackRepo) {
+      const missing = hasFeedbackToken ? 'GITHUB_FEEDBACK_REPO' : 'GITHUB_FEEDBACK_TOKEN';
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [missing],
+        message: 'GITHUB_FEEDBACK_TOKEN and GITHUB_FEEDBACK_REPO must both be set (or both absent) to enable in-app feedback.',
+      });
+    }
   });
 
 /**
@@ -392,11 +391,7 @@ export const env = new Proxy({} as z.infer<typeof envSchema>, {
             `Ensure these variables are set in the Render web service environment.\n` +
             `Required: DATABASE_URL, BETTER_AUTH_SECRET, S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET\n` +
             `Required on Render: BETTER_AUTH_URL=https://careers.thefactoryhq.com\n` +
-<<<<<<< HEAD
             `Optional: BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), S3_SKIP_BUCKET_POLICY, S3_SKIP_BUCKET_INIT, SKIP_RUNTIME_MIGRATIONS, TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CALENDAR_AUTH_MODE, MICROSOFT_CALENDAR_CLIENT_ID, MICROSOFT_CALENDAR_CLIENT_SECRET, MICROSOFT_CALENDAR_TENANT_ID, FACTORY_CAREERS_CALENDAR_SYNC_SHARED, FACTORY_CAREERS_CALENDAR_USER_EMAILS, FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_DISCOVERY_URL, OIDC_PROVIDER_NAME, AUTH_GOOGLE_CLIENT_ID, AUTH_GOOGLE_CLIENT_SECRET, AUTH_GITHUB_CLIENT_ID, AUTH_GITHUB_CLIENT_SECRET, AUTH_MICROSOFT_CLIENT_ID, AUTH_MICROSOFT_CLIENT_SECRET, AUTH_MICROSOFT_TENANT_ID, FACTORY_CAREERS_HIRING_INBOX, FACTORY_ALLOWED_EMAIL_DOMAINS, FACTORY_INITIAL_OWNER_EMAILS\n`,
-=======
-            `Optional: BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), S3_SKIP_BUCKET_POLICY, TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_DISCOVERY_URL, OIDC_PROVIDER_NAME, AUTH_GOOGLE_CLIENT_ID, AUTH_GOOGLE_CLIENT_SECRET, AUTH_GITHUB_CLIENT_ID, AUTH_GITHUB_CLIENT_SECRET, AUTH_MICROSOFT_CLIENT_ID, AUTH_MICROSOFT_CLIENT_SECRET, AUTH_MICROSOFT_TENANT_ID, FACTORY_CAREERS_HIRING_INBOX, FACTORY_ALLOWED_EMAIL_DOMAINS, FACTORY_INITIAL_OWNER_EMAILS\n`,
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
         );
         throw result.error;
       }
