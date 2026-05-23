@@ -104,6 +104,7 @@ const { data: feedbackConfig } = useFetch('/api/feedback/config', {
 const isFeedbackEnabled = computed(() => feedbackConfig.value?.enabled === true)
 
 const showChatbot = useFeatureFlagEnabled('chatbot-experience')
+const showFactoryMoreActions = false
 
 const jobTabs = computed(() => {
   if (!activeJobId.value) return []
@@ -393,6 +394,7 @@ onUnmounted(() => {
 
           <!-- More actions dropdown -->
           <div
+            v-if="showFactoryMoreActions"
             ref="moreActionsMenuRoot"
             class="relative hidden sm:block"
             @mouseenter="showMoreActions = true"

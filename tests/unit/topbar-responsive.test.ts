@@ -16,4 +16,9 @@ describe('dashboard top bar responsiveness', () => {
     expect(source).toContain('flex shrink-0 items-center gap-1 pl-2 lg:gap-1.5 lg:pl-3 xl:pl-4')
     expect(source).toContain('factory-button-cta factory-button-premium mx-1 hidden h-9')
   })
+
+  it('temporarily hides the desktop more actions menu pending a Factory refactor', () => {
+    expect(source).toContain('const showFactoryMoreActions = false')
+    expect(source).toMatch(/v-if="showFactoryMoreActions"[\s\S]*title="More options"/)
+  })
 })
