@@ -176,7 +176,8 @@ onUnmounted(() => {
               Open full page
             </NuxtLink>
             <button
-              class="factory-toolbar-button p-1.5 text-white/58 hover:text-white transition-colors"
+              class="ui-panel-close-button p-1.5 transition-colors"
+              aria-label="Close application detail"
               @click="emit('close')"
             >
               <X class="size-4" />

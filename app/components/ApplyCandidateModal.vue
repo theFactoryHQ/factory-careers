@@ -78,7 +78,7 @@ async function applyCandidate(candidateId: string) {
           </div>
           <button
             type="button"
-            class="flex size-8 cursor-pointer items-center justify-center border border-transparent bg-transparent text-white/42 transition-colors hover:border-white/14 hover:bg-white/[0.06] hover:text-white"
+            class="ui-panel-close-button flex size-8 cursor-pointer items-center justify-center transition-colors"
             aria-label="Close"
             @click="emit('close')"
           >

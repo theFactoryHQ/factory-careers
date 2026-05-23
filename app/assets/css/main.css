@@ -371,6 +371,28 @@
     color: var(--color-surface-200);
   }
 
+  .ui-panel-close-button {
+    border-color: transparent !important;
+    background-color: transparent !important;
+    color: var(--color-surface-500) !important;
+  }
+
+  .ui-panel-close-button:hover:not(:disabled) {
+    border-color: transparent !important;
+    background-color: transparent !important;
+    color: var(--color-surface-700) !important;
+  }
+
+  .dark .ui-panel-close-button {
+    color: rgb(255 255 255 / 0.42) !important;
+  }
+
+  .dark .ui-panel-close-button:hover:not(:disabled) {
+    border-color: transparent !important;
+    background-color: transparent !important;
+    color: rgb(255 255 255 / 0.78) !important;
+  }
+
   .ui-button-danger {
     background-color: var(--color-danger-600);
     color: #ffffff;
@@ -1286,6 +1308,22 @@
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-ghost:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-brand-500) 12%, transparent) !important;
     color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-panel-close-button,
+  .factory-dashboard-portal.ui-panel-close-button,
+  .factory-dashboard-portal .ui-panel-close-button {
+    border-color: transparent !important;
+    background-color: transparent !important;
+    color: rgb(255 255 255 / 0.42) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-panel-close-button:hover:not(:disabled),
+  .factory-dashboard-portal.ui-panel-close-button:hover:not(:disabled),
+  .factory-dashboard-portal .ui-panel-close-button:hover:not(:disabled) {
+    border-color: transparent !important;
+    background-color: transparent !important;
+    color: rgb(255 255 255 / 0.78) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-danger {

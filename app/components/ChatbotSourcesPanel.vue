@@ -64,7 +64,8 @@ function hrefFor(s: ChatbotSource): string | null {
         </span>
       </div>
       <button
-        class="inline-flex size-7 items-center justify-center rounded text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
+        class="ui-panel-close-button inline-flex size-7 items-center justify-center rounded cursor-pointer border-0"
+        aria-label="Close sources"
         @click="emit('close')"
       >
         <X class="size-4" />

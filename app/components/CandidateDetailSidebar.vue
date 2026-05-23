@@ -479,7 +479,7 @@ function formatInterviewDate(dateStr: string) {
             Schedule
           </button>
           <button
-            class="ui-button ui-button-ghost p-1.5"
+            class="ui-button ui-button-ghost ui-panel-close-button p-1.5"
             title="Close (Esc)"
             @click="emit('close')"
           >

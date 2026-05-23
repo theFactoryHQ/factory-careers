@@ -221,7 +221,7 @@ const overlayTitle = computed(() => {
             </p>
           </div>
           <button
-            class="factory-toolbar-button inline-flex h-9 min-h-9 w-9 cursor-pointer items-center justify-center border p-0 transition-colors"
+            class="ui-panel-close-button inline-flex h-9 min-h-9 w-9 cursor-pointer items-center justify-center p-0 transition-colors"
             aria-label="Close properties"
             @click="emit('close')"
           >
