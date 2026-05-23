@@ -334,13 +334,13 @@ const statusCounts = computed(() => {
         <button
           v-for="s in STATUS_OPTIONS"
           :key="s"
-          class="ui-filter-chip inline-flex h-[38px] items-center gap-1.5 px-3 text-xs cursor-pointer"
+          class="ui-filter-chip inline-flex h-[38px] items-center gap-1.5 px-3 text-[11px] font-light uppercase leading-none tracking-normal cursor-pointer"
           :class="activeStatus === s ? 'ui-filter-chip-active' : 'ui-filter-chip-inactive'"
           @click="activeStatus = activeStatus === s ? undefined : s"
         >
           <span class="ui-status-dot size-1.5 rounded-full" :class="getInterviewStatusDotClass(s)" />
           {{ getInterviewStatusLabel(s) }}
-          <span class="tabular-nums text-[10px] font-semibold" :class="activeStatus === s ? 'text-brand-600 dark:text-brand-400' : 'text-surface-400 dark:text-surface-500'">{{ statusCounts[s] }}</span>
+          <span class="tabular-nums text-[10px] font-normal" :class="activeStatus === s ? 'text-brand-600 dark:text-brand-400' : 'text-surface-400 dark:text-surface-500'">{{ statusCounts[s] }}</span>
         </button>
       </div>
 
