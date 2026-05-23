@@ -36,6 +36,9 @@ describe('GooeySearchInput component source', () => {
     const dashboardHoverRule = source.match(/:global\(\.factory-dashboard-shell \.gooey-search-surface:hover \.gooey-search-outline\),[\s\S]*?:global\(\.factory-dashboard-portal \.gooey-search-surface:hover \.gooey-search-outline\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
     const dashboardFieldRule = source.match(/:global\(\.factory-dashboard-shell \.gooey-search-surface \.gooey-search-field\),[\s\S]*?:global\(\.factory-dashboard-portal \.gooey-search-surface \.gooey-search-field\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
     const dashboardFieldFocusRule = source.match(/:global\(\.factory-dashboard-shell \.gooey-search-surface \.gooey-search-field:focus\),[\s\S]*?:global\(\.factory-dashboard-portal \.gooey-search-surface \.gooey-search-field:focus\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
+    const dashboardSurfaceFocusRule = source.match(/:global\(\.factory-dashboard-shell \.gooey-search-surface:focus-within\),[\s\S]*?:global\(\.factory-dashboard-portal \.gooey-search-surface:focus-within\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
+    const dashboardInteractiveFocusRule = source.match(/:global\(\.factory-dashboard-shell \.gooey-search-surface :is\(\.gooey-search-field, \.gooey-search-trigger, \.gooey-search-clear\):focus\),[\s\S]*?:global\(\.factory-dashboard-portal \.gooey-search-surface :is\(\.gooey-search-field, \.gooey-search-trigger, \.gooey-search-clear\):focus\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
+    const dashboardFilteredBubblesRule = source.match(/:global\(\.factory-dashboard-shell \.gooey-search-surface \.gooey-search-bubbles\),[\s\S]*?:global\(\.factory-dashboard-portal \.gooey-search-surface \.gooey-search-bubbles\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
 
     expect(source).toContain('border-radius: 0')
     expect(source).toContain('background: transparent !important')
@@ -48,6 +51,11 @@ describe('GooeySearchInput component source', () => {
     expect(dashboardFieldRule).toContain('background-color: transparent !important')
     expect(dashboardFieldRule).toContain('box-shadow: none !important')
     expect(dashboardFieldFocusRule).toContain('box-shadow: none !important')
+    expect(dashboardSurfaceFocusRule).toContain('outline: none !important')
+    expect(dashboardSurfaceFocusRule).toContain('box-shadow: none !important')
+    expect(dashboardInteractiveFocusRule).toContain('outline: none !important')
+    expect(dashboardInteractiveFocusRule).toContain('box-shadow: none !important')
+    expect(dashboardFilteredBubblesRule).toContain('filter: none !important')
     expect(dashboardHoverRule).toContain('border-color: var(--ui-border-strong) !important')
     expect(dashboardHoverRule).not.toContain('#ffffff')
     expect(source).not.toContain('gooey-search-outline factory-toolbar-button')

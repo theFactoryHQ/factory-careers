@@ -417,6 +417,11 @@ function handleKeydown(event: KeyboardEvent) {
   box-shadow: none !important;
 }
 
+:global(.factory-dashboard-shell .gooey-search-surface .gooey-search-bubbles),
+:global(.factory-dashboard-portal .gooey-search-surface .gooey-search-bubbles) {
+  filter: none !important;
+}
+
 :global(.factory-dashboard-shell .gooey-search-surface .gooey-search-outline),
 :global(.factory-dashboard-portal .gooey-search-surface .gooey-search-outline) {
   background: #050505 !important;
@@ -424,10 +429,28 @@ function handleKeydown(event: KeyboardEvent) {
   box-shadow: none !important;
 }
 
+:global(.factory-dashboard-shell .gooey-search-surface:focus-within),
+:global(.factory-dashboard-portal .gooey-search-surface:focus-within) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 :global(.factory-dashboard-shell .gooey-search-surface .gooey-search-field),
 :global(.factory-dashboard-portal .gooey-search-surface .gooey-search-field) {
   border: 0 !important;
   background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+:global(.factory-dashboard-shell .gooey-search-surface :is(.gooey-search-field, .gooey-search-trigger, .gooey-search-clear):focus),
+:global(.factory-dashboard-portal .gooey-search-surface :is(.gooey-search-field, .gooey-search-trigger, .gooey-search-clear):focus) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+:global(.factory-dashboard-shell .gooey-search-surface :is(.gooey-search-field, .gooey-search-trigger, .gooey-search-clear):focus-visible),
+:global(.factory-dashboard-portal .gooey-search-surface :is(.gooey-search-field, .gooey-search-trigger, .gooey-search-clear):focus-visible) {
+  outline: none !important;
   box-shadow: none !important;
 }
 
