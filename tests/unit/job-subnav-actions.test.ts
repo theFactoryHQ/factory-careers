@@ -22,7 +22,7 @@ describe('job subnav actions', () => {
     const jobDetail = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
 
     expect(applications).toContain('factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-medium transition-colors')
-    expect(jobDetail).toContain('factory-toolbar-button ml-auto inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-medium transition-colors')
+    expect(jobDetail).toContain('factory-toolbar-button ml-auto inline-flex h-8 min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2 py-0 text-sm font-medium transition-colors')
     expect(jobDetail).toContain(":title=\"isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'\"")
     expect(jobDetail).toContain(":aria-label=\"isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'\"")
   })
@@ -35,5 +35,14 @@ describe('job subnav actions', () => {
     expect(menuRule).toContain('background-color: #050505 !important')
     expect(menuRule).toContain('color: #ffffff !important')
     expect(itemRule).toContain('color: rgb(255 255 255 / 0.72) !important')
+  })
+
+  it('labels pipeline stage chips and keeps their strip compact', () => {
+    const jobDetail = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+
+    expect(jobDetail).toContain('Pipeline stages')
+    expect(jobDetail).toContain('factory-pipeline-stage-strip shrink-0 border-b')
+    expect(jobDetail).toContain('px-3 sm:px-5 py-1')
+    expect(jobDetail).toContain('factory-pipeline-status-chip relative flex h-8')
   })
 })

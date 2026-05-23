@@ -1101,12 +1101,15 @@ function closeDocPreview() {
       <!-- ═══════════════════════════════════════ -->
       <!-- PIPELINE STATUS TABS                     -->
       <!-- ═══════════════════════════════════════ -->
-      <div class="shrink-0 border-b border-white/10 bg-white/[0.02] ui-dashboard-panel-header">
-        <div class="factory-dashboard-tabs flex items-center gap-1 overflow-x-auto scrollbar-thin sm:scrollbar-none px-3 sm:px-5 py-2">
+      <div class="factory-pipeline-stage-strip shrink-0 border-b border-white/10 bg-white/[0.02]">
+        <div class="factory-dashboard-tabs flex items-center gap-1.5 overflow-x-auto scrollbar-thin sm:scrollbar-none px-3 sm:px-5 py-1">
+          <span class="shrink-0 pr-2 text-xs font-light uppercase leading-none text-white/48">
+            Pipeline stages
+          </span>
           <button
             v-for="status in PIPELINE_STATUSES"
             :key="`tab-${status}`"
-            class="ui-filter-chip factory-pipeline-status-chip relative flex h-[38px] shrink-0 cursor-pointer items-center gap-2 px-3.5 text-xs !font-light uppercase leading-none tracking-normal transition-all duration-200 focus:outline-none"
+            class="ui-filter-chip factory-pipeline-status-chip relative flex h-8 shrink-0 cursor-pointer items-center gap-2 px-3.5 text-xs !font-light uppercase leading-none tracking-normal transition-all duration-200 focus:outline-none"
             :class="[
               isFocusStatus(status) ? 'ui-filter-chip-active factory-pipeline-status-chip-active' : 'ui-filter-chip-inactive',
               `factory-pipeline-status-chip-${status}`,
@@ -1136,7 +1139,7 @@ function closeDocPreview() {
           <!-- Fullscreen toggle -->
           <button
             type="button"
-            class="factory-toolbar-button ml-auto inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-medium transition-colors"
+            class="factory-toolbar-button ml-auto inline-flex h-8 min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2 py-0 text-sm font-medium transition-colors"
             :title="isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'"
             :aria-label="isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'"
             @click="toggleFullscreen"

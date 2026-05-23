@@ -2171,6 +2171,8 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-status-chip {
+    height: 32px !important;
+    min-height: 32px !important;
     font-weight: 300 !important;
     letter-spacing: 0 !important;
     text-transform: uppercase !important;
