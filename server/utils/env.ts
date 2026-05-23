@@ -147,6 +147,11 @@ export const envSchema = z
       .pipe(z.string().min(1))
       .optional()
       .default("Factory Careers <careers@thefactoryhq.com>"),
+    /**
+     * Preferred "From" address (takes precedence over RESEND_FROM_EMAIL for parity with the main thefactoryhq site).
+     * When the shared @caffeinebounce/email client is used, this lets us align exactly with main-site transactional mail.
+     */
+    EMAIL_FROM: emptyToUndefined.pipe(z.string().min(1)).optional(),
     /** SMTP hostname for outbound email (e.g. smtp.gmail.com). When set, SMTP is used instead of Resend. */
     SMTP_HOST: emptyToUndefined.pipe(z.string().min(1)).optional(),
     /** SMTP port. Defaults to 587 (STARTTLS). Use 465 for implicit TLS, 25 for unencrypted. */
