@@ -17,7 +17,7 @@ const { job, status: jobFetchStatus, error: jobError, updateJob } = useJob(jobId
 
 useSeoMeta({
   title: computed(() =>
-    job.value ? `AI Analysis — ${job.value.title} — Factory Careers` : 'AI Analysis — Factory Careers',
+    job.value ? `AI — ${job.value.title} — Factory Careers` : 'AI — Factory Careers',
   ),
   robots: 'noindex, nofollow',
 })
@@ -320,7 +320,7 @@ function resetCriteria() {
     <template v-else-if="job">
       <!-- Header -->
       <div class="mb-6">
-        <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50">AI Analysis</h1>
+        <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50">AI</h1>
         <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">
           Configure how AI evaluates and scores candidates for <strong>{{ job.title }}</strong>.
         </p>

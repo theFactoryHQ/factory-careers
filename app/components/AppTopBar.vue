@@ -112,7 +112,7 @@ const jobTabs = computed(() => {
     { label: 'Pipeline', to: base, icon: Kanban, exact: true },
     { label: 'Table', to: `${base}/candidates`, icon: Table2, exact: true },
     { label: 'Application Form', to: `${base}/application-form`, icon: FileText, exact: true },
-    { label: 'AI Analysis', to: `${base}/ai-analysis`, icon: Sparkles, exact: true },
+    { label: 'AI', to: `${base}/ai-analysis`, icon: Sparkles, exact: true },
     { label: 'Settings', to: `${base}/settings`, icon: Settings, exact: true },
   ]
 })
@@ -128,8 +128,8 @@ const mainNav: Array<{ label: string; to: string; icon: typeof Briefcase; exact:
   { label: 'Applications', to: '/dashboard/applications', icon: FileText, exact: false },
   { label: 'Interviews', to: '/dashboard/interviews', icon: Calendar, exact: false },
   { label: 'Timeline', to: '/dashboard/timeline', icon: History, exact: true },
-  { label: 'Source Tracking', to: '/dashboard/source-tracking', icon: Radio, exact: true },
-  { label: 'AI Analysis', to: '/dashboard/ai-analysis', icon: Sparkles, exact: true },
+  { label: 'Tracking', to: '/dashboard/source-tracking', icon: Radio, exact: true },
+  { label: 'AI', to: '/dashboard/ai-analysis', icon: Sparkles, exact: true },
   { label: 'Settings', to: '/dashboard/settings', icon: Settings, exact: false },
 ]
 
@@ -138,7 +138,7 @@ const mainNav: Array<{ label: string; to: string; icon: typeof Briefcase; exact:
 const flaggedNav = computed(() => {
   const items: Array<{ label: string; to: string; icon: typeof Briefcase; exact: boolean; afterLabel: string }> = []
   if (showChatbot.value) {
-    items.push({ label: 'Assistant', to: '/dashboard/chatbot', icon: MessageCircle, exact: false, afterLabel: 'AI Analysis' })
+    items.push({ label: 'Assistant', to: '/dashboard/chatbot', icon: MessageCircle, exact: false, afterLabel: 'AI' })
   }
   return items
 })

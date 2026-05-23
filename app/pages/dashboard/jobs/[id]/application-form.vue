@@ -286,7 +286,7 @@ async function copyTrackingUrl(code: string) {
               :to="localePath({ path: '/dashboard/source-tracking', query: { jobId } })"
               class="text-sm font-semibold text-surface-700 dark:text-surface-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
             >
-              Source Tracking Links
+              Tracking Links
             </NuxtLink>
           </div>
           <button

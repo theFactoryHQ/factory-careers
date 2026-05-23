@@ -527,7 +527,7 @@ function formatInterviewDate(dateStr: string) {
             @click="activeTab = 'ai_analysis'"
           >
             <Brain class="size-3.5" />
-            AI Analysis
+            AI
           </button>
           <button
             class="ui-tab cursor-pointer px-3 py-2.5 text-sm font-medium -mb-px inline-flex items-center gap-1.5"

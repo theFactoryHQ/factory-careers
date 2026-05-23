@@ -14,7 +14,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Source Tracking — Factory Careers',
+  title: 'Tracking — Factory Careers',
   description: 'Track where your applications come from',
 })
 
@@ -311,7 +311,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
       <!-- ─── Header ─── -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-10">
         <div>
-          <h1 class="text-xl sm:text-2xl font-bold text-surface-900 dark:text-surface-50 tracking-tight">Source Tracking</h1>
+          <h1 class="text-xl sm:text-2xl font-bold text-surface-900 dark:text-surface-50 tracking-tight">Tracking</h1>
           <p class="text-sm text-surface-400 dark:text-surface-500 mt-1">
             Track where your applications come from
           </p>

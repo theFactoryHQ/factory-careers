@@ -1862,7 +1862,7 @@ const questionTypeLabels: Record<QuestionType, string> = {
                             {{ createdLinkCount }} tracking {{ createdLinkCount === 1 ? 'link' : 'links' }} created.
                           </span>
                           View all analytics and manage links in the
-                          <NuxtLink :to="$localePath('/dashboard/source-tracking')" class="text-brand-600 dark:text-brand-400 font-medium underline underline-offset-2">Source Tracking dashboard</NuxtLink>.
+                          <NuxtLink :to="$localePath('/dashboard/source-tracking')" class="text-brand-600 dark:text-brand-400 font-medium underline underline-offset-2">Tracking dashboard</NuxtLink>.
                         </p>
                       </div>
                     </div>
