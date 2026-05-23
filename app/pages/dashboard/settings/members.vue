@@ -2,7 +2,7 @@
 import type { Component } from 'vue'
 import {
   Users, UserPlus, Shield, ShieldCheck, Crown,
-  MoreHorizontal, Trash2, ChevronDown, Loader2,
+  MoreHorizontal, Trash2, Loader2,
   Mail, Clock, X, Check, AlertTriangle, RefreshCw,
   Link2, Copy, Eye, EyeOff, UserCheck, UserX, MessageSquare, Search,
 } from 'lucide-vue-next'
@@ -593,16 +593,14 @@ onUnmounted(() => {
               />
             </div>
 
-            <div class="relative">
-              <select
-                v-model="inviteRole"
-                class="ui-field appearance-none pr-8 cursor-pointer"
-              >
-                <option value="member">Member</option>
-                <option value="admin">Admin</option>
-              </select>
-              <ChevronDown class="ui-field-icon absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 pointer-events-none" />
-            </div>
+            <FactorySelect
+              v-model="inviteRole"
+              class="w-36"
+              :options="[
+                { value: 'member', label: 'Member' },
+                { value: 'admin', label: 'Admin' },
+              ]"
+            />
 
             <button
               :disabled="isInviting || !inviteEmail.trim()"
@@ -797,31 +795,23 @@ onUnmounted(() => {
           <div class="flex flex-wrap gap-3 items-end">
             <div>
               <label class="block text-xs font-medium text-surface-600 dark:text-surface-400 mb-1">Role</label>
-              <div class="relative">
-                <select
-                  v-model="newLinkRole"
-                  class="ui-field appearance-none pr-8 py-1.5 cursor-pointer"
-                >
-                  <option value="member">Member</option>
-                  <option value="admin">Admin</option>
-                </select>
-                <ChevronDown class="ui-field-icon absolute right-2.5 top-1/2 -translate-y-1/2 size-3 pointer-events-none" />
-              </div>
+              <FactorySelect
+                v-model="newLinkRole"
+                class="w-36"
+                :options="[
+                  { value: 'member', label: 'Member' },
+                  { value: 'admin', label: 'Admin' },
+                ]"
+              />
             </div>
 
             <div>
               <label class="block text-xs font-medium text-surface-600 dark:text-surface-400 mb-1">Expires in</label>
-              <div class="relative">
-                <select
-                  v-model="newLinkExpiresInHours"
-                  class="ui-field appearance-none pr-8 py-1.5 cursor-pointer"
-                >
-                  <option v-for="opt in expiryOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <ChevronDown class="ui-field-icon absolute right-2.5 top-1/2 -translate-y-1/2 size-3 pointer-events-none" />
-              </div>
+              <FactorySelect
+                v-model="newLinkExpiresInHours"
+                class="w-36"
+                :options="expiryOptions.map(opt => ({ value: opt.value, label: opt.label }))"
+              />
             </div>
 
             <div>

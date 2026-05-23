@@ -14,6 +14,8 @@ import {
   getCandidateResponseIconClass,
   getCandidateResponseLabel,
   getCandidateResponseSymbol,
+  formatFileSize,
+  formatRelativeTime,
   getJobStatusBadgeClass,
   getJobStatusLabel,
   getScoreBadgeClass,
@@ -98,5 +100,17 @@ describe('status display helpers', () => {
     expect(getCandidateResponseButtonClass('tentative')).toContain('warning')
     expect(getCandidateResponseIconClass('declined')).toContain('danger')
     expect(getCandidateResponseSymbol('accepted')).toBe('✓')
+  })
+
+  it('centralizes common dashboard formatting helpers', () => {
+    const now = new Date('2026-05-23T12:00:00Z').getTime()
+
+    expect(formatRelativeTime('2026-05-23T11:58:00Z', now)).toBe('2m ago')
+    expect(formatRelativeTime('2026-05-23T09:00:00Z', now)).toBe('3h ago')
+    expect(formatRelativeTime('2026-05-20T12:00:00Z', now)).toBe('3d ago')
+    expect(formatFileSize(null)).toBe('—')
+    expect(formatFileSize(512)).toBe('512 B')
+    expect(formatFileSize(1536)).toBe('1.5 KB')
+    expect(formatFileSize(2 * 1024 * 1024)).toBe('2.0 MB')
   })
 })

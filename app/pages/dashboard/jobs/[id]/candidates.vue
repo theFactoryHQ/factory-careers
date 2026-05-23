@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Users, SlidersHorizontal, X, Check, ChevronsUpDown, ChevronUp, ChevronDown, UserRound } from 'lucide-vue-next'
 import {
+  formatRelativeTime,
   getApplicationStatusBadgeClass,
   getApplicationStatusLabel,
   getScoreBadgeClass,
@@ -175,17 +176,6 @@ const sorted = computed(() => {
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
-
-function timeAgo(date: string | Date) {
-  const diff = Date.now() - new Date(date).getTime()
-  const mins = Math.floor(diff / 60_000)
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  if (days < 30) return `${days}d ago`
-  return new Date(date).toLocaleDateString()
-}
 
 // ─────────────────────────────────────────────
 // Row selection → sidebar
@@ -508,7 +498,7 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
                   </span>
                 </td>
                 <td v-if="visibleCols.createdAt" class="hidden md:table-cell px-4 py-3 text-surface-500 dark:text-surface-400 whitespace-nowrap text-xs font-medium">
-                  <TimelineDateLink :date="app.createdAt">{{ timeAgo(app.createdAt) }}</TimelineDateLink>
+                  <TimelineDateLink :date="app.createdAt">{{ formatRelativeTime(app.createdAt) }}</TimelineDateLink>
                 </td>
               </tr>
             </tbody>

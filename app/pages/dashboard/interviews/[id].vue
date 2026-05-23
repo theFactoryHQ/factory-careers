@@ -6,6 +6,13 @@ import {
   Save, X, Mail, Send, CheckCheck, ChevronDown, ExternalLink,
   Check, AlertCircle,
 } from 'lucide-vue-next'
+import {
+  getInterviewStatusBadgeClass,
+  getInterviewStatusDotClass,
+  getInterviewStatusLabel,
+  getInterviewTransitionButtonClass,
+  getInterviewTransitionLabel,
+} from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -31,35 +38,7 @@ useSeoMeta({
   robots: 'noindex, nofollow',
 })
 
-// ─── Status config ──────────────────────────────────────────────
 type InterviewStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show'
-
-const statusConfig: Record<InterviewStatus, { label: string; icon: any; class: string; dot: string }> = {
-  scheduled: {
-    label: 'Scheduled',
-    icon: Calendar,
-    class: 'bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-950/50 dark:text-brand-300 dark:ring-brand-800',
-    dot: 'bg-brand-500',
-  },
-  completed: {
-    label: 'Completed',
-    icon: CheckCircle2,
-    class: 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/50 dark:text-success-300 dark:ring-success-800',
-    dot: 'bg-success-500',
-  },
-  cancelled: {
-    label: 'Cancelled',
-    icon: XCircle,
-    class: 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:ring-surface-700',
-    dot: 'bg-surface-400',
-  },
-  no_show: {
-    label: 'No Show',
-    icon: AlertTriangle,
-    class: 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950/50 dark:text-danger-300 dark:ring-danger-800',
-    dot: 'bg-danger-500',
-  },
-}
 
 const typeIcons: Record<string, any> = {
   video: Video,
@@ -81,13 +60,6 @@ const typeLabels: Record<string, string> = {
 
 // ─── Status transitions (from shared single source of truth) ────
 import { INTERVIEW_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
-
-const transitionClasses: Record<InterviewStatus, string> = {
-  scheduled: 'border border-surface-300 dark:border-surface-700 bg-white/80 dark:bg-surface-900 text-surface-700 dark:text-surface-300 hover:border-surface-400 dark:hover:border-surface-600 hover:bg-surface-50 dark:hover:bg-surface-800',
-  completed: 'bg-success-600 text-white shadow-sm shadow-success-900/20 hover:bg-success-700',
-  cancelled: 'bg-surface-500 text-white shadow-sm shadow-surface-900/20 hover:bg-surface-600',
-  no_show: 'bg-danger-600 text-white shadow-sm shadow-danger-900/20 hover:bg-danger-700',
-}
 
 const allowedTransitions = computed(() => {
   if (!interview.value) return [] as InterviewStatus[]
@@ -396,10 +368,10 @@ const localePath = useLocalePath()
                 </h1>
                 <span
                   class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ring-inset"
-                  :class="statusConfig[interview.status as InterviewStatus]?.class"
+                  :class="getInterviewStatusBadgeClass(interview.status)"
                 >
-                  <span class="size-1.5 rounded-full" :class="statusConfig[interview.status as InterviewStatus]?.dot" />
-                  {{ statusConfig[interview.status as InterviewStatus]?.label }}
+                  <span class="size-1.5 rounded-full" :class="getInterviewStatusDotClass(interview.status)" />
+                  {{ getInterviewStatusLabel(interview.status) }}
                 </span>
               </div>
               <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm text-surface-500 dark:text-surface-400">
@@ -466,14 +438,14 @@ const localePath = useLocalePath()
             :key="nextStatus"
             :disabled="isTransitioning"
             class="inline-flex cursor-pointer items-center rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
-            :class="transitionClasses[nextStatus]"
+            :class="getInterviewTransitionButtonClass(nextStatus)"
             @click="handleTransition(nextStatus)"
           >
             <span
               class="mr-2 inline-flex size-1.5 rounded-full"
               :class="nextStatus === 'completed' ? 'bg-success-200' : nextStatus === 'cancelled' ? 'bg-surface-200' : nextStatus === 'no_show' ? 'bg-danger-200' : 'bg-brand-200'"
             />
-            {{ nextStatus === 'scheduled' ? 'Re-schedule' : `Mark ${statusConfig[nextStatus]?.label}` }}
+            {{ nextStatus === 'scheduled' ? getInterviewTransitionLabel(nextStatus) : `Mark ${getInterviewStatusLabel(nextStatus)}` }}
           </button>
           <button
             class="inline-flex cursor-pointer items-center rounded-full border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/30 px-3.5 py-1.5 text-sm font-medium text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-950/50 transition-all duration-150"
@@ -878,9 +850,8 @@ const localePath = useLocalePath()
 
     <!-- Reschedule Modal -->
     <Teleport to="body">
-      <div v-if="showReschedule" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showReschedule = false" />
-        <div class="relative bg-white dark:bg-surface-900 rounded-2xl shadow-2xl shadow-surface-900/10 dark:shadow-black/30 ring-1 ring-surface-200/80 dark:ring-surface-700/60 p-6 max-w-md w-full mx-4">
+      <div v-if="showReschedule" class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showReschedule = false">
+        <div class="ui-modal-panel relative w-full max-w-md p-6">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-4">Reschedule Interview</h3>
 
           <div v-if="rescheduleError" class="mb-4 rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-700 dark:border-danger-800 dark:bg-danger-950/40 dark:text-danger-300">
@@ -945,9 +916,8 @@ const localePath = useLocalePath()
 
     <!-- Edit Details Modal -->
     <Teleport to="body">
-      <div v-if="showEditDetails" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showEditDetails = false" />
-        <div class="relative bg-white dark:bg-surface-900 rounded-2xl shadow-2xl shadow-surface-900/10 dark:shadow-black/30 ring-1 ring-surface-200/80 dark:ring-surface-700/60 p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div v-if="showEditDetails" class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showEditDetails = false">
+        <div class="ui-modal-panel relative w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-5">Edit Interview Details</h3>
 
           <div v-if="editErrors.submit" class="mb-4 rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-700 dark:border-danger-800 dark:bg-danger-950/40 dark:text-danger-300">

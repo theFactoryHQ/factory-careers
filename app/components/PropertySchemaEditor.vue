@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, GripVertical, Pencil, Plus, Trash2, X } from 'lucide-vue-next'
+import { GripVertical, Pencil, Plus, Trash2, X } from 'lucide-vue-next'
 import {
   PROPERTY_COLOR_CLASSES,
   PROPERTY_OPTION_COLORS,
@@ -292,12 +292,10 @@ const overlayTitle = computed(() => {
 
               <div v-if="formMode === 'create'">
                 <label class="mb-1 block text-xs font-medium text-white/68">Type</label>
-                <div class="relative">
-                  <select v-model="formType" class="factory-form-select">
-                    <option v-for="t in PROPERTY_TYPES" :key="t" :value="t">{{ PROPERTY_TYPE_LABELS[t] }}</option>
-                  </select>
-                  <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
-                </div>
+                <FactorySelect
+                  v-model="formType"
+                  :options="PROPERTY_TYPES.map(t => ({ value: t, label: PROPERTY_TYPE_LABELS[t] }))"
+                />
                 <p class="mt-1 text-[11px] text-white/38">Type cannot be changed after creation.</p>
               </div>
 
@@ -315,14 +313,15 @@ const overlayTitle = computed(() => {
               <div v-if="supportsNumberFormat">
                 <label class="mb-1 block text-xs font-medium text-white/68">Format</label>
                 <div class="flex items-center gap-2">
-                  <div class="relative flex-1">
-                    <select v-model="formNumberFormat" class="factory-form-select">
-                      <option value="plain">Plain</option>
-                      <option value="percent">Percent</option>
-                      <option value="currency">Currency</option>
-                    </select>
-                    <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
-                  </div>
+                  <FactorySelect
+                    v-model="formNumberFormat"
+                    class="flex-1"
+                    :options="[
+                      { value: 'plain', label: 'Plain' },
+                      { value: 'percent', label: 'Percent' },
+                      { value: 'currency', label: 'Currency' },
+                    ]"
+                  />
                   <input
                     v-if="formNumberFormat === 'currency'"
                     v-model="formCurrency"
@@ -339,15 +338,11 @@ const overlayTitle = computed(() => {
                 <label class="mb-1 block text-xs font-medium text-white/68">Options</label>
                 <ul class="space-y-1.5">
                   <li v-for="opt in formOptions" :key="opt.id" class="flex items-center gap-1.5">
-                    <div class="relative w-24 shrink-0">
-                      <select
-                        v-model="opt.color"
-                        class="factory-form-select !min-h-8 !px-2 !py-1 !pr-7 !text-xs"
-                      >
-                        <option v-for="c in PROPERTY_OPTION_COLORS" :key="c" :value="c">{{ c }}</option>
-                      </select>
-                      <ChevronDown class="factory-form-select-chevron !right-2 !size-3.5" aria-hidden="true" />
-                    </div>
+                    <FactorySelect
+                      v-model="opt.color"
+                      class="w-24 shrink-0"
+                      :options="PROPERTY_OPTION_COLORS.map(c => ({ value: c, label: c }))"
+                    />
                     <input
                       v-model="opt.label"
                       type="text"

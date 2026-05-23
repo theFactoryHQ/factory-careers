@@ -19,7 +19,9 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
 <template>
   <div class="factory-dashboard-shell flex min-h-screen flex-col bg-black text-white">
     <!-- AppTopBar: desktop only -->
-    <AppTopBar class="hidden lg:block" />
+    <div class="hidden lg:block">
+      <AppTopBar />
+    </div>
     <AppToasts />
     <PreviewUpsellModal v-if="isUpsellOpen" @close="closeUpsell" />
     <ClientOnly>

@@ -132,8 +132,8 @@ function pickModelById(modelId: string) {
   form.value.model = modelId
 }
 
-function onModelSelect(event: Event) {
-  pickModelById((event.target as HTMLSelectElement).value)
+function onModelSelect(modelId: string) {
+  pickModelById(modelId)
 }
 
 function pickProvider(key: string) {
@@ -339,25 +339,14 @@ function providerShortName(key: string, name: string) {
           <label class="block text-xs font-medium text-surface-700 dark:text-surface-300">
             Recommended model
           </label>
-          <div class="relative">
-            <select
-              :value="form.model"
-              class="ui-field appearance-none pr-10"
-              @change="onModelSelect"
-            >
-              <option v-if="form.model && !selectedModel" :value="form.model">
-                {{ form.model }} - Custom
-              </option>
-              <option
-                v-for="m in selectedProvider.models"
-                :key="m.id"
-                :value="m.id"
-              >
-                {{ modelOptionLabel(m) }}
-              </option>
-            </select>
-            <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
-          </div>
+          <FactorySelect
+            :model-value="form.model"
+            :options="[
+              ...(form.model && !selectedModel ? [{ value: form.model, label: `${form.model} - Custom` }] : []),
+              ...selectedProvider.models.map(m => ({ value: m.id, label: modelOptionLabel(m) })),
+            ]"
+            @update:model-value="onModelSelect"
+          />
           <p
             v-if="selectedModel"
             class="text-[11px] text-surface-500 dark:text-surface-400"

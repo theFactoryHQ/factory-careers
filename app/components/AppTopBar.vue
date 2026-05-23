@@ -25,6 +25,9 @@ const showMoreActions = ref(false)
 
 const config = useRuntimeConfig()
 const { activeOrg } = useCurrentOrg()
+const languageFeatureEnabled = computed(
+  () => config.public.languageFeatureEnabled === true,
+)
 
 const isDemo = computed(() => {
   const slug = config.public.demoOrgSlug
@@ -491,7 +494,7 @@ onUnmounted(() => {
                     <p class="px-1 text-[10px] font-semibold uppercase tracking-wide text-white/38">Organization</p>
                     <OrgSwitcher />
                   </div>
-                  <div class="space-y-1.5">
+                  <div v-if="languageFeatureEnabled" class="space-y-1.5">
                     <p class="px-1 text-[10px] font-semibold uppercase tracking-wide text-white/38">Language</p>
                     <LanguageSwitcher tone="factory" />
                   </div>

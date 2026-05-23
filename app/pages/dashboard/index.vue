@@ -5,6 +5,7 @@ import {
   Eye, UserPlus, ExternalLink,
   LayoutDashboard, Zap,
 } from 'lucide-vue-next'
+import { getApplicationStatusBadgeClass } from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -87,15 +88,6 @@ function getJobActiveTotal(job: (typeof topJobs.value)[number]): number {
     + getJobStageCount(job, 'screening')
     + getJobStageCount(job, 'interview')
     + getJobStageCount(job, 'offer')
-}
-
-const statusBadgeClasses: Record<string, string> = {
-  new: 'bg-blue-50 text-blue-700 ring-blue-200/60 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-800/40',
-  screening: 'bg-violet-50 text-violet-700 ring-violet-200/60 dark:bg-violet-950 dark:text-violet-400 dark:ring-violet-800/40',
-  interview: 'bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-800/40',
-  offer: 'bg-teal-50 text-teal-700 ring-teal-200/60 dark:bg-teal-950 dark:text-teal-400 dark:ring-teal-800/40',
-  hired: 'bg-green-50 text-green-700 ring-green-200/60 dark:bg-green-950 dark:text-green-400 dark:ring-green-800/40',
-  rejected: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
 }
 
 const interviewTypeLabels: Record<string, string> = {
@@ -456,7 +448,7 @@ const isEmpty = computed(() =>
                     </span>
                     <span
                       class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize shrink-0 ring-1 ring-inset"
-                      :class="statusBadgeClasses[app.status] ?? 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400 ring-surface-200 dark:ring-surface-700'"
+                      :class="getApplicationStatusBadgeClass(app.status, 'subtle-ring')"
                     >
                       {{ app.status }}
                     </span>

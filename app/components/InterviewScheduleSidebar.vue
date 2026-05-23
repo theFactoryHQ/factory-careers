@@ -424,7 +424,7 @@ async function handleMoveToInterview() {
         leave-from-class="opacity-100"
         leave-to-class="opacity-0"
       >
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="emit('close')" />
+        <div class="ui-modal-backdrop absolute inset-0" @click="emit('close')" />
       </Transition>
 
       <!-- Sidebar panel -->

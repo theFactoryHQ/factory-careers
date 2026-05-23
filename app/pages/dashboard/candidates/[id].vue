@@ -285,13 +285,6 @@ async function handleDeleteDoc(docId: string) {
   }
 }
 
-/** Format bytes into a human-readable string */
-function formatFileSize(bytes: number | null | undefined): string {
-  if (!bytes) return '—'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
 </script>
 
 <template>

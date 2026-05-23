@@ -145,15 +145,11 @@ const isEditing = computed(() => !!props.question)
         <label for="q-type" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
           Field Type
         </label>
-        <select
+        <FactorySelect
           id="q-type"
           v-model="form.type"
-          class="ui-field"
-        >
-          <option v-for="qt in questionTypes" :key="qt.value" :value="qt.value">
-            {{ qt.label }}
-          </option>
-        </select>
+          :options="questionTypes"
+        />
       </div>
 
       <!-- Description / help text -->

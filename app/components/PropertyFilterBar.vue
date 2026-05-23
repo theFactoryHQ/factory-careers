@@ -204,30 +204,24 @@ const showableDefs = computed(() => definitions.value)
             <div class="ui-menu-divider pb-2 text-xs font-semibold text-surface-700 dark:text-surface-200">
               {{ definitionMap.get(f.propertyDefinitionId)!.name }}
             </div>
-            <select
-              :value="f.op"
-              class="ui-field px-2 py-1"
-              @change="(e) => patchFilter(idx, { op: (e.target as HTMLSelectElement).value as PropertyOperator })"
-            >
-              <option v-for="op in operatorsFor(definitionMap.get(f.propertyDefinitionId)!)" :key="op" :value="op">
-                {{ OPERATOR_LABELS[op] }}
-              </option>
-            </select>
+            <FactorySelect
+              :model-value="f.op"
+              :options="operatorsFor(definitionMap.get(f.propertyDefinitionId)!).map(op => ({ value: op, label: OPERATOR_LABELS[op] }))"
+              @update:model-value="(value) => patchFilter(idx, { op: value as PropertyOperator })"
+            />
 
             <!-- Value input by op + type -->
             <template v-if="!['isEmpty', 'isNotEmpty'].includes(f.op)">
               <!-- select equals -->
-              <select
+              <FactorySelect
                 v-if="definitionMap.get(f.propertyDefinitionId)!.type === 'select' && f.op === 'equals'"
-                :value="(f.value as string) ?? ''"
-                class="ui-field px-2 py-1"
-                @change="(e) => patchFilter(idx, { value: (e.target as HTMLSelectElement).value || null })"
-              >
-                <option value="">—</option>
-                <option v-for="opt in ((definitionMap.get(f.propertyDefinitionId)!.config as { options?: { id: string; label: string }[] } | null)?.options ?? [])" :key="opt.id" :value="opt.id">
-                  {{ opt.label }}
-                </option>
-              </select>
+                :model-value="(f.value as string) ?? ''"
+                :options="[
+                  { value: '', label: '—' },
+                  ...(((definitionMap.get(f.propertyDefinitionId)!.config as { options?: { id: string; label: string }[] } | null)?.options ?? []).map(opt => ({ value: opt.id, label: opt.label }))),
+                ]"
+                @update:model-value="(value) => patchFilter(idx, { value: value || null })"
+              />
 
               <!-- multi_select in -->
               <div v-else-if="definitionMap.get(f.propertyDefinitionId)!.type === 'multi_select' && f.op === 'in'" class="flex flex-wrap gap-1">
@@ -247,15 +241,15 @@ const showableDefs = computed(() => definitions.value)
               </div>
 
               <!-- checkbox equals -->
-              <select
+              <FactorySelect
                 v-else-if="definitionMap.get(f.propertyDefinitionId)!.type === 'checkbox'"
-                :value="String(f.value ?? false)"
-                class="ui-field px-2 py-1"
-                @change="(e) => patchFilter(idx, { value: (e.target as HTMLSelectElement).value === 'true' })"
-              >
-                <option value="true">checked</option>
-                <option value="false">unchecked</option>
-              </select>
+                :model-value="String(f.value ?? false)"
+                :options="[
+                  { value: 'true', label: 'checked' },
+                  { value: 'false', label: 'unchecked' },
+                ]"
+                @update:model-value="(value) => patchFilter(idx, { value: value === 'true' })"
+              />
 
               <!-- date / number equals -->
               <input

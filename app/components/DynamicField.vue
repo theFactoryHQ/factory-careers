@@ -100,12 +100,6 @@ function clearFile() {
   }
 }
 
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
 const inputClasses = 'w-full border bg-black/35 px-3.5 py-2.5 text-sm text-white placeholder:text-white/38 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25'
 const errorBorderClass = 'border-danger-500/70 focus:border-danger-500 focus:ring-danger-500/25'
 const normalBorderClass = 'border-white/14'

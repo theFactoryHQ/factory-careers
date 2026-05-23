@@ -6,6 +6,8 @@ import {
 
 const route = useRoute()
 const localePath = useLocalePath()
+const runtimeConfig = useRuntimeConfig()
+const languageFeatureEnabled = runtimeConfig.public.languageFeatureEnabled === true
 
 const settingsNav: Array<{
   label: string
@@ -66,6 +68,10 @@ const settingsNav: Array<{
   },
 ]
 
+const visibleSettingsNav = computed(() =>
+  settingsNav.filter((item) => languageFeatureEnabled || item.to !== '/dashboard/settings/localization'),
+)
+
 function isActive(to: string, exact: boolean) {
   const localizedTo = localePath(to)
   if (exact) return route.path === localizedTo
@@ -99,7 +105,7 @@ function isActive(to: string, exact: boolean) {
     <nav class="flex-1 px-3 pb-5">
       <div class="flex flex-col gap-0.5">
         <NuxtLink
-          v-for="item in settingsNav"
+          v-for="item in visibleSettingsNav"
           :key="item.to"
           :to="$localePath(item.to)"
           class="ui-nav-link group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm no-underline"

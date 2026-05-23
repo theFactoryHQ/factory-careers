@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { ChevronDown, Check } from 'lucide-vue-next'
 
+defineOptions({
+  inheritAttrs: false,
+})
+
 const props = defineProps<{
+  id?: string
   modelValue: any
   options: Array<{ value: any; label: string }>
   placeholder?: string
@@ -58,6 +63,7 @@ onUnmounted(() => {
 <template>
   <div ref="menuRef" class="factory-filter-dropdown relative" :class="class">
     <button
+      :id="id"
       type="button"
       class="factory-filter-select factory-filter-dropdown-trigger flex w-full items-center justify-between gap-2 border px-3 py-2 text-sm text-left focus:outline-none transition-colors"
       :disabled="disabled"

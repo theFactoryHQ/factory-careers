@@ -860,14 +860,15 @@ function formatInterviewDate(dateStr: string) {
               <!-- Upload controls -->
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                  <select
+                  <FactorySelect
                     v-model="selectedDocType"
-                    class="ui-field w-auto px-2.5 py-1.5 text-sm"
-                  >
-                    <option value="resume">Resume</option>
-                    <option value="cover_letter">Cover Letter</option>
-                    <option value="other">Other</option>
-                  </select>
+                    class="w-40"
+                    :options="[
+                      { value: 'resume', label: 'Resume' },
+                      { value: 'cover_letter', label: 'Cover Letter' },
+                      { value: 'other', label: 'Other' },
+                    ]"
+                  />
                 </div>
                 <button
                   :disabled="isUploading"
