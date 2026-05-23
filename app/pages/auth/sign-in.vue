@@ -12,11 +12,15 @@ useSeoMeta({
 
 const FACTORY_SSO_PROVIDER_ID = "thefactoryhq-sso";
 
-const error = ref("");
 const ssoRedirecting = ref(false);
 const route = useRoute();
 const localePath = useLocalePath();
 const { track } = useTrack();
+const toast = useToast();
+
+function showSignInError(message: string, details?: string) {
+    toast.error("Microsoft sign-in failed", { message, details });
+}
 
 onMounted(() => {
     track("signin_page_viewed");
@@ -26,16 +30,17 @@ onMounted(() => {
 
     const description = route.query.error_description as string | undefined;
     const normalizedError = ssoError.replace(/\+/g, " ");
-    error.value =
+    showSignInError(
         description?.replace(/\+/g, " ") ||
         (normalizedError === "account not linked"
             ? "That Microsoft account is not linked to Factory Careers yet. Ask an owner for an invitation, then try again."
-            : "SSO authentication failed. Please try again.");
+            : "SSO authentication failed. Please try again."),
+        normalizedError,
+    );
 });
 
 async function handleFactorySso() {
     ssoRedirecting.value = true;
-    error.value = "";
 
     const pendingInvitation = route.query.invitation as string | undefined;
     const callbackURL = pendingInvitation
@@ -54,9 +59,11 @@ async function handleFactorySso() {
         });
 
         if (result.error) {
-            error.value =
+            showSignInError(
                 result.error.message ??
-                "Microsoft SSO is not available yet. Ask an owner to check the SSO configuration.";
+                "Microsoft SSO is not available yet. Ask an owner to check the SSO configuration.",
+                result.error.code,
+            );
             ssoRedirecting.value = false;
             return;
         }
@@ -69,10 +76,11 @@ async function handleFactorySso() {
 
         track("signin_sso_started");
     } catch (e: unknown) {
-        error.value =
+        showSignInError(
             e instanceof Error
                 ? e.message
-                : "Microsoft SSO sign-in failed. Please try again.";
+                : "Microsoft SSO sign-in failed. Please try again.",
+        );
         ssoRedirecting.value = false;
     }
 }
@@ -80,13 +88,6 @@ async function handleFactorySso() {
 
 <template>
     <form class="flex flex-col gap-5" @submit.prevent="handleFactorySso">
-        <div
-            v-if="error"
-            class="border border-danger-500/35 bg-danger-950/50 p-3 text-sm leading-6 text-danger-100"
-        >
-            {{ error }}
-        </div>
-
         <button
             type="submit"
             :disabled="ssoRedirecting"

@@ -8,6 +8,11 @@ import { ac, owner, admin, member } from "~~/shared/permissions";
 import { sendOrgInvitationEmail, sendPasswordResetEmail } from "./email";
 import { deleteFromS3 } from "./s3";
 import { readPositiveIntegerEnv } from "./rateLimitConfig";
+import {
+  collectRequestTrustedOrigins,
+  normalizeTrustedOrigin,
+  uniqueTrustedOrigins,
+} from "./authOrigins";
 import * as schema from "../database/schema";
 
 type Auth = ReturnType<typeof betterAuth>;
@@ -72,12 +77,17 @@ function resolveTrustedOrigins(baseUrl: string): (request?: Request) => Promise<
         ]
       : [];
 
-  const staticOrigins = Array.from(
-    new Set([baseOrigin.origin, ...configuredOrigins, ...defaultDevOrigins]),
-  );
+  const staticOrigins = uniqueTrustedOrigins([
+    baseOrigin.origin,
+    ...configuredOrigins,
+    ...defaultDevOrigins,
+  ]);
 
-  return async () => {
-    const allOrigins = [...staticOrigins];
+  return async (request) => {
+    const allOrigins = [
+      ...staticOrigins,
+      ...collectRequestTrustedOrigins(request),
+    ];
 
     // Load already-registered SSO provider issuers from the database
     try {
@@ -86,7 +96,8 @@ function resolveTrustedOrigins(baseUrl: string): (request?: Request) => Promise<
         .from(schema.ssoProvider);
 
       for (const p of providers) {
-        try { allOrigins.push(new URL(p.issuer).origin); } catch {}
+        const issuerOrigin = normalizeTrustedOrigin(p.issuer);
+        if (issuerOrigin) allOrigins.push(issuerOrigin);
       }
     } catch {
       // Table may not exist yet (pre-migration)

@@ -54,5 +54,6 @@ const localePath = useLocalePath()
         </div>
       </section>
     </main>
+    <AppToasts />
   </div>
 </template>

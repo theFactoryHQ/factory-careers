@@ -15,11 +15,11 @@ const name = ref("");
 const email = ref("");
 const password = ref("");
 const confirmPassword = ref("");
-const error = ref("");
 const isLoading = ref(false);
 const config = useRuntimeConfig();
 const localePath = useLocalePath();
 const { track } = useTrack();
+const toast = useToast();
 const { data: authProviders } = await useFetch('/api/auth/providers');
 const oidcEnabled = computed(() => authProviders.value?.oidc ?? false);
 const oidcProviderName = computed(
@@ -46,27 +46,31 @@ const publicSignupEnabled = computed(
     () => config.public.factoryPublicSignupEnabled === true,
 );
 
-async function handleSignUp() {
-    error.value = "";
+function showSignUpError(title: string, message: string, details?: string) {
+    toast.error(title, { message, details });
+}
 
+async function handleSignUp() {
     if (!publicSignupEnabled.value) {
-        error.value =
-            "Factory Careers account creation is invitation-only. Sign in with Microsoft or use an invitation link.";
+        showSignUpError(
+            "Access is invitation-only",
+            "Factory Careers account creation is invitation-only. Sign in with Microsoft or use an invitation link.",
+        );
         return;
     }
 
     if (!name.value || !email.value || !password.value) {
-        error.value = "All fields are required.";
+        showSignUpError("Check your details", "All fields are required.");
         return;
     }
 
     if (password.value.length < 8) {
-        error.value = "Password must be at least 8 characters.";
+        showSignUpError("Check your details", "Password must be at least 8 characters.");
         return;
     }
 
     if (password.value !== confirmPassword.value) {
-        error.value = "Passwords do not match.";
+        showSignUpError("Check your details", "Passwords do not match.");
         return;
     }
 
@@ -81,15 +85,12 @@ async function handleSignUp() {
     });
 
     if (result.error) {
-        if (result.error.status === 500) {
-            error.value =
-                result.error.message && result.error.message !== "Server Error"
-                    ? result.error.message
-                    : 'Sign-up failed due to a server error. Make sure BETTER_AUTH_URL is set to "https://careers.thefactoryhq.com" in production and redeploy.';
-        } else {
-            error.value =
-                result.error.message ?? "Sign-up failed. Please try again.";
-        }
+        const message = result.error.status === 500
+            ? result.error.message && result.error.message !== "Server Error"
+                ? result.error.message
+                : 'Sign-up failed due to a server error. Make sure BETTER_AUTH_URL is set to "https://careers.thefactoryhq.com" in production and redeploy.'
+            : result.error.message ?? "Sign-up failed. Please try again.";
+        showSignUpError("Sign-up failed", message, result.error.code);
         track("signup_failed", { error_type: result.error.code ?? "unknown" });
         isLoading.value = false;
         return;
@@ -111,20 +112,29 @@ async function handleSignUp() {
 
 async function handleSsoSignUp() {
     isLoading.value = true;
-    error.value = "";
     const callbackURL = pendingInvitation.value
         ? localePath(`/auth/accept-invitation/${pendingInvitation.value}`)
         : localePath("/dashboard");
     try {
-        await authClient.signIn.oauth2({
+        const result = await authClient.signIn.oauth2({
             providerId: "oidc",
             callbackURL,
         });
+        if (result.error) {
+            showSignUpError(
+                "SSO sign-up failed",
+                result.error.message ?? "SSO sign-up failed. Please try again.",
+                result.error.code,
+            );
+            isLoading.value = false;
+        }
     } catch (e: unknown) {
-        error.value =
+        showSignUpError(
+            "SSO sign-up failed",
             e instanceof Error
                 ? e.message
-                : "SSO sign-up failed. Please try again.";
+                : "SSO sign-up failed. Please try again.",
+        );
         isLoading.value = false;
     }
 }
@@ -136,20 +146,29 @@ async function handleSsoSignUp() {
  */
 async function handleSocialSignUp(providerId: string) {
     socialLoading.value = providerId;
-    error.value = "";
     const callbackURL = pendingInvitation.value
         ? localePath(`/auth/accept-invitation/${pendingInvitation.value}`)
         : localePath("/onboarding/create-org");
     try {
-        await authClient.signIn.social({
+        const result = await authClient.signIn.social({
             provider: providerId as "google" | "github" | "microsoft",
             callbackURL,
         });
+        if (result.error) {
+            showSignUpError(
+                "Social sign-up failed",
+                result.error.message ?? "Social sign-up failed. Please try again.",
+                result.error.code,
+            );
+            socialLoading.value = null;
+        }
     } catch (e: unknown) {
-        error.value =
+        showSignUpError(
+            "Social sign-up failed",
             e instanceof Error
                 ? e.message
-                : "Social sign-up failed. Please try again.";
+                : "Social sign-up failed. Please try again.",
+        );
         socialLoading.value = null;
     }
 }
@@ -190,13 +209,6 @@ async function handleSocialSignUp(providerId: string) {
         >
             Create account
         </h2>
-
-        <div
-            v-if="error"
-            class="rounded-md border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-3 text-sm text-danger-700 dark:text-danger-400"
-        >
-            {{ error }}
-        </div>
 
         <!-- Social sign-up providers (Google, GitHub, Microsoft) -->
         <template v-if="socialProviders.length">

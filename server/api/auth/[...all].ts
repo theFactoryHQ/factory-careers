@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
     })
 
     // Detect BETTER_AUTH_URL mismatch — the #1 self-hosting setup issue
-    const requestOrigin = requestUrl.origin
+    const requestOrigin = getRequestURL(event, { xForwardedHost: true }).origin
     const configuredUrl = env.BETTER_AUTH_URL?.trim() || env.RAILWAY_PUBLIC_DOMAIN?.trim()
     const configuredOrigin = configuredUrl
       ? (() => { try { return new URL(configuredUrl.startsWith('http') ? configuredUrl : `https://${configuredUrl}`).origin } catch { return configuredUrl } })()
