@@ -33,7 +33,10 @@ describe('job pipeline filter chips', () => {
     expect(sidebarList).not.toContain('No one in')
     expect(sidebarList).not.toContain('<UserRound')
 
-    expect(centerEmptyState).toContain('No candidates in {{ formatStatusLabel(focusStatus) }}')
+    expect(centerEmptyState).toContain('No candidates in')
+    expect(centerEmptyState).toContain('factory-pipeline-empty-status-chip')
+    expect(centerEmptyState).toContain('factory-pipeline-status-chip-${focusStatus}')
+    expect(centerEmptyState).not.toContain('No candidates in {{ formatStatusLabel(focusStatus) }}')
     expect(centerEmptyState).toContain('<UserRound')
   })
 })

@@ -1387,8 +1387,23 @@ function closeDocPreview() {
             <div class="flex size-16 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-800/60 mb-4">
               <UserRound class="size-7 text-surface-400 dark:text-surface-500" />
             </div>
-            <p class="text-base font-semibold text-surface-700 dark:text-surface-200">
-              No candidates in {{ formatStatusLabel(focusStatus) }}
+            <p class="flex flex-wrap items-center justify-center gap-2 text-base font-semibold text-surface-700 dark:text-surface-200">
+              <span>No candidates in</span>
+              <span
+                class="factory-pipeline-empty-status-chip ui-filter-chip factory-pipeline-status-chip inline-flex h-8 min-h-8 items-center gap-2 px-3 text-xs !font-light uppercase leading-none tracking-normal"
+                :class="[`factory-pipeline-status-chip-${focusStatus}`]"
+                style="font-weight: 300 !important"
+              >
+                <span class="pipeline-status-dot size-2 rounded-full" :class="{
+                  'bg-blue-500 dark:bg-blue-400': focusStatus === 'new',
+                  'bg-violet-500 dark:bg-violet-400': focusStatus === 'screening',
+                  'bg-amber-500 dark:bg-amber-400': focusStatus === 'interview',
+                  'bg-teal-500 dark:bg-teal-400': focusStatus === 'offer',
+                  'bg-green-600 dark:bg-green-300': focusStatus === 'hired',
+                  'bg-surface-400 dark:bg-surface-500': focusStatus === 'rejected',
+                }" />
+                {{ formatStatusLabel(focusStatus) }}
+              </span>
             </p>
             <p class="mt-1.5 text-sm text-surface-500 dark:text-surface-400 max-w-xs">
               Switch to another pipeline stage to review candidates.
