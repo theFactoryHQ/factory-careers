@@ -259,7 +259,7 @@ async function handleDeleteOrg() {
             </p>
           </div>
           <button
-            class="ui-button ui-button-danger shrink-0 px-3.5 py-2"
+            class="ui-button ui-button-danger-outline shrink-0 px-3.5 py-2"
             @click="showDeleteConfirm = true"
           >
             <Trash2 class="size-4" />

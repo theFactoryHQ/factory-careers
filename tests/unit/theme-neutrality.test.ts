@@ -500,7 +500,7 @@ describe('brand-neutral theme variables', () => {
     const recipeUsage = [
       {
         path: 'app/pages/dashboard/settings/index.vue',
-        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-field', 'ui-alert-danger', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-field', 'ui-alert-danger', 'ui-button-primary', 'ui-button-danger', 'ui-button-danger-outline', 'ui-button-secondary'],
       },
       {
         path: 'app/pages/dashboard/settings/account.vue',
