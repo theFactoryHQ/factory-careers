@@ -21,4 +21,11 @@ describe('dashboard top bar responsiveness', () => {
     expect(source).toContain('const showFactoryMoreActions = false')
     expect(source).toMatch(/v-if="showFactoryMoreActions"[\s\S]*title="More options"/)
   })
+
+  it('uses bordered Factory controls for job context sub-navigation tabs', () => {
+    expect(source).toContain('factory-job-subnav-tab')
+    expect(source).toContain('factory-job-subnav-tab-active')
+    expect(source).toContain('factory-job-subnav-tab-inactive')
+    expect(source).not.toContain('border-transparent text-white/50')
+  })
 })

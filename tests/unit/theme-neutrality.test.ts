@@ -109,6 +109,7 @@ describe('brand-neutral theme variables', () => {
 
     expect(css).toMatch(/\.ui-filter-chip\s*\{[\s\S]*min-height:\s*2\.375rem;[\s\S]*border:\s*1px solid/)
     expect(css).toMatch(/\.factory-dashboard-shell,[\s\S]*\.factory-dashboard-portal\)[\s\S]*\.ui-filter-chip\s*\{[\s\S]*min-height:\s*38px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important/)
+    expect(css).toMatch(/\.factory-job-subnav-tab\s*\{[\s\S]*min-height:\s*32px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important/)
   })
 
   it('uses the shared filter chip recipe for job pipeline stage tabs', () => {
