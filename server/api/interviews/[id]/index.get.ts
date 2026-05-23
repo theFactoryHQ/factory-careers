@@ -60,7 +60,14 @@ export default defineEventHandler(async (event) => {
       createdAt: interviewCalendarEvent.createdAt,
     })
     .from(interviewCalendarEvent)
-    .where(eq(interviewCalendarEvent.interviewId, id))
+    .where(
+      and(
+        eq(interviewCalendarEvent.interviewId, id),
+        // Tenant isolation: only return calendar events belonging to the same organization
+        // as the interview (prevents cross-org leakage even if interviewId is guessed).
+        eq(interviewCalendarEvent.organizationId, data.organizationId)
+      )
+    )
     .orderBy(interviewCalendarEvent.isPrimary, interviewCalendarEvent.createdAt)
 
   return {

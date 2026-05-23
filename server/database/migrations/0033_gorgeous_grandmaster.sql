@@ -1,5 +1,17 @@
-ALTER TYPE "public"."calendar_provider" ADD VALUE 'microsoft';--> statement-breakpoint
-CREATE TABLE "interview_calendar_event" (
+-- Idempotent enum extension (safe if 'microsoft' already exists from earlier migration)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum e
+    JOIN pg_type t ON e.enumtypid = t.oid
+    WHERE t.typname = 'calendar_provider' AND e.enumlabel = 'microsoft'
+  ) THEN
+    ALTER TYPE "public"."calendar_provider" ADD VALUE 'microsoft';
+  END IF;
+END $$;--> statement-breakpoint
+
+-- Idempotent table creation
+CREATE TABLE IF NOT EXISTS "interview_calendar_event" (
 	"id" text PRIMARY KEY NOT NULL,
 	"organization_id" text NOT NULL,
 	"interview_id" text NOT NULL,
