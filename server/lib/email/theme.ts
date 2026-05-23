@@ -8,7 +8,7 @@ import { createEmailTheme } from "@caffeinebounce/email";
 export const careersEmailConfig = {
   appName: "Factory Careers",
   companyName: "Factory Holdings LLC.",
-  address: "Los Angeles, CA",
+  address: "5431 W 104th St, Los Angeles, CA 90045",
   accentColor: "#FF4426",
   siteUrl: "https://careers.thefactoryhq.com",
   logoUrl:
