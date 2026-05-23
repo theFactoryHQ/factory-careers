@@ -330,7 +330,7 @@ export function InterviewInvitationEmail({
                     textDecoration: "none",
                     fontSize: "13px",
                     fontWeight: "600",
-                    borderRadius: "6px",
+                    borderRadius: "0",
                     lineHeight: "1",
                   }}
                 >
@@ -348,7 +348,7 @@ export function InterviewInvitationEmail({
                     textDecoration: "none",
                     fontSize: "13px",
                     fontWeight: "600",
-                    borderRadius: "6px",
+                    borderRadius: "0",
                     lineHeight: "1",
                   }}
                 >
@@ -366,7 +366,7 @@ export function InterviewInvitationEmail({
                     textDecoration: "none",
                     fontSize: "13px",
                     fontWeight: "600",
-                    borderRadius: "6px",
+                    borderRadius: "0",
                     lineHeight: "1",
                   }}
                 >

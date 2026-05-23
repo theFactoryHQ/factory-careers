@@ -52,7 +52,7 @@ export const careersEmailStyles = {
   card: {
     backgroundColor: "#0A0A0A",
     border: "1px solid #222222",
-    borderRadius: careersEmails.tokens.boxRadius,
+    borderRadius: "0",
     overflow: "hidden",
   },
   accent: {
@@ -100,7 +100,7 @@ export const careersEmailStyles = {
   detailPanel: {
     backgroundColor: "#111111",
     border: "1px solid #222222",
-    borderRadius: careersEmails.tokens.boxRadius,
+    borderRadius: "0",
     margin: "20px 0 0",
     padding: "16px 18px 8px",
   },
@@ -125,7 +125,7 @@ export const careersEmailStyles = {
   },
   cta: {
     backgroundColor: careersEmailConfig.accentColor,
-    borderRadius: "6px",
+    borderRadius: "0",
     color: "#FFFFFF",
     fontFamily: careersEmailFontStack,
     fontSize: "15px",
