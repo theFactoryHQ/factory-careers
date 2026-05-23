@@ -54,4 +54,21 @@ describe('language feature flag', () => {
     expect(switcher).toMatch(/languageFeatureEnabled/)
     expect(switcher).toMatch(/v-if="languageFeatureEnabled"/)
   })
+
+  it('hides the dashboard language menu section when language support is disabled', () => {
+    const topBar = read('app/components/AppTopBar.vue')
+
+    expect(topBar).toMatch(/languageFeatureEnabled/)
+    expect(topBar).toMatch(/v-if="languageFeatureEnabled"[\s\S]*<p[^>]*>Language<\/p>[\s\S]*<LanguageSwitcher/)
+  })
+
+  it('hides localization settings navigation when language support is disabled', () => {
+    const sidebar = read('app/components/SettingsSidebar.vue')
+    const mobileNav = read('app/components/SettingsMobileNav.vue')
+
+    expect(sidebar).toMatch(/languageFeatureEnabled/)
+    expect(sidebar).toMatch(/filter\(\(item\) => languageFeatureEnabled \|\| item\.to !== '\/dashboard\/settings\/localization'\)/)
+    expect(mobileNav).toMatch(/languageFeatureEnabled/)
+    expect(mobileNav).toMatch(/filter\(\(item\) => languageFeatureEnabled \|\| item\.to !== '\/dashboard\/settings\/localization'\)/)
+  })
 })
