@@ -442,10 +442,9 @@ const statusCounts = computed(() => {
                     {{ interviewItem.title }}
                   </NuxtLink>
                   <span
-                    class="ui-pill inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset"
+                    class="ui-pill inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset"
                     :class="getInterviewStatusBadgeClass(interviewItem.status)"
                   >
-                    <span class="ui-status-dot size-1.5 rounded-full" :class="getInterviewStatusDotClass(interviewItem.status)" />
                     {{ getInterviewStatusLabel(interviewItem.status) }}
                   </span>
                 </div>
