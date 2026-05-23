@@ -26,10 +26,13 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+          registry-url: 'https://npm.pkg.github.com'
 
       - name: Install dependencies
         id: install
         run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
 
       - name: Run unit tests
         id: tests
