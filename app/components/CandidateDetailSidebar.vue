@@ -804,7 +804,7 @@ function formatInterviewDate(dateStr: string) {
               <!-- Preview toolbar -->
               <div class="flex items-center justify-between">
                 <button
-                  class="ui-inline-link-brand inline-flex items-center gap-1.5 text-sm font-medium"
+                  class="factory-toolbar-button inline-flex h-10 min-h-10 items-center gap-1.5 border px-3 py-0 text-xs font-medium transition-colors hover:bg-white hover:text-black"
                   @click="closePreview"
                 >
                   <ArrowLeft class="size-3.5" />

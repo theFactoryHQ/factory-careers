@@ -542,7 +542,7 @@ onUnmounted(() => {
         <div class="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 lg:px-6 h-10 overflow-x-auto scrollbar-none">
           <NuxtLink
             :to="$localePath('/dashboard/jobs')"
-            class="hidden sm:flex size-8 items-center justify-center text-white/45 hover:text-white transition-colors no-underline shrink-0"
+            class="hidden sm:flex size-8 items-center justify-center border border-transparent bg-transparent text-white/62 transition-colors no-underline shrink-0 hover:border-white hover:bg-white hover:text-black"
             aria-label="All jobs"
             title="All jobs"
           >

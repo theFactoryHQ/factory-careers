@@ -305,15 +305,12 @@ const typeLabels: Record<string, string> = {
     <template v-else-if="job">
 
       <!-- Back link -->
-      <NuxtLink
+      <AppBackLink
         :to="$localePath(`/jobs/${jobSlug}`)"
-        class="group mb-6 inline-flex items-center gap-1.5 text-sm text-white/45 transition-colors hover:text-brand-500"
+        class="mb-6"
       >
-        <svg class="size-3.5 transition-transform group-hover:-translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m15 18-6-6 6-6"/>
-        </svg>
         Back to job details
-      </NuxtLink>
+      </AppBackLink>
 
       <!-- Job hero card -->
       <div class="mb-6 overflow-hidden border border-white/10 bg-white/[0.03]">

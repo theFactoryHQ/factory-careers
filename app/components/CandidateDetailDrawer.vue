@@ -357,7 +357,7 @@ onUnmounted(() => {
               <template v-if="showPreview">
                 <div class="flex items-center justify-between mb-3">
                   <button
-                    class="factory-toolbar-button inline-flex items-center gap-1.5 border px-3 py-0 text-xs font-medium transition-colors"
+                    class="factory-toolbar-button inline-flex h-10 min-h-10 items-center gap-1.5 border px-3 py-0 text-xs font-medium transition-colors hover:bg-white hover:text-black"
                     @click="closePreview"
                   >
                     ← Back to documents

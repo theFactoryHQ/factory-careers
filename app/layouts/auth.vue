@@ -24,7 +24,7 @@ const localePath = useLocalePath()
         <div class="flex items-center gap-3">
           <NuxtLink
             :to="localePath('/jobs')"
-            class="hidden items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white/42 transition-colors hover:text-brand-500 sm:inline-flex"
+            class="hidden h-10 min-h-10 items-center gap-2 border border-transparent bg-black px-4 py-0 text-xs font-medium uppercase tracking-normal text-white/62 transition-colors no-underline hover:border-white hover:bg-white hover:text-black sm:inline-flex"
           >
             <ArrowLeft class="size-3.5" />
             Open Positions
