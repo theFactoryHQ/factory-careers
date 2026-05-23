@@ -1,6 +1,11 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import tailwindcss from "@tailwindcss/vite";
 import { readEnvFlagOverrides } from "./shared/feature-flags";
+import {
+  getEnabledI18nLocales,
+  I18N_DEFAULT_LOCALE,
+  isLanguageFeatureEnabled,
+} from "./shared/language-feature";
 
 const railwayEnvironmentName =
   process.env.RAILWAY_ENVIRONMENT_NAME?.toLowerCase() ?? "";
@@ -8,42 +13,12 @@ const railwayPublicDomain =
   process.env.RAILWAY_PUBLIC_DOMAIN?.toLowerCase() ?? "";
 const siteUrl =
   process.env.NUXT_PUBLIC_SITE_URL || "https://careers.thefactoryhq.com";
-const i18nDefaultLocale = "en";
-const i18nLocales = [
-  { code: "en", language: "en-US", name: "English", file: "en.json" },
-  {
-    code: "es",
-    language: "es-ES",
-    name: "Español",
-    file: "es.json",
-    partial: true,
-  },
-  {
-    code: "fr",
-    language: "fr-FR",
-    name: "Français",
-    file: "fr.json",
-    partial: true,
-  },
-  {
-    code: "de",
-    language: "de-DE",
-    name: "Deutsch",
-    file: "de.json",
-    partial: true,
-  },
-  { code: "nb", language: "nb-NO", name: "Norsk Bokmål", file: "nb.json" },
-  {
-    code: "vi",
-    language: "vi-VN",
-    name: "Tiếng Việt",
-    file: "vi.json",
-    partial: true,
-  },
-];
+const i18nDefaultLocale = I18N_DEFAULT_LOCALE;
+const languageFeatureEnabled = isLanguageFeatureEnabled();
+const enabledI18nLocales = getEnabledI18nLocales();
 
 const localizedPublicRouteRules = Object.fromEntries(
-  i18nLocales
+  enabledI18nLocales
     .filter((locale) => locale.code !== i18nDefaultLocale)
     .flatMap((locale) => [
       [`/${locale.code}/jobs`, { isr: 3600 }],
@@ -53,7 +28,7 @@ const localizedPublicRouteRules = Object.fromEntries(
 
 // Allow search-engine indexing for localized job board pages
 const localizedJobsRobotsRules = Object.fromEntries(
-  i18nLocales
+  enabledI18nLocales
     .filter((locale) => locale.code !== i18nDefaultLocale)
     .flatMap((locale) => [
       [
@@ -70,7 +45,7 @@ const localizedJobsRobotsRules = Object.fromEntries(
 // Redirect locale roots to their respective job boards
 // (e.g. / → /jobs, /es → /es/jobs, /fr → /fr/jobs)
 const localizedRootRedirectRules = Object.fromEntries(
-  i18nLocales.map((locale) => {
+  enabledI18nLocales.map((locale) => {
     const root = locale.code === i18nDefaultLocale ? "/" : `/${locale.code}`;
     const target =
       locale.code === i18nDefaultLocale ? "/jobs" : `/${locale.code}/jobs`;
@@ -165,13 +140,15 @@ export default defineNuxtConfig({
     baseUrl: siteUrl,
     defaultLocale: i18nDefaultLocale,
     strategy: "prefix_except_default",
-    locales: i18nLocales,
+    locales: enabledI18nLocales,
     langDir: "locales",
-    detectBrowserLanguage: {
-      useCookie: true,
-      cookieKey: "reqcore_i18n_redirected",
-      redirectOn: "root",
-    },
+    detectBrowserLanguage: languageFeatureEnabled
+      ? {
+          useCookie: true,
+          cookieKey: "reqcore_i18n_redirected",
+          redirectOn: "root",
+        }
+      : false,
     vueI18n: "./i18n.config.ts",
   },
 
@@ -270,6 +247,8 @@ export default defineNuxtConfig({
       /** Whether to show the analytics consent banner ("A small ask"). Disabled for Factory (SSO + always cookieless). */
       factoryAnalyticsConsentBannerEnabled:
         process.env.FACTORY_DISABLE_ANALYTICS_CONSENT_BANNER === "false",
+      /** Whether public language switching and localized routes are enabled. */
+      languageFeatureEnabled,
       /**
        * Feature flag overrides forced by env vars (FEATURE_FLAG_*).
        * Self-hosters use these to enable/disable flags without running PostHog.
