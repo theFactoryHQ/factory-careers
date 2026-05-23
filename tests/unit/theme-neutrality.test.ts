@@ -552,6 +552,13 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('does not pass layout visibility classes through fragment-root app chrome components', () => {
+    const settingsLayout = readProjectFile('app/layouts/settings.vue')
+
+    expect(settingsLayout).not.toMatch(/<AppTopBar\s+class=/)
+    expect(settingsLayout).toMatch(/<div\s+class="hidden lg:block">\s*<AppTopBar\s*\/>\s*<\/div>/)
+  })
+
   it('applies shared UI recipes to interview list and template surfaces', () => {
     const interviewList = readProjectFile('app/pages/dashboard/interviews/index.vue')
 
