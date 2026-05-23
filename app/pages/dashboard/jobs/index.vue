@@ -5,6 +5,7 @@ import {
   LayoutGrid, List, Table2, ArrowUp, ArrowDown, ArrowUpDown,
   Check, ChevronDown,
 } from 'lucide-vue-next'
+import { getJobStatusBadgeClass } from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -41,17 +42,6 @@ function getStageCount(pipeline: any, key: string): number {
 // ─────────────────────────────────────────────
 
 const { jobs, total, fetchStatus, error, refresh } = useJobs()
-
-// ─────────────────────────────────────────────
-// Job status config
-// ─────────────────────────────────────────────
-
-const statusBadgeClasses: Record<string, string> = {
-  draft: 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400',
-  open: 'bg-success-50 text-success-700 dark:bg-success-950 dark:text-success-400',
-  closed: 'bg-warning-50 text-warning-700 dark:bg-warning-950 dark:text-warning-400',
-  archived: 'bg-surface-100 text-surface-400 dark:bg-surface-800 dark:text-surface-500',
-}
 
 const typeLabels: Record<string, string> = {
   full_time: 'Full-time',
@@ -818,7 +808,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
                 <td class="px-4 py-3">
                   <span
                     class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize"
-                    :class="statusBadgeClasses[j.status] ?? 'bg-surface-100 text-surface-600'"
+                    :class="getJobStatusBadgeClass(j.status)"
                   >
                     {{ j.status }}
                   </span>
@@ -883,7 +873,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
               </NuxtLink>
               <span
                 class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0 capitalize mt-0.5"
-                :class="statusBadgeClasses[j.status] ?? 'bg-surface-100 text-surface-600'"
+                :class="getJobStatusBadgeClass(j.status)"
               >
                 {{ j.status }}
               </span>
@@ -973,7 +963,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
                 </NuxtLink>
                 <span
                   class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0 capitalize mt-0.5"
-                  :class="statusBadgeClasses[j.status] ?? 'bg-surface-100 text-surface-600'"
+                  :class="getJobStatusBadgeClass(j.status)"
                 >
                   {{ j.status }}
                 </span>
@@ -1055,7 +1045,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
                 </NuxtLink>
                 <span
                   class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0 capitalize mt-0.5"
-                  :class="statusBadgeClasses[j.status] ?? 'bg-surface-100 text-surface-600'"
+                  :class="getJobStatusBadgeClass(j.status)"
                 >
                   {{ j.status }}
                 </span>

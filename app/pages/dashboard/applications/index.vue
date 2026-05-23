@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { FileText, Search, X, Briefcase, Mail, Clock, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, Maximize2, Minimize2, Check } from 'lucide-vue-next'
 import {
+  formatRelativeTime,
   getApplicationStatusBadgeClass,
   getApplicationStatusDotClass,
   getApplicationStatusLabel,
@@ -195,17 +196,6 @@ function clearAllFilters() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function timeAgo(date: string | Date) {
-  const diff = Date.now() - new Date(date).getTime()
-  const mins = Math.floor(diff / 60_000)
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  if (days < 30) return `${days}d ago`
-  return new Date(date).toLocaleDateString()
-}
 
 // ── Drawer + Saved Views ──────────────────────────────────────────────────────
 
@@ -645,7 +635,7 @@ const selectedApplicationId = ref<string | null>(null)
               <td v-if="visibleColumns.applied" class="px-4 py-3 text-white/60 whitespace-nowrap">
                 <TimelineDateLink :date="app.createdAt" class="inline-flex items-center gap-1.5">
                   <Clock class="size-3.5 shrink-0" />
-                  {{ timeAgo(app.createdAt) }}
+                  {{ formatRelativeTime(app.createdAt) }}
                 </TimelineDateLink>
               </td>
               <!-- Property columns -->

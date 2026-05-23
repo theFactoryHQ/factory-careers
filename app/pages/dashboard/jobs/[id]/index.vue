@@ -10,6 +10,11 @@ import {
 import type { PropertyEntry, PropertyFilter } from '~~/shared/properties'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 import { APPLICATION_STATUS_TRANSITIONS, INTERVIEW_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
+import {
+  formatRelativeTime,
+  getApplicationTransitionButtonClass,
+  getApplicationTransitionLabel,
+} from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -535,37 +540,6 @@ useSeoMeta({
   robots: 'noindex, nofollow',
 })
 
-// ─────────────────────────────────────────────
-// Application status transitions
-// ─────────────────────────────────────────────
-
-const statusBadgeClasses: Record<string, string> = {
-  new: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
-  screening: 'bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-400',
-  interview: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
-  offer: 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-400',
-  hired: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400',
-  rejected: 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400',
-}
-
-const transitionLabels: Record<string, string> = {
-  new: 'Re-open',
-  screening: 'Screening',
-  interview: 'Interview',
-  offer: 'Offer',
-  hired: 'Hired',
-  rejected: 'Reject',
-}
-
-const transitionClasses: Record<string, string> = {
-  new: 'border border-surface-300 dark:border-surface-600 text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800',
-  screening: 'bg-violet-600 text-white hover:bg-violet-700',
-  interview: 'bg-amber-600 text-white hover:bg-amber-700',
-  offer: 'bg-teal-600 text-white hover:bg-teal-700',
-  hired: 'bg-green-700 text-white hover:bg-green-800',
-  rejected: 'bg-danger-600 text-white hover:bg-danger-700',
-}
-
 function formatStatusLabel(status: string) {
   return status.charAt(0).toUpperCase() + status.slice(1)
 }
@@ -586,23 +560,6 @@ function getCandidateInitials(firstName?: string, lastName?: string) {
   const first = firstName?.trim().charAt(0) ?? ''
   const last = lastName?.trim().charAt(0) ?? ''
   return `${first}${last}`.toUpperCase() || 'C'
-}
-
-function timeAgo(date: string | Date) {
-  const diff = Date.now() - new Date(date).getTime()
-  const mins = Math.floor(diff / 60_000)
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  if (days < 30) return `${days}d ago`
-  return new Date(date).toLocaleDateString()
-}
-
-function scoreClass(score: number) {
-  if (score >= 75) return 'bg-success-50 text-success-700 dark:bg-success-950 dark:text-success-400'
-  if (score >= 40) return 'bg-warning-50 text-warning-700 dark:bg-warning-950 dark:text-warning-400'
-  return 'bg-danger-50 text-danger-700 dark:bg-danger-950 dark:text-danger-400'
 }
 
 const allowedTransitions = computed(() => {
@@ -1468,7 +1425,7 @@ function closeDocPreview() {
                   >
                     {{ app.score }} pts
                   </span>
-                  <span class="text-[11px] text-surface-400 dark:text-surface-500">{{ timeAgo(app.createdAt) }}</span>
+                  <span class="text-[11px] text-surface-400 dark:text-surface-500">{{ formatRelativeTime(app.createdAt) }}</span>
                   <span v-if="applicationsWithInterviews.has(app.id)" class="inline-flex items-center text-warning-500 dark:text-warning-400" title="Interview scheduled">
                     <Calendar class="size-3" />
                   </span>
@@ -1508,10 +1465,10 @@ function closeDocPreview() {
                   :key="nextStatus"
                   :disabled="isMutating"
                   class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm inline-flex items-center gap-1.5"
-                  :class="transitionClasses[nextStatus] ?? 'border border-surface-300 text-surface-600 hover:bg-surface-50'"
+                  :class="getApplicationTransitionButtonClass(nextStatus)"
                   @click="nextStatus === 'interview' ? openInterviewScheduler() : changeStatus(nextStatus)"
                 >
-                  {{ transitionLabels[nextStatus] ?? nextStatus }}
+                  {{ getApplicationTransitionLabel(nextStatus) }}
                   <kbd class="inline-flex items-center justify-center rounded px-1 py-0.5 text-[10px] font-mono leading-none opacity-60 bg-black/10 dark:bg-white/10 min-w-[16px]">{{ idx + 1 }}</kbd>
                 </button>
               </div>
@@ -2414,7 +2371,7 @@ function closeDocPreview() {
                 >
                   {{ app.score }}pts
                 </span>
-                <span class="text-[10px] text-surface-400 dark:text-surface-500">{{ timeAgo(app.createdAt) }}</span>
+                <span class="text-[10px] text-surface-400 dark:text-surface-500">{{ formatRelativeTime(app.createdAt) }}</span>
               </div>
             </div>
           </button>

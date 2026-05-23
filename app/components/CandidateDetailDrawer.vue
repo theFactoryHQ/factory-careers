@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { X, ExternalLink, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Download, Eye } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
-import { getApplicationStatusBadgeClass } from '~/utils/status-display'
+import { formatFileSize, getApplicationStatusBadgeClass } from '~/utils/status-display'
 
 const props = defineProps<{
   candidateId: string
@@ -98,13 +98,6 @@ const documentTypeLabels: Record<string, string> = {
   other: 'Other',
 }
 
-function formatFileSize(bytes: number | null | undefined): string {
-  if (!bytes) return '—'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
 // ─── Body scroll lock + keyboard handling ─────────────────────────────────────
 
 function onKeydown(e: KeyboardEvent) {
@@ -132,7 +125,7 @@ onUnmounted(() => {
       leave-to-class="opacity-0"
     >
       <div
-        class="fixed inset-0 z-[55] bg-black/75 backdrop-blur-[1px]"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-[55]"
         @click="emit('close')"
       />
     </Transition>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown, Upload, X } from 'lucide-vue-next'
+import { formatFileSize } from '~/utils/status-display'
 
 /**
  * Renders a custom question as the appropriate form field based on its type.
@@ -98,12 +99,6 @@ function clearFile() {
   if (fileInputRef.value) {
     fileInputRef.value.value = ''
   }
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 const inputClasses = 'w-full border bg-black/35 px-3.5 py-2.5 text-sm text-white placeholder:text-white/38 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25'

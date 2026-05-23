@@ -746,4 +746,105 @@ describe('brand-neutral theme variables', () => {
       }
     }
   })
+
+  it('keeps remaining detail surfaces behind shared modal and drawer recipes', () => {
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/components/ApplicationDetailDrawer.vue',
+        patterns: [/fixed inset-0 z-\[55\] bg-black\/75/],
+      },
+      {
+        path: 'app/components/CandidateDetailDrawer.vue',
+        patterns: [/fixed inset-0 z-\[55\] bg-black\/75/],
+      },
+      {
+        path: 'app/components/InterviewScheduleSidebar.vue',
+        patterns: [/absolute inset-0 bg-black\/50/],
+      },
+      {
+        path: 'app/pages/dashboard/interviews/[id].vue',
+        patterns: [
+          /absolute inset-0 bg-black\/40/,
+          /relative bg-white dark:bg-surface-900 rounded-2xl/,
+          /const statusConfig:/,
+          /const transitionClasses:/,
+        ],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
+    }
+  })
+
+  it('does not leave native selects in internal Factory dashboard controls', () => {
+    const internalSelectFiles = [
+      'app/components/AiConfigForm.vue',
+      'app/components/CandidateDetailSidebar.vue',
+      'app/components/PropertyFilterBar.vue',
+      'app/components/PropertySchemaEditor.vue',
+      'app/components/QuestionForm.vue',
+      'app/components/ScoreBreakdown.vue',
+      'app/pages/dashboard/settings/members.vue',
+    ]
+
+    for (const path of internalSelectFiles) {
+      const source = readProjectFile(path)
+      expect(source, `${path} should use FactorySelect instead of native select`).not.toContain('<select')
+    }
+  })
+
+  it('keeps remaining dashboard display helpers centralized', () => {
+    const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
+      {
+        path: 'app/pages/dashboard/index.vue',
+        patterns: [/const statusBadgeClasses:/],
+      },
+      {
+        path: 'app/pages/dashboard/jobs/index.vue',
+        patterns: [/const statusBadgeClasses:/],
+      },
+      {
+        path: 'app/pages/dashboard/jobs/[id]/index.vue',
+        patterns: [
+          /const statusBadgeClasses:/,
+          /const transitionClasses:/,
+          /function timeAgo/,
+          /function scoreClass/,
+        ],
+      },
+      {
+        path: 'app/pages/dashboard/jobs/[id]/candidates.vue',
+        patterns: [/function timeAgo/],
+      },
+      {
+        path: 'app/pages/dashboard/applications/index.vue',
+        patterns: [/function timeAgo/],
+      },
+      {
+        path: 'app/components/CandidateDetailDrawer.vue',
+        patterns: [/function formatFileSize/],
+      },
+      {
+        path: 'app/pages/dashboard/candidates/[id].vue',
+        patterns: [/function formatFileSize/],
+      },
+      {
+        path: 'app/components/DynamicField.vue',
+        patterns: [/function formatFileSize/],
+      },
+    ]
+
+    for (const { path, patterns } of disallowedPatternsByFile) {
+      const source = readProjectFile(path)
+
+      for (const pattern of patterns) {
+        expect(source, `${path} should centralize ${pattern}`).not.toMatch(pattern)
+      }
+    }
+  })
 })

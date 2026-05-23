@@ -425,6 +425,24 @@ function titleizeStatus(status: string): string {
     .join(' ')
 }
 
+export function formatRelativeTime(date: string | Date, now = Date.now()): string {
+  const diff = now - new Date(date).getTime()
+  const mins = Math.max(0, Math.floor(diff / 60_000))
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  if (days < 30) return `${days}d ago`
+  return new Date(date).toLocaleDateString()
+}
+
+export function formatFileSize(bytes: number | null | undefined): string {
+  if (bytes == null) return '—'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 export function getApplicationStatusLabel(status: string): string {
   return isApplicationStatus(status) ? APPLICATION_STATUS_LABELS[status] : titleizeStatus(status)
 }

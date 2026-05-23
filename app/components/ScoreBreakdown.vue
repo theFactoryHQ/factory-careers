@@ -49,6 +49,10 @@ const defaultAnalysisConfig = computed(() =>
   aiConfigOptions.value.find((c) => c.isDefaultAnalysis) ?? null,
 )
 const selectedAiConfigId = ref<string | null>(null)
+const aiConfigSelectOptions = computed(() => [
+  { value: null, label: `Default${defaultAnalysisConfig.value ? ` (${defaultAnalysisConfig.value.name})` : ''}` },
+  ...aiConfigOptions.value.map((c) => ({ value: c.id, label: c.name })),
+])
 
 // Cache last successful data so switching candidates doesn't flash "Loading scores…"
 const cachedScoreData = ref(scoreData.value)
@@ -135,16 +139,14 @@ async function retryParse() {
           </div>
         </div>
         <div class="flex items-center gap-1.5">
-          <select
+          <FactorySelect
             v-if="aiConfigOptions.length > 1"
             v-model="selectedAiConfigId"
             :disabled="isAnalyzing"
-            class="rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-2 py-1.5 text-xs text-surface-700 dark:text-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer max-w-[140px] truncate"
+            class="max-w-[140px]"
+            :options="aiConfigSelectOptions"
             :title="selectedAiConfigId ?? 'Use org default'"
-          >
-            <option :value="null">Default{{ defaultAnalysisConfig ? ` (${defaultAnalysisConfig.name})` : '' }}</option>
-            <option v-for="c in aiConfigOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
+          />
           <button
             :disabled="isAnalyzing"
             class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -175,15 +177,13 @@ async function retryParse() {
             <h3 class="text-sm font-semibold text-surface-800 dark:text-surface-200">Composite Score</h3>
           </div>
           <div class="flex items-center gap-1.5">
-            <select
+            <FactorySelect
               v-if="aiConfigOptions.length > 1"
               v-model="selectedAiConfigId"
               :disabled="isAnalyzing"
-              class="rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-2 py-1 text-[11px] text-surface-700 dark:text-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer max-w-[140px] truncate"
-            >
-              <option :value="null">Default{{ defaultAnalysisConfig ? ` (${defaultAnalysisConfig.name})` : '' }}</option>
-              <option v-for="c in aiConfigOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
+              class="max-w-[140px]"
+              :options="aiConfigSelectOptions"
+            />
             <button
               :disabled="isAnalyzing"
               class="text-xs text-brand-600 dark:text-brand-400 hover:underline disabled:opacity-50"
