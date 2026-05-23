@@ -255,61 +255,61 @@ function openPropertyEditor(scope: 'org' | 'job') {
             <div
               v-if="showMoreMenu"
               :style="{ position: 'fixed', top: moreMenuPos.top + 'px', right: moreMenuPos.right + 'px' }"
-              class="factory-job-more-menu z-[200] w-56 border py-1.5 origin-top-right"
+              class="factory-job-more-menu z-[200] w-64 border border-white/12 bg-black py-1 shadow-2xl shadow-black/50 overflow-hidden origin-top-right"
             >
               <NuxtLink
                 :to="localePath(`/dashboard/jobs/${jobId}/settings`)"
-                class="factory-job-more-menu-item flex w-full items-center gap-2.5 px-3.5 py-2 text-sm transition-colors"
+                class="factory-job-more-menu-item flex w-full items-center gap-2.5 px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors"
                 @click="showMoreMenu = false"
               >
                 <Pencil class="size-3.5" />
                 Edit Job
               </NuxtLink>
               <button
-                class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm transition-colors sm:hidden"
+                class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors sm:hidden"
                 @click="showApplyModal = true; showMoreMenu = false"
               >
                 <UserPlus class="size-3.5" />
                 Add Candidate
               </button>
-              <div class="factory-job-more-menu-divider my-1.5 mx-2 border-t" />
+              <div class="factory-job-more-menu-divider my-1 mx-2 border-t border-white/10" />
               <button
                 :disabled="isScoringAll"
-                class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm transition-colors disabled:opacity-50"
+                class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors disabled:opacity-50"
                 @click="scoreAllCandidates()"
               >
                 <Brain class="size-3.5" />
                 {{ isScoringAll ? `Scoring ${scoringProgress.done}/${scoringProgress.total}…` : 'Score All Candidates' }}
               </button>
               <button
-                class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm transition-colors"
+                class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors"
                 @click="openPropertyEditor('job')"
               >
                 <Settings2 class="size-3.5" />
-                Manage job-specific properties
+                Job properties
               </button>
               <button
-                class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm transition-colors"
+                class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors"
                 @click="openPropertyEditor('org')"
               >
                 <Settings2 class="size-3.5" />
-                Manage org-wide application properties
+                Org properties
               </button>
               <template v-if="secondaryJobTransitions.length > 0">
-                <div class="factory-job-more-menu-divider my-1.5 mx-2 border-t" />
+                <div class="factory-job-more-menu-divider my-1 mx-2 border-t border-white/10" />
                 <button
                   v-for="t in secondaryJobTransitions"
                   :key="t"
                   :disabled="isJobTransitioning"
-                  class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm transition-colors disabled:opacity-50"
+                  class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors disabled:opacity-50"
                   @click="handleJobTransition(t); showMoreMenu = false"
                 >
                   {{ jobTransitionLabels[t] ?? t }}
                 </button>
               </template>
-              <div class="factory-job-more-menu-divider my-1.5 mx-2 border-t" />
+              <div class="factory-job-more-menu-divider my-1 mx-2 border-t border-white/10" />
               <button
-                class="factory-job-more-menu-item factory-job-more-menu-danger flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm transition-colors"
+                class="factory-job-more-menu-item factory-job-more-menu-danger flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-sm hover:bg-white/[0.05] hover:text-white transition-colors"
                 @click="showDeleteConfirm = true; showMoreMenu = false"
               >
                 <Trash2 class="size-3.5" />

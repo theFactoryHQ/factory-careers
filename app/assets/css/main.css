@@ -2335,7 +2335,7 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-more-menu {
-    border-color: var(--ui-border-strong) !important;
+    border-color: rgb(255 255 255 / 0.12) !important;
     background-color: #050505 !important;
     color: #ffffff !important;
     box-shadow: 0 18px 48px rgb(0 0 0 / 0.62) !important;
@@ -2343,7 +2343,9 @@
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-more-menu-item {
     background-color: transparent !important;
-    color: rgb(255 255 255 / 0.72) !important;
+    color: rgb(255 255 255 / 0.62) !important;
+    text-align: left !important;
+    white-space: nowrap !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-more-menu-item svg {
@@ -2356,7 +2358,7 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-more-menu-divider {
-    border-color: var(--ui-border) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-more-menu-danger {
@@ -2369,7 +2371,7 @@
   }
 
   .factory-job-more-menu {
-    border-color: var(--ui-border-strong) !important;
+    border-color: rgb(255 255 255 / 0.12) !important;
     background-color: #050505 !important;
     color: #ffffff !important;
     box-shadow: 0 18px 48px rgb(0 0 0 / 0.62) !important;
@@ -2377,7 +2379,9 @@
 
   .factory-job-more-menu .factory-job-more-menu-item {
     background-color: transparent !important;
-    color: rgb(255 255 255 / 0.72) !important;
+    color: rgb(255 255 255 / 0.62) !important;
+    text-align: left !important;
+    white-space: nowrap !important;
   }
 
   .factory-job-more-menu .factory-job-more-menu-item svg {
@@ -2390,7 +2394,7 @@
   }
 
   .factory-job-more-menu .factory-job-more-menu-divider {
-    border-color: var(--ui-border) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
   }
 
   .factory-job-more-menu .factory-job-more-menu-danger {
