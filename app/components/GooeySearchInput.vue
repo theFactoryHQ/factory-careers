@@ -414,6 +414,7 @@ function handleKeydown(event: KeyboardEvent) {
 
 :global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-outline,
 :global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-outline {
+  border-color: rgb(255 255 255 / 0.18) !important;
   box-shadow: none !important;
 }
 

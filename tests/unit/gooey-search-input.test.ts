@@ -36,6 +36,7 @@ describe('GooeySearchInput component source', () => {
     expect(source).toContain('border-radius: 0')
     expect(source).toContain('gooey-search-outline factory-toolbar-button')
     expect(source).toContain('background: transparent !important')
+    expect(source).toContain('border-color: rgb(255 255 255 / 0.18) !important')
     expect(source).toContain('border-color: #ffffff !important')
     expect(source).toContain('border-color: var(--color-brand-500) !important')
     expect(source).toContain('box-shadow: none')

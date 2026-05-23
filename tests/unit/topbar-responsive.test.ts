@@ -37,7 +37,9 @@ describe('dashboard top bar responsiveness', () => {
   })
 
   it('uses white-fill hover treatment for dashboard back links', () => {
+    expect(backLinkSource).toContain('border border-transparent')
     expect(backLinkSource).toContain('hover:border-white hover:bg-white hover:text-black')
+    expect(backLinkSource).not.toContain('border border-white/16')
     expect(backLinkSource).not.toContain('hover:border-brand-500')
   })
 })
