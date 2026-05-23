@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ChevronDown, Upload, X } from 'lucide-vue-next'
-import { formatFileSize } from '~/utils/status-display'
 
 /**
  * Renders a custom question as the appropriate form field based on its type.

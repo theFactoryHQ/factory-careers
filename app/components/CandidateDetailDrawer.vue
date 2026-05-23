@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { X, ExternalLink, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Download, Eye } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
-import { formatFileSize, getApplicationStatusBadgeClass } from '~/utils/status-display'
+import { getApplicationStatusBadgeClass } from '~/utils/status-display'
 
 const props = defineProps<{
   candidateId: string

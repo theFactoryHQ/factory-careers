@@ -2,7 +2,7 @@
 import { ArrowLeft, Pencil, Trash2, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Upload, Download, Eye, AlertTriangle } from 'lucide-vue-next'
 import { z } from 'zod'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
-import { formatFileSize, getApplicationStatusBadgeClass } from '~/utils/status-display'
+import { getApplicationStatusBadgeClass } from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',

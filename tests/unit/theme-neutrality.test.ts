@@ -805,6 +805,13 @@ describe('brand-neutral theme variables', () => {
     }
   })
 
+  it('keeps FactorySelect labels associated with the interactive control', () => {
+    const source = readProjectFile('app/components/FactorySelect.vue')
+
+    expect(source).toMatch(/defineOptions\(\{\s*inheritAttrs:\s*false,\s*\}\)/)
+    expect(source).toMatch(/<button[\s\S]*:id="id"/)
+  })
+
   it('keeps remaining dashboard display helpers centralized', () => {
     const disallowedPatternsByFile: Array<{ path: string, patterns: RegExp[] }> = [
       {
