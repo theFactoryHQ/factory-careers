@@ -1135,8 +1135,10 @@ function closeDocPreview() {
 
           <!-- Fullscreen toggle -->
           <button
-            class="ml-auto flex shrink-0 cursor-pointer items-center justify-center rounded-lg p-2 text-surface-400 hover:bg-surface-100 hover:text-surface-600 dark:text-surface-500 dark:hover:bg-surface-800 dark:hover:text-surface-300 transition-all duration-200 focus:outline-none"
-            :title="isFullscreen ? 'Exit focus mode (Esc)' : 'Focus mode'"
+            type="button"
+            class="factory-toolbar-button ml-auto inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-medium transition-colors"
+            :title="isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'"
+            :aria-label="isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'"
             @click="toggleFullscreen"
           >
             <Minimize2 v-if="isFullscreen" class="size-4" />

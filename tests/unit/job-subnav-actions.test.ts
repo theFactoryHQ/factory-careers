@@ -16,4 +16,14 @@ describe('job subnav actions', () => {
     expect(jobDetail).not.toContain('<span>stages</span>')
     expect(jobDetail).not.toContain('<span>actions</span>')
   })
+
+  it('uses the applications toolbar button recipe for the pipeline fullscreen control', () => {
+    const applications = readProjectFile('app/pages/dashboard/applications/index.vue')
+    const jobDetail = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+
+    expect(applications).toContain('factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-medium transition-colors')
+    expect(jobDetail).toContain('factory-toolbar-button ml-auto inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-medium transition-colors')
+    expect(jobDetail).toContain(":title=\"isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'\"")
+    expect(jobDetail).toContain(":aria-label=\"isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'\"")
+  })
 })
