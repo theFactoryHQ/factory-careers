@@ -2584,7 +2584,7 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-segment-screening {
-    background-color: color-mix(in srgb, var(--color-brand-500) 72%, #ffffff 28%) !important;
+    background-color: var(--color-brand-500) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-segment-interview {

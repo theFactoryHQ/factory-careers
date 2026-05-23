@@ -133,6 +133,14 @@ describe('brand-neutral theme variables', () => {
     expect(css).toMatch(/\.factory-pipeline-status-chip\s*\{[\s\S]*font-weight:\s*300 !important/)
   })
 
+  it('uses the regular brand color for dashboard pipeline screening segments', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+    const screeningSegment = css.match(/\.factory-pipeline-segment-screening\s*\{[^}]+\}/)?.[0] ?? ''
+
+    expect(screeningSegment).toContain('background-color: var(--color-brand-500) !important')
+    expect(screeningSegment).not.toContain('color-mix')
+  })
+
   it('uses an in-app focus mode for the job pipeline instead of native fullscreen', () => {
     const jobDetail = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
 
