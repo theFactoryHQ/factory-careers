@@ -3,8 +3,14 @@
  * to the org creation page. Must be used after the `auth` middleware.
  */
 export default defineNuxtRouteMiddleware(async () => {
-  const { data: session } = await authClient.useSession(useFetch)
+  // Use the centralized cached session composable (deduped)
+  const { session, status, refresh } = useAuthSession()
   const localePath = useLocalePath()
+
+  // Ensure the session has settled before checking activeOrganizationId.
+  if (status.value === 'loading') {
+    await refresh()
+  }
 
   if (session.value && !session.value.session.activeOrganizationId) {
     return navigateTo(localePath('/onboarding/create-org'))

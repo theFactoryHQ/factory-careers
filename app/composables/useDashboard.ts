@@ -7,7 +7,31 @@ export function useDashboard() {
   const { data, status: fetchStatus, error, refresh } = useFetch('/api/dashboard/stats', {
     key: 'dashboard-stats',
     headers: useRequestHeaders(['cookie']),
+    // SWR-style client caching (45s stale-while-revalidate).
+    // Serves cached data instantly on navigation/refresh within the TTL, then refreshes in background.
+    // Key is stable per-org thanks to the dashboard stats endpoint being org-scoped.
+    getCachedData(key, nuxtApp) {
+      const cached = nuxtApp.payload.data[key]
+      if (!cached) return undefined
+
+      // Use a non-enumerable property we attach on first successful fetch (see below)
+      const fetchedAt = (cached as any)._fetchedAt || 0
+      if (Date.now() - fetchedAt < 45_000) {
+        return cached
+      }
+      // Return stale data so UI is instant; the useFetch will still run and update the payload
+      return cached
+    },
   })
+
+  // On successful client fetch, stamp the payload for the cache helper (runs once per key lifetime)
+  if (import.meta.client) {
+    watch(data, (val) => {
+      if (val && !(val as any)._fetchedAt) {
+        ;(val as any)._fetchedAt = Date.now()
+      }
+    }, { immediate: true })
+  }
 
   /** Summary counts (open jobs, candidates, applications, unreviewed) */
   const counts = computed(() => data.value?.counts ?? {

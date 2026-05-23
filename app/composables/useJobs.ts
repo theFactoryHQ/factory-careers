@@ -14,10 +14,24 @@ export function useJobs(options?: {
   }))
 
   const { data, status: fetchStatus, error, refresh } = useFetch('/api/jobs', {
-    key: 'jobs',
+    key: computed(() => `jobs-${JSON.stringify(query.value)}`), // stable per filter combination
     query,
     headers: useRequestHeaders(['cookie']),
+    // 45s SWR cache — jobs lists are frequently visited and change infrequently within an org
+    getCachedData(key, nuxtApp) {
+      const cached = nuxtApp.payload.data[key]
+      if (!cached) return undefined
+      const fetchedAt = (cached as any)._fetchedAt || 0
+      if (Date.now() - fetchedAt < 45_000) return cached
+      return cached
+    },
   })
+
+  if (import.meta.client) {
+    watch(data, (val) => {
+      if (val && !(val as any)._fetchedAt) (val as any)._fetchedAt = Date.now()
+    }, { immediate: true })
+  }
 
   const jobs = computed(() => data.value?.data ?? [])
   const total = computed(() => data.value?.total ?? 0)

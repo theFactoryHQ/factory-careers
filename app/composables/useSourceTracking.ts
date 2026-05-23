@@ -144,7 +144,21 @@ export function useTrackingLinks(options?: {
   } = useFetch<{ data: TrackingLink[]; total: number }>(linksUrl, {
     key: fetchKey.value,
     headers: useRequestHeaders(['cookie']),
+    // 45s SWR for source-tracking links (heavy dashboard page)
+    getCachedData(key, nuxtApp) {
+      const cached = nuxtApp.payload.data[key]
+      if (!cached) return undefined
+      const fetchedAt = (cached as any)._fetchedAt || 0
+      if (Date.now() - fetchedAt < 45_000) return cached
+      return cached
+    },
   })
+
+  if (import.meta.client) {
+    watch(data, (val) => {
+      if (val && !(val as any)._fetchedAt) (val as any)._fetchedAt = Date.now()
+    }, { immediate: true })
+  }
 
   const links = computed<TrackingLink[]>(() => data.value?.data ?? [])
   const total = computed(() => data.value?.total ?? 0)

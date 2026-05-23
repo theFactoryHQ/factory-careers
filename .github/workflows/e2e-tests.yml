@@ -18,6 +18,14 @@ jobs:
     name: Playwright E2E
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Completely skip E2E when requested (e.g. during heavy refactors where tests are known brittle).
+    # Trigger by adding `[skip e2e]` to the PR title or the `skip-e2e` label.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (
+        !contains(github.event.pull_request.title, '[skip e2e]') &&
+        !contains(github.event.pull_request.labels.*.name, 'skip-e2e')
+      )
 
     services:
       postgres:

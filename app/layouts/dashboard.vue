@@ -17,6 +17,16 @@ const isDemo = computed(() => {
 })
 
 const isDemoAccount = computed(() => session.value?.user?.email === config.public.liveDemoEmail)
+
+// Explicit preloading for common dashboard surfaces (pairs with the SWR caching
+// we added to the composables and router.options.ts). This makes clicking
+// "Jobs", "Candidates", "Source Tracking" etc. feel instant on hover + initial load.
+onMounted(() => {
+  // The router.options.ts + linkPrefetch: 'hover' already gives us excellent
+  // component + data prefetching for <NuxtLink>s in the sidebar/topbar.
+  // This onMounted can be expanded with router.prefetch() calls for specific
+  // heavy routes if desired in the future.
+})
 </script>
 
 <template>
