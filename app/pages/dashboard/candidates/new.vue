@@ -203,17 +203,17 @@ async function handleSubmit() {
           <label for="gender" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
             Gender
           </label>
-          <select
+          <FactorySelect
             id="gender"
             v-model="form.gender"
-            class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-          >
-            <option value="">Not specified</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-            <option value="prefer_not_to_say">Prefer not to say</option>
-          </select>
+            :options="[
+              { value: '', label: 'Not specified' },
+              { value: 'male', label: 'Male' },
+              { value: 'female', label: 'Female' },
+              { value: 'other', label: 'Other' },
+              { value: 'prefer_not_to_say', label: 'Prefer not to say' },
+            ]"
+          />
         </div>
 
         <!-- Date of Birth -->

@@ -274,7 +274,7 @@ const selectedCandidateId = ref<string | null>(null)
     <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50">Candidates</h1>
-        <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">
+        <p class="text-sm text-white/60 mt-1">
           Manage your candidate pool and track applicants.
         </p>
       </div>
@@ -290,12 +290,12 @@ const selectedCandidateId = ref<string | null>(null)
     <!-- Search + Views + Filters -->
     <div class="flex items-center gap-2 mb-4">
       <div class="relative flex-1">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-surface-400" />
+        <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/60" />
         <input
           v-model="searchInput"
           type="text"
           placeholder="Search by name or email…"
-          class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 pl-10 pr-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+          class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 pl-10 pr-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
         />
       </div>
       <SavedViewsMenu
@@ -314,22 +314,20 @@ const selectedCandidateId = ref<string | null>(null)
       />
       <button
         type="button"
-        class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
-        :class="activeFilterCount > 0
-          ? 'border-surface-400 bg-surface-100 text-surface-800 dark:border-surface-500 dark:bg-surface-800 dark:text-surface-200'
-          : 'border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'"
+        class="factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+        :class="{ 'is-active': activeFilterCount > 0 }"
         @click="drawerOpen = true"
       >
         <SlidersHorizontal class="size-4" />
-        Filters
+        <span>Filters</span>
         <span
           v-if="activeFilterCount > 0"
-          class="inline-flex items-center justify-center size-4 rounded-full bg-surface-700 dark:bg-surface-300 text-white dark:text-surface-900 text-xs font-semibold"
+          class="inline-flex items-center justify-center min-w-[1rem] h-4 px-1 rounded-full bg-brand-500 text-white text-[10px] font-semibold"
         >{{ activeFilterCount }}</span>
       </button>
       <button
         v-if="activeFilterCount > 0"
-        class="inline-flex items-center gap-1 text-xs text-surface-400 hover:text-danger-600 transition-colors"
+        class="inline-flex items-center gap-1 text-xs text-white/60 hover:text-danger-600 transition-colors"
         @click="clearFilters"
       >
         <X class="size-3" />
@@ -337,7 +335,7 @@ const selectedCandidateId = ref<string | null>(null)
       </button>
       <button
         type="button"
-        class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-2.5 py-2 text-surface-500 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 hover:text-surface-700 dark:hover:text-surface-200 transition-colors"
+        class="factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-medium transition-colors"
         :title="isFullscreen ? 'Exit fullscreen' : 'Fullscreen table'"
         @click="isFullscreen = !isFullscreen"
       >
@@ -359,23 +357,23 @@ const selectedCandidateId = ref<string | null>(null)
     >
       <div class="space-y-6">
         <!-- Gender -->
-        <div class="ui-filter-section">
-          <label class="ui-filter-label mb-2 block">Gender</label>
-          <select
+        <div class="factory-filter-section">
+          <label class="factory-filter-label mb-2 block">Gender</label>
+          <FactorySelect
             v-model="filterGender"
-            class="ui-field"
-          >
-            <option :value="undefined">Any</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-            <option value="prefer_not_to_say">Prefer not to say</option>
-          </select>
+            :options="[
+              { value: undefined, label: 'Any' },
+              { value: 'male', label: 'Male' },
+              { value: 'female', label: 'Female' },
+              { value: 'other', label: 'Other' },
+              { value: 'prefer_not_to_say', label: 'Prefer not to say' },
+            ]"
+          />
         </div>
 
         <!-- Date of birth range -->
-        <div class="ui-filter-section">
-          <label class="ui-filter-label mb-2 block">Date of birth</label>
+        <div class="factory-filter-section">
+          <label class="factory-filter-label mb-2 block">Date of birth</label>
           <div class="grid grid-cols-2 gap-2">
             <div>
               <span class="block text-[11px] text-surface-500 mb-1">From</span>
@@ -397,60 +395,43 @@ const selectedCandidateId = ref<string | null>(null)
         </div>
 
         <!-- Sort -->
-        <div class="ui-filter-section">
-          <label class="ui-filter-label mb-2 block">Sort by</label>
+        <div class="factory-filter-section">
+          <label class="factory-filter-label mb-2 block">Sort by</label>
           <div class="flex gap-2">
-            <select
+            <FactorySelect
               v-model="sortKey"
-              class="ui-field flex-1"
-            >
-              <option value="created">Date added</option>
-              <option value="name">Name</option>
-              <option value="email">Email</option>
-              <option value="phone">Phone</option>
-              <option value="applications">Applications</option>
-            </select>
-            <select
+              :options="[
+                { value: 'created', label: 'Date added' },
+                { value: 'name', label: 'Name' },
+                { value: 'email', label: 'Email' },
+                { value: 'phone', label: 'Phone' },
+                { value: 'applications', label: 'Applications' },
+              ]"
+              class="flex-1"
+            />
+            <FactorySelect
               v-model="sortDir"
-              class="ui-field w-32"
-            >
-              <option value="asc">Ascending</option>
-              <option value="desc">Descending</option>
-            </select>
+              :options="[
+                { value: 'asc', label: 'Ascending' },
+                { value: 'desc', label: 'Descending' },
+              ]"
+              class="w-36"
+            />
           </div>
         </div>
 
         <!-- Property filters -->
-        <div v-if="propertyDefs.length > 0" class="ui-filter-section">
-          <label class="ui-filter-label mb-2 block">Properties</label>
+        <div v-if="propertyDefs.length > 0" class="factory-filter-section">
+          <label class="factory-filter-label mb-2 block">Properties</label>
           <PropertyFilterBar v-model="propertyFilters" entity-type="candidate" />
         </div>
 
-        <!-- Columns -->
-        <div class="ui-filter-section">
-          <label class="ui-filter-label mb-2 block">Columns</label>
-          <div class="space-y-1.5">
-            <label
-              v-for="col in candidateColumns.filter(c => !c.required)"
-              :key="col.key"
-              class="flex items-center gap-2.5 cursor-pointer select-none group"
-            >
-              <span
-                class="ui-checkbox-indicator size-4 shrink-0"
-                :class="visibleColumns[col.key] ? 'ui-checkbox-indicator-checked' : ''"
-                @click="visibleColumns = { ...visibleColumns, [col.key]: !visibleColumns[col.key] }"
-              >
-                <Check v-if="visibleColumns[col.key]" class="size-3" />
-              </span>
-              <span class="text-sm text-surface-700 dark:text-surface-300 group-hover:text-surface-900 dark:group-hover:text-surface-100 transition-colors">{{ col.label }}</span>
-            </label>
-          </div>
-        </div>
+
       </div>
     </FilterDrawer>
 
     <!-- Loading state -->
-    <div v-if="fetchStatus === 'pending'" class="text-center py-12 text-surface-400">
+    <div v-if="fetchStatus === 'pending'" class="text-center py-12 text-white/60">
       Loading candidates…
     </div>
 
@@ -472,7 +453,7 @@ const selectedCandidateId = ref<string | null>(null)
       <h3 class="text-base font-semibold text-surface-700 dark:text-surface-200 mb-1">
         {{ debouncedSearch ? 'No candidates found' : 'No candidates yet' }}
       </h3>
-      <p class="text-sm text-surface-500 dark:text-surface-400 mb-4">
+      <p class="text-sm text-white/60 mb-4">
         {{ debouncedSearch
           ? 'Try adjusting your search terms.'
           : 'Add your first candidate to start building your talent pool.'
@@ -491,15 +472,15 @@ const selectedCandidateId = ref<string | null>(null)
     <!-- Candidate table -->
     <div v-else>
       <Teleport to="body" :disabled="!isFullscreen">
-        <div :class="isFullscreen ? 'fixed inset-0 z-50 bg-white dark:bg-surface-950 flex flex-col' : ''">
+        <div :class="isFullscreen ? 'fixed inset-0 z-50 bg-black text-white flex flex-col factory-dashboard-portal' : ''">
           <!-- Fullscreen header -->
-          <div v-if="isFullscreen" class="flex items-center justify-between px-4 py-3 border-b border-surface-200 dark:border-surface-800 shrink-0 bg-white dark:bg-surface-950">
-            <span class="text-sm font-semibold text-surface-900 dark:text-surface-100">
+          <div v-if="isFullscreen" class="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0 bg-white/[0.02]">
+            <span class="text-sm font-semibold text-white">
               Candidates — {{ sortedCandidates.length }} result{{ sortedCandidates.length === 1 ? '' : 's' }}
             </span>
             <button
               type="button"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-800 px-2.5 py-1.5 text-sm text-surface-500 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 hover:text-surface-700 dark:hover:text-surface-200 transition-colors"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-sm text-white/60 hover:bg-white/5 hover:text-white transition-colors"
               @click="isFullscreen = false"
             >
               <Minimize2 class="size-4" />
@@ -511,7 +492,7 @@ const selectedCandidateId = ref<string | null>(null)
         <table class="w-full text-sm">
           <thead>
             <tr class="ui-table-header">
-              <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">
+              <th class="text-left px-4 py-3 font-medium text-white/60">
                 <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('name')">
                   Name
                   <ArrowUp v-if="sortKey === 'name' && sortDir === 'asc'" class="size-3.5" />
@@ -519,7 +500,7 @@ const selectedCandidateId = ref<string | null>(null)
                   <ArrowUpDown v-else class="size-3.5 opacity-40" />
                 </button>
               </th>
-              <th v-if="visibleColumns.email" class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">
+              <th v-if="visibleColumns.email" class="text-left px-4 py-3 font-medium text-white/60">
                 <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('email')">
                   Email
                   <ArrowUp v-if="sortKey === 'email' && sortDir === 'asc'" class="size-3.5" />
@@ -527,7 +508,7 @@ const selectedCandidateId = ref<string | null>(null)
                   <ArrowUpDown v-else class="size-3.5 opacity-40" />
                 </button>
               </th>
-              <th v-if="visibleColumns.phone" class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400 hidden md:table-cell">
+              <th v-if="visibleColumns.phone" class="text-left px-4 py-3 font-medium text-white/60 hidden md:table-cell">
                 <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('phone')">
                   Phone
                   <ArrowUp v-if="sortKey === 'phone' && sortDir === 'asc'" class="size-3.5" />
@@ -535,7 +516,7 @@ const selectedCandidateId = ref<string | null>(null)
                   <ArrowUpDown v-else class="size-3.5 opacity-40" />
                 </button>
               </th>
-              <th v-if="visibleColumns.applications" class="text-center px-4 py-3 font-medium text-surface-500 dark:text-surface-400 hidden sm:table-cell">
+              <th v-if="visibleColumns.applications" class="text-center px-4 py-3 font-medium text-white/60 hidden sm:table-cell">
                 <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('applications')">
                   Applications
                   <ArrowUp v-if="sortKey === 'applications' && sortDir === 'asc'" class="size-3.5" />
@@ -543,7 +524,7 @@ const selectedCandidateId = ref<string | null>(null)
                   <ArrowUpDown v-else class="size-3.5 opacity-40" />
                 </button>
               </th>
-              <th v-if="visibleColumns.added" class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">
+              <th v-if="visibleColumns.added" class="text-left px-4 py-3 font-medium text-white/60">
                 <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('created')">
                   Added
                   <ArrowUp v-if="sortKey === 'created' && sortDir === 'asc'" class="size-3.5" />
@@ -551,11 +532,11 @@ const selectedCandidateId = ref<string | null>(null)
                   <ArrowUpDown v-else class="size-3.5 opacity-40" />
                 </button>
               </th>
-              <th v-if="visibleColumns.quickNotes" class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400 hidden lg:table-cell w-52">
+              <th v-if="visibleColumns.quickNotes" class="text-left px-4 py-3 font-medium text-white/60 hidden lg:table-cell w-52">
                 Quick notes
               </th>
               <template v-for="d in propertyDefs" :key="d.id">
-                <th v-if="visibleColumns[`prop_${d.id}`]" class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400 whitespace-nowrap">
+                <th v-if="visibleColumns[`prop_${d.id}`]" class="text-left px-4 py-3 font-medium text-white/60 whitespace-nowrap">
                   {{ d.name }}
                 </th>
               </template>
@@ -577,7 +558,7 @@ const selectedCandidateId = ref<string | null>(null)
                   {{ formatCandidateName(c) }}
                 </button>
               </td>
-              <td v-if="visibleColumns.email" class="px-4 py-3 text-surface-500 dark:text-surface-400">
+              <td v-if="visibleColumns.email" class="px-4 py-3 text-white/60">
                 <a
                   :href="`mailto:${c.email}`"
                   class="inline-flex items-center gap-1.5 hover:text-brand-600 dark:hover:text-brand-400 hover:underline transition-colors"
@@ -587,7 +568,7 @@ const selectedCandidateId = ref<string | null>(null)
                   <span class="truncate max-w-[200px]">{{ c.email }}</span>
                 </a>
               </td>
-              <td v-if="visibleColumns.phone" class="px-4 py-3 text-surface-500 dark:text-surface-400 hidden md:table-cell">
+              <td v-if="visibleColumns.phone" class="px-4 py-3 text-white/60 hidden md:table-cell">
                 <span v-if="c.phone" class="inline-flex items-center gap-1.5 whitespace-nowrap">
                   <Phone class="size-3.5 shrink-0" />
                   {{ c.phone }}
@@ -603,7 +584,7 @@ const selectedCandidateId = ref<string | null>(null)
                 </span>
                 <span v-else class="text-surface-300 dark:text-surface-600">0</span>
               </td>
-              <td v-if="visibleColumns.added" class="px-4 py-3 text-surface-500 dark:text-surface-400 whitespace-nowrap">
+              <td v-if="visibleColumns.added" class="px-4 py-3 text-white/60 whitespace-nowrap">
                 <TimelineDateLink :date="c.createdAt">{{ formatDateTime(c.createdAt) }}</TimelineDateLink>
               </td>
               <!-- Quick notes — inline editable (must match header order) -->
@@ -641,14 +622,14 @@ const selectedCandidateId = ref<string | null>(null)
                   <StickyNote class="size-3.5 shrink-0 mt-0.5 text-surface-300 dark:text-surface-600 group-hover/notes:text-brand-500 transition-colors" />
                   <span
                     v-if="c.quickNotes"
-                    class="text-xs text-surface-600 dark:text-surface-400 line-clamp-2 group-hover/notes:text-surface-900 dark:group-hover/notes:text-surface-100 transition-colors"
+                    class="text-xs text-surface-600 dark:text-white/60 line-clamp-2 group-hover/notes:text-surface-900 dark:group-hover/notes:text-surface-100 transition-colors"
                   >{{ c.quickNotes }}</span>
-                  <span v-else class="text-xs text-surface-300 dark:text-surface-600 group-hover/notes:text-surface-400 transition-colors italic">Add note…</span>
+                  <span v-else class="text-xs text-surface-300 dark:text-surface-600 group-hover/notes:text-white/60 transition-colors italic">Add note…</span>
                 </button>
               </td>
               <!-- Property columns (must come AFTER quick notes to match header order) -->
               <template v-for="d in propertyDefs" :key="d.id">
-                <td v-if="visibleColumns[`prop_${d.id}`]" class="px-4 py-3 text-surface-500 dark:text-surface-400 align-top">
+                <td v-if="visibleColumns[`prop_${d.id}`]" class="px-4 py-3 text-white/60 align-top">
                   <PropertyTableCell
                     entity-type="candidate"
                     :entity-id="c.id"
@@ -663,7 +644,7 @@ const selectedCandidateId = ref<string | null>(null)
       </div>
 
       <!-- Total count -->
-      <p class="text-xs text-surface-400 pt-3">
+      <p class="text-xs text-white/60 pt-3">
         {{ total }} candidate{{ total === 1 ? '' : 's' }} total
       </p>
           </div>

@@ -44,7 +44,7 @@ onMounted(() => {
   diagnostics.value = {
     userAgent: window.navigator.userAgent,
     language: window.navigator.language,
-    platform: window.navigator.platform,
+    platform: (window.navigator as any).userAgentData?.platform ?? window.navigator.platform,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     screen: `${window.screen.width}x${window.screen.height}`,
@@ -126,6 +126,7 @@ async function handleScreenshotSelect(event: Event) {
   if (!file.type.startsWith('image/')) {
     submitError.value = 'Screenshot must be an image file.'
     resetScreenshot()
+    input.value = ''
     return
   }
 
@@ -138,6 +139,7 @@ async function handleScreenshotSelect(event: Event) {
     if (compressedDataUrl.length > MAX_SCREENSHOT_DATA_URL_CHARS) {
       submitError.value = 'Screenshot is too large for GitHub issue body. Please use a smaller image.'
       resetScreenshot()
+      input.value = ''
       return
     }
 
@@ -146,6 +148,7 @@ async function handleScreenshotSelect(event: Event) {
   } catch {
     submitError.value = 'Failed to process screenshot. Please try another file.'
     resetScreenshot()
+    input.value = ''
   }
 }
 
@@ -347,6 +350,8 @@ function resetAndClose() {
                 type="button"
                 class="flex w-full items-center justify-between px-3 py-2 text-left"
                 @click="showOptionalContext = !showOptionalContext"
+                :aria-expanded="showOptionalContext"
+                aria-controls="optional-context-panel"
               >
                 <span class="text-xs font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
                   Add More Context (Optional)
@@ -354,7 +359,7 @@ function resetAndClose() {
                 <component :is="showOptionalContext ? ChevronDown : ChevronRight" class="size-4 text-surface-500 dark:text-surface-400" />
               </button>
 
-              <div v-if="showOptionalContext" class="ui-panel-header space-y-3 p-3">
+              <div v-if="showOptionalContext" id="optional-context-panel" class="ui-panel-header space-y-3 p-3">
                 <div v-if="feedbackType === 'bug'" class="space-y-3">
                   <p class="text-xs font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
                     Bug Context

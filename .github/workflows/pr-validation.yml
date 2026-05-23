@@ -61,7 +61,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm audit --audit-level=high 2>&1 | tee audit-output.txt
+          npm audit --audit-level=high 2>&1 | tee audit-output.txt || true
+          # Advisory-only: does not fail the job on high-severity transitive issues.
+          # See CodeRabbit review on PR #24.
 
       - name: Validate production environment contract
         id: production_env

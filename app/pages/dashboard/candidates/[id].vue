@@ -323,7 +323,7 @@ function formatFileSize(bytes: number | null | undefined): string {
       <!-- VIEW MODE -->
       <div v-if="!isEditing">
         <!-- Header -->
-        <div class="mb-4 border border-white/12 bg-white/[0.025] p-5">
+        <div class="mb-4 ui-panel ui-dashboard-panel p-5">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
               <p class="mb-2 text-xs font-medium uppercase tracking-wide text-white/38">
@@ -368,7 +368,7 @@ function formatFileSize(bytes: number | null | undefined): string {
         </div>
 
         <!-- Contact details -->
-        <div class="mb-4 border border-white/12 bg-white/[0.025] p-5">
+        <div class="mb-4 ui-panel ui-dashboard-panel p-5">
           <h2 class="mb-3 text-sm font-semibold text-white">Details</h2>
           <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
             <div>
@@ -427,7 +427,7 @@ function formatFileSize(bytes: number | null | undefined): string {
         </div>
 
         <!-- Custom properties (Notion-style) -->
-        <div class="mb-4 border border-white/12 bg-white/[0.025] p-4">
+        <div class="mb-4 ui-panel ui-dashboard-panel p-4">
           <h2 class="mb-2 px-2 text-sm font-semibold text-white">Properties</h2>
           <PropertyBlock
             entity-type="candidate"
@@ -476,7 +476,7 @@ function formatFileSize(bytes: number | null | undefined): string {
 
           <div
             v-if="!candidate.applications?.length"
-            class="border border-white/12 bg-white/[0.025] p-8 text-center"
+            class="ui-panel ui-dashboard-panel p-8 text-center"
           >
             <Briefcase class="mx-auto mb-2 size-8 text-white/32" />
             <p class="text-sm text-white/54">No applications yet.</p>
@@ -486,7 +486,7 @@ function formatFileSize(bytes: number | null | undefined): string {
             <div
               v-for="app in candidate.applications"
               :key="app.id"
-              class="group flex flex-col gap-2 border border-white/12 bg-white/[0.025] px-4 py-3 transition-all hover:border-brand-500/70 hover:bg-brand-500/10 sm:flex-row sm:items-center sm:justify-between"
+              class="group flex flex-col gap-2 ui-panel ui-dashboard-panel px-4 py-3 transition-all hover:border-brand-500/70 hover:bg-brand-500/10 sm:flex-row sm:items-center sm:justify-between"
             >
               <NuxtLink
                 :to="$localePath(`/dashboard/applications/${app.id}`)"
@@ -572,7 +572,7 @@ function formatFileSize(bytes: number | null | undefined): string {
             </div>
 
             <!-- Filename -->
-            <div v-if="previewFilename" class="mb-3 flex items-center gap-2 border border-white/12 bg-white/[0.025] px-3 py-2">
+            <div v-if="previewFilename" class="mb-3 flex items-center gap-2 ui-panel ui-dashboard-panel px-3 py-2">
               <FileText class="size-4 shrink-0 text-white/38" />
               <span class="truncate text-sm font-medium text-white/78">
                 {{ previewFilename }}
@@ -609,14 +609,14 @@ function formatFileSize(bytes: number | null | undefined): string {
             <!-- Upload controls -->
             <div class="mb-3 flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <select
+                <FactorySelect
                   v-model="selectedDocType"
-                  class="factory-form-select h-10 min-h-10 py-0 text-sm"
-                >
-                  <option value="resume">Resume</option>
-                  <option value="cover_letter">Cover Letter</option>
-                  <option value="other">Other</option>
-                </select>
+                  :options="[
+                    { value: 'resume', label: 'Resume' },
+                    { value: 'cover_letter', label: 'Cover Letter' },
+                    { value: 'other', label: 'Other' },
+                  ]"
+                />
               </div>
               <button
                 :disabled="isUploading"
@@ -640,7 +640,7 @@ function formatFileSize(bytes: number | null | undefined): string {
             <!-- Empty state -->
             <div
               v-if="!candidate.documents?.length"
-              class="border border-white/12 bg-white/[0.025] p-8 text-center"
+              class="ui-panel ui-dashboard-panel p-8 text-center"
             >
               <FileText class="mx-auto mb-2 size-8 text-white/32" />
               <p class="text-sm text-white/54">No documents yet.</p>
@@ -654,7 +654,7 @@ function formatFileSize(bytes: number | null | undefined): string {
               <div
                 v-for="doc in candidate.documents"
                 :key="doc.id"
-                class="group flex items-center justify-between border border-white/12 bg-white/[0.025] px-4 py-3 transition-colors"
+                class="group flex items-center justify-between ui-panel ui-dashboard-panel px-4 py-3 transition-colors"
                 :class="doc.mimeType === 'application/pdf' ? 'cursor-pointer hover:border-brand-500/70 hover:bg-brand-500/10' : ''"
                 @click="doc.mimeType === 'application/pdf' ? handlePreview(doc.id, doc.mimeType) : undefined"
               >
@@ -732,14 +732,14 @@ function formatFileSize(bytes: number | null | undefined): string {
 
       <!-- EDIT MODE -->
       <div v-else>
-        <div class="mb-4 border border-white/12 bg-white/[0.025] p-5">
+        <div class="mb-4 ui-panel ui-dashboard-panel p-5">
           <p class="mb-2 text-xs font-medium uppercase tracking-wide text-white/38">
             Candidate profile
           </p>
           <h1 class="text-2xl font-bold text-white">Edit Candidate</h1>
         </div>
 
-        <form class="space-y-5 border border-white/12 bg-white/[0.025] p-5" @submit.prevent="handleSave">
+        <form class="space-y-5 ui-panel ui-dashboard-panel p-5" @submit.prevent="handleSave">
           <!-- First Name -->
           <div>
             <label for="edit-firstName" class="mb-1 block text-sm font-medium text-white/70">
@@ -819,17 +819,17 @@ function formatFileSize(bytes: number | null | undefined): string {
               <label for="edit-gender" class="mb-1 block text-sm font-medium text-white/70">
                 Gender
               </label>
-              <select
+              <FactorySelect
                 id="edit-gender"
                 v-model="editForm.gender"
-                class="factory-form-select w-full"
-              >
-                <option value="">Not specified</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-                <option value="prefer_not_to_say">Prefer not to say</option>
-              </select>
+                :options="[
+                  { value: '', label: 'Not specified' },
+                  { value: 'male', label: 'Male' },
+                  { value: 'female', label: 'Female' },
+                  { value: 'other', label: 'Other' },
+                  { value: 'prefer_not_to_say', label: 'Prefer not to say' },
+                ]"
+              />
             </div>
             <div>
               <label for="edit-dateOfBirth" class="mb-1 block text-sm font-medium text-white/70">

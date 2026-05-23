@@ -112,8 +112,9 @@ const { formatPersonName } = useOrgSettings()
 const activeJobId = ref<string | undefined>(undefined)
 
 const uniqueJobs = computed(() => {
+  const apps = applications.value ?? []
   const map = new Map<string, string>()
-  for (const app of applications.value) {
+  for (const app of apps) {
     if (!map.has(app.jobId)) map.set(app.jobId, app.jobTitle)
   }
   return Array.from(map, ([id, title]) => ({ id, title })).sort((a, b) => a.title.localeCompare(b.title))
@@ -327,7 +328,7 @@ const selectedApplicationId = ref<string | null>(null)
     <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50">Applications</h1>
-        <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">
+        <p class="text-sm text-white/60 mt-1">
           Track candidates through your hiring pipeline.
         </p>
       </div>
@@ -360,17 +361,15 @@ const selectedApplicationId = ref<string | null>(null)
       />
       <button
         type="button"
-        class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
-        :class="drawerActiveCount > 0
-          ? 'border-surface-400 bg-surface-100 text-surface-800 dark:border-surface-500 dark:bg-surface-800 dark:text-surface-200'
-          : 'border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'"
+        class="factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+        :class="{ 'is-active': drawerActiveCount > 0 }"
         @click="drawerOpen = true"
       >
         <SlidersHorizontal class="size-4" />
-        Filters
+        <span>Filters</span>
         <span
           v-if="drawerActiveCount > 0"
-          class="inline-flex items-center justify-center min-w-[1rem] h-4 px-1 rounded-full bg-surface-700 dark:bg-surface-300 text-white dark:text-surface-900 text-[10px] font-semibold"
+          class="inline-flex items-center justify-center min-w-[1rem] h-4 px-1 rounded-full bg-brand-500 text-white text-[10px] font-semibold"
         >{{ drawerActiveCount }}</span>
       </button>
       <button
@@ -383,7 +382,7 @@ const selectedApplicationId = ref<string | null>(null)
       </button>
       <button
         type="button"
-        class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-2.5 py-2 text-surface-500 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 hover:text-surface-700 dark:hover:text-surface-200 transition-colors"
+        class="factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-medium transition-colors"
         :title="isFullscreen ? 'Exit fullscreen' : 'Fullscreen table'"
         @click="isFullscreen = !isFullscreen"
       >
@@ -405,93 +404,72 @@ const selectedApplicationId = ref<string | null>(null)
     >
       <div class="space-y-6">
         <!-- Status -->
-        <div class="ui-filter-section">
-          <label class="ui-filter-label mb-2 block">Status</label>
+        <div class="factory-filter-section">
+          <label class="factory-filter-label mb-2 block">Status</label>
           <div class="flex flex-wrap gap-1.5">
             <button
               type="button"
-              class="ui-filter-chip px-3 py-1.5 text-xs"
-              :class="!activeStatus
-                ? 'ui-filter-chip-active'
-                : 'ui-filter-chip-inactive'"
+              class="factory-filter-chip px-3 py-1.5 text-xs"
+              :class="{ 'is-active': !activeStatus }"
               @click="activeStatus = undefined"
             >Any</button>
             <button
               v-for="s in STATUS_OPTIONS"
               :key="s"
               type="button"
-              class="ui-filter-chip px-3 py-1.5 text-xs"
-              :class="activeStatus === s
-                ? 'ui-filter-chip-active'
-                : 'ui-filter-chip-inactive'"
+              class="factory-filter-chip px-3 py-1.5 text-xs"
+              :class="{ 'is-active': activeStatus === s }"
               @click="activeStatus = activeStatus === s ? undefined : s"
             >{{ getApplicationStatusLabel(s) }}</button>
           </div>
         </div>
 
         <!-- Job -->
-        <div class="ui-filter-section">
-          <label class="ui-filter-label mb-2 block">Job</label>
-          <select
+        <div class="factory-filter-section">
+          <label class="factory-filter-label mb-2 block">Job</label>
+          <FactorySelect
             v-model="activeJobId"
-            class="ui-field"
-          >
-            <option :value="undefined">All jobs</option>
-            <option v-for="j in uniqueJobs" :key="j.id" :value="j.id">{{ j.title }}</option>
-          </select>
+            :options="[
+              { value: undefined, label: 'All jobs' },
+              ...uniqueJobs.map(j => ({ value: j.id, label: j.title }))
+            ]"
+          />
         </div>
 
         <!-- Sort -->
-        <div class="ui-filter-section">
-          <label class="ui-filter-label mb-2 block">Sort by</label>
+        <div class="factory-filter-section">
+          <label class="factory-filter-label mb-2 block">Sort by</label>
           <div class="flex gap-2">
-            <select
+            <FactorySelect
               v-model="sortKey"
-              class="ui-field flex-1"
-            >
-              <option value="created">Applied date</option>
-              <option value="name">Candidate name</option>
-              <option value="email">Email</option>
-              <option value="job">Job title</option>
-              <option value="status">Status</option>
-              <option value="score">Score</option>
-            </select>
-            <select
+              :options="[
+                { value: 'created', label: 'Applied date' },
+                { value: 'name', label: 'Candidate name' },
+                { value: 'email', label: 'Email' },
+                { value: 'job', label: 'Job title' },
+                { value: 'status', label: 'Status' },
+                { value: 'score', label: 'Score' },
+              ]"
+              class="flex-1"
+            />
+            <FactorySelect
               v-model="sortDir"
-              class="ui-field w-32"
-            >
-              <option value="asc">Ascending</option>
-              <option value="desc">Descending</option>
-            </select>
+              :options="[
+                { value: 'asc', label: 'Ascending' },
+                { value: 'desc', label: 'Descending' },
+              ]"
+              class="w-32"
+            />
           </div>
         </div>
 
         <!-- Property filters -->
-        <div v-if="propertyDefs.length > 0" class="ui-filter-section">
-          <label class="ui-filter-label mb-2 block">Properties</label>
+        <div v-if="propertyDefs.length > 0" class="factory-filter-section">
+          <label class="factory-filter-label mb-2 block">Properties</label>
           <PropertyFilterBar v-model="propertyFilters" entity-type="application" />
         </div>
 
-        <!-- Columns -->
-        <div class="ui-filter-section">
-          <label class="ui-filter-label mb-2 block">Columns</label>
-          <div class="space-y-1.5">
-            <label
-              v-for="col in applicationColumns.filter(c => !c.required)"
-              :key="col.key"
-              class="flex items-center gap-2.5 cursor-pointer select-none group"
-            >
-              <span
-                class="ui-checkbox-indicator size-4 shrink-0"
-                :class="visibleColumns[col.key] ? 'ui-checkbox-indicator-checked' : ''"
-                @click="visibleColumns = { ...visibleColumns, [col.key]: !visibleColumns[col.key] }"
-              >
-                <Check v-if="visibleColumns[col.key]" class="size-3" />
-              </span>
-              <span class="text-sm text-surface-700 dark:text-surface-300 group-hover:text-surface-900 dark:group-hover:text-surface-100 transition-colors">{{ col.label }}</span>
-            </label>
-          </div>
-        </div>
+
       </div>
     </FilterDrawer>
 
@@ -516,7 +494,7 @@ const selectedApplicationId = ref<string | null>(null)
     >
       <FileText class="size-10 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
       <h3 class="text-base font-semibold text-surface-700 dark:text-surface-200 mb-1">No applications yet</h3>
-      <p class="text-sm text-surface-500 dark:text-surface-400">
+      <p class="text-sm text-white/60">
         Applications will appear here when candidates apply to your jobs or when you manually link candidates.
       </p>
     </div>
@@ -528,7 +506,7 @@ const selectedApplicationId = ref<string | null>(null)
     >
       <Search class="size-8 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
       <h3 class="text-base font-semibold text-surface-700 dark:text-surface-200 mb-1">No matching applications</h3>
-      <p class="text-sm text-surface-500 dark:text-surface-400 mb-3">
+      <p class="text-sm text-white/60 mb-3">
         Try adjusting your search or filters.
       </p>
       <button
@@ -542,15 +520,15 @@ const selectedApplicationId = ref<string | null>(null)
     <!-- Application table -->
     <div v-else>
       <Teleport to="body" :disabled="!isFullscreen">
-        <div :class="isFullscreen ? 'fixed inset-0 z-50 bg-white dark:bg-surface-950 flex flex-col' : ''">
+        <div :class="isFullscreen ? 'fixed inset-0 z-50 bg-black text-white flex flex-col factory-dashboard-portal' : ''">
           <!-- Fullscreen header -->
-          <div v-if="isFullscreen" class="flex items-center justify-between px-4 py-3 border-b border-surface-200 dark:border-surface-800 shrink-0 bg-white dark:bg-surface-950">
-            <span class="text-sm font-semibold text-surface-900 dark:text-surface-100">
+          <div v-if="isFullscreen" class="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0 bg-white/[0.02]">
+            <span class="text-sm font-semibold text-white">
               Applications — {{ filteredApplications.length }} result{{ filteredApplications.length === 1 ? '' : 's' }}
             </span>
             <button
               type="button"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-800 px-2.5 py-1.5 text-sm text-surface-500 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 hover:text-surface-700 dark:hover:text-surface-200 transition-colors"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-sm text-white/60 hover:bg-white/5 hover:text-white transition-colors"
               @click="isFullscreen = false"
             >
               <Minimize2 class="size-4" />
@@ -562,7 +540,7 @@ const selectedApplicationId = ref<string | null>(null)
         <table class="w-full text-sm">
           <thead>
             <tr class="ui-table-header">
-              <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">
+              <th class="text-left px-4 py-3 font-medium text-white/60">
                 <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('name')">
                   Candidate
                   <ArrowUp v-if="sortKey === 'name' && sortDir === 'asc'" class="size-3.5" />
@@ -570,7 +548,7 @@ const selectedApplicationId = ref<string | null>(null)
                   <ArrowUpDown v-else class="size-3.5 opacity-40" />
                 </button>
               </th>
-              <th v-if="visibleColumns.email" class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400 hidden lg:table-cell">
+              <th v-if="visibleColumns.email" class="text-left px-4 py-3 font-medium text-white/60 hidden lg:table-cell">
                 <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('email')">
                   Email
                   <ArrowUp v-if="sortKey === 'email' && sortDir === 'asc'" class="size-3.5" />
@@ -578,7 +556,7 @@ const selectedApplicationId = ref<string | null>(null)
                   <ArrowUpDown v-else class="size-3.5 opacity-40" />
                 </button>
               </th>
-              <th v-if="visibleColumns.job" class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400 hidden md:table-cell">
+              <th v-if="visibleColumns.job" class="text-left px-4 py-3 font-medium text-white/60 hidden md:table-cell">
                 <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('job')">
                   Job
                   <ArrowUp v-if="sortKey === 'job' && sortDir === 'asc'" class="size-3.5" />
@@ -586,7 +564,7 @@ const selectedApplicationId = ref<string | null>(null)
                   <ArrowUpDown v-else class="size-3.5 opacity-40" />
                 </button>
               </th>
-              <th v-if="visibleColumns.status" class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">
+              <th v-if="visibleColumns.status" class="text-left px-4 py-3 font-medium text-white/60">
                 <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('status')">
                   Status
                   <ArrowUp v-if="sortKey === 'status' && sortDir === 'asc'" class="size-3.5" />
@@ -594,7 +572,7 @@ const selectedApplicationId = ref<string | null>(null)
                   <ArrowUpDown v-else class="size-3.5 opacity-40" />
                 </button>
               </th>
-              <th v-if="visibleColumns.score" class="text-center px-4 py-3 font-medium text-surface-500 dark:text-surface-400 hidden sm:table-cell">
+              <th v-if="visibleColumns.score" class="text-center px-4 py-3 font-medium text-white/60 hidden sm:table-cell">
                 <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('score')">
                   Score
                   <ArrowUp v-if="sortKey === 'score' && sortDir === 'asc'" class="size-3.5" />
@@ -602,7 +580,7 @@ const selectedApplicationId = ref<string | null>(null)
                   <ArrowUpDown v-else class="size-3.5 opacity-40" />
                 </button>
               </th>
-              <th v-if="visibleColumns.applied" class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">
+              <th v-if="visibleColumns.applied" class="text-left px-4 py-3 font-medium text-white/60">
                 <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('created')">
                   Applied
                   <ArrowUp v-if="sortKey === 'created' && sortDir === 'asc'" class="size-3.5" />
@@ -611,7 +589,7 @@ const selectedApplicationId = ref<string | null>(null)
                 </button>
               </th>
               <template v-for="d in propertyDefs" :key="d.id">
-                <th v-if="visibleColumns[`prop_${d.id}`]" class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400 whitespace-nowrap">
+                <th v-if="visibleColumns[`prop_${d.id}`]" class="text-left px-4 py-3 font-medium text-white/60 whitespace-nowrap">
                   {{ d.name }}
                 </th>
               </template>
@@ -633,13 +611,13 @@ const selectedApplicationId = ref<string | null>(null)
                   {{ formatPersonName(app.candidateFirstName, app.candidateLastName) }}
                 </button>
               </td>
-              <td v-if="visibleColumns.email" class="px-4 py-3 text-surface-500 dark:text-surface-400 hidden lg:table-cell">
+              <td v-if="visibleColumns.email" class="px-4 py-3 text-white/60 hidden lg:table-cell">
                 <span class="inline-flex items-center gap-1.5">
                   <Mail class="size-3.5 shrink-0" />
                   <span class="truncate max-w-[200px]">{{ app.candidateEmail }}</span>
                 </span>
               </td>
-              <td v-if="visibleColumns.job" class="px-4 py-3 text-surface-600 dark:text-surface-300 hidden md:table-cell">
+              <td v-if="visibleColumns.job" class="px-4 py-3 text-white/70 hidden md:table-cell">
                 <span class="inline-flex items-center gap-1.5 truncate max-w-[200px]">
                   <Briefcase class="size-3.5 shrink-0 text-surface-400" />
                   {{ app.jobTitle }}
@@ -647,8 +625,8 @@ const selectedApplicationId = ref<string | null>(null)
               </td>
               <td v-if="visibleColumns.status" class="px-4 py-3">
                 <span
-                  class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium capitalize whitespace-nowrap"
-                  :class="getApplicationStatusBadgeClass(app.status)"
+                  class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold capitalize ring-1 ring-inset"
+                  :class="getApplicationStatusBadgeClass(app.status, 'ring')"
                 >
                   <span class="size-1.5 rounded-full" :class="getApplicationStatusDotClass(app.status)" />
                   {{ getApplicationStatusLabel(app.status) }}
@@ -664,7 +642,7 @@ const selectedApplicationId = ref<string | null>(null)
                 </span>
                 <span v-else class="text-surface-300 dark:text-surface-600">—</span>
               </td>
-              <td v-if="visibleColumns.applied" class="px-4 py-3 text-surface-400 whitespace-nowrap">
+              <td v-if="visibleColumns.applied" class="px-4 py-3 text-white/60 whitespace-nowrap">
                 <TimelineDateLink :date="app.createdAt" class="inline-flex items-center gap-1.5">
                   <Clock class="size-3.5 shrink-0" />
                   {{ timeAgo(app.createdAt) }}
@@ -672,7 +650,7 @@ const selectedApplicationId = ref<string | null>(null)
               </td>
               <!-- Property columns -->
               <template v-for="d in propertyDefs" :key="d.id">
-                <td v-if="visibleColumns[`prop_${d.id}`]" class="px-4 py-3 text-surface-500 dark:text-surface-400 align-top">
+                <td v-if="visibleColumns[`prop_${d.id}`]" class="px-4 py-3 text-white/60 align-top">
                   <PropertyTableCell
                     entity-type="application"
                     :entity-id="app.id"

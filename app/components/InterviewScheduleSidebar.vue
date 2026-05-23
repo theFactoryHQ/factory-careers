@@ -3,9 +3,10 @@ import {
   X, Calendar, Clock, MapPin, Users, ChevronLeft, ChevronRight,
   Plus, AlertCircle, Mail, ChevronDown, RefreshCw, Globe,
   Send, UserPlus, Bell, Pencil, CheckCircle2, ExternalLink,
-  ArrowRight, Eye,
+  ArrowRight, Eye, Video,
 } from 'lucide-vue-next'
 import { SYSTEM_TEMPLATES } from '~/utils/system-templates'
+import { authClient } from '~/utils/auth-client'
 
 const props = withDefaults(defineProps<{
   applicationId: string
@@ -29,6 +30,14 @@ const createdInterview = ref<{ id: string; googleCalendarEventLink?: string | nu
 const { calendarStatus, isConnected: calendarConnected } = useCalendarIntegration()
 const calendarProviderLabel = computed(() => calendarStatus.value.providerLabel || 'Microsoft Calendar')
 
+const { data: sessionData } = await authClient.useSession(useFetch)
+const currentUserEmail = computed(() => sessionData.value?.user?.email ?? '')
+
+const isAppManagedCalendar = computed(() => 
+  calendarStatus.value.authMode === 'application' || calendarStatus.value.managedByAdmin === true
+)
+const canUseCalendar = computed(() => calendarConnected.value || isAppManagedCalendar.value)
+
 // ─── Form state ───────────────────────────────────────────────────
 const form = reactive({
   title: '',
@@ -44,6 +53,8 @@ const form = reactive({
 const errors = ref<Record<string, string>>({})
 const isSubmitting = ref(false)
 const isMoving = ref(false)
+const newInterviewerEmail = ref('')
+const timeScroller = ref<HTMLElement | null>(null)
 
 // ─── Notification method ──────────────────────────────────────────
 const notifyViaEmail = ref(false)
@@ -55,6 +66,7 @@ const calendarCustomization = reactive({
   eventDescription: '',
   addCandidateAttendee: true,
   sendNotifications: true,
+  generateTeamsLink: true,
   showCustomize: false,
 })
 
@@ -62,6 +74,7 @@ const calendarCustomization = reactive({
 const { templates: customTemplates } = useEmailTemplates()
 const selectedTemplateId = ref('system-standard')
 const showTemplateDropdown = ref(false)
+const showTimezoneDropdown = ref(false)
 
 const allTemplates = computed(() => [
   ...SYSTEM_TEMPLATES.map(t => ({ id: t.id, name: t.name, description: t.description, isSystem: true as const })),
@@ -88,10 +101,25 @@ onMounted(() => {
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   form.date = toDateString(tomorrow)
-  // Auto-enable calendar sync if connected
-  if (calendarConnected.value) {
-    notifyViaCalendar.value = true
+
+  // Default both notifications on
+  notifyViaEmail.value = true
+  notifyViaCalendar.value = true
+
+  // Center default time (e.g. 10:00) vertically in the time slider list
+  nextTick(() => centerTimeInSlider())
+})
+
+// Default the first interviewer to the current user once we have their email
+watchEffect(() => {
+  if (form.interviewers.length === 0 && currentUserEmail.value) {
+    form.interviewers.push(currentUserEmail.value)
   }
+})
+
+// Keep selected time vertically centered if it changes (ensures default is visible on load)
+watch(() => form.time, () => {
+  nextTick(() => centerTimeInSlider())
 })
 
 // ─── Duration presets ─────────────────────────────────────────────
@@ -114,6 +142,16 @@ const timeSlots = computed(() => {
   }
   return slots
 })
+
+// Center the currently selected time in the vertical slider (for initial default load)
+function centerTimeInSlider() {
+  const scroller = timeScroller.value
+  if (!scroller) return
+  const target = scroller.querySelector<HTMLElement>(`button[data-time="${form.time}"]`)
+  if (target) {
+    target.scrollIntoView({ block: 'center', behavior: 'auto' })
+  }
+}
 
 // ─── Calendar ─────────────────────────────────────────────────────
 const calendarMonth = ref(new Date())
@@ -198,6 +236,14 @@ function removeInterviewer(idx: number) {
   form.interviewers.splice(idx, 1)
 }
 
+function addNewInterviewer() {
+  const email = newInterviewerEmail.value.trim()
+  if (email && EMAIL_RE.test(email)) {
+    form.interviewers.push(email)
+    newInterviewerEmail.value = ''
+  }
+}
+
 // ─── Common Timezones ─────────────────────────────────────────────
 const commonTimezones = [
   'UTC',
@@ -241,6 +287,11 @@ const commonTimezones = [
   'Pacific/Auckland',
 ]
 
+const timezoneLabel = computed(() => {
+  const tz = form.timezone
+  return tz.split('/').pop()?.replace(/_/g, ' ') || tz
+})
+
 // ─── Formatted preview ───────────────────────────────────────────
 const formattedDateTime = computed(() => {
   if (!form.date || !form.time) return ''
@@ -283,11 +334,16 @@ async function handleSubmit() {
     errors.value.interviewers = 'All interviewers must have a valid email address'
   }
 
+  const hasLocationOrTeams = form.location.trim() || calendarCustomization.generateTeamsLink
+
+  if (!hasLocationOrTeams) {
+    errors.value.location = 'Location or meeting link is required'
+  }
+
   if (Object.keys(errors.value).length > 0) return
 
   isSubmitting.value = true
   try {
-
     const created = await $fetch('/api/interviews', {
       method: 'POST',
       body: {
@@ -306,25 +362,29 @@ async function handleSubmit() {
           calendarEventDescription: calendarCustomization.eventDescription.trim() || undefined,
           calendarAddCandidateAttendee: calendarCustomization.addCandidateAttendee,
           calendarSendUpdates: calendarCustomization.sendNotifications,
+          generateTeamsLink: calendarCustomization.generateTeamsLink,
         }),
       },
     })
 
-    // Optionally send invitation email
-    if (notifyViaEmail.value && created?.id) {
-      try {
-        await $fetch(`/api/interviews/${created.id}/send-invitation`, {
-          method: 'POST',
-          body: { templateId: selectedTemplateId.value },
-        })
-      } catch {
-        // Interview was created successfully — don't block on email failure.
-      }
-    }
-
-    await refreshNuxtData('interviews')
+    // Interview created successfully — flip to success view immediately so the user sees confirmation
+    // and cannot accidentally submit the form again. Side effects below are non-blocking.
     createdInterview.value = created ? { id: created.id, googleCalendarEventLink: created.googleCalendarEventLink ?? null } : null
     showSuccess.value = true
+
+    // Fire-and-forget secondary actions (email invite + list refresh). Do not let them block the success UI.
+    if (notifyViaEmail.value && created?.id) {
+      $fetch(`/api/interviews/${created.id}/send-invitation`, {
+        method: 'POST',
+        body: { templateId: selectedTemplateId.value },
+      }).catch(() => {
+        // Interview was created successfully — don't block on email failure.
+      })
+    }
+
+    refreshNuxtData('interviews').catch(() => {
+      // Non-critical; the success view is already shown.
+    })
   } catch (err: any) {
     errors.value.submit = err?.data?.statusMessage ?? 'Failed to schedule interview'
   } finally {
@@ -341,7 +401,8 @@ async function handleMoveToInterview() {
       method: 'PATCH',
       body: { status: 'interview' },
     })
-    await refreshNuxtData('interviews')
+    // Non-blocking refresh; the caller will close the sidebar via the emit regardless.
+    refreshNuxtData('interviews').catch(() => {})
     emit('scheduled')
   } catch (err: any) {
     errors.value.submit = err?.data?.statusMessage ?? 'Failed to move to interview stage'
@@ -353,7 +414,7 @@ async function handleMoveToInterview() {
 
 <template>
   <Teleport :to="teleportTarget">
-    <div class="fixed inset-0 z-50 flex justify-end">
+    <div class="factory-dashboard-portal fixed inset-0 z-[80] flex justify-end">
       <!-- Backdrop -->
       <Transition
         enter-active-class="transition duration-300 ease-out"
@@ -514,7 +575,7 @@ async function handleMoveToInterview() {
 
               <div class="space-y-2">
                 <!-- Option: Standard email -->
-                <div class="rounded-xl border transition-all" :class="notifyViaEmail ? 'border-brand-300 dark:border-brand-700 bg-brand-50/30 dark:bg-brand-950/10' : 'border-surface-200 dark:border-surface-700/80'">
+                <div class="rounded-xl border transition-all" :class="notifyViaEmail ? 'border-brand-300 dark:border-brand-700' : 'border-transparent'">
                   <label class="flex items-center gap-3 cursor-pointer px-3.5 py-3 group">
                     <input
                       v-model="notifyViaEmail"
@@ -607,12 +668,12 @@ async function handleMoveToInterview() {
                 </div>
 
                 <!-- Option: Calendar sync -->
-                <div class="rounded-xl border transition-all" :class="notifyViaCalendar ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50/30 dark:bg-emerald-950/10' : 'border-surface-200 dark:border-surface-700/80'">
-                  <label class="flex items-center gap-3 px-3.5 py-3 group" :class="calendarConnected ? 'cursor-pointer' : 'cursor-default'">
+                <div class="rounded-xl border transition-all" :class="notifyViaCalendar ? 'border-emerald-300 dark:border-emerald-700' : 'border-transparent'">
+                  <label class="flex items-center gap-3 px-3.5 py-3 group" :class="canUseCalendar ? 'cursor-pointer' : 'cursor-default'">
                     <input
                       v-model="notifyViaCalendar"
                       type="checkbox"
-                      :disabled="!calendarConnected"
+                      :disabled="!canUseCalendar"
                       class="size-4 rounded border-surface-300 dark:border-surface-600 text-emerald-600 focus:ring-emerald-500/20 focus:ring-offset-0 cursor-pointer disabled:cursor-not-allowed"
                     />
                     <Calendar class="size-4 shrink-0 transition-colors" :class="notifyViaCalendar ? 'text-emerald-600 dark:text-emerald-400' : 'text-surface-400 dark:text-surface-500'" />
@@ -621,7 +682,7 @@ async function handleMoveToInterview() {
                         {{ calendarProviderLabel }}
                       </p>
                       <p class="text-[11px] text-surface-400 dark:text-surface-500">
-                        <template v-if="calendarConnected">Create calendar event with invite</template>
+                        <template v-if="canUseCalendar">Create calendar event with invite</template>
                         <template v-else>
                           <NuxtLink to="/dashboard/settings/integrations" class="underline underline-offset-2 hover:text-surface-600 dark:hover:text-surface-400 transition-colors" @click.stop>Connect in Settings</NuxtLink>
                           to enable
@@ -630,7 +691,7 @@ async function handleMoveToInterview() {
                     </div>
                     <!-- Customize toggle -->
                     <button
-                      v-if="notifyViaCalendar && calendarConnected"
+                      v-if="notifyViaCalendar && canUseCalendar"
                       type="button"
                       class="shrink-0 rounded-lg p-1.5 text-surface-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-400 dark:hover:bg-emerald-950/30 transition-colors cursor-pointer"
                       title="Customize event"
@@ -689,6 +750,15 @@ async function handleMoveToInterview() {
                         />
                         <Bell class="size-3.5 text-surface-400" />
                         <span class="text-[12px] text-surface-600 dark:text-surface-400">Send calendar notifications</span>
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                          v-model="calendarCustomization.generateTeamsLink"
+                          type="checkbox"
+                          class="size-3.5 rounded border-surface-300 dark:border-surface-600 text-emerald-600 focus:ring-emerald-500/20 focus:ring-offset-0 cursor-pointer"
+                        />
+                        <Video class="size-3.5 text-surface-400" />
+                        <span class="text-[12px] text-surface-600 dark:text-surface-400">Generate Teams meeting link</span>
                       </label>
                     </div>
                   </div>
@@ -789,10 +859,11 @@ async function handleMoveToInterview() {
                     </div>
                   </div>
                   <!-- Time List -->
-                  <div class="flex-1 overflow-y-auto px-1.5 pb-2 flex flex-col gap-0.5 min-h-0">
+                  <div ref="timeScroller" class="flex-1 overflow-y-auto px-1.5 pb-2 flex flex-col gap-0.5 min-h-0">
                     <button
                       v-for="slot in timeSlots"
                       :key="slot"
+                      :data-time="slot"
                       type="button"
                       class="shrink-0 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-center transition-all duration-100 cursor-pointer"
                       :class="form.time === slot
@@ -833,33 +904,82 @@ async function handleMoveToInterview() {
 
               <!-- Timezone -->
               <div class="mt-3">
-                <label for="interview-timezone" class="text-[12px] font-medium text-surface-500 dark:text-surface-400 mb-1.5 flex items-center gap-1.5">
+                <label class="text-[12px] font-medium text-surface-500 dark:text-surface-400 mb-1.5 flex items-center gap-1.5">
                   <Globe class="size-3 text-surface-400" />
                   Timezone
                 </label>
-                <select
-                  id="interview-timezone"
-                  v-model="form.timezone"
-                  class="w-full rounded-lg border border-surface-200 dark:border-surface-700/80 bg-surface-50/50 dark:bg-surface-800/50 px-3 py-1.5 text-[13px] text-surface-700 dark:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all cursor-pointer"
-                >
-                  <option v-for="tz in commonTimezones" :key="tz" :value="tz">{{ tz }}</option>
-                </select>
+                <div class="relative">
+                  <button
+                    type="button"
+                    class="w-full flex items-center justify-between rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2.5 text-[13px] text-left transition-all hover:border-surface-300 dark:hover:border-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400 cursor-pointer"
+                    @click="showTimezoneDropdown = !showTimezoneDropdown"
+                  >
+                    <span class="truncate text-surface-800 dark:text-surface-200">{{ timezoneLabel }}</span>
+                    <ChevronDown class="size-4 shrink-0 text-surface-400 transition-transform" :class="showTimezoneDropdown ? 'rotate-180' : ''" />
+                  </button>
+
+                  <!-- Timezone dropdown menu -->
+                  <Transition
+                    enter-active-class="transition duration-150 ease-out"
+                    enter-from-class="opacity-0 -translate-y-1"
+                    enter-to-class="opacity-100 translate-y-0"
+                    leave-active-class="transition duration-100 ease-in"
+                    leave-from-class="opacity-100 translate-y-0"
+                    leave-to-class="opacity-0 -translate-y-1"
+                  >
+                    <div
+                      v-if="showTimezoneDropdown"
+                      class="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-lg shadow-surface-900/10 dark:shadow-black/20"
+                    >
+                      <button
+                        v-for="tz in commonTimezones"
+                        :key="tz"
+                        type="button"
+                        class="w-full flex items-center justify-between px-3 py-2 text-left text-[13px] hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors cursor-pointer"
+                        :class="form.timezone === tz ? 'bg-brand-50/60 dark:bg-brand-950/20 text-brand-700 dark:text-brand-300' : 'text-surface-800 dark:text-surface-200'"
+                        @click="form.timezone = tz; showTimezoneDropdown = false"
+                      >
+                        <span class="truncate">{{ tz }}</span>
+                        <div v-if="form.timezone === tz" class="shrink-0 text-brand-600 dark:text-brand-400">
+                          <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        </div>
+                      </button>
+                    </div>
+                  </Transition>
+                </div>
               </div>
             </div>
 
-            <!-- Location -->
+            <!-- Location / Meeting link -->
             <div>
-              <label for="interview-location" class="block text-[13px] font-medium text-surface-700 dark:text-surface-300 mb-2">
+              <label class="block text-[13px] font-medium text-surface-700 dark:text-surface-300 mb-2">
                 <MapPin class="inline size-3.5 mr-1.5 -mt-0.5 text-surface-400" />
                 Location or meeting link
               </label>
+
+              <!-- Teams link bubble (when generate is on) -->
+              <div v-if="calendarCustomization.generateTeamsLink" class="inline-flex items-center gap-2 rounded-full bg-emerald-100 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 px-3 py-1 text-sm text-emerald-800 dark:text-emerald-300 mb-2">
+                <span>Teams meeting link (auto-generated)</span>
+                <button
+                  type="button"
+                  class="text-emerald-500 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-200"
+                  @click="calendarCustomization.generateTeamsLink = false; form.location = ''"
+                >
+                  <X class="size-3.5" />
+                </button>
+              </div>
+
+              <!-- Manual location input -->
               <input
+                v-else
                 id="interview-location"
                 v-model="form.location"
                 type="text"
                 placeholder="Zoom link, office address…"
-                class="w-full rounded-xl border border-surface-200 dark:border-surface-700/80 bg-surface-50/50 dark:bg-surface-800/50 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 focus:bg-white dark:focus:bg-surface-800 transition-all"
+                :class="errors.location ? 'border-danger-300 dark:border-danger-700' : 'border-surface-200 dark:border-surface-700/80'"
+                class="w-full rounded-xl border bg-surface-50/50 dark:bg-surface-800/50 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 focus:bg-white dark:focus:bg-surface-800 transition-all"
               />
+              <p v-if="errors.location" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ errors.location }}</p>
             </div>
 
             <!-- Interviewers -->
@@ -867,36 +987,46 @@ async function handleMoveToInterview() {
               <label class="block text-[13px] font-medium text-surface-700 dark:text-surface-300 mb-2">
                 <Users class="inline size-3.5 mr-1.5 -mt-0.5 text-surface-400" />
                 Interviewers
-                <span class="font-normal text-surface-400 dark:text-surface-500">(optional)</span>
               </label>
-              <div class="space-y-2">
-                <div v-for="(email, idx) in form.interviewers" :key="idx" class="flex items-center gap-2">
-                  <input
-                    v-model="form.interviewers[idx]"
-                    type="email"
-                    :placeholder="`interviewer${idx + 1}@example.com`"
-                    :class="errors.interviewers && email.trim() && !EMAIL_RE.test(email.trim()) ? 'border-danger-300 dark:border-danger-700' : 'border-surface-200 dark:border-surface-700/80'"
-                    class="flex-1 rounded-xl border bg-surface-50/50 dark:bg-surface-800/50 px-4 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 focus:bg-white dark:focus:bg-surface-800 transition-all"
-                  />
+
+              <!-- Interviewer bubbles -->
+              <div v-if="form.interviewers.length > 0" class="flex flex-wrap gap-2 mb-2">
+                <div
+                  v-for="(email, idx) in form.interviewers"
+                  :key="idx"
+                  class="inline-flex items-center gap-1.5 rounded-full bg-surface-100 dark:bg-surface-700 px-3 py-1 text-sm text-surface-800 dark:text-surface-200"
+                >
+                  <span class="truncate max-w-[180px]">{{ email }}</span>
                   <button
-                    v-if="form.interviewers.length > 1"
                     type="button"
-                    class="flex items-center justify-center rounded-lg p-1.5 text-surface-400 hover:text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-950/30 transition-colors cursor-pointer"
+                    class="ml-0.5 text-surface-400 hover:text-danger-500 dark:text-surface-500 dark:hover:text-danger-400 transition-colors"
                     @click="removeInterviewer(idx)"
                   >
                     <X class="size-3.5" />
                   </button>
                 </div>
+              </div>
+
+              <!-- Add new interviewer -->
+              <div class="flex items-center gap-2">
+                <input
+                  v-model="newInterviewerEmail"
+                  type="email"
+                  placeholder="Add interviewer email"
+                  class="flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  @keydown.enter.prevent="addNewInterviewer"
+                />
                 <button
                   type="button"
-                  class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-950/20 transition-colors cursor-pointer"
-                  @click="addInterviewer"
+                  class="flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
+                  @click="addNewInterviewer"
                 >
                   <Plus class="size-3.5" />
-                  Add interviewer
+                  Add
                 </button>
-                <p v-if="errors.interviewers" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ errors.interviewers }}</p>
               </div>
+
+              <p v-if="errors.interviewers" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ errors.interviewers }}</p>
             </div>
 
             <!-- Notes -->
@@ -941,7 +1071,7 @@ async function handleMoveToInterview() {
             <div class="flex items-center gap-3">
               <button
                 type="button"
-                class="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-800 hover:bg-surface-50 dark:hover:text-surface-200 dark:hover:bg-surface-800 transition-colors cursor-pointer"
+                class="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm font-medium uppercase tracking-wider text-surface-600 dark:text-surface-400 hover:text-white hover:bg-surface-800 dark:hover:bg-surface-700 transition-colors cursor-pointer"
                 :disabled="isSubmitting || isMoving"
                 @click="emit('close')"
               >
@@ -949,7 +1079,7 @@ async function handleMoveToInterview() {
               </button>
               <button
                 type="button"
-                :disabled="isSubmitting || isMoving"
+                :disabled="isSubmitting || isMoving || !(form.location.trim() || calendarCustomization.generateTeamsLink)"
                 class="flex-[1.5] rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-sm shadow-brand-600/20 dark:shadow-brand-500/10"
                 @click="handleSubmit"
               >

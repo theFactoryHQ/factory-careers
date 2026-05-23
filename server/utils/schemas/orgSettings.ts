@@ -7,4 +7,5 @@ import { z } from 'zod'
 export const updateOrgSettingsSchema = z.object({
   nameDisplayFormat: z.enum(['first_last', 'last_first']).optional(),
   dateFormat: z.enum(['mdy', 'dmy', 'ymd']).optional(),
+  calendarSyncInterviewers: z.boolean().optional(),
 })

@@ -172,91 +172,7 @@ async function copyTrackingUrl(code: string) {
 // Display helpers
 // ─────────────────────────────────────────────
 
-const channelLabels: Record<string, string> = {
-  linkedin: 'LinkedIn',
-  indeed: 'Indeed',
-  glassdoor: 'Glassdoor',
-  ziprecruiter: 'ZipRecruiter',
-  monster: 'Monster',
-  handshake: 'Handshake',
-  angellist: 'AngelList',
-  wellfound: 'Wellfound',
-  dice: 'Dice',
-  stackoverflow: 'Stack Overflow',
-  weworkremotely: 'We Work Remotely',
-  remoteok: 'Remote OK',
-  builtin: 'Built In',
-  hired: 'Hired',
-  lever: 'Lever',
-  greenhouse_board: 'Greenhouse',
-  google_jobs: 'Google Jobs',
-  facebook: 'Facebook',
-  twitter: 'X / Twitter',
-  instagram: 'Instagram',
-  tiktok: 'TikTok',
-  reddit: 'Reddit',
-  referral: 'Referral',
-  career_site: 'Career Site',
-  email: 'Email',
-  event: 'Event',
-  agency: 'Agency',
-  direct: 'Direct',
-  other: 'Other',
-  custom: 'Custom',
-}
 
-const channelColors: Record<string, string> = {
-  linkedin: 'bg-blue-500',
-  indeed: 'bg-indigo-500',
-  glassdoor: 'bg-emerald-500',
-  ziprecruiter: 'bg-green-600',
-  monster: 'bg-violet-500',
-  google_jobs: 'bg-red-500',
-  facebook: 'bg-blue-600',
-  twitter: 'bg-surface-700 dark:bg-surface-300',
-  instagram: 'bg-pink-500',
-  tiktok: 'bg-surface-900 dark:bg-surface-100',
-  reddit: 'bg-orange-500',
-  referral: 'bg-amber-500',
-  career_site: 'bg-brand-500',
-  email: 'bg-teal-500',
-  direct: 'bg-surface-400',
-  other: 'bg-surface-300 dark:bg-surface-600',
-  custom: 'bg-brand-400',
-  event: 'bg-cyan-500',
-  agency: 'bg-rose-500',
-}
-
-const channelBadgeClasses: Record<string, string> = {
-  linkedin: 'bg-blue-50 text-blue-700 ring-blue-200/60 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-800/40',
-  indeed: 'bg-indigo-50 text-indigo-700 ring-indigo-200/60 dark:bg-indigo-950 dark:text-indigo-400 dark:ring-indigo-800/40',
-  glassdoor: 'bg-emerald-50 text-emerald-700 ring-emerald-200/60 dark:bg-emerald-950 dark:text-emerald-400 dark:ring-emerald-800/40',
-  referral: 'bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-800/40',
-  direct: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
-  career_site: 'bg-brand-50 text-brand-700 ring-brand-200/60 dark:bg-brand-950 dark:text-brand-400 dark:ring-brand-800/40',
-  email: 'bg-teal-50 text-teal-700 ring-teal-200/60 dark:bg-teal-950 dark:text-teal-400 dark:ring-teal-800/40',
-}
-
-function getChannelBadge(channel: string) {
-  return channelBadgeClasses[channel] ?? 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700'
-}
-
-function getChannelColor(channel: string) {
-  return channelColors[channel] ?? 'bg-surface-400 dark:bg-surface-500'
-}
-
-function getChannelLabel(channel: string) {
-  return channelLabels[channel] ?? channel
-}
-
-const statusBadgeClasses: Record<string, string> = {
-  new: 'bg-blue-50 text-blue-700 ring-blue-200/60 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-800/40',
-  screening: 'bg-violet-50 text-violet-700 ring-violet-200/60 dark:bg-violet-950 dark:text-violet-400 dark:ring-violet-800/40',
-  interview: 'bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-800/40',
-  offer: 'bg-teal-50 text-teal-700 ring-teal-200/60 dark:bg-teal-950 dark:text-teal-400 dark:ring-teal-800/40',
-  hired: 'bg-green-50 text-green-700 ring-green-200/60 dark:bg-green-950 dark:text-green-400 dark:ring-green-800/40',
-  rejected: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
-}
 
 const totalApplications = computed(() =>
   channelBreakdown.value.reduce((sum, c) => sum + c.count, 0),
@@ -406,10 +322,8 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
             <button
               v-for="range in (['7d', '30d', '90d', 'all'] as const)"
               :key="range"
-              class="px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
-              :class="dateRange === range
-                ? 'bg-brand-600 text-white shadow-sm'
-                : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200'"
+              class="ui-filter-chip px-3 py-1.5 text-xs font-medium transition-all"
+              :class="dateRange === range ? 'ui-filter-chip-active' : 'ui-filter-chip-inactive'"
               @click="dateRange = range"
             >
               {{ range === 'all' ? 'All time' : range.toUpperCase() }}
@@ -417,16 +331,13 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </div>
 
           <!-- Job filter -->
-          <div class="relative">
-            <select
-              v-model="selectedJobId"
-              class="ui-field appearance-none pl-3 pr-8 py-2 text-xs font-medium cursor-pointer"
-            >
-              <option :value="undefined">All jobs</option>
-              <option v-for="j in jobs" :key="j.id" :value="j.id">{{ j.title }}</option>
-            </select>
-            <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-surface-400 pointer-events-none" />
-          </div>
+          <FactorySelect
+            v-model="selectedJobId"
+            :options="[
+              { value: undefined, label: 'All jobs' },
+              ...jobs.map((j: { id: string; title: string }) => ({ value: j.id, label: j.title }))
+            ]"
+          />
 
           <!-- Create link button -->
           <button
@@ -449,10 +360,8 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
             { key: 'table', label: 'Attribution Log', icon: Users },
           ] as const"
           :key="tab.key"
-          class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors"
-          :class="showTab === tab.key
-            ? 'border-brand-600 text-brand-600 dark:text-brand-400 dark:border-brand-400'
-            : 'border-transparent text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200'"
+          class="ui-tab flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium -mb-px transition-colors"
+          :class="showTab === tab.key ? 'ui-tab-active' : 'ui-tab-inactive'"
           @click="showTab = tab.key; if (tab.key !== 'table') selectedChannel = undefined"
         >
           <component :is="tab.icon" class="size-4" />
@@ -568,7 +477,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
             <div class="ui-panel ui-dashboard-panel shadow-xs dark:shadow-none">
               <div class="ui-panel-header ui-dashboard-panel-header flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
-                  <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
+                  <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
                     <BarChart3 class="size-3.5 text-surface-500 dark:text-surface-400" />
                   </div>
                   <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Applications by Source</h2>
@@ -595,9 +504,9 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                 >
                   <div class="flex items-center justify-between mb-1.5">
                     <div class="flex items-center gap-2">
-                      <div class="size-2.5 rounded-full" :class="getChannelColor(item.channel)" />
+                      <div class="size-2.5 rounded-full" :class="getSourceChannelDotClass(item.channel)" />
                       <span class="text-sm font-medium text-surface-700 dark:text-surface-200">
-                        {{ getChannelLabel(item.channel) }}
+                        {{ getSourceChannelLabel(item.channel) }}
                       </span>
                     </div>
                     <div class="flex items-center gap-3">
@@ -609,10 +518,10 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                       </span>
                     </div>
                   </div>
-                  <div class="h-2 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden">
+                  <div class="ui-meter-track h-2 rounded-full overflow-hidden">
                     <div
-                      class="h-full rounded-full transition-all duration-700 ease-out"
-                      :class="getChannelColor(item.channel)"
+                      class="ui-meter-fill h-full rounded-full transition-all duration-700 ease-out"
+                      :class="getSourceChannelDotClass(item.channel)"
                       :style="{ width: `${(item.count / maxChannelCount) * 100}%` }"
                     />
                   </div>
@@ -625,9 +534,9 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
               v-if="Object.keys(funnel).length > 0"
               class="ui-table-shell shadow-xs dark:shadow-none"
             >
-              <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
+              <div class="ui-panel-divider flex items-center justify-between px-6 py-4">
                 <div class="flex items-center gap-2.5">
-                  <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
+                  <div class="ui-dashboard-soft-icon flex items-center justify-center size-7 rounded-lg">
                     <TrendingUp class="size-3.5 text-surface-500 dark:text-surface-400" />
                   </div>
                   <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Conversion by Source</h2>
@@ -656,8 +565,8 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                     >
                       <td class="px-6 py-3">
                         <div class="flex items-center gap-2">
-                          <div class="size-2 rounded-full" :class="getChannelColor(channel as string)" />
-                          <span class="font-medium text-surface-800 dark:text-surface-200">{{ getChannelLabel(channel as string) }}</span>
+                          <div class="size-2 rounded-full" :class="getSourceChannelDotClass(channel as string)" />
+                          <span class="font-medium text-surface-800 dark:text-surface-200">{{ getSourceChannelLabel(channel as string) }}</span>
                         </div>
                       </td>
                       <td class="px-3 py-3 text-center tabular-nums text-surface-600 dark:text-surface-300">{{ stages.new ?? 0 }}</td>
@@ -721,10 +630,10 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                   <div class="flex items-center justify-between mb-1">
                     <span class="text-sm font-medium text-surface-800 dark:text-surface-200 truncate hover:text-brand-600 dark:hover:text-brand-400 transition-colors">{{ link.name }}</span>
                     <span
-                      class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset shrink-0 ml-2"
-                      :class="getChannelBadge(link.channel)"
+                      class="ui-pill inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset shrink-0 ml-2"
+                      :class="getSourceChannelBadgeClass(link.channel)"
                     >
-                      {{ getChannelLabel(link.channel) }}
+                      {{ getSourceChannelLabel(link.channel) }}
                     </span>
                   </div>
                   <div class="flex items-center gap-4 text-xs text-surface-400">
@@ -801,12 +710,12 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                 <p class="text-xs text-surface-400">No attributed applications yet</p>
               </div>
 
-              <div v-else class="divide-y divide-surface-100 dark:divide-surface-800">
+              <div v-else class="ui-list-divider divide-y divide-surface-100 dark:divide-surface-800">
                 <NuxtLink
                   v-for="app in recentAttributed.slice(0, 5)"
                   :key="app.applicationId"
                   :to="localePath(`/dashboard/jobs/${app.jobId}/candidates`)"
-                  class="flex items-center gap-3 px-5 py-3 hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors group"
+                  class="ui-list-row flex items-center gap-3 px-5 py-3 hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors group"
                 >
                   <div class="flex items-center justify-center size-8 rounded-full bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-900/80 dark:to-brand-800/80 shrink-0 ring-1 ring-brand-200/50 dark:ring-brand-800/50">
                     <span class="text-[10px] font-bold text-brand-700 dark:text-brand-300">
@@ -820,10 +729,10 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                     <div class="text-xs text-surface-400 truncate">{{ app.jobTitle }}</div>
                   </div>
                   <span
-                    class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset shrink-0"
-                    :class="getChannelBadge(app.channel)"
+                    class="ui-pill inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset shrink-0"
+                    :class="getSourceChannelBadgeClass(app.channel)"
                   >
-                    {{ getChannelLabel(app.channel) }}
+                    {{ getSourceChannelLabel(app.channel) }}
                   </span>
                 </NuxtLink>
               </div>
@@ -895,17 +804,17 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                     >
                       {{ link.name }}
                     </NuxtLink>
-                    <div class="text-[11px] text-surface-400 dark:text-surface-500 font-mono truncate max-w-[200px]">
+                    <div class="ui-code text-[11px] truncate max-w-[200px]">
                       ?ref={{ link.code }}
                     </div>
                   </td>
                   <!-- Channel -->
                   <td class="px-4 py-3.5">
                     <span
-                      class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
-                      :class="getChannelBadge(link.channel)"
+                      class="ui-pill inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
+                      :class="getSourceChannelBadgeClass(link.channel)"
                     >
-                      {{ getChannelLabel(link.channel) }}
+                      {{ getSourceChannelLabel(link.channel) }}
                     </span>
                   </td>
                   <!-- Job -->
@@ -985,10 +894,10 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           <span class="text-xs text-surface-500 dark:text-surface-400">Filtered by:</span>
           <span
             class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
-            :class="getChannelBadge(selectedChannel)"
+            :class="getSourceChannelBadgeClass(selectedChannel)"
           >
-            <span class="size-1.5 rounded-full" :class="getChannelColor(selectedChannel)" />
-            {{ getChannelLabel(selectedChannel) }}
+            <span class="size-1.5 rounded-full" :class="getSourceChannelDotClass(selectedChannel)" />
+            {{ getSourceChannelLabel(selectedChannel) }}
             <button class="ml-0.5 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="selectedChannel = undefined">
               <X class="size-3" />
             </button>
@@ -1047,10 +956,10 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                   <td class="px-4 py-3.5">
                     <div class="flex items-center gap-2">
                       <span
-                        class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
-                        :class="getChannelBadge(app.channel)"
+                        class="ui-pill inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
+                        :class="getSourceChannelBadgeClass(app.channel)"
                       >
-                        {{ getChannelLabel(app.channel) }}
+                        {{ getSourceChannelLabel(app.channel) }}
                       </span>
                     </div>
                     <div v-if="app.trackingLinkName" class="text-[11px] text-surface-400 mt-0.5 truncate max-w-[140px]">
@@ -1068,7 +977,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                   <td class="px-4 py-3.5 text-center">
                     <span
                       class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ring-1 ring-inset"
-                      :class="statusBadgeClasses[app.status] ?? 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400 ring-surface-200 dark:ring-surface-700'"
+                      :class="getApplicationStatusBadgeClass(app.status)"
                     >
                       {{ app.status }}
                     </span>
@@ -1125,24 +1034,15 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
             <!-- Channel -->
             <div>
               <label for="link-channel" class="mb-2 block text-xs font-semibold uppercase text-white/55">Source Channel</label>
-              <div class="relative">
-                <select
-                  id="link-channel"
-                  v-model="newLink.channel"
-                  class="ui-field appearance-none px-4 py-3 pr-10 [color-scheme:dark]"
-                >
-                  <optgroup label="Job Boards">
-                    <option v-for="ch in ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
-                  </optgroup>
-                  <optgroup label="Social Media">
-                    <option v-for="ch in ['facebook', 'twitter', 'instagram', 'tiktok', 'reddit']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
-                  </optgroup>
-                  <optgroup label="Other">
-                    <option v-for="ch in ['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
-                  </optgroup>
-                </select>
-                <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-brand-500" />
-              </div>
+              <FactorySelect
+                id="link-channel"
+                v-model="newLink.channel"
+                :options="[
+                  ...['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs'].map(ch => ({ value: ch, label: getSourceChannelLabel(ch) })),
+                  ...['facebook', 'twitter', 'instagram', 'tiktok', 'reddit'].map(ch => ({ value: ch, label: getSourceChannelLabel(ch) })),
+                  ...['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other'].map(ch => ({ value: ch, label: getSourceChannelLabel(ch) }))
+                ]"
+              />
             </div>
 
             <!-- Job (optional) -->
@@ -1150,17 +1050,14 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
               <label for="link-job" class="mb-2 block text-xs font-semibold uppercase text-white/55">
                 Scope to Job <span class="font-normal text-white/35">(optional)</span>
               </label>
-              <div class="relative">
-                <select
-                  id="link-job"
-                  v-model="newLink.jobId"
-                  class="ui-field appearance-none px-4 py-3 pr-10 [color-scheme:dark]"
-                >
-                  <option value="">All jobs (org-wide)</option>
-                  <option v-for="j in jobs" :key="j.id" :value="j.id">{{ j.title }}</option>
-                </select>
-                <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-brand-500" />
-              </div>
+              <FactorySelect
+                id="link-job"
+                v-model="newLink.jobId"
+                :options="[
+                  { value: '', label: 'All jobs (org-wide)' },
+                  ...jobs.map((j: { id: string; title: string }) => ({ value: j.id, label: j.title }))
+                ]"
+              />
             </div>
 
             <!-- UTM fields (collapsible) -->

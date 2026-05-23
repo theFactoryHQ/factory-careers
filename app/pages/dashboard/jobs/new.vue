@@ -899,15 +899,11 @@ const questionTypeLabels: Record<QuestionType, string> = {
                     <label for="type" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
                       Workplace type
                     </label>
-                    <select
+                    <FactorySelect
                       id="type"
                       v-model="form.type"
-                      class="w-full rounded-lg border px-3 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors bg-white dark:bg-surface-900 border-surface-300 dark:border-surface-700"
-                    >
-                      <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
-                        {{ opt.label }}
-                      </option>
-                    </select>
+                      :options="typeOptions"
+                    />
                   </div>
                 </div>
               </div>
@@ -918,29 +914,29 @@ const questionTypeLabels: Record<QuestionType, string> = {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label for="experienceLevel" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Experience level</label>
-                    <select
+                    <FactorySelect
                       id="experienceLevel"
                       v-model="form.experienceLevel"
-                      class="w-full rounded-lg border px-3 py-2.5 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 border-surface-300 dark:border-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                    >
-                      <option value="junior">Junior</option>
-                      <option value="mid">Mid-level</option>
-                      <option value="senior">Senior</option>
-                      <option value="lead">Lead</option>
-                    </select>
+                      :options="[
+                        { value: 'junior', label: 'Junior' },
+                        { value: 'mid', label: 'Mid-level' },
+                        { value: 'senior', label: 'Senior' },
+                        { value: 'lead', label: 'Lead' },
+                      ]"
+                    />
                   </div>
                   <div>
                     <label for="remoteStatus" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Remote status</label>
-                    <select
+                    <FactorySelect
                       id="remoteStatus"
                       v-model="form.remoteStatus"
-                      class="w-full rounded-lg border px-3 py-2.5 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 border-surface-300 dark:border-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                    >
-                      <option :value="undefined">Not specified</option>
-                      <option value="remote">Remote</option>
-                      <option value="hybrid">Hybrid</option>
-                      <option value="onsite">On-site</option>
-                    </select>
+                      :options="[
+                        { value: undefined, label: 'Not specified' },
+                        { value: 'remote', label: 'Remote' },
+                        { value: 'hybrid', label: 'Hybrid' },
+                        { value: 'onsite', label: 'On-site' },
+                      ]"
+                    />
                   </div>
                 </div>
               </div>
@@ -1442,12 +1438,10 @@ const questionTypeLabels: Record<QuestionType, string> = {
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-surface-700 dark:text-surface-300 mb-1">Category</label>
-                    <select
+                    <FactorySelect
                       v-model="customCriterionForm.category"
-                      class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    >
-                      <option v-for="(label, key) in categoryLabels" :key="key" :value="key">{{ label }}</option>
-                    </select>
+                      :options="Object.entries(categoryLabels).map(([key, label]) => ({ value: key, label }))"
+                    />
                   </div>
                 </div>
                 <div>

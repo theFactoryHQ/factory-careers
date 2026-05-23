@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm'
-import { interview, application, candidate, job } from '../../../database/schema'
+import { interview, application, candidate, job, interviewCalendarEvent } from '../../../database/schema'
 import { interviewIdParamSchema } from '../../../utils/schemas/interview'
 
 export default defineEventHandler(async (event) => {
@@ -47,5 +47,34 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Interview not found' })
   }
 
-  return data
+  const calendarEventFilters = [
+    eq(interviewCalendarEvent.interviewId, id),
+    // Tenant isolation: only return calendar events belonging to the same organization
+    // as the interview (prevents cross-org leakage even if interviewId is guessed).
+    eq(interviewCalendarEvent.organizationId, orgId),
+  ]
+  if (data.calendarEventProvider) {
+    calendarEventFilters.push(eq(interviewCalendarEvent.provider, data.calendarEventProvider))
+  }
+
+  const calendarEvents = await db
+    .select({
+      id: interviewCalendarEvent.id,
+      destinationType: interviewCalendarEvent.destinationType,
+      destinationEmail: interviewCalendarEvent.destinationEmail,
+      eventId: interviewCalendarEvent.eventId,
+      eventLink: interviewCalendarEvent.eventLink,
+      isPrimary: interviewCalendarEvent.isPrimary,
+      syncStatus: interviewCalendarEvent.syncStatus,
+      lastError: interviewCalendarEvent.lastError,
+      createdAt: interviewCalendarEvent.createdAt,
+    })
+    .from(interviewCalendarEvent)
+    .where(and(...calendarEventFilters))
+    .orderBy(interviewCalendarEvent.isPrimary, interviewCalendarEvent.createdAt)
+
+  return {
+    ...data,
+    calendarEvents,
+  }
 })

@@ -358,6 +358,18 @@ export const envSchema = z
         });
       }
     }
+
+    // GITHUB_FEEDBACK_TOKEN and GITHUB_FEEDBACK_REPO must both be set or both absent.
+    const hasFeedbackToken = !!data.GITHUB_FEEDBACK_TOKEN;
+    const hasFeedbackRepo = !!data.GITHUB_FEEDBACK_REPO;
+    if (hasFeedbackToken !== hasFeedbackRepo) {
+      const missing = hasFeedbackToken ? 'GITHUB_FEEDBACK_REPO' : 'GITHUB_FEEDBACK_TOKEN';
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [missing],
+        message: 'GITHUB_FEEDBACK_TOKEN and GITHUB_FEEDBACK_REPO must both be set (or both absent) to enable in-app feedback.',
+      });
+    }
   });
 
 /**

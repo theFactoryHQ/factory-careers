@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
 
   const preferredProvider = getPreferredCalendarProvider()
   const expectedAccountEmail = getMicrosoftCalendarAccountEmail()
-  const microsoftDestinationSummary = getMicrosoftCalendarDestinationSummary()
+  const isMicrosoftApplicationMode = preferredProvider === 'microsoft' && isMicrosoftCalendarApplicationMode()
 
   if (!isCalendarConfigured()) {
     return {
@@ -38,7 +38,8 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  if (preferredProvider === 'microsoft' && isMicrosoftCalendarApplicationMode()) {
+  if (isMicrosoftApplicationMode) {
+    const microsoftDestinationSummary = await getMicrosoftCalendarDestinationSummary(orgId)
     const primaryDestination = microsoftDestinationSummary.destinations.find(destination => destination.isPrimary)
       ?? microsoftDestinationSummary.destinations[0]
 

@@ -228,7 +228,7 @@ function formatPrice(p: number | null): string {
 
     <div
       v-else-if="!canManageAi"
-      class="ui-alert ui-alert-warning p-5 flex items-start gap-3"
+      class="ui-alert ui-alert-warning ui-settings-route-alert"
     >
       <AlertTriangle class="size-5 shrink-0 mt-0.5" />
       <div>
@@ -238,7 +238,7 @@ function formatPrice(p: number | null): string {
     </div>
 
     <!-- Loading -->
-    <div v-else-if="isLoading" class="ui-panel p-8 text-center text-sm text-surface-500">
+    <div v-else-if="isLoading" class="ui-panel ui-dashboard-panel p-8 text-center text-sm text-surface-500">
       <Loader2 class="size-5 animate-spin mx-auto mb-2 text-surface-400" />
       Loading configurations…
     </div>
@@ -246,9 +246,9 @@ function formatPrice(p: number | null): string {
     <!-- Empty state -->
     <div
       v-else-if="configs.length === 0"
-      class="ui-empty-panel border-dashed p-10"
+      class="ui-empty-panel ui-empty-panel-dashed ui-settings-empty-panel"
     >
-      <div class="ui-icon-state ui-icon-state-brand mx-auto flex size-12 items-center justify-center mb-3">
+      <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile mx-auto size-12 mb-3">
         <Brain class="size-6" />
       </div>
       <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">No AI models configured yet</h2>
@@ -269,7 +269,7 @@ function formatPrice(p: number | null): string {
       <li
         v-for="c in configs"
         :key="c.id"
-        class="ui-panel overflow-hidden"
+        class="ui-panel ui-dashboard-panel overflow-hidden"
       >
         <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-4">
           <!-- Identity -->
@@ -323,13 +323,13 @@ function formatPrice(p: number | null): string {
             <div v-if="testResults[c.id]" class="mt-2">
               <span
                 v-if="testResults[c.id]?.success"
-                class="inline-flex items-center gap-1 text-[11px] text-success-600 dark:text-success-400"
+                class="ui-feedback-success text-[11px]"
               >
                 <Check class="size-3" /> Connection verified.
               </span>
               <span
                 v-else
-                class="inline-flex items-start gap-1 text-[11px] text-danger-600 dark:text-danger-400"
+                class="ui-feedback-danger items-start text-[11px]"
               >
                 <AlertTriangle class="size-3 mt-px" /> {{ testResults[c.id]?.message }}
               </span>

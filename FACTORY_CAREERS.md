@@ -34,20 +34,6 @@ S3_SKIP_BUCKET_POLICY=true
 S3_SKIP_BUCKET_INIT=false
 SKIP_RUNTIME_MIGRATIONS=false
 
-FACTORY_ORG_NAME=Factory
-FACTORY_ORG_SLUG=factory
-FACTORY_ALLOWED_EMAIL_DOMAINS=thefactoryhq.com
-FACTORY_CAREERS_HIRING_INBOX=careers@thefactoryhq.com
-FACTORY_CAREERS_CALENDAR_EMAIL=interviews@thefactoryhq.com
-MICROSOFT_CALENDAR_AUTH_MODE=application
-FACTORY_CAREERS_CALENDAR_SYNC_SHARED=true
-FACTORY_CAREERS_CALENDAR_USER_EMAILS=
-FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS=false
-FACTORY_DISABLE_PUBLIC_SIGNUP=true
-FACTORY_ADMIN_SSO_ONLY=true
-FACTORY_DISABLE_PUBLIC_ORG_CREATION=true
-FACTORY_DISABLE_ANALYTICS_CONSENT_BANNER=true
-
 AUTH_MICROSOFT_CLIENT_ID=...
 AUTH_MICROSOFT_CLIENT_SECRET=...
 AUTH_MICROSOFT_TENANT_ID=...
@@ -59,16 +45,3 @@ MICROSOFT_CALENDAR_TENANT_ID=...
 # FACTORY_CAREERS_CALENDAR_EMAIL should be a shared mailbox or user mailbox.
 # Scope Exchange app access to the shared mailbox and configured user mailboxes.
 
-RESEND_API_KEY=...
-RESEND_FROM_EMAIL="Factory Careers <careers@thefactoryhq.com>"
-```
-
-After the first migration has run, seed launch content:
-
-```bash
-npm run db:seed:factory
-```
-
-Documents stay private. Candidate resumes are stored by server-side object keys and are only previewed/downloaded through authenticated dashboard routes.
-
-For a temporary free Render scaffold before Supabase is available, set `S3_SKIP_BUCKET_INIT=true` and `SKIP_RUNTIME_MIGRATIONS=true` with placeholder `DATABASE_URL` and S3 values. Turn both flags back to `false` before production smoke testing.

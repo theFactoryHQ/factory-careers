@@ -178,7 +178,7 @@ function formatResponseValue(value: unknown): string {
     <!-- Application detail -->
     <template v-else-if="application">
       <!-- Header -->
-      <div class="relative mb-4 border border-white/12 bg-white/[0.025] p-5">
+      <div class="relative mb-4 ui-panel ui-dashboard-panel p-5">
         <div class="flex flex-col gap-4 sm:pr-56">
           <div class="min-w-0">
             <p class="mb-2 text-xs font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
@@ -226,7 +226,7 @@ function formatResponseValue(value: unknown): string {
       </div>
 
       <!-- Quick actions -->
-      <div class="mb-6 border border-white/12 bg-white/[0.025] p-3">
+      <div class="mb-6 ui-panel ui-dashboard-panel p-3">
         <div class="flex flex-nowrap items-center gap-1.5 overflow-x-auto">
           <span class="inline-flex shrink-0 items-center whitespace-nowrap bg-white/[0.04] px-2 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal text-white/58">Quick actions</span>
           <button
@@ -255,7 +255,7 @@ function formatResponseValue(value: unknown): string {
 
       <div class="grid gap-4 md:grid-cols-2">
         <!-- Candidate info -->
-        <div class="border border-white/12 bg-white/[0.025] p-5">
+        <div class="ui-panel ui-dashboard-panel p-5">
           <div class="flex items-center gap-2 mb-3">
             <User class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Candidate</h2>
@@ -290,7 +290,7 @@ function formatResponseValue(value: unknown): string {
         </div>
 
         <!-- Job info -->
-        <div class="border border-white/12 bg-white/[0.025] p-5">
+        <div class="ui-panel ui-dashboard-panel p-5">
           <div class="flex items-center gap-2 mb-3">
             <Briefcase class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Job</h2>
@@ -315,7 +315,7 @@ function formatResponseValue(value: unknown): string {
         </div>
 
         <!-- Application scoring -->
-        <div class="border border-white/12 bg-white/[0.025] p-5 md:col-span-2">
+        <div class="ui-panel ui-dashboard-panel p-5 md:col-span-2">
           <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex items-center gap-2">
               <Brain class="size-4 text-surface-500 dark:text-surface-400" />
@@ -365,7 +365,7 @@ function formatResponseValue(value: unknown): string {
       </div>
 
       <!-- Notes -->
-      <div class="mt-4 border border-white/12 bg-white/[0.025] p-5 mb-4">
+      <div class="mt-4 ui-panel ui-dashboard-panel p-5 mb-4">
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-2">
             <MessageSquare class="size-4 text-surface-500 dark:text-surface-400" />
@@ -423,7 +423,7 @@ function formatResponseValue(value: unknown): string {
       </div>
 
       <!-- Custom properties (Notion-style) -->
-      <div class="border border-white/12 bg-white/[0.025] p-4 mb-4">
+      <div class="ui-panel ui-dashboard-panel p-4 mb-4">
         <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200 mb-2 px-2">Properties</h2>
         <PropertyBlock
           entity-type="application"
@@ -437,7 +437,7 @@ function formatResponseValue(value: unknown): string {
       <!-- Question Responses -->
       <div
         v-if="application.responses && application.responses.length > 0"
-        class="border border-white/12 bg-white/[0.025] p-5"
+        class="ui-panel ui-dashboard-panel p-5"
       >
         <div class="flex items-center gap-2 mb-3">
           <FileText class="size-4 text-surface-500 dark:text-surface-400" />

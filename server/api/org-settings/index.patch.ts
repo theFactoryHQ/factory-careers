@@ -15,18 +15,21 @@ export default defineEventHandler(async (event) => {
       organizationId: orgId,
       nameDisplayFormat: body.nameDisplayFormat ?? 'first_last',
       dateFormat: body.dateFormat ?? 'mdy',
+      calendarSyncInterviewers: body.calendarSyncInterviewers ?? false,
     })
     .onConflictDoUpdate({
       target: orgSettings.organizationId,
       set: {
         ...(body.nameDisplayFormat !== undefined && { nameDisplayFormat: body.nameDisplayFormat }),
         ...(body.dateFormat !== undefined && { dateFormat: body.dateFormat }),
+        ...(body.calendarSyncInterviewers !== undefined && { calendarSyncInterviewers: body.calendarSyncInterviewers }),
         updatedAt: new Date(),
       },
     })
     .returning({
       nameDisplayFormat: orgSettings.nameDisplayFormat,
       dateFormat: orgSettings.dateFormat,
+      calendarSyncInterviewers: orgSettings.calendarSyncInterviewers,
     })
 
   if (!result) {

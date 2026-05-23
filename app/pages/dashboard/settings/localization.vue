@@ -102,7 +102,7 @@ const previewDateFormatted = computed(() => {
     <section class="ui-panel ui-settings-panel">
       <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
+          <div class="ui-icon-state ui-icon-state-brand ui-icon-tile size-10 shrink-0">
             <Globe class="size-5" />
           </div>
           <div>
@@ -119,23 +119,12 @@ const previewDateFormatted = computed(() => {
             <label for="localization-name-format" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
               Name display format
             </label>
-            <div class="relative">
-              <select
-                id="localization-name-format"
-                v-model="localNameFormat"
-                class="ui-field h-11 appearance-none pr-10 font-medium disabled:cursor-not-allowed disabled:opacity-50"
-                :disabled="!canUpdateOrg"
-              >
-                <option
-                  v-for="option in nameFormatOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.label }} - {{ option.example }}
-                </option>
-              </select>
-              <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
-            </div>
+            <FactorySelect
+              id="localization-name-format"
+              v-model="localNameFormat"
+              :options="nameFormatOptions.map(o => ({ value: o.value, label: `${o.label} - ${o.example}` }))"
+              :disabled="!canUpdateOrg"
+            />
             <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">
               Currently: {{ selectedNameFormatOption.example }}
             </p>
@@ -146,23 +135,12 @@ const previewDateFormatted = computed(() => {
             <label for="localization-date-format" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
               Date format
             </label>
-            <div class="relative">
-              <select
-                id="localization-date-format"
-                v-model="localDateFormat"
-                class="ui-field h-11 appearance-none pr-10 font-medium disabled:cursor-not-allowed disabled:opacity-50"
-                :disabled="!canUpdateOrg"
-              >
-                <option
-                  v-for="option in dateFormatOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.label }} - {{ option.example }}
-                </option>
-              </select>
-              <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
-            </div>
+            <FactorySelect
+              id="localization-date-format"
+              v-model="localDateFormat"
+              :options="dateFormatOptions.map(o => ({ value: o.value, label: `${o.label} - ${o.example}` }))"
+              :disabled="!canUpdateOrg"
+            />
             <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">
               {{ selectedDateFormatOption.example }}
             </p>

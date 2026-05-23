@@ -77,9 +77,7 @@ function getInitials(name: string | undefined): string {
     <section class="ui-panel ui-settings-panel">
       <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
-            <User class="size-5" />
-          </div>
+          <User class="size-6 text-brand-400 shrink-0" />
           <div>
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Profile</h2>
             <p class="text-sm text-surface-500 dark:text-surface-400">Your personal information.</p>

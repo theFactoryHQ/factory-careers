@@ -1,0 +1,1 @@
+ALTER TABLE "org_settings" ADD COLUMN "calendar_sync_interviewers" boolean DEFAULT false NOT NULL;

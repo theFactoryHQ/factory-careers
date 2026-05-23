@@ -1275,9 +1275,8 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-icon-state {
-    border: 1px solid var(--ui-border) !important;
-    border-radius: 0 !important;
-    background-color: rgb(255 255 255 / 0.04) !important;
+    border: none !important;
+    background-color: transparent !important;
     color: var(--ui-muted) !important;
   }
 

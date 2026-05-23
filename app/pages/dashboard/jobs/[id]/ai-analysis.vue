@@ -533,12 +533,10 @@ function resetCriteria() {
           </div>
           <div>
             <label class="block text-xs font-medium text-surface-700 dark:text-surface-300 mb-1">Category</label>
-            <select
+            <FactorySelect
               v-model="customCriterionForm.category"
-              class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
-            >
-              <option v-for="(label, key) in categoryLabels" :key="key" :value="key">{{ label }}</option>
-            </select>
+              :options="Object.entries(categoryLabels).map(([key, label]) => ({ value: key, label }))"
+            />
           </div>
         </div>
         <div>

@@ -321,18 +321,11 @@ function onSalaryMaxChange(e: Event) {
                 <label for="settings-type" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                   Employment Type
                 </label>
-                <div class="relative">
-                  <select
-                    id="settings-type"
-                    v-model="form.type"
-                    class="factory-form-select"
-                  >
-                    <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
-                </div>
+                <FactorySelect
+                  id="settings-type"
+                  v-model="form.type"
+                  :options="typeOptions"
+                />
               </div>
             </div>
 
@@ -341,18 +334,11 @@ function onSalaryMaxChange(e: Event) {
               <label for="settings-remote" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                 Work Arrangement
               </label>
-              <div class="relative">
-                <select
-                  id="settings-remote"
-                  v-model="form.remoteStatus"
-                  class="factory-form-select"
-                >
-                  <option v-for="opt in remoteOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
-              </div>
+              <FactorySelect
+                id="settings-remote"
+                v-model="form.remoteStatus"
+                :options="remoteOptions"
+              />
             </div>
 
             <!-- Experience Level -->
@@ -360,18 +346,11 @@ function onSalaryMaxChange(e: Event) {
               <label for="settings-experience-level" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                 Experience Level
               </label>
-              <div class="relative">
-                <select
-                  id="settings-experience-level"
-                  v-model="form.experienceLevel"
-                  class="factory-form-select"
-                >
-                  <option v-for="opt in experienceLevelOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
-              </div>
+              <FactorySelect
+                id="settings-experience-level"
+                v-model="form.experienceLevel"
+                :options="experienceLevelOptions"
+              />
             </div>
 
             <!-- Slug -->
@@ -467,18 +446,11 @@ function onSalaryMaxChange(e: Event) {
                   <label for="settings-salary-unit" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                     Pay Period
                   </label>
-                  <div class="relative">
-                    <select
-                      id="settings-salary-unit"
-                      v-model="form.salaryUnit"
-                      class="factory-form-select"
-                    >
-                      <option v-for="opt in salaryUnitOptions" :key="opt.value" :value="opt.value">
-                        {{ opt.label }}
-                      </option>
-                    </select>
-                    <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
-                  </div>
+                  <FactorySelect
+                    id="settings-salary-unit"
+                    v-model="form.salaryUnit"
+                    :options="salaryUnitOptions"
+                  />
                 </div>
               </div>
             </template>

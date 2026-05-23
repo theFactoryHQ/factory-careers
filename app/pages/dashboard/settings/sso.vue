@@ -288,9 +288,11 @@ async function copyCallbackUrl(providerId: string) {
       <!-- Empty state -->
       <div
         v-else-if="!showForm"
-        class="ui-empty-panel border-dashed p-8"
+        class="ui-empty-panel ui-empty-panel-dashed p-8"
       >
-        <ShieldCheck class="size-10 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
+        <div class="ui-icon-state ui-icon-state-brand ui-icon-tile mx-auto size-12 mb-3">
+          <ShieldCheck class="size-6" />
+        </div>
         <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1">
           No SSO provider configured
         </h3>
@@ -420,7 +422,7 @@ async function copyCallbackUrl(providerId: string) {
           </form>
 
           <!-- Setup guide -->
-          <div class="mt-6 border-t border-surface-100 dark:border-surface-800 pt-4">
+          <div class="ui-panel-divider mt-6 pt-4">
             <h4 class="text-xs font-semibold text-surface-600 dark:text-surface-400 uppercase tracking-wider mb-2">
               Quick setup guide
             </h4>
