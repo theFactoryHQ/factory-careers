@@ -21,17 +21,14 @@ jobs:
   docker:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 12
 
     steps:
       # ── 1. Checkout (needed for path context so .dockerignore is respected) ──
       - name: Checkout
         uses: actions/checkout@v6
 
-      # ── 2. Multi-platform support ───────────────────────────────────────────
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
-
+      # ── 2. Buildx support ───────────────────────────────────────────────────
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -72,7 +69,9 @@ jobs:
         with:
           context: .
           push: true
-          platforms: linux/amd64,linux/arm64
+          # Keep the main publish path fast. Restore multi-arch once issue #29
+          # is solved without QEMU-heavy builds on every push.
+          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
