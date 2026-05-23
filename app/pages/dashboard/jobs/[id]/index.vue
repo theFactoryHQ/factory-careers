@@ -1469,10 +1469,7 @@ function closeDocPreview() {
                       </span>
                       <button
                         :disabled="isScoringIndividual"
-                        class="inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-                        :class="currentSummary.score != null
-                          ? 'text-surface-500 hover:text-brand-600 hover:bg-brand-50 dark:text-surface-400 dark:hover:text-brand-400 dark:hover:bg-brand-950/40'
-                          : 'text-brand-600 bg-brand-50 hover:bg-brand-100 dark:text-brand-400 dark:bg-brand-950/40 dark:hover:bg-brand-950/60 ring-1 ring-brand-200 dark:ring-brand-800'"
+                        class="factory-button-cta factory-button-premium inline-flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1.5 px-2.5 py-0 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         @click="scoreIndividualCandidate(currentSummary.id)"
                       >
                         <Loader2 v-if="isScoringIndividual" class="size-3 animate-spin" />

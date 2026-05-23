@@ -185,10 +185,13 @@ async function retryParse() {
               :options="aiConfigSelectOptions"
             />
             <button
+              type="button"
               :disabled="isAnalyzing"
-              class="text-xs text-brand-600 dark:text-brand-400 hover:underline disabled:opacity-50"
+              class="factory-button-cta factory-button-premium inline-flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1.5 px-2.5 py-0 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               @click="runAnalysis"
             >
+              <Loader2 v-if="isAnalyzing" class="size-3 animate-spin" />
+              <Brain v-else class="size-3" />
               {{ isAnalyzing ? 'Re-scoring…' : 'Re-score' }}
             </button>
           </div>
