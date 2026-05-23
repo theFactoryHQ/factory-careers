@@ -42,4 +42,13 @@ describe('dashboard top bar responsiveness', () => {
     expect(backLinkSource).not.toContain('border border-white/16')
     expect(backLinkSource).not.toContain('hover:border-brand-500')
   })
+
+  it('keeps mobile navigation in the hamburger menu, not the user menu', () => {
+    const userDropdown = source.match(/<!-- User dropdown -->[\s\S]*?<!-- Mobile hamburger -->/)?.[0] ?? ''
+    const mobileNav = source.match(/<!-- Mobile navigation menu -->[\s\S]*?<!-- Get Started CTA/)?.[0] ?? ''
+
+    expect(userDropdown).not.toContain('v-for="item in navItems"')
+    expect(userDropdown).not.toContain('Mobile-only items')
+    expect(mobileNav).toContain('v-for="item in navItems"')
+  })
 })

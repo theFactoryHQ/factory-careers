@@ -502,26 +502,6 @@ onUnmounted(() => {
                   </div>
                 </div>
 
-                <!-- Mobile-only items -->
-                <div class="md:hidden border-b border-white/10 py-1">
-                  <NuxtLink
-                    v-for="item in navItems"
-                    :key="item.to"
-                    :to="$localePath(item.to)"
-                    class="flex items-center gap-2.5 px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors no-underline"
-                    :class="isActiveRoute(item.to, item.exact) ? 'text-brand-400 font-medium' : ''"
-                  >
-                    <component :is="item.icon" class="size-4" />
-                    {{ item.label }}
-                    <span
-                      v-if="item.comingSoon"
-                      class="ml-auto inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 text-[9px] font-semibold leading-none text-amber-700 dark:text-amber-400 ring-1 ring-inset ring-amber-200/60 dark:ring-amber-800/40"
-                    >
-                      Soon
-                    </span>
-                  </NuxtLink>
-                </div>
-
                 <!-- Actions -->
                 <div class="py-1">
                   <button
