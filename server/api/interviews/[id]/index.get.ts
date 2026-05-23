@@ -65,7 +65,10 @@ export default defineEventHandler(async (event) => {
         eq(interviewCalendarEvent.interviewId, id),
         // Tenant isolation: only return calendar events belonging to the same organization
         // as the interview (prevents cross-org leakage even if interviewId is guessed).
-        eq(interviewCalendarEvent.organizationId, orgId)
+        eq(interviewCalendarEvent.organizationId, orgId),
+        data.calendarEventProvider
+          ? eq(interviewCalendarEvent.provider, data.calendarEventProvider)
+          : undefined
       )
     )
     .orderBy(interviewCalendarEvent.isPrimary, interviewCalendarEvent.createdAt)
