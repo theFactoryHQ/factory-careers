@@ -181,20 +181,11 @@ export function isUnsupportedBucketPolicyError(error: unknown): boolean {
   const message = error.message.toLowerCase()
 
   return (
+    statusCode === 400 ||
     statusCode === 405 ||
     statusCode === 501 ||
     compactName.includes('notimplemented') ||
     compactName.includes('notsupported') ||
-=======
-  const message = error.message.toLowerCase()
-
-  return (
-    statusCode === 400 ||
-    statusCode === 405 ||
-    statusCode === 501 ||
-    name.includes('notimplemented') ||
-    name.includes('not supported') ||
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
     message.includes('not implemented') ||
     message.includes('not supported') ||
     message.includes('unsupported')
