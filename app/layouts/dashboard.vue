@@ -27,6 +27,31 @@ onMounted(() => {
   // This onMounted can be expanded with router.prefetch() calls for specific
   // heavy routes if desired in the future.
 })
+</script>
+
+<template>
+  <div class="factory-dashboard-shell flex h-screen flex-col overflow-hidden bg-black text-white">
+    <AppTopBar />
+    <AppToasts />
+    <PreviewUpsellModal v-if="isUpsellOpen" @close="closeUpsell" />
+    <ClientOnly>
+      <DemoUpsellBanner v-if="isDemoAccount" />
+    </ClientOnly>
+    <main :class="['relative flex min-h-0 flex-1 flex-col overflow-y-auto', isFullbleed ? 'overflow-hidden' : 'px-4 py-6 sm:px-6 lg:px-6 lg:py-8']">
+      <!-- Demo mode banner -->
+      <div
+        v-if="isDemo"
+        class="mx-auto mb-6 flex max-w-5xl items-center gap-3 border border-brand-500/35 bg-brand-500/10 px-4 py-2.5 text-sm text-white/74"
+      >
+        <Eye class="size-4 shrink-0" />
+        <span>
+          <strong>Demo mode</strong> — Explore freely with sample data. Editing is disabled here.
+          <a
+            href="https://github.com/caffeinebounce/factory-careers"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="ml-1 font-semibold underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"
+          >View the Factory Careers fork →</a>
         </span>
       </div>
       <div :class="isFullbleed ? 'min-h-0 flex-1' : 'flex-1'">

@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  if (isMicrosoftApplicationMode) {
+  if (isMicrosoftApplicationMode && microsoftDestinationSummary) {
     const primaryDestination = microsoftDestinationSummary.destinations.find(destination => destination.isPrimary)
       ?? microsoftDestinationSummary.destinations[0]
 

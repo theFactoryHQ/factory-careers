@@ -62,7 +62,7 @@ export default defineEventHandler(async (event) => {
 
   performIncrementalSync(integration.userId).catch(err => {
     logError('calendar.webhook_sync_failed', {
-      posthog_distinct_id: integration.userId,
+      posthog_distinct_id: integration.userId ?? undefined,
       error_message: err instanceof Error ? err.message : String(err),
     })
   })
