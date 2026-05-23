@@ -135,6 +135,15 @@ function isUpcoming(dateStr: string) {
   return new Date(dateStr) > new Date()
 }
 
+type InterviewDisplayStatus = InterviewStatus | 'scheduled_past'
+
+function getInterviewDisplayStatus(interviewItem: typeof interviews.value[number]): InterviewDisplayStatus {
+  if (interviewItem.status === 'scheduled' && !isUpcoming(interviewItem.scheduledAt)) {
+    return 'scheduled_past'
+  }
+  return interviewItem.status as InterviewStatus
+}
+
 function getCandidateInitials(firstName?: string, lastName?: string) {
   const first = firstName?.trim().charAt(0) ?? ''
   const last = lastName?.trim().charAt(0) ?? ''
@@ -443,9 +452,9 @@ const statusCounts = computed(() => {
                   </NuxtLink>
                   <span
                     class="ui-pill inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset"
-                    :class="getInterviewStatusBadgeClass(interviewItem.status)"
+                    :class="getInterviewStatusBadgeClass(getInterviewDisplayStatus(interviewItem))"
                   >
-                    {{ getInterviewStatusLabel(interviewItem.status) }}
+                    {{ getInterviewStatusLabel(getInterviewDisplayStatus(interviewItem)) }}
                   </span>
                 </div>
 
@@ -595,7 +604,7 @@ const statusCounts = computed(() => {
               <!-- Timeline dot -->
               <div
                 class="absolute -left-[calc(1.5rem+5px)] top-5 size-2.5 rounded-full ring-2 ring-white dark:ring-surface-950"
-                :class="getInterviewStatusDotClass(interviewItem.status)"
+                :class="getInterviewStatusDotClass(getInterviewDisplayStatus(interviewItem))"
               />
 
               <div class="flex items-start justify-between gap-3">
@@ -607,9 +616,9 @@ const statusCounts = computed(() => {
                     <span class="text-xs text-surface-400">{{ interviewItem.duration }}min</span>
                     <span
                       class="ui-pill inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
-                      :class="getInterviewStatusBadgeClass(interviewItem.status)"
+                      :class="getInterviewStatusBadgeClass(getInterviewDisplayStatus(interviewItem))"
                     >
-                      {{ getInterviewStatusLabel(interviewItem.status) }}
+                      {{ getInterviewStatusLabel(getInterviewDisplayStatus(interviewItem)) }}
                     </span>
                   </div>
                   <p class="mt-1 text-sm font-medium">

@@ -14,6 +14,9 @@ import {
   getCandidateResponseIconClass,
   getCandidateResponseLabel,
   getCandidateResponseSymbol,
+  getInterviewStatusBadgeClass,
+  getInterviewStatusDotClass,
+  getInterviewStatusLabel,
   formatFileSize,
   formatRelativeTime,
   getJobStatusBadgeClass,
@@ -89,6 +92,12 @@ describe('status display helpers', () => {
     expect(getJobStatusBadgeClass('open')).toContain('success')
     expect(getJobStatusBadgeClass('closed', 'ring')).toContain('ring-warning-200')
     expect(getJobStatusBadgeClass('unknown', 'ring')).toContain('ring-surface-200')
+  })
+
+  it('centralizes past-due interview display status', () => {
+    expect(getInterviewStatusLabel('scheduled_past')).toBe('Past Due')
+    expect(getInterviewStatusBadgeClass('scheduled_past')).toContain('warning')
+    expect(getInterviewStatusDotClass('scheduled_past')).toContain('warning')
   })
 
   it('centralizes candidate interview response display values', () => {
