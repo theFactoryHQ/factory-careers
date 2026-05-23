@@ -63,6 +63,8 @@ services:
         sync: false
       - key: RESEND_FROM_EMAIL
         sync: false
+      - key: MICROSOFT_CALENDAR_AUTH_MODE
+        value: application
       - key: MICROSOFT_CALENDAR_CLIENT_ID
         sync: false
       - key: MICROSOFT_CALENDAR_CLIENT_SECRET
