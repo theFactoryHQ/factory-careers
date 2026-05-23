@@ -176,7 +176,7 @@ function handleKeydown(event: KeyboardEvent) {
       <span class="gooey-search-bubble gooey-search-bubble-icon" />
     </div>
 
-    <span class="gooey-search-outline factory-toolbar-button" aria-hidden="true" />
+    <span class="gooey-search-outline" aria-hidden="true" />
 
     <div class="gooey-search-control">
       <input
@@ -406,6 +406,11 @@ function handleKeydown(event: KeyboardEvent) {
   box-shadow: none;
 }
 
+.gooey-search-surface:focus-within .gooey-search-outline,
+.gooey-search-inverse:focus-within .gooey-search-outline {
+  border-color: var(--color-brand-500);
+}
+
 :global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-bubble,
 :global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-bubble {
   background: transparent !important;
@@ -414,6 +419,8 @@ function handleKeydown(event: KeyboardEvent) {
 
 :global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-outline,
 :global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-outline {
+  background: #050505 !important;
+  border-color: var(--ui-border-strong) !important;
   box-shadow: none !important;
 }
 
