@@ -1323,21 +1323,13 @@ function closeDocPreview() {
 
           <!-- Scrollable list -->
           <div class="flex-1 overflow-y-auto scrollbar-thin border-t border-surface-100 dark:border-surface-800/60">
-            <div v-if="filteredApplications.length === 0" class="p-8 text-center">
-              <div class="flex size-12 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-800/60 mx-auto mb-3">
-                <UserRound class="size-5 text-surface-400 dark:text-surface-500" />
-              </div>
-              <p class="text-sm font-medium text-surface-600 dark:text-surface-300">
-                {{ (searchTerm.trim() || hasActiveFilters) ? 'No matching candidates' : `No candidates yet` }}
-              </p>
-              <p class="mt-1 text-xs text-surface-400 dark:text-surface-500">
-                {{ (searchTerm.trim() || hasActiveFilters) ? 'Try adjusting your search or filters.' : `No one in ${formatStatusLabel(focusStatus)} stage.` }}
-              </p>
+            <div v-if="filteredApplications.length === 0" class="p-3">
               <button
                 v-if="hasActiveFilters"
-                class="mt-2 cursor-pointer text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+                class="flex w-full cursor-pointer items-center justify-center gap-1 rounded-md py-1 text-[11px] font-medium text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200 transition-colors"
                 @click="clearFilters"
               >
+                <X class="size-3" />
                 Clear filters
               </button>
             </div>
