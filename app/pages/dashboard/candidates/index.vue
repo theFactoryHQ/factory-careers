@@ -630,7 +630,6 @@ const selectedCandidateId = ref<string | null>(null)
                 >
                   <span class="inline-flex items-center gap-1.5 italic">
                     <StickyNote class="size-3.5 shrink-0 text-surface-400 transition-colors group-hover/notes:text-brand-400" />
-                    No notes yet.
                   </span>
                   <span class="text-xs font-semibold uppercase text-brand-400 transition-colors group-hover/notes:text-brand-300">Add Notes</span>
                 </button>

@@ -13,5 +13,6 @@ describe('candidate quick notes', () => {
     expect(source).toContain('border border-dashed border-white/12 bg-black')
     expect(source).toContain('Add Notes')
     expect(source).not.toContain('Add note…')
+    expect(source).not.toContain('No notes yet.')
   })
 })
