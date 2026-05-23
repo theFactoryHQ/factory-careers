@@ -411,63 +411,63 @@ function handleKeydown(event: KeyboardEvent) {
   border-color: var(--color-brand-500);
 }
 
-:global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-bubble,
-:global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-bubble {
+:global(.factory-dashboard-shell .gooey-search-surface .gooey-search-bubble),
+:global(.factory-dashboard-portal .gooey-search-surface .gooey-search-bubble) {
   background: transparent !important;
   box-shadow: none !important;
 }
 
-:global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-outline,
-:global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-outline {
+:global(.factory-dashboard-shell .gooey-search-surface .gooey-search-outline),
+:global(.factory-dashboard-portal .gooey-search-surface .gooey-search-outline) {
   background: #050505 !important;
   border-color: var(--ui-border-strong) !important;
   box-shadow: none !important;
 }
 
-:global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-field,
-:global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-field {
+:global(.factory-dashboard-shell .gooey-search-surface .gooey-search-field),
+:global(.factory-dashboard-portal .gooey-search-surface .gooey-search-field) {
   border: 0 !important;
   background-color: transparent !important;
   box-shadow: none !important;
 }
 
-:global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-field:focus,
-:global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-field:focus {
+:global(.factory-dashboard-shell .gooey-search-surface .gooey-search-field:focus),
+:global(.factory-dashboard-portal .gooey-search-surface .gooey-search-field:focus) {
   border: 0 !important;
   background-color: transparent !important;
   outline: none !important;
   box-shadow: none !important;
 }
 
-:global(.factory-dashboard-shell) .gooey-search-surface:hover .gooey-search-outline,
-:global(.factory-dashboard-portal) .gooey-search-surface:hover .gooey-search-outline {
+:global(.factory-dashboard-shell .gooey-search-surface:hover .gooey-search-outline),
+:global(.factory-dashboard-portal .gooey-search-surface:hover .gooey-search-outline) {
   border-color: var(--ui-border-strong) !important;
 }
 
-:global(.factory-dashboard-shell) .gooey-search-surface:focus-within .gooey-search-outline,
-:global(.factory-dashboard-portal) .gooey-search-surface:focus-within .gooey-search-outline {
+:global(.factory-dashboard-shell .gooey-search-surface:focus-within .gooey-search-outline),
+:global(.factory-dashboard-portal .gooey-search-surface:focus-within .gooey-search-outline) {
   border-color: var(--color-brand-500) !important;
 }
 
-:global(.factory-dashboard-shell) .gooey-search-surface,
-:global(.factory-dashboard-portal) .gooey-search-surface,
-:global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-field::placeholder,
-:global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-trigger,
-:global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-clear,
-:global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-field::placeholder,
-:global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-trigger,
-:global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-clear {
+:global(.factory-dashboard-shell .gooey-search-surface),
+:global(.factory-dashboard-portal .gooey-search-surface),
+:global(.factory-dashboard-shell .gooey-search-surface .gooey-search-field::placeholder),
+:global(.factory-dashboard-shell .gooey-search-surface .gooey-search-trigger),
+:global(.factory-dashboard-shell .gooey-search-surface .gooey-search-clear),
+:global(.factory-dashboard-portal .gooey-search-surface .gooey-search-field::placeholder),
+:global(.factory-dashboard-portal .gooey-search-surface .gooey-search-trigger),
+:global(.factory-dashboard-portal .gooey-search-surface .gooey-search-clear) {
   color: rgb(255 255 255 / 0.72) !important;
 }
 
-:global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-trigger:hover,
-:global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-clear:hover,
-:global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-trigger:focus-visible,
-:global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-clear:focus-visible,
-:global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-trigger:hover,
-:global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-clear:hover,
-:global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-trigger:focus-visible,
-:global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-clear:focus-visible {
+:global(.factory-dashboard-shell .gooey-search-surface .gooey-search-trigger:hover),
+:global(.factory-dashboard-shell .gooey-search-surface .gooey-search-clear:hover),
+:global(.factory-dashboard-shell .gooey-search-surface .gooey-search-trigger:focus-visible),
+:global(.factory-dashboard-shell .gooey-search-surface .gooey-search-clear:focus-visible),
+:global(.factory-dashboard-portal .gooey-search-surface .gooey-search-trigger:hover),
+:global(.factory-dashboard-portal .gooey-search-surface .gooey-search-clear:hover),
+:global(.factory-dashboard-portal .gooey-search-surface .gooey-search-trigger:focus-visible),
+:global(.factory-dashboard-portal .gooey-search-surface .gooey-search-clear:focus-visible) {
   color: #ffffff !important;
 }
 

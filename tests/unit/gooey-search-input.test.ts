@@ -33,9 +33,9 @@ describe('GooeySearchInput component source', () => {
   })
 
   it('keeps the Factory search skin square and border-led', () => {
-    const dashboardHoverRule = source.match(/:global\(\.factory-dashboard-shell\) \.gooey-search-surface:hover \.gooey-search-outline,[\s\S]*?:global\(\.factory-dashboard-portal\) \.gooey-search-surface:hover \.gooey-search-outline \{([\s\S]*?)\n\}/)?.[1] ?? ''
-    const dashboardFieldRule = source.match(/:global\(\.factory-dashboard-shell\) \.gooey-search-surface \.gooey-search-field,[\s\S]*?:global\(\.factory-dashboard-portal\) \.gooey-search-surface \.gooey-search-field \{([\s\S]*?)\n\}/)?.[1] ?? ''
-    const dashboardFieldFocusRule = source.match(/:global\(\.factory-dashboard-shell\) \.gooey-search-surface \.gooey-search-field:focus,[\s\S]*?:global\(\.factory-dashboard-portal\) \.gooey-search-surface \.gooey-search-field:focus \{([\s\S]*?)\n\}/)?.[1] ?? ''
+    const dashboardHoverRule = source.match(/:global\(\.factory-dashboard-shell \.gooey-search-surface:hover \.gooey-search-outline\),[\s\S]*?:global\(\.factory-dashboard-portal \.gooey-search-surface:hover \.gooey-search-outline\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
+    const dashboardFieldRule = source.match(/:global\(\.factory-dashboard-shell \.gooey-search-surface \.gooey-search-field\),[\s\S]*?:global\(\.factory-dashboard-portal \.gooey-search-surface \.gooey-search-field\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
+    const dashboardFieldFocusRule = source.match(/:global\(\.factory-dashboard-shell \.gooey-search-surface \.gooey-search-field:focus\),[\s\S]*?:global\(\.factory-dashboard-portal \.gooey-search-surface \.gooey-search-field:focus\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
 
     expect(source).toContain('border-radius: 0')
     expect(source).toContain('background: transparent !important')
@@ -51,6 +51,7 @@ describe('GooeySearchInput component source', () => {
     expect(dashboardHoverRule).toContain('border-color: var(--ui-border-strong) !important')
     expect(dashboardHoverRule).not.toContain('#ffffff')
     expect(source).not.toContain('gooey-search-outline factory-toolbar-button')
+    expect(source).not.toMatch(/:global\(\.factory-dashboard-(?:shell|portal)\) \.gooey-search/)
     expect(source).not.toContain('ResizeObserver')
     expect(source).not.toContain('parentElement')
     expect(source).not.toContain('border-radius: 0.5rem')
