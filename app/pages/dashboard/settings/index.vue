@@ -1,23 +1,38 @@
 <script setup lang="ts">
-import { Building2, Save, AlertTriangle, Trash2, Loader2 } from 'lucide-vue-next'
+import { Building2, Save, AlertTriangle, Trash2, Loader2, CircleHelp } from 'lucide-vue-next'
 
 definePageMeta({})
 
 useSeoMeta({
-  title: 'Organization Settings — Reqcore',
+  title: 'Organization Settings — Factory Careers',
   description: 'Manage your organization settings',
 })
 
 const { activeOrg } = useCurrentOrg()
-const { allowed: canUpdateOrg } = usePermission({ organization: ['update'] })
+const { allowed: canUpdateOrg, isLoading: isUpdateOrgPermissionLoading } = usePermission({ organization: ['update'] })
 const { allowed: canDeleteOrg } = usePermission({ organization: ['delete'] })
 const { track } = useTrack()
+const config = useRuntimeConfig()
+const factoryOrgName = computed(() => String(config.public.factoryOrgName || 'Factory').trim())
+const factoryOrgSlug = computed(() => String(config.public.factoryOrgSlug || 'factory').trim().toLowerCase())
+const isFactorySlugLocked = computed(() => !!factoryOrgSlug.value)
+const siteUrl = computed(() => String(config.public.factoryCareersUrl || 'https://careers.thefactoryhq.com').replace(/\/+$/, ''))
+const publicBoardPath = 'jobs'
+const publicBoardPrefix = computed(() => {
+  try {
+    return `${new URL(siteUrl.value).host}/`
+  }
+  catch {
+    return `${siteUrl.value.replace(/^https?:\/\//, '')}/`
+  }
+})
+const publicBoardDisplayUrl = computed(() => `${publicBoardPrefix.value}${publicBoardPath}`)
 
 // ─────────────────────────────────────────────
 // Org name/slug editing
 // ─────────────────────────────────────────────
-const orgName = ref('')
-const orgSlug = ref('')
+const orgName = ref(factoryOrgName.value)
+const orgSlug = ref(factoryOrgSlug.value)
 const isSaving = ref(false)
 const saveSuccess = ref(false)
 const saveError = ref('')
@@ -26,6 +41,7 @@ const saveError = ref('')
 const slugPattern = /^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?$/
 
 const slugError = computed(() => {
+  if (isFactorySlugLocked.value) return ''
   const s = orgSlug.value.trim()
   if (!s) return ''
   if (!slugPattern.test(s)) return 'Only lowercase letters, numbers, and hyphens. Must start and end with a letter or number.'
@@ -35,7 +51,7 @@ const slugError = computed(() => {
 watch(activeOrg, (org) => {
   if (org) {
     orgName.value = org.name ?? ''
-    orgSlug.value = org.slug ?? ''
+    orgSlug.value = isFactorySlugLocked.value ? factoryOrgSlug.value : (org.slug ?? '')
   }
 }, { immediate: true })
 
@@ -43,7 +59,7 @@ async function handleSaveOrg() {
   if (!canUpdateOrg.value) return
 
   const trimmedName = orgName.value.trim()
-  const trimmedSlug = orgSlug.value.trim().toLowerCase()
+  const trimmedSlug = isFactorySlugLocked.value ? factoryOrgSlug.value : orgSlug.value.trim().toLowerCase()
 
   // Prevent saving empty or invalid values
   if (!trimmedName) {
@@ -51,7 +67,7 @@ async function handleSaveOrg() {
     return
   }
   if (!trimmedSlug || slugError.value) {
-    saveError.value = slugError.value || 'URL slug cannot be empty.'
+    saveError.value = slugError.value || 'Organization slug cannot be empty.'
     return
   }
 
@@ -116,9 +132,9 @@ async function handleDeleteOrg() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl">
+  <div class="ui-settings-page">
     <!-- Page title -->
-    <div class="mb-6">
+    <div class="ui-settings-page-header">
       <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">
         General
       </h1>
@@ -128,10 +144,10 @@ async function handleDeleteOrg() {
     </div>
 
     <!-- Organization profile -->
-    <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
-      <div class="px-4 sm:px-6 py-5 border-b border-surface-200 dark:border-surface-800">
+    <section class="ui-panel ui-settings-panel">
+      <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-10 shrink-0 rounded-lg bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400">
+          <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
             <Building2 class="size-5" />
           </div>
           <div>
@@ -141,7 +157,7 @@ async function handleDeleteOrg() {
         </div>
       </div>
 
-      <div class="px-4 sm:px-6 py-5 space-y-5">
+      <div class="ui-settings-panel-body space-y-5">
         <div>
           <label for="org-name" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
             Organization name
@@ -151,41 +167,54 @@ async function handleDeleteOrg() {
             v-model="orgName"
             type="text"
             :disabled="!canUpdateOrg"
-            class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            class="ui-field disabled:opacity-60 disabled:cursor-not-allowed"
             placeholder="My Company"
           />
         </div>
 
         <div>
-          <label for="org-slug" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-            URL slug
-          </label>
-          <div class="flex items-center rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 overflow-hidden focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500 transition-colors">
-            <span class="px-3 text-sm text-surface-400 dark:text-surface-500 select-none bg-surface-50 dark:bg-surface-800/50 border-r border-surface-200 dark:border-surface-700 py-2">
-              reqcore.com/
+          <div class="mb-1.5 flex items-center gap-1.5">
+            <label for="public-board-path" class="text-sm font-medium text-surface-700 dark:text-surface-300">
+              Public board URL
+            </label>
+            <span class="group relative inline-flex">
+              <button
+                type="button"
+                class="inline-flex size-5 cursor-help items-center justify-center text-surface-500 transition-colors hover:text-brand-400 focus:outline-none focus-visible:text-brand-400"
+                aria-label="Public board URL help"
+                aria-describedby="public-board-url-tooltip"
+              >
+                <CircleHelp class="size-3.5" />
+              </button>
+              <span
+                id="public-board-url-tooltip"
+                role="tooltip"
+                class="pointer-events-none absolute left-1/2 top-full z-30 mt-2 w-72 -translate-x-1/2 border border-white/14 bg-black px-3 py-2 text-xs leading-relaxed text-white/78 opacity-0 shadow-xl shadow-black/30 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+              >
+                Candidates see open roles at {{ publicBoardDisplayUrl }}. Individual roles use /jobs/:job-slug.
+              </span>
+            </span>
+          </div>
+          <div class="ui-field flex items-center overflow-hidden p-0 focus-within:border-brand-500">
+            <span class="shrink-0 border-r border-surface-200 dark:border-surface-700 px-3 py-2 text-sm text-surface-500 dark:text-surface-400">
+              {{ publicBoardPrefix }}
             </span>
             <input
-              id="org-slug"
-              v-model="orgSlug"
+              id="public-board-path"
+              :value="publicBoardPath"
               type="text"
-              :disabled="!canUpdateOrg"
-              class="flex-1 bg-transparent px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
-              placeholder="my-company"
+              readonly
+              class="flex-1 bg-transparent px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none"
+              aria-describedby="public-board-url-tooltip"
             />
           </div>
-          <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">
-            Used in your public job board URL. Only lowercase letters, numbers, and hyphens.
-          </p>
-          <p v-if="slugError" class="mt-1 text-xs text-danger-500">
-            {{ slugError }}
-          </p>
         </div>
 
         <!-- Save button & feedback -->
         <div class="flex items-center gap-3 pt-2">
           <button
             :disabled="!canUpdateOrg || isSaving"
-            class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="ui-button ui-button-primary disabled:opacity-50 disabled:cursor-not-allowed"
             @click="handleSaveOrg"
           >
             <Loader2 v-if="isSaving" class="size-4 animate-spin" />
@@ -205,27 +234,27 @@ async function handleDeleteOrg() {
           </Transition>
         </div>
 
-        <div v-if="saveError" class="rounded-lg bg-danger-50 dark:bg-danger-950/40 border border-danger-200 dark:border-danger-900 px-4 py-3 text-sm text-danger-700 dark:text-danger-400">
+        <div v-if="saveError" class="ui-alert ui-alert-danger">
           {{ saveError }}
         </div>
       </div>
     </section>
 
     <!-- Danger zone -->
-    <section v-if="canDeleteOrg" class="mt-8 rounded-xl border border-danger-200 dark:border-danger-900 bg-white dark:bg-surface-900 overflow-hidden">
-      <div class="px-4 sm:px-6 py-5 border-b border-danger-200 dark:border-danger-900 bg-danger-50/50 dark:bg-danger-950/20">
+    <section v-if="canDeleteOrg" class="ui-panel ui-settings-panel mt-8">
+      <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-10 shrink-0 rounded-lg bg-danger-100 dark:bg-danger-950 text-danger-600 dark:text-danger-400">
+          <div class="ui-icon-state ui-icon-state-danger flex items-center justify-center size-10 shrink-0 rounded-lg">
             <AlertTriangle class="size-5" />
           </div>
           <div>
-            <h2 class="text-base font-semibold text-danger-700 dark:text-danger-300">Danger zone</h2>
-            <p class="text-sm text-danger-600/80 dark:text-danger-400/80">Irreversible and destructive actions.</p>
+            <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Danger zone</h2>
+            <p class="text-sm text-surface-500 dark:text-surface-400">Irreversible and destructive actions.</p>
           </div>
         </div>
       </div>
 
-      <div class="px-4 sm:px-6 py-5">
+      <div class="ui-settings-panel-body">
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Delete organization</h3>
@@ -234,7 +263,7 @@ async function handleDeleteOrg() {
             </p>
           </div>
           <button
-            class="shrink-0 inline-flex items-center gap-2 rounded-lg border border-danger-300 dark:border-danger-800 bg-white dark:bg-surface-900 px-3.5 py-2 text-sm font-medium text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950/40 transition-colors"
+            class="ui-button ui-button-danger shrink-0 px-3.5 py-2"
             @click="showDeleteConfirm = true"
           >
             <Trash2 class="size-4" />
@@ -249,20 +278,20 @@ async function handleDeleteOrg() {
           enter-from-class="opacity-0 -translate-y-2"
           leave-to-class="opacity-0 -translate-y-2"
         >
-          <div v-if="showDeleteConfirm" class="mt-5 rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50/50 dark:bg-danger-950/30 px-4 py-4 space-y-3">
+          <div v-if="showDeleteConfirm" class="ui-alert ui-alert-danger mt-5 space-y-3">
             <p class="text-sm text-surface-700 dark:text-surface-300">
               Type <strong class="text-surface-900 dark:text-surface-100 font-semibold">{{ activeOrg?.name }}</strong> to confirm deletion:
             </p>
             <input
               v-model="deleteConfirmText"
               type="text"
-              class="w-full rounded-lg border border-danger-300 dark:border-danger-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-danger-500 focus:border-danger-500 transition-colors"
+              class="ui-field"
               :placeholder="activeOrg?.name"
             />
             <div class="flex items-center gap-2">
               <button
                 :disabled="!canConfirmDelete || isDeleting"
-                class="inline-flex items-center gap-2 rounded-lg bg-danger-600 px-4 py-2 text-sm font-medium text-white hover:bg-danger-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                class="ui-button ui-button-danger disabled:opacity-50 disabled:cursor-not-allowed"
                 @click="handleDeleteOrg"
               >
                 <Loader2 v-if="isDeleting" class="size-4 animate-spin" />
@@ -270,13 +299,13 @@ async function handleDeleteOrg() {
                 {{ isDeleting ? 'Deleting…' : 'Permanently delete' }}
               </button>
               <button
-                class="rounded-lg px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-colors"
+                class="ui-button ui-button-secondary"
                 @click="showDeleteConfirm = false; deleteConfirmText = ''"
               >
                 Cancel
               </button>
             </div>
-            <div v-if="deleteError" class="text-sm text-danger-600 dark:text-danger-400">
+            <div v-if="deleteError" class="ui-alert ui-alert-danger">
               {{ deleteError }}
             </div>
           </div>
@@ -285,7 +314,7 @@ async function handleDeleteOrg() {
     </section>
 
     <!-- Read-only notice for non-admin users -->
-    <div v-if="!canUpdateOrg" class="mt-6 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-800 px-4 py-3 text-sm text-surface-500 dark:text-surface-400">
+    <div v-if="!isUpdateOrgPermissionLoading && !canUpdateOrg" class="ui-alert ui-alert-info mt-6">
       You don't have permission to modify organization settings. Contact an admin or owner for changes.
     </div>
   </div>

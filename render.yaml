@@ -1,0 +1,73 @@
+services:
+  - type: web
+    name: factory-careers
+    runtime: docker
+    repo: https://github.com/caffeinebounce/factory-careers
+    plan: free
+    region: oregon
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/public/jobs?limit=1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BETTER_AUTH_URL
+        value: https://careers.thefactoryhq.com
+      - key: NUXT_PUBLIC_SITE_URL
+        value: https://careers.thefactoryhq.com
+      - key: NUXT_PUBLIC_MARKETING_URL
+        value: https://thefactoryhq.com
+      - key: FACTORY_APP_NAME
+        value: Factory Careers
+      - key: FACTORY_ORG_NAME
+        value: Factory
+      - key: FACTORY_ORG_SLUG
+        value: factory
+      - key: FACTORY_ALLOWED_EMAIL_DOMAINS
+        value: thefactoryhq.com
+      - key: FACTORY_CAREERS_HIRING_INBOX
+        sync: false
+      - key: FACTORY_CAREERS_CALENDAR_EMAIL
+        value: careers@thefactoryhq.com
+      - key: FACTORY_DISABLE_PUBLIC_SIGNUP
+        value: "true"
+      - key: FACTORY_ADMIN_SSO_ONLY
+        value: "true"
+      - key: FACTORY_DISABLE_PUBLIC_ORG_CREATION
+        value: "true"
+      - key: FACTORY_DISABLE_ANALYTICS_CONSENT_BANNER
+        value: "true"
+      - key: S3_BUCKET
+        value: factory-careers-documents
+      - key: S3_REGION
+        value: us-east-1
+      - key: S3_FORCE_PATH_STYLE
+        value: "true"
+      - key: S3_SKIP_BUCKET_POLICY
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: MICROSOFT_CALENDAR_CLIENT_ID
+        sync: false
+      - key: MICROSOFT_CALENDAR_CLIENT_SECRET
+        sync: false
+      - key: MICROSOFT_CALENDAR_TENANT_ID
+        sync: false
+      - key: AUTH_MICROSOFT_CLIENT_ID
+        sync: false
+      - key: AUTH_MICROSOFT_CLIENT_SECRET
+        sync: false
+      - key: AUTH_MICROSOFT_TENANT_ID
+        sync: false

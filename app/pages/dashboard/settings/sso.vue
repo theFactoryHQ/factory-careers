@@ -7,7 +7,7 @@ import {
 definePageMeta({})
 
 useSeoMeta({
-  title: 'Single Sign-On — Reqcore',
+  title: 'Single Sign-On — Factory Careers',
   description: 'Configure enterprise SSO for your organization',
 })
 
@@ -53,7 +53,7 @@ const siteOrigin = computed(() => {
   if (import.meta.client) {
     return window.location.origin
   }
-  return 'https://app.reqcore.com'
+  return 'https://careers.thefactoryhq.com'
 })
 
 function resetForm() {
@@ -154,16 +154,11 @@ async function copyCallbackUrl(providerId: string) {
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl">
-    <div class="mb-6">
-      <div class="flex items-center gap-2">
-        <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-100">
-          Single Sign-On
-        </h1>
-        <span class="inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-          Beta
-        </span>
-      </div>
+  <div class="ui-settings-page">
+    <div class="ui-settings-page-header">
+      <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-100">
+        Single Sign-On
+      </h1>
       <p class="mt-1 text-sm text-surface-500 dark:text-surface-400">
         Allow your team to sign in with their corporate identity provider (Okta, Azure AD, Google Workspace, etc.).
       </p>
@@ -173,10 +168,10 @@ async function copyCallbackUrl(providerId: string) {
     <Transition name="fade">
       <div
         v-if="formSuccess"
-        class="mb-4 flex items-center gap-3 rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3"
+        class="ui-alert ui-alert-success mb-4 flex items-center gap-3"
       >
-        <Check class="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-        <p class="text-sm text-emerald-700 dark:text-emerald-300 flex-1">
+        <Check class="size-4 shrink-0" />
+        <p class="flex-1">
           {{ formSuccess }}
         </p>
         <button class="text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-200" @click="formSuccess = ''">
@@ -188,10 +183,10 @@ async function copyCallbackUrl(providerId: string) {
     <Transition name="fade">
       <div
         v-if="formError"
-        class="mb-4 flex items-center gap-3 rounded-lg border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950/30 px-4 py-3"
+        class="ui-alert ui-alert-danger mb-4 flex items-center gap-3"
       >
-        <AlertTriangle class="size-4 text-danger-500 shrink-0" />
-        <p class="text-sm text-danger-700 dark:text-danger-300 flex-1">
+        <AlertTriangle class="size-4 shrink-0" />
+        <p class="flex-1">
           {{ formError }}
         </p>
         <button class="text-danger-400 hover:text-danger-600 dark:hover:text-danger-200" @click="formError = ''">
@@ -212,9 +207,9 @@ async function copyCallbackUrl(providerId: string) {
         <div
           v-for="provider in providers"
           :key="provider.id"
-          class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-4"
+          class="ui-panel ui-settings-panel"
         >
-          <div class="flex items-start justify-between gap-4">
+          <div class="ui-settings-panel-body flex items-start justify-between gap-4">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
                 <ShieldCheck class="size-4 text-emerald-500 shrink-0" />
@@ -237,7 +232,7 @@ async function copyCallbackUrl(providerId: string) {
               </div>
 
               <!-- Callback URL helper -->
-              <div class="mt-3 rounded-md bg-surface-50 dark:bg-surface-800/50 px-3 py-2">
+              <div class="ui-panel-muted mt-3 px-3 py-2">
                 <p class="text-xs font-medium text-surface-600 dark:text-surface-300 mb-1">
                   Redirect URI (add this in your IdP):
                 </p>
@@ -246,7 +241,7 @@ async function copyCallbackUrl(providerId: string) {
                     {{ getCallbackUrl(provider.providerId) }}
                   </code>
                   <button
-                    class="shrink-0 rounded p-1 text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+                    class="ui-button ui-button-ghost shrink-0 p-1"
                     title="Copy callback URL"
                     @click="copyCallbackUrl(provider.providerId)"
                   >
@@ -262,7 +257,7 @@ async function copyCallbackUrl(providerId: string) {
               <template v-if="confirmDeleteId === provider.id">
                 <div class="flex items-center gap-1">
                   <button
-                    class="rounded px-2 py-1 text-xs font-medium text-danger-600 dark:text-danger-400 bg-danger-50 dark:bg-danger-950/40 hover:bg-danger-100 dark:hover:bg-danger-950/60 transition-colors disabled:opacity-50"
+                    class="ui-button ui-button-danger-outline px-2 py-1 text-xs disabled:opacity-50"
                     :disabled="deletingId === provider.id"
                     @click="handleDelete(provider.id)"
                   >
@@ -270,7 +265,7 @@ async function copyCallbackUrl(providerId: string) {
                     <span v-else>Confirm</span>
                   </button>
                   <button
-                    class="rounded px-2 py-1 text-xs font-medium text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                    class="ui-button ui-button-secondary px-2 py-1 text-xs"
                     @click="confirmDeleteId = null"
                   >
                     Cancel
@@ -279,7 +274,7 @@ async function copyCallbackUrl(providerId: string) {
               </template>
               <button
                 v-else
-                class="rounded p-1.5 text-surface-400 hover:text-danger-500 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                class="ui-button ui-button-ghost p-1.5 hover:text-danger-500"
                 title="Remove SSO provider"
                 @click="confirmDeleteId = provider.id"
               >
@@ -293,7 +288,7 @@ async function copyCallbackUrl(providerId: string) {
       <!-- Empty state -->
       <div
         v-else-if="!showForm"
-        class="rounded-lg border border-dashed border-surface-300 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-800/30 p-8 text-center"
+        class="ui-empty-panel border-dashed p-8"
       >
         <ShieldCheck class="size-10 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
         <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1">
@@ -304,7 +299,7 @@ async function copyCallbackUrl(providerId: string) {
         </p>
         <button
           v-if="canManageSso"
-          class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+          class="ui-button ui-button-primary px-3.5 py-2"
           @click="showForm = true"
         >
           <Plus class="size-4" />
@@ -315,7 +310,7 @@ async function copyCallbackUrl(providerId: string) {
       <!-- Add another provider (when one already exists) -->
       <div v-if="hasProvider && !showForm && canManageSso" class="mb-6">
         <button
-          class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-700 px-3.5 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+          class="ui-button ui-button-secondary px-3.5 py-2"
           @click="showForm = true"
         >
           <Plus class="size-4" />
@@ -325,12 +320,14 @@ async function copyCallbackUrl(providerId: string) {
 
       <!-- Registration form -->
       <Transition name="fade">
-        <div v-if="showForm" class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
-          <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
-            Register OIDC SSO Provider
-          </h3>
+        <div v-if="showForm" class="ui-panel ui-settings-panel">
+          <div class="ui-panel-header ui-settings-panel-header">
+            <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100">
+              Register OIDC SSO Provider
+            </h3>
+          </div>
 
-          <form class="space-y-4" @submit.prevent="handleRegister">
+          <form class="ui-settings-panel-body space-y-4" @submit.prevent="handleRegister">
             <!-- Domain -->
             <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
               <span>Email domain <span class="text-danger-500">*</span></span>
@@ -339,7 +336,7 @@ async function copyCallbackUrl(providerId: string) {
                 type="text"
                 placeholder="company.com"
                 required
-                class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
+                class="ui-field"
               />
               <span class="text-xs text-surface-400">Users with this email domain will be routed to this SSO provider.</span>
             </label>
@@ -352,10 +349,10 @@ async function copyCallbackUrl(providerId: string) {
                 type="url"
                 placeholder="https://your-org.okta.com"
                 required
-                class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 font-mono text-xs"
+                class="ui-field font-mono text-xs"
               />
               <span class="text-xs text-surface-400">
-                The OIDC issuer URL. Reqcore will auto-discover endpoints from
+                The OIDC issuer URL. Factory Careers will auto-discover endpoints from
                 <code class="text-xs">/.well-known/openid-configuration</code>.
               </span>
             </label>
@@ -369,7 +366,7 @@ async function copyCallbackUrl(providerId: string) {
                 placeholder="company-sso"
                 required
                 pattern="^[a-z0-9-]+$"
-                class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
+                class="ui-field"
               />
               <span class="text-xs text-surface-400">A unique slug for this provider. Lowercase letters, numbers, and hyphens only.</span>
             </label>
@@ -383,7 +380,7 @@ async function copyCallbackUrl(providerId: string) {
                 placeholder="Paste from your IdP"
                 required
                 autocomplete="off"
-                class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 font-mono text-xs"
+                class="ui-field font-mono text-xs"
               />
             </label>
 
@@ -396,7 +393,7 @@ async function copyCallbackUrl(providerId: string) {
                 placeholder="Paste from your IdP"
                 required
                 autocomplete="off"
-                class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
+                class="ui-field"
               />
               <span class="text-xs text-surface-400">Stored encrypted. Never exposed in the UI after saving.</span>
             </label>
@@ -406,7 +403,7 @@ async function copyCallbackUrl(providerId: string) {
               <button
                 type="submit"
                 :disabled="isRegistering"
-                class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                class="ui-button ui-button-primary disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Loader2 v-if="isRegistering" class="size-4 animate-spin" />
                 <ShieldCheck v-else class="size-4" />
@@ -414,7 +411,7 @@ async function copyCallbackUrl(providerId: string) {
               </button>
               <button
                 type="button"
-                class="rounded-lg px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                class="ui-button ui-button-secondary"
                 @click="showForm = false; resetForm()"
               >
                 Cancel
@@ -431,7 +428,7 @@ async function copyCallbackUrl(providerId: string) {
               <li>Create an OIDC application in your identity provider (Okta, Azure AD, Google Workspace, etc.).</li>
               <li>Set the <strong>Redirect URI</strong> to: <code class="bg-surface-100 dark:bg-surface-800 px-1 py-0.5 rounded text-xs">{{ `${siteOrigin}/api/auth/sso/callback/{provider-id}` }}</code></li>
               <li>Copy the <strong>Client ID</strong> and <strong>Client Secret</strong> from your IdP and paste them above.</li>
-              <li>Enter the <strong>Issuer URL</strong> — Reqcore will auto-discover all OIDC endpoints.</li>
+              <li>Enter the <strong>Issuer URL</strong> — Factory Careers will auto-discover all OIDC endpoints.</li>
             </ol>
 
             <div class="mt-3 flex flex-wrap gap-2">
@@ -465,7 +462,7 @@ async function copyCallbackUrl(providerId: string) {
       </Transition>
 
       <!-- How it works -->
-      <div class="mt-8 rounded-lg border border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/20 p-5">
+      <div v-if="!hasProvider" class="ui-panel-muted mt-8 p-5">
         <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3">
           How Enterprise SSO works
         </h3>
@@ -476,7 +473,7 @@ async function copyCallbackUrl(providerId: string) {
           </div>
           <div class="flex gap-3">
             <div class="flex items-center justify-center size-6 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 text-xs font-bold shrink-0">2</div>
-            <p>Team members visit the sign-in page and enter their work email. Reqcore detects the email domain and redirects to your IdP.</p>
+            <p>Team members visit the sign-in page and enter their work email. Factory Careers detects the email domain and redirects to your IdP.</p>
           </div>
           <div class="flex gap-3">
             <div class="flex items-center justify-center size-6 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 text-xs font-bold shrink-0">3</div>

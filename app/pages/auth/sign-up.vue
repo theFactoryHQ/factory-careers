@@ -5,8 +5,8 @@ definePageMeta({
 });
 
 useSeoMeta({
-    title: "Sign Up — Reqcore",
-    description: "Create your Reqcore account",
+    title: "Request Access — Factory Careers",
+    description: "Request access to Factory Careers",
     robots: "noindex, nofollow",
 });
 
@@ -17,6 +17,7 @@ const password = ref("");
 const confirmPassword = ref("");
 const error = ref("");
 const isLoading = ref(false);
+const config = useRuntimeConfig();
 const localePath = useLocalePath();
 const { track } = useTrack();
 const { data: authProviders } = await useFetch('/api/auth/providers');
@@ -41,8 +42,18 @@ const pendingInvitation = computed(
     () => route.query.invitation as string | undefined,
 );
 
+const publicSignupEnabled = computed(
+    () => config.public.factoryPublicSignupEnabled === true,
+);
+
 async function handleSignUp() {
     error.value = "";
+
+    if (!publicSignupEnabled.value) {
+        error.value =
+            "Factory Careers account creation is invitation-only. Sign in with Microsoft or use an invitation link.";
+        return;
+    }
 
     if (!name.value || !email.value || !password.value) {
         error.value = "All fields are required.";
@@ -74,7 +85,7 @@ async function handleSignUp() {
             error.value =
                 result.error.message && result.error.message !== "Server Error"
                     ? result.error.message
-                    : 'Sign-up failed due to a server error. If you are self-hosting, make sure the BETTER_AUTH_URL environment variable is set to your deployment domain (e.g. "https://your-app.up.railway.app") and redeploy.';
+                    : 'Sign-up failed due to a server error. Make sure BETTER_AUTH_URL is set to "https://careers.thefactoryhq.com" in production and redeploy.';
         } else {
             error.value =
                 result.error.message ?? "Sign-up failed. Please try again.";
@@ -145,11 +156,39 @@ async function handleSocialSignUp(providerId: string) {
 </script>
 
 <template>
-    <form class="flex flex-col gap-4" @submit.prevent="handleSignUp">
+    <div v-if="!publicSignupEnabled" class="flex flex-col gap-4 text-center">
+        <h2 class="text-xl font-semibold text-surface-900 dark:text-surface-100">
+            Access is invitation-only
+        </h2>
+        <p class="text-sm leading-6 text-surface-500 dark:text-surface-400">
+            Factory Careers is limited to Factory staff and invited hiring collaborators. Sign in with Microsoft, or use the invitation link from your Factory administrator.
+        </p>
+        <NuxtLink
+            :to="
+                pendingInvitation
+                    ? $localePath({
+                          path: '/auth/sign-in',
+                          query: { invitation: pendingInvitation },
+                      })
+                    : $localePath('/auth/sign-in')
+            "
+            class="mt-2 rounded-md bg-brand-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-700"
+        >
+            Go to sign in
+        </NuxtLink>
+        <a
+            :href="useRuntimeConfig().public.marketingUrl"
+            class="text-sm text-brand-600 dark:text-brand-400 hover:underline"
+        >
+            Return to Factory
+        </a>
+    </div>
+
+    <form v-else class="flex flex-col gap-4" @submit.prevent="handleSignUp">
         <h2
             class="text-xl font-semibold text-center text-surface-900 dark:text-surface-100 mb-2"
         >
-            Create your account
+            Create account
         </h2>
 
         <div

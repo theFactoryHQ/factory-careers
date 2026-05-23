@@ -1,6 +1,13 @@
 <div align="center">
 
-# Reqcore
+# Factory Careers
+
+This repository is Factory's thin, AGPL-compatible fork of Reqcore for `careers.thefactoryhq.com`.
+Factory-specific deployment notes live in [FACTORY_CAREERS.md](FACTORY_CAREERS.md).
+
+---
+
+# Upstream Reqcore
 
 **The simple, open-source ATS. Self-hosted. No per-seat fees.**
 
@@ -168,7 +175,7 @@ docker compose exec app npm run db:seed
 ```
 
 Then sign in with:
-- **Email:** `demo@reqcore.com`
+- **Email:** `demo@thefactoryhq.com`
 - **Password:** `demo1234`
 
 ---

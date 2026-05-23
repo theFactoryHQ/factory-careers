@@ -16,35 +16,38 @@ const isDemo = computed(() => {
   return slug && activeOrg.value?.slug === slug
 })
 
-const isDemoAccount = computed(() => session.value?.user?.email === 'demo@reqcore.com')
+const isDemoAccount = computed(() => session.value?.user?.email === config.public.liveDemoEmail)
 </script>
 
 <template>
-  <div class="flex h-screen flex-col overflow-hidden bg-surface-50 dark:bg-surface-950">
+  <div class="factory-dashboard-shell flex h-screen flex-col overflow-hidden bg-black text-white">
     <AppTopBar />
     <AppToasts />
     <PreviewUpsellModal v-if="isUpsellOpen" @close="closeUpsell" />
     <ClientOnly>
       <DemoUpsellBanner v-if="isDemoAccount" />
     </ClientOnly>
-    <main :class="['relative flex-1 min-h-0 overflow-y-auto', isFullbleed ? 'overflow-hidden' : 'px-4 py-6 sm:px-6 lg:px-8 lg:py-8']">
+    <main :class="['relative flex min-h-0 flex-1 flex-col overflow-y-auto', isFullbleed ? 'overflow-hidden' : 'px-4 py-6 sm:px-6 lg:px-6 lg:py-8']">
       <!-- Demo mode banner -->
       <div
         v-if="isDemo"
-        class="mx-auto mb-6 flex max-w-5xl items-center gap-3 rounded-lg border border-brand-200 dark:border-brand-900 bg-brand-50 dark:bg-brand-950/40 px-4 py-2.5 text-sm text-brand-700 dark:text-brand-300"
+        class="mx-auto mb-6 flex max-w-5xl items-center gap-3 border border-brand-500/35 bg-brand-500/10 px-4 py-2.5 text-sm text-white/74"
       >
         <Eye class="size-4 shrink-0" />
         <span>
-          <strong>Live demo</strong> — Explore freely with sample data. Editing is disabled here.
+          <strong>Demo mode</strong> — Explore freely with sample data. Editing is disabled here.
           <a
-            href="https://github.com/reqcore-inc/reqcore#quick-start"
+            href="https://github.com/caffeinebounce/factory-careers"
             target="_blank"
             rel="noopener noreferrer"
-            class="ml-1 font-semibold underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"
-          >Deploy your own free instance →</a>
+            class="ml-1 font-semibold text-brand-300 underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"
+          >View source →</a>
         </span>
       </div>
-      <slot />
+      <div :class="isFullbleed ? 'min-h-0 flex-1' : 'flex-1'">
+        <slot />
+      </div>
+      <AppDashboardFooter :class="isFullbleed ? 'px-4 pb-4 sm:px-6 lg:px-6' : 'mx-auto w-full max-w-6xl'" />
     </main>
   </div>
 </template>

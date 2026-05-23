@@ -9,7 +9,7 @@ import { aiConfig } from '../../database/schema'
  * only a `hasApiKey` boolean.
  */
 export default defineEventHandler(async (event) => {
-  const session = await requirePermission(event, { organization: ['update'] })
+  const session = await requirePermission(event, { aiConfig: ['read'] })
   const orgId = session.session.activeOrganizationId
 
   const rows = await db.query.aiConfig.findMany({

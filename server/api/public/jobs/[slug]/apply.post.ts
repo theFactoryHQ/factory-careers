@@ -4,7 +4,9 @@ import { job, candidate, application, jobQuestion, questionResponse, document, o
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
 import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
 import { autoScoreApplication } from '../../../../utils/ai/autoScore'
+import { sendApplicationReceiptEmail, sendApplicationTeamAlertEmail } from '../../../../utils/email'
 import { parseDocument } from '../../../../utils/resume-parser'
+import { assertUploadContentLength } from '../../../../utils/uploadLimits'
 import { readPositiveIntegerEnv } from '../../../../utils/rateLimitConfig'
 import {
   ALLOWED_MIME_TYPES,
@@ -30,6 +32,9 @@ const applyRateLimit = createRateLimiter({
   message: 'Too many applications submitted. Please try again later.',
 })
 
+const MULTIPART_OVERHEAD_BYTES = 1024 * 1024
+const MAX_PUBLIC_APPLICATION_MULTIPART_BYTES = (MAX_DOCUMENTS_PER_CANDIDATE * MAX_FILE_SIZE) + MULTIPART_OVERHEAD_BYTES
+
 /**
  * POST /api/public/jobs/:slug/apply
  * Public application submission endpoint. No auth required.
@@ -54,6 +59,7 @@ const applyRateLimit = createRateLimiter({
  */
 export default defineEventHandler(async (event) => {
   // Enforce rate limit before any processing.
+  // Skipped outside production so local dev and test environments are not throttled.
   // CI flags must not bypass this when NODE_ENV=production because several
   // deployment platforms set them.
   if (process.env.NODE_ENV === 'production') {
@@ -68,6 +74,10 @@ export default defineEventHandler(async (event) => {
 
   const contentType = getHeader(event, 'content-type') ?? ''
   const isMultipart = contentType.includes('multipart/form-data')
+
+  if (isMultipart) {
+    assertUploadContentLength(event, MAX_PUBLIC_APPLICATION_MULTIPART_BYTES)
+  }
 
   let firstName: string
   let lastName: string
@@ -188,7 +198,7 @@ export default defineEventHandler(async (event) => {
 
   const existingJob = await db.query.job.findFirst({
     where: and(eq(job.slug, slug), eq(job.status, 'open')),
-    columns: { id: true, organizationId: true, requireResume: true, requireCoverLetter: true, autoScoreOnApply: true },
+    columns: { id: true, title: true, organizationId: true, requireResume: true, requireCoverLetter: true, autoScoreOnApply: true },
   })
 
   if (!existingJob) {
@@ -623,7 +633,43 @@ export default defineEventHandler(async (event) => {
   }
 
   // ─────────────────────────────────────────────
-  // 12. Fire-and-forget auto AI scoring if enabled
+  // 12. Send application emails
+  // ─────────────────────────────────────────────
+
+  if (newApplication) {
+    const candidateName = `${firstName} ${lastName}`.trim()
+    const applicationUrl = `${resolveFactoryCareersBaseUrl()}/dashboard/applications/${newApplication.id}`
+
+    void sendApplicationReceiptEmail({
+      candidateEmail: email.toLowerCase(),
+      candidateName,
+      jobTitle: existingJob.title,
+      organizationName: env.FACTORY_ORG_NAME,
+    }).catch((err) => {
+      logError('application.receipt_email_failed', {
+        application_id: newApplication.id,
+        job_id: jobId,
+        error_message: err instanceof Error ? err.message : String(err),
+      })
+    })
+
+    void sendApplicationTeamAlertEmail({
+      candidateEmail: email.toLowerCase(),
+      candidateName,
+      jobTitle: existingJob.title,
+      applicationUrl,
+      hasResume: !!resumeUpload,
+    }).catch((err) => {
+      logError('application.team_alert_email_failed', {
+        application_id: newApplication.id,
+        job_id: jobId,
+        error_message: err instanceof Error ? err.message : String(err),
+      })
+    })
+  }
+
+  // ─────────────────────────────────────────────
+  // 13. Fire-and-forget auto AI scoring if enabled
   // ─────────────────────────────────────────────
 
   if (existingJob.autoScoreOnApply && newApplication) {
@@ -796,4 +842,16 @@ function mapReferrerToChannel(domain: string | null): string | null {
     if (d.endsWith(`.${key}`) || d === key) return channel
   }
   return null
+}
+
+function resolveFactoryCareersBaseUrl(): string {
+  const explicitUrl = env.BETTER_AUTH_URL?.trim()
+  if (explicitUrl) return explicitUrl.replace(/\/+$/, '')
+
+  const platformDomain = env.RAILWAY_PUBLIC_DOMAIN?.trim()
+  if (platformDomain) {
+    return `https://${platformDomain.replace(/^https?:\/\//, '').replace(/\/+$/, '')}`
+  }
+
+  return 'https://careers.thefactoryhq.com'
 }

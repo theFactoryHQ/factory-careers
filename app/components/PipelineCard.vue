@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { User, Calendar } from 'lucide-vue-next'
+import {
+  getApplicationTransitionButtonClass,
+  getApplicationTransitionLabel,
+  getScoreBadgeClass,
+} from '~/utils/status-display'
 
 const props = defineProps<{
   id: string
@@ -15,24 +20,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'transition', status: string): void
 }>()
-
-const transitionLabels: Record<string, string> = {
-  new: 'Re-open',
-  screening: 'Screening',
-  interview: 'Interview',
-  offer: 'Offer',
-  hired: 'Hired',
-  rejected: 'Reject',
-}
-
-const transitionClasses: Record<string, string> = {
-  new: 'text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700',
-  screening: 'text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950',
-  interview: 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950',
-  offer: 'text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950',
-  hired: 'text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900',
-  rejected: 'text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950',
-}
 
 const { formatPersonName, formatDateTime } = useOrgSettings()
 </script>
@@ -65,11 +52,7 @@ const { formatPersonName, formatDateTime } = useOrgSettings()
         {{ formatDateTime(createdAt) }}
       </span>
       <span v-if="score != null" class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
-        :class="score >= 75
-          ? 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950 dark:text-success-300 dark:ring-success-800'
-          : score >= 40
-            ? 'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950 dark:text-warning-300 dark:ring-warning-800'
-            : 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950 dark:text-danger-300 dark:ring-danger-800'"
+        :class="getScoreBadgeClass(score)"
       >
         {{ score }}pts
       </span>
@@ -82,10 +65,10 @@ const { formatPersonName, formatDateTime } = useOrgSettings()
         :key="nextStatus"
         :disabled="isTransitioning"
         class="rounded px-1.5 py-0.5 text-[11px] font-medium transition-colors disabled:opacity-50"
-        :class="transitionClasses[nextStatus] ?? 'text-surface-500 hover:bg-surface-100'"
+        :class="getApplicationTransitionButtonClass(nextStatus, 'subtle')"
         @click.prevent="emit('transition', nextStatus)"
       >
-        {{ transitionLabels[nextStatus] ?? nextStatus }}
+        {{ getApplicationTransitionLabel(nextStatus) }}
       </button>
     </div>
   </div>

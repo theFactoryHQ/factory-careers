@@ -36,7 +36,7 @@ if (!connectionString) {
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
 const BETTER_AUTH_SECRET = process.env.BETTER_AUTH_SECRET
-const BETTER_AUTH_URL = process.env.BETTER_AUTH_URL || 'https://reqcore.com'
+const BETTER_AUTH_URL = process.env.BETTER_AUTH_URL || 'https://thefactoryhq.com'
 
 if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !BETTER_AUTH_SECRET) {
   console.error('ERROR: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and BETTER_AUTH_SECRET are required')

@@ -3,10 +3,14 @@ import type { H3Event, EventHandlerRequest } from 'h3'
 
 const hasPermission = vi.fn(async () => ({ error: null, success: true }))
 
+vi.mock('../../server/utils/factoryAccess', () => ({
+  assertFactoryStaffAccess: vi.fn(async () => undefined),
+}))
+
 vi.stubGlobal('auth', {
   api: {
     getSession: vi.fn(async () => ({
-      user: { id: 'user-1' },
+      user: { id: 'user-1', email: 'doug@thefactoryhq.com' },
       session: { activeOrganizationId: 'org-1' },
     })),
     hasPermission,

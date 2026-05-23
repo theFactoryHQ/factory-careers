@@ -26,7 +26,8 @@ const showSuccess = ref(false)
 const createdInterview = ref<{ id: string; googleCalendarEventLink?: string | null } | null>(null)
 
 // ─── Calendar integration status ──────────────────────────────────
-const { isConnected: calendarConnected } = useCalendarIntegration()
+const { calendarStatus, isConnected: calendarConnected } = useCalendarIntegration()
+const calendarProviderLabel = computed(() => calendarStatus.value.providerLabel || 'Microsoft Calendar')
 
 // ─── Form state ───────────────────────────────────────────────────
 const form = reactive({
@@ -48,7 +49,7 @@ const isMoving = ref(false)
 const notifyViaEmail = ref(false)
 const notifyViaCalendar = ref(false)
 
-// ─── Google Calendar event customization ──────────────────────────
+// ─── Calendar event customization ─────────────────────────────────
 const calendarCustomization = reactive({
   eventTitle: '',
   eventDescription: '',
@@ -87,7 +88,7 @@ onMounted(() => {
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   form.date = toDateString(tomorrow)
-  // Auto-enable Google Calendar if connected
+  // Auto-enable calendar sync if connected
   if (calendarConnected.value) {
     notifyViaCalendar.value = true
   }
@@ -439,7 +440,7 @@ async function handleMoveToInterview() {
                   Quick links
                 </p>
 
-                <!-- Google Calendar link -->
+                <!-- Calendar link -->
                 <a
                   v-if="createdInterview?.googleCalendarEventLink"
                   :href="createdInterview.googleCalendarEventLink"
@@ -450,7 +451,7 @@ async function handleMoveToInterview() {
                   <div class="flex size-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
                     <Calendar class="size-4 text-emerald-600 dark:text-emerald-400" />
                   </div>
-                  <span class="flex-1">Open in Google Calendar</span>
+                  <span class="flex-1">Open in {{ calendarProviderLabel }}</span>
                   <ExternalLink class="size-3.5 text-surface-400 group-hover:text-emerald-500 transition-colors" />
                 </a>
 
@@ -605,7 +606,7 @@ async function handleMoveToInterview() {
                   </div>
                 </div>
 
-                <!-- Option: Google Calendar -->
+                <!-- Option: Calendar sync -->
                 <div class="rounded-xl border transition-all" :class="notifyViaCalendar ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50/30 dark:bg-emerald-950/10' : 'border-surface-200 dark:border-surface-700/80'">
                   <label class="flex items-center gap-3 px-3.5 py-3 group" :class="calendarConnected ? 'cursor-pointer' : 'cursor-default'">
                     <input
@@ -617,7 +618,7 @@ async function handleMoveToInterview() {
                     <Calendar class="size-4 shrink-0 transition-colors" :class="notifyViaCalendar ? 'text-emerald-600 dark:text-emerald-400' : 'text-surface-400 dark:text-surface-500'" />
                     <div class="min-w-0 flex-1">
                       <p class="text-[13px] font-medium transition-colors" :class="notifyViaCalendar ? 'text-surface-900 dark:text-surface-100' : 'text-surface-600 dark:text-surface-400'">
-                        Google Calendar
+                        {{ calendarProviderLabel }}
                       </p>
                       <p class="text-[11px] text-surface-400 dark:text-surface-500">
                         <template v-if="calendarConnected">Create calendar event with invite</template>
@@ -639,7 +640,7 @@ async function handleMoveToInterview() {
                     </button>
                   </label>
 
-                  <!-- Google Calendar event customization (expanded) -->
+                  <!-- Calendar event customization (expanded) -->
                   <div v-if="notifyViaCalendar && calendarCustomization.showCustomize" class="px-3.5 pb-3.5 pt-0 space-y-3 border-t border-emerald-200/60 dark:border-emerald-800/30 mt-0">
                     <!-- Event title -->
                     <div>
@@ -687,7 +688,7 @@ async function handleMoveToInterview() {
                           class="size-3.5 rounded border-surface-300 dark:border-surface-600 text-emerald-600 focus:ring-emerald-500/20 focus:ring-offset-0 cursor-pointer"
                         />
                         <Bell class="size-3.5 text-surface-400" />
-                        <span class="text-[12px] text-surface-600 dark:text-surface-400">Send Google Calendar notifications</span>
+                        <span class="text-[12px] text-surface-600 dark:text-surface-400">Send calendar notifications</span>
                       </label>
                     </div>
                   </div>
@@ -933,7 +934,7 @@ async function handleMoveToInterview() {
               </span>
               <span v-if="notifyViaCalendar" class="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
                 <Calendar class="size-3" />
-                Google Calendar
+                {{ calendarProviderLabel }}
               </span>
             </div>
 

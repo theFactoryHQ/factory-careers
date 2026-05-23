@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  ArrowLeft, Save, Eye, EyeOff, Mail, AlertCircle, FileText,
+  Save, Eye, EyeOff, Mail, AlertCircle, FileText,
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -9,7 +9,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'New Template — Email Templates — Reqcore',
+  title: 'New Template — Email Templates — Factory Careers',
   description: 'Create a new interview invitation email template',
   robots: 'noindex, nofollow',
 })
@@ -83,13 +83,12 @@ async function handleCreate() {
 <template>
   <div class="mx-auto max-w-5xl px-6 py-8">
     <!-- Breadcrumb -->
-    <NuxtLink
+    <AppBackLink
       :to="localePath('/dashboard/interviews/templates')"
-      class="mb-6 inline-flex items-center gap-1 rounded-full border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-3 py-1.5 text-sm text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors no-underline"
+      class="mb-6"
     >
-      <ArrowLeft class="size-4" />
       All Templates
-    </NuxtLink>
+    </AppBackLink>
 
     <!-- Page header -->
     <div class="mb-6 flex items-start justify-between gap-4">

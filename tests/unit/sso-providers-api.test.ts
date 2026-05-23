@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { z } from 'zod'
+import { registerSsoSchema } from '../../server/utils/ssoSecurity'
 
 /**
  * SSO Provider API validation tests.
@@ -9,25 +10,6 @@ import { z } from 'zod'
  * They exercise input sanitization, domain validation, provider ID format,
  * and issuer URL handling — without requiring a running server.
  */
-
-// ─────────────────────────────────────────────
-// Mirror the validation schemas from the API routes
-// to test them in isolation.
-// ─────────────────────────────────────────────
-
-const registerSsoSchema = z.object({
-  providerId: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/, 'Only lowercase alphanumeric and hyphens'),
-  issuer: z.string().url().refine(
-    (url) => url.startsWith('https://') || url.startsWith('http://'),
-    'Issuer URL must use HTTPS (or HTTP for local development)',
-  ),
-  domain: z.string().min(1).max(253).regex(
-    /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/,
-    'Must be a valid domain (e.g. company.com)',
-  ),
-  clientId: z.string().min(1),
-  clientSecret: z.string().min(1),
-})
 
 const deleteSsoSchema = z.object({
   id: z.string().min(1),

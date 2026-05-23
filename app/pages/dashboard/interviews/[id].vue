@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  ArrowLeft, Calendar, Clock, Video, Phone, Building2, Code2,
+  Calendar, Clock, Video, Phone, Building2, Code2,
   FileText, UsersRound, CheckCircle2, XCircle, AlertTriangle,
   UserRound, Briefcase, Pencil, MapPin, Users, MessageSquare,
   Save, X, Mail, Send, CheckCheck, ChevronDown, ExternalLink,
@@ -25,8 +25,8 @@ const { interview, status: fetchStatus, error, updateInterview, deleteInterview,
 useSeoMeta({
   title: computed(() =>
     interview.value
-      ? `${interview.value.title} — Reqcore`
-      : 'Interview — Reqcore',
+      ? `${interview.value.title} — Factory Careers`
+      : 'Interview — Factory Careers',
   ),
   robots: 'noindex, nofollow',
 })
@@ -353,13 +353,12 @@ const localePath = useLocalePath()
 <template>
   <div class="mx-auto max-w-3xl px-6 py-8">
     <!-- Back link -->
-    <NuxtLink
+    <AppBackLink
       :to="$localePath('/dashboard/interviews')"
-      class="mb-4 inline-flex items-center gap-1 rounded-full border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-3 py-1.5 text-sm text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+      class="mb-4"
     >
-      <ArrowLeft class="size-4" />
       Back to Interviews
-    </NuxtLink>
+    </AppBackLink>
 
     <!-- Loading -->
     <div v-if="fetchStatus === 'pending'" class="flex flex-col items-center justify-center py-20">
@@ -438,7 +437,7 @@ const localePath = useLocalePath()
           <CheckCheck class="size-3.5" />
           Invitation sent <TimelineDateLink :date="interview.invitationSentAt" class="text-success-600 dark:text-success-400">{{ formatDate(interview.invitationSentAt) }}</TimelineDateLink>
         </div>
-        <!-- Google Calendar sync status -->
+        <!-- Calendar sync status -->
         <div
           v-if="interview.googleCalendarEventId"
           class="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400"
@@ -450,8 +449,8 @@ const localePath = useLocalePath()
             target="_blank"
             rel="noopener noreferrer"
             class="underline underline-offset-2 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
-          >Open in Google Calendar</a>
-          <span v-else>Synced to Google Calendar</span>
+          >Open in Calendar</a>
+          <span v-else>Synced to Calendar</span>
         </div>
       </div>
 
@@ -674,12 +673,12 @@ const localePath = useLocalePath()
                   class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors"
                 >
                   <CheckCircle2 class="size-3.5" />
-                  Open in Google Calendar
+                  Open in Calendar
                   <ExternalLink class="size-3" />
                 </a>
                 <span v-else class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-sm font-medium text-emerald-700 dark:text-emerald-400">
                   <CheckCircle2 class="size-3.5" />
-                  Synced to Google Calendar
+                  Synced to Calendar
                 </span>
               </dd>
             </div>

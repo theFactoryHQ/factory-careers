@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { FileText, Search, X, Briefcase, Mail, Clock, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, Maximize2, Minimize2, Check } from 'lucide-vue-next'
+import {
+  getApplicationStatusBadgeClass,
+  getApplicationStatusDotClass,
+  getApplicationStatusLabel,
+  getScoreBadgeClass,
+} from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -7,7 +13,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Applications — Reqcore',
+  title: 'Applications — Factory Careers',
   description: 'Manage applications across all jobs',
 })
 
@@ -198,39 +204,6 @@ function timeAgo(date: string | Date) {
   const days = Math.floor(hrs / 24)
   if (days < 30) return `${days}d ago`
   return new Date(date).toLocaleDateString()
-}
-
-function scoreClass(score: number) {
-  if (score >= 75) return 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950 dark:text-success-400 dark:ring-success-800'
-  if (score >= 40) return 'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950 dark:text-warning-400 dark:ring-warning-800'
-  return 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950 dark:text-danger-400 dark:ring-danger-800'
-}
-
-const statusBadgeClasses: Record<string, string> = {
-  new: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
-  screening: 'bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-400',
-  interview: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
-  offer: 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-400',
-  hired: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400',
-  rejected: 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400',
-}
-
-const statusDotClasses: Record<string, string> = {
-  new: 'bg-blue-500',
-  screening: 'bg-violet-500',
-  interview: 'bg-amber-500',
-  offer: 'bg-teal-500',
-  hired: 'bg-green-600',
-  rejected: 'bg-surface-400 dark:bg-surface-500',
-}
-
-const statusLabels: Record<Status, string> = {
-  new: 'New',
-  screening: 'Screening',
-  interview: 'Interview',
-  offer: 'Offer',
-  hired: 'Hired',
-  rejected: 'Rejected',
 }
 
 // ── Drawer + Saved Views ──────────────────────────────────────────────────────
@@ -432,36 +405,36 @@ const selectedApplicationId = ref<string | null>(null)
     >
       <div class="space-y-6">
         <!-- Status -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Status</label>
+        <div class="ui-filter-section">
+          <label class="ui-filter-label mb-2 block">Status</label>
           <div class="flex flex-wrap gap-1.5">
             <button
               type="button"
-              class="rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
+              class="ui-filter-chip px-3 py-1.5 text-xs"
               :class="!activeStatus
-                ? 'bg-surface-900 text-white dark:bg-surface-100 dark:text-surface-900'
-                : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'"
+                ? 'ui-filter-chip-active'
+                : 'ui-filter-chip-inactive'"
               @click="activeStatus = undefined"
             >Any</button>
             <button
               v-for="s in STATUS_OPTIONS"
               :key="s"
               type="button"
-              class="rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
+              class="ui-filter-chip px-3 py-1.5 text-xs"
               :class="activeStatus === s
-                ? 'bg-surface-900 text-white dark:bg-surface-100 dark:text-surface-900'
-                : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'"
+                ? 'ui-filter-chip-active'
+                : 'ui-filter-chip-inactive'"
               @click="activeStatus = activeStatus === s ? undefined : s"
-            >{{ statusLabels[s] }}</button>
+            >{{ getApplicationStatusLabel(s) }}</button>
           </div>
         </div>
 
         <!-- Job -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Job</label>
+        <div class="ui-filter-section">
+          <label class="ui-filter-label mb-2 block">Job</label>
           <select
             v-model="activeJobId"
-            class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+            class="ui-field"
           >
             <option :value="undefined">All jobs</option>
             <option v-for="j in uniqueJobs" :key="j.id" :value="j.id">{{ j.title }}</option>
@@ -469,12 +442,12 @@ const selectedApplicationId = ref<string | null>(null)
         </div>
 
         <!-- Sort -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Sort by</label>
+        <div class="ui-filter-section">
+          <label class="ui-filter-label mb-2 block">Sort by</label>
           <div class="flex gap-2">
             <select
               v-model="sortKey"
-              class="flex-1 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+              class="ui-field flex-1"
             >
               <option value="created">Applied date</option>
               <option value="name">Candidate name</option>
@@ -485,7 +458,7 @@ const selectedApplicationId = ref<string | null>(null)
             </select>
             <select
               v-model="sortDir"
-              class="w-32 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+              class="ui-field w-32"
             >
               <option value="asc">Ascending</option>
               <option value="desc">Descending</option>
@@ -494,14 +467,14 @@ const selectedApplicationId = ref<string | null>(null)
         </div>
 
         <!-- Property filters -->
-        <div v-if="propertyDefs.length > 0">
-          <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Properties</label>
+        <div v-if="propertyDefs.length > 0" class="ui-filter-section">
+          <label class="ui-filter-label mb-2 block">Properties</label>
           <PropertyFilterBar v-model="propertyFilters" entity-type="application" />
         </div>
 
         <!-- Columns -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 mb-2">Columns</label>
+        <div class="ui-filter-section">
+          <label class="ui-filter-label mb-2 block">Columns</label>
           <div class="space-y-1.5">
             <label
               v-for="col in applicationColumns.filter(c => !c.required)"
@@ -509,8 +482,8 @@ const selectedApplicationId = ref<string | null>(null)
               class="flex items-center gap-2.5 cursor-pointer select-none group"
             >
               <span
-                class="flex size-4 shrink-0 items-center justify-center rounded border transition-colors"
-                :class="visibleColumns[col.key] ? 'bg-brand-600 border-brand-600 text-white' : 'border-surface-300 dark:border-surface-600'"
+                class="ui-checkbox-indicator size-4 shrink-0"
+                :class="visibleColumns[col.key] ? 'ui-checkbox-indicator-checked' : ''"
                 @click="visibleColumns = { ...visibleColumns, [col.key]: !visibleColumns[col.key] }"
               >
                 <Check v-if="visibleColumns[col.key]" class="size-3" />
@@ -539,7 +512,7 @@ const selectedApplicationId = ref<string | null>(null)
     <!-- Empty state -->
     <div
       v-else-if="applications.length === 0"
-      class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-16 text-center"
+      class="ui-empty-panel"
     >
       <FileText class="size-10 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
       <h3 class="text-base font-semibold text-surface-700 dark:text-surface-200 mb-1">No applications yet</h3>
@@ -551,7 +524,7 @@ const selectedApplicationId = ref<string | null>(null)
     <!-- No results after filtering -->
     <div
       v-else-if="filteredApplications.length === 0"
-      class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-12 text-center"
+      class="ui-empty-panel"
     >
       <Search class="size-8 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
       <h3 class="text-base font-semibold text-surface-700 dark:text-surface-200 mb-1">No matching applications</h3>
@@ -559,7 +532,7 @@ const selectedApplicationId = ref<string | null>(null)
         Try adjusting your search or filters.
       </p>
       <button
-        class="text-sm text-brand-600 hover:text-brand-700 font-medium transition-colors"
+        class="ui-button ui-button-secondary"
         @click="clearAllFilters"
       >
         Clear all filters
@@ -585,10 +558,10 @@ const selectedApplicationId = ref<string | null>(null)
             </button>
           </div>
           <div :class="isFullscreen ? 'flex-1 overflow-auto p-4' : ''">
-            <div class="overflow-x-auto rounded-lg border border-surface-200 dark:border-surface-800">
+            <div class="ui-table-shell overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
-            <tr class="bg-surface-50 dark:bg-surface-800/50 border-b border-surface-200 dark:border-surface-800">
+            <tr class="ui-table-header">
               <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">
                 <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('name')">
                   Candidate
@@ -644,11 +617,11 @@ const selectedApplicationId = ref<string | null>(null)
               </template>
             </tr>
           </thead>
-          <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
+          <tbody>
             <tr
               v-for="app in filteredApplications"
               :key="app.id"
-              class="group bg-white dark:bg-surface-900 hover:bg-surface-50 dark:hover:bg-surface-800/60 transition-colors cursor-pointer [&>td]:align-top"
+              class="ui-table-row group cursor-pointer [&>td]:align-top"
               @click="selectedApplicationId = app.id"
             >
               <td class="px-4 py-3">
@@ -675,17 +648,17 @@ const selectedApplicationId = ref<string | null>(null)
               <td v-if="visibleColumns.status" class="px-4 py-3">
                 <span
                   class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium capitalize whitespace-nowrap"
-                  :class="statusBadgeClasses[app.status] ?? 'bg-surface-100 text-surface-600'"
+                  :class="getApplicationStatusBadgeClass(app.status)"
                 >
-                  <span class="size-1.5 rounded-full" :class="statusDotClasses[app.status] ?? 'bg-surface-400'" />
-                  {{ statusLabels[app.status as Status] ?? app.status }}
+                  <span class="size-1.5 rounded-full" :class="getApplicationStatusDotClass(app.status)" />
+                  {{ getApplicationStatusLabel(app.status) }}
                 </span>
               </td>
               <td v-if="visibleColumns.score" class="px-4 py-3 text-center hidden sm:table-cell">
                 <span
                   v-if="app.score != null"
                   class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ring-1 ring-inset"
-                  :class="scoreClass(app.score)"
+                  :class="getScoreBadgeClass(app.score, 'soft')"
                 >
                   {{ app.score }}%
                 </span>

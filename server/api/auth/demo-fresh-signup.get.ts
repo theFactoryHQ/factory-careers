@@ -10,7 +10,7 @@
  *   - Any other account    → redirect to /dashboard (already logged in)
  *
  * Demo detection uses the user email (liveDemoEmail runtime config,
- * defaults to demo@reqcore.com).
+ * defaults to demo@thefactoryhq.com).
  *
  * Sign-out uses Better Auth's server-side API (`auth.api.signOut` with
  * `asResponse: true`) which bypasses CSRF origin checks, deletes the
@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
     return sendRedirect(event, '/auth/sign-up')
   }
 
-  const demoEmail = (useRuntimeConfig().public.liveDemoEmail as string) || 'demo@reqcore.com'
+  const demoEmail = (useRuntimeConfig().public.liveDemoEmail as string) || 'demo@thefactoryhq.com'
 
   if (session.user.email !== demoEmail) {
     return sendRedirect(event, '/dashboard')

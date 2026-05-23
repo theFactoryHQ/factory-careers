@@ -1,21 +1,19 @@
 import { z } from 'zod'
+import { validateServerSideUrlShape } from '../serverSideUrl'
 
 // ─── AI Config Schemas ────────────────────────────────────────────
 
+const aiProviderValues = ['openai', 'anthropic', 'google', 'xai', 'openai_compatible'] as const
+
 const safeBaseUrl = z.string().url().max(500)
-  .refine(url => {
-    try {
-      const parsed = new URL(url)
-      // Block cloud metadata endpoints (SSRF)
-      if (parsed.hostname === '169.254.169.254') return false
-      if (parsed.hostname === 'metadata.google.internal') return false
-      return true
-    } catch { return false }
-  }, 'URL must not target internal metadata endpoints')
+  .refine(
+    url => validateServerSideUrlShape(url).ok,
+    'URL must use HTTPS and must not target credentials, local, private, link-local, multicast, or metadata hosts',
+  )
 
 export const createAiConfigSchema = z.object({
   name: z.string().min(1).max(80).trim(),
-  provider: z.enum(['openai', 'anthropic', 'google', 'openai_compatible']),
+  provider: z.enum(aiProviderValues),
   model: z.string().min(1).max(200),
   apiKey: z.string().min(1).max(500),
   baseUrl: safeBaseUrl.nullish(),
@@ -29,7 +27,7 @@ export const createAiConfigSchema = z.object({
 
 export const updateAiConfigSchema = z.object({
   name: z.string().min(1).max(80).trim().optional(),
-  provider: z.enum(['openai', 'anthropic', 'google', 'openai_compatible']).optional(),
+  provider: z.enum(aiProviderValues).optional(),
   model: z.string().min(1).max(200).optional(),
   apiKey: z.string().min(1).max(500).optional(),
   baseUrl: safeBaseUrl.nullish(),

@@ -1,4 +1,4 @@
-import { PROVIDER_REGISTRY } from '../../utils/ai/provider'
+import { getProviderRegistryWithCachedModels } from '../../utils/ai/modelCatalog'
 
 /**
  * GET /api/ai-config/providers
@@ -6,6 +6,6 @@ import { PROVIDER_REGISTRY } from '../../utils/ai/provider'
  * Public within org (no secrets exposed).
  */
 export default defineEventHandler(async (event) => {
-  await requirePermission(event, { scoring: ['read'] })
-  return PROVIDER_REGISTRY
+  await requirePermission(event, { aiConfig: ['read'] })
+  return getProviderRegistryWithCachedModels()
 })

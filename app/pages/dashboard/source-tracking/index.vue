@@ -14,7 +14,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Source Tracking — Reqcore',
+  title: 'Source Tracking — Factory Careers',
   description: 'Track where your applications come from',
 })
 
@@ -359,19 +359,19 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
         <div class="h-4 w-72 bg-surface-200 dark:bg-surface-700 rounded animate-pulse" />
       </div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        <div v-for="i in 4" :key="i" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div v-for="i in 4" :key="i" class="ui-dashboard-stat-card p-6 animate-pulse">
           <div class="h-4 w-20 bg-surface-200 dark:bg-surface-700 rounded mb-4" />
           <div class="h-9 w-14 bg-surface-200 dark:bg-surface-700 rounded" />
         </div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-panel ui-dashboard-panel lg:col-span-2 p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-4">
             <div v-for="i in 5" :key="i" class="h-10 bg-surface-100 dark:bg-surface-800 rounded-xl" />
           </div>
         </div>
-        <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-panel ui-dashboard-panel p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-3">
             <div v-for="i in 4" :key="i" class="h-14 bg-surface-100 dark:bg-surface-800 rounded-xl" />
@@ -383,7 +383,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
     <!-- ─── Error ─── -->
     <div
       v-else-if="statsError"
-      class="rounded-2xl border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950/60 p-5 text-sm text-danger-700 dark:text-danger-400 flex items-center gap-3"
+      class="ui-alert ui-alert-danger flex items-center gap-3 p-5"
     >
       <AlertCircle class="size-5 shrink-0" />
       <span>Failed to load source tracking data.</span>
@@ -402,7 +402,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
         </div>
         <div class="flex items-center gap-2">
           <!-- Date range pill -->
-          <div class="inline-flex rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-0.5">
+          <div class="ui-panel inline-flex rounded-xl p-0.5">
             <button
               v-for="range in (['7d', '30d', '90d', 'all'] as const)"
               :key="range"
@@ -420,7 +420,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           <div class="relative">
             <select
               v-model="selectedJobId"
-              class="appearance-none rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 pl-3 pr-8 py-2 text-xs font-medium text-surface-700 dark:text-surface-300 cursor-pointer"
+              class="ui-field appearance-none pl-3 pr-8 py-2 text-xs font-medium cursor-pointer"
             >
               <option :value="undefined">All jobs</option>
               <option v-for="j in jobs" :key="j.id" :value="j.id">{{ j.title }}</option>
@@ -431,7 +431,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           <!-- Create link button -->
           <button
             v-if="canManageLinks"
-            class="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-brand-700 shadow-sm shadow-brand-600/15 hover:shadow-md hover:shadow-brand-600/20 transition-all"
+            class="ui-button ui-button-primary px-4 py-2 text-xs sm:text-sm font-semibold shadow-sm shadow-brand-600/15 hover:shadow-md hover:shadow-brand-600/20"
             @click="showCreateModal = true"
           >
             <Plus class="size-4" />
@@ -476,7 +476,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
         <!-- ─── Stat cards ─── -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-10">
           <!-- Tracked Applications -->
-          <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-brand-500/25 dark:hover:ring-brand-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-500/[0.08]">
+          <div class="group ui-dashboard-stat-card p-5 sm:p-6 ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-brand-500/25 dark:hover:ring-brand-400/25 hover:shadow-lg hover:shadow-brand-500/[0.08]">
             <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <Target class="absolute -bottom-3 -right-3 size-24 text-brand-500/[0.03] dark:text-brand-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
             <div class="relative">
@@ -492,7 +492,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </div>
 
           <!-- Attribution Rate -->
-          <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-teal-500/25 dark:hover:ring-teal-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-teal-500/[0.08]">
+          <div class="group ui-dashboard-stat-card p-5 sm:p-6 ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-teal-500/25 dark:hover:ring-teal-400/25 hover:shadow-lg hover:shadow-teal-500/[0.08]">
             <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <Activity class="absolute -bottom-3 -right-3 size-24 text-teal-500/[0.03] dark:text-teal-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
             <div class="relative">
@@ -508,7 +508,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </div>
 
           <!-- Active Links -->
-          <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-violet-500/25 dark:hover:ring-violet-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/[0.08]">
+          <div class="group ui-dashboard-stat-card p-5 sm:p-6 ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-violet-500/25 dark:hover:ring-violet-400/25 hover:shadow-lg hover:shadow-violet-500/[0.08]">
             <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <Link2 class="absolute -bottom-3 -right-3 size-24 text-violet-500/[0.03] dark:text-violet-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
             <div class="relative">
@@ -525,7 +525,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
 
           <!-- Untracked -->
           <div
-            class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate transition-all duration-300 hover:-translate-y-0.5"
+            class="group ui-dashboard-stat-card p-5 sm:p-6"
             :class="summary.totalUntracked > 0
               ? 'ring-1 ring-warning-400/30 dark:ring-warning-500/20 hover:ring-warning-500/40 dark:hover:ring-warning-400/30 shadow-sm shadow-warning-500/[0.06] hover:shadow-lg hover:shadow-warning-500/[0.12]'
               : 'ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-surface-300/50 dark:hover:ring-surface-600/30 hover:shadow-lg hover:shadow-surface-500/[0.04]'"
@@ -565,8 +565,8 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           <!-- ─── Left (2/3): Channel breakdown ─── -->
           <div class="lg:col-span-2 space-y-6">
             <!-- Channel breakdown -->
-            <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-              <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
+            <div class="ui-panel ui-dashboard-panel shadow-xs dark:shadow-none">
+              <div class="ui-panel-header ui-dashboard-panel-header flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                   <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                     <BarChart3 class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -623,7 +623,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
             <!-- ─── Conversion funnel by source ─── -->
             <div
               v-if="Object.keys(funnel).length > 0"
-              class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none"
+              class="ui-table-shell shadow-xs dark:shadow-none"
             >
               <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
                 <div class="flex items-center gap-2.5">
@@ -637,7 +637,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
               <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                   <thead>
-                    <tr class="border-b border-surface-100 dark:border-surface-800">
+                    <tr class="ui-table-header">
                       <th class="px-6 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Source</th>
                       <th class="px-3 py-3 text-center text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">New</th>
                       <th class="px-3 py-3 text-center text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Screening</th>
@@ -647,11 +647,11 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                       <th class="px-3 py-3 text-center text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Hire Rate</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
+                  <tbody>
                     <tr
                       v-for="(stages, channel) in funnel"
                       :key="channel"
-                      class="hover:bg-surface-50 dark:hover:bg-surface-800/40 cursor-pointer"
+                      class="ui-table-row cursor-pointer"
                       @click="selectedChannel = channel as string; showTab = 'table'"
                     >
                       <td class="px-6 py-3">
@@ -687,8 +687,8 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           <!-- ─── Right (1/3): Side panels ─── -->
           <div class="space-y-6">
             <!-- Top tracking links -->
-            <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-              <div class="flex items-center justify-between px-5 py-4 border-b border-surface-100 dark:border-surface-800">
+            <div class="ui-panel ui-dashboard-panel shadow-xs dark:shadow-none">
+              <div class="ui-panel-header ui-dashboard-panel-header flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                   <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                     <Link2 class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -745,8 +745,8 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
             </div>
 
             <!-- Top referrer domains -->
-            <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-              <div class="flex items-center justify-between px-5 py-4 border-b border-surface-100 dark:border-surface-800">
+            <div class="ui-panel ui-dashboard-panel shadow-xs dark:shadow-none">
+              <div class="ui-panel-header ui-dashboard-panel-header flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                   <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                     <Globe class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -780,8 +780,8 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
             </div>
 
             <!-- Recent attributed -->
-            <div class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
-              <div class="flex items-center justify-between px-5 py-4 border-b border-surface-100 dark:border-surface-800">
+            <div class="ui-panel ui-dashboard-panel shadow-xs dark:shadow-none">
+              <div class="ui-panel-header ui-dashboard-panel-header flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                   <div class="flex items-center justify-center size-7 rounded-lg bg-surface-100 dark:bg-surface-800">
                     <Clock class="size-3.5 text-surface-500 dark:text-surface-400" />
@@ -837,7 +837,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
       <!-- ═══════════════════════════════════════ -->
       <div v-if="showTab === 'links'">
         <div v-if="links.length === 0" class="flex flex-col items-center justify-center py-20">
-          <div class="rounded-3xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-14 text-center max-w-md shadow-sm">
+          <div class="ui-empty-panel max-w-md p-14 shadow-sm">
             <div class="mx-auto mb-8 flex items-center justify-center size-18 rounded-2xl bg-gradient-to-br from-brand-500 to-violet-600 shadow-lg shadow-brand-500/20">
               <Link2 class="size-9 text-white" />
             </div>
@@ -858,35 +858,35 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </div>
         </div>
 
-        <div v-else class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+        <div v-else class="ui-table-shell shadow-xs dark:shadow-none">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
-                <tr class="border-b border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/30">
+                <tr class="ui-table-header">
                   <th class="px-5 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider cursor-pointer select-none hover:text-surface-700 dark:hover:text-surface-200 transition-colors" @click="toggleLinkSort('name')">
-                    <span class="inline-flex items-center gap-1">Name <component :is="linkSortKey === 'name' ? (linkSortAsc ? ChevronUp : ChevronDown) : ChevronDown" class="size-3" :class="linkSortKey === 'name' ? 'opacity-100' : 'opacity-0'" /></span>
+                    <span class="inline-flex items-center gap-1">Name <ChevronUp v-if="linkSortKey === 'name' && linkSortAsc" class="size-3" /><ChevronDown v-else class="size-3" :class="linkSortKey === 'name' ? 'opacity-100' : 'opacity-0'" /></span>
                   </th>
                   <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider cursor-pointer select-none hover:text-surface-700 dark:hover:text-surface-200 transition-colors" @click="toggleLinkSort('channel')">
-                    <span class="inline-flex items-center gap-1">Source <component :is="linkSortKey === 'channel' ? (linkSortAsc ? ChevronUp : ChevronDown) : ChevronDown" class="size-3" :class="linkSortKey === 'channel' ? 'opacity-100' : 'opacity-0'" /></span>
+                    <span class="inline-flex items-center gap-1">Source <ChevronUp v-if="linkSortKey === 'channel' && linkSortAsc" class="size-3" /><ChevronDown v-else class="size-3" :class="linkSortKey === 'channel' ? 'opacity-100' : 'opacity-0'" /></span>
                   </th>
                   <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Job</th>
                   <th class="px-4 py-3 text-center text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider cursor-pointer select-none hover:text-surface-700 dark:hover:text-surface-200 transition-colors" @click="toggleLinkSort('clickCount')">
-                    <span class="inline-flex items-center gap-1">Clicks <component :is="linkSortKey === 'clickCount' ? (linkSortAsc ? ChevronUp : ChevronDown) : ChevronDown" class="size-3" :class="linkSortKey === 'clickCount' ? 'opacity-100' : 'opacity-0'" /></span>
+                    <span class="inline-flex items-center gap-1">Clicks <ChevronUp v-if="linkSortKey === 'clickCount' && linkSortAsc" class="size-3" /><ChevronDown v-else class="size-3" :class="linkSortKey === 'clickCount' ? 'opacity-100' : 'opacity-0'" /></span>
                   </th>
                   <th class="px-4 py-3 text-center text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider cursor-pointer select-none hover:text-surface-700 dark:hover:text-surface-200 transition-colors" @click="toggleLinkSort('applicationCount')">
-                    <span class="inline-flex items-center gap-1">Apps <component :is="linkSortKey === 'applicationCount' ? (linkSortAsc ? ChevronUp : ChevronDown) : ChevronDown" class="size-3" :class="linkSortKey === 'applicationCount' ? 'opacity-100' : 'opacity-0'" /></span>
+                    <span class="inline-flex items-center gap-1">Apps <ChevronUp v-if="linkSortKey === 'applicationCount' && linkSortAsc" class="size-3" /><ChevronDown v-else class="size-3" :class="linkSortKey === 'applicationCount' ? 'opacity-100' : 'opacity-0'" /></span>
                   </th>
                   <th class="px-4 py-3 text-center text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider cursor-pointer select-none hover:text-surface-700 dark:hover:text-surface-200 transition-colors" @click="toggleLinkSort('cvr')">
-                    <span class="inline-flex items-center gap-1">CVR <component :is="linkSortKey === 'cvr' ? (linkSortAsc ? ChevronUp : ChevronDown) : ChevronDown" class="size-3" :class="linkSortKey === 'cvr' ? 'opacity-100' : 'opacity-0'" /></span>
+                    <span class="inline-flex items-center gap-1">CVR <ChevronUp v-if="linkSortKey === 'cvr' && linkSortAsc" class="size-3" /><ChevronDown v-else class="size-3" :class="linkSortKey === 'cvr' ? 'opacity-100' : 'opacity-0'" /></span>
                   </th>
                   <th class="px-4 py-3 text-center text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider cursor-pointer select-none hover:text-surface-700 dark:hover:text-surface-200 transition-colors" @click="toggleLinkSort('isActive')">
-                    <span class="inline-flex items-center gap-1">Status <component :is="linkSortKey === 'isActive' ? (linkSortAsc ? ChevronUp : ChevronDown) : ChevronDown" class="size-3" :class="linkSortKey === 'isActive' ? 'opacity-100' : 'opacity-0'" /></span>
+                    <span class="inline-flex items-center gap-1">Status <ChevronUp v-if="linkSortKey === 'isActive' && linkSortAsc" class="size-3" /><ChevronDown v-else class="size-3" :class="linkSortKey === 'isActive' ? 'opacity-100' : 'opacity-0'" /></span>
                   </th>
                   <th class="px-4 py-3 text-right text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
-                <tr v-for="link in sortedLinks" :key="link.id" class="hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors group">
+              <tbody>
+                <tr v-for="link in sortedLinks" :key="link.id" class="ui-table-row group">
                   <!-- Name + URL -->
                   <td class="px-5 py-3.5">
                     <NuxtLink
@@ -1005,11 +1005,11 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </p>
         </div>
 
-        <div v-else class="rounded-2xl border border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-xs dark:shadow-none">
+        <div v-else class="ui-table-shell shadow-xs dark:shadow-none">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
-                <tr class="border-b border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/30">
+                <tr class="ui-table-header">
                   <th class="px-5 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Candidate</th>
                   <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Job</th>
                   <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Source</th>
@@ -1018,8 +1018,8 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                   <th class="px-4 py-3 text-right text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Applied</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
-                <tr v-for="app in filteredAttributed" :key="app.applicationId" class="hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors">
+              <tbody>
+                <tr v-for="app in filteredAttributed" :key="app.applicationId" class="ui-table-row">
                   <!-- Candidate -->
                   <td class="px-5 py-3.5">
                     <NuxtLink
@@ -1089,14 +1089,19 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
     <!-- Modal: Create tracking link             -->
     <!-- ═══════════════════════════════════════ -->
     <Teleport to="body">
-      <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/50 dark:bg-black/70" @click="showCreateModal = false" />
-        <div class="relative w-full max-w-lg rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-2xl">
+      <div
+        v-if="showCreateModal"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+        @click.self="showCreateModal = false"
+      >
+        <div class="ui-modal-panel relative w-full max-w-xl max-h-[calc(100vh-2rem)] overflow-y-auto">
           <!-- Header -->
-          <div class="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
-            <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Create Tracking Link</h2>
+          <div class="ui-panel-header flex items-center justify-between px-6 py-5">
+            <h2 class="text-xl font-semibold text-white">Create Tracking Link</h2>
             <button
-              class="p-1.5 rounded-lg text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              type="button"
+              aria-label="Close create tracking link form"
+              class="ui-button ui-button-ghost size-9 p-0"
               @click="showCreateModal = false"
             >
               <X class="size-4" />
@@ -1104,79 +1109,87 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </div>
 
           <!-- Body -->
-          <form class="px-6 py-5 space-y-4" @submit.prevent="handleCreateLink">
+          <form class="space-y-5 px-6 py-5" @submit.prevent="handleCreateLink">
             <!-- Name -->
             <div>
-              <label for="link-name" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Link Name</label>
+              <label for="link-name" class="mb-2 block text-xs font-semibold uppercase text-white/55">Link Name</label>
               <input
                 id="link-name"
                 v-model="newLink.name"
                 type="text"
                 placeholder="e.g. LinkedIn Spring Campaign"
-                class="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                class="ui-field px-4 py-3"
               />
             </div>
 
             <!-- Channel -->
             <div>
-              <label for="link-channel" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Source Channel</label>
-              <select
-                id="link-channel"
-                v-model="newLink.channel"
-                class="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
-              >
-                <optgroup label="Job Boards">
-                  <option v-for="ch in ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
-                </optgroup>
-                <optgroup label="Social Media">
-                  <option v-for="ch in ['facebook', 'twitter', 'instagram', 'tiktok', 'reddit']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
-                </optgroup>
-                <optgroup label="Other">
-                  <option v-for="ch in ['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
-                </optgroup>
-              </select>
+              <label for="link-channel" class="mb-2 block text-xs font-semibold uppercase text-white/55">Source Channel</label>
+              <div class="relative">
+                <select
+                  id="link-channel"
+                  v-model="newLink.channel"
+                  class="ui-field appearance-none px-4 py-3 pr-10 [color-scheme:dark]"
+                >
+                  <optgroup label="Job Boards">
+                    <option v-for="ch in ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  </optgroup>
+                  <optgroup label="Social Media">
+                    <option v-for="ch in ['facebook', 'twitter', 'instagram', 'tiktok', 'reddit']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  </optgroup>
+                  <optgroup label="Other">
+                    <option v-for="ch in ['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
+                  </optgroup>
+                </select>
+                <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-brand-500" />
+              </div>
             </div>
 
             <!-- Job (optional) -->
             <div>
-              <label for="link-job" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Scope to Job <span class="text-surface-400 font-normal">(optional)</span></label>
-              <select
-                id="link-job"
-                v-model="newLink.jobId"
-                class="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
-              >
-                <option value="">All jobs (org-wide)</option>
-                <option v-for="j in jobs" :key="j.id" :value="j.id">{{ j.title }}</option>
-              </select>
+              <label for="link-job" class="mb-2 block text-xs font-semibold uppercase text-white/55">
+                Scope to Job <span class="font-normal text-white/35">(optional)</span>
+              </label>
+              <div class="relative">
+                <select
+                  id="link-job"
+                  v-model="newLink.jobId"
+                  class="ui-field appearance-none px-4 py-3 pr-10 [color-scheme:dark]"
+                >
+                  <option value="">All jobs (org-wide)</option>
+                  <option v-for="j in jobs" :key="j.id" :value="j.id">{{ j.title }}</option>
+                </select>
+                <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-brand-500" />
+              </div>
             </div>
 
             <!-- UTM fields (collapsible) -->
-            <details class="group">
-              <summary class="flex items-center gap-2 text-sm font-medium text-surface-500 dark:text-surface-400 cursor-pointer select-none hover:text-surface-700 dark:hover:text-surface-200 transition-colors">
-                <ChevronDown class="size-4 transition-transform group-open:rotate-180" />
+            <details class="ui-panel-muted group p-4">
+              <summary class="ui-disclosure-trigger flex cursor-pointer select-none items-center gap-2 text-xs font-semibold uppercase">
+                <ChevronDown class="size-4 text-brand-500 transition-transform group-open:rotate-180" />
                 UTM Parameters (optional)
               </summary>
-              <div class="mt-3 grid grid-cols-2 gap-3">
+              <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label for="utm-source" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">utm_source</label>
-                  <input id="utm-source" v-model="newLink.utmSource" type="text" placeholder="linkedin" class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-xs text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+                  <label for="utm-source" class="mb-1.5 block text-xs font-semibold uppercase text-white/45">utm_source</label>
+                  <input id="utm-source" v-model="newLink.utmSource" type="text" placeholder="linkedin" class="ui-field px-3 py-2.5 text-xs" />
                 </div>
                 <div>
-                  <label for="utm-medium" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">utm_medium</label>
-                  <input id="utm-medium" v-model="newLink.utmMedium" type="text" placeholder="social" class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-xs text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+                  <label for="utm-medium" class="mb-1.5 block text-xs font-semibold uppercase text-white/45">utm_medium</label>
+                  <input id="utm-medium" v-model="newLink.utmMedium" type="text" placeholder="social" class="ui-field px-3 py-2.5 text-xs" />
                 </div>
-                <div class="col-span-2">
-                  <label for="utm-campaign" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">utm_campaign</label>
-                  <input id="utm-campaign" v-model="newLink.utmCampaign" type="text" placeholder="spring-hiring-2026" class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-xs text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+                <div class="sm:col-span-2">
+                  <label for="utm-campaign" class="mb-1.5 block text-xs font-semibold uppercase text-white/45">utm_campaign</label>
+                  <input id="utm-campaign" v-model="newLink.utmCampaign" type="text" placeholder="spring-hiring-2026" class="ui-field px-3 py-2.5 text-xs" />
                 </div>
               </div>
             </details>
 
             <!-- Footer -->
-            <div class="flex items-center justify-end gap-3 pt-2">
+            <div class="flex items-center justify-end gap-3 border-t border-white/12 pt-5">
               <button
                 type="button"
-                class="rounded-xl px-4 py-2.5 text-sm font-medium text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                class="ui-button ui-button-secondary px-4 py-2.5 text-sm"
                 @click="showCreateModal = false"
               >
                 Cancel
@@ -1184,9 +1197,9 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
               <button
                 type="submit"
                 :disabled="!newLink.name.trim() || isCreating"
-                class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 shadow-sm shadow-brand-600/15 transition-all"
+                class="ui-button ui-button-primary px-5 py-2.5 text-sm font-semibold disabled:pointer-events-none"
               >
-                {{ isCreating ? 'Creating…' : 'Create Link' }}
+                {{ isCreating ? 'Creating...' : 'Create Link' }}
               </button>
             </div>
           </form>
@@ -1198,11 +1211,14 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
     <!-- Modal: Delete confirmation               -->
     <!-- ═══════════════════════════════════════ -->
     <Teleport to="body">
-      <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/50 dark:bg-black/70" @click="showDeleteConfirm = false" />
-        <div class="relative w-full max-w-sm rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-2xl p-6 text-center">
-          <div class="mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl bg-danger-50 dark:bg-danger-950/40">
-            <Trash2 class="size-5 text-danger-600 dark:text-danger-400" />
+      <div
+        v-if="showDeleteConfirm"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+        @click.self="showDeleteConfirm = false"
+      >
+        <div class="ui-modal-panel relative w-full max-w-sm p-6 text-center">
+          <div class="ui-icon-state ui-icon-state-danger mx-auto mb-4 size-12">
+            <Trash2 class="size-5" />
           </div>
           <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Tracking Link?</h3>
           <p class="text-sm text-surface-500 dark:text-surface-400 mb-6">
@@ -1210,13 +1226,13 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </p>
           <div class="flex items-center justify-center gap-3">
             <button
-              class="rounded-xl px-4 py-2.5 text-sm font-medium text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              class="ui-button ui-button-secondary px-4 py-2.5 text-sm"
               @click="showDeleteConfirm = false"
             >
               Cancel
             </button>
             <button
-              class="rounded-xl bg-danger-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-danger-700 transition-colors"
+              class="ui-button ui-button-danger px-5 py-2.5 text-sm font-semibold"
               @click="handleDelete"
             >
               Delete

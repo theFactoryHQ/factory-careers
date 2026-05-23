@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Search, MapPin, Briefcase, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { Search, MapPin, Briefcase, ChevronLeft, ChevronRight, ChevronDown, Check } from 'lucide-vue-next'
 
 definePageMeta({
   layout: 'public',
+  publicWide: true,
 })
 
 const route = useRoute()
@@ -20,18 +21,18 @@ const sourceQuery = computed(() => {
 })
 
 useSeoMeta({
-  title: 'Open Positions — Job Board',
+  title: 'Open Positions',
   description:
-    'Browse open job positions on Reqcore and apply directly. Find your next career opportunity with companies that value transparency.',
-  ogTitle: 'Open Positions — Reqcore Job Board',
+    'Browse open roles at Factory and submit your application directly.',
+  ogTitle: 'Open Positions — Factory Careers',
   ogDescription:
-    'Browse open job positions and apply directly. Powered by the open-source ATS you actually own.',
+    'Browse open Factory roles and submit your application directly.',
   ogType: 'website',
-  ogImage: '/reqcore-banner-github.jpeg',
+  ogImage: '/factory-careers-og.png',
   twitterCard: 'summary_large_image',
-  twitterTitle: 'Open Positions — Reqcore Job Board',
+  twitterTitle: 'Open Positions — Factory Careers',
   twitterDescription:
-    'Browse open job positions and apply directly.',
+    'Browse open Factory roles and apply directly.',
 })
 
 // ─────────────────────────────────────────────
@@ -42,6 +43,8 @@ const page = ref(1)
 const searchInput = ref('')
 const searchQuery = ref('')
 const typeFilter = ref<string | undefined>(undefined)
+const typeDropdownOpen = ref(false)
+const typeDropdownRef = ref<HTMLElement | null>(null)
 
 // Debounce search input
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -95,6 +98,22 @@ const typeOptions = [
   { label: 'Internship', value: 'internship' },
 ] as const
 
+const selectedTypeLabel = computed(() => typeOptions.find(option => option.value === typeFilter.value)?.label ?? 'All types')
+
+function setTypeFilter(value: string | undefined) {
+  typeFilter.value = value
+  typeDropdownOpen.value = false
+}
+
+function handleTypeDropdownClickOutside(event: MouseEvent) {
+  if (typeDropdownRef.value && !typeDropdownRef.value.contains(event.target as Node)) {
+    typeDropdownOpen.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('mousedown', handleTypeDropdownClickOutside))
+onUnmounted(() => document.removeEventListener('mousedown', handleTypeDropdownClickOutside))
+
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString(locale.value, {
     month: 'short',
@@ -107,60 +126,88 @@ function formatDate(dateStr: string) {
 <template>
   <div>
     <!-- Page header -->
-    <div class="mb-8">
-      <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-100">Open Positions</h1>
-      <p class="text-sm text-surface-500 mt-1">
-        Browse our current openings and find your next opportunity.
+    <div class="mb-10 border-b border-white/10 pb-8">
+      <p class="mb-4 text-xs font-semibold uppercase tracking-[0.22em] text-brand-500">
+        Factory Careers
+      </p>
+      <h1 class="text-5xl font-light leading-[0.96] tracking-tight text-white sm:text-6xl">Open Positions</h1>
+      <p class="mt-5 max-w-xl text-base leading-7 text-white/62">
+        Browse open roles, or introduce yourself if your path does not fit a posting yet.
       </p>
     </div>
 
     <!-- Filters -->
-    <div class="flex flex-col sm:flex-row gap-3 mb-6">
+    <div class="mb-6 flex flex-col gap-3 sm:flex-row">
       <!-- Search -->
       <div class="relative flex-1">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-surface-400 pointer-events-none" />
+        <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/38" />
         <input
           v-model="searchInput"
           type="text"
           placeholder="Search jobs by title or location…"
-          class="w-full rounded-lg border border-surface-300 dark:border-surface-700 pl-9 pr-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
+          class="w-full border border-white/14 bg-black/35 py-3 pl-9 pr-3 text-sm text-white placeholder:text-white/38 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25"
         />
       </div>
 
       <!-- Type filter -->
-      <select
-        :value="typeFilter ?? ''"
-        class="rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-700 dark:text-surface-300 bg-white dark:bg-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
-        @change="typeFilter = ($event.target as HTMLSelectElement).value || undefined"
-      >
-        <option v-for="opt in typeOptions" :key="String(opt.value)" :value="opt.value ?? ''">
-          {{ opt.label }}
-        </option>
-      </select>
+      <div ref="typeDropdownRef" class="relative sm:w-40">
+        <button
+          type="button"
+          class="flex w-full items-center justify-between border border-white/14 bg-black/35 px-3 py-3 text-left text-sm text-white outline-none transition-colors hover:border-brand-500/60 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25"
+          :aria-expanded="typeDropdownOpen"
+          aria-haspopup="listbox"
+          @click="typeDropdownOpen = !typeDropdownOpen"
+          @keydown.escape="typeDropdownOpen = false"
+        >
+          <span>{{ selectedTypeLabel }}</span>
+          <ChevronDown
+            class="size-4 shrink-0 text-brand-500 transition-transform duration-150"
+            :class="{ 'rotate-180': typeDropdownOpen }"
+          />
+        </button>
+
+        <ul
+          v-if="typeDropdownOpen"
+          role="listbox"
+          class="absolute right-0 z-30 mt-2 w-full border border-white/14 bg-black py-1 text-sm shadow-2xl shadow-black/50"
+        >
+          <li v-for="opt in typeOptions" :key="String(opt.value)" role="option" :aria-selected="opt.value === typeFilter">
+            <button
+              type="button"
+              class="flex w-full items-center justify-between px-3 py-2 text-left text-white/68 transition-colors hover:bg-brand-500/12 hover:text-white"
+              :class="opt.value === typeFilter ? 'text-white' : ''"
+              @click="setTypeFilter(opt.value)"
+            >
+              <span>{{ opt.label }}</span>
+              <Check v-if="opt.value === typeFilter" class="size-3.5 text-brand-500" />
+            </button>
+          </li>
+        </ul>
+      </div>
     </div>
 
     <!-- Loading state -->
-    <div v-if="fetchStatus === 'pending'" class="text-center py-16 text-surface-400">
+    <div v-if="fetchStatus === 'pending'" class="py-16 text-center text-white/42">
       Loading positions…
     </div>
 
     <!-- Error state -->
     <div
       v-else-if="error"
-      class="rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-4 text-sm text-danger-700 dark:text-danger-400"
+      class="border border-danger-500/30 bg-danger-950/55 p-4 text-sm text-danger-100"
     >
       Failed to load jobs. Please try again.
-      <button class="underline ml-1 cursor-pointer" @click="refresh()">Retry</button>
+      <button class="ml-1 cursor-pointer text-brand-500 underline" @click="refresh()">Retry</button>
     </div>
 
     <!-- Empty state -->
     <div
       v-else-if="jobs.length === 0"
-      class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-12 text-center"
+      class="border border-white/10 bg-white/[0.03] p-12 text-center"
     >
-      <Briefcase class="size-10 text-surface-300 mx-auto mb-3" />
-      <h3 class="text-base font-semibold text-surface-700 dark:text-surface-300 mb-1">No open positions</h3>
-      <p class="text-sm text-surface-500">
+      <Briefcase class="mx-auto mb-3 size-10 text-brand-500" />
+      <h3 class="mb-1 text-base font-semibold text-white">No open positions</h3>
+      <p class="text-sm text-white/50">
         <template v-if="searchQuery || typeFilter">
           No jobs match your current filters. Try adjusting your search.
         </template>
@@ -176,17 +223,17 @@ function formatDate(dateStr: string) {
         v-for="j in jobs"
         :key="j.id"
         :to="{ path: $localePath(`/jobs/${j.slug}`), query: sourceQuery }"
-        class="block rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-5 py-4 hover:border-surface-300 dark:hover:border-surface-700 hover:shadow-sm transition-all group"
+        class="group block border border-white/10 bg-white/[0.03] px-5 py-5 transition-colors hover:border-brand-500/60 hover:bg-brand-500/[0.07]"
       >
         <div class="flex items-start justify-between gap-4">
           <div class="min-w-0 flex-1">
             <!-- Title -->
-            <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+            <h2 class="text-xl font-light leading-tight text-white transition-colors group-hover:text-brand-500 sm:text-2xl">
               {{ j.title }}
             </h2>
 
             <!-- Meta -->
-            <div class="flex flex-wrap items-center gap-3 mt-1.5 text-sm text-surface-500">
+            <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/42">
               <span class="inline-flex items-center gap-1">
                 <Briefcase class="size-3.5" />
                 {{ typeLabels[j.type] ?? j.type }}
@@ -195,19 +242,19 @@ function formatDate(dateStr: string) {
                 <MapPin class="size-3.5" />
                 {{ j.location }}
               </span>
-              <span class="text-surface-400">
+              <span class="text-white/34">
                 Posted {{ formatDate(j.createdAt) }}
               </span>
             </div>
 
             <!-- Description preview -->
-            <p v-if="j.description" class="mt-2 text-sm text-surface-600 dark:text-surface-400 line-clamp-2">
+            <p v-if="j.description" class="mt-3 line-clamp-2 max-w-3xl text-sm leading-6 text-white/54">
               {{ j.description }}
             </p>
           </div>
 
           <!-- Arrow -->
-          <ChevronRight class="size-5 text-surface-300 group-hover:text-brand-500 shrink-0 mt-1 transition-colors" />
+          <ChevronRight class="mt-1 size-5 shrink-0 text-brand-500 transition-transform group-hover:translate-x-0.5" />
         </div>
       </NuxtLink>
 
@@ -215,20 +262,20 @@ function formatDate(dateStr: string) {
       <div v-if="totalPages > 1" class="flex items-center justify-between pt-4">
         <button
           :disabled="page <= 1"
-          class="inline-flex items-center gap-1 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          class="inline-flex cursor-pointer items-center gap-1 border border-white/14 px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:border-brand-500/60 hover:text-brand-500 disabled:cursor-not-allowed disabled:opacity-40"
           @click="page--"
         >
           <ChevronLeft class="size-4" />
           Previous
         </button>
 
-        <span class="text-sm text-surface-500">
+        <span class="text-sm text-white/45">
           Page {{ page }} of {{ totalPages }}
         </span>
 
         <button
           :disabled="page >= totalPages"
-          class="inline-flex items-center gap-1 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          class="inline-flex cursor-pointer items-center gap-1 border border-white/14 px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:border-brand-500/60 hover:text-brand-500 disabled:cursor-not-allowed disabled:opacity-40"
           @click="page++"
         >
           Next
@@ -237,7 +284,7 @@ function formatDate(dateStr: string) {
       </div>
 
       <!-- Total count -->
-      <p class="text-xs text-surface-400 pt-1">
+      <p class="pt-1 text-xs text-white/34">
         {{ total }} open position{{ total === 1 ? '' : 's' }}
       </p>
     </div>

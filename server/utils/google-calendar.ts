@@ -40,7 +40,7 @@ function createOAuth2Client(redirectUri: string) {
 function getRedirectUri(): string {
   const baseUrl = env.BETTER_AUTH_URL
     || (env.RAILWAY_PUBLIC_DOMAIN ? `https://${env.RAILWAY_PUBLIC_DOMAIN}` : '')
-    || 'https://reqcore.com'
+    || 'https://thefactoryhq.com'
   return `${baseUrl}/api/calendar/google/callback`
 }
 
@@ -106,7 +106,7 @@ export async function exchangeCodeForTokens(code: string): Promise<{
  */
 export async function getCalendarClient(userId: string): Promise<calendar_v3.Calendar | null> {
   const integration = await db.query.calendarIntegration.findFirst({
-    where: eq(calendarIntegration.userId, userId),
+    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
   })
 
   if (!integration) return null
@@ -138,7 +138,7 @@ export async function getCalendarClient(userId: string): Promise<calendar_v3.Cal
             accessTokenEncrypted: newAccessTokenEncrypted,
             updatedAt: new Date(),
           })
-          .where(eq(calendarIntegration.userId, userId))
+          .where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
       }
       catch (err) {
         logError('calendar.token_refresh_persist_failed', {
@@ -166,7 +166,7 @@ export async function saveCalendarIntegration(userId: string, params: {
 
   // Upsert: update if exists, insert if not
   const existing = await db.query.calendarIntegration.findFirst({
-    where: eq(calendarIntegration.userId, userId),
+    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
   })
 
   if (existing) {
@@ -177,9 +177,10 @@ export async function saveCalendarIntegration(userId: string, params: {
         accountEmail: params.email,
         updatedAt: new Date(),
       })
-      .where(eq(calendarIntegration.userId, userId))
+      .where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
   }
   else {
+    await db.delete(calendarIntegration).where(eq(calendarIntegration.userId, userId))
     await db.insert(calendarIntegration).values({
       userId,
       provider: 'google',
@@ -196,7 +197,7 @@ export async function saveCalendarIntegration(userId: string, params: {
  */
 export async function removeCalendarIntegration(userId: string): Promise<void> {
   const integration = await db.query.calendarIntegration.findFirst({
-    where: eq(calendarIntegration.userId, userId),
+    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
   })
 
   if (!integration) return
@@ -223,7 +224,7 @@ export async function removeCalendarIntegration(userId: string): Promise<void> {
     }
   }
 
-  await db.delete(calendarIntegration).where(eq(calendarIntegration.userId, userId))
+  await db.delete(calendarIntegration).where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
 }
 
 // ─────────────────────────────────────────────
@@ -262,7 +263,7 @@ export async function createCalendarEvent(
   if (!calendar) return null
 
   const integration = await db.query.calendarIntegration.findFirst({
-    where: eq(calendarIntegration.userId, userId),
+    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
     columns: { calendarId: true },
   })
 
@@ -347,7 +348,7 @@ export async function updateCalendarEvent(
   if (!calendar) return null
 
   const integration = await db.query.calendarIntegration.findFirst({
-    where: eq(calendarIntegration.userId, userId),
+    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
     columns: { calendarId: true },
   })
 
@@ -424,7 +425,7 @@ export async function cancelCalendarEvent(
   if (!calendar) return false
 
   const integration = await db.query.calendarIntegration.findFirst({
-    where: eq(calendarIntegration.userId, userId),
+    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
     columns: { calendarId: true },
   })
 
@@ -461,7 +462,7 @@ export async function setupCalendarWebhook(userId: string): Promise<boolean> {
   if (!calendar) return false
 
   const integration = await db.query.calendarIntegration.findFirst({
-    where: eq(calendarIntegration.userId, userId),
+    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
     columns: { calendarId: true, webhookChannelId: true, webhookResourceId: true },
   })
 
@@ -484,7 +485,7 @@ export async function setupCalendarWebhook(userId: string): Promise<boolean> {
 
   const baseUrl = env.BETTER_AUTH_URL
     || (env.RAILWAY_PUBLIC_DOMAIN ? `https://${env.RAILWAY_PUBLIC_DOMAIN}` : '')
-    || 'https://reqcore.com'
+    || 'https://thefactoryhq.com'
 
   const channelId = crypto.randomUUID()
   const calendarId = integration.calendarId || 'primary'
@@ -513,7 +514,7 @@ export async function setupCalendarWebhook(userId: string): Promise<boolean> {
           : null,
         updatedAt: new Date(),
       })
-      .where(eq(calendarIntegration.userId, userId))
+      .where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
 
     // Do an initial sync to get the syncToken
     await performIncrementalSync(userId)
@@ -538,7 +539,7 @@ export async function performIncrementalSync(userId: string): Promise<void> {
   if (!calendar) return
 
   const integration = await db.query.calendarIntegration.findFirst({
-    where: eq(calendarIntegration.userId, userId),
+    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
   })
 
   if (!integration) return
@@ -581,7 +582,7 @@ export async function performIncrementalSync(userId: string): Promise<void> {
           if (integration.syncToken) {
             await db.update(calendarIntegration)
               .set({ syncToken: null, updatedAt: new Date() })
-              .where(eq(calendarIntegration.userId, userId))
+              .where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
             return performIncrementalSync(userId)
           }
           // Already cleared syncToken but still getting 410 — bail out
@@ -608,7 +609,7 @@ export async function performIncrementalSync(userId: string): Promise<void> {
     if (nextSyncToken) {
       await db.update(calendarIntegration)
         .set({ syncToken: nextSyncToken, updatedAt: new Date() })
-        .where(eq(calendarIntegration.userId, userId))
+        .where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
     }
   }
   catch (err) {

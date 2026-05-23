@@ -32,8 +32,8 @@ export function useAnalyticsConsent() {
 
   const cookieDomain = (useRuntimeConfig().public as Record<string, string>).cookieDomain
 
-  // Cross-subdomain cookie: domain=.reqcore.com makes this visible on both
-  // reqcore.com (marketing) and app.reqcore.com (app).
+  // Cross-subdomain cookie: domain=.thefactoryhq.com makes this visible on both
+  // thefactoryhq.com (marketing) and careers.thefactoryhq.com (app).
   const consentCookie = useCookie<ConsentState>(CONSENT_COOKIE_NAME, {
     domain: cookieDomain || undefined,
     maxAge: 365 * 24 * 60 * 60,

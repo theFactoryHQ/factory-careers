@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GripVertical, Pencil, Plus, Trash2, X } from 'lucide-vue-next'
+import { ChevronDown, GripVertical, Pencil, Plus, Trash2, X } from 'lucide-vue-next'
 import {
   PROPERTY_COLOR_CLASSES,
   PROPERTY_OPTION_COLORS,
@@ -206,169 +206,188 @@ const overlayTitle = computed(() => {
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="open" class="fixed inset-0 z-[65] bg-black/40" @click="emit('close')" />
+      <div v-if="open" class="fixed inset-0 z-[65] bg-black/72 backdrop-blur-sm" @click="emit('close')" />
     </Transition>
     <Transition name="slide-right">
       <aside
         v-if="open"
-        class="fixed right-0 top-0 z-[70] flex h-full w-full max-w-md flex-col border-l border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-2xl"
+        class="factory-dashboard-portal fixed right-0 top-0 z-[70] flex h-full w-full max-w-md flex-col border-l border-white/12 bg-black text-white shadow-2xl shadow-black/70"
       >
-        <header class="flex items-center justify-between border-b border-surface-200 dark:border-surface-800 px-5 py-4">
+        <header class="flex items-center justify-between border-b border-white/12 bg-black px-5 py-4">
           <div class="min-w-0">
-            <h2 class="text-base font-semibold text-surface-900 dark:text-surface-50 truncate">{{ overlayTitle }}</h2>
-            <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
+            <h2 class="truncate text-base font-semibold text-white">{{ overlayTitle }}</h2>
+            <p class="mt-0.5 text-xs text-white/52">
               {{ jobId ? 'Visible only on applications to this job.' : 'Visible everywhere in your workspace.' }}
             </p>
           </div>
-          <button class="rounded p-1.5 text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer" @click="emit('close')">
+          <button
+            class="factory-toolbar-button inline-flex h-9 min-h-9 w-9 cursor-pointer items-center justify-center border p-0 transition-colors"
+            aria-label="Close properties"
+            @click="emit('close')"
+          >
             <X class="size-4" />
           </button>
         </header>
 
-        <div class="flex-1 overflow-y-auto">
+        <div class="flex-1 overflow-y-auto bg-black">
           <!-- List existing definitions -->
-          <ul class="divide-y divide-surface-100 dark:divide-surface-800">
+          <ul class="divide-y divide-white/10">
             <li
               v-for="def in definitions"
               :key="def.id"
               draggable="true"
-              class="flex items-center gap-2 px-3 py-2 hover:bg-surface-50 dark:hover:bg-surface-800/50"
+              class="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-white/[0.04]"
               @dragstart="onDragStart(def.id)"
               @dragover.prevent
               @drop.prevent="onDrop(def.id)"
             >
-              <GripVertical class="size-4 text-surface-300 dark:text-surface-600 cursor-grab active:cursor-grabbing" />
+              <GripVertical class="size-4 cursor-grab text-white/32 active:cursor-grabbing" />
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
-                  <span class="text-sm font-medium text-surface-800 dark:text-surface-100 truncate">{{ def.name }}</span>
-                  <span class="rounded bg-surface-100 dark:bg-surface-800 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
+                  <span class="truncate text-sm font-medium text-white">{{ def.name }}</span>
+                  <span class="border border-white/10 bg-white/[0.045] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/54">
                     {{ PROPERTY_TYPE_LABELS[def.type] }}
                   </span>
                 </div>
-                <p v-if="def.description" class="text-xs text-surface-500 dark:text-surface-400 truncate mt-0.5">{{ def.description }}</p>
+                <p v-if="def.description" class="mt-0.5 truncate text-xs text-white/46">{{ def.description }}</p>
               </div>
-              <button class="rounded p-1.5 text-surface-400 hover:text-surface-700 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer" @click="openEdit(def)">
+              <button
+                class="inline-flex h-8 w-8 cursor-pointer items-center justify-center border border-transparent text-white/48 transition-colors hover:border-white/16 hover:bg-white/[0.055] hover:text-white"
+                aria-label="Edit property"
+                @click="openEdit(def)"
+              >
                 <Pencil class="size-3.5" />
               </button>
-              <button class="rounded p-1.5 text-surface-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/30 cursor-pointer" @click="confirmDeleteId = def.id">
+              <button
+                class="inline-flex h-8 w-8 cursor-pointer items-center justify-center border border-transparent text-white/48 transition-colors hover:border-danger-500/45 hover:bg-danger-500/12 hover:text-danger-300"
+                aria-label="Delete property"
+                @click="confirmDeleteId = def.id"
+              >
                 <Trash2 class="size-3.5" />
               </button>
             </li>
           </ul>
 
           <div v-if="definitions.length === 0 && formMode !== 'create'" class="px-5 py-10 text-center">
-            <p class="text-sm text-surface-500 dark:text-surface-400">No properties yet.</p>
-            <p class="text-xs text-surface-400 dark:text-surface-500 mt-1">Add one to start tracking custom data.</p>
+            <p class="text-sm text-white/68">No properties yet.</p>
+            <p class="mt-1 text-xs text-white/42">Add one to start tracking custom data.</p>
           </div>
 
           <!-- Add / edit form -->
-          <div v-if="formMode" class="border-t border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-950/50 px-5 py-4">
-            <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-3">
+          <div v-if="formMode" class="border-t border-white/12 bg-white/[0.025] px-5 py-4">
+            <h3 class="mb-3 text-sm font-semibold text-white">
               {{ formMode === 'create' ? 'New property' : 'Edit property' }}
             </h3>
 
             <div class="space-y-3">
               <div>
-                <label class="block text-xs font-medium text-surface-600 dark:text-surface-300 mb-1">Name</label>
+                <label class="mb-1 block text-xs font-medium text-white/68">Name</label>
                 <input
                   v-model="formName"
                   type="text"
                   maxlength="80"
-                  class="w-full rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2.5 py-1.5 text-sm text-surface-900 dark:text-surface-50 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                  class="w-full border border-white/16 bg-black/55 px-2.5 py-1.5 text-sm text-white outline-none transition-colors placeholder:text-white/34 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
                 />
               </div>
 
               <div v-if="formMode === 'create'">
-                <label class="block text-xs font-medium text-surface-600 dark:text-surface-300 mb-1">Type</label>
-                <select
-                  v-model="formType"
-                  class="w-full rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2.5 py-1.5 text-sm text-surface-900 dark:text-surface-50 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
-                >
-                  <option v-for="t in PROPERTY_TYPES" :key="t" :value="t">{{ PROPERTY_TYPE_LABELS[t] }}</option>
-                </select>
-                <p class="text-[11px] text-surface-400 mt-1">Type cannot be changed after creation.</p>
+                <label class="mb-1 block text-xs font-medium text-white/68">Type</label>
+                <div class="relative">
+                  <select v-model="formType" class="factory-form-select">
+                    <option v-for="t in PROPERTY_TYPES" :key="t" :value="t">{{ PROPERTY_TYPE_LABELS[t] }}</option>
+                  </select>
+                  <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
+                </div>
+                <p class="mt-1 text-[11px] text-white/38">Type cannot be changed after creation.</p>
               </div>
 
               <div>
-                <label class="block text-xs font-medium text-surface-600 dark:text-surface-300 mb-1">Description (optional)</label>
+                <label class="mb-1 block text-xs font-medium text-white/68">Description (optional)</label>
                 <input
                   v-model="formDescription"
                   type="text"
                   maxlength="500"
-                  class="w-full rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2.5 py-1.5 text-sm text-surface-900 dark:text-surface-50 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                  class="w-full border border-white/16 bg-black/55 px-2.5 py-1.5 text-sm text-white outline-none transition-colors placeholder:text-white/34 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
                 />
               </div>
 
               <!-- Number format -->
               <div v-if="supportsNumberFormat">
-                <label class="block text-xs font-medium text-surface-600 dark:text-surface-300 mb-1">Format</label>
+                <label class="mb-1 block text-xs font-medium text-white/68">Format</label>
                 <div class="flex items-center gap-2">
-                  <select
-                    v-model="formNumberFormat"
-                    class="rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
-                  >
-                    <option value="plain">Plain</option>
-                    <option value="percent">Percent</option>
-                    <option value="currency">Currency</option>
-                  </select>
+                  <div class="relative flex-1">
+                    <select v-model="formNumberFormat" class="factory-form-select">
+                      <option value="plain">Plain</option>
+                      <option value="percent">Percent</option>
+                      <option value="currency">Currency</option>
+                    </select>
+                    <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
+                  </div>
                   <input
                     v-if="formNumberFormat === 'currency'"
                     v-model="formCurrency"
                     type="text"
                     maxlength="8"
                     placeholder="$"
-                    class="w-20 rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                    class="w-20 border border-white/16 bg-black/55 px-2 py-1 text-sm text-white outline-none transition-colors placeholder:text-white/34 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
                   />
                 </div>
               </div>
 
               <!-- Options editor -->
               <div v-if="supportsOptions">
-                <label class="block text-xs font-medium text-surface-600 dark:text-surface-300 mb-1">Options</label>
+                <label class="mb-1 block text-xs font-medium text-white/68">Options</label>
                 <ul class="space-y-1.5">
                   <li v-for="opt in formOptions" :key="opt.id" class="flex items-center gap-1.5">
-                    <select
-                      v-model="opt.color"
-                      class="shrink-0 rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-1 py-0.5 text-xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
-                    >
-                      <option v-for="c in PROPERTY_OPTION_COLORS" :key="c" :value="c">{{ c }}</option>
-                    </select>
+                    <div class="relative w-24 shrink-0">
+                      <select
+                        v-model="opt.color"
+                        class="factory-form-select !min-h-8 !px-2 !py-1 !pr-7 !text-xs"
+                      >
+                        <option v-for="c in PROPERTY_OPTION_COLORS" :key="c" :value="c">{{ c }}</option>
+                      </select>
+                      <ChevronDown class="factory-form-select-chevron !right-2 !size-3.5" aria-hidden="true" />
+                    </div>
                     <input
                       v-model="opt.label"
                       type="text"
                       maxlength="80"
-                      class="flex-1 min-w-0 rounded border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                      class="min-w-0 flex-1 border border-white/16 bg-black/55 px-2 py-1 text-sm text-white outline-none transition-colors placeholder:text-white/34 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
                       placeholder="Option label"
                     />
                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="PROPERTY_COLOR_CLASSES[opt.color as PropertyOptionColor].chip">
                       {{ opt.label || '—' }}
                     </span>
-                    <button class="rounded p-1 text-surface-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/30 cursor-pointer" @click="removeOption(opt.id)">
+                    <button
+                      class="inline-flex h-8 w-8 cursor-pointer items-center justify-center border border-transparent text-white/48 transition-colors hover:border-danger-500/45 hover:bg-danger-500/12 hover:text-danger-300"
+                      aria-label="Remove option"
+                      @click="removeOption(opt.id)"
+                    >
                       <X class="size-3.5" />
                     </button>
                   </li>
                 </ul>
                 <button
                   type="button"
-                  class="mt-2 inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 cursor-pointer"
+                  class="mt-2 inline-flex cursor-pointer items-center gap-1 text-xs font-medium uppercase text-brand-300 transition-colors hover:text-white"
                   @click="addOption"
                 >
                   <Plus class="size-3.5" /> Add option
                 </button>
               </div>
 
-              <p v-if="formError" class="text-xs text-danger-600">{{ formError }}</p>
+              <p v-if="formError" class="text-xs text-danger-300">{{ formError }}</p>
 
               <div class="flex items-center justify-end gap-2 pt-1">
                 <button
                   type="button"
-                  class="rounded px-3 py-1.5 text-xs text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer"
+                  class="factory-toolbar-button inline-flex h-10 min-h-10 cursor-pointer items-center justify-center border px-3.5 py-0 text-xs font-medium transition-colors"
                   @click="cancelForm"
                 >Cancel</button>
                 <button
                   type="button"
                   :disabled="isSaving"
-                  class="rounded bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  class="factory-button-cta factory-button-premium inline-flex h-10 min-h-10 cursor-pointer items-center justify-center px-3.5 py-0 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   @click="submitForm"
                 >{{ isSaving ? 'Saving…' : (formMode === 'create' ? 'Create' : 'Save') }}</button>
               </div>
@@ -376,10 +395,10 @@ const overlayTitle = computed(() => {
           </div>
         </div>
 
-        <footer v-if="!formMode" class="border-t border-surface-200 dark:border-surface-800 px-5 py-3">
+        <footer v-if="!formMode" class="border-t border-white/12 bg-black px-5 py-3">
           <button
             type="button"
-            class="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm font-medium text-surface-600 dark:text-surface-300 hover:border-brand-400 hover:text-brand-700 dark:hover:text-brand-300 cursor-pointer"
+            class="inline-flex min-h-10 w-full cursor-pointer items-center justify-center gap-1.5 border border-dashed border-white/18 bg-black/55 px-3 py-2 text-sm font-medium uppercase text-white/72 transition-colors hover:border-brand-500 hover:bg-brand-500/12 hover:text-white"
             @click="openCreate"
           >
             <Plus class="size-4" /> Add property
@@ -391,20 +410,20 @@ const overlayTitle = computed(() => {
     <!-- Delete confirmation -->
     <Transition name="fade">
       <div v-if="confirmDeleteId" class="fixed inset-0 z-[80] flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/50" @click="confirmDeleteId = null" />
-        <div class="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
-          <h3 class="text-base font-semibold text-surface-900 dark:text-surface-50 mb-2">Delete property?</h3>
-          <p class="text-sm text-surface-600 dark:text-surface-300 mb-4">
+        <div class="absolute inset-0 bg-black/78 backdrop-blur-sm" @click="confirmDeleteId = null" />
+        <div class="factory-dashboard-portal relative mx-4 w-full max-w-sm border border-white/12 bg-black p-6 text-white shadow-2xl shadow-black/70">
+          <h3 class="mb-2 text-base font-semibold text-white">Delete property?</h3>
+          <p class="mb-4 text-sm text-white/58">
             This deletes the property and removes it from all rows. This cannot be undone.
           </p>
           <div class="flex justify-end gap-2">
             <button
-              class="rounded px-3 py-1.5 text-sm text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer"
+              class="factory-toolbar-button cursor-pointer border px-3 py-1.5 text-sm font-medium transition-colors"
               :disabled="isDeleting"
               @click="confirmDeleteId = null"
             >Cancel</button>
             <button
-              class="rounded bg-danger-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-danger-700 disabled:opacity-50 cursor-pointer"
+              class="factory-button-cta cursor-pointer border border-danger-500/60 bg-danger-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-danger-500 disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="isDeleting"
               @click="confirmDelete"
             >{{ isDeleting ? 'Deleting…' : 'Delete' }}</button>

@@ -1,8 +1,15 @@
 import { and, eq } from 'drizzle-orm'
-import { interview, application } from '../../../database/schema'
+import { interview, interviewCalendarEvent } from '../../../database/schema'
 import { interviewIdParamSchema, updateInterviewSchema } from '../../../utils/schemas/interview'
 import { INTERVIEW_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
-import { updateCalendarEvent, cancelCalendarEvent } from '../../../utils/google-calendar'
+import {
+  updateConnectedCalendarEvent,
+  cancelConnectedCalendarEvent,
+  updateConnectedCalendarEventRecords,
+  cancelConnectedCalendarEventRecords,
+  type CalendarEventRecord,
+  type CalendarProvider,
+} from '../../../utils/calendar'
 
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { interview: ['update'] })
@@ -14,12 +21,16 @@ export default defineEventHandler(async (event) => {
   // Fetch current interview for validation
   const current = await db.query.interview.findFirst({
     where: and(eq(interview.id, id), eq(interview.organizationId, orgId)),
-    columns: { id: true, status: true, googleCalendarEventId: true, createdById: true, timezone: true },
+    columns: { id: true, status: true, calendarEventProvider: true, googleCalendarEventId: true, createdById: true, timezone: true },
   })
 
   if (!current) {
     throw createError({ statusCode: 404, statusMessage: 'Interview not found' })
   }
+
+  const syncedCalendarEvents = await db.query.interviewCalendarEvent.findMany({
+    where: and(eq(interviewCalendarEvent.interviewId, id), eq(interviewCalendarEvent.organizationId, orgId)),
+  })
 
   // Validate status transition
   if (body.status && body.status !== current.status) {
@@ -49,14 +60,40 @@ export default defineEventHandler(async (event) => {
     .where(and(eq(interview.id, id), eq(interview.organizationId, orgId)))
     .returning()
 
-  // Sync changes to Google Calendar (non-blocking)
-  if (current.googleCalendarEventId) {
+  // Sync changes to the connected calendar provider (non-blocking)
+  if (current.googleCalendarEventId || syncedCalendarEvents.length > 0) {
     const isCancelling = body.status === 'cancelled'
+    const provider = (current.calendarEventProvider ?? 'google') as CalendarProvider
+    const eventRecords: CalendarEventRecord[] = syncedCalendarEvents
+      .filter(record => record.eventId)
+      .map(record => ({
+        id: record.id,
+        provider: record.provider as CalendarProvider,
+        destinationEmail: record.destinationEmail,
+        eventId: record.eventId,
+        isPrimary: record.isPrimary,
+      }))
 
-    if (isCancelling) {
-      cancelCalendarEvent(current.createdById, current.googleCalendarEventId).catch(err => {
+    if (eventRecords.length > 0 && isCancelling) {
+      cancelConnectedCalendarEventRecords(current.createdById, orgId, eventRecords).then(async (results) => {
+        await Promise.all(results.map(result => db.update(interviewCalendarEvent)
+          .set({
+            syncStatus: result.success ? 'cancelled' : 'failed',
+            updatedAt: new Date(),
+          })
+          .where(eq(interviewCalendarEvent.id, result.recordId))))
+      }).catch(err => {
+        logError('calendar.cancel_event_failed', {
+          provider,
+          error_message: err instanceof Error ? err.message : String(err),
+        })
+      })
+    }
+    else if (isCancelling && current.googleCalendarEventId) {
+      cancelConnectedCalendarEvent(current.createdById, orgId, current.googleCalendarEventId, provider).catch(err => {
         logError('calendar.cancel_event_failed', {
           event_id: current.googleCalendarEventId,
+          provider,
           error_message: err instanceof Error ? err.message : String(err),
         })
       })
@@ -75,7 +112,7 @@ export default defineEventHandler(async (event) => {
       })
 
       const candidate = interviewWithApp?.application?.candidate
-      updateCalendarEvent(current.createdById, current.googleCalendarEventId, {
+      const calendarUpdateData = {
         ...(body.title ? { title: body.title } : {}),
         ...(body.scheduledAt ? {
           startTime: new Date(body.scheduledAt),
@@ -88,18 +125,49 @@ export default defineEventHandler(async (event) => {
           candidateName: `${candidate.firstName} ${candidate.lastName}`,
         } : {}),
         ...(body.interviewers ? { interviewerEmails: body.interviewers } : {}),
-      }).then(async (htmlLink) => {
-        if (htmlLink) {
-          await db.update(interview)
-            .set({ googleCalendarEventLink: htmlLink })
-            .where(and(eq(interview.id, id), eq(interview.organizationId, orgId)))
-        }
-      }).catch(err => {
-        logError('calendar.update_event_failed', {
-          event_id: current.googleCalendarEventId,
-          error_message: err instanceof Error ? err.message : String(err),
+      }
+
+      if (eventRecords.length > 0) {
+        updateConnectedCalendarEventRecords(current.createdById, orgId, eventRecords, calendarUpdateData).then(async (results) => {
+          await Promise.all(results.map(result => db.update(interviewCalendarEvent)
+            .set({
+              ...(result.htmlLink ? { eventLink: result.htmlLink } : {}),
+              syncStatus: result.success ? 'synced' : 'failed',
+              updatedAt: new Date(),
+            })
+            .where(eq(interviewCalendarEvent.id, result.recordId))))
+
+          const primaryRecord = eventRecords.find(record => record.isPrimary) ?? eventRecords[0]
+          const primaryResult = primaryRecord
+            ? results.find(result => result.recordId === primaryRecord.id)
+            : null
+          if (primaryResult?.htmlLink) {
+            await db.update(interview)
+              .set({ googleCalendarEventLink: primaryResult.htmlLink })
+              .where(and(eq(interview.id, id), eq(interview.organizationId, orgId)))
+          }
+        }).catch(err => {
+          logError('calendar.update_event_failed', {
+            provider,
+            error_message: err instanceof Error ? err.message : String(err),
+          })
         })
-      })
+      }
+      else if (current.googleCalendarEventId) {
+        updateConnectedCalendarEvent(current.createdById, orgId, current.googleCalendarEventId, calendarUpdateData, provider).then(async (htmlLink) => {
+          if (htmlLink) {
+            await db.update(interview)
+              .set({ googleCalendarEventLink: htmlLink })
+              .where(and(eq(interview.id, id), eq(interview.organizationId, orgId)))
+          }
+        }).catch(err => {
+          logError('calendar.update_event_failed', {
+            event_id: current.googleCalendarEventId,
+            provider,
+            error_message: err instanceof Error ? err.message : String(err),
+          })
+        })
+      }
     }
   }
 

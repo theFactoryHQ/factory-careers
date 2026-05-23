@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  ArrowLeft, Plus, Mail, Trash2, Sparkles, Lock,
+  Plus, Mail, Trash2, Sparkles, Lock,
   FileText, ChevronRight,
 } from 'lucide-vue-next'
 
@@ -10,7 +10,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Email Templates — Reqcore',
+  title: 'Email Templates — Factory Careers',
   description: 'Manage interview invitation email templates',
   robots: 'noindex, nofollow',
 })
@@ -47,13 +47,12 @@ async function handleDelete() {
 <template>
   <div class="mx-auto max-w-4xl px-6 py-8">
     <!-- Back to interviews -->
-    <NuxtLink
+    <AppBackLink
       :to="localePath('/dashboard/interviews')"
-      class="mb-6 inline-flex items-center gap-1 rounded-full border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-3 py-1.5 text-sm text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors no-underline"
+      class="mb-6"
     >
-      <ArrowLeft class="size-4" />
       Back to Interviews
-    </NuxtLink>
+    </AppBackLink>
 
     <!-- Page header -->
     <div class="mb-8 flex items-start justify-between gap-4">

@@ -1,6 +1,12 @@
 <script setup lang="ts">
-import { ArrowLeft, User, Briefcase, Calendar, Clock, Hash, FileText, MessageSquare } from 'lucide-vue-next'
+import { User, Briefcase, Calendar, Clock, FileText, MessageSquare, Brain, Loader2 } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
+import {
+  getApplicationStatusBadgeClass,
+  getApplicationTransitionButtonClass,
+  getApplicationTransitionDotClass,
+  getApplicationTransitionLabel,
+} from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -12,15 +18,50 @@ const applicationId = route.params.id as string
 const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 const toast = useToast()
 
+type ApplicationScoresResponse = {
+  compositeScore: number | null
+  scores: Array<{
+    criterionKey: string
+    maxScore: number
+    score: number
+    confidence: number
+    evidence: string
+    strengths: string[] | null
+    gaps: string[] | null
+    criterionName: string | null
+    weight: number | null
+    category: string | null
+  }>
+  latestRun: {
+    id: string
+    status: string
+    provider: string
+    model: string
+    compositeScore: number | null
+    promptTokens: number | null
+    completionTokens: number | null
+    createdAt: string
+    summary: string | null
+  } | null
+}
+
 const { application, status: fetchStatus, error, refresh, updateApplication } = useApplication(applicationId)
+const { isScoringApplication, scoreApplicationCandidate } = useApplicationScoring()
+const { data: scoringData, refresh: refreshScoring } = useFetch<ApplicationScoresResponse>(
+  `/api/applications/${applicationId}/scores`,
+  {
+    key: `application-scores-${applicationId}`,
+    headers: useRequestHeaders(['cookie']),
+  },
+)
 
 const { formatCandidateName } = useOrgSettings()
 
 useSeoMeta({
   title: computed(() =>
     application.value
-      ? `${application.value.candidate.firstName} ${application.value.candidate.lastName} → ${application.value.job.title} — Reqcore`
-      : 'Application — Reqcore',
+      ? `${application.value.candidate.firstName} ${application.value.candidate.lastName} → ${application.value.job.title} — Factory Careers`
+      : 'Application — Factory Careers',
   ),
 })
 
@@ -29,33 +70,6 @@ useSeoMeta({
 // ─────────────────────────────────────────────
 import { APPLICATION_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 
-const transitionLabels: Record<string, string> = {
-  new: 'Re-open',
-  screening: 'Move to Screening',
-  interview: 'Move to Interview',
-  offer: 'Make Offer',
-  hired: 'Mark Hired',
-  rejected: 'Reject',
-}
-
-const transitionClasses: Record<string, string> = {
-  new: 'border border-surface-300 dark:border-surface-700 bg-white/80 dark:bg-surface-900 text-surface-700 dark:text-surface-300 hover:border-surface-400 dark:hover:border-surface-600 hover:bg-surface-50 dark:hover:bg-surface-800',
-  screening: 'bg-violet-600 text-white shadow-sm shadow-violet-900/20 hover:bg-violet-700',
-  interview: 'bg-amber-600 text-white shadow-sm shadow-amber-900/20 hover:bg-amber-700',
-  offer: 'bg-teal-600 text-white shadow-sm shadow-teal-900/20 hover:bg-teal-700',
-  hired: 'bg-green-700 text-white shadow-sm shadow-green-900/30 hover:bg-green-800',
-  rejected: 'bg-danger-600 text-white shadow-sm shadow-danger-900/20 hover:bg-danger-700',
-}
-
-const transitionDotClasses: Record<string, string> = {
-  new: 'bg-surface-400 dark:bg-surface-500',
-  screening: 'bg-violet-200',
-  interview: 'bg-amber-200',
-  offer: 'bg-teal-200',
-  hired: 'bg-green-100',
-  rejected: 'bg-danger-200',
-}
-
 const allowedTransitions = computed(() => {
   if (!application.value) return []
   return APPLICATION_STATUS_TRANSITIONS[application.value.status] ?? []
@@ -63,6 +77,17 @@ const allowedTransitions = computed(() => {
 
 const isTransitioning = ref(false)
 const showInterviewSidebar = ref(false)
+const scoringSummary = computed(() => {
+  const summary = scoringData.value?.latestRun?.summary
+  return typeof summary === 'string' ? summary.trim() : ''
+})
+const scoringSummaryFallback = computed(() => {
+  if (application.value?.score != null) {
+    return 'No AI summary was stored for this score. Re-score to generate one.'
+  }
+
+  return 'Run analysis to generate an AI scoring summary.'
+})
 
 async function handleTransition(newStatus: string) {
   isTransitioning.value = true
@@ -83,10 +108,13 @@ async function handleTransition(newStatus: string) {
 const isEditingNotes = ref(false)
 const notesInput = ref('')
 const isSavingNotes = ref(false)
+const notesTextarea = ref<HTMLTextAreaElement | null>(null)
 
-function startEditNotes() {
+async function startEditNotes() {
   notesInput.value = application.value?.notes ?? ''
   isEditingNotes.value = true
+  await nextTick()
+  notesTextarea.value?.focus()
 }
 
 async function saveNotes() {
@@ -102,18 +130,19 @@ async function saveNotes() {
   }
 }
 
+async function scoreCurrentApplication() {
+  if (!application.value) return
+  await scoreApplicationCandidate(applicationId, {
+    refresh,
+    jobId: application.value.job.id,
+    source: 'application_detail_page',
+  })
+  await refreshScoring()
+}
+
 // ─────────────────────────────────────────────
 // Display helpers
 // ─────────────────────────────────────────────
-
-const statusBadgeClasses: Record<string, string> = {
-  new: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
-  screening: 'bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-400',
-  interview: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
-  offer: 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-400',
-  hired: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400',
-  rejected: 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400',
-}
 
 function formatResponseValue(value: unknown): string {
   if (Array.isArray(value)) return value.join(', ')
@@ -123,15 +152,14 @@ function formatResponseValue(value: unknown): string {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl">
+  <div class="mx-auto w-full max-w-6xl">
     <!-- Back link -->
-    <NuxtLink
+    <AppBackLink
       :to="$localePath('/dashboard/applications')"
-      class="mb-4 inline-flex items-center gap-1 rounded-full border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-3 py-1.5 text-sm text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+      class="mb-4"
     >
-      <ArrowLeft class="size-4" />
       Back to Applications
-    </NuxtLink>
+    </AppBackLink>
 
     <!-- Loading -->
     <div v-if="fetchStatus === 'pending'" class="text-center py-12 text-surface-400">
@@ -141,7 +169,7 @@ function formatResponseValue(value: unknown): string {
     <!-- Error / not found -->
     <div
       v-else-if="error"
-      class="rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700"
+      class="border border-danger-500/45 bg-danger-500/10 p-4 text-sm text-danger-200"
     >
       {{ error.statusCode === 404 ? 'Application not found.' : 'Failed to load application.' }}
       <NuxtLink :to="$localePath('/dashboard/applications')" class="underline ml-1">Back to Applications</NuxtLink>
@@ -150,58 +178,76 @@ function formatResponseValue(value: unknown): string {
     <!-- Application detail -->
     <template v-else-if="application">
       <!-- Header -->
-      <div class="mb-4 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
-        <p class="mb-2 text-xs font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
-          Application Overview
-        </p>
-        <div class="mb-2 flex flex-wrap items-center gap-2 text-surface-400">
-          <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50 truncate">
-            {{ formatCandidateName(application.candidate) }}
-          </h1>
-          <span class="text-surface-400">→</span>
-          <NuxtLink
-            :to="$localePath(`/dashboard/jobs/${application.job.id}`)"
-            class="text-xl text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 truncate transition-colors"
-          >
-            {{ application.job.title }}
-          </NuxtLink>
-        </div>
-        <div class="flex flex-wrap items-center gap-3">
-          <span
-            class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
-            :class="statusBadgeClasses[application.status] ?? 'bg-surface-100 text-surface-600'"
-          >
-            {{ application.status }}
-          </span>
-          <TimelineDateLink :date="application.createdAt" class="text-sm text-surface-500 dark:text-surface-400">
-            Applied {{ new Date(application.createdAt).toLocaleDateString() }}
-          </TimelineDateLink>
+      <div class="relative mb-4 border border-white/12 bg-white/[0.025] p-5">
+        <div class="flex flex-col gap-4 sm:pr-56">
+          <div class="min-w-0">
+            <p class="mb-2 text-xs font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
+              Application Overview
+            </p>
+            <div class="mb-3 flex flex-wrap items-center gap-2 text-surface-400">
+              <h1 class="truncate text-2xl font-bold text-surface-900 dark:text-surface-50">
+                {{ formatCandidateName(application.candidate) }}
+              </h1>
+              <span class="text-surface-400">→</span>
+              <NuxtLink
+                :to="$localePath(`/dashboard/jobs/${application.job.id}`)"
+                class="truncate text-xl text-brand-600 transition-colors hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+              >
+                {{ application.job.title }}
+              </NuxtLink>
+            </div>
+            <span
+              class="inline-flex items-center border px-2.5 py-1 text-xs font-semibold uppercase"
+              :class="getApplicationStatusBadgeClass(application.status, 'factory')"
+            >
+              {{ application.status }}
+            </span>
+          </div>
+
+          <div class="flex shrink-0 flex-wrap gap-x-3 gap-y-1 text-xs sm:absolute sm:right-5 sm:top-5 sm:flex-col sm:items-end">
+            <TimelineDateLink
+              :date="application.createdAt"
+              class="inline-flex items-center gap-1.5 text-xs font-medium text-white/58 no-underline transition-colors hover:text-white"
+            >
+              <Calendar class="size-3.5 text-brand-500" />
+              <span class="uppercase text-white/36">Applied</span>
+              <span class="text-white/78">{{ new Date(application.createdAt).toLocaleDateString() }}</span>
+            </TimelineDateLink>
+            <TimelineDateLink
+              :date="application.updatedAt"
+              class="inline-flex items-center gap-1.5 text-xs font-medium text-white/58 no-underline transition-colors hover:text-white"
+            >
+              <Clock class="size-3.5 text-brand-500" />
+              <span class="uppercase text-white/36">Updated</span>
+              <span class="text-white/78">{{ new Date(application.updatedAt).toLocaleDateString() }}</span>
+            </TimelineDateLink>
+          </div>
         </div>
       </div>
 
       <!-- Quick actions -->
-      <div class="mb-6 rounded-xl border border-surface-200 dark:border-surface-800 bg-white/80 dark:bg-surface-900/70 p-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="inline-flex items-center rounded-full bg-surface-100 dark:bg-surface-800 px-2.5 py-1 text-xs font-medium text-surface-600 dark:text-surface-400">Quick actions</span>
+      <div class="mb-6 border border-white/12 bg-white/[0.025] p-3">
+        <div class="flex flex-nowrap items-center gap-1.5 overflow-x-auto">
+          <span class="inline-flex shrink-0 items-center whitespace-nowrap bg-white/[0.04] px-2 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal text-white/58">Quick actions</span>
           <button
             v-for="nextStatus in allowedTransitions"
             :key="nextStatus"
             :disabled="isTransitioning"
-            class="inline-flex cursor-pointer items-center rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
-            :class="transitionClasses[nextStatus] ?? 'border border-surface-300 dark:border-surface-700 bg-white/80 dark:bg-surface-900 text-surface-700 dark:text-surface-300 hover:border-surface-400 dark:hover:border-surface-600 hover:bg-surface-50 dark:hover:bg-surface-800'"
+            class="inline-flex shrink-0 cursor-pointer items-center whitespace-nowrap px-2.5 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
+            :class="getApplicationTransitionButtonClass(nextStatus, 'factory')"
             @click="handleTransition(nextStatus)"
           >
             <span
-              class="mr-2 inline-flex size-1.5 rounded-full"
-              :class="transitionDotClasses[nextStatus] ?? 'bg-surface-400 dark:bg-surface-500'"
+              class="mr-1.5 inline-flex size-1 rounded-full"
+              :class="getApplicationTransitionDotClass(nextStatus)"
             />
-            {{ transitionLabels[nextStatus] ?? nextStatus }}
+            {{ getApplicationTransitionLabel(nextStatus) }}
           </button>
           <button
-            class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-surface-300 dark:border-surface-700 bg-white/80 dark:bg-surface-900 px-3.5 py-1.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:border-brand-400 dark:hover:border-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/30 hover:text-brand-700 dark:hover:text-brand-300 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+            class="inline-flex shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap border border-white/16 bg-black px-2.5 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal text-white/80 hover:border-brand-500 hover:bg-brand-500/12 hover:text-white transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
             @click="showInterviewSidebar = true"
           >
-            <Calendar class="size-3.5" />
+            <Calendar class="size-3" />
             Schedule Interview
           </button>
         </div>
@@ -209,7 +255,7 @@ function formatResponseValue(value: unknown): string {
 
       <div class="grid gap-4 md:grid-cols-2">
         <!-- Candidate info -->
-        <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
+        <div class="border border-white/12 bg-white/[0.025] p-5">
           <div class="flex items-center gap-2 mb-3">
             <User class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Candidate</h2>
@@ -244,7 +290,7 @@ function formatResponseValue(value: unknown): string {
         </div>
 
         <!-- Job info -->
-        <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
+        <div class="border border-white/12 bg-white/[0.025] p-5">
           <div class="flex items-center gap-2 mb-3">
             <Briefcase class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Job</h2>
@@ -268,37 +314,50 @@ function formatResponseValue(value: unknown): string {
           </dl>
         </div>
 
-        <!-- Application details -->
-        <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 md:col-span-2">
-          <div class="flex items-center gap-2 mb-3">
-            <Hash class="size-4 text-surface-500 dark:text-surface-400" />
-            <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Details</h2>
+        <!-- Application scoring -->
+        <div class="border border-white/12 bg-white/[0.025] p-5 md:col-span-2">
+          <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex items-center gap-2">
+              <Brain class="size-4 text-surface-500 dark:text-surface-400" />
+              <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Scoring</h2>
+            </div>
+            <button
+              type="button"
+              :disabled="isScoringApplication"
+              class="factory-button-cta factory-button-premium inline-flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1.5 px-2.5 py-0 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              @click="scoreCurrentApplication"
+            >
+              <Loader2 v-if="isScoringApplication" class="size-3 animate-spin" />
+              <Brain v-else class="size-3" />
+              {{ isScoringApplication ? 'Scoring...' : (application.score != null ? 'Re-score' : 'Run Analysis') }}
+            </button>
           </div>
-          <dl class="grid grid-cols-2 gap-3 text-sm">
+
+          <dl class="grid gap-5 text-sm md:grid-cols-[10rem_minmax(0,1fr)]">
             <div>
-              <dt class="text-surface-400">Score</dt>
-              <dd class="text-surface-700 dark:text-surface-200 font-medium">{{ application.score ?? '—' }}</dd>
-            </div>
-            <div>
-              <dt class="text-surface-400">Status</dt>
-              <dd class="text-surface-700 dark:text-surface-200 font-medium capitalize">{{ application.status }}</dd>
-            </div>
-            <div>
-              <dt class="text-surface-400 inline-flex items-center gap-1">
-                <Calendar class="size-3.5" />
-                Applied
-              </dt>
-              <dd class="text-surface-700 dark:text-surface-200 font-medium">
-                <TimelineDateLink :date="application.createdAt">{{ new Date(application.createdAt).toLocaleDateString() }}</TimelineDateLink>
+              <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-500 dark:text-surface-500">Score</dt>
+              <dd class="mt-2 text-2xl font-semibold text-surface-900 dark:text-white">
+                {{ application.score != null ? application.score : '—' }}
+                <span v-if="application.score != null" class="ml-1 text-sm font-medium text-surface-500 dark:text-surface-500">
+                  pts
+                </span>
               </dd>
             </div>
             <div>
-              <dt class="text-surface-400 inline-flex items-center gap-1">
-                <Clock class="size-3.5" />
-                Updated
+              <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-500 dark:text-surface-500">
+                AI summary
               </dt>
-              <dd class="text-surface-700 dark:text-surface-200 font-medium">
-                <TimelineDateLink :date="application.updatedAt">{{ new Date(application.updatedAt).toLocaleDateString() }}</TimelineDateLink>
+              <dd
+                v-if="scoringSummary"
+                class="mt-2 max-w-3xl text-sm leading-6 text-surface-700 dark:text-surface-300"
+              >
+                {{ scoringSummary }}
+              </dd>
+              <dd
+                v-else
+                class="mt-2 max-w-3xl text-sm leading-6 text-surface-500 dark:text-surface-500"
+              >
+                {{ scoringSummaryFallback }}
               </dd>
             </div>
           </dl>
@@ -306,38 +365,39 @@ function formatResponseValue(value: unknown): string {
       </div>
 
       <!-- Notes -->
-      <div class="mt-4 rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 mb-4">
+      <div class="mt-4 border border-white/12 bg-white/[0.025] p-5 mb-4">
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-2">
             <MessageSquare class="size-4 text-surface-500 dark:text-surface-400" />
             <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Notes</h2>
           </div>
           <button
-            v-if="!isEditingNotes"
+            v-if="!isEditingNotes && application.notes"
             class="cursor-pointer text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors"
             @click="startEditNotes"
           >
-            {{ application.notes ? 'Edit' : 'Add Notes' }}
+            Edit
           </button>
         </div>
 
         <div v-if="isEditingNotes">
           <textarea
+            ref="notesTextarea"
             v-model="notesInput"
             rows="4"
             placeholder="Add notes about this application…"
-            class="w-full rounded-lg border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+            class="w-full border border-white/16 bg-black/45 px-3 py-2 text-sm text-white placeholder:text-white/34 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
           />
           <div class="flex items-center gap-2 mt-2">
             <button
               :disabled="isSavingNotes"
-              class="cursor-pointer rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              class="factory-button-cta factory-button-premium cursor-pointer px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               @click="saveNotes"
             >
               {{ isSavingNotes ? 'Saving…' : 'Save' }}
             </button>
             <button
-              class="cursor-pointer rounded-lg border border-surface-300 dark:border-surface-600 px-3 py-1.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+              class="factory-toolbar-button cursor-pointer border px-3 py-1.5 text-xs font-medium text-white/78 hover:text-white transition-colors"
               @click="isEditingNotes = false"
             >
               Cancel
@@ -351,11 +411,19 @@ function formatResponseValue(value: unknown): string {
         >
           {{ application.notes }}
         </p>
-        <p v-else class="text-sm text-surface-400 italic">No notes yet.</p>
+        <button
+          v-else
+          type="button"
+          class="group flex w-full cursor-pointer items-center justify-between border border-dashed border-white/12 bg-black px-3 py-3 text-left text-sm text-surface-400 transition-colors hover:border-brand-500/70 hover:bg-brand-500/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+          @click="startEditNotes"
+        >
+          <span class="italic">No notes yet.</span>
+          <span class="text-xs font-semibold uppercase text-brand-400 transition-colors group-hover:text-brand-300">Add Notes</span>
+        </button>
       </div>
 
       <!-- Custom properties (Notion-style) -->
-      <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-4 mb-4">
+      <div class="border border-white/12 bg-white/[0.025] p-4 mb-4">
         <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200 mb-2 px-2">Properties</h2>
         <PropertyBlock
           entity-type="application"
@@ -369,7 +437,7 @@ function formatResponseValue(value: unknown): string {
       <!-- Question Responses -->
       <div
         v-if="application.responses && application.responses.length > 0"
-        class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5"
+        class="border border-white/12 bg-white/[0.025] p-5"
       >
         <div class="flex items-center gap-2 mb-3">
           <FileText class="size-4 text-surface-500 dark:text-surface-400" />
@@ -381,7 +449,7 @@ function formatResponseValue(value: unknown): string {
           <div
             v-for="response in application.responses"
             :key="response.id"
-            class="border-b border-surface-100 dark:border-surface-800 pb-3 last:border-0 last:pb-0"
+            class="border-b border-white/10 pb-3 last:border-0 last:pb-0"
           >
             <dt class="text-xs font-medium text-surface-500 dark:text-surface-400 mb-0.5">
               {{ response.question?.label ?? 'Unknown question' }}

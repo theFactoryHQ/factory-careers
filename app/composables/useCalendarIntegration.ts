@@ -1,11 +1,23 @@
 /**
- * Composable for managing Google Calendar integration status.
+ * Composable for managing calendar integration status.
  * Provides connection state, connect/disconnect actions.
  */
 export interface CalendarStatus {
   available: boolean
+  availableProvider: 'google' | 'microsoft' | null
+  authMode: 'delegated' | 'application' | null
+  managedByAdmin: boolean
+  expectedAccountEmail: string | null
+  destinations: Array<{
+    type: 'shared_mailbox' | 'user_mailbox'
+    email: string
+    isPrimary: boolean
+  }>
+  syncInterviewers: boolean
+  connectionScope: 'organization' | 'user' | null
   connected: boolean
-  provider: 'google' | null
+  provider: 'google' | 'microsoft' | null
+  providerLabel: string | null
   accountEmail: string | null
   calendarId: string | null
   webhookActive: boolean
@@ -20,8 +32,16 @@ export function useCalendarIntegration() {
 
   const calendarStatus = computed<CalendarStatus>(() => data.value ?? {
     available: false,
+    availableProvider: null,
+    authMode: null,
+    managedByAdmin: false,
+    expectedAccountEmail: null,
+    destinations: [],
+    syncInterviewers: false,
+    connectionScope: null,
     connected: false,
     provider: null,
+    providerLabel: null,
     accountEmail: null,
     calendarId: null,
     webhookActive: false,
@@ -31,8 +51,10 @@ export function useCalendarIntegration() {
   const isAvailable = computed(() => calendarStatus.value.available)
 
   function connect() {
+    if (calendarStatus.value.managedByAdmin) return
     // Navigate to the OAuth2 connect endpoint (server-side redirect)
-    navigateTo('/api/calendar/google/connect', { external: true })
+    const provider = calendarStatus.value.availableProvider ?? 'microsoft'
+    navigateTo(`/api/calendar/${provider}/connect`, { external: true })
   }
 
   async function disconnect() {

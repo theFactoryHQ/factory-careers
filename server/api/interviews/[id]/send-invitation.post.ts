@@ -111,7 +111,7 @@ export default defineEventHandler(async (event) => {
   // Derive the base URL for response links
   const baseUrl = env.BETTER_AUTH_URL
     || (env.RAILWAY_PUBLIC_DOMAIN ? `https://${env.RAILWAY_PUBLIC_DOMAIN}` : '')
-    || 'https://reqcore.com'
+    || 'https://thefactoryhq.com'
 
   // Generate signed response URLs (accept / decline / tentative)
   const responseUrls = buildResponseUrls(baseUrl, interviewRecord.id, env.BETTER_AUTH_SECRET)

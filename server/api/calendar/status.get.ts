@@ -4,42 +4,77 @@
  * Returns the current user's calendar integration status.
  * Never exposes raw tokens — only connection metadata.
  */
-import { eq } from 'drizzle-orm'
-import { calendarIntegration } from '../../database/schema'
-import { isGoogleCalendarConfigured } from '../../utils/google-calendar'
+import { getConnectedCalendarIntegration, getPreferredCalendarProvider, isCalendarConfigured } from '../../utils/calendar'
+import {
+  getMicrosoftCalendarAccountEmail,
+  getMicrosoftCalendarDestinationSummary,
+  isMicrosoftCalendarApplicationMode,
+} from '../../utils/microsoft-calendar'
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
+  const orgId = session.session.activeOrganizationId
 
-  if (!isGoogleCalendarConfigured()) {
+  const preferredProvider = getPreferredCalendarProvider()
+  const expectedAccountEmail = getMicrosoftCalendarAccountEmail()
+  const microsoftDestinationSummary = getMicrosoftCalendarDestinationSummary()
+
+  if (!isCalendarConfigured()) {
     return {
       available: false,
+      availableProvider: null,
+      authMode: null,
+      managedByAdmin: false,
+      expectedAccountEmail,
+      destinations: [],
+      syncInterviewers: false,
+      connectionScope: null,
       connected: false,
       provider: null,
+      providerLabel: null,
       accountEmail: null,
       calendarId: null,
       webhookActive: false,
     }
   }
 
-  const integration = await db.query.calendarIntegration.findFirst({
-    where: eq(calendarIntegration.userId, session.user.id),
-    columns: {
-      provider: true,
-      accountEmail: true,
-      calendarId: true,
-      webhookChannelId: true,
-      webhookExpiration: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  })
+  if (preferredProvider === 'microsoft' && isMicrosoftCalendarApplicationMode()) {
+    const primaryDestination = microsoftDestinationSummary.destinations.find(destination => destination.isPrimary)
+      ?? microsoftDestinationSummary.destinations[0]
+
+    return {
+      available: true,
+      availableProvider: preferredProvider,
+      authMode: 'application',
+      managedByAdmin: true,
+      expectedAccountEmail,
+      destinations: microsoftDestinationSummary.destinations,
+      syncInterviewers: microsoftDestinationSummary.syncInterviewers,
+      connectionScope: 'organization',
+      connected: true,
+      provider: 'microsoft',
+      providerLabel: 'Microsoft Calendar',
+      accountEmail: 'Microsoft app credentials',
+      calendarId: primaryDestination?.email ?? expectedAccountEmail,
+      webhookActive: false,
+    }
+  }
+
+  const integration = await getConnectedCalendarIntegration(session.user.id, orgId)
 
   if (!integration) {
     return {
       available: true,
+      availableProvider: preferredProvider,
+      authMode: preferredProvider === 'microsoft' ? 'delegated' : null,
+      managedByAdmin: false,
+      expectedAccountEmail,
+      destinations: [],
+      syncInterviewers: false,
+      connectionScope: null,
       connected: false,
       provider: null,
+      providerLabel: preferredProvider === 'microsoft' ? 'Microsoft Calendar' : 'Google Calendar',
       accountEmail: null,
       calendarId: null,
       webhookActive: false,
@@ -54,11 +89,19 @@ export default defineEventHandler(async (event) => {
 
   return {
     available: true,
+    availableProvider: preferredProvider,
+    authMode: integration.provider === 'microsoft' ? 'delegated' : null,
+    managedByAdmin: false,
+    expectedAccountEmail,
+    destinations: [],
+    syncInterviewers: false,
+    connectionScope: integration.organizationId ? 'organization' : 'user',
     connected: true,
     provider: integration.provider,
+    providerLabel: integration.provider === 'microsoft' ? 'Microsoft Calendar' : 'Google Calendar',
     accountEmail: integration.accountEmail,
     calendarId: integration.calendarId,
-    webhookActive,
+    webhookActive: integration.provider === 'google' ? webhookActive : false,
     connectedAt: integration.createdAt,
   }
 })

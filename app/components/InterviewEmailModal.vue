@@ -154,18 +154,18 @@ const canSend = computed(() => {
 
 <template>
   <Teleport to="body">
-    <div class="fixed inset-0 z-50 flex items-center justify-center">
-      <!-- Backdrop -->
-      <div class="absolute inset-0 bg-black/40 backdrop-blur-[2px]" @click="emit('close')" />
-
+    <div
+      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+      @click.self="emit('close')"
+    >
       <!-- Modal -->
-      <div class="relative bg-white dark:bg-surface-900 rounded-2xl shadow-2xl shadow-surface-900/10 dark:shadow-black/30 ring-1 ring-surface-200/80 dark:ring-surface-700/60 w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="ui-modal-panel ui-email-modal-panel">
         <!-- Header -->
-        <div class="shrink-0 border-b border-surface-200/80 dark:border-surface-800/60 px-4 sm:px-6 py-4">
+        <div class="ui-panel-header ui-email-modal-header">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
-              <div class="flex size-9 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-950/40">
-                <Mail class="size-4.5 text-brand-600 dark:text-brand-400" />
+              <div class="ui-icon-state ui-icon-state-brand size-9 rounded-lg">
+                <Mail class="size-4.5" />
               </div>
               <div>
                 <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">
@@ -177,7 +177,7 @@ const canSend = computed(() => {
               </div>
             </div>
             <button
-              class="rounded-lg p-1.5 text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:text-surface-300 dark:hover:bg-surface-800 transition-all cursor-pointer"
+              class="ui-button ui-button-ghost p-1.5"
               @click="emit('close')"
             >
               <X class="size-5" />
@@ -186,9 +186,9 @@ const canSend = computed(() => {
         </div>
 
         <!-- Success state -->
-        <div v-if="sendSuccess" class="flex-1 flex flex-col items-center justify-center py-12 px-6">
-          <div class="flex size-14 items-center justify-center rounded-full bg-success-100 dark:bg-success-950/40 mb-4">
-            <Check class="size-7 text-success-600 dark:text-success-400" />
+        <div v-if="sendSuccess" class="ui-modal-success-state">
+          <div class="ui-icon-state ui-icon-state-success size-14 mb-4">
+            <Check class="size-7" />
           </div>
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-1.5">Invitation Sent!</h3>
           <p class="text-sm text-surface-500 dark:text-surface-400 text-center">
@@ -199,7 +199,7 @@ const canSend = computed(() => {
         <!-- Main content -->
         <template v-else>
           <!-- Tabs -->
-          <div class="shrink-0 border-b border-surface-200/80 dark:border-surface-800/60 px-4 sm:px-6 overflow-x-auto scrollbar-none">
+          <div class="ui-panel-header ui-email-modal-tabs scrollbar-none">
             <div class="flex gap-1">
               <button
                 v-for="tab in ([
@@ -208,10 +208,10 @@ const canSend = computed(() => {
                   { id: 'manage' as Tab, label: 'Manage Templates', icon: Sparkles },
                 ])"
                 :key="tab.id"
-                class="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-all cursor-pointer -mb-px whitespace-nowrap shrink-0"
+                class="ui-tab flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium cursor-pointer -mb-px whitespace-nowrap shrink-0"
                 :class="activeTab === tab.id
-                  ? 'border-brand-500 text-brand-700 dark:text-brand-300'
-                  : 'border-transparent text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'"
+                  ? 'ui-tab-active'
+                  : 'ui-tab-inactive'"
                 @click="activeTab = tab.id"
               >
                 <component :is="tab.icon" class="size-3.5" />
@@ -221,13 +221,13 @@ const canSend = computed(() => {
           </div>
 
           <!-- Error -->
-          <div v-if="sendError" class="mx-4 sm:mx-6 mt-4 flex items-start gap-2.5 rounded-xl border border-danger-200/80 bg-danger-50 p-3.5 text-sm text-danger-700 dark:border-danger-800/60 dark:bg-danger-950/40 dark:text-danger-300">
+          <div v-if="sendError" class="ui-alert ui-alert-danger mx-4 sm:mx-6 mt-4 flex items-start gap-2.5">
             <AlertCircle class="size-4 shrink-0 mt-0.5" />
             {{ sendError }}
           </div>
 
           <!-- Tab content -->
-          <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
+          <div class="ui-email-modal-body">
             <!-- Template Selection Tab -->
             <div v-if="activeTab === 'template'" class="space-y-3">
               <p class="text-xs text-surface-500 dark:text-surface-400 mb-3">
@@ -237,15 +237,15 @@ const canSend = computed(() => {
                 v-for="t in allTemplates"
                 :key="t.id"
                 type="button"
-                class="w-full text-left rounded-xl border-2 p-4 transition-all duration-150 cursor-pointer"
+                class="ui-selectable-panel ui-email-modal-selectable"
                 :class="selectedTemplateId === t.id
-                  ? 'border-brand-500 bg-brand-50/50 dark:border-brand-400 dark:bg-brand-950/20 shadow-sm'
-                  : 'border-surface-200 dark:border-surface-700/80 hover:border-surface-300 dark:hover:border-surface-600 hover:bg-surface-50 dark:hover:bg-surface-800/40'"
+                  ? 'ui-selectable-panel-active'
+                  : ''"
                 @click="selectedTemplateId = t.id"
               >
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-sm font-semibold text-surface-800 dark:text-surface-200">{{ t.name }}</span>
-                  <span v-if="t.isSystem" class="text-[10px] uppercase tracking-wider font-semibold text-surface-400 bg-surface-100 dark:bg-surface-800 px-1.5 py-0.5 rounded">
+                  <span v-if="t.isSystem" class="ui-pill text-[10px] uppercase font-semibold px-1.5 py-0.5">
                     Built-in
                   </span>
                 </div>
@@ -258,7 +258,7 @@ const canSend = computed(() => {
               <div v-if="selectedTemplate" class="mt-4">
                 <button
                   type="button"
-                  class="flex items-center gap-1.5 text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors cursor-pointer"
+                  class="ui-disclosure-trigger inline-flex items-center gap-1.5 text-sm font-medium cursor-pointer"
                   @click="showPreview = !showPreview"
                 >
                   <Eye class="size-3.5" />
@@ -268,7 +268,7 @@ const canSend = computed(() => {
                     :class="showPreview ? 'rotate-180' : ''"
                   />
                 </button>
-                <div v-if="showPreview" class="mt-3 rounded-xl border border-surface-200 dark:border-surface-700/80 bg-surface-50 dark:bg-surface-800/40 p-4">
+                <div v-if="showPreview" class="ui-panel-muted ui-email-modal-preview">
                   <div class="mb-2">
                     <span class="text-[10px] uppercase tracking-wider font-semibold text-surface-400">Subject</span>
                     <p class="text-sm font-semibold text-surface-800 dark:text-surface-200">{{ previewSubject }}</p>
@@ -292,7 +292,7 @@ const canSend = computed(() => {
                   v-model="customSubject"
                   type="text"
                   placeholder="e.g., Interview Invitation: {{jobTitle}}"
-                  class="w-full rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-2.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+                  class="ui-field py-2.5"
                 />
               </div>
 
@@ -305,18 +305,18 @@ const canSend = computed(() => {
                   v-model="customBody"
                   rows="10"
                   placeholder="Write your invitation email here. Use {{variables}} for dynamic content..."
-                  class="w-full rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-2.5 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all resize-none font-mono"
+                  class="ui-field py-2.5 resize-none font-mono"
                 />
               </div>
 
               <!-- Variable reference -->
-              <div class="rounded-xl border border-surface-200/60 dark:border-surface-700/40 bg-surface-50 dark:bg-surface-800/30 p-3.5">
+              <div class="ui-panel-muted ui-email-modal-variable-panel">
                 <p class="text-[10px] uppercase tracking-wider font-semibold text-surface-400 mb-2">Available Variables</p>
                 <div class="flex flex-wrap gap-1.5">
                   <span
                     v-for="v in AVAILABLE_VARIABLES"
                     :key="v.key"
-                    class="inline-flex items-center gap-1 rounded-md bg-brand-50 dark:bg-brand-950/30 px-2 py-1 text-[11px] font-mono text-brand-700 dark:text-brand-300"
+                    class="ui-code inline-flex items-center gap-1 px-2 py-1 text-[11px]"
                     :title="v.desc"
                   >
                     {{ v.key }}
@@ -328,13 +328,13 @@ const canSend = computed(() => {
               <div v-if="customSubject || customBody">
                 <button
                   type="button"
-                  class="flex items-center gap-1.5 text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors cursor-pointer"
+                  class="ui-disclosure-trigger inline-flex items-center gap-1.5 text-sm font-medium cursor-pointer"
                   @click="showPreview = !showPreview"
                 >
                   <Eye class="size-3.5" />
                   {{ showPreview ? 'Hide Preview' : 'Preview with Real Data' }}
                 </button>
-                <div v-if="showPreview" class="mt-3 rounded-xl border border-surface-200 dark:border-surface-700/80 bg-surface-50 dark:bg-surface-800/40 p-4">
+                <div v-if="showPreview" class="ui-panel-muted ui-email-modal-preview">
                   <div class="mb-2">
                     <span class="text-[10px] uppercase tracking-wider font-semibold text-surface-400">Subject</span>
                     <p class="text-sm font-semibold text-surface-800 dark:text-surface-200">{{ previewSubject }}</p>
@@ -356,7 +356,7 @@ const canSend = computed(() => {
                 <button
                   v-if="!showNewTemplateForm"
                   type="button"
-                  class="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 transition-all cursor-pointer"
+                  class="ui-button ui-button-primary px-3 py-1.5 text-xs font-semibold"
                   @click="showNewTemplateForm = true"
                 >
                   <Plus class="size-3.5" />
@@ -365,33 +365,33 @@ const canSend = computed(() => {
               </div>
 
               <!-- New template form -->
-              <div v-if="showNewTemplateForm" class="rounded-xl border border-brand-200 dark:border-brand-800/60 bg-brand-50/30 dark:bg-brand-950/20 p-4 space-y-3">
+              <div v-if="showNewTemplateForm" class="ui-panel-muted ui-email-modal-template-form">
                 <h4 class="text-sm font-semibold text-surface-800 dark:text-surface-200">Create Template</h4>
-                <div v-if="templateSaveError" class="rounded-lg border border-danger-200 bg-danger-50 p-2.5 text-xs text-danger-700 dark:border-danger-800 dark:bg-danger-950/40 dark:text-danger-300">
+                <div v-if="templateSaveError" class="ui-alert ui-alert-danger p-2.5 text-xs">
                   {{ templateSaveError }}
                 </div>
                 <input
                   v-model="newTemplateName"
                   type="text"
                   placeholder="Template name"
-                  class="w-full rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+                  class="ui-field py-2"
                 />
                 <input
                   v-model="newTemplateSubject"
                   type="text"
                   placeholder="Subject line (use {{variables}})"
-                  class="w-full rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+                  class="ui-field py-2"
                 />
                 <textarea
                   v-model="newTemplateBody"
                   rows="6"
                   placeholder="Email body (use {{variables}} for dynamic content)"
-                  class="w-full rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all resize-none font-mono"
+                  class="ui-field py-2 resize-none font-mono"
                 />
                 <div class="flex items-center justify-end gap-2">
                   <button
                     type="button"
-                    class="rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all cursor-pointer"
+                    class="ui-button ui-button-secondary px-3 py-1.5 text-xs"
                     @click="showNewTemplateForm = false"
                   >
                     Cancel
@@ -399,7 +399,7 @@ const canSend = computed(() => {
                   <button
                     type="button"
                     :disabled="isSavingTemplate"
-                    class="flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    class="ui-button ui-button-primary px-3 py-1.5 text-xs font-semibold"
                     @click="handleSaveTemplate"
                   >
                     <Save class="size-3" />
@@ -414,7 +414,7 @@ const canSend = computed(() => {
                 <div
                   v-for="t in templates"
                   :key="t.id"
-                  class="flex items-center justify-between rounded-xl border border-surface-200 dark:border-surface-700/80 bg-white dark:bg-surface-800/40 p-3.5"
+                  class="ui-panel ui-list-row ui-email-modal-template-row"
                 >
                   <div class="min-w-0 flex-1">
                     <p class="text-sm font-semibold text-surface-800 dark:text-surface-200 truncate">{{ t.name }}</p>
@@ -422,7 +422,7 @@ const canSend = computed(() => {
                   </div>
                   <button
                     type="button"
-                    class="shrink-0 ml-3 rounded-lg p-1.5 text-surface-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:text-danger-400 dark:hover:bg-danger-950/40 transition-all cursor-pointer"
+                    class="ui-button ui-button-ghost ui-button-ghost-danger shrink-0 ml-3 p-1.5"
                     @click="handleDeleteTemplate(t.id)"
                   >
                     <Trash2 class="size-3.5" />
@@ -436,13 +436,13 @@ const canSend = computed(() => {
               </div>
 
               <!-- Variable reference -->
-              <div class="rounded-xl border border-surface-200/60 dark:border-surface-700/40 bg-surface-50 dark:bg-surface-800/30 p-3.5">
+              <div class="ui-panel-muted ui-email-modal-variable-panel">
                 <p class="text-[10px] uppercase tracking-wider font-semibold text-surface-400 mb-2">Available Variables</p>
                 <div class="flex flex-wrap gap-1.5">
                   <span
                     v-for="v in AVAILABLE_VARIABLES"
                     :key="v.key"
-                    class="inline-flex items-center gap-1 rounded-md bg-brand-50 dark:bg-brand-950/30 px-2 py-1 text-[11px] font-mono text-brand-700 dark:text-brand-300"
+                    class="ui-code inline-flex items-center gap-1 px-2 py-1 text-[11px]"
                     :title="v.desc"
                   >
                     {{ v.key }}
@@ -453,11 +453,11 @@ const canSend = computed(() => {
           </div>
 
           <!-- Footer -->
-          <div v-if="activeTab !== 'manage'" class="shrink-0 border-t border-surface-200/80 dark:border-surface-800/60 bg-surface-50/80 dark:bg-surface-950/60 px-6 py-4">
+          <div v-if="activeTab !== 'manage'" class="ui-panel-footer ui-email-modal-footer">
             <div class="flex items-center gap-3">
               <button
                 type="button"
-                class="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all cursor-pointer"
+                class="ui-button ui-button-secondary flex-1"
                 @click="emit('close')"
               >
                 Cancel
@@ -465,7 +465,7 @@ const canSend = computed(() => {
               <button
                 type="button"
                 :disabled="!canSend || isSending"
-                class="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer shadow-sm shadow-brand-500/20"
+                class="ui-button ui-button-primary flex-1 font-semibold"
                 @click="handleSend"
               >
                 <Send class="size-4" />

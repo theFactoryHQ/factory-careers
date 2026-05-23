@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  Save, Trash2, ArrowLeft, ExternalLink, Link2, ClipboardCopy,
+  Save, Trash2, ArrowLeft, ExternalLink, Link2, ClipboardCopy, ChevronDown,
 } from 'lucide-vue-next'
 import { z } from 'zod'
 
@@ -20,7 +20,7 @@ const { job, status: fetchStatus, error: fetchError, updateJob, deleteJob } = us
 
 useSeoMeta({
   title: computed(() =>
-    job.value ? `Settings — ${job.value.title} — Reqcore` : 'Job Settings — Reqcore',
+    job.value ? `Settings — ${job.value.title} — Factory Careers` : 'Job Settings — Factory Careers',
   ),
 })
 
@@ -321,15 +321,18 @@ function onSalaryMaxChange(e: Event) {
                 <label for="settings-type" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                   Employment Type
                 </label>
-                <select
-                  id="settings-type"
-                  v-model="form.type"
-                  class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                >
-                  <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </option>
-                </select>
+                <div class="relative">
+                  <select
+                    id="settings-type"
+                    v-model="form.type"
+                    class="factory-form-select"
+                  >
+                    <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                  <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
+                </div>
               </div>
             </div>
 
@@ -338,15 +341,18 @@ function onSalaryMaxChange(e: Event) {
               <label for="settings-remote" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                 Work Arrangement
               </label>
-              <select
-                id="settings-remote"
-                v-model="form.remoteStatus"
-                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-              >
-                <option v-for="opt in remoteOptions" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
+              <div class="relative">
+                <select
+                  id="settings-remote"
+                  v-model="form.remoteStatus"
+                  class="factory-form-select"
+                >
+                  <option v-for="opt in remoteOptions" :key="opt.value" :value="opt.value">
+                    {{ opt.label }}
+                  </option>
+                </select>
+                <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
+              </div>
             </div>
 
             <!-- Experience Level -->
@@ -354,15 +360,18 @@ function onSalaryMaxChange(e: Event) {
               <label for="settings-experience-level" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                 Experience Level
               </label>
-              <select
-                id="settings-experience-level"
-                v-model="form.experienceLevel"
-                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-              >
-                <option v-for="opt in experienceLevelOptions" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
+              <div class="relative">
+                <select
+                  id="settings-experience-level"
+                  v-model="form.experienceLevel"
+                  class="factory-form-select"
+                >
+                  <option v-for="opt in experienceLevelOptions" :key="opt.value" :value="opt.value">
+                    {{ opt.label }}
+                  </option>
+                </select>
+                <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
+              </div>
             </div>
 
             <!-- Slug -->
@@ -458,15 +467,18 @@ function onSalaryMaxChange(e: Event) {
                   <label for="settings-salary-unit" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                     Pay Period
                   </label>
-                  <select
-                    id="settings-salary-unit"
-                    v-model="form.salaryUnit"
-                    class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                  >
-                    <option v-for="opt in salaryUnitOptions" :key="opt.value" :value="opt.value">
-                      {{ opt.label }}
-                    </option>
-                  </select>
+                  <div class="relative">
+                    <select
+                      id="settings-salary-unit"
+                      v-model="form.salaryUnit"
+                      class="factory-form-select"
+                    >
+                      <option v-for="opt in salaryUnitOptions" :key="opt.value" :value="opt.value">
+                        {{ opt.label }}
+                      </option>
+                    </select>
+                    <ChevronDown class="factory-form-select-chevron" aria-hidden="true" />
+                  </div>
                 </div>
               </div>
             </template>
@@ -597,16 +609,16 @@ function onSalaryMaxChange(e: Event) {
       <!-- ═══════════════════════════════════════ -->
       <!-- DANGER ZONE                              -->
       <!-- ═══════════════════════════════════════ -->
-      <section class="rounded-xl border border-danger-200 dark:border-danger-800/60 bg-danger-50/50 dark:bg-danger-950/20 p-6 mb-12">
-        <h2 class="text-base font-semibold text-danger-700 dark:text-danger-400 mb-1">Danger Zone</h2>
-        <p class="text-xs text-surface-500 dark:text-surface-400 mb-4">
+      <section class="factory-danger-zone rounded-xl border p-6 mb-12">
+        <h2 class="factory-danger-zone-title text-base font-semibold mb-1">Danger Zone</h2>
+        <p class="factory-danger-zone-copy text-xs mb-4">
           Permanently delete this job and all associated applications.
         </p>
 
         <div v-if="!showDeleteConfirm">
           <button
             type="button"
-            class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-danger-300 dark:border-danger-700 px-4 py-2 text-sm font-medium text-danger-700 dark:text-danger-400 hover:bg-danger-100 dark:hover:bg-danger-950/40 transition-colors"
+            class="factory-button-cta factory-danger-button inline-flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
             @click="showDeleteConfirm = true"
           >
             <Trash2 class="size-4" />
@@ -614,7 +626,7 @@ function onSalaryMaxChange(e: Event) {
           </button>
         </div>
 
-        <div v-else class="rounded-lg border border-danger-300 dark:border-danger-700 bg-white dark:bg-surface-900 p-4">
+        <div v-else class="factory-danger-confirm rounded-lg border p-4">
           <p class="text-sm text-surface-700 dark:text-surface-300 mb-3">
             Are you sure you want to delete <strong>{{ job.title }}</strong>? This will also delete all associated applications. This action cannot be undone.
           </p>
@@ -622,7 +634,7 @@ function onSalaryMaxChange(e: Event) {
             <button
               type="button"
               :disabled="isDeleting"
-              class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-danger-600 px-4 py-2 text-sm font-medium text-white hover:bg-danger-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              class="factory-button-cta inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-danger-600 px-4 py-2 text-sm font-medium text-white hover:bg-danger-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               @click="handleDelete"
             >
               {{ isDeleting ? 'Deleting…' : 'Yes, Delete' }}
@@ -630,7 +642,7 @@ function onSalaryMaxChange(e: Event) {
             <button
               type="button"
               :disabled="isDeleting"
-              class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-surface-300 dark:border-surface-700 px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+              class="factory-button-cta factory-toolbar-button inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
               @click="showDeleteConfirm = false"
             >
               Cancel

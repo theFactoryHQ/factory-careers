@@ -3,6 +3,11 @@ import {
   Brain, Sparkles, TrendingUp, AlertTriangle, CheckCircle2,
   XCircle, Zap, Clock, BarChart3, Activity, AlertCircle, DollarSign,
 } from 'lucide-vue-next'
+import {
+  getAnalysisRunStatusBadgeClass,
+  getAnalysisRunStatusDotClass,
+  getScoreBadgeClass,
+} from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -10,7 +15,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'AI Analysis — Reqcore',
+  title: 'AI Analysis — Factory Careers',
   robots: 'noindex, nofollow',
 })
 
@@ -95,25 +100,6 @@ function formatDateTime(dateStr: string | Date): string {
   })
 }
 
-function scoreColor(score: number | null): string {
-  if (score == null) return 'text-surface-400'
-  if (score >= 75) return 'text-success-600 dark:text-success-400'
-  if (score >= 40) return 'text-warning-600 dark:text-warning-400'
-  return 'text-danger-600 dark:text-danger-400'
-}
-
-function scoreBadgeClass(score: number | null): string {
-  if (score == null) return ''
-  if (score >= 75) return 'bg-success-50 text-success-700 ring-success-200/60 dark:bg-success-950 dark:text-success-400 dark:ring-success-800/40'
-  if (score >= 40) return 'bg-warning-50 text-warning-700 ring-warning-200/60 dark:bg-warning-950 dark:text-warning-400 dark:ring-warning-800/40'
-  return 'bg-danger-50 text-danger-700 ring-danger-200/60 dark:bg-danger-950 dark:text-danger-400 dark:ring-danger-800/40'
-}
-
-function statusBadgeClass(status: string): string {
-  if (status === 'completed') return 'bg-success-50 text-success-700 ring-success-200/60 dark:bg-success-950 dark:text-success-400 dark:ring-success-800/40'
-  if (status === 'failed') return 'bg-danger-50 text-danger-700 ring-danger-200/60 dark:bg-danger-950 dark:text-danger-400 dark:ring-danger-800/40'
-  return 'bg-warning-50 text-warning-700 ring-warning-200/60 dark:bg-warning-950 dark:text-warning-400 dark:ring-warning-800/40'
-}
 </script>
 
 <template>
@@ -125,7 +111,7 @@ function statusBadgeClass(status: string): string {
         <div class="h-4 w-64 bg-surface-200 dark:bg-surface-700 rounded animate-pulse" />
       </div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        <div v-for="i in 4" :key="i" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 animate-pulse">
+        <div v-for="i in 4" :key="i" class="ui-dashboard-stat-card p-5 animate-pulse">
           <div class="flex items-center justify-between mb-4">
             <div class="h-3 w-20 bg-surface-200 dark:bg-surface-700 rounded" />
             <div class="size-9 bg-surface-200 dark:bg-surface-700 rounded-xl" />
@@ -135,11 +121,11 @@ function statusBadgeClass(status: string): string {
         </div>
       </div>
       <div class="space-y-6">
-        <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-panel ui-dashboard-panel p-6 animate-pulse">
           <div class="h-5 w-40 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="h-24 bg-surface-100 dark:bg-surface-800 rounded-xl" />
         </div>
-        <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 animate-pulse">
+        <div class="ui-panel ui-dashboard-panel p-6 animate-pulse">
           <div class="h-5 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-6" />
           <div class="space-y-3">
             <div v-for="i in 3" :key="i" class="h-12 bg-surface-100 dark:bg-surface-800 rounded-xl" />
@@ -283,7 +269,7 @@ function statusBadgeClass(status: string): string {
       </div>
 
       <!-- ─── Usage chart (last 30 days) ─── -->
-      <div v-if="dailyRuns.length > 0" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden mb-6">
+      <div v-if="dailyRuns.length > 0" class="ui-panel ui-dashboard-panel overflow-hidden mb-6">
         <div class="px-6 py-5 border-b border-surface-200 dark:border-surface-800">
           <div class="flex items-center gap-3">
             <div class="flex items-center justify-center size-10 rounded-lg bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400">
@@ -372,7 +358,7 @@ function statusBadgeClass(status: string): string {
       </div>
 
       <!-- ─── Model breakdown ─── -->
-      <div v-if="modelBreakdown.length > 0" class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden mb-6">
+      <div v-if="modelBreakdown.length > 0" class="ui-table-shell mb-6">
         <div class="px-6 py-5 border-b border-surface-200 dark:border-surface-800">
           <div class="flex items-center gap-3">
             <div class="flex items-center justify-center size-10 rounded-lg bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400">
@@ -388,7 +374,7 @@ function statusBadgeClass(status: string): string {
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="bg-surface-50 dark:bg-surface-800/50 border-b border-surface-200 dark:border-surface-800">
+              <tr class="ui-table-header">
                 <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">Provider</th>
                 <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">Model</th>
                 <th class="text-right px-4 py-3 font-medium text-surface-500 dark:text-surface-400">Runs</th>
@@ -398,11 +384,11 @@ function statusBadgeClass(status: string): string {
                 <th v-if="pricing.configured" class="text-right px-4 py-3 font-medium text-surface-500 dark:text-surface-400">Cost</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
+            <tbody>
               <tr
                 v-for="m in modelBreakdown"
                 :key="`${m.provider}-${m.model}`"
-                class="bg-white dark:bg-surface-900 hover:bg-surface-50 dark:hover:bg-surface-800/60 transition-colors"
+                class="ui-table-row"
               >
                 <td class="px-4 py-3 font-medium text-surface-700 dark:text-surface-300 capitalize">{{ m.provider }}</td>
                 <td class="px-4 py-3">
@@ -420,7 +406,7 @@ function statusBadgeClass(status: string): string {
       </div>
 
       <!-- ─── Recent runs ─── -->
-      <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
+      <div class="ui-table-shell">
         <div class="px-6 py-5 border-b border-surface-200 dark:border-surface-800">
           <div class="flex items-center gap-3">
             <div class="flex items-center justify-center size-10 rounded-lg bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400">
@@ -444,7 +430,7 @@ function statusBadgeClass(status: string): string {
         <div v-else class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="bg-surface-50 dark:bg-surface-800/50 border-b border-surface-200 dark:border-surface-800">
+              <tr class="ui-table-header">
                 <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">Status</th>
                 <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400">Candidate</th>
                 <th class="text-left px-4 py-3 font-medium text-surface-500 dark:text-surface-400 hidden lg:table-cell">Job</th>
@@ -455,20 +441,20 @@ function statusBadgeClass(status: string): string {
                 <th class="text-right px-4 py-3 font-medium text-surface-500 dark:text-surface-400">Date</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-surface-100 dark:divide-surface-800">
+            <tbody>
               <tr
                 v-for="run in recentRuns"
                 :key="run.id"
-                class="bg-white dark:bg-surface-900 hover:bg-surface-50 dark:hover:bg-surface-800/60 transition-colors"
+                class="ui-table-row"
               >
                 <td class="px-4 py-3">
                   <span
                     class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset capitalize whitespace-nowrap"
-                    :class="statusBadgeClass(run.status)"
+                    :class="getAnalysisRunStatusBadgeClass(run.status)"
                   >
                     <span
                       class="size-1.5 rounded-full"
-                      :class="run.status === 'completed' ? 'bg-success-500' : run.status === 'failed' ? 'bg-danger-500' : 'bg-warning-500'"
+                      :class="getAnalysisRunStatusDotClass(run.status)"
                     />
                     {{ run.status }}
                   </span>
@@ -483,7 +469,7 @@ function statusBadgeClass(status: string): string {
                   <span
                     v-if="run.compositeScore != null"
                     class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ring-1 ring-inset"
-                    :class="scoreBadgeClass(run.compositeScore)"
+                    :class="getScoreBadgeClass(run.compositeScore, 'subtle')"
                   >
                     {{ run.compositeScore }}
                   </span>

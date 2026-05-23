@@ -16,6 +16,7 @@ import { getChatbotAttachments } from '../../utils/chatbotAttachments'
 import { requireChatbotAccess } from '../../utils/chatbotAccess'
 import { extractChatbotSources } from '../../utils/chatbotSources'
 import { createRateLimiter } from '../../utils/rateLimit'
+import { assertSafeServerSideUrl } from '../../utils/serverSideUrl'
 import { trackEvent } from '../../utils/trackEvent'
 import {
   CHATBOT_MAX_ATTACHMENTS_PER_MESSAGE,
@@ -72,7 +73,7 @@ const bodySchema = z.object({
 })
 
 const BASE_SYSTEM_PROMPT = [
-  'You are Reqcore Assistant, an AI copilot embedded in an applicant tracking system.',
+  'You are Factory Careers Assistant, an AI copilot embedded in an applicant tracking system.',
   'You help recruiters and hiring managers analyse candidates, jobs, and applications.',
   '',
   'Tooling:',
@@ -231,6 +232,10 @@ export default defineEventHandler(async (event) => {
     .where(eq(chatbotConversation.id, conversation.id))
 
   // ── Build model + tools ──
+  if (config.baseUrl) {
+    await assertSafeServerSideUrl(config.baseUrl)
+  }
+
   const model = createLanguageModel({
     provider: config.provider as SupportedProvider,
     model: config.model,

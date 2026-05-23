@@ -6,6 +6,10 @@ import {
   ChevronDown, ChevronRight, ArrowDown, Loader2,
   AlertCircle, History, ArrowRight, Search, X,
 } from 'lucide-vue-next'
+import {
+  getApplicationStatusBadgeClass,
+  getApplicationStatusLabel,
+} from '~/utils/status-display'
 
 const NuxtLinkComponent = resolveComponent('NuxtLink')
 const route = useRoute()
@@ -16,7 +20,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Timeline — Reqcore',
+  title: 'Timeline — Factory Careers',
   description: 'Full activity timeline for your organization',
 })
 
@@ -98,6 +102,7 @@ function itemMatchesSearch(item: TimelineItem, query: string): boolean {
     || (item.candidateName?.toLowerCase().includes(query) ?? false)
     || (item.jobName?.toLowerCase().includes(query) ?? false)
     || (item.actorEmail?.toLowerCase().includes(query) ?? false)
+    || getEventDescription(item).toLowerCase().includes(query)
 }
 
 // Load data on mount
@@ -148,6 +153,41 @@ const filters = [
   { key: 'application', label: 'Applications', icon: FileText },
   { key: 'interview', label: 'Interviews', icon: Calendar },
 ] as const
+
+const activeFilterConfig = computed(() => filters.find(f => f.key === activeFilter.value))
+
+const emptyStateTitle = computed(() => {
+  if (!activeFilter.value) return 'No activity yet'
+  return `No ${activeFilterConfig.value?.label.toLowerCase() ?? 'matching'} activity yet`
+})
+
+const emptyStateDescription = computed(() => {
+  if (activeFilter.value === 'job') {
+    return 'Job activity appears here when roles are created, updated, or when candidates move through a job pipeline.'
+  }
+  if (activeFilter.value) {
+    return `${activeFilterConfig.value?.label ?? 'Matching'} activity will appear here as it happens.`
+  }
+  return 'Activity will appear here as you create jobs, add candidates, and process applications.'
+})
+
+const emptyStateCta = computed(() => {
+  if (activeFilter.value === 'job') {
+    return {
+      to: '/dashboard/jobs',
+      label: 'View jobs',
+      icon: Briefcase,
+    }
+  }
+  if (!activeFilter.value) {
+    return {
+      to: '/dashboard/jobs/new',
+      label: 'Create a job',
+      icon: Briefcase,
+    }
+  }
+  return null
+})
 
 async function setFilter(type?: string) {
   await loadInitial(type)
@@ -296,7 +336,7 @@ function getActionStyle(action: string, resourceType: string, metadata?: Record<
     color: 'text-surface-500 dark:text-surface-400',
     bg: 'bg-surface-100 dark:bg-surface-800',
     ring: 'ring-surface-200 dark:ring-surface-700',
-    label: action,
+    label: humanizeIdentifier(action),
   }
 }
 
@@ -326,15 +366,6 @@ function formatFullDate(dateStr: string): string {
   })
 }
 
-function getStatusChangeDescription(metadata: Record<string, unknown> | null): string | null {
-  if (!metadata) return null
-  const from = metadata.fromStatus ?? metadata.from
-  const to = metadata.toStatus ?? metadata.to
-  if (from && to) return `${from} → ${to}`
-  if (to) return `→ ${to}`
-  return null
-}
-
 function getPipelineStatusColors(status: string): { color: string, bg: string, ring: string } {
   const map: Record<string, { color: string, bg: string, ring: string }> = {
     new: { color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/50', ring: 'ring-blue-200 dark:ring-blue-800' },
@@ -347,60 +378,117 @@ function getPipelineStatusColors(status: string): { color: string, bg: string, r
   return map[status] ?? { color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/50', ring: 'ring-blue-200 dark:ring-blue-800' }
 }
 
-function getStatusBadgeClasses(status: string): string {
-  const s = status.toLowerCase()
-  const map: Record<string, string> = {
-    new: 'bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300',
-    screening: 'bg-violet-100 text-violet-700 dark:bg-violet-900/60 dark:text-violet-300',
-    interview: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
-    offer: 'bg-teal-100 text-teal-700 dark:bg-teal-900/60 dark:text-teal-300',
-    hired: 'bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300',
-    rejected: 'bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-300',
+function getStatusMetadataValue(metadata: Record<string, unknown> | null, keys: string[]): string | null {
+  if (!metadata) return null
+  for (const key of keys) {
+    const value = metadata[key]
+    if (value == null) continue
+    const text = String(value).trim()
+    if (text) return text
   }
-  return map[s] ?? 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-300'
+  return null
+}
+
+function getFromStatus(metadata: Record<string, unknown> | null): string | null {
+  return getStatusMetadataValue(metadata, ['fromStatus', 'from_status', 'from'])
+}
+
+function getToStatus(metadata: Record<string, unknown> | null): string | null {
+  return getStatusMetadataValue(metadata, ['toStatus', 'to_status', 'to'])
+}
+
+function getTimelineStatusBadgeClasses(status: string): string {
+  return getApplicationStatusBadgeClass(status.toLowerCase(), 'factory')
+}
+
+function getTimelineStatusLabel(status: string): string {
+  return getApplicationStatusLabel(status.toLowerCase())
 }
 
 function getEventDescription(item: TimelineItem): string {
-  const typeLabels: Record<string, string> = {
-    job: 'Job',
-    candidate: 'Candidate',
-    application: 'Application',
-    interview: 'Interview',
-    member: 'Team member',
-  }
-  const type = typeLabels[item.resourceType] ?? item.resourceType
+  const type = getResourceTypeLabel(item.resourceType)
 
   switch (item.action) {
     case 'created': return `${type} created`
     case 'updated': return `${type} updated`
     case 'deleted': return `${type} deleted`
     case 'status_changed': return `${type} moved`
-    case 'comment_added': return `Comment on ${type.toLowerCase()}`
+    case 'comment_added': return `Comment added to ${type.toLowerCase()}`
     case 'member_invited': return 'Member invited'
     case 'member_removed': return 'Member removed'
     case 'member_role_changed': return 'Role changed'
     case 'scored': return `${type} scored by AI`
     case 'scheduled': return `${type} scheduled`
-    default: return `${type} ${item.action.replace(/_/g, ' ')}`
+    default: return `${type} ${humanizeIdentifier(item.action).toLowerCase()}`
   }
+}
+
+const resourceTypeLabels: Record<string, string> = {
+  aiConfig: 'AI configuration',
+  ai_config: 'AI configuration',
+  application: 'Application',
+  calendarIntegration: 'Calendar integration',
+  calendar_integration: 'Calendar integration',
+  candidate: 'Candidate',
+  comment: 'Comment',
+  document: 'Document',
+  emailTemplate: 'Email template',
+  email_template: 'Email template',
+  interview: 'Interview',
+  job: 'Job',
+  member: 'Team member',
+  note: 'Note',
+  organization: 'Organization',
+  scoringCriteria: 'Scoring criteria',
+  scoring_criteria: 'Scoring criteria',
+  sourceTracking: 'Source tracking link',
+  source_tracking: 'Source tracking link',
+  trackingLink: 'Tracking link',
+  tracking_link: 'Tracking link',
+}
+
+function getResourceTypeLabel(resourceType: string): string {
+  return resourceTypeLabels[resourceType] ?? humanizeIdentifier(resourceType)
+}
+
+function humanizeIdentifier(value: string): string {
+  const words = value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+
+  return words
+    .map((word, index) => {
+      const lower = word.toLowerCase()
+      if (lower === 'ai') return 'AI'
+      return index === 0 ? lower.charAt(0).toUpperCase() + lower.slice(1) : lower
+    })
+    .join(' ')
 }
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl">
+  <div class="mx-auto max-w-6xl">
     <!-- ─── Page header ─── -->
     <div class="mb-6">
       <div class="flex items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <h1 class="text-xl font-bold text-surface-900 dark:text-surface-50 tracking-tight">
-            Timeline
-          </h1>
-          <span
-            v-if="totalEvents > 0 && !isLoading"
-            class="text-xs text-surface-400 dark:text-surface-500 tabular-nums"
-          >
-            <template v-if="searchQuery.trim()">{{ filteredEventCount }} of </template>{{ totalEvents.toLocaleString() }} events
-          </span>
+        <div>
+          <div class="flex items-center gap-3">
+            <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50 tracking-tight">
+              Timeline
+            </h1>
+            <span
+              v-if="totalEvents > 0 && !isLoading"
+              class="text-xs text-surface-400 dark:text-surface-500 tabular-nums"
+            >
+              <template v-if="searchQuery.trim()">{{ filteredEventCount }} of </template>{{ totalEvents.toLocaleString() }} events
+            </span>
+          </div>
+          <p class="mt-1 text-sm text-surface-500 dark:text-surface-400">
+            Review activity across jobs, candidates, applications, and interviews.
+          </p>
         </div>
 
         <!-- Scroll to today button -->
@@ -414,38 +502,37 @@ function getEventDescription(item: TimelineItem): string {
         </button>
       </div>
 
-      <!-- Filter pills -->
-      <div class="mt-3 flex items-center gap-1.5 flex-wrap">
-        <button
-          v-for="f in filters"
-          :key="f.key ?? 'all'"
-          class="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 cursor-pointer"
-          :class="activeFilter === f.key
-            ? 'bg-brand-600 text-white'
-            : 'text-surface-500 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-700 dark:hover:text-surface-300'"
-          @click="setFilter(f.key)"
-        >
-          <component :is="f.icon" class="size-3" />
-          {{ f.label }}
-        </button>
-      </div>
-
-      <!-- Search bar -->
-      <div class="mt-3 relative">
-        <div class="relative">
-          <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-surface-400 dark:text-surface-500 pointer-events-none" />
+      <!-- Search + filters -->
+      <div class="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div class="relative flex-1">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-surface-400 dark:text-surface-500 pointer-events-none" />
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Search by name, date, or keyword…"
-            class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 pl-8 pr-8 py-1.5 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-400 dark:focus:border-brand-600 transition-colors"
+            class="ui-field pl-10 pr-10 py-2"
           />
           <button
             v-if="searchQuery"
-            class="absolute right-2 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 dark:text-surface-500 dark:hover:text-surface-300 cursor-pointer"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 dark:text-surface-500 dark:hover:text-surface-300 cursor-pointer"
             @click="searchQuery = ''"
           >
-            <X class="size-3.5" />
+            <X class="size-4" />
+          </button>
+        </div>
+
+        <div class="flex shrink-0 items-center gap-1.5 flex-wrap">
+          <button
+            v-for="f in filters"
+            :key="f.key ?? 'all'"
+            class="inline-flex items-center gap-1 rounded-md px-2.5 py-2 text-xs font-medium uppercase tracking-wide transition-all duration-150 cursor-pointer"
+            :class="activeFilter === f.key
+              ? 'bg-brand-600 text-white'
+              : 'text-surface-500 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-700 dark:hover:text-surface-300'"
+            @click="setFilter(f.key)"
+          >
+            <component :is="f.icon" class="size-3" />
+            {{ f.label }}
           </button>
         </div>
       </div>
@@ -472,7 +559,7 @@ function getEventDescription(item: TimelineItem): string {
     <!-- ─── Error state ─── -->
     <div
       v-else-if="error"
-      class="rounded-lg border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950/60 p-4 text-sm text-danger-700 dark:text-danger-400 flex items-center gap-3"
+      class="ui-alert ui-alert-danger flex items-center gap-3 p-4"
     >
       <AlertCircle class="size-4 shrink-0" />
       <span>{{ error }}</span>
@@ -486,22 +573,23 @@ function getEventDescription(item: TimelineItem): string {
       v-else-if="dayGroups.length === 0"
       class="flex flex-col items-center justify-center py-20"
     >
-      <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-10 text-center max-w-sm">
+      <div class="ui-empty-panel max-w-sm p-10">
         <div class="mx-auto mb-5 flex items-center justify-center size-12 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700">
           <History class="size-6 text-white" />
         </div>
         <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 mb-2 tracking-tight">
-          No activity yet
+          {{ emptyStateTitle }}
         </h2>
         <p class="text-sm text-surface-500 dark:text-surface-400 leading-relaxed">
-          Activity will appear here as you create jobs, add candidates, and process applications.
+          {{ emptyStateDescription }}
         </p>
         <NuxtLink
-          :to="localePath('/dashboard/jobs')"
+          v-if="emptyStateCta"
+          :to="localePath(emptyStateCta.to)"
           class="mt-5 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors no-underline"
         >
-          <Briefcase class="size-4" />
-          Create your first job
+          <component :is="emptyStateCta.icon" class="size-4" />
+          {{ emptyStateCta.label }}
         </NuxtLink>
       </div>
     </div>
@@ -589,10 +677,10 @@ function getEventDescription(item: TimelineItem): string {
 
           <!-- Events for this day, grouped by purpose -->
           <div class="ml-3.5 pl-5 space-y-3 mt-1">
-            <div v-for="section in group.sections" :key="section.jobId ?? section.type" class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/60 overflow-hidden">
+            <div v-for="section in group.sections" :key="section.jobId ?? section.type" class="ui-panel ui-dashboard-panel">
               <!-- Section header (collapsible) -->
               <button
-                class="flex items-center gap-2 px-3 py-2 w-full border-b border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/40 cursor-pointer hover:bg-surface-100/60 dark:hover:bg-surface-800/60 transition-colors"
+                class="ui-panel-header ui-dashboard-panel-header flex items-center gap-2 w-full cursor-pointer hover:bg-surface-100/60 dark:hover:bg-surface-800/60 transition-colors"
                 @click="toggleSection(sectionKey(group.date, section))"
               >
                 <ChevronRight
@@ -603,10 +691,8 @@ function getEventDescription(item: TimelineItem): string {
                 <component
                   :is="section.jobUrl ? NuxtLinkComponent : 'span'"
                   :to="section.jobUrl ? localePath(section.jobUrl) : undefined"
-                  class="text-xs font-semibold tracking-wide no-underline truncate"
-                  :class="section.type === 'job'
-                    ? 'text-surface-800 dark:text-surface-200 hover:text-brand-600 dark:hover:text-brand-400 transition-colors'
-                    : 'text-surface-500 dark:text-surface-400 uppercase'"
+                  class="text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 no-underline truncate transition-colors"
+                  :class="section.jobUrl ? 'hover:text-surface-700 dark:hover:text-surface-200' : ''"
                   @click.stop
                 >
                   {{ section.label }}
@@ -635,9 +721,9 @@ function getEventDescription(item: TimelineItem): string {
                       <span class="text-[13px] font-medium text-surface-900 dark:text-surface-100 shrink-0">{{ getEventDescription(item) }}</span>
                       <span v-if="item.resourceName" class="text-[13px] text-surface-600 dark:text-surface-300 truncate group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">&mdash; {{ item.resourceName }}</span>
                       <template v-if="item.action === 'status_changed' && item.metadata">
-                        <span v-if="item.metadata.fromStatus || item.metadata.from" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getStatusBadgeClasses(String(item.metadata.fromStatus ?? item.metadata.from))">{{ item.metadata.fromStatus ?? item.metadata.from }}</span>
+                        <span v-if="getFromStatus(item.metadata)" class="inline-flex items-center border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none" :class="getTimelineStatusBadgeClasses(String(getFromStatus(item.metadata)))">{{ getTimelineStatusLabel(String(getFromStatus(item.metadata))) }}</span>
                         <ArrowRight class="size-2.5 text-surface-400 dark:text-surface-500 shrink-0" />
-                        <span v-if="item.metadata.toStatus || item.metadata.to" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getStatusBadgeClasses(String(item.metadata.toStatus ?? item.metadata.to))">{{ item.metadata.toStatus ?? item.metadata.to }}</span>
+                        <span v-if="getToStatus(item.metadata)" class="inline-flex items-center border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none" :class="getTimelineStatusBadgeClasses(String(getToStatus(item.metadata)))">{{ getTimelineStatusLabel(String(getToStatus(item.metadata))) }}</span>
                       </template>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
@@ -646,7 +732,7 @@ function getEventDescription(item: TimelineItem): string {
                         <div v-else class="size-4 rounded-full bg-surface-200 dark:bg-surface-700 flex items-center justify-center">
                           <span class="text-[8px] font-bold text-surface-500 dark:text-surface-400">{{ item.actorName.charAt(0).toUpperCase() }}</span>
                         </div>
-                        <span class="text-[11px] text-surface-400 dark:text-surface-500 max-w-[80px] truncate">{{ item.actorName }}</span>
+                        <span class="text-[11px] text-surface-400 dark:text-surface-500 whitespace-nowrap">{{ item.actorName }}</span>
                       </div>
                       <span class="text-[11px] text-surface-400 dark:text-surface-500 tabular-nums">{{ formatTime(item.createdAt) }}</span>
                     </div>
@@ -687,9 +773,9 @@ function getEventDescription(item: TimelineItem): string {
                         <span class="text-[12px] font-medium shrink-0" :class="getActionStyle(item.action, item.resourceType, item.metadata).color">{{ getEventDescription(item) }}</span>
                         <span v-if="item.resourceName" class="text-[12px] text-surface-600 dark:text-surface-300 truncate group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">{{ item.resourceName }}</span>
                         <template v-if="item.action === 'status_changed' && item.metadata">
-                          <span v-if="item.metadata.fromStatus || item.metadata.from" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getStatusBadgeClasses(String(item.metadata.fromStatus ?? item.metadata.from))">{{ item.metadata.fromStatus ?? item.metadata.from }}</span>
+                          <span v-if="getFromStatus(item.metadata)" class="inline-flex items-center border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none" :class="getTimelineStatusBadgeClasses(String(getFromStatus(item.metadata)))">{{ getTimelineStatusLabel(String(getFromStatus(item.metadata))) }}</span>
                           <ArrowRight class="size-2.5 text-surface-400 dark:text-surface-500 shrink-0" />
-                          <span v-if="item.metadata.toStatus || item.metadata.to" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getStatusBadgeClasses(String(item.metadata.toStatus ?? item.metadata.to))">{{ item.metadata.toStatus ?? item.metadata.to }}</span>
+                          <span v-if="getToStatus(item.metadata)" class="inline-flex items-center border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none" :class="getTimelineStatusBadgeClasses(String(getToStatus(item.metadata)))">{{ getTimelineStatusLabel(String(getToStatus(item.metadata))) }}</span>
                         </template>
                         <span v-if="item.isUpcoming" class="text-[11px] font-medium text-accent-600 dark:text-accent-400 shrink-0">Upcoming</span>
                       </div>
@@ -699,7 +785,7 @@ function getEventDescription(item: TimelineItem): string {
                           <div v-else class="size-3.5 rounded-full bg-surface-200 dark:bg-surface-700 flex items-center justify-center">
                             <span class="text-[7px] font-bold text-surface-500 dark:text-surface-400">{{ item.actorName.charAt(0).toUpperCase() }}</span>
                           </div>
-                          <span class="text-[10px] text-surface-400 dark:text-surface-500 max-w-[70px] truncate">{{ item.actorName }}</span>
+                          <span class="text-[10px] text-surface-400 dark:text-surface-500 whitespace-nowrap">{{ item.actorName }}</span>
                         </div>
                         <span class="text-[10px] text-surface-400 dark:text-surface-500 tabular-nums">{{ formatTime(item.createdAt) }}</span>
                       </div>

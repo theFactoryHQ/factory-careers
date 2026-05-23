@@ -180,11 +180,11 @@ const isPopoverType = computed(
     <button
       type="button"
       :disabled="readOnly"
-      class="flex size-5 cursor-pointer items-center justify-center rounded border transition-colors disabled:cursor-not-allowed"
+      class="ui-checkbox-indicator size-5 cursor-pointer disabled:cursor-not-allowed"
       :class="[
         modelValue
-          ? 'bg-brand-600 border-brand-600 hover:bg-brand-700 hover:border-brand-700'
-          : 'border-surface-300 dark:border-surface-600 hover:border-surface-400 dark:hover:border-surface-500',
+          ? 'ui-checkbox-indicator-checked'
+          : '',
         saving ? 'pointer-events-none opacity-60' : ''
       ]"
       @click="emit('update', !modelValue)"
@@ -199,8 +199,8 @@ const isPopoverType = computed(
       v-if="!editing || isPopoverType"
       type="button"
       :disabled="readOnly"
-      class="group block w-full min-w-0 cursor-text rounded px-2 py-1 text-left transition-colors hover:bg-surface-100/80 dark:hover:bg-surface-800/50 disabled:cursor-default disabled:hover:bg-transparent"
-      :class="[{ 'opacity-60': saving }, editing && isPopoverType ? 'ring-2 ring-brand-500/30' : '']"
+      class="ui-inline-edit-trigger group block w-full min-w-0 px-2 py-1 text-left disabled:cursor-default disabled:hover:bg-transparent"
+      :class="[{ 'opacity-60': saving }, editing && isPopoverType ? 'ui-inline-edit-trigger-active' : '']"
       @click="startEdit"
     >
       <PropertyValueDisplay :definition="definition" :value="modelValue" />
@@ -214,7 +214,7 @@ const isPopoverType = computed(
         ref="inputEl"
         :value="draft as string"
         :type="definition.type === 'email' ? 'email' : definition.type === 'url' ? 'url' : 'text'"
-        class="w-full min-w-0 rounded border border-brand-500 bg-white dark:bg-surface-900 px-2 py-1 text-sm text-surface-900 dark:text-surface-50 outline-none ring-2 ring-brand-500/20"
+        class="ui-field min-w-0 px-2 py-1"
         :placeholder="definition.type === 'url' ? 'https://…' : ''"
         @input="(e) => { draft = (e.target as HTMLInputElement).value }"
         @keydown="onKey"
@@ -227,7 +227,7 @@ const isPopoverType = computed(
         ref="inputEl"
         :value="draft as string"
         rows="3"
-        class="w-full min-w-0 rounded border border-brand-500 bg-white dark:bg-surface-900 px-2 py-1.5 text-sm text-surface-900 dark:text-surface-50 outline-none ring-2 ring-brand-500/20"
+        class="ui-field min-w-0 px-2 py-1.5"
         @input="(e) => { draft = (e.target as HTMLTextAreaElement).value }"
         @keydown="onKey"
         @blur="commit()"
@@ -240,7 +240,7 @@ const isPopoverType = computed(
         :value="draft"
         type="number"
         step="any"
-        class="w-full min-w-0 rounded border border-brand-500 bg-white dark:bg-surface-900 px-2 py-1 text-sm tabular-nums text-surface-900 dark:text-surface-50 outline-none ring-2 ring-brand-500/20"
+        class="ui-field min-w-0 px-2 py-1 tabular-nums"
         @input="(e) => { const v = (e.target as HTMLInputElement).value; draft = v === '' ? null : Number(v) }"
         @keydown="onKey"
         @blur="commit()"
@@ -252,7 +252,7 @@ const isPopoverType = computed(
         ref="inputEl"
         :value="draft as string"
         type="date"
-        class="w-full min-w-0 rounded border border-brand-500 bg-white dark:bg-surface-900 px-2 py-1 text-sm text-surface-900 dark:text-surface-50 outline-none ring-2 ring-brand-500/20"
+        class="ui-field min-w-0 px-2 py-1"
         @input="(e) => { draft = (e.target as HTMLInputElement).value }"
         @keydown="onKey"
         @blur="commit()"
@@ -263,25 +263,26 @@ const isPopoverType = computed(
         <div
           data-property-popover="true"
           :style="popoverStyle"
-          class="rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg"
+          class="ui-floating-menu"
         >
           <div class="max-h-64 overflow-y-auto py-1">
             <button
               v-for="opt in (config?.options ?? [])"
               :key="opt.id"
               type="button"
-              class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-surface-100 dark:hover:bg-surface-800"
+              class="ui-menu-action px-3 py-1.5 text-sm"
+              :class="opt.id === modelValue ? 'ui-menu-action-active' : ''"
               @click="commit(opt.id)"
             >
               <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="PROPERTY_COLOR_CLASSES[opt.color].chip">
                 {{ opt.label }}
               </span>
-              <Check v-if="opt.id === modelValue" class="ml-auto size-3.5 text-brand-600" />
+              <Check v-if="opt.id === modelValue" class="ml-auto size-3.5" />
             </button>
             <button
               v-if="modelValue"
               type="button"
-              class="flex w-full cursor-pointer items-center gap-2 border-t border-surface-100 dark:border-surface-800 px-3 py-1.5 text-left text-xs text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800"
+              class="ui-menu-action ui-menu-divider px-3 py-1.5 text-xs"
               @click="commit(null)"
             >
               <X class="size-3.5" /> Clear
@@ -298,28 +299,29 @@ const isPopoverType = computed(
         <div
           data-property-popover="true"
           :style="popoverStyle"
-          class="rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg"
+          class="ui-floating-menu"
         >
           <div class="max-h-64 overflow-y-auto py-1">
             <button
               v-for="opt in (config?.options ?? [])"
               :key="opt.id"
               type="button"
-              class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-surface-100 dark:hover:bg-surface-800"
+              class="ui-menu-action px-3 py-1.5 text-sm"
+              :class="(draft as string[] | null)?.includes(opt.id) ? 'ui-menu-action-active' : ''"
               @click="toggleMultiSelect(opt.id)"
             >
               <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="PROPERTY_COLOR_CLASSES[opt.color].chip">
                 {{ opt.label }}
               </span>
-              <Check v-if="(draft as string[] | null)?.includes(opt.id)" class="ml-auto size-3.5 text-brand-600" />
+              <Check v-if="(draft as string[] | null)?.includes(opt.id)" class="ml-auto size-3.5" />
             </button>
             <div v-if="(config?.options ?? []).length === 0" class="px-3 py-2 text-xs text-surface-400">
               No options yet — add some in the schema editor.
             </div>
           </div>
-          <div class="flex items-center justify-end gap-2 border-t border-surface-100 dark:border-surface-800 px-2 py-1.5">
-            <button type="button" class="text-xs text-surface-500 hover:text-surface-700 cursor-pointer" @click="cancel">Cancel</button>
-            <button type="button" class="rounded bg-brand-600 px-2 py-1 text-xs font-medium text-white hover:bg-brand-700 cursor-pointer" @click="commit()">Done</button>
+          <div class="ui-panel-footer flex items-center justify-end gap-2 px-2 py-1.5">
+            <button type="button" class="ui-button ui-button-ghost px-2 py-1 text-xs" @click="cancel">Cancel</button>
+            <button type="button" class="ui-button ui-button-primary px-2 py-1 text-xs" @click="commit()">Done</button>
           </div>
         </div>
       </Teleport>

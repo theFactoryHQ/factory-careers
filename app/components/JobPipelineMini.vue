@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { APPLICATION_PIPELINE_STAGES } from '~/utils/status-display'
+
 /**
  * A compact, premium pipeline visualization for job cards.
  * Shows application counts per stage as colored segments with totals.
@@ -15,13 +17,7 @@ const props = defineProps<{
   }
 }>()
 
-const stages = [
-  { key: 'new', label: 'New', dotClass: 'bg-blue-500', barClass: 'bg-blue-500', textClass: 'text-blue-700 dark:text-blue-400' },
-  { key: 'screening', label: 'Screen', dotClass: 'bg-violet-500', barClass: 'bg-violet-500', textClass: 'text-violet-700 dark:text-violet-400' },
-  { key: 'interview', label: 'Interview', dotClass: 'bg-amber-500', barClass: 'bg-amber-500', textClass: 'text-amber-700 dark:text-amber-400' },
-  { key: 'offer', label: 'Offer', dotClass: 'bg-teal-500', barClass: 'bg-teal-500', textClass: 'text-teal-700 dark:text-teal-400' },
-  { key: 'hired', label: 'Hired', dotClass: 'bg-green-600', barClass: 'bg-green-600', textClass: 'text-green-700 dark:text-green-400' },
-] as const
+const stages = APPLICATION_PIPELINE_STAGES
 
 const totalActive = computed(() => {
   return props.pipeline.new

@@ -204,6 +204,34 @@
       "when": 1777463601249,
       "tag": "0028_custom_properties",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1779380000000,
+      "tag": "0029_microsoft_calendar",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1779383000000,
+      "tag": "0030_org_calendar_integration",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1779385000000,
+      "tag": "0031_microsoft_sso_user_read_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1779387000000,
+      "tag": "0032_interview_calendar_events",
+      "breakpoints": true
     }
   ]
 }
