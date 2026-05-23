@@ -40,6 +40,10 @@ export default defineEventHandler(async (event) => {
   let failed = 0
 
   for (const integration of expiring) {
+    if (!integration.userId) {
+      failed++
+      continue
+    }
     try {
       const success = await setupCalendarWebhook(integration.userId)
       if (success) renewed++

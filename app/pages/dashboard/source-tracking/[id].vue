@@ -786,21 +786,14 @@ async function handleSidebarUpdated() {
             <!-- Channel -->
             <div>
               <label for="edit-link-channel" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Source Channel</label>
-              <select
+              <FactorySelect
                 id="edit-link-channel"
                 v-model="editForm.channel"
-                class="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
-              >
-                <optgroup label="Job Boards">
-                  <option v-for="ch in ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
-                </optgroup>
-                <optgroup label="Social Media">
-                  <option v-for="ch in ['facebook', 'twitter', 'instagram', 'tiktok', 'reddit']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
-                </optgroup>
-                <optgroup label="Other">
-                  <option v-for="ch in ['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other']" :key="ch" :value="ch">{{ getSourceChannelLabel(ch) }}</option>
-                </optgroup>
-              </select>
+                :options="[
+                  ...['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs'].map(ch => ({ value: ch, label: getSourceChannelLabel(ch) })),
+                  ...['facebook', 'twitter', 'instagram', 'tiktok', 'reddit'].map(ch => ({ value: ch, label: getSourceChannelLabel(ch) }))
+                ]"
+              />
             </div>
 
             <!-- UTM fields -->

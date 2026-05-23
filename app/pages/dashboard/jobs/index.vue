@@ -499,10 +499,10 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
         />
 
         <!-- View mode toggle -->
-        <div class="factory-view-toggle inline-flex rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
+        <div class="factory-view-toggle inline-flex rounded-lg border overflow-hidden">
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors"
+            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors min-h-10"
             :class="{ 'is-active': viewMode === 'gallery' }"
             title="Gallery view"
             @click="viewMode = 'gallery'"
@@ -511,7 +511,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           </button>
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-l border-surface-200 dark:border-surface-800"
+            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-l border-white/10 min-h-10"
             :class="{ 'is-active': viewMode === 'list' }"
             title="List view"
             @click="viewMode = 'list'"
@@ -520,7 +520,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           </button>
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-l border-surface-200 dark:border-surface-800"
+            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-l border-white/10 min-h-10"
             :class="{ 'is-active': viewMode === 'table' }"
             title="Table view"
             @click="viewMode = 'table'"

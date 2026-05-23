@@ -9,6 +9,12 @@ export default defineEventHandler(async (event) => {
 
   const body = await readValidatedBody(event, createInterviewSchema.parse)
 
+  // Default interviewers to the person creating the interview if none provided
+  let interviewers = body.interviewers ?? []
+  if (interviewers.length === 0 && session.user?.email) {
+    interviewers = [session.user.email]
+  }
+
   // Verify the application exists and belongs to this org
   const app = await db.query.application.findFirst({
     where: and(
@@ -37,7 +43,7 @@ export default defineEventHandler(async (event) => {
     duration: body.duration,
     location: body.location ?? null,
     notes: body.notes ?? null,
-    interviewers: body.interviewers ?? null,
+    interviewers,
     timezone: body.timezone ?? 'UTC',
     createdById: session.user.id,
   }).returning()
@@ -69,6 +75,7 @@ export default defineEventHandler(async (event) => {
     ].join('\n')
     const addCandidate = body.calendarAddCandidateAttendee !== false
     const sendUpdates = body.calendarSendUpdates !== false
+    const generateTeamsLink = body.generateTeamsLink !== false
 
     try {
       const results = await createConnectedCalendarEvents(session.user.id, orgId, {
@@ -80,8 +87,9 @@ export default defineEventHandler(async (event) => {
         location: body.location ?? null,
         candidateEmail: addCandidate ? app.candidate.email : null,
         candidateName,
-        interviewerEmails: body.interviewers ?? [],
+        interviewerEmails: interviewers,
         sendUpdates,
+        generateTeamsLink,
       })
 
       if (results.length > 0) {

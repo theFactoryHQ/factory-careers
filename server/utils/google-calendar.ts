@@ -112,8 +112,8 @@ export async function getCalendarClient(userId: string): Promise<calendar_v3.Cal
   if (!integration) return null
 
   const secret = env.BETTER_AUTH_SECRET
-  const accessToken = decrypt(integration.accessTokenEncrypted, secret)
-  const refreshToken = decrypt(integration.refreshTokenEncrypted, secret)
+  const accessToken = integration.accessTokenEncrypted ? decrypt(integration.accessTokenEncrypted, secret) : null
+  const refreshToken = integration.refreshTokenEncrypted ? decrypt(integration.refreshTokenEncrypted, secret) : null
 
   if (!accessToken || !refreshToken) {
     logError('calendar.token_decrypt_failed', {

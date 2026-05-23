@@ -20,6 +20,10 @@ const calendarProviderLabel = computed(() => calendarStatus.value.providerLabel 
 const selectedCalendarProvider = computed(() => calendarStatus.value.provider || calendarStatus.value.availableProvider || 'microsoft')
 const isMicrosoftCalendar = computed(() => selectedCalendarProvider.value === 'microsoft')
 const isAdminManagedCalendar = computed(() => calendarStatus.value.managedByAdmin)
+const isMicrosoftAppMode = computed(() => 
+  isMicrosoftCalendar.value && 
+  (calendarStatus.value.authMode === 'application' || calendarStatus.value.managedByAdmin)
+)
 const calendarProviderName = computed(() => isMicrosoftCalendar.value ? 'Microsoft Calendar' : 'Google Calendar')
 const calendarSyncLabel = computed(() => isAdminManagedCalendar.value ? 'Mailbox sync' : (isMicrosoftCalendar.value ? 'Event sync' : 'Two-way sync'))
 const sharedCalendarEmail = computed(() => calendarStatus.value.expectedAccountEmail || 'interviews@thefactoryhq.com')
@@ -70,6 +74,21 @@ async function handleDisconnect() {
   }
   finally {
     isDisconnecting.value = false
+  }
+}
+
+async function updateSyncInterviewers(enabled: boolean) {
+  try {
+    await $fetch('/api/org-settings', {
+      method: 'PATCH',
+      body: { calendarSyncInterviewers: enabled },
+    })
+    await refresh()
+    successMessage.value = enabled
+      ? 'Interviewer calendar sync enabled.'
+      : 'Interviewer calendar sync disabled.'
+  } catch {
+    errorMessage.value = 'Failed to update setting.'
   }
 }
 </script>
@@ -126,9 +145,7 @@ async function handleDisconnect() {
     <div class="ui-panel ui-dashboard-panel ui-settings-panel">
       <!-- Header -->
       <div class="ui-panel-header ui-dashboard-panel-header ui-settings-panel-header flex items-center gap-4">
-        <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile size-10">
-          <Calendar class="size-5" />
-        </div>
+        <Calendar class="size-5 text-brand-400 shrink-0" />
         <div class="flex-1 min-w-0">
           <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">
             {{ calendarProviderName }}
@@ -251,8 +268,21 @@ async function handleDisconnect() {
                 </span>
               </div>
             </div>
+            <!-- Sync Interviewers Toggle (only for Microsoft app mode) -->
+            <div v-if="isMicrosoftCalendar && isAdminManagedCalendar" class="flex items-center justify-between pt-2 border-t border-surface-200 dark:border-surface-700">
+              <div class="text-sm text-surface-600 dark:text-surface-400">
+                Also create events on interviewers' personal calendars
+              </div>
+              <input
+                type="checkbox"
+                :checked="calendarStatus.syncInterviewers"
+                class="toggle toggle-brand"
+                @change="(e: Event) => updateSyncInterviewers(!!(e.target as HTMLInputElement | null)?.checked)"
+              />
+            </div>
+
             <div
-              v-if="calendarStatus.syncInterviewers"
+              v-else-if="calendarStatus.syncInterviewers"
               class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400"
             >
               <Check class="ui-icon-success size-4 shrink-0" />
@@ -320,7 +350,39 @@ async function handleDisconnect() {
 
         <!-- Disconnected / Ready to connect -->
         <div v-else class="space-y-4">
-          <div class="space-y-3">
+          <!-- App-mode (application permissions) — hide OAuth entirely -->
+          <div v-if="isMicrosoftAppMode" class="space-y-3">
+            <p class="text-sm text-surface-600 dark:text-surface-400">
+              Microsoft Calendar is configured for this organization using application permissions.
+              No user login is required — the server uses pre-authorized app credentials to sync interviews to the configured mailboxes.
+            </p>
+
+            <div class="ui-panel-muted p-4 space-y-2">
+              <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
+                <Calendar class="ui-icon-brand size-4 shrink-0" />
+                Auto-create events on the Factory shared calendar via app permissions
+              </div>
+              <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
+                <RefreshCw class="ui-icon-brand size-4 shrink-0" />
+                Interview event creation, updates, and cancellation sync
+              </div>
+              <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
+                <Clock class="ui-icon-brand size-4 shrink-0" />
+                Proper timezone handling — no more scheduling confusion
+              </div>
+              <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
+                <Shield class="ui-icon-brand size-4 shrink-0" />
+                Managed centrally via server environment configuration
+              </div>
+            </div>
+
+            <div class="text-xs text-surface-500 dark:text-surface-400">
+              Contact an administrator if the integration is not yet active.
+            </div>
+          </div>
+
+          <!-- Normal delegated / user OAuth flow -->
+          <div v-else class="space-y-3">
             <p class="text-sm text-surface-600 dark:text-surface-400">
               Connect with a Factory Microsoft account that can access {{ sharedCalendarEmail }}.
               Interview schedules will sync to that shared interview mailbox calendar.
@@ -347,15 +409,16 @@ async function handleDisconnect() {
                 OAuth tokens encrypted at rest — revoke anytime
               </div>
             </div>
-          </div>
 
-          <button
-            class="ui-button ui-button-primary py-2.5"
-            @click="connect"
-          >
-            <Calendar class="size-4" />
-            Connect shared calendar
-          </button>
+            <button
+              v-if="!isMicrosoftAppMode"
+              class="ui-button ui-button-primary py-2.5"
+              @click="connect"
+            >
+              <Calendar class="size-4" />
+              Connect shared calendar
+            </button>
+          </div>
         </div>
       </div>
     </div>

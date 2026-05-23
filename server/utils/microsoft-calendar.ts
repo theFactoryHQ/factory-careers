@@ -8,7 +8,8 @@
 import { and, eq } from 'drizzle-orm'
 import { env } from './env'
 import { encrypt, decrypt } from './encryption'
-import { calendarIntegration } from '../database/schema'
+import { calendarIntegration, orgSettings } from '../database/schema'
+import { db } from './db'
 import {
   resolveMicrosoftCalendarDestinations,
   type CalendarDestination,
@@ -79,6 +80,7 @@ interface InterviewEventData {
   candidateName: string
   interviewerEmails: string[]
   sendUpdates?: boolean
+  generateTeamsLink?: boolean
 }
 
 const MICROSOFT_SCOPES = [
@@ -234,6 +236,9 @@ async function refreshMicrosoftAccessToken(userId: string, organizationId?: stri
   if (!integration) return null
 
   const secret = env.BETTER_AUTH_SECRET
+  if (!integration.refreshTokenEncrypted) {
+    return null // App-only integrations don't have refresh tokens
+  }
   const refreshToken = decrypt(integration.refreshTokenEncrypted, secret)
   if (!refreshToken) {
     logError('calendar.microsoft_refresh_token_decrypt_failed', {
@@ -467,31 +472,67 @@ function buildMicrosoftEventBody(
     ]
   }
 
+  // Generate Teams meeting link when requested (works in app mode)
+  if (data.generateTeamsLink) {
+    body.isOnlineMeeting = true
+    body.onlineMeetingProvider = 'teamsForBusiness'
+  }
+
   return body
 }
 
-function getMicrosoftCalendarDestinations(interviewerEmails: string[] = []): CalendarDestination[] {
+async function getMicrosoftCalendarDestinations(organizationId: string | null | undefined, interviewerEmails: string[] = []): Promise<CalendarDestination[]> {
+  let syncInterviewers = env.FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS
+
+  if (organizationId && isMicrosoftCalendarApplicationMode()) {
+    try {
+      const setting = await db.query.orgSettings.findFirst({
+        where: eq(orgSettings.organizationId, organizationId),
+      })
+      if (setting && typeof setting.calendarSyncInterviewers === 'boolean') {
+        syncInterviewers = setting.calendarSyncInterviewers
+      }
+    } catch {
+      // fall back to env
+    }
+  }
+
   return resolveMicrosoftCalendarDestinations({
     sharedCalendarEmail: getMicrosoftCalendarAccountEmail(),
     syncSharedCalendar: env.FACTORY_CAREERS_CALENDAR_SYNC_SHARED,
     configuredUserEmails: env.FACTORY_CAREERS_CALENDAR_USER_EMAILS,
-    syncInterviewers: env.FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS,
+    syncInterviewers,
     interviewerEmails,
     allowedDomains: env.FACTORY_ALLOWED_EMAIL_DOMAINS,
   })
 }
 
-export function getMicrosoftCalendarDestinationSummary(): {
+export async function getMicrosoftCalendarDestinationSummary(organizationId?: string | null): Promise<{
   authMode: 'delegated' | 'application'
   destinations: CalendarDestination[]
   syncInterviewers: boolean
-} {
+}> {
+  let syncInterviewers = env.FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS
+
+  if (organizationId && isMicrosoftCalendarApplicationMode()) {
+    try {
+      const setting = await db.query.orgSettings.findFirst({
+        where: eq(orgSettings.organizationId, organizationId),
+      })
+      if (setting && typeof setting.calendarSyncInterviewers === 'boolean') {
+        syncInterviewers = setting.calendarSyncInterviewers
+      }
+    } catch {
+      // fall back to env
+    }
+  }
+
   return {
     authMode: getMicrosoftCalendarAuthMode(),
     destinations: isMicrosoftCalendarApplicationMode()
-      ? getMicrosoftCalendarDestinations()
+      ? await getMicrosoftCalendarDestinations(organizationId)
       : [],
-    syncInterviewers: env.FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS,
+    syncInterviewers,
   }
 }
 
@@ -523,6 +564,40 @@ export async function removeMicrosoftCalendarIntegration(userId: string, organiz
     .where(organizationId
       ? and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, 'microsoft'))
       : and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'microsoft')))
+}
+
+/**
+ * Enable Microsoft Calendar integration at the organization level using application (app-only) permissions.
+ * This is used when MICROSOFT_CALENDAR_AUTH_MODE=application.
+ * No user tokens are stored; the system uses client_credentials from the pre-configured app registration.
+ */
+export async function enableMicrosoftCalendarAppIntegration(organizationId: string): Promise<void> {
+  const secret = env.BETTER_AUTH_SECRET
+
+  // Obtain an app token to resolve the target calendar/group
+  let accessToken: string
+  try {
+    accessToken = await getMicrosoftApplicationAccessToken()
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    throw new Error(`Failed to obtain app token for Microsoft Calendar: ${message}`)
+  }
+
+  const group = await resolveMicrosoftCalendarGroup(accessToken)
+  const expectedEmail = getMicrosoftCalendarAccountEmail()
+
+  await db.delete(calendarIntegration)
+    .where(and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, 'microsoft')))
+
+  await db.insert(calendarIntegration).values({
+    userId: null, // organization-level / app-only
+    organizationId,
+    provider: 'microsoft',
+    accessTokenEncrypted: null,
+    refreshTokenEncrypted: null,
+    calendarId: group.id,
+    accountEmail: normalizeEmail(expectedEmail) || expectedEmail,
+  })
 }
 
 export async function createMicrosoftCalendarEvent(
@@ -572,7 +647,7 @@ export async function createMicrosoftCalendarEvents(
       : []
   }
 
-  const destinations = getMicrosoftCalendarDestinations(data.interviewerEmails)
+  const destinations = await getMicrosoftCalendarDestinations(organizationId, data.interviewerEmails)
   if (destinations.length === 0) {
     logWarn('calendar.microsoft_no_destinations_configured', {
       posthog_distinct_id: userId,

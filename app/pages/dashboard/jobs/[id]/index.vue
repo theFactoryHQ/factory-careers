@@ -1199,7 +1199,7 @@ function closeDocPreview() {
       <!-- ═══════════════════════════════════════ -->
       <!-- PIPELINE STATUS TABS                     -->
       <!-- ═══════════════════════════════════════ -->
-      <div class="shrink-0 border-b border-surface-200/80 bg-white dark:border-surface-800/60 dark:bg-surface-900">
+      <div class="shrink-0 border-b border-white/10 bg-white/[0.02] ui-dashboard-panel-header">
         <div class="factory-dashboard-tabs flex items-center gap-1 overflow-x-auto scrollbar-thin sm:scrollbar-none px-3 sm:px-5 py-2">
           <button
             v-for="status in PIPELINE_STATUSES"
@@ -1248,7 +1248,7 @@ function closeDocPreview() {
 
         <!-- LEFT PANEL — Candidate list (desktop only; mobile uses bottom bar) -->
         <div
-          class="hidden md:flex md:w-72 md:shrink-0 flex-col border-r border-surface-200/80 bg-white dark:border-surface-800/60 dark:bg-surface-900"
+          class="hidden md:flex md:w-72 md:shrink-0 flex-col border-r border-white/10 bg-white/[0.015] ui-dashboard-panel"
         >
           <!-- Search + Sort + Filter controls -->
           <div class="shrink-0 px-3.5 pt-3 pb-2 space-y-2 dark:border-surface-800">
@@ -1339,7 +1339,7 @@ function closeDocPreview() {
             >
               <div
                 v-if="showFilterPanel"
-                class="rounded-lg border border-surface-200/80 bg-surface-50/80 p-2.5 space-y-2.5 dark:border-surface-700/80 dark:bg-surface-800/40"
+                class="rounded-lg border border-white/12 bg-white/[0.025] p-2.5 space-y-2.5"
               >
                 <!-- Score filter -->
                 <div>
@@ -1501,7 +1501,7 @@ function closeDocPreview() {
 
           <template v-else>
             <!-- Sticky status transitions (stays visible on scroll) -->
-            <div v-if="allowedTransitions.length > 0" class="shrink-0 border-b border-surface-200/80 bg-white/95 backdrop-blur-sm px-4 sm:px-6 py-2.5 dark:border-surface-800/60 dark:bg-surface-900/95">
+            <div v-if="allowedTransitions.length > 0" class="shrink-0 border-b border-white/10 bg-white/[0.02] px-4 sm:px-6 py-2.5 ui-dashboard-panel-header">
               <div class="mx-auto max-w-4xl flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <button
                   v-for="(nextStatus, idx) in allowedTransitions"
@@ -1521,7 +1521,7 @@ function closeDocPreview() {
             <div ref="detailScrollContainer" class="flex-1 overflow-y-auto scrollbar-thin pb-20 md:pb-0">
 
             <!-- Candidate header -->
-            <div class="border-b border-surface-200 bg-surface-50 px-4 sm:px-6 py-4 sm:py-6 dark:border-surface-800 dark:bg-surface-900/80">
+            <div class="border-b border-white/10 bg-white/[0.02] px-4 sm:px-6 py-4 sm:py-6 ui-dashboard-panel-header">
               <div class="mx-auto max-w-4xl">
               <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div class="flex items-start gap-4 min-w-0">
@@ -1628,7 +1628,7 @@ function closeDocPreview() {
             </div>
 
             <!-- Detail tabs -->
-            <div class="border-b border-surface-200/80 bg-white px-4 sm:px-6 dark:border-surface-800/60 dark:bg-surface-900">
+            <div class="border-b border-white/10 bg-white/[0.02] px-4 sm:px-6 ui-dashboard-panel-header">
               <div class="factory-dashboard-tabs mx-auto max-w-4xl flex gap-1 -mb-px scrollbar-none whitespace-nowrap" :class="showOverviewDropdown ? '' : 'overflow-x-auto'">
                 <div ref="overviewDropdownRef" class="relative">
                   <div class="flex items-center border-b-2 transition-all duration-150" :class="detailTab === 'overview'
@@ -1780,7 +1780,7 @@ function closeDocPreview() {
               <!-- PROFILE SECTION (overview only) -->
               <div v-if="showSection.profile" ref="overviewRef" class="space-y-5 max-w-4xl mx-auto">
                 <!-- Notes -->
-                <div class="rounded-xl border border-surface-200/80 bg-white p-5 shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none">
+                <div class="ui-panel ui-dashboard-panel p-5">
                   <div class="flex items-center gap-2.5 mb-4">
                     <div class="flex size-7 items-center justify-center rounded-lg bg-warning-50 dark:bg-warning-950/40">
                       <MessageSquare class="size-3.5 text-warning-600 dark:text-warning-400" />
@@ -2065,18 +2065,17 @@ function closeDocPreview() {
 
                             <div>
                               <label class="block text-[11px] font-medium text-surface-500 dark:text-surface-400 mb-1">Type</label>
-                              <select
+                              <FactorySelect
                                 v-model="interviewEditForm.type"
-                                class="w-full rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-colors"
-                                @click.stop
-                              >
-                                <option value="video">Video Call</option>
-                                <option value="phone">Phone</option>
-                                <option value="in_person">In Person</option>
-                                <option value="technical">Technical</option>
-                                <option value="panel">Panel</option>
-                                <option value="take_home">Take Home</option>
-                              </select>
+                                :options="[
+                                  { value: 'video', label: 'Video Call' },
+                                  { value: 'phone', label: 'Phone' },
+                                  { value: 'in_person', label: 'In Person' },
+                                  { value: 'technical', label: 'Technical' },
+                                  { value: 'panel', label: 'Panel' },
+                                  { value: 'take_home', label: 'Take Home' },
+                                ]"
+                              />
                             </div>
 
                             <div>
@@ -2155,7 +2154,7 @@ function closeDocPreview() {
                 </div>
 
                 <!-- Empty state -->
-                <div v-else class="rounded-xl border border-surface-200/80 bg-white p-10 text-center shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none">
+                <div v-else class="ui-panel ui-dashboard-panel p-10 text-center">
                   <div class="flex size-14 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-800/60 mx-auto mb-3">
                     <Calendar class="size-6 text-surface-400 dark:text-surface-500" />
                   </div>
@@ -2181,7 +2180,7 @@ function closeDocPreview() {
                   <div
                     v-for="doc in resolvedCurrentApplication.candidate.documents"
                     :key="doc.id"
-                    class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-surface-200/80 bg-white px-5 py-4 shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none transition-colors hover:border-surface-300 dark:hover:border-surface-700"
+                    class="flex flex-wrap items-center justify-between gap-3 ui-panel ui-dashboard-panel px-5 py-4 transition-colors hover:border-surface-300 dark:hover:border-surface-700"
                   >
                     <div class="flex items-center gap-3.5 min-w-0">
                       <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-800/60">
@@ -2214,7 +2213,7 @@ function closeDocPreview() {
                     </div>
                   </div>
                 </div>
-                <div v-else class="rounded-xl border border-surface-200/80 bg-white p-10 text-center shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none">
+                <div v-else class="ui-panel ui-dashboard-panel p-10 text-center">
                   <div class="flex size-14 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-800/60 mx-auto mb-3">
                     <FileText class="size-6 text-surface-400 dark:text-surface-500" />
                   </div>
@@ -2233,7 +2232,7 @@ function closeDocPreview() {
                     <div
                       v-for="response in resolvedCurrentApplication.responses"
                       :key="response.id"
-                      class="rounded-xl border border-surface-200/80 bg-white p-5 shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none"
+                      class="ui-panel ui-dashboard-panel p-5"
                     >
                       <p class="text-xs font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-wider mb-2">
                         {{ response.question?.label ?? 'Unknown question' }}
@@ -2244,7 +2243,7 @@ function closeDocPreview() {
                     </div>
                   </div>
                 </template>
-                <div v-else class="rounded-xl border border-surface-200/80 bg-white p-10 text-center shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none">
+                <div v-else class="ui-panel ui-dashboard-panel p-10 text-center">
                   <div class="flex size-14 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-800/60 mx-auto mb-3">
                     <MessageSquare class="size-6 text-surface-400 dark:text-surface-500" />
                   </div>
@@ -2255,7 +2254,7 @@ function closeDocPreview() {
 
               <!-- PROPERTIES SECTION -->
               <div v-if="showSection.properties && resolvedCurrentApplication" class="max-w-4xl mx-auto" :class="detailTab === 'overview' ? 'mt-10' : ''">
-                <div class="rounded-xl border border-surface-200/80 bg-white p-5 shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none">
+                <div class="ui-panel ui-dashboard-panel p-5">
                   <div class="flex items-center gap-2.5 mb-4">
                     <div class="flex size-7 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-950/40">
                       <SlidersHorizontal class="size-3.5 text-brand-600 dark:text-brand-400" />
@@ -2303,7 +2302,7 @@ function closeDocPreview() {
                 <!-- Empty -->
                 <div
                   v-else-if="timelineItems.length === 0"
-                  class="rounded-xl border border-surface-200/80 bg-white p-10 text-center shadow-sm shadow-surface-900/[0.03] dark:border-surface-800/60 dark:bg-surface-900 dark:shadow-none"
+                  class="ui-panel ui-dashboard-panel p-10 text-center"
                 >
                   <div class="flex size-14 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-800/60 mx-auto mb-3">
                     <History class="size-6 text-surface-400 dark:text-surface-500" />
@@ -2373,7 +2372,7 @@ function closeDocPreview() {
       <!-- ═══════════════════════════════════════ -->
       <div
         v-if="filteredApplications.length > 0"
-        class="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-surface-200/80 bg-white dark:border-surface-800/60 dark:bg-surface-900"
+        class="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-white/[0.02] ui-dashboard-panel-header"
         :style="{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }"
       >
         <!-- Horizontal scrollable candidate cards -->
@@ -2431,7 +2430,7 @@ function closeDocPreview() {
       <!-- Mobile empty state for bottom bar -->
       <div
         v-else-if="focusedApplications.length === 0"
-        class="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-surface-200/80 bg-white dark:border-surface-800/60 dark:bg-surface-900 px-4 py-3 text-center"
+        class="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-white/[0.02] ui-dashboard-panel-header px-4 py-3 text-center"
         :style="{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }"
       >
         <p class="text-xs text-surface-400 dark:text-surface-500">

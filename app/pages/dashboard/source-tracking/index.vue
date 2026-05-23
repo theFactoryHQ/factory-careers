@@ -417,16 +417,13 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           </div>
 
           <!-- Job filter -->
-          <div class="relative">
-            <select
-              v-model="selectedJobId"
-              class="ui-field appearance-none pl-3 pr-8 py-2 text-xs font-medium cursor-pointer"
-            >
-              <option :value="undefined">All jobs</option>
-              <option v-for="j in jobs" :key="j.id" :value="j.id">{{ j.title }}</option>
-            </select>
-            <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-surface-400 pointer-events-none" />
-          </div>
+          <FactorySelect
+            v-model="selectedJobId"
+            :options="[
+              { value: undefined, label: 'All jobs' },
+              ...jobs.map((j: { id: string; title: string }) => ({ value: j.id, label: j.title }))
+            ]"
+          />
 
           <!-- Create link button -->
           <button
@@ -1125,24 +1122,15 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
             <!-- Channel -->
             <div>
               <label for="link-channel" class="mb-2 block text-xs font-semibold uppercase text-white/55">Source Channel</label>
-              <div class="relative">
-                <select
-                  id="link-channel"
-                  v-model="newLink.channel"
-                  class="ui-field appearance-none px-4 py-3 pr-10 [color-scheme:dark]"
-                >
-                  <optgroup label="Job Boards">
-                    <option v-for="ch in ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
-                  </optgroup>
-                  <optgroup label="Social Media">
-                    <option v-for="ch in ['facebook', 'twitter', 'instagram', 'tiktok', 'reddit']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
-                  </optgroup>
-                  <optgroup label="Other">
-                    <option v-for="ch in ['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other']" :key="ch" :value="ch">{{ getChannelLabel(ch) }}</option>
-                  </optgroup>
-                </select>
-                <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-brand-500" />
-              </div>
+              <FactorySelect
+                id="link-channel"
+                v-model="newLink.channel"
+                :options="[
+                  ...['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'handshake', 'angellist', 'wellfound', 'dice', 'stackoverflow', 'weworkremotely', 'remoteok', 'builtin', 'hired', 'lever', 'greenhouse_board', 'google_jobs'].map(ch => ({ value: ch, label: getChannelLabel(ch) })),
+                  ...['facebook', 'twitter', 'instagram', 'tiktok', 'reddit'].map(ch => ({ value: ch, label: getChannelLabel(ch) })),
+                  ...['referral', 'career_site', 'email', 'event', 'agency', 'direct', 'custom', 'other'].map(ch => ({ value: ch, label: getChannelLabel(ch) }))
+                ]"
+              />
             </div>
 
             <!-- Job (optional) -->
@@ -1150,17 +1138,14 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
               <label for="link-job" class="mb-2 block text-xs font-semibold uppercase text-white/55">
                 Scope to Job <span class="font-normal text-white/35">(optional)</span>
               </label>
-              <div class="relative">
-                <select
-                  id="link-job"
-                  v-model="newLink.jobId"
-                  class="ui-field appearance-none px-4 py-3 pr-10 [color-scheme:dark]"
-                >
-                  <option value="">All jobs (org-wide)</option>
-                  <option v-for="j in jobs" :key="j.id" :value="j.id">{{ j.title }}</option>
-                </select>
-                <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-brand-500" />
-              </div>
+              <FactorySelect
+                id="link-job"
+                v-model="newLink.jobId"
+                :options="[
+                  { value: '', label: 'All jobs (org-wide)' },
+                  ...jobs.map((j: { id: string; title: string }) => ({ value: j.id, label: j.title }))
+                ]"
+              />
             </div>
 
             <!-- UTM fields (collapsible) -->

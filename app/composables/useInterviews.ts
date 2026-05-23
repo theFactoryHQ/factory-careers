@@ -16,6 +16,17 @@ export interface Interview {
   calendarEventProvider: 'google' | 'microsoft' | null
   googleCalendarEventId: string | null
   googleCalendarEventLink: string | null
+  calendarEvents?: Array<{
+    id: string
+    destinationType: string
+    destinationEmail: string | null
+    eventId: string | null
+    eventLink: string | null
+    isPrimary: boolean
+    syncStatus: string
+    lastError: string | null
+    createdAt: string
+  }>
   timezone: string
   applicationId: string
   candidateId: string

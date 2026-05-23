@@ -23,6 +23,7 @@ export const createInterviewSchema = z.object({
   calendarEventDescription: z.string().max(5000).optional(),
   calendarAddCandidateAttendee: z.boolean().optional(),
   calendarSendUpdates: z.boolean().optional(),
+  generateTeamsLink: z.boolean().optional(),
 }).refine(
   data => new Date(data.scheduledAt) > new Date(),
   { message: 'Scheduled date must be in the future', path: ['scheduledAt'] },

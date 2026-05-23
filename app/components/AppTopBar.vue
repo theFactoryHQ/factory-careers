@@ -245,7 +245,7 @@ onUnmounted(() => {
               v-for="item in primaryNavItems"
               :key="item.to"
               :to="$localePath(item.to)"
-              class="group relative flex h-9 items-center gap-1.5 border px-3 text-[13px] font-medium transition-all duration-200 no-underline"
+              class="group relative flex h-9 items-center gap-1.5 border px-3 text-[13px] font-normal uppercase tracking-[0.25px] transition-all duration-200 no-underline"
               :aria-label="item.label"
               :class="isActiveRoute(item.to, item.exact)
                 ? 'border-brand-500/50 bg-brand-500/12 text-white'
@@ -262,7 +262,7 @@ onUnmounted(() => {
               v-for="item in moreNavItems"
               :key="item.to"
               :to="$localePath(item.to)"
-              class="group relative hidden h-9 items-center gap-1.5 border px-3 text-[13px] font-medium transition-all duration-200 no-underline lg:flex"
+              class="group relative hidden h-9 items-center gap-1.5 border px-3 text-[13px] font-normal uppercase tracking-[0.25px] transition-all duration-200 no-underline lg:flex"
               :aria-label="item.label"
               :class="isActiveRoute(item.to, item.exact)
                 ? 'border-brand-500/50 bg-brand-500/12 text-white'
@@ -283,7 +283,7 @@ onUnmounted(() => {
               @mouseleave="showMoreNav = false"
             >
               <button
-                class="group relative flex h-9 items-center gap-1.5 border px-3 text-[13px] font-medium transition-all duration-200 cursor-pointer bg-transparent"
+                class="group relative flex h-9 items-center gap-1.5 border px-3 text-[13px] font-normal uppercase tracking-[0.25px] transition-all duration-200 cursor-pointer bg-transparent"
                 aria-label="More"
                 :class="moreNavItems.some(i => isActiveRoute(i.to, i.exact))
                   ? 'border-brand-500/50 bg-brand-500/12 text-white'

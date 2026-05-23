@@ -5,7 +5,12 @@
  * access. Generates a CSRF state token stored in a secure, httpOnly cookie.
  */
 import { randomBytes } from 'node:crypto'
-import { getMicrosoftAuthUrl, isMicrosoftCalendarConfigured } from '../../../utils/microsoft-calendar'
+import {
+  enableMicrosoftCalendarAppIntegration,
+  getMicrosoftAuthUrl,
+  isMicrosoftCalendarApplicationMode,
+  isMicrosoftCalendarConfigured,
+} from '../../../utils/microsoft-calendar'
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
@@ -23,6 +28,13 @@ export default defineEventHandler(async (event) => {
       statusCode: 400,
       statusMessage: 'Select an organization before connecting Microsoft Calendar',
     })
+  }
+
+  // In application (app-only) mode, we don't do per-user OAuth.
+  // Just enable the org-level integration using the pre-configured app credentials.
+  if (isMicrosoftCalendarApplicationMode()) {
+    await enableMicrosoftCalendarAppIntegration(orgId)
+    return sendRedirect(event, '/dashboard/settings/integrations?success=connected&provider=microsoft')
   }
 
   const stateToken = randomBytes(32).toString('hex')

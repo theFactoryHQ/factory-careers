@@ -51,7 +51,10 @@ export function useCalendarIntegration() {
   const isAvailable = computed(() => calendarStatus.value.available)
 
   function connect() {
-    if (calendarStatus.value.managedByAdmin) return
+    // In application / admin-managed mode, connection is handled purely via server configuration
+    // (MICROSOFT_CALENDAR_AUTH_MODE=application). No per-user OAuth flow is needed or allowed.
+    if (calendarStatus.value.managedByAdmin || calendarStatus.value.authMode === 'application') return
+
     // Navigate to the OAuth2 connect endpoint (server-side redirect)
     const provider = calendarStatus.value.availableProvider ?? 'microsoft'
     navigateTo(`/api/calendar/${provider}/connect`, { external: true })

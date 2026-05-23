@@ -232,6 +232,20 @@
       "when": 1779387000000,
       "tag": "0032_interview_calendar_events",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1779493018327,
+      "tag": "0033_gorgeous_grandmaster",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1779494242740,
+      "tag": "0034_dark_living_mummy",
+      "breakpoints": true
     }
   ]
 }

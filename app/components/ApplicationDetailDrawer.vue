@@ -25,6 +25,33 @@ const { application, status: fetchStatus, error, refresh, updateApplication } = 
 const { isScoringApplication, scoreApplicationCandidate } = useApplicationScoring()
 const { formatCandidateName } = useOrgSettings()
 
+type ApplicationScoresResponse = {
+  latestRun: {
+    summary: string | null
+  } | null
+}
+
+const { data: scoringData, refresh: refreshScoring } = useFetch<ApplicationScoresResponse>(
+  () => `/api/applications/${props.applicationId}/scores`,
+  {
+    key: `application-scores-${props.applicationId}`,
+    headers: useRequestHeaders(['cookie']),
+    watch: [() => props.applicationId],
+  }
+)
+
+const scoringSummary = computed(() => {
+  const summary = scoringData.value?.latestRun?.summary
+  return typeof summary === 'string' ? summary.trim() : ''
+})
+
+const scoringSummaryFallback = computed(() => {
+  if (application.value?.score != null) {
+    return 'No AI summary was stored for this score. Re-score to generate one.'
+  }
+  return 'Run analysis to generate an AI scoring summary.'
+})
+
 // ─── Status transitions ───────────────────────────────────────────────────────
 
 const allowedTransitions = computed(() => {
@@ -81,6 +108,7 @@ async function scoreCurrentApplication() {
     jobId: application.value.job.id,
     source: 'application_detail_drawer',
   })
+  await refreshScoring()
 }
 
 // ─── Display helpers ──────────────────────────────────────────────────────────
@@ -311,29 +339,50 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Application scoring -->
+            <!-- Application scoring (matches full page layout) -->
             <div class="border border-white/12 bg-white/[0.025] p-5">
-              <div class="flex items-center gap-2 mb-3">
-                <Brain class="size-4 text-surface-500 dark:text-surface-400" />
-                <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Scoring</h3>
+              <div class="mb-5 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <Brain class="size-4 text-surface-500 dark:text-surface-400" />
+                  <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Scoring</h3>
+                </div>
+                <button
+                  type="button"
+                  :disabled="isScoringApplication"
+                  class="factory-button-cta factory-button-premium inline-flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1.5 px-2.5 py-0 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  @click="scoreCurrentApplication"
+                >
+                  <Loader2 v-if="isScoringApplication" class="size-3 animate-spin" />
+                  <Brain v-else class="size-3" />
+                  {{ isScoringApplication ? 'Scoring...' : (application.score != null ? 'Re-score' : 'Run Analysis') }}
+                </button>
               </div>
-              <dl class="grid grid-cols-1 gap-4 text-sm">
+
+              <dl class="grid gap-5 text-sm md:grid-cols-[8rem_minmax(0,1fr)]">
                 <div>
-                  <dt class="text-surface-400">Score</dt>
-                  <dd class="mt-1 flex flex-wrap items-center gap-2">
-                    <span class="text-surface-700 dark:text-surface-200 font-medium">
-                      {{ application.score != null ? `${application.score} pts` : 'Not scored' }}
+                  <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-400">Score</dt>
+                  <dd class="mt-1 text-2xl font-semibold text-surface-900 dark:text-white">
+                    {{ application.score != null ? application.score : '—' }}
+                    <span v-if="application.score != null" class="ml-1 text-sm font-medium text-surface-400">
+                      pts
                     </span>
-                    <button
-                      type="button"
-                      :disabled="isScoringApplication"
-                      class="factory-button-cta factory-button-premium inline-flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1.5 px-2.5 py-0 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                      @click="scoreCurrentApplication"
-                    >
-                      <Loader2 v-if="isScoringApplication" class="size-3 animate-spin" />
-                      <Brain v-else class="size-3" />
-                      {{ isScoringApplication ? 'Scoring...' : (application.score != null ? 'Re-score' : 'Run Analysis') }}
-                    </button>
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-400">
+                    AI summary
+                  </dt>
+                  <dd
+                    v-if="scoringSummary"
+                    class="mt-1 max-w-3xl text-sm leading-6 text-surface-700 dark:text-surface-300"
+                  >
+                    {{ scoringSummary }}
+                  </dd>
+                  <dd
+                    v-else
+                    class="mt-1 max-w-3xl text-sm leading-6 text-surface-500 dark:text-surface-400"
+                  >
+                    {{ scoringSummaryFallback }}
                   </dd>
                 </div>
               </dl>

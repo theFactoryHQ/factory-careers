@@ -266,6 +266,62 @@ export async function sendApplicationTeamAlertEmail(data: {
 }
 
 // ─────────────────────────────────────────────
+// Shared branded email shell (align with main thefactoryhq.com site)
+// ─────────────────────────────────────────────
+
+/**
+ * Wraps content in a consistent Factory-branded email shell.
+ * TODO: Replace the inner content with the exact template used by the main thefactoryhq.com site
+ * (ideally by importing React Email components or a shared package).
+ */
+function buildBrandedEmailHtml(options: {
+  title: string
+  preheader?: string
+  content: string
+  footerNote?: string
+}): string {
+  const { title, preheader, content, footerNote = 'Sent by Factory Careers — Open-source applicant tracking' } = options
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(title)}</title>
+  ${preheader ? `<meta name="description" content="${escapeHtml(preheader)}" />` : ''}
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e4e4e7;">
+          <!-- Header -->
+          <tr>
+            <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f4f4f5;">
+              <h1 style="margin:0;font-size:20px;font-weight:700;color:#09090b;">Factory</h1>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              ${content}
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding:16px 32px;text-align:center;border-top:1px solid #f4f4f5;background-color:#fafafa;">
+              <p style="margin:0;font-size:12px;color:#a1a1aa;">${escapeHtml(footerNote)}</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
+// ─────────────────────────────────────────────
 // Email templates
 // ─────────────────────────────────────────────
 

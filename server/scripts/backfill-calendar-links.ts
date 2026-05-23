@@ -91,8 +91,8 @@ async function main() {
       return null
     }
 
-    const accessToken = decrypt(integration.accessTokenEncrypted, BETTER_AUTH_SECRET!)
-    const refreshToken = decrypt(integration.refreshTokenEncrypted, BETTER_AUTH_SECRET!)
+    const accessToken = integration.accessTokenEncrypted ? decrypt(integration.accessTokenEncrypted, BETTER_AUTH_SECRET!) : null
+    const refreshToken = integration.refreshTokenEncrypted ? decrypt(integration.refreshTokenEncrypted, BETTER_AUTH_SECRET!) : null
 
     if (!accessToken || !refreshToken) {
       clientCache.set(userId, null)

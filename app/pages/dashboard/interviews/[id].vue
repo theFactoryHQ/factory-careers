@@ -662,7 +662,8 @@ const localePath = useLocalePath()
               <dt class="text-surface-400">Location / Link</dt>
               <dd class="text-surface-700 dark:text-surface-200 font-medium break-all">{{ interview.location }}</dd>
             </div>
-            <div v-if="interview.googleCalendarEventId">
+            <!-- Legacy single calendar link (Google or old Microsoft) -->
+            <div v-if="interview.googleCalendarEventId && (!interview.calendarEvents || interview.calendarEvents.length === 0)">
               <dt class="text-surface-400">Calendar</dt>
               <dd>
                 <a
@@ -681,6 +682,56 @@ const localePath = useLocalePath()
                   Synced to Calendar
                 </span>
               </dd>
+            </div>
+
+            <!-- Modern multi-destination Calendar Sync Status (Microsoft app mode) -->
+            <div v-if="interview.calendarEvents && interview.calendarEvents.length > 0" class="mt-4">
+              <dt class="text-sm font-medium text-surface-400 mb-2">Calendar Sync Status</dt>
+              <div class="space-y-2">
+                <div
+                  v-for="ce in interview.calendarEvents"
+                  :key="ce.id"
+                  class="flex items-center justify-between gap-3 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50 px-3 py-2 text-sm"
+                >
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span
+                      :class="ce.syncStatus === 'synced' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'"
+                    >
+                      <CheckCircle2 v-if="ce.syncStatus === 'synced'" class="size-4" />
+                      <XCircle v-else class="size-4" />
+                    </span>
+                    <div class="min-w-0">
+                      <div class="font-medium text-surface-800 dark:text-surface-100 truncate">
+                        {{ ce.destinationEmail || 'Unknown' }}
+                        <span v-if="ce.isPrimary" class="ml-1 text-xs font-normal text-brand-600 dark:text-brand-400">(Primary)</span>
+                      </div>
+                      <div class="text-xs text-surface-500 dark:text-surface-400">
+                        {{ ce.destinationType === 'shared_mailbox' ? 'Shared mailbox' : 'User mailbox' }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <a
+                      v-if="ce.eventLink"
+                      :href="ce.eventLink"
+                      target="_blank"
+                      class="inline-flex items-center gap-1 rounded-md bg-white dark:bg-surface-700 px-2 py-0.5 text-xs font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-600 transition-colors"
+                    >
+                      View <ExternalLink class="size-3" />
+                    </a>
+                    <span
+                      v-else-if="ce.syncStatus === 'failed'"
+                      class="text-xs text-red-600 dark:text-red-400"
+                    >
+                      Failed
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div v-if="interview.calendarEvents.some(ce => ce.lastError)" class="mt-2 text-xs text-red-600 dark:text-red-400">
+                Some syncs failed — check server logs for details.
+              </div>
             </div>
           </dl>
         </div>
@@ -920,18 +971,18 @@ const localePath = useLocalePath()
 
             <div>
               <label for="edit-type" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">Type</label>
-              <select
+              <FactorySelect
                 id="edit-type"
                 v-model="editForm.type"
-                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
-              >
-                <option value="video">Video</option>
-                <option value="phone">Phone</option>
-                <option value="in_person">In Person</option>
-                <option value="technical">Technical</option>
-                <option value="panel">Panel</option>
-                <option value="take_home">Take Home</option>
-              </select>
+                :options="[
+                  { value: 'video', label: 'Video' },
+                  { value: 'phone', label: 'Phone' },
+                  { value: 'in_person', label: 'In Person' },
+                  { value: 'technical', label: 'Technical' },
+                  { value: 'panel', label: 'Panel' },
+                  { value: 'take_home', label: 'Take Home' },
+                ]"
+              />
             </div>
 
             <div>
@@ -998,24 +1049,23 @@ const localePath = useLocalePath()
 
     <!-- Delete Confirm Modal -->
     <Teleport to="body">
-      <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showDeleteConfirm = false" />
-        <div class="relative bg-white dark:bg-surface-900 rounded-2xl shadow-2xl shadow-surface-900/10 dark:shadow-black/30 ring-1 ring-surface-200/80 dark:ring-surface-700/60 p-6 max-w-sm w-full mx-4">
+      <div v-if="showDeleteConfirm" class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="ui-modal-panel relative w-full max-w-sm p-6">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Interview</h3>
-          <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
+          <p class="text-sm text-surface-600 dark:text-surface-400 mb-5">
             Are you sure you want to delete <strong>{{ interview?.title }}</strong>? This action cannot be undone.
           </p>
           <div class="flex justify-end gap-2">
             <button
               :disabled="isDeleting"
-              class="cursor-pointer rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+              class="ui-button ui-button-secondary"
               @click="showDeleteConfirm = false"
             >
               Cancel
             </button>
             <button
               :disabled="isDeleting"
-              class="cursor-pointer rounded-lg bg-danger-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-danger-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              class="ui-button ui-button-danger"
               @click="handleDelete"
             >
               {{ isDeleting ? 'Deleting…' : 'Delete' }}

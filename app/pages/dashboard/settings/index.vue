@@ -147,9 +147,7 @@ async function handleDeleteOrg() {
     <section class="ui-panel ui-settings-panel">
       <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-icon-state-brand flex items-center justify-center size-10 shrink-0 rounded-lg">
-            <Building2 class="size-5" />
-          </div>
+          <Building2 class="size-6 text-brand-400 shrink-0" />
           <div>
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Organization profile</h2>
             <p class="text-sm text-surface-500 dark:text-surface-400">Basic information about your organization.</p>
@@ -253,9 +251,7 @@ async function handleDeleteOrg() {
     <section v-if="canDeleteOrg" class="ui-panel ui-settings-panel mt-8">
       <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
-          <div class="ui-icon-state ui-icon-state-danger flex items-center justify-center size-10 shrink-0 rounded-lg">
-            <AlertTriangle class="size-5" />
-          </div>
+          <AlertTriangle class="size-6 text-danger-400 shrink-0" />
           <div>
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Danger zone</h2>
             <p class="text-sm text-surface-500 dark:text-surface-400">Irreversible and destructive actions.</p>

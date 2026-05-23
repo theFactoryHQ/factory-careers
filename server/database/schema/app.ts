@@ -266,6 +266,8 @@ export const orgSettings = pgTable('org_settings', {
   nameDisplayFormat: nameDisplayFormatEnum('name_display_format').notNull().default('first_last'),
   /** Controls the date display format across the app */
   dateFormat: dateFormatEnum('date_format').notNull().default('mdy'),
+  /** When true (in Microsoft application auth mode), interview events are also created on each interviewer's personal calendar */
+  calendarSyncInterviewers: boolean('calendar_sync_interviewers').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => ([
@@ -332,18 +334,19 @@ export const calendarProviderEnum = pgEnum('calendar_provider', ['google', 'micr
 /**
  * Calendar integration credentials.
  * Tokens are encrypted at rest with AES-256-GCM derived from BETTER_AUTH_SECRET.
- * Factory uses an organization-level connection for the shared careers calendar.
- * User-scoped rows are kept for compatibility with upstream/self-hosted installs.
+ * Factory uses an organization-level connection (userId null) for app-only Microsoft Calendar (MICROSOFT_CALENDAR_AUTH_MODE=application).
+ * User-scoped rows (with tokens) are used for delegated OAuth in self-hosted / Google / standard Microsoft setups.
  */
 export const calendarIntegration = pgTable('calendar_integration', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  /** Null for organization-level / application permission integrations (e.g. Factory app-only Microsoft Calendar) */
+  userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
   organizationId: text('organization_id').references(() => organization.id, { onDelete: 'cascade' }),
   provider: calendarProviderEnum('provider').notNull().default('google'),
-  /** AES-256-GCM encrypted provider OAuth2 access token */
-  accessTokenEncrypted: text('access_token_encrypted').notNull(),
-  /** AES-256-GCM encrypted provider OAuth2 refresh token */
-  refreshTokenEncrypted: text('refresh_token_encrypted').notNull(),
+  /** AES-256-GCM encrypted provider OAuth2 access token (null for app-only integrations) */
+  accessTokenEncrypted: text('access_token_encrypted'),
+  /** AES-256-GCM encrypted provider OAuth2 refresh token (null for app-only integrations) */
+  refreshTokenEncrypted: text('refresh_token_encrypted'),
   /** Calendar ID to create events in (defaults to 'primary') */
   calendarId: text('calendar_id').notNull().default('primary'),
   /** Email address of the connected account */

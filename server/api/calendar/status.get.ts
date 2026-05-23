@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
 
   const preferredProvider = getPreferredCalendarProvider()
   const expectedAccountEmail = getMicrosoftCalendarAccountEmail()
-  const microsoftDestinationSummary = getMicrosoftCalendarDestinationSummary()
+  const microsoftDestinationSummary = await getMicrosoftCalendarDestinationSummary(orgId)
 
   if (!isCalendarConfigured()) {
     return {
