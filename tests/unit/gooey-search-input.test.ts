@@ -33,19 +33,22 @@ describe('GooeySearchInput component source', () => {
   })
 
   it('keeps the Factory search skin square and border-led', () => {
+    const dashboardHoverRule = source.match(/:global\(\.factory-dashboard-shell\) \.gooey-search-surface:hover \.gooey-search-outline,[\s\S]*?:global\(\.factory-dashboard-portal\) \.gooey-search-surface:hover \.gooey-search-outline \{([\s\S]*?)\n\}/)?.[1] ?? ''
+
     expect(source).toContain('border-radius: 0')
     expect(source).toContain('background: transparent !important')
     expect(source).toContain('border-color: var(--ui-border-strong) !important')
     expect(source).toContain('border-color: var(--color-brand-500) !important')
     expect(source).toContain('box-shadow: none')
     expect(source).toContain('color: rgb(255 255 255 / 0.72) !important')
+    expect(dashboardHoverRule).toContain('border-color: var(--ui-border-strong) !important')
+    expect(dashboardHoverRule).not.toContain('#ffffff')
     expect(source).not.toContain('gooey-search-outline factory-toolbar-button')
     expect(source).not.toContain('background: #050505 !important')
     expect(source).not.toContain('ResizeObserver')
     expect(source).not.toContain('parentElement')
     expect(source).not.toContain('border-radius: 0.5rem')
     expect(source).not.toContain('background: var(--color-surface-900)')
-    expect(source).not.toContain('.gooey-search-surface:hover .gooey-search-outline')
     expect(source).not.toContain('border-color: rgb(255 255 255 / 0.18) !important')
     expect(source).not.toContain('border-color: rgb(255 255 255 / 0.24) !important')
     expect(source).not.toContain('box-shadow: 0 0 0 3px color-mix')
