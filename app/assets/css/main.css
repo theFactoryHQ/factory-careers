@@ -2074,6 +2074,11 @@
     cursor: not-allowed;
   }
 
+  .factory-fullscreen-surface {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+
   .factory-dashboard-portal.ui-filter-drawer,
   .factory-dashboard-portal.factory-filter-drawer,
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-filter-drawer,

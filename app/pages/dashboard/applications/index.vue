@@ -228,6 +228,15 @@ const currentSettings = computed<ApplicationsViewSettings>(() => ({
   visibleColumns: { ...visibleColumns.value },
 }))
 
+function handleFullscreenKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && isFullscreen.value) {
+    isFullscreen.value = false
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', handleFullscreenKeydown))
+onUnmounted(() => window.removeEventListener('keydown', handleFullscreenKeydown))
+
 function applySettings(s: ApplicationsViewSettings) {
   activeStatus.value = s.status
   activeJobId.value = s.jobId
@@ -508,7 +517,7 @@ const selectedApplicationId = ref<string | null>(null)
     <!-- Application table -->
     <div v-else>
       <Teleport to="body" :disabled="!isFullscreen">
-        <div :class="isFullscreen ? 'fixed inset-0 z-50 bg-black text-white flex flex-col factory-dashboard-portal' : ''">
+        <div :class="isFullscreen ? 'factory-fullscreen-surface fixed inset-0 z-50 flex flex-col factory-dashboard-portal' : ''">
           <!-- Fullscreen header -->
           <div v-if="isFullscreen" class="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0 bg-white/[0.02]">
             <span class="text-sm font-semibold text-white">
