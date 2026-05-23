@@ -11,10 +11,14 @@ const props = withDefaults(defineProps<{
 
 const route = useRoute()
 const requestURL = useRequestURL()
+const runtimeConfig = useRuntimeConfig()
 const { locale, locales, t } = useI18n()
 
 const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
+const languageFeatureEnabled = computed(
+  () => runtimeConfig.public.languageFeatureEnabled === true,
+)
 
 function closeDropdown() {
   isOpen.value = false
@@ -195,7 +199,7 @@ async function handleLocaleChange(nextLocale: string) {
 </script>
 
 <template>
-  <div class="flex items-center gap-2">
+  <div v-if="languageFeatureEnabled" class="flex items-center gap-2">
     <span
       v-if="showI18nProbe"
       data-testid="i18n-probe"
