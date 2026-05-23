@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   APPLICATION_PIPELINE_STAGES,
   getApplicationStatusBadgeClass,
@@ -30,6 +32,8 @@ import {
 } from '../../app/utils/status-display'
 
 describe('status display helpers', () => {
+  const stylesheet = readFileSync(join(process.cwd(), 'app/assets/css/main.css'), 'utf8')
+
   it('returns centralized labels with readable fallbacks', () => {
     expect(getApplicationStatusLabel('screening')).toBe('Screening')
     expect(getApplicationTransitionLabel('new')).toBe('Re-open')
@@ -98,6 +102,14 @@ describe('status display helpers', () => {
     expect(getInterviewStatusLabel('scheduled_past')).toBe('Past Due')
     expect(getInterviewStatusBadgeClass('scheduled_past')).toContain('warning')
     expect(getInterviewStatusDotClass('scheduled_past')).toContain('warning')
+  })
+
+  it('defines every interview status dot class used by filter chips', () => {
+    for (const status of ['scheduled', 'scheduled_past', 'completed', 'cancelled', 'no_show']) {
+      const dotClass = getInterviewStatusDotClass(status)
+
+      expect(stylesheet, `${dotClass} should be defined`).toContain(`.${dotClass}`)
+    }
   })
 
   it('centralizes candidate interview response display values', () => {
