@@ -6,10 +6,10 @@ WORKDIR /app
 
 # Install dependencies first (layer-cached unless package.json changes)
 COPY package*.json ./
-RUN --mount=type=secret,id=npm_token,required=false \
+RUN --mount=type=secret,id=npm_token,dst=/etc/secrets/npm_token,required=false \
   set -eu; \
-  if [ -s /run/secrets/npm_token ]; then \
-    printf '@caffeinebounce:registry=https://npm.pkg.github.com/\n//npm.pkg.github.com/:_authToken=%s\n' "$(cat /run/secrets/npm_token)" > .npmrc; \
+  if [ -s /etc/secrets/npm_token ]; then \
+    printf '@caffeinebounce:registry=https://npm.pkg.github.com/\n//npm.pkg.github.com/:_authToken=%s\n' "$(cat /etc/secrets/npm_token)" > .npmrc; \
   fi; \
   npm ci; \
   rm -f .npmrc
