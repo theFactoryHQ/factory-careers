@@ -1672,15 +1672,26 @@ function closeDocPreview() {
               <div v-if="showSection.profile" ref="overviewRef" class="space-y-5 max-w-4xl mx-auto">
                 <!-- Notes -->
                 <div class="ui-panel ui-dashboard-panel p-5">
-                  <div class="flex items-center gap-2.5 mb-4">
-                    <div class="flex size-7 items-center justify-center rounded-lg bg-warning-50 dark:bg-warning-950/40">
-                      <MessageSquare class="size-3.5 text-warning-600 dark:text-warning-400" />
+                  <div class="mb-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <MessageSquare class="size-4 text-surface-500 dark:text-surface-400" />
+                      <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Notes</h3>
                     </div>
-                    <h3 class="text-sm font-semibold text-surface-800 dark:text-surface-200">Notes</h3>
                   </div>
-                  <p class="text-sm leading-relaxed text-surface-600 dark:text-surface-300 whitespace-pre-wrap">
-                    {{ currentSummary.notes || 'No notes yet.' }}
+                  <p
+                    v-if="currentSummary.notes"
+                    class="text-sm text-surface-600 dark:text-surface-300 whitespace-pre-wrap"
+                  >
+                    {{ currentSummary.notes }}
                   </p>
+                  <NuxtLink
+                    v-else
+                    :to="$localePath(`/dashboard/applications/${currentSummary.id}`)"
+                    class="group flex w-full cursor-pointer items-center justify-between border border-dashed border-white/12 bg-black px-3 py-3 text-left text-sm text-surface-400 transition-colors hover:border-brand-500/70 hover:bg-brand-500/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40 no-underline"
+                  >
+                    <span class="italic">No notes yet.</span>
+                    <span class="text-xs font-semibold uppercase text-brand-400 transition-colors group-hover:text-brand-300">Add Notes</span>
+                  </NuxtLink>
                 </div>
 
                 <!-- Quick links -->
