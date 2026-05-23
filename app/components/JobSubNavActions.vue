@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Archive, Brain, CircleSlash2, MoreHorizontal, Pencil, Rocket, RotateCcw, Settings2, Trash2, UserPlus } from 'lucide-vue-next'
+import { Archive, Brain, Pencil, Settings2, Trash2, UserPlus } from 'lucide-vue-next'
 import { JOB_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 
 const props = defineProps<{
@@ -36,17 +36,6 @@ const jobTransitionClasses: Record<string, string> = {
   closed: 'factory-job-status-action-closed',
   draft: 'factory-job-status-action-secondary',
   archived: 'factory-job-status-action-secondary',
-}
-
-const jobTransitionMenuIcons = {
-  archived: Archive,
-  closed: CircleSlash2,
-  draft: RotateCcw,
-  open: Rocket,
-}
-
-function getJobTransitionMenuIcon(status: string) {
-  return jobTransitionMenuIcons[status as keyof typeof jobTransitionMenuIcons] ?? MoreHorizontal
 }
 
 const allowedJobTransitions = computed(() => {
@@ -313,9 +302,10 @@ function openPropertyEditor(scope: 'org' | 'job') {
                   class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors disabled:opacity-50"
                   @click="handleJobTransition(t); showMoreMenu = false"
                 >
-                  <component
-                    :is="getJobTransitionMenuIcon(t)"
+                  <Archive
+                    v-if="t === 'archived'"
                     class="size-3.5"
+                    aria-hidden="true"
                   />
                   {{ jobTransitionLabels[t] ?? t }}
                 </button>
