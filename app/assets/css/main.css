@@ -2309,6 +2309,40 @@
     color: rgb(255 205 213) !important;
   }
 
+  .factory-job-more-menu {
+    border-color: var(--ui-border-strong) !important;
+    background-color: #050505 !important;
+    color: #ffffff !important;
+    box-shadow: 0 18px 48px rgb(0 0 0 / 0.62) !important;
+  }
+
+  .factory-job-more-menu .factory-job-more-menu-item {
+    background-color: transparent !important;
+    color: rgb(255 255 255 / 0.72) !important;
+  }
+
+  .factory-job-more-menu .factory-job-more-menu-item svg {
+    color: var(--color-brand-400) !important;
+  }
+
+  .factory-job-more-menu .factory-job-more-menu-item:hover {
+    background-color: color-mix(in srgb, var(--color-brand-500) 14%, transparent) !important;
+    color: #ffffff !important;
+  }
+
+  .factory-job-more-menu .factory-job-more-menu-divider {
+    border-color: var(--ui-border) !important;
+  }
+
+  .factory-job-more-menu .factory-job-more-menu-danger {
+    color: rgb(253 164 175) !important;
+  }
+
+  .factory-job-more-menu .factory-job-more-menu-danger:hover {
+    background-color: rgb(244 63 94 / 0.14) !important;
+    color: rgb(255 205 213) !important;
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-ai-config-action {
     border-color: transparent !important;
     background-color: transparent !important;

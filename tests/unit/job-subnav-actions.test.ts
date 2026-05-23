@@ -26,4 +26,14 @@ describe('job subnav actions', () => {
     expect(jobDetail).toContain(":title=\"isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'\"")
     expect(jobDetail).toContain(":aria-label=\"isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'\"")
   })
+
+  it('keeps the teleported job actions menu opaque and readable', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+    const menuRule = css.match(/\.factory-job-more-menu\s*\{[^}]+\}/)?.[0] ?? ''
+    const itemRule = css.match(/\.factory-job-more-menu \.factory-job-more-menu-item\s*\{[^}]+\}/)?.[0] ?? ''
+
+    expect(menuRule).toContain('background-color: #050505 !important')
+    expect(menuRule).toContain('color: #ffffff !important')
+    expect(itemRule).toContain('color: rgb(255 255 255 / 0.72) !important')
+  })
 })
