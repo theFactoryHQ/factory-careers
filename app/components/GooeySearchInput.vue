@@ -424,6 +424,21 @@ function handleKeydown(event: KeyboardEvent) {
   box-shadow: none !important;
 }
 
+:global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-field,
+:global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-field {
+  border: 0 !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+:global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-field:focus,
+:global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-field:focus {
+  border: 0 !important;
+  background-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 :global(.factory-dashboard-shell) .gooey-search-surface:hover .gooey-search-outline,
 :global(.factory-dashboard-portal) .gooey-search-surface:hover .gooey-search-outline {
   border-color: var(--ui-border-strong) !important;
