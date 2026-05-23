@@ -7,8 +7,8 @@ import { createEmailTheme } from "@caffeinebounce/email";
  */
 export const careersEmailConfig = {
   appName: "Factory Careers",
-  companyName: "Supply Factory Holdings, Inc.",
-  address: "San Francisco, CA",
+  companyName: "Factory Holdings LLC.",
+  address: "Los Angeles, CA",
   accentColor: "#FF4426",
   siteUrl: "https://careers.thefactoryhq.com",
   logoUrl:
