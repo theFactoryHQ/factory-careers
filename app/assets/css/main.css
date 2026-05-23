@@ -1257,6 +1257,14 @@
     color: rgb(125 211 252) !important;
   }
 
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-requirement-option-title {
+    color: var(--color-surface-950) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-requirement-option-description {
+    color: var(--color-surface-700) !important;
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button {
     border-radius: 0 !important;
     font-weight: 400 !important;

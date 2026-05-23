@@ -238,8 +238,8 @@ async function copyTrackingUrl(code: string) {
               <Check class="size-3" />
             </span>
             <div>
-              <span class="block text-sm font-medium text-surface-900 dark:text-surface-100">Require resume/CV</span>
-              <span class="text-xs text-surface-500">Candidates must upload a file.</span>
+              <span class="factory-requirement-option-title block text-sm font-medium">Require resume/CV</span>
+              <span class="factory-requirement-option-description text-xs">Candidates must upload a file.</span>
             </div>
           </button>
           <button
@@ -259,8 +259,8 @@ async function copyTrackingUrl(code: string) {
               <Check class="size-3" />
             </span>
             <div>
-              <span class="block text-sm font-medium text-surface-900 dark:text-surface-100">Ask for cover letter</span>
-              <span class="text-xs text-surface-500">Candidates can write a cover letter.</span>
+              <span class="factory-requirement-option-title block text-sm font-medium">Ask for cover letter</span>
+              <span class="factory-requirement-option-description text-xs">Candidates can write a cover letter.</span>
             </div>
           </button>
         </div>
