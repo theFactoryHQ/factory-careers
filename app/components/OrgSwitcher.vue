@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ChevronDown } from 'lucide-vue-next'
 
+const props = defineProps<{
+  inlinePanel?: boolean
+}>()
+
 const { orgs, activeOrg, switchOrg } = useCurrentOrg()
 const isOpen = ref(false)
 const isSwitching = ref(false)
@@ -46,7 +50,10 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
 
     <div
       v-if="isOpen"
-      class="absolute top-[calc(100%+4px)] left-0 z-50 min-w-full w-max overflow-hidden border border-white/12 bg-black shadow-2xl shadow-black/50"
+      class="z-50 overflow-hidden border border-white/12 bg-black shadow-2xl shadow-black/50"
+      :class="props.inlinePanel
+        ? 'relative mt-1 max-h-56 w-full overflow-y-auto'
+        : 'absolute top-[calc(100%+4px)] left-0 min-w-full w-max'"
     >
       <div class="border-b border-white/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-white/38">
         Organization

@@ -492,7 +492,7 @@ onUnmounted(() => {
                 <div class="border-b border-white/10 p-2 space-y-2">
                   <div class="space-y-1.5">
                     <p class="px-1 text-[10px] font-semibold uppercase tracking-wide text-white/38">Organization</p>
-                    <OrgSwitcher />
+                    <OrgSwitcher inline-panel />
                   </div>
                   <div v-if="languageFeatureEnabled" class="space-y-1.5">
                     <p class="px-1 text-[10px] font-semibold uppercase tracking-wide text-white/38">Language</p>
