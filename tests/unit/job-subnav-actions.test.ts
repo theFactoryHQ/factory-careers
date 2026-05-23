@@ -41,6 +41,8 @@ describe('job subnav actions', () => {
     expect(actions).toContain('px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white')
     expect(actions).toContain('Job properties')
     expect(actions).toContain('Org properties')
+    expect(actions).toContain('archived: Archive')
+    expect(actions).toContain(':is="getJobTransitionMenuIcon(t)"')
     expect(actions).not.toContain('factory-job-more-menu-divider')
     expect(actions).not.toContain('Manage job-specific properties')
     expect(actions).not.toContain('Manage org-wide application properties')
