@@ -419,7 +419,7 @@ function handleKeydown(event: KeyboardEvent) {
 
 :global(.factory-dashboard-shell) .gooey-search-surface .gooey-search-outline,
 :global(.factory-dashboard-portal) .gooey-search-surface .gooey-search-outline {
-  background: #050505 !important;
+  background: transparent !important;
   border-color: var(--ui-border-strong) !important;
   box-shadow: none !important;
 }
