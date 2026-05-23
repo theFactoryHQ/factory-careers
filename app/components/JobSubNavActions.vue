@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Archive, Brain, Pencil, Settings2, Trash2, UserPlus } from 'lucide-vue-next'
+import { ArchiveIcon, Brain, MoreHorizontal, Pencil, Settings2, Trash2, UserPlus } from 'lucide-vue-next'
 import { JOB_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 
 const props = defineProps<{
@@ -45,6 +45,8 @@ const allowedJobTransitions = computed(() => {
 
 const primaryJobTransition = computed(() => allowedJobTransitions.value[0] ?? null)
 const secondaryJobTransitions = computed(() => allowedJobTransitions.value.slice(1))
+const showArchiveTransition = computed(() => secondaryJobTransitions.value.includes('archived'))
+const otherSecondaryJobTransitions = computed(() => secondaryJobTransitions.value.filter((transition) => transition !== 'archived'))
 
 const isJobTransitioning = ref(false)
 
@@ -294,19 +296,26 @@ function openPropertyEditor(scope: 'org' | 'job') {
                 <Settings2 class="size-3.5" />
                 Org properties
               </button>
-              <template v-if="secondaryJobTransitions.length > 0">
+              <button
+                v-if="showArchiveTransition"
+                :disabled="isJobTransitioning"
+                class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors disabled:opacity-50"
+                @click="handleJobTransition('archived'); showMoreMenu = false"
+              >
+                <ArchiveIcon
+                  class="size-3.5 shrink-0"
+                  aria-hidden="true"
+                />
+                Archive
+              </button>
+              <template v-if="otherSecondaryJobTransitions.length > 0">
                 <button
-                  v-for="t in secondaryJobTransitions"
+                  v-for="t in otherSecondaryJobTransitions"
                   :key="t"
                   :disabled="isJobTransitioning"
                   class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors disabled:opacity-50"
                   @click="handleJobTransition(t); showMoreMenu = false"
                 >
-                  <Archive
-                    v-if="t === 'archived'"
-                    class="size-3.5"
-                    aria-hidden="true"
-                  />
                   {{ jobTransitionLabels[t] ?? t }}
                 </button>
               </template>
