@@ -1,5 +1,5 @@
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
-import { inviteLink, member, organization, user } from "../../database/schema";
+import { inviteLink, member, organization } from "../../database/schema";
 import { acceptInviteLinkSchema } from "../../utils/schemas/inviteLink";
 
 /**

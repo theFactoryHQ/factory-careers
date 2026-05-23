@@ -100,6 +100,8 @@ jobs:
       - name: Build image and start all services (new-user step 2)
         id: docker_build
         run: docker compose up --build -d
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
 
       - name: Wait for db to be healthy
         id: db_health
