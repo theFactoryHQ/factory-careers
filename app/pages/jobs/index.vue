@@ -3,6 +3,7 @@ import { MapPin, Briefcase, ChevronLeft, ChevronRight, ChevronDown, Check } from
 
 definePageMeta({
   layout: 'public',
+  publicPinnedNav: true,
   publicWide: true,
 })
 
