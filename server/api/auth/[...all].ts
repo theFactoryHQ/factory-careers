@@ -86,8 +86,6 @@ async function enforceFactoryAuthPolicy(event: H3Event) {
   }
 
   if (
-=======
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
     env.FACTORY_DISABLE_PUBLIC_ORG_CREATION &&
     authPath.includes('/organization/create')
   ) {

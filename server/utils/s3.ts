@@ -181,7 +181,6 @@ export function isUnsupportedBucketPolicyError(error: unknown): boolean {
   const message = error.message.toLowerCase()
 
   return (
-    statusCode === 400 ||
     statusCode === 405 ||
     statusCode === 501 ||
     compactName.includes('notimplemented') ||
