@@ -39,6 +39,7 @@ describe('GooeySearchInput component source', () => {
 
     expect(source).toContain('border-radius: 0')
     expect(source).toContain('background: transparent !important')
+    expect(source).toContain('background: #050505 !important')
     expect(source).toContain('border-color: var(--ui-border-strong) !important')
     expect(source).toContain('border-color: var(--color-brand-500) !important')
     expect(source).toContain('box-shadow: none')
@@ -50,7 +51,6 @@ describe('GooeySearchInput component source', () => {
     expect(dashboardHoverRule).toContain('border-color: var(--ui-border-strong) !important')
     expect(dashboardHoverRule).not.toContain('#ffffff')
     expect(source).not.toContain('gooey-search-outline factory-toolbar-button')
-    expect(source).not.toContain('background: #050505 !important')
     expect(source).not.toContain('ResizeObserver')
     expect(source).not.toContain('parentElement')
     expect(source).not.toContain('border-radius: 0.5rem')
