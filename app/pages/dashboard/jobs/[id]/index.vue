@@ -916,27 +916,9 @@ const pipelineContainer = useTemplateRef<HTMLElement>('pipelineContainer')
 const teleportTarget = computed(() => isFullscreen.value && pipelineContainer.value ? pipelineContainer.value : 'body')
 
 async function toggleFullscreen() {
-  if (!isFullscreen.value) {
-    isFullscreen.value = true
-    await nextTick()
-    pipelineContainer.value?.requestFullscreen?.()
-  }
-  else {
-    isFullscreen.value = false
-    if (document.fullscreenElement) {
-      document.exitFullscreen?.()
-    }
-  }
+  isFullscreen.value = !isFullscreen.value
+  await nextTick()
 }
-
-function onFullscreenChange() {
-  if (!document.fullscreenElement) {
-    isFullscreen.value = false
-  }
-}
-
-onMounted(() => document.addEventListener('fullscreenchange', onFullscreenChange))
-onBeforeUnmount(() => document.removeEventListener('fullscreenchange', onFullscreenChange))
 
 function goToPreviousStage() {
   const idx = PIPELINE_STATUSES.indexOf(focusStatus.value)
@@ -955,6 +937,11 @@ function goToNextStage() {
 function handleKeyNavigation(event: KeyboardEvent) {
   if (event.key === 'Escape' && showDocPreview.value) {
     closeDocPreview()
+    return
+  }
+
+  if (event.key === 'Escape' && isFullscreen.value) {
+    isFullscreen.value = false
     return
   }
 
@@ -1089,7 +1076,7 @@ function closeDocPreview() {
   <div
     ref="pipelineContainer"
     :class="isFullscreen
-      ? 'flex h-screen flex-col overflow-hidden bg-surface-50 dark:bg-surface-950'
+      ? 'fixed inset-0 z-50 flex h-screen flex-col overflow-hidden bg-surface-50 dark:bg-surface-950 factory-dashboard-portal'
       : 'absolute inset-0 flex flex-col overflow-hidden'"
   >
     <!-- Loading -->

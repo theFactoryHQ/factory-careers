@@ -122,6 +122,16 @@ describe('brand-neutral theme variables', () => {
     expect(css).toMatch(/\.factory-pipeline-status-chip\s*\{[\s\S]*font-weight:\s*300 !important/)
   })
 
+  it('uses an in-app focus mode for the job pipeline instead of native fullscreen', () => {
+    const jobDetail = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+
+    expect(jobDetail).toContain('fixed inset-0 z-50 flex h-screen')
+    expect(jobDetail).toContain("event.key === 'Escape' && isFullscreen.value")
+    expect(jobDetail).not.toContain('requestFullscreen')
+    expect(jobDetail).not.toContain('exitFullscreen')
+    expect(jobDetail).not.toContain('fullscreenchange')
+  })
+
   it('adapts shared UI recipes inside the Factory dashboard shell', () => {
     const css = readProjectFile('app/assets/css/main.css')
 
