@@ -53,6 +53,16 @@ export const FEATURE_FLAGS = {
     defaultValue: false,
     description: 'New AI chatbot experience in the dashboard.',
   },
+  /**
+   * Public language switching and localized route generation.
+   *
+   * Off by default until translations are fully piped through the product.
+   * Enable per deployment with `FEATURE_FLAG_LANGUAGE_SUPPORT=true`.
+   */
+  'language-support': {
+    defaultValue: false,
+    description: 'Public language switching and localized routes.',
+  },
 } as const satisfies Record<string, FeatureFlagDefinition>
 
 export type FeatureFlagKey = keyof typeof FEATURE_FLAGS
