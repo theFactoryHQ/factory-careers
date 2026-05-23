@@ -37,7 +37,10 @@ services:
       retries: 10
 
   app:
-    build: .
+    build:
+      context: .
+      secrets:
+        - npm_token
     container_name: reqcore_app
     restart: unless-stopped
     env_file: .env
@@ -77,3 +80,7 @@ volumes:
   postgres_data:
   minio_data:
   backups_data:
+
+secrets:
+  npm_token:
+    environment: NODE_AUTH_TOKEN

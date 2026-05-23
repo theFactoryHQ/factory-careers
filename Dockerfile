@@ -1,10 +1,18 @@
+# syntax=docker/dockerfile:1.7
+
 # ─── Stage 1: Build ─────────────────────────────────────────────────────────
 FROM node:22.22.0-alpine AS builder
 WORKDIR /app
 
 # Install dependencies first (layer-cached unless package.json changes)
 COPY package*.json ./
-RUN npm ci
+RUN --mount=type=secret,id=npm_token,required=false \
+  set -eu; \
+  if [ -s /run/secrets/npm_token ]; then \
+    printf '@caffeinebounce:registry=https://npm.pkg.github.com/\n//npm.pkg.github.com/:_authToken=%s\n' "$(cat /run/secrets/npm_token)" > .npmrc; \
+  fi; \
+  npm ci; \
+  rm -f .npmrc
 
 # Copy source and build
 COPY . .

@@ -230,7 +230,7 @@ export async function sendInterviewInvitationEmail(params: {
         {
           filename: "interview.ics",
           content: Buffer.from(params.data.icsContent).toString("base64"),
-          content_type: "text/calendar; method=REQUEST",
+          contentType: "text/calendar; method=REQUEST",
         },
       ]
     : undefined;
