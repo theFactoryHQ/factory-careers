@@ -30,6 +30,12 @@ describe('dashboard top bar responsiveness', () => {
     expect(source).not.toContain('border-transparent text-white/50')
   })
 
+  it('renders the job context back link as icon-only', () => {
+    expect(source).toContain('aria-label="All jobs"')
+    expect(source).toContain('title="All jobs"')
+    expect(source).not.toMatch(/<ChevronLeft class="size-3\.5" \/>\s*All Jobs/)
+  })
+
   it('uses white-fill hover treatment for dashboard back links', () => {
     expect(backLinkSource).toContain('hover:border-white hover:bg-white hover:text-black')
     expect(backLinkSource).not.toContain('hover:border-brand-500')
