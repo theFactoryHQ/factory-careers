@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Users, Plus, Search, Mail, Phone, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, X, StickyNote, Maximize2, Minimize2, Check } from 'lucide-vue-next'
+import { Users, Plus, Mail, Phone, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, X, StickyNote, Maximize2, Minimize2, Check } from 'lucide-vue-next'
 
 definePageMeta({
   layout: 'dashboard',
@@ -289,15 +289,13 @@ const selectedCandidateId = ref<string | null>(null)
 
     <!-- Search + Views + Filters -->
     <div class="flex items-center gap-2 mb-4">
-      <div class="relative flex-1">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/60" />
-        <input
-          v-model="searchInput"
-          type="text"
-          placeholder="Search by name or email…"
-          class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 pl-10 pr-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-        />
-      </div>
+      <GooeySearchInput
+        v-model="searchInput"
+        aria-label="Search candidates"
+        class="min-w-0 flex-1 sm:max-w-sm"
+        placeholder="Search by name or email…"
+        reserve-expanded-space
+      />
       <SavedViewsMenu
         :views="views"
         :active-view-id="activeViewId"

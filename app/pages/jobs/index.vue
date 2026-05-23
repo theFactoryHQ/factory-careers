@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, MapPin, Briefcase, ChevronLeft, ChevronRight, ChevronDown, Check } from 'lucide-vue-next'
+import { MapPin, Briefcase, ChevronLeft, ChevronRight, ChevronDown, Check } from 'lucide-vue-next'
 
 definePageMeta({
   layout: 'public',
@@ -139,15 +139,15 @@ function formatDate(dateStr: string) {
     <!-- Filters -->
     <div class="mb-6 flex flex-col gap-3 sm:flex-row">
       <!-- Search -->
-      <div class="relative flex-1">
-        <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/38" />
-        <input
-          v-model="searchInput"
-          type="text"
-          placeholder="Search jobs by title or location…"
-          class="w-full border border-white/14 bg-black/35 py-3 pl-9 pr-3 text-sm text-white placeholder:text-white/38 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25"
-        />
-      </div>
+      <GooeySearchInput
+        v-model="searchInput"
+        aria-label="Search jobs"
+        class="flex-1"
+        placeholder="Search jobs by title or location…"
+        reserve-expanded-space
+        size="lg"
+        tone="inverse"
+      />
 
       <!-- Type filter -->
       <div ref="typeDropdownRef" class="relative sm:w-40">

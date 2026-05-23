@@ -6,6 +6,17 @@ const readProjectFile = (path: string) =>
   readFileSync(join(process.cwd(), path), 'utf8')
 
 describe('brand-neutral theme variables', () => {
+  it('keeps Factory dark pages on a true black document background', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+    const baseLayer = css.match(/@layer base \{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(baseLayer).toMatch(/html\s*\{[\s\S]*background-color:\s*#000000;/)
+    expect(baseLayer).toMatch(/body\s*\{[\s\S]*background-color:\s*#000000;/)
+    expect(baseLayer).toMatch(/\.dark,\s*[\r\n\s]*\.dark body\s*\{[\s\S]*background-color:\s*#000000;/)
+    expect(baseLayer).not.toContain('background-color: var(--color-surface-50);')
+    expect(baseLayer).not.toContain('background-color: var(--color-surface-950);')
+  })
+
   it('uses neutral CSS custom properties for shared app chrome', () => {
     const css = readProjectFile('app/assets/css/main.css')
 
@@ -465,7 +476,7 @@ describe('brand-neutral theme variables', () => {
           'ui-dashboard-panel',
           'ui-dashboard-panel-header',
           'ui-empty-panel',
-          'ui-field',
+          'GooeySearchInput',
           'ui-alert-danger',
         ],
       },

@@ -370,16 +370,18 @@ async function handleSubmitJoinRequest() {
         Search by organization name or slug. An admin must approve your request.
       </p>
 
-      <div class="relative">
-        <input
-          v-model="orgSearch"
-          type="text"
-          placeholder="Search organizations…"
-          class="ui-field pl-9"
-        />
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-surface-400" />
-        <Loader2 v-if="isSearching" class="absolute right-3 top-1/2 -translate-y-1/2 size-4 animate-spin text-surface-400" />
-      </div>
+      <GooeySearchInput
+        v-model="orgSearch"
+        aria-label="Search organizations"
+        class="w-full"
+        placeholder="Search organizations…"
+        reserve-expanded-space
+        :show-clear="!isSearching"
+      >
+        <template #trailing>
+          <Loader2 v-if="isSearching" class="size-4 animate-spin text-surface-400" />
+        </template>
+      </GooeySearchInput>
 
       <div v-if="searchError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">{{ searchError }}</div>
 

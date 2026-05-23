@@ -466,15 +466,13 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
     <template v-else>
       <!-- ─── Toolbar: Search + Views + Filters + View Toggle ─── -->
       <div class="factory-dashboard-toolbar flex items-center gap-2 mb-4">
-        <div class="relative flex-1">
-          <Search class="size-4 text-surface-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            v-model="search"
-            type="search"
-            placeholder="Search jobs by title, location, or description"
-            class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 pl-9 pr-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-          />
-        </div>
+        <GooeySearchInput
+          v-model="search"
+          aria-label="Search jobs"
+          class="min-w-0 flex-1 sm:max-w-sm"
+          placeholder="Search jobs by title, location, or description"
+          reserve-expanded-space
+        />
 
         <!-- Saved views menu -->
         <SavedViewsMenu

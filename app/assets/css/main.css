@@ -128,17 +128,19 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-color: #000000;
   }
 
   body {
     font-family: var(--font-sans);
-    background-color: var(--color-surface-50);
+    background-color: #000000;
     color: var(--color-surface-900);
   }
 
   /* Dark mode body defaults */
+  .dark,
   .dark body {
-    background-color: var(--color-surface-950);
+    background-color: #000000;
     color: var(--color-surface-100);
   }
 

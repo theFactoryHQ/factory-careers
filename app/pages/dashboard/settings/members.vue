@@ -4,7 +4,7 @@ import {
   Users, UserPlus, Shield, ShieldCheck, Crown,
   MoreHorizontal, Trash2, Loader2,
   Mail, Clock, X, Check, AlertTriangle, RefreshCw,
-  Link2, Copy, Eye, EyeOff, UserCheck, UserX, MessageSquare, Search,
+  Link2, Copy, Eye, EyeOff, UserCheck, UserX, MessageSquare,
 } from 'lucide-vue-next'
 
 definePageMeta({})
@@ -1055,15 +1055,13 @@ onUnmounted(() => {
             </div>
           </div>
           <div v-if="!isLoadingMembers && members.length > 5" class="flex-shrink-0">
-            <div class="relative">
-              <Search class="ui-field-icon absolute left-3 top-1/2 -translate-y-1/2 size-3.5 pointer-events-none" />
-              <input
-                v-model="memberSearch"
-                type="text"
-                placeholder="Search members…"
-                class="ui-field w-full sm:w-48 pl-8.5 pr-3 py-1.5"
-              />
-            </div>
+            <GooeySearchInput
+              v-model="memberSearch"
+              aria-label="Search members"
+              placeholder="Search members…"
+              reserve-expanded-space
+              size="sm"
+            />
           </div>
         </div>
       </div>

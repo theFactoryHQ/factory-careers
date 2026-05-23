@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, X, UserPlus } from 'lucide-vue-next'
+import { X, UserPlus } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 
 const props = withDefaults(defineProps<{
@@ -88,15 +88,14 @@ async function applyCandidate(candidateId: string) {
 
         <!-- Search -->
         <div class="px-5 pt-4">
-          <div class="relative">
-            <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/38" />
-            <input
-              v-model="searchInput"
-              type="text"
-              placeholder="Search candidates by name or email…"
-              class="h-11 w-full border border-white/14 bg-black/35 pl-10 pr-3 text-sm text-white outline-none transition-colors placeholder:text-white/38 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
-            />
-          </div>
+          <GooeySearchInput
+            v-model="searchInput"
+            aria-label="Search candidates"
+            class="w-full"
+            placeholder="Search candidates by name or email…"
+            reserve-expanded-space
+            tone="inverse"
+          />
         </div>
 
         <!-- Error -->

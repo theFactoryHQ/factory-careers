@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
   ArrowLeft, ArrowRight, Briefcase, Calendar, Clock, Hash, UserRound, Mail, MessageSquare,
-  FileText, Paperclip, Download, Eye, Phone, Search, ExternalLink,
+  FileText, Paperclip, Download, Eye, Phone, ExternalLink,
   Pencil, Trash2, Globe, ChevronDown, X,
   Video, Building2, Code2, UsersRound, Save, Check, MapPin, Users, Plus,
   CheckCircle2, XCircle, AlertTriangle, ArrowUpDown, ListFilter,
@@ -1162,23 +1162,22 @@ function closeDocPreview() {
           <!-- Search + Sort + Filter controls -->
           <div class="shrink-0 px-3.5 pt-3 pb-2 space-y-2 dark:border-surface-800">
             <!-- Search input -->
-            <div class="relative">
-              <Search class="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-surface-400 dark:text-surface-500" />
-              <input
-                v-model="searchTerm"
-                type="text"
-                placeholder="Search candidates…"
-                class="w-full rounded-lg border border-surface-200/80 bg-surface-50/80 py-2 pl-8 pr-3 text-sm text-surface-900 placeholder:text-surface-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-surface-700/80 dark:bg-surface-800/60 dark:text-surface-100 dark:placeholder:text-surface-500 dark:focus:border-brand-500 dark:focus:ring-brand-500/20 transition-all duration-150"
-                @focus="closePanels"
-              />
-            </div>
+            <GooeySearchInput
+              v-model="searchTerm"
+              aria-label="Search candidates"
+              class="w-full"
+              placeholder="Search candidates…"
+              reserve-expanded-space
+              size="sm"
+              @open-change="closePanels"
+            />
 
             <!-- Sort & Filter row -->
             <div class="flex items-center gap-1.5">
               <!-- Sort dropdown -->
               <div class="relative flex-1 min-w-0">
                 <button
-                  class="flex w-full cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1.5 text-left transition-all duration-150"
+                  class="flex h-8 min-h-8 w-full cursor-pointer items-center gap-1.5 rounded-md border px-2 py-0 text-left transition-all duration-150"
                   :class="showSortPanel
                     ? 'border-brand-300 bg-brand-50/50 text-brand-700 dark:border-brand-600 dark:bg-brand-950/30 dark:text-brand-300'
                     : 'border-surface-200/80 bg-surface-50/50 text-surface-600 hover:border-surface-300 hover:bg-surface-50 dark:border-surface-700/80 dark:bg-surface-800/40 dark:text-surface-300 dark:hover:border-surface-600 dark:hover:bg-surface-800'"
@@ -1221,7 +1220,7 @@ function closeDocPreview() {
 
               <!-- Filter button -->
               <button
-                class="relative flex cursor-pointer items-center gap-1 rounded-md border px-2 py-1.5 transition-all duration-150"
+                class="relative flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1 rounded-md border px-2 py-0 transition-all duration-150"
                 :class="showFilterPanel || hasActiveFilters
                   ? 'border-brand-300 bg-brand-50/50 text-brand-700 dark:border-brand-600 dark:bg-brand-950/30 dark:text-brand-300'
                   : 'border-surface-200/80 bg-surface-50/50 text-surface-600 hover:border-surface-300 hover:bg-surface-50 dark:border-surface-700/80 dark:bg-surface-800/40 dark:text-surface-300 dark:hover:border-surface-600 dark:hover:bg-surface-800'"
