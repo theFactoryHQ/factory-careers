@@ -1137,10 +1137,12 @@ function closeDocPreview() {
           <button
             v-for="status in PIPELINE_STATUSES"
             :key="`tab-${status}`"
-            class="relative flex shrink-0 cursor-pointer items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 focus:outline-none"
-            :class="isFocusStatus(status)
-              ? 'bg-brand-50 text-brand-700 shadow-sm ring-1 ring-brand-200/60 dark:bg-brand-950/40 dark:text-brand-300 dark:ring-brand-800/40'
-              : 'text-surface-500 hover:bg-surface-50 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-surface-800/60 dark:hover:text-surface-200'"
+            class="ui-filter-chip factory-pipeline-status-chip relative flex h-[38px] shrink-0 cursor-pointer items-center gap-2 px-3.5 text-[11px] !font-light uppercase leading-none tracking-normal transition-all duration-200 focus:outline-none"
+            :class="[
+              isFocusStatus(status) ? 'ui-filter-chip-active factory-pipeline-status-chip-active' : 'ui-filter-chip-inactive',
+              `factory-pipeline-status-chip-${status}`,
+            ]"
+            style="font-weight: 300 !important"
             @click="setFocusStatus(status)"
           >
             <span class="pipeline-status-dot size-2 rounded-full" :class="{
@@ -1153,10 +1155,10 @@ function closeDocPreview() {
             }" />
             {{ formatStatusLabel(status) }}
             <span
-              class="inline-flex min-w-[20px] items-center justify-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums transition-colors duration-200"
+              class="tabular-nums text-[10px] font-normal transition-colors duration-200"
               :class="isFocusStatus(status)
-                ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/50 dark:text-brand-300'
-                : 'bg-surface-100 text-surface-500 dark:bg-surface-800/80 dark:text-surface-400'"
+                ? 'text-brand-600 dark:text-brand-400'
+                : 'text-surface-400 dark:text-surface-500'"
             >
               {{ statusCounts[status] ?? 0 }}
             </span>

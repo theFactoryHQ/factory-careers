@@ -111,6 +111,17 @@ describe('brand-neutral theme variables', () => {
     expect(css).toMatch(/\.factory-dashboard-shell,[\s\S]*\.factory-dashboard-portal\)[\s\S]*\.ui-filter-chip\s*\{[\s\S]*min-height:\s*38px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important/)
   })
 
+  it('uses the shared filter chip recipe for job pipeline stage tabs', () => {
+    const jobDetail = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+    const css = readProjectFile('app/assets/css/main.css')
+
+    expect(jobDetail).toContain('ui-filter-chip factory-pipeline-status-chip')
+    expect(jobDetail).toContain('ui-filter-chip-active factory-pipeline-status-chip-active')
+    expect(jobDetail).toContain('ui-filter-chip-inactive')
+    expect(jobDetail).toContain('style="font-weight: 300 !important"')
+    expect(css).toMatch(/\.factory-pipeline-status-chip\s*\{[\s\S]*font-weight:\s*300 !important/)
+  })
+
   it('adapts shared UI recipes inside the Factory dashboard shell', () => {
     const css = readProjectFile('app/assets/css/main.css')
 

@@ -2170,6 +2170,12 @@
     text-transform: uppercase !important;
   }
 
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-status-chip {
+    font-weight: 300 !important;
+    letter-spacing: 0 !important;
+    text-transform: uppercase !important;
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button {
     min-height: 40px;
     border-color: var(--ui-border-strong) !important;
