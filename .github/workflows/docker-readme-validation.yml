@@ -24,6 +24,8 @@ jobs:
       # ── 1. Clone ─────────────────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       # ── 2. setup.sh ──────────────────────────────────────────────────────────
       - name: Run setup.sh (new-user step 1)
