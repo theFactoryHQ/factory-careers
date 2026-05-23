@@ -25,7 +25,11 @@ export function useAuthSession() {
   // The official Better Auth Vue composable already does excellent
   // client-side caching and reactive updates. We pass useFetch so it
   // integrates with Nuxt's SSR + payload transfer.
-  const session = authClient.useSession(useFetch)
+  //
+  // We cast to any because vue-tsc / the current @better-auth/vue types
+  // sometimes infer the return as Promise<...> during `nuxi typecheck`,
+  // even though runtime returns the reactive state object.
+  const session = authClient.useSession(useFetch) as any
 
   return {
     /** Reactive session data (Ref) */
