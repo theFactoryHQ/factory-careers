@@ -11,5 +11,5 @@ export const emailClient = createEmailClient({
   defaultFrom:
     env.EMAIL_FROM ||
     env.RESEND_FROM_EMAIL ||
-    "Factory Careers <careers@thefactoryhq.com>",
+    "Factory <hello@interviews.thefactoryhq.com>",
 });

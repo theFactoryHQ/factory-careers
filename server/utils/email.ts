@@ -7,7 +7,7 @@
  */
 
 // @ts-nocheck - React casts for email templates (type resolution for server React Email is handled at runtime)
-import type React from "react";
+import React from "react";
 
 import { emailClient } from "../lib/email/client";
 import {
@@ -265,7 +265,8 @@ export async function sendInterviewInvitationEmail(params: {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function getFromEmail(): string {
-  return emailClient.defaultFrom;
+  // Preferred transactional from for careers/interview emails
+  return emailClient.defaultFrom || "Factory <hello@interviews.thefactoryhq.com>";
 }
 
 // InterviewEmailData interface is already exported above via its declaration.

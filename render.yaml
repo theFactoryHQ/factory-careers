@@ -57,7 +57,8 @@ services:
         sync: false
       # IMPORTANT: Set RESEND_API_KEY to the *exact same value* used by the main thefactoryhq.com
       # Render service. This links careers to the production Resend project + verified domains.
-      # After deploy, also consider setting EMAIL_FROM for full parity with main-site transactional mail.
+      # Recommended From address: "Factory <hello@interviews.thefactoryhq.com>"
+      # (You must verify the domain interviews.thefactoryhq.com in the Resend dashboard first.)
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM_EMAIL

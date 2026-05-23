@@ -146,7 +146,7 @@ export const envSchema = z
     RESEND_FROM_EMAIL: emptyToUndefined
       .pipe(z.string().min(1))
       .optional()
-      .default("Factory Careers <careers@thefactoryhq.com>"),
+      .default("Factory <hello@interviews.thefactoryhq.com>"),
     /**
      * Preferred "From" address (takes precedence over RESEND_FROM_EMAIL for parity with the main thefactoryhq site).
      * When the shared @caffeinebounce/email client is used, this lets us align exactly with main-site transactional mail.

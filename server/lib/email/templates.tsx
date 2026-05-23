@@ -1,4 +1,5 @@
 // @ts-nocheck - server-only React Email templates; JSX namespace resolved at runtime via @react-email/components + react
+import React from "react";
 import type { EmailThemeConfig } from "@caffeinebounce/email";
 import {
   Body,
@@ -81,9 +82,9 @@ function CareersEmailShell({
                 {new Date().getFullYear()} {config.companyName}
               </Text>
               <Text style={styles.footerText}>{config.address}</Text>
-              <Text style={styles.footerText}>
-                {footerNote || `You're receiving this because you have a ${config.appName} account.`}
-              </Text>
+              {footerNote && (
+                <Text style={styles.footerText}>{footerNote}</Text>
+              )}
             </Section>
           </Section>
         </Container>
@@ -316,17 +317,25 @@ export function InterviewInvitationEmail({
       {responseUrls && (
         <Section style={{ marginTop: 24 }}>
           <Text style={styles.subtext}>Please respond:</Text>
-          <Section style={{ display: "flex", gap: "12px", marginTop: 8 }}>
-            <Button href={responseUrls.accepted} style={styles.cta}>
-              Accept
-            </Button>
-            <Button href={responseUrls.tentative} style={{ ...styles.cta, backgroundColor: "#333" }}>
-              Tentative
-            </Button>
-            <Button href={responseUrls.declined} style={{ ...styles.cta, backgroundColor: "#333" }}>
-              Decline
-            </Button>
-          </Section>
+          <table role="presentation" cellSpacing="0" cellPadding="0" style={{ marginTop: 8 }}>
+            <tr>
+              <td style={{ paddingRight: 12 }}>
+                <Button href={responseUrls.accepted} style={styles.cta}>
+                  Accept
+                </Button>
+              </td>
+              <td style={{ paddingRight: 12 }}>
+                <Button href={responseUrls.tentative} style={{ ...styles.cta, backgroundColor: "#333" }}>
+                  Tentative
+                </Button>
+              </td>
+              <td>
+                <Button href={responseUrls.declined} style={{ ...styles.cta, backgroundColor: "#333" }}>
+                  Decline
+                </Button>
+              </td>
+            </tr>
+          </table>
         </Section>
       )}
 
