@@ -78,6 +78,8 @@ jobs:
           annotations: ${{ steps.meta.outputs.annotations }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          secrets: |
+            npm_token=${{ secrets.GH_PACKAGES_READ_TOKEN }}
           provenance: mode=max
           sbom: true
         env:

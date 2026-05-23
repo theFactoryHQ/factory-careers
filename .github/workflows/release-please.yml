@@ -8,15 +8,32 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   release-please:
     name: Create Release
     runs-on: ubuntu-latest
+    env:
+      HAS_RELEASE_PLEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN != '' }}
 
     steps:
+      - name: Release automation token required
+        if: ${{ env.HAS_RELEASE_PLEASE_TOKEN != 'true' }}
+        run: |
+          echo "Release Please is skipped until RELEASE_PLEASE_TOKEN is configured."
+          echo "Tracking issue: https://github.com/theFactoryHQ/factory-careers/issues/27"
+          {
+            echo "## Release Please skipped"
+            echo ""
+            echo "The workflow needs RELEASE_PLEASE_TOKEN or repo settings that allow Actions to create pull requests."
+            echo ""
+            echo "Tracking issue: https://github.com/theFactoryHQ/factory-careers/issues/27"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - uses: googleapis/release-please-action@v5
+        if: ${{ env.HAS_RELEASE_PLEASE_TOKEN == 'true' }}
         with:
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: .github/release-please-config.json
           manifest-file: .release-please-manifest.json
