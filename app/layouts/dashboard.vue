@@ -45,13 +45,13 @@ onMounted(() => {
       >
         <Eye class="size-4 shrink-0" />
         <span>
-          <strong>Demo mode</strong> — Explore freely with sample data. Editing is disabled here.
+          <strong>Demo mode</strong> - Explore freely with sample data. Editing is disabled here.
           <a
-            href="https://github.com/caffeinebounce/factory-careers"
+            href="https://github.com/theFactoryHQ/factory-careers"
             target="_blank"
             rel="noopener noreferrer"
-            class="ml-1 font-semibold underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"
-          >View the Factory Careers fork →</a>
+            class="ml-1 font-semibold text-brand-300 underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"
+          >View source -></a>
         </span>
       </div>
       <div :class="isFullbleed ? 'min-h-0 flex-1' : 'flex-1'">

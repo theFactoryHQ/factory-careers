@@ -56,13 +56,14 @@ export default defineEventHandler(async (event) => {
 
   // Perform incremental sync to pull changes from Google Calendar
   // Run async — Google expects a fast response
-  if (!integration.userId) {
+  const userId = integration.userId
+  if (!userId) {
     return { ok: true }
   }
 
-  performIncrementalSync(integration.userId).catch(err => {
+  performIncrementalSync(userId).catch(err => {
     logError('calendar.webhook_sync_failed', {
-      posthog_distinct_id: integration.userId ?? undefined,
+      posthog_distinct_id: userId,
       error_message: err instanceof Error ? err.message : String(err),
     })
   })
