@@ -313,25 +313,64 @@ export function InterviewInvitationEmail({
         </Section>
       )}
 
-      {/* Response actions */}
+      {/* Response actions - using the original careers interview button treatment for familiarity */}
       {responseUrls && (
         <Section style={{ marginTop: 24 }}>
-          <Text style={styles.subtext}>Please respond:</Text>
+          <Text style={styles.subtext}>Can you make it?</Text>
           <table role="presentation" cellSpacing="0" cellPadding="0" style={{ marginTop: 8 }}>
             <tr>
-              <td style={{ paddingRight: 12 }}>
-                <Button href={responseUrls.accepted} style={styles.cta}>
-                  Accept
+              <td style={{ padding: "0 4px" }}>
+                <Button
+                  href={responseUrls.accepted}
+                  style={{
+                    display: "inline-block",
+                    padding: "10px 20px",
+                    backgroundColor: "#16a34a",
+                    color: "#ffffff",
+                    textDecoration: "none",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    borderRadius: "6px",
+                    lineHeight: "1",
+                  }}
+                >
+                  ✓ Accept
                 </Button>
               </td>
-              <td style={{ paddingRight: 12 }}>
-                <Button href={responseUrls.tentative} style={{ ...styles.cta, backgroundColor: "#333" }}>
-                  Tentative
+              <td style={{ padding: "0 4px" }}>
+                <Button
+                  href={responseUrls.tentative}
+                  style={{
+                    display: "inline-block",
+                    padding: "10px 20px",
+                    backgroundColor: "#ca8a04",
+                    color: "#ffffff",
+                    textDecoration: "none",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    borderRadius: "6px",
+                    lineHeight: "1",
+                  }}
+                >
+                  ? Maybe
                 </Button>
               </td>
-              <td>
-                <Button href={responseUrls.declined} style={{ ...styles.cta, backgroundColor: "#333" }}>
-                  Decline
+              <td style={{ padding: "0 4px" }}>
+                <Button
+                  href={responseUrls.declined}
+                  style={{
+                    display: "inline-block",
+                    padding: "10px 20px",
+                    backgroundColor: "#dc2626",
+                    color: "#ffffff",
+                    textDecoration: "none",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    borderRadius: "6px",
+                    lineHeight: "1",
+                  }}
+                >
+                  ✕ Decline
                 </Button>
               </td>
             </tr>
