@@ -43,6 +43,9 @@ describe('brand-neutral theme variables', () => {
       '.ui-button-danger-outline',
       '.ui-button-success',
       '.ui-field',
+      '.ui-filter-chip',
+      '.ui-filter-chip-active',
+      '.ui-filter-chip-inactive',
       '.ui-icon-state',
       '.ui-icon-state-danger',
       '.ui-icon-state-success',
@@ -76,7 +79,10 @@ describe('brand-neutral theme variables', () => {
       '.ui-icon-tile',
       '.ui-pill-success',
       '.ui-status-dot',
+      '.ui-status-dot-brand',
       '.ui-status-dot-success',
+      '.ui-status-dot-warning',
+      '.ui-status-dot-danger',
       '.ui-code',
       '.ui-inline-link',
       '.ui-inline-link-brand',
@@ -96,6 +102,13 @@ describe('brand-neutral theme variables', () => {
     expect(css).toContain('var(--color-success-')
     expect(css).toContain('var(--color-brand-')
     expect(css).not.toMatch(/\.factory-(panel|alert|field|icon-state)\b/)
+  })
+
+  it('keeps filter chips as bordered controls aligned with toolbar fields', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+
+    expect(css).toMatch(/\.ui-filter-chip\s*\{[\s\S]*min-height:\s*2\.375rem;[\s\S]*border:\s*1px solid/)
+    expect(css).toMatch(/\.factory-dashboard-shell,[\s\S]*\.factory-dashboard-portal\)[\s\S]*\.ui-filter-chip\s*\{[\s\S]*min-height:\s*38px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important/)
   })
 
   it('adapts shared UI recipes inside the Factory dashboard shell', () => {
