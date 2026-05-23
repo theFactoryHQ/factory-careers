@@ -70,7 +70,6 @@ async function enforceFactoryAuthPolicy(event: H3Event) {
   }
 
   if (
-<<<<<<< HEAD
     env.FACTORY_ADMIN_SSO_ONLY &&
     (
       authPath.startsWith('/sign-in/email') ||

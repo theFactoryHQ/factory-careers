@@ -35,14 +35,10 @@ export async function assertFactoryStaffAccess(params: {
     columns: { id: true, slug: true },
   })
 
-<<<<<<< HEAD
   if (
     !activeOrg
     || (env.FACTORY_DISABLE_PUBLIC_ORG_CREATION && activeOrg.slug !== env.FACTORY_ORG_SLUG)
   ) {
-=======
-  if (!activeOrg || activeOrg.slug !== env.FACTORY_ORG_SLUG) {
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
     throw createError({
       statusCode: 403,
       statusMessage: 'Factory Careers staff access is limited to the Factory organization.',

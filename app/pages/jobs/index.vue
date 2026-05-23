@@ -21,11 +21,7 @@ const sourceQuery = computed(() => {
 })
 
 useSeoMeta({
-<<<<<<< HEAD
   title: 'Open Positions',
-=======
-  title: 'Open Positions — Factory Careers',
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
   description:
     'Browse open roles at Factory and submit your application directly.',
   ogTitle: 'Open Positions — Factory Careers',
@@ -130,7 +126,6 @@ function formatDate(dateStr: string) {
 <template>
   <div>
     <!-- Page header -->
-<<<<<<< HEAD
     <div class="mb-10 border-b border-white/10 pb-8">
       <p class="mb-4 text-xs font-semibold uppercase tracking-[0.22em] text-brand-500">
         Factory Careers
@@ -138,12 +133,6 @@ function formatDate(dateStr: string) {
       <h1 class="text-5xl font-light leading-[0.96] tracking-tight text-white sm:text-6xl">Open Positions</h1>
       <p class="mt-5 max-w-xl text-base leading-7 text-white/62">
         Browse open roles, or introduce yourself if your path does not fit a posting yet.
-=======
-    <div class="mb-8">
-      <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-100">Open Positions</h1>
-      <p class="text-sm text-surface-500 mt-1">
-        Browse Factory openings and share where your work could fit.
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
       </p>
     </div>
 

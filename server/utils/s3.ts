@@ -171,17 +171,12 @@ async function enforcePrivateBucketPolicy(): Promise<void> {
   }
 }
 
-<<<<<<< HEAD
 export function isUnsupportedBucketPolicyError(error: unknown): boolean {
-=======
-function isUnsupportedBucketPolicyError(error: unknown): boolean {
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
   if (!(error instanceof Error)) return false
 
   const metadata = (error as { $metadata?: { httpStatusCode?: number } }).$metadata
   const statusCode = metadata?.httpStatusCode
   const name = error.name.toLowerCase()
-<<<<<<< HEAD
   const compactName = name.replace(/[^a-z0-9]/g, '')
   const message = error.message.toLowerCase()
 

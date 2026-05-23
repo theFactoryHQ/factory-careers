@@ -171,7 +171,6 @@ async function handleDeleteOrg() {
         </div>
 
         <div>
-<<<<<<< HEAD
           <div class="mb-1.5 flex items-center gap-1.5">
             <label for="public-board-path" class="text-sm font-medium text-surface-700 dark:text-surface-300">
               Public board URL
@@ -197,14 +196,6 @@ async function handleDeleteOrg() {
           <div class="ui-field flex items-center overflow-hidden p-0 focus-within:border-brand-500">
             <span class="shrink-0 border-r border-surface-200 dark:border-surface-700 px-3 py-2 text-sm text-surface-500 dark:text-surface-400">
               {{ publicBoardPrefix }}
-=======
-          <label for="org-slug" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-            URL slug
-          </label>
-          <div class="flex items-center rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 overflow-hidden focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500 transition-colors">
-            <span class="px-3 text-sm text-surface-400 dark:text-surface-500 select-none bg-surface-50 dark:bg-surface-800/50 border-r border-surface-200 dark:border-surface-700 py-2">
-              careers.thefactoryhq.com/
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
             </span>
             <input
               id="public-board-path"

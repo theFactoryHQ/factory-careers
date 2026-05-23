@@ -7,11 +7,7 @@ definePageMeta({})
 
 useSeoMeta({
   title: 'Account Settings — Factory Careers',
-<<<<<<< HEAD
   description: 'Manage your Factory Careers profile.',
-=======
-  description: 'Manage your personal account settings',
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
 })
 
 const { data: session } = await authClient.useSession(useFetch)

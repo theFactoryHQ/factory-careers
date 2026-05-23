@@ -795,11 +795,7 @@ function formatDate(dateString: string | null | undefined): string {
           </div>
           <div>
             <h4 class="text-sm font-semibold text-surface-800 dark:text-surface-200 mb-2">Manual / Git deployment</h4>
-<<<<<<< HEAD
             <div class="ui-command-block px-4 py-3 font-mono text-sm space-y-1 overflow-x-auto">
-=======
-            <div class="rounded-lg bg-surface-900 dark:bg-surface-950 px-4 py-3 font-mono text-sm text-surface-100 space-y-1 overflow-x-auto">
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
               <p class="text-surface-500"># Navigate to your Factory Careers directory</p>
               <p>cd /path/to/reqcore</p>
               <p class="text-surface-500 mt-3"># Pull the latest version</p>

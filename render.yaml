@@ -27,7 +27,6 @@ services:
         value: thefactoryhq.com
       - key: FACTORY_CAREERS_HIRING_INBOX
         sync: false
-<<<<<<< HEAD
       - key: FACTORY_CAREERS_CALENDAR_EMAIL
         value: careers@thefactoryhq.com
       - key: FACTORY_DISABLE_PUBLIC_SIGNUP
@@ -38,12 +37,6 @@ services:
         value: "true"
       - key: FACTORY_DISABLE_ANALYTICS_CONSENT_BANNER
         value: "true"
-=======
-      - key: FACTORY_DISABLE_PUBLIC_SIGNUP
-        value: "true"
-      - key: FACTORY_DISABLE_PUBLIC_ORG_CREATION
-        value: "true"
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
       - key: S3_BUCKET
         value: factory-careers-documents
       - key: S3_REGION
@@ -66,15 +59,12 @@ services:
         sync: false
       - key: RESEND_FROM_EMAIL
         sync: false
-<<<<<<< HEAD
       - key: MICROSOFT_CALENDAR_CLIENT_ID
         sync: false
       - key: MICROSOFT_CALENDAR_CLIENT_SECRET
         sync: false
       - key: MICROSOFT_CALENDAR_TENANT_ID
         sync: false
-=======
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
       - key: AUTH_MICROSOFT_CLIENT_ID
         sync: false
       - key: AUTH_MICROSOFT_CLIENT_SECRET

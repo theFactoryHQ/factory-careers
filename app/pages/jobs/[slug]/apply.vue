@@ -26,11 +26,7 @@ const { data: job, status: fetchStatus, error: fetchError } = useFetch(
 )
 
 useSeoMeta({
-<<<<<<< HEAD
   title: computed(() => job.value ? `Apply — ${job.value.title}` : 'Apply'),
-=======
-  title: computed(() => job.value ? `Apply — ${job.value.title}` : 'Apply — Factory Careers'),
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
   description: computed(() => job.value?.description?.slice(0, 160) ?? 'Submit your application'),
   robots: 'noindex, nofollow',
 })

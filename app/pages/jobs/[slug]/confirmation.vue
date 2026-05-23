@@ -17,11 +17,7 @@ const { data: job } = useFetch(`/api/public/jobs/${jobSlug}`, {
 })
 
 useSeoMeta({
-<<<<<<< HEAD
   title: 'Application Submitted',
-=======
-  title: 'Application Submitted — Factory Careers',
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
   robots: 'noindex, nofollow',
 })
 </script>

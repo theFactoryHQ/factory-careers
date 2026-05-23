@@ -182,13 +182,9 @@ export default defineNuxtConfig({
     head: {
       titleTemplate: "%s — Factory Careers",
       link: [
-<<<<<<< HEAD
         { rel: "shortcut icon", href: "/favicon.ico" },
         { rel: "icon", href: "/favicon.ico", sizes: "any", type: "image/x-icon" },
         { rel: "icon", href: "/icon.png", sizes: "512x512", type: "image/png" },
-=======
-        { rel: "icon", type: "image/png", href: "/factory-logo.png" },
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
         {
           rel: "apple-touch-icon",
           sizes: "180x180",
@@ -220,11 +216,8 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-<<<<<<< HEAD
       /** Base URL of this Factory Careers app */
       siteUrl,
-=======
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
       /** Base URL of the Factory marketing site for cross-domain links */
       marketingUrl:
         process.env.NUXT_PUBLIC_MARKETING_URL || "https://thefactoryhq.com",
@@ -265,26 +258,18 @@ export default defineNuxtConfig({
       ),
       /** Display name for the SSO provider button */
       oidcProviderName: process.env.OIDC_PROVIDER_NAME || "Microsoft SSO",
-<<<<<<< HEAD
       factoryCareersUrl:
         process.env.NUXT_PUBLIC_FACTORY_CAREERS_URL || "https://careers.thefactoryhq.com",
       factoryAppName: process.env.FACTORY_APP_NAME || "Factory Careers",
       factoryOrgName: process.env.FACTORY_ORG_NAME || "Factory",
       factoryOrgSlug: process.env.FACTORY_ORG_SLUG || "factory",
-=======
-      factoryAppName: process.env.FACTORY_APP_NAME || "Factory Careers",
-      factoryOrgName: process.env.FACTORY_ORG_NAME || "Factory",
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
       factoryPublicSignupEnabled:
         process.env.FACTORY_DISABLE_PUBLIC_SIGNUP === "false",
       factoryPublicOrgCreationEnabled:
         process.env.FACTORY_DISABLE_PUBLIC_ORG_CREATION === "false",
-<<<<<<< HEAD
       /** Whether to show the analytics consent banner ("A small ask"). Disabled for Factory (SSO + always cookieless). */
       factoryAnalyticsConsentBannerEnabled:
         process.env.FACTORY_DISABLE_ANALYTICS_CONSENT_BANNER === "false",
-=======
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
       /**
        * Feature flag overrides forced by env vars (FEATURE_FLAG_*).
        * Self-hosters use these to enable/disable flags without running PostHog.

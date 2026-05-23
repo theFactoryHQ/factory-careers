@@ -53,11 +53,7 @@ const jobDescriptionPlain = computed(() => markdownToPlainText(job.value?.descri
 // ─────────────────────────────────────────────
 
 useSeoMeta({
-<<<<<<< HEAD
   title: computed(() => job.value ? job.value.title : 'Job Details'),
-=======
-  title: computed(() => job.value ? `${job.value.title} — Factory Careers` : 'Job Details — Factory Careers'),
->>>>>>> cd599d8 (feat: brand factory careers reqcore fork)
   description: computed(() => {
     if (!job.value) return 'View job details and apply'
     const loc = job.value.location ? ` in ${job.value.location}` : ''
