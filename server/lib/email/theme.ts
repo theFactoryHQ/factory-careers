@@ -1,4 +1,5 @@
 import { createEmailTheme } from "@caffeinebounce/email";
+import { env } from "../../utils/env";
 
 /**
  * Careers-specific email theme config.
@@ -15,8 +16,7 @@ export const careersEmailConfig = {
     "https://nypetlcjkgntmkebnxbx.supabase.co/storage/v1/object/public/public-assets/factory-logo.png",
   logoMode: "full" as const,
   logoAlign: "left" as const,
-  unsubscribeSecret:
-    process.env.UNSUBSCRIBE_SECRET || "factory-careers-unsub-secret",
+  unsubscribeSecret: env.UNSUBSCRIBE_SECRET || "factory-careers-unsub-secret",
 };
 
 /**

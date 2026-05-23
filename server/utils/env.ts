@@ -152,9 +152,17 @@ export const envSchema = z
      * When the shared @caffeinebounce/email client is used, this lets us align exactly with main-site transactional mail.
      */
     EMAIL_FROM: emptyToUndefined.pipe(z.string().min(1)).optional(),
-    /** SMTP hostname for outbound email (e.g. smtp.gmail.com). When set, SMTP is used instead of Resend. */
+    /**
+     * Secret used to sign unsubscribe links in marketing emails (via @caffeinebounce/email).
+     * Required in production for the email system.
+     */
+    UNSUBSCRIBE_SECRET: emptyToUndefined.pipe(z.string().min(32)).optional(),
+    /**
+     * SMTP configuration (DEPRECATED / NO LONGER USED).
+     * The careers email system now uses Resend exclusively.
+     * These fields are kept only to avoid breaking existing .env files; they are ignored.
+     */
     SMTP_HOST: emptyToUndefined.pipe(z.string().min(1)).optional(),
-    /** SMTP port. Defaults to 587 (STARTTLS). Use 465 for implicit TLS, 25 for unencrypted. */
     SMTP_PORT: z.preprocess(
       (val) => {
         if (typeof val === 'string' && val.trim() === '') return 587
@@ -164,16 +172,12 @@ export const envSchema = z
       },
       z.number().int().min(1).max(65535).default(587),
     ),
-    /** SMTP username for authentication. Omit for anonymous relay. */
     SMTP_USER: emptyToUndefined.pipe(z.string().min(1)).optional(),
-    /** SMTP password for authentication. Omit for anonymous relay. */
     SMTP_PASS: emptyToUndefined.pipe(z.string().min(1)).optional(),
-    /** Sender address for SMTP emails. */
     SMTP_FROM: emptyToUndefined
       .pipe(z.string().min(1))
       .optional()
       .default('Factory Careers <careers@thefactoryhq.com>'),
-    /** Use implicit TLS on port 465. When false, uses STARTTLS (port 587). Defaults to false. */
     SMTP_SECURE: z.preprocess(
       (val) => typeof val === 'string' && val.trim() === '' ? false : val === 'true',
       z.boolean().default(false),

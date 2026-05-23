@@ -220,6 +220,11 @@ export async function sendInterviewInvitationEmail(params: {
   body: string;
   data: InterviewEmailData;
 }): Promise<void> {
+  // Render any {{placeholders}} in the recruiter-provided subject/body
+  // before sending (the interview route still uses the placeholder system).
+  const renderedSubject = renderTemplate(params.subject, params.data);
+  const renderedBody = renderTemplate(params.body, params.data);
+
   const icsAttachment = params.data.icsContent
     ? [
         {
@@ -234,7 +239,7 @@ export async function sendInterviewInvitationEmail(params: {
     await emailClient.send({
       from: emailClient.defaultFrom,
       to: [params.data.candidateEmail],
-      subject: params.subject,
+      subject: renderedSubject,
       react: InterviewInvitationEmail({
         candidateName: params.data.candidateName,
         jobTitle: params.data.jobTitle,
@@ -246,7 +251,7 @@ export async function sendInterviewInvitationEmail(params: {
         interviewLocation: params.data.interviewLocation ?? undefined,
         interviewers: params.data.interviewers ?? undefined,
         organizationName: params.data.organizationName,
-        customBody: params.body,
+        customBody: renderedBody,
         responseUrls: params.data.responseUrls,
         config: careersEmailConfig,
       }) as React.ReactElement,

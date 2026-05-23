@@ -15,16 +15,19 @@ import { render } from "@react-email/render";
 import { InterviewInvitationEmail } from "../server/lib/email/templates";
 
 const key = process.env.RESEND_API_KEY || process.argv[2];
+const to = process.env.TEST_EMAIL_TO || process.argv[3];
 
-if (!key) {
-  console.error("Usage: RESEND_API_KEY=re_... npx tsx scripts/send-test-interview-email.ts");
+if (!key || !to) {
+  console.error(
+    "Usage: RESEND_API_KEY=... TEST_EMAIL_TO=you@example.com npx tsx scripts/send-test-interview-email.ts\n" +
+    "   or: RESEND_API_KEY=... npx tsx scripts/send-test-interview-email.ts <to-email>"
+  );
   process.exit(1);
 }
 
 const resend = new Resend(key);
 
 const from = "Factory <hello@interviews.thefactoryhq.com>";
-const to = "doug@thefactoryhq.com";
 
 async function main() {
   const html = await render(
