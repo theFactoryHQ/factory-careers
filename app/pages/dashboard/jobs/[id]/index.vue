@@ -1257,10 +1257,10 @@ function closeDocPreview() {
                     <button
                       v-for="opt in scoreFilterOptions"
                       :key="opt.value"
-                      class="cursor-pointer rounded-md px-2 py-1 text-[11px] font-medium transition-all duration-150"
+                      class="ui-filter-chip relative flex h-8 shrink-0 cursor-pointer items-center px-2.5 text-xs !font-light uppercase leading-none tracking-normal transition-all duration-200 focus:outline-none"
                       :class="scoreFilter === opt.value
-                        ? 'bg-brand-600 text-white shadow-sm dark:bg-brand-500'
-                        : 'bg-white text-surface-600 ring-1 ring-inset ring-surface-200 hover:bg-surface-50 dark:bg-surface-800 dark:text-surface-300 dark:ring-surface-700 dark:hover:bg-surface-700'"
+                        ? 'ui-filter-chip-active'
+                        : 'ui-filter-chip-inactive'"
                       @click="scoreFilter = opt.value"
                     >
                       {{ opt.label }}
@@ -1275,10 +1275,10 @@ function closeDocPreview() {
                     <button
                       v-for="opt in interviewFilterOptions"
                       :key="opt.value"
-                      class="cursor-pointer rounded-md px-2 py-1 text-[11px] font-medium transition-all duration-150"
+                      class="ui-filter-chip relative flex h-8 shrink-0 cursor-pointer items-center px-2.5 text-xs !font-light uppercase leading-none tracking-normal transition-all duration-200 focus:outline-none"
                       :class="interviewFilter === opt.value
-                        ? 'bg-brand-600 text-white shadow-sm dark:bg-brand-500'
-                        : 'bg-white text-surface-600 ring-1 ring-inset ring-surface-200 hover:bg-surface-50 dark:bg-surface-800 dark:text-surface-300 dark:ring-surface-700 dark:hover:bg-surface-700'"
+                        ? 'ui-filter-chip-active'
+                        : 'ui-filter-chip-inactive'"
                       @click="interviewFilter = opt.value"
                     >
                       {{ opt.label }}
