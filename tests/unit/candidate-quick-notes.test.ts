@@ -15,4 +15,13 @@ describe('candidate quick notes', () => {
     expect(source).not.toContain('Add note…')
     expect(source).not.toContain('No notes yet.')
   })
+
+  it('vertically centers every candidate table cell', () => {
+    const source = readProjectFile('app/pages/dashboard/candidates/index.vue')
+
+    expect(source).toContain('[&>td]:align-middle')
+    expect(source).not.toContain('[&>td]:align-top')
+    expect(source).not.toContain('w-52 align-top')
+    expect(source).not.toContain('text-white/60 align-top')
+  })
 })

@@ -544,7 +544,7 @@ const selectedCandidateId = ref<string | null>(null)
             <tr
               v-for="c in sortedCandidates"
               :key="c.id"
-              class="ui-table-row group cursor-pointer [&>td]:align-top"
+              class="ui-table-row group cursor-pointer [&>td]:align-middle"
               @click="selectedCandidateId = c.id"
             >
               <td class="px-4 py-3">
@@ -586,7 +586,7 @@ const selectedCandidateId = ref<string | null>(null)
                 <TimelineDateLink :date="c.createdAt">{{ formatDateTime(c.createdAt) }}</TimelineDateLink>
               </td>
               <!-- Quick notes — inline editable (must match header order) -->
-              <td v-if="visibleColumns.quickNotes" class="px-4 py-3 hidden lg:table-cell w-52 align-top" @click.stop>
+              <td v-if="visibleColumns.quickNotes" class="px-4 py-3 hidden lg:table-cell w-52" @click.stop>
                 <div v-if="editingNotesId === c.id" class="flex items-start gap-1.5">
                   <textarea
                     v-model="editingNotesValue"
@@ -636,7 +636,7 @@ const selectedCandidateId = ref<string | null>(null)
               </td>
               <!-- Property columns (must come AFTER quick notes to match header order) -->
               <template v-for="d in propertyDefs" :key="d.id">
-                <td v-if="visibleColumns[`prop_${d.id}`]" class="px-4 py-3 text-white/60 align-top">
+                <td v-if="visibleColumns[`prop_${d.id}`]" class="px-4 py-3 text-white/60">
                   <PropertyTableCell
                     entity-type="candidate"
                     :entity-id="c.id"
