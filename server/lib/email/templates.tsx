@@ -313,7 +313,7 @@ export function InterviewInvitationEmail({
         </Section>
       )}
 
-      {/* Response actions - using the original careers interview button treatment for familiarity */}
+      {/* Response actions - using the original careers interview button treatment (no Maybe per Factory rule) */}
       {responseUrls && (
         <Section style={{ marginTop: 24 }}>
           <Text style={styles.subtext}>Can you make it?</Text>
@@ -335,24 +335,6 @@ export function InterviewInvitationEmail({
                   }}
                 >
                   ✓ Accept
-                </Button>
-              </td>
-              <td style={{ padding: "0 4px" }}>
-                <Button
-                  href={responseUrls.tentative}
-                  style={{
-                    display: "inline-block",
-                    padding: "10px 20px",
-                    backgroundColor: "#ca8a04",
-                    color: "#ffffff",
-                    textDecoration: "none",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    borderRadius: "0",
-                    lineHeight: "1",
-                  }}
-                >
-                  ? Maybe
                 </Button>
               </td>
               <td style={{ padding: "0 4px" }}>
