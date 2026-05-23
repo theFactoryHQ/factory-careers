@@ -197,7 +197,7 @@ const showableDefs = computed(() => definitions.value)
       <div
         v-if="editingIdx === idx"
         :ref="(el) => setEditElRef(el, idx)"
-        class="ui-floating-menu absolute left-0 top-full z-30 mt-1 w-80 max-w-[calc(100vw-2rem)] p-3"
+        class="ui-floating-menu factory-filter-dropdown-menu absolute left-0 top-full z-50 mt-1 w-80 max-w-[calc(100vw-2rem)] p-3"
       >
         <template v-if="definitionMap.get(f.propertyDefinitionId) as PropertyDefinition">
           <div class="space-y-2">
@@ -287,7 +287,7 @@ const showableDefs = computed(() => definitions.value)
     <div class="relative" ref="pickerEl">
       <button
         type="button"
-        class="ui-button ui-button-secondary px-2.5 py-1 text-xs"
+        class="ui-button ui-button-secondary factory-filter-dropdown-trigger px-2.5 py-1 text-xs"
         @click="pickerOpen = !pickerOpen"
       >
         <component :is="modelValue.length === 0 ? Filter : Plus" class="size-3.5" />
@@ -295,14 +295,14 @@ const showableDefs = computed(() => definitions.value)
       </button>
       <div
         v-if="pickerOpen"
-        class="ui-floating-menu absolute left-0 top-full z-30 mt-1 w-64 max-w-[calc(100vw-2rem)]"
+        class="ui-floating-menu factory-filter-dropdown-menu absolute left-0 top-full z-50 mt-1 w-64 max-w-[calc(100vw-2rem)]"
       >
         <div class="max-h-72 overflow-y-auto py-1">
           <button
             v-for="def in showableDefs"
             :key="def.id"
             type="button"
-            class="ui-menu-action justify-between px-3 py-1.5 text-sm"
+            class="ui-menu-action factory-filter-dropdown-option justify-between px-3 py-1.5 text-sm"
             @click="addFilter(def)"
           >
             <span class="truncate text-surface-800 dark:text-surface-100">{{ def.name }}</span>
