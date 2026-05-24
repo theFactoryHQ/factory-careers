@@ -12,6 +12,7 @@ describe('brand-neutral theme variables', () => {
 
     expect(baseLayer).toMatch(/html\s*\{[\s\S]*background-color:\s*#000000;/)
     expect(baseLayer).toMatch(/body\s*\{[\s\S]*background-color:\s*#000000;/)
+    expect(baseLayer).toMatch(/body\s*\{[\s\S]*color:\s*var\(--color-surface-100\);/)
     expect(baseLayer).toMatch(/\.dark,\s*[\r\n\s]*\.dark body\s*\{[\s\S]*background-color:\s*#000000;/)
     expect(baseLayer).not.toContain('background-color: var(--color-surface-50);')
     expect(baseLayer).not.toContain('background-color: var(--color-surface-950);')
@@ -121,7 +122,7 @@ describe('brand-neutral theme variables', () => {
     expect(css).toMatch(/\.ui-filter-chip\s*\{[\s\S]*min-height:\s*2\.375rem;[\s\S]*border:\s*1px solid/)
     expect(css).toMatch(/\.factory-dashboard-shell,[\s\S]*\.factory-dashboard-portal\)[\s\S]*\.ui-filter-chip\s*\{[\s\S]*min-height:\s*38px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important/)
     expect(css).toMatch(/\.factory-job-subnav-tab\s*\{[\s\S]*min-height:\s*32px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important/)
-    expect(css).toMatch(/\.factory-job-status-action\s*\{[\s\S]*height:\s*28px;[\s\S]*font-weight:\s*400 !important/)
+    expect(css).toMatch(/:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) \.factory-job-status-action\s*\{[\s\S]*height:\s*32px;[\s\S]*font-weight:\s*400 !important/)
   })
 
   it('explains job status actions with tooltips', () => {

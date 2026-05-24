@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Search, X } from 'lucide-vue-next'
-import { computed, ref, useId, watch } from 'vue'
+import { computed, ref, useId, useSlots, watch } from 'vue'
 
 type GooeySearchSize = 'sm' | 'md' | 'lg'
 type GooeySearchTone = 'surface' | 'inverse'
@@ -38,6 +38,7 @@ const emit = defineEmits<{
 }>()
 
 const inputRef = ref<HTMLInputElement | null>(null)
+const slots = useSlots()
 const isOpen = ref(Boolean(props.modelValue))
 const rawId = useId()
 const filterId = `gooey-search-${rawId.replace(/[^a-zA-Z0-9_-]/g, '')}`
@@ -90,7 +91,11 @@ const visualOffset = computed(() => {
   return 0
 })
 const inputPaddingLeft = computed(() => sizeConfig.value.iconWidth)
-const inputPaddingRight = computed(() => currentValue.value && props.showClear ? sizeConfig.value.clearWidth : 14)
+const inputPaddingRight = computed(() => {
+  if (currentValue.value && props.showClear) return sizeConfig.value.clearWidth
+  if (slots.trailing) return sizeConfig.value.clearWidth
+  return 14
+})
 
 const rootStyle = computed(() => ({
   '--gooey-height': `${sizeConfig.value.height}px`,
@@ -121,6 +126,11 @@ function updateValue(value: string) {
 
 function clearValue() {
   updateValue('')
+  setOpen(true)
+  inputRef.value?.focus()
+}
+
+function openAndFocus() {
   setOpen(true)
   inputRef.value?.focus()
 }
@@ -199,7 +209,7 @@ function handleKeydown(event: KeyboardEvent) {
         :disabled="disabled"
         aria-label="Open search"
         @mousedown.prevent
-        @click="() => { setOpen(true); inputRef?.focus() }"
+        @click="openAndFocus"
       >
         <Search aria-hidden="true" :class="sizeConfig.iconSize" />
       </button>

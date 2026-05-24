@@ -31,6 +31,15 @@ describe('GooeySearchInput component source', () => {
     expect(source).toContain('handleKeydown')
     expect(source).toContain("event.key === 'Escape'")
     expect(source).toContain('inputRef.value?.blur()')
+    expect(source).toContain('inputRef.value?.focus()')
+    expect(source).not.toContain('inputRef?.focus()')
+  })
+
+  it('reserves input padding for clear and trailing controls', () => {
+    expect(source).toContain('useSlots')
+    expect(source).toContain('const slots = useSlots()')
+    expect(source).toContain('if (currentValue.value && props.showClear) return sizeConfig.value.clearWidth')
+    expect(source).toContain('if (slots.trailing) return sizeConfig.value.clearWidth')
   })
 
   it('keeps the Factory search skin square and border-led', () => {
