@@ -2235,6 +2235,31 @@
     text-transform: uppercase !important;
   }
 
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-chip {
+    height: 32px !important;
+    min-height: 32px !important;
+    border-color: var(--ui-border-strong) !important;
+    border-radius: 0 !important;
+    background-color: #050505 !important;
+    color: rgb(255 255 255 / 0.72) !important;
+    font-weight: 300 !important;
+    letter-spacing: 0 !important;
+    text-transform: uppercase !important;
+    box-shadow: none !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-chip:hover {
+    border-color: rgb(255 255 255 / 0.32) !important;
+    background-color: rgb(255 255 255 / 0.055) !important;
+    color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-shortcut {
+    min-width: 16px;
+    border-left: 1px solid rgb(255 255 255 / 0.12);
+    color: rgb(255 255 255 / 0.46);
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button {
     min-height: 40px;
     border-color: var(--ui-border-strong) !important;

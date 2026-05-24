@@ -13,7 +13,7 @@ import { APPLICATION_STATUS_TRANSITIONS, INTERVIEW_STATUS_TRANSITIONS } from '~~
 import {
   formatRelativeTime,
   getApplicationStatusBadgeClass,
-  getApplicationTransitionButtonClass,
+  getApplicationTransitionDotClass,
   getApplicationTransitionLabel,
   getInterviewStatusBadgeClass,
   getScoreBadgeClass,
@@ -1418,12 +1418,15 @@ function closeDocPreview() {
                   v-for="(nextStatus, idx) in allowedTransitions"
                   :key="nextStatus"
                   :disabled="isMutating"
-                  class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm inline-flex items-center gap-1.5"
-                  :class="getApplicationTransitionButtonClass(nextStatus)"
+                  class="ui-filter-chip factory-application-transition-chip inline-flex h-8 min-h-8 cursor-pointer items-center gap-2 px-3 text-xs !font-light uppercase leading-none tracking-normal transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50"
                   @click="nextStatus === 'interview' ? openInterviewScheduler() : changeStatus(nextStatus)"
                 >
+                  <span
+                    class="pipeline-status-dot size-2 rounded-full"
+                    :class="getApplicationTransitionDotClass(nextStatus)"
+                  />
                   {{ getApplicationTransitionLabel(nextStatus) }}
-                  <kbd class="inline-flex items-center justify-center rounded px-1 py-0.5 text-[10px] font-mono leading-none opacity-60 bg-black/10 dark:bg-white/10 min-w-[16px]">{{ idx + 1 }}</kbd>
+                  <kbd class="factory-application-transition-shortcut inline-flex items-center justify-center px-1 text-[10px] font-mono leading-none">{{ idx + 1 }}</kbd>
                 </button>
               </div>
             </div>
