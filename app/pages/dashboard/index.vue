@@ -43,15 +43,16 @@ const {
 // ─────────────────────────────────────────────
 
 const dashboardNowIso = useState('dashboard-upcoming-interviews-now', () => new Date().toISOString())
+const dashboardInterviewQueryFromIso = useState('dashboard-upcoming-interviews-query-from', () => new Date().toISOString())
 const dashboardNow = computed(() => new Date(dashboardNowIso.value))
-const weekFromDashboardNowIso = computed(() =>
-  new Date(dashboardNow.value.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+const dashboardInterviewQueryToIso = computed(() =>
+  new Date(new Date(dashboardInterviewQueryFromIso.value).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
 )
 
 const { interviews: upcomingInterviews } = useInterviews({
   status: 'scheduled',
-  from: dashboardNowIso,
-  to: weekFromDashboardNowIso,
+  from: dashboardInterviewQueryFromIso,
+  to: dashboardInterviewQueryToIso,
   limit: 5,
 })
 
@@ -63,7 +64,9 @@ const upcomingInterviewsForCard = computed(() =>
 
 onMounted(() => {
   track('dashboard_viewed')
-  dashboardNowIso.value = new Date().toISOString()
+  const mountedAtIso = new Date().toISOString()
+  dashboardNowIso.value = mountedAtIso
+  dashboardInterviewQueryFromIso.value = mountedAtIso
   dashboardNowTimer = setInterval(() => {
     dashboardNowIso.value = new Date().toISOString()
   }, 60_000)

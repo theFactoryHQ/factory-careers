@@ -5,9 +5,16 @@ import { join } from 'node:path'
 describe('dashboard upcoming interviews', () => {
   const source = readFileSync(join(process.cwd(), 'app/pages/dashboard/index.vue'), 'utf8')
 
-  it('queries upcoming interviews from the current time, not the start of the day', () => {
+  it('queries upcoming interviews from a current-time window, not the start of the day', () => {
     expect(source).not.toContain('from: today.toISOString()')
-    expect(source).toContain('from: dashboardNowIso')
+    expect(source).toContain("useState('dashboard-upcoming-interviews-query-from'")
+    expect(source).toContain('from: dashboardInterviewQueryFromIso')
+    expect(source).toContain('to: dashboardInterviewQueryToIso')
+  })
+
+  it('keeps the interview fetch key stable while refreshing relative times', () => {
+    expect(source).toContain('dashboardInterviewQueryFromIso.value = mountedAtIso')
+    expect(source).not.toMatch(/setInterval\(\(\) => \{\s*dashboardInterviewQueryFromIso\.value = new Date\(\)\.toISOString\(\)/)
   })
 
   it('filters stale cached interviews before rendering the upcoming card', () => {
