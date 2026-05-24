@@ -5,6 +5,7 @@ import {
   Check, BookOpen, PanelRightClose, PanelRightOpen,
 } from 'lucide-vue-next'
 import MarkdownDescription from '~/components/MarkdownDescription.vue'
+import { formatFileSize } from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -189,12 +190,6 @@ const suggestions = computed(() => {
 function applySuggestion(s: string) {
   draft.value = s
   nextTick(() => composerRef.value?.focus())
-}
-
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
 function toolLabel(name: string) {
@@ -535,7 +530,7 @@ async function startNew() {
               >
                 <FileText class="size-3.5 text-brand-500" />
                 <span class="max-w-[160px] truncate font-medium">{{ a.filename }}</span>
-                <span class="text-surface-400">{{ formatBytes(a.sizeBytes) }}</span>
+                <span class="text-surface-400">{{ formatFileSize(a.sizeBytes) }}</span>
                 <button
                   class="ml-1 inline-flex items-center justify-center rounded p-0.5 text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700 hover:text-danger-500 transition-colors cursor-pointer border-0 bg-transparent"
                   :aria-label="`Remove ${a.filename}`"

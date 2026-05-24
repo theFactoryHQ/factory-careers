@@ -12,8 +12,11 @@ import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 import { APPLICATION_STATUS_TRANSITIONS, INTERVIEW_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 import {
   formatRelativeTime,
+  getApplicationStatusBadgeClass,
   getApplicationTransitionButtonClass,
   getApplicationTransitionLabel,
+  getInterviewStatusBadgeClass,
+  getScoreBadgeClass,
 } from '~/utils/status-display'
 
 definePageMeta({
@@ -380,19 +383,6 @@ function getTimelineActionStyle(action: string): TimelineActionStyle {
   return map[action] ?? { icon: Clock, color: 'text-surface-500 dark:text-surface-400', bg: 'bg-surface-100 dark:bg-surface-800' }
 }
 
-function getTimelineStatusBadge(status: string): string {
-  const s = status.toLowerCase()
-  const map: Record<string, string> = {
-    new: 'bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300',
-    screening: 'bg-violet-100 text-violet-700 dark:bg-violet-900/60 dark:text-violet-300',
-    interview: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
-    offer: 'bg-teal-100 text-teal-700 dark:bg-teal-900/60 dark:text-teal-300',
-    hired: 'bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300',
-    rejected: 'bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-300',
-  }
-  return map[s] ?? 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-300'
-}
-
 function describeTimelineItem(item: TimelineEntry): string {
   const actor = item.actorName ?? item.actorEmail ?? 'System'
   const action = timelineActionLabels[item.action] ?? item.action
@@ -671,13 +661,6 @@ const interviewTypeLabels: Record<string, string> = {
   technical: 'Technical',
   panel: 'Panel',
   take_home: 'Take Home',
-}
-
-const interviewStatusClasses: Record<string, string> = {
-  scheduled: 'bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-950/50 dark:text-brand-300 dark:ring-brand-800',
-  completed: 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/50 dark:text-success-300 dark:ring-success-800',
-  cancelled: 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:ring-surface-700',
-  no_show: 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950/50 dark:text-danger-300 dark:ring-danger-800',
 }
 
 function formatInterviewDateTime(dateStr: string) {
@@ -1021,13 +1004,6 @@ onBeforeUnmount(() => {
 // ─────────────────────────────────────────────
 // Job status transitions (Publish, Close, etc.)
 // ─────────────────────────────────────────────
-
-const jobStatusBadgeClasses: Record<string, string> = {
-  draft: 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400',
-  open: 'bg-success-50 dark:bg-success-950 text-success-700 dark:text-success-400',
-  closed: 'bg-warning-50 dark:bg-warning-950 text-warning-700 dark:text-warning-400',
-  archived: 'bg-surface-100 dark:bg-surface-800 text-surface-400',
-}
 
 const isScoringIndividual = ref(false)
 
@@ -1417,11 +1393,7 @@ function closeDocPreview() {
                   <span
                     v-if="app.score != null"
                     class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
-                    :class="{
-                      'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/60 dark:text-success-400 dark:ring-success-800': app.score >= 75,
-                      'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950/60 dark:text-warning-400 dark:ring-warning-800': app.score >= 40 && app.score < 75,
-                      'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950/60 dark:text-danger-400 dark:ring-danger-800': app.score < 40,
-                    }"
+                    :class="getScoreBadgeClass(app.score, 'muted')"
                   >
                     {{ app.score }} pts
                   </span>
@@ -1492,14 +1464,7 @@ function closeDocPreview() {
                       </h2>
                       <span
                         class="inline-flex shrink-0 items-center rounded-lg px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset"
-                        :class="{
-                          'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-950/50 dark:text-blue-400 dark:ring-blue-800': currentSummary.status === 'new',
-                          'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-950/50 dark:text-violet-400 dark:ring-violet-800': currentSummary.status === 'screening',
-                          'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:ring-amber-800': currentSummary.status === 'interview',
-                          'bg-teal-50 text-teal-700 ring-teal-200 dark:bg-teal-950/50 dark:text-teal-400 dark:ring-teal-800': currentSummary.status === 'offer',
-                          'bg-green-50 text-green-700 ring-green-200 dark:bg-green-950/50 dark:text-green-400 dark:ring-green-800': currentSummary.status === 'hired',
-                          'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:ring-surface-700': currentSummary.status === 'rejected',
-                        }"
+                        :class="getApplicationStatusBadgeClass(currentSummary.status, 'ring')"
                       >
                         {{ currentSummary.status }}
                       </span>
@@ -1522,11 +1487,7 @@ function closeDocPreview() {
                       <span
                         v-if="currentSummary.score != null"
                         class="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset"
-                        :class="{
-                          'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/60 dark:text-success-400 dark:ring-success-800': currentSummary.score >= 75,
-                          'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950/60 dark:text-warning-400 dark:ring-warning-800': currentSummary.score >= 40 && currentSummary.score < 75,
-                          'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950/60 dark:text-danger-400 dark:ring-danger-800': currentSummary.score < 40,
-                        }"
+                        :class="getScoreBadgeClass(currentSummary.score, 'muted')"
                       >
                         {{ currentSummary.score }} pts
                       </span>
@@ -1834,7 +1795,7 @@ function closeDocPreview() {
                       <div class="flex items-center gap-2.5 shrink-0">
                         <span
                           class="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset"
-                          :class="interviewStatusClasses[iv.status] ?? 'bg-surface-100 text-surface-500 ring-surface-200'"
+                          :class="getInterviewStatusBadgeClass(iv.status)"
                         >
                           <component :is="interviewStatusIcons[iv.status as InterviewStatus] ?? Calendar" class="size-3" />
                           {{ iv.status === 'no_show' ? 'No Show' : iv.status }}
@@ -2292,9 +2253,9 @@ function closeDocPreview() {
                           <span class="text-[13px] font-medium text-surface-900 dark:text-surface-100 shrink-0">{{ timelineActionLabels[item.action] ?? item.action }}</span>
                           <span class="text-[13px] text-surface-500 dark:text-surface-400">{{ item.resourceType }}</span>
                           <template v-if="item.action === 'status_changed' && item.metadata">
-                            <span v-if="item.metadata.from_status || item.metadata.fromStatus" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getTimelineStatusBadge(String(item.metadata.from_status ?? item.metadata.fromStatus))">{{ item.metadata.from_status ?? item.metadata.fromStatus }}</span>
+                            <span v-if="item.metadata.from_status || item.metadata.fromStatus" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getApplicationStatusBadgeClass(String(item.metadata.from_status ?? item.metadata.fromStatus), 'soft')">{{ item.metadata.from_status ?? item.metadata.fromStatus }}</span>
                             <ArrowRight class="size-2.5 text-surface-400 dark:text-surface-500 shrink-0" />
-                            <span v-if="item.metadata.to_status || item.metadata.toStatus" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getTimelineStatusBadge(String(item.metadata.to_status ?? item.metadata.toStatus))">{{ item.metadata.to_status ?? item.metadata.toStatus }}</span>
+                            <span v-if="item.metadata.to_status || item.metadata.toStatus" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getApplicationStatusBadgeClass(String(item.metadata.to_status ?? item.metadata.toStatus), 'soft')">{{ item.metadata.to_status ?? item.metadata.toStatus }}</span>
                           </template>
                           <template v-else-if="item.action === 'scored' && item.metadata?.score">
                             <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none bg-accent-100 text-accent-700 dark:bg-accent-900/60 dark:text-accent-300">{{ item.metadata.score }} pts</span>
