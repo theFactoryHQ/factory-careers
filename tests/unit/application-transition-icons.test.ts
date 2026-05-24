@@ -34,4 +34,14 @@ describe('application transition icons', () => {
     expect(drawer).not.toContain('mr-1.5 inline-flex size-1 rounded-full')
     expect(fullPage).not.toContain('mr-1.5 inline-flex size-1 rounded-full')
   })
+
+  it('uses action labels on application detail quick actions', () => {
+    const drawer = readProjectFile('app/components/ApplicationDetailDrawer.vue')
+    const fullPage = readProjectFile('app/pages/dashboard/applications/[id].vue')
+
+    expect(drawer).toContain('getApplicationTransitionActionLabel(nextStatus)')
+    expect(fullPage).toContain('getApplicationTransitionActionLabel(nextStatus)')
+    expect(drawer).not.toContain('{{ getApplicationTransitionLabel(nextStatus) }}')
+    expect(fullPage).not.toContain('{{ getApplicationTransitionLabel(nextStatus) }}')
+  })
 })

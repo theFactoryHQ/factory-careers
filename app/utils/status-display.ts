@@ -463,6 +463,14 @@ export function getApplicationTransitionLabel(status: string): string {
   return isApplicationStatus(normalized) ? APPLICATION_TRANSITION_LABELS[normalized] : titleizeStatus(status)
 }
 
+export function getApplicationTransitionActionLabel(status: string): string {
+  if (status === 'new' || status === 'rejected') {
+    return getApplicationTransitionLabel(status)
+  }
+
+  return `Move to ${getApplicationTransitionLabel(status)}`
+}
+
 export function getApplicationStatusBadgeClass(
   status: string,
   variant: ApplicationStatusBadgeVariant = 'soft',

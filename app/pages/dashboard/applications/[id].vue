@@ -3,8 +3,8 @@ import { User, Briefcase, Calendar, Clock, FileText, MessageSquare, Brain, Loade
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 import {
   getApplicationStatusBadgeClass,
+  getApplicationTransitionActionLabel,
   getApplicationTransitionButtonClass,
-  getApplicationTransitionLabel,
 } from '~/utils/status-display'
 
 definePageMeta({
@@ -224,7 +224,7 @@ function formatResponseValue(value: unknown): string {
             @click="handleTransition(nextStatus)"
           >
             <ApplicationTransitionIcon :status="nextStatus" />
-            {{ getApplicationTransitionLabel(nextStatus) }}
+            {{ getApplicationTransitionActionLabel(nextStatus) }}
           </button>
           <button
             class="inline-flex shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap border border-white/16 bg-black px-2.5 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal text-white/80 hover:border-brand-500 hover:bg-brand-500/12 hover:text-white transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40"

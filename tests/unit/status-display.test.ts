@@ -6,6 +6,7 @@ import {
   getApplicationStatusBadgeClass,
   getApplicationStatusDotClass,
   getApplicationStatusLabel,
+  getApplicationTransitionActionLabel,
   getApplicationTransitionButtonClass,
   getApplicationTransitionDotClass,
   getApplicationTransitionLabel,
@@ -37,6 +38,8 @@ describe('status display helpers', () => {
   it('returns centralized labels with readable fallbacks', () => {
     expect(getApplicationStatusLabel('screening')).toBe('Screening')
     expect(getApplicationTransitionLabel('new')).toBe('Re-open')
+    expect(getApplicationTransitionActionLabel('interview')).toBe('Move to Interview')
+    expect(getApplicationTransitionActionLabel('rejected')).toBe('Reject')
     expect(getApplicationStatusLabel('phone_screen')).toBe('Phone Screen')
   })
 
