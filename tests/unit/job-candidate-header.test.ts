@@ -32,4 +32,18 @@ describe('job candidate header', () => {
     expect(headerActions).toContain(':applied-at="currentSummary.createdAt"')
     expect(headerActions).toContain(':updated-at="currentSummary.updatedAt"')
   })
+
+  it('keeps overview as a plain detail tab without section checkboxes', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+    const detailTabs = source.slice(
+      source.indexOf('<!-- Detail tabs -->'),
+      source.indexOf('<!-- Detail content -->'),
+    )
+
+    expect(detailTabs).toContain("@click=\"detailTab = 'overview'\"")
+    expect(source).not.toContain('showOverviewDropdown')
+    expect(source).not.toContain('overviewSections')
+    expect(detailTabs).not.toContain('type="checkbox"')
+    expect(detailTabs).not.toContain('Sections')
+  })
 })

@@ -137,7 +137,6 @@ function selectSort(option: SortOption) {
 function closePanels() {
   showSortPanel.value = false
   showFilterPanel.value = false
-  showOverviewDropdown.value = false
 }
 
 const filteredApplications = computed(() => {
@@ -290,39 +289,14 @@ const currentSummary = computed(() => filteredApplications.value[currentIndex.va
 type DetailTab = 'overview' | 'interviews' | 'documents' | 'responses' | 'ai-analysis' | 'timeline' | 'properties'
 const detailTab = ref<DetailTab>('overview')
 
-// Overview section visibility toggles
-const overviewSections = reactive({
-  aiAnalysis: true,
-  interviews: true,
-  documents: true,
-  responses: true,
-  properties: true,
-})
-const showOverviewDropdown = ref(false)
-const overviewDropdownRef = ref<HTMLElement | null>(null)
-
-function handleOverviewDropdownClickOutside(event: MouseEvent) {
-  if (overviewDropdownRef.value && !overviewDropdownRef.value.contains(event.target as Node)) {
-    showOverviewDropdown.value = false
-  }
-}
-
-watch(showOverviewDropdown, (val) => {
-  if (val) {
-    setTimeout(() => document.addEventListener('click', handleOverviewDropdownClickOutside), 0)
-  } else {
-    document.removeEventListener('click', handleOverviewDropdownClickOutside)
-  }
-})
-
 // Which sections to display based on active tab
 const showSection = computed(() => ({
   profile: detailTab.value === 'overview',
-  aiAnalysis: detailTab.value === 'overview' ? overviewSections.aiAnalysis : detailTab.value === 'ai-analysis',
-  interviews: detailTab.value === 'overview' ? overviewSections.interviews : detailTab.value === 'interviews',
-  documents: detailTab.value === 'overview' ? overviewSections.documents : detailTab.value === 'documents',
-  responses: detailTab.value === 'overview' ? overviewSections.responses : detailTab.value === 'responses',
-  properties: detailTab.value === 'overview' ? overviewSections.properties : detailTab.value === 'properties',
+  aiAnalysis: detailTab.value === 'overview' || detailTab.value === 'ai-analysis',
+  interviews: detailTab.value === 'overview' || detailTab.value === 'interviews',
+  documents: detailTab.value === 'overview' || detailTab.value === 'documents',
+  responses: detailTab.value === 'overview' || detailTab.value === 'responses',
+  properties: detailTab.value === 'overview' || detailTab.value === 'properties',
   timeline: detailTab.value === 'timeline',
 }))
 
@@ -999,10 +973,6 @@ const jobStatusBadgeClasses: Record<string, string> = {
   archived: 'bg-surface-100 dark:bg-surface-800 text-surface-400',
 }
 
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleOverviewDropdownClickOutside)
-})
-
 const isLoading = computed(() => {
   return jobFetchStatus.value === 'pending' || appFetchStatus.value === 'pending'
 })
@@ -1486,66 +1456,16 @@ function closeDocPreview() {
 
             <!-- Detail tabs -->
             <div class="border-b border-white/10 bg-white/[0.02] px-4 sm:px-6 ui-dashboard-panel-header">
-              <div class="factory-dashboard-tabs mx-auto max-w-4xl flex gap-1 -mb-px scrollbar-none whitespace-nowrap" :class="showOverviewDropdown ? '' : 'overflow-x-auto'">
-                <div ref="overviewDropdownRef" class="relative">
-                  <div class="flex items-center border-b-2 transition-all duration-150" :class="detailTab === 'overview'
-                    ? 'border-brand-600 dark:border-brand-400'
-                    : 'border-transparent'">
-                    <button
-                      class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150"
-                      :class="detailTab === 'overview'
-                        ? 'text-brand-700 dark:text-brand-300'
-                        : 'text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-300'"
-                      @click="detailTab = 'overview'"
-                    >
-                      Overview
-                    </button>
-                    <button
-                      v-if="detailTab === 'overview'"
-                      class="cursor-pointer -ml-2 p-1 rounded transition-colors duration-150 text-surface-400 hover:text-surface-600 dark:text-surface-500 dark:hover:text-surface-300"
-                      @click.stop="showOverviewDropdown = !showOverviewDropdown"
-                    >
-                      <ChevronDown class="size-3.5 transition-transform duration-150" :class="showOverviewDropdown ? 'rotate-180' : ''" />
-                    </button>
-                  </div>
-
-                  <!-- Overview sections dropdown -->
-                  <Transition
-                    enter-active-class="transition duration-150 ease-out"
-                    enter-from-class="opacity-0 scale-95 -translate-y-1"
-                    enter-to-class="opacity-100 scale-100 translate-y-0"
-                    leave-active-class="transition duration-100 ease-in"
-                    leave-from-class="opacity-100 scale-100 translate-y-0"
-                    leave-to-class="opacity-0 scale-95 -translate-y-1"
-                  >
-                    <div
-                      v-if="showOverviewDropdown"
-                      class="factory-saved-views-panel absolute left-0 top-full z-50 mt-1 w-44 rounded-xl border py-1.5 origin-top-left"
-                    >
-                      <span class="block px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500">Sections</span>
-                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
-                        <input v-model="overviewSections.aiAnalysis" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
-                        AI
-                      </label>
-                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
-                        <input v-model="overviewSections.interviews" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
-                        Interviews
-                      </label>
-                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
-                        <input v-model="overviewSections.documents" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
-                        Documents
-                      </label>
-                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
-                        <input v-model="overviewSections.responses" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
-                        Responses
-                      </label>
-                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
-                        <input v-model="overviewSections.properties" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
-                        Properties
-                      </label>
-                    </div>
-                  </Transition>
-                </div>
+              <div class="factory-dashboard-tabs mx-auto max-w-4xl flex gap-1 -mb-px overflow-x-auto scrollbar-none whitespace-nowrap">
+                <button
+                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
+                  :class="detailTab === 'overview'
+                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
+                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
+                  @click="detailTab = 'overview'"
+                >
+                  Overview
+                </button>
                 <button
                   class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
                   :class="detailTab === 'ai-analysis'
