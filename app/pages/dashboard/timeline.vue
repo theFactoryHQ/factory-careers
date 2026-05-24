@@ -516,10 +516,10 @@ function humanizeIdentifier(value: string): string {
           <button
             v-for="f in filters"
             :key="f.key ?? 'all'"
-            class="inline-flex items-center gap-1 rounded-md px-2.5 py-2 text-xs font-medium uppercase tracking-wide transition-all duration-150 cursor-pointer"
+            class="ui-filter-chip inline-flex h-10 min-h-10 items-center gap-1.5 px-3 py-0 text-xs font-light uppercase tracking-normal transition-all duration-150 cursor-pointer"
             :class="activeFilter === f.key
-              ? 'bg-brand-600 text-white'
-              : 'text-surface-500 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-700 dark:hover:text-surface-300'"
+              ? 'ui-filter-chip-active'
+              : 'ui-filter-chip-inactive'"
             @click="setFilter(f.key)"
           >
             <component :is="f.icon" class="size-3" />
