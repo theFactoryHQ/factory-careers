@@ -26,6 +26,15 @@ npm run dev
 3. Ensure every commit includes a **DCO sign-off**.
 4. Open a pull request with a clear summary and testing notes.
 
+### Local CI Preflight
+
+`npm install` configures git to use this repo's `.githooks` directory. The hooks catch the two most common PR failures before GitHub Actions spends a run:
+
+- `commit-msg` validates Conventional Commit syntax with the same allowed types as the PR title lint workflow.
+- `pre-push` runs `npm run preflight:pr`, which mirrors the required PR validation job: CLI parity evidence, unit tests, optional lint, typecheck, CLI smoke tests, production env contract validation, and build.
+
+Run `npm run prepare` if you need to reinstall the hooks in an existing checkout.
+
 ### DCO Sign-off (Required)
 
 Reqcore uses the Developer Certificate of Origin (DCO) instead of a CLA.
