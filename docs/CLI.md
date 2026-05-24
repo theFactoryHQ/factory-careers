@@ -149,6 +149,8 @@ Some routes intentionally remain outside the deterministic CLI surface:
 
 Server API coverage is tracked in `packages/careers-cli/src/routeCoverage.ts`. The unit test `tests/unit/cli-route-coverage-manifest.test.ts` walks `server/api` and fails if a route is missing from the manifest, if a supported route lacks a CLI command, or if an excluded/internal route lacks a reason. When adding or changing a portal/API workflow, update the CLI command surface or record the explicit exclusion in that manifest.
 
+`org update-settings --stdin --yes` accepts the same JSON payload as `/api/org-settings`, including `signupAllowedDomains` for owner-managed signup domain allowlists. The server still enforces owner-only updates and requires each domain to match a configured SSO provider or organization-level calendar integration.
+
 ## Examples
 
 Create a job, add questions, create a candidate, and apply:

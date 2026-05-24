@@ -3,6 +3,10 @@ import {
   ShieldCheck, Plus, Trash2, Loader2, Check, X, AlertTriangle,
   ExternalLink, Copy, Globe, KeyRound,
 } from 'lucide-vue-next'
+import {
+  normalizeSignupDomain,
+  SIGNUP_ALLOWED_DOMAINS_MAX,
+} from '~~/shared/signup-domains'
 
 definePageMeta({})
 
@@ -63,19 +67,28 @@ watch(signupAllowedDomains, (domains) => {
   localSignupAllowedDomains.value = domains.join('\n')
 }, { immediate: true })
 
-const domainPattern = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/
-
 const parsedSignupAllowedDomains = computed(() => {
   const domains = localSignupAllowedDomains.value
     .split(/[\n,]/)
-    .map(domain => domain.trim().toLowerCase().replace(/^@+/, '').replace(/\.$/, ''))
-    .filter(Boolean)
+    .map(normalizeSignupDomain)
+    .filter((domain): domain is string => !!domain)
 
   return Array.from(new Set(domains)).sort((a, b) => a.localeCompare(b))
 })
 
+const rawSignupDomainEntries = computed(() =>
+  localSignupAllowedDomains.value
+    .split(/[\n,]/)
+    .map(domain => domain.trim())
+    .filter(Boolean),
+)
+
 const invalidSignupDomains = computed(() =>
-  parsedSignupAllowedDomains.value.filter(domain => domain.length > 253 || !domainPattern.test(domain)),
+  rawSignupDomainEntries.value.filter(domain => !normalizeSignupDomain(domain)),
+)
+
+const hasTooManySignupDomains = computed(() =>
+  rawSignupDomainEntries.value.length > SIGNUP_ALLOWED_DOMAINS_MAX,
 )
 
 async function handleSaveSignupDomains() {
@@ -86,6 +99,11 @@ async function handleSaveSignupDomains() {
 
   if (invalidSignupDomains.value.length > 0) {
     domainSaveError.value = `Invalid domain: ${invalidSignupDomains.value[0]}`
+    return
+  }
+
+  if (hasTooManySignupDomains.value) {
+    domainSaveError.value = `Add ${SIGNUP_ALLOWED_DOMAINS_MAX} or fewer domains.`
     return
   }
 
@@ -291,15 +309,18 @@ async function copyCallbackUrl(providerId: string) {
             One domain per line or comma. Matching email domains can create a user account, but organization access still requires SSO provisioning, an invitation, or approval.
           </p>
           <p class="text-xs text-surface-400 dark:text-surface-500">
-            Domains must match a configured SSO provider or a connected calendar account. Only owners can save changes.
+            Domains must match a configured SSO provider or an organization-level calendar integration. Only owners can save changes.
           </p>
           <p v-if="invalidSignupDomains.length" class="text-xs text-danger-500 dark:text-danger-400">
             Invalid domain: {{ invalidSignupDomains[0] }}
           </p>
+          <p v-if="hasTooManySignupDomains" class="text-xs text-danger-500 dark:text-danger-400">
+            Add {{ SIGNUP_ALLOWED_DOMAINS_MAX }} or fewer domains.
+          </p>
           <div class="flex items-center gap-3 pt-1">
             <button
               type="button"
-              :disabled="!canManageSignupDomains || isSavingDomains"
+              :disabled="!canManageSignupDomains || isSavingDomains || invalidSignupDomains.length > 0 || hasTooManySignupDomains"
               class="ui-button ui-button-primary disabled:opacity-60 disabled:cursor-not-allowed"
               @click="handleSaveSignupDomains"
             >
