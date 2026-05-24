@@ -26,6 +26,16 @@
 - [ ] I updated `docs/CLI.md`, CLI commands, shared schemas, or CLI tests when the portal/API workflow should be agent-accessible
 - [ ] I documented the reason when a changed portal/API workflow should not be exposed through the CLI
 
+## Keyboard / accessibility acceptance
+
+- [ ] Visible focus is preserved for every interactive control I touched
+- [ ] No core action in this change is pointer-only
+- [ ] `Escape` behavior is intentional for transient UI I changed
+- [ ] Focus restores to the invoking control after closing modals/popovers/drawers
+- [ ] Any modal I changed traps focus correctly while open
+- [ ] Any custom listbox/menu/combobox behavior still works from the keyboard
+- [ ] New custom controls include keyboard-focused tests where applicable
+
 ## DCO
 
 - [ ] All commits in this PR are signed off (`Signed-off-by`) via `git commit -s`
