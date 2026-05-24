@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { CURRENCY_VALUES } from '~~/shared/currency-options'
 
 export { JOB_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 
@@ -17,7 +18,7 @@ export const createJobSchema = z.object({
   /** Salary range fields for SEO-rich job postings (Google Jobs) */
   salaryMin: z.coerce.number().int().min(0).nullable().optional(),
   salaryMax: z.coerce.number().int().min(0).nullable().optional(),
-  salaryCurrency: z.string().length(3).nullable().optional(),
+  salaryCurrency: z.enum(CURRENCY_VALUES).nullable().optional(),
   salaryUnit: z.enum(['YEAR', 'MONTH', 'HOUR']).nullable().optional(),
   /** Whether salary is negotiable (hides min/max range on public listing) */
   salaryNegotiable: z.boolean().optional().default(false),
@@ -45,7 +46,7 @@ export const updateJobSchema = z.object({
   /** Pass null to explicitly clear a salary field */
   salaryMin: z.coerce.number().int().min(0).nullable().optional(),
   salaryMax: z.coerce.number().int().min(0).nullable().optional(),
-  salaryCurrency: z.string().length(3).nullable().optional(),
+  salaryCurrency: z.enum(CURRENCY_VALUES).nullable().optional(),
   salaryUnit: z.enum(['YEAR', 'MONTH', 'HOUR']).nullable().optional(),
   salaryNegotiable: z.boolean().optional(),
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).nullable().optional(),

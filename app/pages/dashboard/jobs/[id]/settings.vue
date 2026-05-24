@@ -3,6 +3,7 @@ import {
   Save, Trash2, ArrowLeft, ExternalLink, Link2, ClipboardCopy, ChevronDown,
 } from 'lucide-vue-next'
 import { z } from 'zod'
+import { CURRENCY_OPTIONS, CURRENCY_VALUES } from '~~/shared/currency-options'
 
 definePageMeta({
   layout: 'dashboard',
@@ -36,7 +37,7 @@ const form = ref({
   slug: '',
   salaryMin: null as number | null,
   salaryMax: null as number | null,
-  salaryCurrency: '',
+  salaryCurrency: 'USD',
   salaryUnit: '' as string,
   salaryNegotiable: false,
   remoteStatus: '' as string,
@@ -57,7 +58,7 @@ watch(job, (j) => {
       slug: j.slug ?? '',
       salaryMin: j.salaryMin ?? null,
       salaryMax: j.salaryMax ?? null,
-      salaryCurrency: j.salaryCurrency ?? '',
+      salaryCurrency: j.salaryCurrency ?? 'USD',
       salaryUnit: j.salaryUnit ?? '',
       salaryNegotiable: j.salaryNegotiable ?? false,
       remoteStatus: j.remoteStatus ?? '',
@@ -77,6 +78,8 @@ watch(() => form.value.salaryNegotiable, (negotiable) => {
     form.value.salaryMax = null
     form.value.salaryCurrency = ''
     form.value.salaryUnit = ''
+  } else if (!form.value.salaryCurrency) {
+    form.value.salaryCurrency = 'USD'
   }
 })
 
@@ -92,7 +95,7 @@ const editSchema = z.object({
   slug: z.string().max(80).optional(),
   salaryMin: z.union([z.coerce.number().int().min(0), z.null()]).optional(),
   salaryMax: z.union([z.coerce.number().int().min(0), z.null()]).optional(),
-  salaryCurrency: z.string().length(3).optional().or(z.literal('')),
+  salaryCurrency: z.enum(CURRENCY_VALUES),
   salaryUnit: z.enum(['YEAR', 'MONTH', 'HOUR']).optional().or(z.literal('')),
   salaryNegotiable: z.boolean().optional(),
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).optional().or(z.literal('')),
@@ -134,7 +137,7 @@ async function handleSave() {
       // Always send salary fields so cleared values write null to the DB
       salaryMin: form.value.salaryNegotiable ? null : (form.value.salaryMin ?? null),
       salaryMax: form.value.salaryNegotiable ? null : (form.value.salaryMax ?? null),
-      salaryCurrency: form.value.salaryNegotiable ? null : (form.value.salaryCurrency || null),
+      salaryCurrency: form.value.salaryNegotiable ? null : (form.value.salaryCurrency || 'USD'),
       salaryUnit: form.value.salaryNegotiable ? null : (form.value.salaryUnit || null),
       remoteStatus: form.value.remoteStatus || null,
       experienceLevel: (form.value.experienceLevel as 'junior' | 'mid' | 'senior' | 'lead' | null) || null,
@@ -433,13 +436,10 @@ function onSalaryMaxChange(e: Event) {
                   <label for="settings-currency" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                     Currency
                   </label>
-                  <input
+                  <FactorySelect
                     id="settings-currency"
                     v-model="form.salaryCurrency"
-                    type="text"
-                    maxlength="3"
-                    placeholder="e.g. USD, EUR, NOK"
-                    class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors uppercase"
+                    :options="CURRENCY_OPTIONS"
                   />
                 </div>
                 <div>
