@@ -76,23 +76,29 @@ Docker, and access to Factory's package registry when installing private
 `@caffeinebounce/*` packages.
 
 ```bash
+export NODE_AUTH_TOKEN=ghp_your_github_packages_read_token
 npm ci
-cp .env.example .env
 ./setup.sh
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-For a local Docker stack with Postgres, MinIO, and the Nuxt app:
+`./setup.sh` generates `.env` and exits if one already exists. If you need to
+regenerate local secrets, remove `.env` first.
+
+For a local Docker stack with Postgres, MinIO, and the Nuxt app instead:
 
 ```bash
+export NODE_AUTH_TOKEN=ghp_your_github_packages_read_token
 ./setup.sh
 docker compose up --build
 ```
 
-The first Docker build can take a few minutes. The app listens on port `3000`,
-MinIO's console is available at port `9001`, and Adminer can be enabled with:
+The Docker build reads `NODE_AUTH_TOKEN` as a BuildKit secret so npm can install
+private `@caffeinebounce/*` packages. The first Docker build can take a few
+minutes. The app listens on port `3000`, MinIO's console is available at port
+`9001`, and Adminer can be enabled with:
 
 ```bash
 docker compose --profile tools up
