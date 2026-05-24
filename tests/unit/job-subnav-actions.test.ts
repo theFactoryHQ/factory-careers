@@ -22,9 +22,15 @@ describe('job subnav actions', () => {
     const jobDetail = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
 
     expect(applications).toContain('factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-medium transition-colors')
-    expect(jobDetail).toContain('factory-toolbar-button ml-auto inline-flex h-8 min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2 py-0 text-sm font-medium transition-colors')
+    expect(jobDetail).toContain('factory-pipeline-fullscreen-button factory-toolbar-button ml-auto inline-flex h-8 min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2 py-0 text-sm font-medium transition-colors')
     expect(jobDetail).toContain(":title=\"isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'\"")
     expect(jobDetail).toContain(":aria-label=\"isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'\"")
+  })
+
+  it('hides the pipeline fullscreen control on mobile', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+
+    expect(css).toMatch(/@media \(max-width: 640px\)[\s\S]*\.factory-pipeline-fullscreen-button\s*\{[\s\S]*display:\s*none !important;/)
   })
 
   it('keeps the teleported job actions menu opaque and readable', () => {

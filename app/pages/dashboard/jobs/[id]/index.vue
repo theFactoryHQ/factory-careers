@@ -1084,7 +1084,7 @@ function closeDocPreview() {
           <!-- Fullscreen toggle -->
           <button
             type="button"
-            class="factory-toolbar-button ml-auto inline-flex h-8 min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2 py-0 text-sm font-medium transition-colors"
+            class="factory-pipeline-fullscreen-button factory-toolbar-button ml-auto inline-flex h-8 min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2 py-0 text-sm font-medium transition-colors"
             :title="isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'"
             :aria-label="isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'"
             @click="toggleFullscreen"

@@ -2298,6 +2298,12 @@
     }
   }
 
+  @media (max-width: 640px) {
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-fullscreen-button {
+      display: none !important;
+    }
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-chip {
     height: 32px !important;
     min-height: 32px !important;
