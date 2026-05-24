@@ -19,6 +19,13 @@
 - [ ] I added/updated relevant documentation
 - [ ] I verified multi-tenant scoping and auth behavior for affected API paths
 
+## CLI parity
+
+- [ ] I checked whether this changes portal/API workflow payload shapes changed, response shapes, auth requirements, or resource coverage
+- [ ] I updated `packages/careers-cli/src/routeCoverage.ts` when API routes were added, removed, renamed, or intentionally excluded
+- [ ] I updated `docs/CLI.md`, CLI commands, shared schemas, or CLI tests when the portal/API workflow should be agent-accessible
+- [ ] I documented the reason when a changed portal/API workflow should not be exposed through the CLI
+
 ## DCO
 
 - [ ] All commits in this PR are signed off (`Signed-off-by`) via `git commit -s`

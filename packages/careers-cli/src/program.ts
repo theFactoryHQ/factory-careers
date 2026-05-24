@@ -4,6 +4,12 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { requestBinary, requestFormJson, requestJson, requestText, type FetchLike } from './api'
 import { removeProfileToken, resolveActiveProfile, resolveConfigPath, saveProfile } from './config'
 import { normalizeCliError } from './errors'
+import {
+  cliApplicationCreateSchema,
+  cliCandidateCreateSchema,
+  cliInterviewScheduleSchema,
+  cliJobCreateSchema,
+} from './schemas'
 
 type CliIo = {
   stdout?: (value: string) => void
@@ -136,6 +142,10 @@ type CandidateDocumentsResponse = {
   documents?: unknown[]
 }
 
+type CliPayloadSchema = {
+  parse: (value: unknown) => unknown
+}
+
 function writeJson(io: CliIo, value: unknown): void {
   io.stdout?.(JSON.stringify(value))
 }
@@ -202,6 +212,22 @@ async function readStdinJson(io: CliIo, enabled?: boolean): Promise<unknown> {
       status: 400,
       code: 'INVALID_STDIN_JSON',
       message: 'Expected valid JSON on stdin.',
+    }
+  }
+}
+
+function validateStdinPayload(schema: CliPayloadSchema, body: unknown): unknown {
+  try {
+    return schema.parse(body)
+  } catch (error) {
+    const details = error && typeof error === 'object' && 'issues' in error
+      ? (error as { issues: unknown }).issues
+      : undefined
+    throw {
+      status: 400,
+      code: 'INVALID_STDIN_PAYLOAD',
+      message: 'Stdin JSON did not match the CLI command schema.',
+      details,
     }
   }
 }
@@ -500,7 +526,7 @@ export function createProgram(io: CliIo = {}): Command {
     const { globals, profile } = getContext(command, options)
     requireMutationConfirmation(globals)
     const token = requireAuthenticatedProfile(profile)
-    const body = await readStdinJson(io, options.stdin)
+    const body = validateStdinPayload(cliJobCreateSchema, await readStdinJson(io, options.stdin))
     const result = await requestJson<unknown>({
       fetch: getFetch(io),
       url: `${profile.baseUrl}/api/jobs`,
@@ -843,7 +869,7 @@ export function createProgram(io: CliIo = {}): Command {
     const { globals, profile } = getContext(command, options)
     requireMutationConfirmation(globals)
     const token = requireAuthenticatedProfile(profile)
-    const body = await readStdinJson(io, options.stdin)
+    const body = validateStdinPayload(cliCandidateCreateSchema, await readStdinJson(io, options.stdin))
     const result = await requestJson<unknown>({
       fetch: getFetch(io),
       url: `${profile.baseUrl}/api/candidates`,
@@ -1241,6 +1267,23 @@ export function createProgram(io: CliIo = {}): Command {
     })
   }
 
+  addGlobalOptions(
+    system
+      .command('capabilities')
+      .description('Show the authenticated CLI/API compatibility contract'),
+  ).action(async (options: GlobalOptions, command: Command) => {
+    const { globals, profile } = getContext(command, options)
+    const token = requireAuthenticatedProfile(profile)
+    const result = await requestJson<unknown>({
+      fetch: getFetch(io),
+      url: `${profile.baseUrl}/api/cli/capabilities`,
+      method: 'GET',
+      token,
+    })
+
+    outputResult(io, globals, result)
+  })
+
   const sourceTracking = program
     .command('source-tracking')
     .description('Manage source tracking links and analytics')
@@ -1546,7 +1589,7 @@ export function createProgram(io: CliIo = {}): Command {
     const { globals, profile } = getContext(command, options)
     requireMutationConfirmation(globals)
     const token = requireAuthenticatedProfile(profile)
-    const body = await readStdinJson(io, options.stdin)
+    const body = validateStdinPayload(cliInterviewScheduleSchema, await readStdinJson(io, options.stdin))
     const result = await requestJson<unknown>({
       fetch: getFetch(io),
       url: `${profile.baseUrl}/api/interviews`,
@@ -2663,7 +2706,7 @@ export function createProgram(io: CliIo = {}): Command {
     const { globals, profile } = getContext(command, options)
     requireMutationConfirmation(globals)
     const token = requireAuthenticatedProfile(profile)
-    const body = await readStdinJson(io, options.stdin)
+    const body = validateStdinPayload(cliApplicationCreateSchema, await readStdinJson(io, options.stdin))
     const result = await requestJson<unknown>({
       fetch: getFetch(io),
       url: `${profile.baseUrl}/api/applications`,

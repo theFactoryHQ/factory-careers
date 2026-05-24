@@ -98,6 +98,16 @@ Errors in JSON mode use:
 
 Commands never print stored bearer tokens. The CLI writes its config file with owner-only permissions (`0600`) when it stores an auth token. AI provider API keys can be sent to the server in `ai-config create` or `ai-config update` request bodies, but API responses expose only `hasApiKey`. Avoid shell history leaks by piping JSON from a protected file or secret manager instead of typing secrets inline.
 
+## Compatibility Contract
+
+The server exposes its CLI/API contract through the authenticated capabilities endpoint:
+
+```bash
+factory-careers system capabilities --json
+```
+
+That response includes `CLI_API_CONTRACT_VERSION`, `MINIMUM_SUPPORTED_CLI_VERSION`, resource groups, and the route coverage manifest used by tests. Portal/API changes that affect workflow payloads, response shapes, auth requirements, or resource coverage must update the CLI package, `packages/careers-cli/src/routeCoverage.ts`, shared schemas, docs, or tests in the same PR.
+
 ## Command Coverage
 
 Core commands:
@@ -112,7 +122,7 @@ Core commands:
 - `interviews list`, `interviews get`, `interviews schedule`, `interviews update`, `interviews cancel`, `interviews send-invitation`
 - `comments list`, `comments create`, `comments update`, `comments delete`
 - `feedback status`, `feedback submit`
-- `system info`, `system version`, `system changelog`
+- `system info`, `system version`, `system changelog`, `system capabilities`
 - `source-tracking list`, `source-tracking get`, `source-tracking create`, `source-tracking update`, `source-tracking delete`, `source-tracking link-stats`, `source-tracking stats`
 - `email-templates list`, `email-templates create`, `email-templates update`, `email-templates delete`
 - `properties list`, `properties create`, `properties update`, `properties delete`, `properties reorder`
@@ -120,7 +130,7 @@ Core commands:
 - `calendar status`, `calendar connect`, `calendar disconnect`, `calendar renew-webhooks`
 - `ai-config list`, `ai-config get`, `ai-config create`, `ai-config update`, `ai-config delete`, `ai-config set-default`, `ai-config test-connection`, `ai-config providers`, `ai-config refresh-providers`, `ai-config generate-criteria`
 - `dashboard summary`, `dashboard activity`, `dashboard timeline`, `dashboard candidate-timeline`, `dashboard ai-stats`
-- `chatbot upload`, `chatbot conversations`, `chatbot folders`, `chatbot agents`, `chatbot chat`
+- `chatbot upload`, `chatbot conversations list`, `chatbot conversations get`, `chatbot conversations create`, `chatbot conversations update`, `chatbot conversations delete`, `chatbot folders list`, `chatbot folders create`, `chatbot folders update`, `chatbot folders delete`, `chatbot agents list`, `chatbot agents create`, `chatbot agents update`, `chatbot agents delete`, `chatbot chat`
 - `public jobs list`, `public jobs get`, `public jobs apply`
 
 ## Not CLI Surfaced
