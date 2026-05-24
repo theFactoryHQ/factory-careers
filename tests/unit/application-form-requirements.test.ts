@@ -6,6 +6,12 @@ function readProjectFile(path: string) {
   return readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), 'utf-8')
 }
 
+function cssRule(source: string, selector: string) {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = source.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`))
+  return match?.[1] ?? ''
+}
+
 describe('application form requirement cards', () => {
   it('uses readable Factory text colors inside selectable requirement panels', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
@@ -13,8 +19,8 @@ describe('application form requirement cards', () => {
 
     expect(source).toContain('factory-requirement-option-title')
     expect(source).toContain('factory-requirement-option-description')
-    expect(css).toMatch(/\.factory-requirement-option-title\s*\{[\s\S]*color:\s*var\(--color-surface-950\) !important/)
-    expect(css).toMatch(/\.factory-requirement-option-description\s*\{[\s\S]*color:\s*var\(--color-surface-700\) !important/)
+    expect(cssRule(css, ':where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-requirement-option-title')).toContain('color: #ffffff !important')
+    expect(cssRule(css, ':where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-requirement-option-description')).toContain('color: rgb(255 255 255 / 0.72) !important')
   })
 
   it('renders the application link with the global click-anywhere copy field', () => {

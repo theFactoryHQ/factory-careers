@@ -1258,11 +1258,11 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-requirement-option-title {
-    color: var(--color-surface-950) !important;
+    color: #ffffff !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-requirement-option-description {
-    color: var(--color-surface-700) !important;
+    color: rgb(255 255 255 / 0.72) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button {
