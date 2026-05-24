@@ -2502,6 +2502,25 @@
     color: #080808 !important;
   }
 
+  .factory-back-button,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-back-button {
+    border-color: transparent !important;
+    color: rgb(255 255 255 / 0.62) !important;
+    box-shadow: none !important;
+  }
+
+  .factory-back-button:hover {
+    border-color: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #080808 !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-back-button:hover {
+    border-color: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #080808 !important;
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button.is-active {
     border-color: var(--color-brand-500) !important;
     background-color: var(--color-brand-500) !important;

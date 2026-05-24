@@ -543,7 +543,7 @@ onUnmounted(() => {
           <div class="factory-job-mobile-context flex min-w-0 items-center gap-2 lg:hidden">
             <NuxtLink
               :to="$localePath('/dashboard/jobs')"
-              class="factory-job-mobile-back inline-flex h-8 shrink-0 items-center gap-1.5 border border-transparent bg-transparent px-2 text-xs font-normal uppercase text-white/62 transition-colors no-underline hover:border-white hover:bg-white hover:text-black"
+              class="factory-back-button factory-job-mobile-back inline-flex h-8 shrink-0 items-center gap-1.5 border border-transparent bg-transparent px-2 text-xs font-normal uppercase text-white/62 transition-colors no-underline hover:border-white hover:bg-white hover:text-black"
               aria-label="Back to jobs"
               title="Back to jobs"
             >
@@ -568,7 +568,7 @@ onUnmounted(() => {
 
           <NuxtLink
             :to="$localePath('/dashboard/jobs')"
-            class="hidden lg:flex size-8 items-center justify-center border border-transparent bg-transparent text-white/62 transition-colors no-underline shrink-0 hover:border-white hover:bg-white hover:text-black"
+            class="factory-back-button hidden lg:flex size-8 items-center justify-center border border-transparent bg-transparent text-white/62 transition-colors no-underline shrink-0 hover:border-white hover:bg-white hover:text-black"
             aria-label="All jobs"
             title="All jobs"
           >

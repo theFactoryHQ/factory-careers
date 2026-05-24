@@ -24,6 +24,16 @@ describe('back button hover treatment', () => {
     expect(source).not.toContain('hover:border-brand-500')
   })
 
+  it('uses a dashboard-level recipe so back link hover wins over generic controls', () => {
+    const css = readSource('app/assets/css/main.css')
+    const source = readSource('app/components/AppBackLink.vue')
+    const topbar = readSource('app/components/AppTopBar.vue')
+
+    expect(source).toContain('factory-back-button')
+    expect(topbar).toContain('factory-back-button')
+    expect(css).toMatch(/\.factory-back-button:hover\s*\{[\s\S]*border-color:\s*#ffffff !important;[\s\S]*background-color:\s*#ffffff !important;[\s\S]*color:\s*#080808 !important;/)
+  })
+
   it('uses white-fill hover for the job context chevron back link', () => {
     const source = readSource('app/components/AppTopBar.vue')
     const allJobsLink = elementContaining(source, 'NuxtLink', 'aria-label="All jobs"')
