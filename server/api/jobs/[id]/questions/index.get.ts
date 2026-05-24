@@ -1,6 +1,7 @@
 import { eq, and, asc } from 'drizzle-orm'
 import { job, jobQuestion } from '../../../../database/schema'
 import { jobIdParamSchema } from '../../../../utils/schemas/jobQuestion'
+import { isBuiltInLocationQuestion } from '~~/shared/built-in-application-fields'
 
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { job: ['read'] })
@@ -35,5 +36,5 @@ export default defineEventHandler(async (event) => {
     },
   })
 
-  return questions
+  return questions.filter((q) => !isBuiltInLocationQuestion(q))
 })

@@ -4,7 +4,7 @@ import {
   Plus, Trash2, Edit3, UserPlus, UserMinus,
   ShieldCheck, Sparkles, MessageSquare, GitCommit,
   ChevronDown, ChevronRight, ArrowDown, Loader2,
-  AlertCircle, History, ArrowRight, Search, X,
+  AlertCircle, History, ArrowRight, Search,
 } from 'lucide-vue-next'
 import {
   getApplicationStatusBadgeClass,
@@ -504,31 +504,22 @@ function humanizeIdentifier(value: string): string {
 
       <!-- Search + filters -->
       <div class="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div class="relative flex-1">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-surface-400 dark:text-surface-500 pointer-events-none" />
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search by name, date, or keyword…"
-            class="ui-field pl-10 pr-10 py-2"
-          />
-          <button
-            v-if="searchQuery"
-            class="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 dark:text-surface-500 dark:hover:text-surface-300 cursor-pointer"
-            @click="searchQuery = ''"
-          >
-            <X class="size-4" />
-          </button>
-        </div>
+        <GooeySearchInput
+          v-model="searchQuery"
+          aria-label="Search timeline"
+          class="min-w-0 flex-1 sm:max-w-sm"
+          placeholder="Search by name, date, or keyword…"
+          reserve-expanded-space
+        />
 
         <div class="flex shrink-0 items-center gap-1.5 flex-wrap">
           <button
             v-for="f in filters"
             :key="f.key ?? 'all'"
-            class="inline-flex items-center gap-1 rounded-md px-2.5 py-2 text-xs font-medium uppercase tracking-wide transition-all duration-150 cursor-pointer"
+            class="ui-filter-chip inline-flex h-10 min-h-10 items-center gap-1.5 px-3 py-0 text-xs font-light uppercase tracking-normal transition-all duration-150 cursor-pointer"
             :class="activeFilter === f.key
-              ? 'bg-brand-600 text-white'
-              : 'text-surface-500 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-700 dark:hover:text-surface-300'"
+              ? 'ui-filter-chip-active'
+              : 'ui-filter-chip-inactive'"
             @click="setFilter(f.key)"
           >
             <component :is="f.icon" class="size-3" />

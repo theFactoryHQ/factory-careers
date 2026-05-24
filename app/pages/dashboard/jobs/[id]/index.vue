@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import {
   ArrowLeft, ArrowRight, Briefcase, Calendar, Clock, Hash, UserRound, Mail, MessageSquare,
-  FileText, Paperclip, Download, Eye, Phone, Search, ExternalLink,
+  FileText, Paperclip, Download, Eye, Phone, ExternalLink,
   Pencil, Trash2, Globe, ChevronDown, X,
   Video, Building2, Code2, UsersRound, Save, Check, MapPin, Users, Plus,
   CheckCircle2, XCircle, AlertTriangle, ArrowUpDown, ListFilter,
-  Maximize2, Minimize2, Brain, Loader2, History, SlidersHorizontal,
+  Maximize2, Minimize2, Brain, History, SlidersHorizontal,
 } from 'lucide-vue-next'
 import type { PropertyEntry, PropertyFilter } from '~~/shared/properties'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
@@ -13,10 +13,10 @@ import { APPLICATION_STATUS_TRANSITIONS, INTERVIEW_STATUS_TRANSITIONS } from '~~
 import {
   formatRelativeTime,
   getApplicationStatusBadgeClass,
-  getApplicationTransitionButtonClass,
   getApplicationTransitionLabel,
   getInterviewStatusBadgeClass,
   getScoreBadgeClass,
+  getScoreTextClass,
 } from '~/utils/status-display'
 
 definePageMeta({
@@ -137,7 +137,6 @@ function selectSort(option: SortOption) {
 function closePanels() {
   showSortPanel.value = false
   showFilterPanel.value = false
-  showOverviewDropdown.value = false
 }
 
 const filteredApplications = computed(() => {
@@ -290,39 +289,14 @@ const currentSummary = computed(() => filteredApplications.value[currentIndex.va
 type DetailTab = 'overview' | 'interviews' | 'documents' | 'responses' | 'ai-analysis' | 'timeline' | 'properties'
 const detailTab = ref<DetailTab>('overview')
 
-// Overview section visibility toggles
-const overviewSections = reactive({
-  aiAnalysis: true,
-  interviews: true,
-  documents: true,
-  responses: true,
-  properties: true,
-})
-const showOverviewDropdown = ref(false)
-const overviewDropdownRef = ref<HTMLElement | null>(null)
-
-function handleOverviewDropdownClickOutside(event: MouseEvent) {
-  if (overviewDropdownRef.value && !overviewDropdownRef.value.contains(event.target as Node)) {
-    showOverviewDropdown.value = false
-  }
-}
-
-watch(showOverviewDropdown, (val) => {
-  if (val) {
-    setTimeout(() => document.addEventListener('click', handleOverviewDropdownClickOutside), 0)
-  } else {
-    document.removeEventListener('click', handleOverviewDropdownClickOutside)
-  }
-})
-
 // Which sections to display based on active tab
 const showSection = computed(() => ({
   profile: detailTab.value === 'overview',
-  aiAnalysis: detailTab.value === 'overview' ? overviewSections.aiAnalysis : detailTab.value === 'ai-analysis',
-  interviews: detailTab.value === 'overview' ? overviewSections.interviews : detailTab.value === 'interviews',
-  documents: detailTab.value === 'overview' ? overviewSections.documents : detailTab.value === 'documents',
-  responses: detailTab.value === 'overview' ? overviewSections.responses : detailTab.value === 'responses',
-  properties: detailTab.value === 'overview' ? overviewSections.properties : detailTab.value === 'properties',
+  aiAnalysis: detailTab.value === 'overview' || detailTab.value === 'ai-analysis',
+  interviews: detailTab.value === 'overview' || detailTab.value === 'interviews',
+  documents: detailTab.value === 'overview' || detailTab.value === 'documents',
+  responses: detailTab.value === 'overview' || detailTab.value === 'responses',
+  properties: detailTab.value === 'overview' || detailTab.value === 'properties',
   timeline: detailTab.value === 'timeline',
 }))
 
@@ -988,49 +962,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeyNavigation)
 })
 
-// ─────────────────────────────────────────────
-// Job status transitions (Publish, Close, etc.)
-// ─────────────────────────────────────────────
-
-const isScoringIndividual = ref(false)
-
-async function scoreIndividualCandidate(applicationId: string) {
-  isScoringIndividual.value = true
-  try {
-    await $fetch(`/api/applications/${applicationId}/analyze`, {
-      method: 'POST',
-    })
-    await refreshApps()
-    // Re-fetch the detail so score updates in the detail panel
-    if (currentApplicationId.value === applicationId) {
-      await executeDetailFetch()
-    }
-    track('individual_scoring_completed', { application_id: applicationId })
-    toast.success('Candidate scored', 'AI analysis complete.')
-  } catch (err: any) {
-    const statusMessage = err?.data?.statusMessage ?? ''
-    if (statusMessage.includes('AI provider not configured')) {
-      toast.add({
-        type: 'warning',
-        title: 'AI provider not configured',
-        message: 'Set up your AI provider in Settings first.',
-        link: { label: 'Go to AI Settings', href: '/dashboard/settings/ai' },
-        duration: 8000,
-      })
-    } else if (statusMessage.includes('No scoring criteria')) {
-      toast.warning('No scoring criteria', 'Add scoring criteria to this job first.')
-    } else {
-      toast.error('Scoring failed', { message: statusMessage || 'An unexpected error occurred.', statusCode: err?.data?.statusCode })
-    }
-  } finally {
-    isScoringIndividual.value = false
-  }
-}
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleOverviewDropdownClickOutside)
-})
-
 const isLoading = computed(() => {
   return jobFetchStatus.value === 'pending' || appFetchStatus.value === 'pending'
 })
@@ -1103,20 +1034,23 @@ function closeDocPreview() {
       <!-- ═══════════════════════════════════════ -->
       <div class="factory-pipeline-stage-strip shrink-0 border-b border-white/10 bg-white/[0.02]">
         <div class="factory-dashboard-tabs flex items-center gap-1.5 overflow-x-auto scrollbar-thin sm:scrollbar-none px-3 sm:px-5 py-1">
-          <span class="shrink-0 pr-2 text-xs font-light uppercase leading-none text-white/48">
+          <span class="factory-pipeline-stage-strip-label shrink-0 pr-2 text-xs font-light uppercase leading-none text-white/48">
             Pipeline stages
           </span>
           <button
-            v-for="status in PIPELINE_STATUSES"
+            v-for="(status, idx) in PIPELINE_STATUSES"
             :key="`tab-${status}`"
             class="ui-filter-chip factory-pipeline-status-chip relative flex h-8 shrink-0 cursor-pointer items-center gap-2 px-3.5 text-xs !font-light uppercase leading-none tracking-normal transition-all duration-200 focus:outline-none"
             :class="[
               isFocusStatus(status) ? 'ui-filter-chip-active factory-pipeline-status-chip-active' : 'ui-filter-chip-inactive',
               `factory-pipeline-status-chip-${status}`,
             ]"
+            :title="`${formatStatusLabel(status)} stage ${idx + 1}, ${statusCounts[status] ?? 0} applicants`"
+            :aria-label="`${formatStatusLabel(status)} stage ${idx + 1}, ${statusCounts[status] ?? 0} applicants`"
             style="font-weight: 300 !important"
             @click="setFocusStatus(status)"
           >
+            <span class="factory-pipeline-status-chip-stage tabular-nums">{{ idx + 1 }}</span>
             <span class="pipeline-status-dot size-2 rounded-full" :class="{
               'bg-blue-500 dark:bg-blue-400': status === 'new',
               'bg-violet-500 dark:bg-violet-400': status === 'screening',
@@ -1125,9 +1059,9 @@ function closeDocPreview() {
               'bg-green-600 dark:bg-green-300': status === 'hired',
               'bg-surface-400 dark:bg-surface-500': status === 'rejected',
             }" />
-            {{ formatStatusLabel(status) }}
+            <span class="factory-pipeline-status-chip-label">{{ formatStatusLabel(status) }}</span>
             <span
-              class="tabular-nums text-xs font-normal transition-colors duration-200"
+              class="factory-pipeline-status-chip-number factory-pipeline-status-chip-count tabular-nums text-xs font-normal transition-colors duration-200"
               :class="isFocusStatus(status)
                 ? 'text-brand-600 dark:text-brand-400'
                 : 'text-surface-400 dark:text-surface-500'"
@@ -1139,7 +1073,7 @@ function closeDocPreview() {
           <!-- Fullscreen toggle -->
           <button
             type="button"
-            class="factory-toolbar-button ml-auto inline-flex h-8 min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2 py-0 text-sm font-medium transition-colors"
+            class="factory-pipeline-fullscreen-button factory-toolbar-button ml-auto inline-flex h-8 min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2 py-0 text-sm font-medium transition-colors"
             :title="isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'"
             :aria-label="isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'"
             @click="toggleFullscreen"
@@ -1162,23 +1096,22 @@ function closeDocPreview() {
           <!-- Search + Sort + Filter controls -->
           <div class="shrink-0 px-3.5 pt-3 pb-2 space-y-2 dark:border-surface-800">
             <!-- Search input -->
-            <div class="relative">
-              <Search class="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-surface-400 dark:text-surface-500" />
-              <input
-                v-model="searchTerm"
-                type="text"
-                placeholder="Search candidates…"
-                class="w-full rounded-lg border border-surface-200/80 bg-surface-50/80 py-2 pl-8 pr-3 text-sm text-surface-900 placeholder:text-surface-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-surface-700/80 dark:bg-surface-800/60 dark:text-surface-100 dark:placeholder:text-surface-500 dark:focus:border-brand-500 dark:focus:ring-brand-500/20 transition-all duration-150"
-                @focus="closePanels"
-              />
-            </div>
+            <GooeySearchInput
+              v-model="searchTerm"
+              aria-label="Search candidates"
+              class="w-full"
+              placeholder="Search candidates…"
+              reserve-expanded-space
+              size="sm"
+              @open-change="closePanels"
+            />
 
             <!-- Sort & Filter row -->
             <div class="flex items-center gap-1.5">
               <!-- Sort dropdown -->
               <div class="relative flex-1 min-w-0">
                 <button
-                  class="flex w-full cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1.5 text-left transition-all duration-150"
+                  class="flex h-8 min-h-8 w-full cursor-pointer items-center gap-1.5 rounded-md border px-2 py-0 text-left transition-all duration-150"
                   :class="showSortPanel
                     ? 'border-brand-300 bg-brand-50/50 text-brand-700 dark:border-brand-600 dark:bg-brand-950/30 dark:text-brand-300'
                     : 'border-surface-200/80 bg-surface-50/50 text-surface-600 hover:border-surface-300 hover:bg-surface-50 dark:border-surface-700/80 dark:bg-surface-800/40 dark:text-surface-300 dark:hover:border-surface-600 dark:hover:bg-surface-800'"
@@ -1221,7 +1154,7 @@ function closeDocPreview() {
 
               <!-- Filter button -->
               <button
-                class="relative flex cursor-pointer items-center gap-1 rounded-md border px-2 py-1.5 transition-all duration-150"
+                class="relative flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1 rounded-md border px-2 py-0 transition-all duration-150"
                 :class="showFilterPanel || hasActiveFilters
                   ? 'border-brand-300 bg-brand-50/50 text-brand-700 dark:border-brand-600 dark:bg-brand-950/30 dark:text-brand-300'
                   : 'border-surface-200/80 bg-surface-50/50 text-surface-600 hover:border-surface-300 hover:bg-surface-50 dark:border-surface-700/80 dark:bg-surface-800/40 dark:text-surface-300 dark:hover:border-surface-600 dark:hover:bg-surface-800'"
@@ -1324,21 +1257,13 @@ function closeDocPreview() {
 
           <!-- Scrollable list -->
           <div class="flex-1 overflow-y-auto scrollbar-thin border-t border-surface-100 dark:border-surface-800/60">
-            <div v-if="filteredApplications.length === 0" class="p-8 text-center">
-              <div class="flex size-12 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-800/60 mx-auto mb-3">
-                <UserRound class="size-5 text-surface-400 dark:text-surface-500" />
-              </div>
-              <p class="text-sm font-medium text-surface-600 dark:text-surface-300">
-                {{ (searchTerm.trim() || hasActiveFilters) ? 'No matching candidates' : `No candidates yet` }}
-              </p>
-              <p class="mt-1 text-xs text-surface-400 dark:text-surface-500">
-                {{ (searchTerm.trim() || hasActiveFilters) ? 'Try adjusting your search or filters.' : `No one in ${formatStatusLabel(focusStatus)} stage.` }}
-              </p>
+            <div v-if="filteredApplications.length === 0" class="p-3">
               <button
                 v-if="hasActiveFilters"
-                class="mt-2 cursor-pointer text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+                class="flex w-full cursor-pointer items-center justify-center gap-1 rounded-md py-1 text-[11px] font-medium text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200 transition-colors"
                 @click="clearFilters"
               >
+                <X class="size-3" />
                 Clear filters
               </button>
             </div>
@@ -1396,8 +1321,23 @@ function closeDocPreview() {
             <div class="flex size-16 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-800/60 mb-4">
               <UserRound class="size-7 text-surface-400 dark:text-surface-500" />
             </div>
-            <p class="text-base font-semibold text-surface-700 dark:text-surface-200">
-              No candidates in {{ formatStatusLabel(focusStatus) }}
+            <p class="flex flex-wrap items-center justify-center gap-2 text-base font-semibold text-surface-700 dark:text-surface-200">
+              <span>No candidates in</span>
+              <span
+                class="factory-pipeline-empty-status-chip ui-filter-chip factory-pipeline-status-chip inline-flex h-8 min-h-8 items-center gap-2 px-3 text-xs !font-light uppercase leading-none tracking-normal"
+                :class="[`factory-pipeline-status-chip-${focusStatus}`]"
+                style="font-weight: 300 !important"
+              >
+                <span class="pipeline-status-dot size-2 rounded-full" :class="{
+                  'bg-blue-500 dark:bg-blue-400': focusStatus === 'new',
+                  'bg-violet-500 dark:bg-violet-400': focusStatus === 'screening',
+                  'bg-amber-500 dark:bg-amber-400': focusStatus === 'interview',
+                  'bg-teal-500 dark:bg-teal-400': focusStatus === 'offer',
+                  'bg-green-600 dark:bg-green-300': focusStatus === 'hired',
+                  'bg-surface-400 dark:bg-surface-500': focusStatus === 'rejected',
+                }" />
+                {{ formatStatusLabel(focusStatus) }}
+              </span>
             </p>
             <p class="mt-1.5 text-sm text-surface-500 dark:text-surface-400 max-w-xs">
               Switch to another pipeline stage to review candidates.
@@ -1407,17 +1347,22 @@ function closeDocPreview() {
           <template v-else>
             <!-- Sticky status transitions (stays visible on scroll) -->
             <div v-if="allowedTransitions.length > 0" class="shrink-0 border-b border-white/10 bg-white/[0.02] px-4 sm:px-6 py-2.5 ui-dashboard-panel-header">
-              <div class="mx-auto max-w-4xl flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <div class="factory-application-transition-strip mx-auto flex max-w-4xl flex-nowrap items-center gap-1.5 sm:gap-2">
                 <button
                   v-for="(nextStatus, idx) in allowedTransitions"
                   :key="nextStatus"
                   :disabled="isMutating"
-                  class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm inline-flex items-center gap-1.5"
-                  :class="getApplicationTransitionButtonClass(nextStatus)"
+                  class="ui-filter-chip factory-application-transition-chip inline-flex h-8 min-h-8 cursor-pointer items-center gap-2 px-3 text-xs !font-light uppercase leading-none tracking-normal transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50"
+                  :title="`${getApplicationTransitionLabel(nextStatus)} ${idx + 1}`"
+                  :aria-label="`${getApplicationTransitionLabel(nextStatus)} ${idx + 1}`"
                   @click="nextStatus === 'interview' ? openInterviewScheduler() : changeStatus(nextStatus)"
                 >
-                  {{ getApplicationTransitionLabel(nextStatus) }}
-                  <kbd class="inline-flex items-center justify-center rounded px-1 py-0.5 text-[10px] font-mono leading-none opacity-60 bg-black/10 dark:bg-white/10 min-w-[16px]">{{ idx + 1 }}</kbd>
+                  <ApplicationTransitionIcon :status="nextStatus" />
+                  <span class="factory-application-transition-label">{{ getApplicationTransitionLabel(nextStatus) }}</span>
+                  <kbd class="factory-application-transition-shortcut inline-flex items-center justify-center px-1 text-[10px] font-mono leading-none">{{ idx + 1 }}</kbd>
+                  <span class="factory-application-transition-tooltip" role="tooltip" aria-hidden="true">
+                    {{ getApplicationTransitionLabel(nextStatus) }}
+                  </span>
                 </button>
               </div>
             </div>
@@ -1426,24 +1371,23 @@ function closeDocPreview() {
             <div ref="detailScrollContainer" class="flex-1 overflow-y-auto scrollbar-thin pb-20 md:pb-0">
 
             <!-- Candidate header -->
-            <div class="border-b border-white/10 bg-white/[0.02] px-4 sm:px-6 py-4 sm:py-6 ui-dashboard-panel-header">
-              <div class="mx-auto max-w-4xl">
-              <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div class="flex items-start gap-4 min-w-0">
+            <div class="factory-candidate-header border-b border-white/10 bg-white/[0.02] px-4 sm:px-6 py-4 sm:py-6 ui-dashboard-panel-header">
+              <div class="factory-candidate-header-inner mx-auto flex max-w-4xl flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="factory-candidate-header-primary flex min-w-0 items-start gap-4">
                   <div class="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 text-lg font-bold text-white shadow-lg shadow-brand-500/20 dark:from-brand-500 dark:to-brand-700 dark:shadow-brand-500/10">
                     {{ getCandidateInitials(currentSummary.candidateFirstName, currentSummary.candidateLastName) }}
                   </div>
                   <div class="min-w-0">
-                    <div class="flex items-center gap-2.5">
-                      <h2 class="text-xl font-semibold tracking-tight text-surface-900 dark:text-surface-50 truncate">
-                        {{ formatPersonName(currentSummary.candidateFirstName, currentSummary.candidateLastName) }}
+                    <div class="factory-candidate-header-title-row flex items-center gap-2.5">
+                      <h2 class="truncate text-xl font-semibold tracking-tight text-surface-900 dark:text-surface-50">
+                        <NuxtLink
+                          :to="$localePath(`/dashboard/applications/${currentSummary.id}`)"
+                          class="truncate transition-colors hover:text-brand-600 dark:hover:text-brand-400"
+                        >
+                          {{ formatPersonName(currentSummary.candidateFirstName, currentSummary.candidateLastName) }}
+                        </NuxtLink>
                       </h2>
-                      <span
-                        class="inline-flex shrink-0 items-center rounded-lg px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset"
-                        :class="getApplicationStatusBadgeClass(currentSummary.status, 'ring')"
-                      >
-                        {{ currentSummary.status }}
-                      </span>
+                      <ApplicationStatusBadge :status="currentSummary.status" />
                     </div>
                     <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-surface-500 dark:text-surface-400">
                       <a
@@ -1459,35 +1403,21 @@ function closeDocPreview() {
                         {{ resolvedCurrentApplication.candidate.phone }}
                       </span>
                     </div>
-                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <div class="factory-candidate-header-score mt-2 flex flex-wrap items-center gap-2">
                       <span
                         v-if="currentSummary.score != null"
-                        class="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset"
-                        :class="getScoreBadgeClass(currentSummary.score, 'muted')"
+                        class="inline-flex items-baseline gap-1"
                       >
-                        {{ currentSummary.score }} pts
-                      </span>
-                      <button
-                        :disabled="isScoringIndividual"
-                        class="factory-button-cta factory-button-premium inline-flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1.5 px-2.5 py-0 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                        @click="scoreIndividualCandidate(currentSummary.id)"
-                      >
-                        <Loader2 v-if="isScoringIndividual" class="size-3 animate-spin" />
-                        <Brain v-else class="size-3" />
-                        {{ isScoringIndividual ? 'Scoring…' : (currentSummary.score != null ? 'Re-score' : 'Score Candidate') }}
-                      </button>
-                      <TimelineDateLink :date="currentSummary.createdAt" class="inline-flex items-center gap-1 text-[11px] text-surface-400 dark:text-surface-500">
-                        <Clock class="size-3" />
-                        Applied {{ new Date(currentSummary.createdAt).toLocaleDateString() }}
-                      </TimelineDateLink>
-                      <span v-if="currentSummary.updatedAt !== currentSummary.createdAt" class="inline-flex items-center gap-1 text-[11px] text-surface-400 dark:text-surface-500">
-                        · <TimelineDateLink :date="currentSummary.updatedAt">Updated {{ new Date(currentSummary.updatedAt).toLocaleDateString() }}</TimelineDateLink>
+                        <span class="text-lg font-bold tabular-nums" :class="getScoreTextClass(currentSummary.score)">
+                          {{ currentSummary.score }}
+                        </span>
+                        <span class="text-xs text-surface-400 dark:text-surface-500">/ 100</span>
                       </span>
                     </div>
                   </div>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
-                  <div class="flex items-center gap-1.5 mr-2">
+                <div class="factory-candidate-header-actions flex shrink-0 flex-col items-end justify-between gap-4 sm:self-stretch">
+                  <div class="factory-candidate-header-pager mr-2 flex items-center gap-1.5">
                     <button
                       :disabled="currentIndex === 0"
                       class="flex cursor-pointer items-center justify-center rounded-lg border border-surface-200 p-1.5 text-surface-500 transition-all duration-150 hover:bg-white hover:border-surface-300 hover:text-surface-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:border-surface-600 dark:hover:text-surface-300"
@@ -1506,153 +1436,131 @@ function closeDocPreview() {
                       <ArrowRight class="size-4" />
                     </button>
                   </div>
-                  <NuxtLink
-                    :to="$localePath(`/dashboard/applications/${currentSummary.id}`)"
-                    class="flex items-center justify-center rounded-lg border border-surface-200 p-1.5 text-surface-500 transition-all duration-150 hover:bg-white hover:border-surface-300 hover:text-surface-700 dark:border-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:border-surface-600 dark:hover:text-surface-300"
-                    title="Full application page"
-                  >
-                    <ExternalLink class="size-4" />
-                  </NuxtLink>
+                  <ApplicationTimestampStack
+                    :applied-at="currentSummary.createdAt"
+                    :updated-at="currentSummary.updatedAt"
+                  />
                 </div>
-              </div>
               </div>
             </div>
 
             <!-- Detail tabs -->
             <div class="border-b border-white/10 bg-white/[0.02] px-4 sm:px-6 ui-dashboard-panel-header">
-              <div class="factory-dashboard-tabs mx-auto max-w-4xl flex gap-1 -mb-px scrollbar-none whitespace-nowrap" :class="showOverviewDropdown ? '' : 'overflow-x-auto'">
-                <div ref="overviewDropdownRef" class="relative">
-                  <div class="flex items-center border-b-2 transition-all duration-150" :class="detailTab === 'overview'
-                    ? 'border-brand-600 dark:border-brand-400'
-                    : 'border-transparent'">
-                    <button
-                      class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150"
-                      :class="detailTab === 'overview'
-                        ? 'text-brand-700 dark:text-brand-300'
-                        : 'text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-300'"
-                      @click="detailTab = 'overview'"
-                    >
-                      Overview
-                    </button>
-                    <button
-                      v-if="detailTab === 'overview'"
-                      class="cursor-pointer -ml-2 p-1 rounded transition-colors duration-150 text-surface-400 hover:text-surface-600 dark:text-surface-500 dark:hover:text-surface-300"
-                      @click.stop="showOverviewDropdown = !showOverviewDropdown"
-                    >
-                      <ChevronDown class="size-3.5 transition-transform duration-150" :class="showOverviewDropdown ? 'rotate-180' : ''" />
-                    </button>
-                  </div>
-
-                  <!-- Overview sections dropdown -->
-                  <Transition
-                    enter-active-class="transition duration-150 ease-out"
-                    enter-from-class="opacity-0 scale-95 -translate-y-1"
-                    enter-to-class="opacity-100 scale-100 translate-y-0"
-                    leave-active-class="transition duration-100 ease-in"
-                    leave-from-class="opacity-100 scale-100 translate-y-0"
-                    leave-to-class="opacity-0 scale-95 -translate-y-1"
-                  >
-                    <div
-                      v-if="showOverviewDropdown"
-                      class="factory-saved-views-panel absolute left-0 top-full z-50 mt-1 w-44 rounded-xl border py-1.5 origin-top-left"
-                    >
-                      <span class="block px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500">Sections</span>
-                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
-                        <input v-model="overviewSections.aiAnalysis" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
-                        AI
-                      </label>
-                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
-                        <input v-model="overviewSections.interviews" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
-                        Interviews
-                      </label>
-                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
-                        <input v-model="overviewSections.documents" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
-                        Documents
-                      </label>
-                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
-                        <input v-model="overviewSections.responses" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
-                        Responses
-                      </label>
-                      <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
-                        <input v-model="overviewSections.properties" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
-                        Properties
-                      </label>
-                    </div>
-                  </Transition>
-                </div>
+              <div class="factory-dashboard-tabs factory-candidate-detail-tabs mx-auto grid h-11 max-w-4xl grid-cols-7 gap-0.5">
                 <button
-                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
+                  class="factory-candidate-detail-tab cursor-pointer"
+                  title="Overview"
+                  aria-label="Overview"
+                  :class="detailTab === 'overview'
+                    ? 'factory-candidate-detail-tab-active'
+                    : 'factory-candidate-detail-tab-inactive'"
+                  @click="detailTab = 'overview'"
+                >
+                  <UserRound class="factory-candidate-detail-tab-icon size-4" />
+                  <span class="factory-candidate-detail-tab-label">Overview</span>
+                  <span class="factory-candidate-detail-tab-tooltip">Overview</span>
+                </button>
+                <button
+                  class="factory-candidate-detail-tab cursor-pointer"
+                  title="AI"
+                  aria-label="AI"
                   :class="detailTab === 'ai-analysis'
-                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
+                    ? 'factory-candidate-detail-tab-active'
+                    : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'ai-analysis'"
                 >
-                  AI
+                  <Brain class="factory-candidate-detail-tab-icon size-4" />
+                  <span class="factory-candidate-detail-tab-label">AI</span>
+                  <span class="factory-candidate-detail-tab-tooltip">AI</span>
                 </button>
                 <button
-                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
+                  class="factory-candidate-detail-tab cursor-pointer"
+                  :title="`Interviews${currentApplicationInterviews.length > 0 ? ` (${currentApplicationInterviews.length})` : ''}`"
+                  :aria-label="`Interviews${currentApplicationInterviews.length > 0 ? ` (${currentApplicationInterviews.length})` : ''}`"
                   :class="detailTab === 'interviews'
-                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
+                    ? 'factory-candidate-detail-tab-active'
+                    : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'interviews'"
                 >
-                  Interviews
+                  <Calendar class="factory-candidate-detail-tab-icon size-4" />
+                  <span class="factory-candidate-detail-tab-label">Interviews</span>
                   <span
                     v-if="currentApplicationInterviews.length > 0"
-                    class="ml-1 text-xs text-surface-400"
+                    class="factory-candidate-detail-tab-count"
                   >
-                    ({{ currentApplicationInterviews.length }})
+                    {{ currentApplicationInterviews.length }}
+                  </span>
+                  <span class="factory-candidate-detail-tab-tooltip">
+                    Interviews<span v-if="currentApplicationInterviews.length > 0"> ({{ currentApplicationInterviews.length }})</span>
                   </span>
                 </button>
                 <button
-                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
+                  class="factory-candidate-detail-tab cursor-pointer"
+                  :title="`Documents${resolvedCurrentApplication?.candidate.documents?.length ? ` (${resolvedCurrentApplication.candidate.documents.length})` : ''}`"
+                  :aria-label="`Documents${resolvedCurrentApplication?.candidate.documents?.length ? ` (${resolvedCurrentApplication.candidate.documents.length})` : ''}`"
                   :class="detailTab === 'documents'
-                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
+                    ? 'factory-candidate-detail-tab-active'
+                    : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'documents'"
                 >
-                  Documents
+                  <FileText class="factory-candidate-detail-tab-icon size-4" />
+                  <span class="factory-candidate-detail-tab-label">Documents</span>
                   <span
                     v-if="resolvedCurrentApplication?.candidate.documents?.length"
-                    class="ml-1 text-xs text-surface-400"
+                    class="factory-candidate-detail-tab-count"
                   >
-                    ({{ resolvedCurrentApplication.candidate.documents.length }})
+                    {{ resolvedCurrentApplication.candidate.documents.length }}
+                  </span>
+                  <span class="factory-candidate-detail-tab-tooltip">
+                    Documents<span v-if="resolvedCurrentApplication?.candidate.documents?.length"> ({{ resolvedCurrentApplication.candidate.documents.length }})</span>
                   </span>
                 </button>
                 <button
-                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
+                  class="factory-candidate-detail-tab cursor-pointer"
+                  :title="`Responses${resolvedCurrentApplication?.responses?.length ? ` (${resolvedCurrentApplication.responses.length})` : ''}`"
+                  :aria-label="`Responses${resolvedCurrentApplication?.responses?.length ? ` (${resolvedCurrentApplication.responses.length})` : ''}`"
                   :class="detailTab === 'responses'
-                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
+                    ? 'factory-candidate-detail-tab-active'
+                    : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'responses'"
                 >
-                  Responses
+                  <MessageSquare class="factory-candidate-detail-tab-icon size-4" />
+                  <span class="factory-candidate-detail-tab-label">Responses</span>
                   <span
                     v-if="resolvedCurrentApplication?.responses?.length"
-                    class="ml-1 text-xs text-surface-400"
+                    class="factory-candidate-detail-tab-count"
                   >
-                    ({{ resolvedCurrentApplication.responses.length }})
+                    {{ resolvedCurrentApplication.responses.length }}
+                  </span>
+                  <span class="factory-candidate-detail-tab-tooltip">
+                    Responses<span v-if="resolvedCurrentApplication?.responses?.length"> ({{ resolvedCurrentApplication.responses.length }})</span>
                   </span>
                 </button>
                 <button
-                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px flex items-center gap-1.5"
+                  class="factory-candidate-detail-tab cursor-pointer"
+                  title="Timeline"
+                  aria-label="Timeline"
                   :class="detailTab === 'timeline'
-                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
+                    ? 'factory-candidate-detail-tab-active'
+                    : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'timeline'"
                 >
-                  <History class="size-3.5" />
-                  Timeline
+                  <History class="factory-candidate-detail-tab-icon size-4" />
+                  <span class="factory-candidate-detail-tab-label">Timeline</span>
+                  <span class="factory-candidate-detail-tab-tooltip">Timeline</span>
                 </button>
                 <button
-                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px flex items-center gap-1.5"
+                  class="factory-candidate-detail-tab cursor-pointer"
+                  title="Properties"
+                  aria-label="Properties"
                   :class="detailTab === 'properties'
-                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
+                    ? 'factory-candidate-detail-tab-active'
+                    : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'properties'"
                 >
-                  <SlidersHorizontal class="size-3.5" />
-                  Properties
+                  <SlidersHorizontal class="factory-candidate-detail-tab-icon size-4" />
+                  <span class="factory-candidate-detail-tab-label">Properties</span>
+                  <span class="factory-candidate-detail-tab-tooltip">Properties</span>
                 </button>
               </div>
             </div>
@@ -1691,17 +1599,6 @@ function closeDocPreview() {
                   >
                     <span class="italic">No notes yet.</span>
                     <span class="text-xs font-semibold uppercase text-brand-400 transition-colors group-hover:text-brand-300">Add Notes</span>
-                  </NuxtLink>
-                </div>
-
-                <!-- Quick links -->
-                <div class="flex items-center gap-4 pt-1">
-                  <NuxtLink
-                    :to="$localePath(`/dashboard/applications/${currentSummary.id}`)"
-                    class="inline-flex items-center gap-1.5 text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors group"
-                  >
-                    <ExternalLink class="size-3.5 transition-transform group-hover:translate-x-0.5" />
-                    Full application page
                   </NuxtLink>
                 </div>
               </div>
@@ -2274,7 +2171,7 @@ function closeDocPreview() {
       <!-- ═══════════════════════════════════════ -->
       <div
         v-if="filteredApplications.length > 0"
-        class="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-white/[0.02] ui-dashboard-panel-header"
+        class="factory-mobile-candidate-bar md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-white/[0.02] ui-dashboard-panel-header"
         :style="{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }"
       >
         <!-- Horizontal scrollable candidate cards -->
@@ -2286,10 +2183,10 @@ function closeDocPreview() {
             v-for="(app, idx) in filteredApplications"
             :key="app.id"
             :data-candidate-idx="idx"
-            class="snap-center shrink-0 flex items-center gap-2.5 rounded-xl px-3 py-2 min-w-[130px] max-w-[180px] transition-all duration-150 cursor-pointer"
+            class="factory-mobile-candidate-card snap-center shrink-0 flex items-center gap-2.5 rounded-xl px-3 py-2 min-w-[130px] max-w-[180px] transition-all duration-150 cursor-pointer"
             :class="currentIndex === idx
-              ? 'bg-brand-50 ring-2 ring-brand-500 shadow-sm dark:bg-brand-950/30 dark:ring-brand-400'
-              : 'bg-surface-50 ring-1 ring-surface-200 hover:ring-surface-300 dark:bg-surface-800/60 dark:ring-surface-700 dark:hover:ring-surface-600'"
+              ? 'factory-mobile-candidate-card-active bg-brand-50 ring-2 ring-brand-500 shadow-sm dark:bg-brand-950/30 dark:ring-brand-400'
+              : 'factory-mobile-candidate-card-inactive bg-surface-50 ring-1 ring-surface-200 hover:ring-surface-300 dark:bg-surface-800/60 dark:ring-surface-700 dark:hover:ring-surface-600'"
             @click="currentIndex = idx"
           >
             <div

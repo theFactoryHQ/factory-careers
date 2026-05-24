@@ -112,7 +112,7 @@ const jobTabs = computed(() => {
   return [
     { label: 'Pipeline', to: base, icon: Kanban, exact: true },
     { label: 'Table', to: `${base}/candidates`, icon: Table2, exact: true },
-    { label: 'Application Form', to: `${base}/application-form`, icon: FileText, exact: true },
+    { label: 'Application', to: `${base}/application-form`, icon: FileText, exact: true },
     { label: 'AI', to: `${base}/ai-analysis`, icon: Sparkles, exact: true },
     { label: 'Settings', to: `${base}/settings`, icon: Settings, exact: true },
   ]
@@ -502,26 +502,6 @@ onUnmounted(() => {
                   </div>
                 </div>
 
-                <!-- Mobile-only items -->
-                <div class="md:hidden border-b border-white/10 py-1">
-                  <NuxtLink
-                    v-for="item in navItems"
-                    :key="item.to"
-                    :to="$localePath(item.to)"
-                    class="flex items-center gap-2.5 px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors no-underline"
-                    :class="isActiveRoute(item.to, item.exact) ? 'text-brand-400 font-medium' : ''"
-                  >
-                    <component :is="item.icon" class="size-4" />
-                    {{ item.label }}
-                    <span
-                      v-if="item.comingSoon"
-                      class="ml-auto inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 text-[9px] font-semibold leading-none text-amber-700 dark:text-amber-400 ring-1 ring-inset ring-amber-200/60 dark:ring-amber-800/40"
-                    >
-                      Soon
-                    </span>
-                  </NuxtLink>
-                </div>
-
                 <!-- Actions -->
                 <div class="py-1">
                   <button
@@ -559,19 +539,45 @@ onUnmounted(() => {
         v-if="activeJobId"
         class="relative z-10 border-b border-white/10 bg-black/92 backdrop-blur-lg"
       >
-        <div class="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 lg:px-6 h-10 overflow-x-auto scrollbar-none">
+        <div class="flex flex-col gap-2 px-3 py-2 lg:h-10 lg:flex-row lg:items-center lg:gap-4 lg:px-6 lg:py-0">
+          <div class="factory-job-mobile-context flex min-w-0 items-center gap-2 lg:hidden">
+            <NuxtLink
+              :to="$localePath('/dashboard/jobs')"
+              class="factory-back-button factory-job-mobile-back inline-flex h-8 shrink-0 items-center gap-1.5 border border-transparent bg-transparent px-2 text-xs font-normal uppercase text-white/62 transition-colors no-underline hover:border-white hover:bg-white hover:text-black"
+              aria-label="Back to jobs"
+              title="Back to jobs"
+            >
+              <ChevronLeft class="size-3.5" />
+              Back to jobs
+            </NuxtLink>
+
+            <div class="min-w-0 flex items-center gap-2">
+              <Briefcase class="size-3.5 shrink-0 text-brand-500" />
+              <span class="truncate text-sm font-semibold text-white">
+                {{ activeJobTitle }}
+              </span>
+              <span
+                v-if="activeJobStatus"
+                class="inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold capitalize ring-1 ring-inset"
+                :class="getJobStatusBadgeClass(activeJobStatus, 'ring')"
+              >
+                {{ getJobStatusLabel(activeJobStatus) }}
+              </span>
+            </div>
+          </div>
+
           <NuxtLink
             :to="$localePath('/dashboard/jobs')"
-            class="hidden sm:flex size-8 items-center justify-center text-white/45 hover:text-white transition-colors no-underline shrink-0"
+            class="factory-back-button hidden lg:flex size-8 items-center justify-center border border-transparent bg-transparent text-white/62 transition-colors no-underline shrink-0 hover:border-white hover:bg-white hover:text-black"
             aria-label="All jobs"
             title="All jobs"
           >
             <ChevronLeft class="size-3.5" />
           </NuxtLink>
 
-          <div class="hidden sm:block w-px h-4 bg-white/10 shrink-0" />
+          <div class="hidden lg:block w-px h-4 bg-white/10 shrink-0" />
 
-          <div class="hidden md:flex items-center gap-2 shrink-0 min-w-0">
+          <div class="hidden lg:flex items-center gap-2 shrink-0 min-w-0">
             <Briefcase class="size-3.5 text-brand-500 shrink-0" />
             <span class="text-sm font-semibold text-white truncate max-w-48">
               {{ activeJobTitle }}
@@ -585,23 +591,25 @@ onUnmounted(() => {
             </span>
           </div>
 
-          <nav class="flex items-center gap-0.5 md:ml-2">
-            <NuxtLink
-              v-for="tab in jobTabs"
-              :key="tab.to"
-              :to="$localePath(tab.to)"
-              class="factory-button-cta factory-button-cta-sm factory-job-subnav-tab flex items-center gap-1.5 border px-2.5 py-1 text-xs transition-all duration-200 no-underline whitespace-nowrap shrink-0"
-              :class="isActiveRoute(tab.to, tab.exact)
-                ? 'factory-job-subnav-tab-active border-brand-500/50 bg-brand-500/12 text-white'
-                : 'factory-job-subnav-tab-inactive text-white/50 hover:bg-white/[0.04] hover:text-white'"
-            >
-              <component :is="tab.icon" class="size-3.5" />
-              <span class="hidden sm:inline">{{ tab.label }}</span>
-            </NuxtLink>
-          </nav>
+          <div class="flex min-w-0 items-center gap-2 overflow-x-auto scrollbar-none lg:flex-1">
+            <nav class="flex min-w-0 items-center gap-0.5 lg:ml-2">
+              <NuxtLink
+                v-for="tab in jobTabs"
+                :key="tab.to"
+                :to="$localePath(tab.to)"
+                class="factory-button-cta factory-button-cta-sm factory-job-subnav-tab flex items-center gap-1.5 border px-2.5 py-1 text-xs transition-all duration-200 no-underline whitespace-nowrap shrink-0"
+                :class="isActiveRoute(tab.to, tab.exact)
+                  ? 'factory-job-subnav-tab-active border-brand-500/50 bg-brand-500/12 text-white'
+                  : 'factory-job-subnav-tab-inactive text-white/50 hover:bg-white/[0.04] hover:text-white'"
+              >
+                <component :is="tab.icon" class="size-3.5" />
+                <span class="hidden sm:inline">{{ tab.label }}</span>
+              </NuxtLink>
+            </nav>
 
-          <div class="ml-auto flex items-center gap-2 shrink-0">
-            <div id="job-sub-nav-actions" class="flex items-center gap-2" />
+            <div class="ml-auto flex items-center gap-2 shrink-0">
+              <div id="job-sub-nav-actions" class="flex items-center gap-2" />
+            </div>
           </div>
         </div>
       </div>

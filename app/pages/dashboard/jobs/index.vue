@@ -466,15 +466,13 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
     <template v-else>
       <!-- ─── Toolbar: Search + Views + Filters + View Toggle ─── -->
       <div class="factory-dashboard-toolbar flex items-center gap-2 mb-4">
-        <div class="relative flex-1">
-          <Search class="size-4 text-surface-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            v-model="search"
-            type="search"
-            placeholder="Search jobs by title, location, or description"
-            class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 pl-9 pr-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-          />
-        </div>
+        <GooeySearchInput
+          v-model="search"
+          aria-label="Search jobs"
+          class="min-w-0 flex-1 sm:max-w-sm"
+          placeholder="Search jobs by title, location, or description"
+          reserve-expanded-space
+        />
 
         <!-- Saved views menu -->
         <SavedViewsMenu
@@ -489,10 +487,10 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
         />
 
         <!-- View mode toggle -->
-        <div class="factory-view-toggle inline-flex rounded-lg border overflow-hidden">
+        <div class="factory-view-toggle inline-flex h-10 rounded-lg border overflow-hidden">
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors min-h-10"
+            class="inline-flex h-full items-center gap-1.5 px-3 text-sm font-medium transition-colors"
             :class="{ 'is-active': viewMode === 'gallery' }"
             title="Gallery view"
             @click="viewMode = 'gallery'"
@@ -501,7 +499,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           </button>
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-l border-white/10 min-h-10"
+            class="inline-flex h-full items-center gap-1.5 border-l border-white/10 px-3 text-sm font-medium transition-colors"
             :class="{ 'is-active': viewMode === 'list' }"
             title="List view"
             @click="viewMode = 'list'"
@@ -510,7 +508,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           </button>
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-l border-white/10 min-h-10"
+            class="inline-flex h-full items-center gap-1.5 border-l border-white/10 px-3 text-sm font-medium transition-colors"
             :class="{ 'is-active': viewMode === 'table' }"
             title="Table view"
             @click="viewMode = 'table'"

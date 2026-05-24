@@ -253,6 +253,34 @@
       "when": 1779495000000,
       "tag": "0035_device_authorization",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1779584760000,
+      "tag": "0036_candidate_location",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1779585360000,
+      "tag": "0036_default_salary_unit",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1779585960000,
+      "tag": "0037_auto_score_default_on",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1779586560000,
+      "tag": "0038_job_active_from",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
-import { eq, and, asc } from 'drizzle-orm'
+import { eq, and, asc, lte } from 'drizzle-orm'
 import { job, organization } from '../../../database/schema'
 import { publicJobSlugSchema } from '../../../utils/schemas/publicApplication'
+import { isBuiltInLocationQuestion } from '~~/shared/built-in-application-fields'
 
 /**
  * GET /api/public/jobs/:slug
@@ -12,7 +13,7 @@ export default defineEventHandler(async (event) => {
   const { slug } = await getValidatedRouterParams(event, publicJobSlugSchema.parse)
 
   const result = await db.query.job.findFirst({
-    where: and(eq(job.slug, slug), eq(job.status, 'open')),
+    where: and(eq(job.slug, slug), eq(job.status, 'open'), lte(job.activeFrom, new Date())),
     columns: {
       id: true,
       title: true,
@@ -27,6 +28,7 @@ export default defineEventHandler(async (event) => {
       salaryUnit: true,
       salaryNegotiable: true,
       remoteStatus: true,
+      activeFrom: true,
       validThrough: true,
       requireResume: true,
       requireCoverLetter: true,
@@ -62,6 +64,7 @@ export default defineEventHandler(async (event) => {
   const { organization: org, ...jobData } = result
   return {
     ...jobData,
+    questions: jobData.questions.filter((q) => !isBuiltInLocationQuestion(q)),
     organizationName: org?.name ?? null,
     organizationLogo: org?.logo ?? null,
   }

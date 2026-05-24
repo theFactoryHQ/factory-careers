@@ -69,6 +69,10 @@ const scoringSummary = computed(() => {
 })
 const scoringSummaryFallback = 'No AI summary was stored for this score. Re-score to generate one.'
 
+function formatScoreRunDate(value: string | Date): string {
+  return new Date(value).toLocaleDateString()
+}
+
 function confidenceLabel(confidence: number): string {
   if (confidence >= 80) return 'High'
   if (confidence >= 50) return 'Medium'
@@ -231,9 +235,21 @@ async function retryParse() {
         </div>
 
         <!-- Run metadata -->
-        <div v-if="resolvedScoreData!.latestRun" class="mt-3 pt-3 border-t border-surface-100 dark:border-surface-800 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-surface-400">
-          <span>{{ resolvedScoreData!.latestRun.provider }} · {{ resolvedScoreData!.latestRun.model }}</span>
-          <span>{{ new Date(resolvedScoreData!.latestRun.createdAt).toLocaleString() }}</span>
+        <div v-if="resolvedScoreData!.latestRun" class="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-surface-100 pt-3 text-[11px] text-surface-400 dark:border-surface-800">
+          <span
+            class="inline-flex items-center gap-1.5"
+            :title="`${resolvedScoreData!.latestRun.provider} · ${resolvedScoreData!.latestRun.model}`"
+          >
+            <AiProviderLogo :provider="resolvedScoreData!.latestRun.provider" class="size-3.5 shrink-0" />
+            <span>{{ resolvedScoreData!.latestRun.model }}</span>
+          </span>
+          <TimelineDateLink
+            :date="resolvedScoreData!.latestRun.createdAt"
+            class="factory-application-timestamp-link ml-auto inline-flex items-center justify-end gap-1.5 text-right"
+          >
+            <span class="factory-application-timestamp-label">Updated</span>
+            <span class="factory-application-timestamp-value">{{ formatScoreRunDate(resolvedScoreData!.latestRun.createdAt) }}</span>
+          </TimelineDateLink>
         </div>
       </div>
 

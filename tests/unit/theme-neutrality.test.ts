@@ -6,6 +6,18 @@ const readProjectFile = (path: string) =>
   readFileSync(join(process.cwd(), path), 'utf8')
 
 describe('brand-neutral theme variables', () => {
+  it('keeps Factory dark pages on a true black document background', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+    const baseLayer = css.match(/@layer base \{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(baseLayer).toMatch(/html\s*\{[\s\S]*background-color:\s*#000000;/)
+    expect(baseLayer).toMatch(/body\s*\{[\s\S]*background-color:\s*#000000;/)
+    expect(baseLayer).toMatch(/body\s*\{[\s\S]*color:\s*var\(--color-surface-100\);/)
+    expect(baseLayer).toMatch(/\.dark,\s*[\r\n\s]*\.dark body\s*\{[\s\S]*background-color:\s*#000000;/)
+    expect(baseLayer).not.toContain('background-color: var(--color-surface-50);')
+    expect(baseLayer).not.toContain('background-color: var(--color-surface-950);')
+  })
+
   it('uses neutral CSS custom properties for shared app chrome', () => {
     const css = readProjectFile('app/assets/css/main.css')
 
@@ -110,7 +122,16 @@ describe('brand-neutral theme variables', () => {
     expect(css).toMatch(/\.ui-filter-chip\s*\{[\s\S]*min-height:\s*2\.375rem;[\s\S]*border:\s*1px solid/)
     expect(css).toMatch(/\.factory-dashboard-shell,[\s\S]*\.factory-dashboard-portal\)[\s\S]*\.ui-filter-chip\s*\{[\s\S]*min-height:\s*38px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important/)
     expect(css).toMatch(/\.factory-job-subnav-tab\s*\{[\s\S]*min-height:\s*32px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important/)
-    expect(css).toMatch(/\.factory-job-status-action\s*\{[\s\S]*height:\s*28px;[\s\S]*font-weight:\s*400 !important/)
+    expect(css).toMatch(/:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) \.factory-job-status-action\s*\{[\s\S]*height:\s*32px;[\s\S]*font-weight:\s*400 !important/)
+  })
+
+  it('keeps selectable panels dark inside the dashboard shell', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+    const applicationForm = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
+
+    expect(applicationForm).toContain('ui-selectable-panel')
+    expect(css).toMatch(/:where\(\.factory-dashboard-shell,\s*\.factory-dashboard-portal\)\s+\.ui-selectable-panel\s*\{[\s\S]*background-color:\s*#050505 !important;[\s\S]*color:\s*rgb\(255 255 255 \/ 0\.78\) !important;/)
+    expect(css).toMatch(/:where\(\.factory-dashboard-shell,\s*\.factory-dashboard-portal\)\s+\.ui-selectable-panel-active\s*\{[\s\S]*background-color:\s*color-mix\(in srgb,\s*var\(--color-brand-500\) 16%,\s*#050505\) !important;/)
   })
 
   it('explains job status actions with tooltips', () => {
@@ -130,9 +151,16 @@ describe('brand-neutral theme variables', () => {
     expect(jobDetail).toContain('ui-filter-chip-active factory-pipeline-status-chip-active')
     expect(jobDetail).toContain('ui-filter-chip-inactive')
     expect(jobDetail).toContain('factory-pipeline-status-chip relative flex h-8 shrink-0 cursor-pointer items-center gap-2 px-3.5 text-xs')
-    expect(jobDetail).toContain('tabular-nums text-xs font-normal')
+    expect(jobDetail).toContain('factory-pipeline-status-chip-stage tabular-nums')
+    expect(jobDetail).toContain('factory-pipeline-status-chip-count tabular-nums text-xs font-normal')
     expect(jobDetail).toContain('style="font-weight: 300 !important"')
     expect(css).toMatch(/\.factory-pipeline-status-chip\s*\{[\s\S]*height:\s*32px !important;[\s\S]*min-height:\s*32px !important;[\s\S]*font-weight:\s*300 !important/)
+    expect(css).toMatch(/@media \(max-width: 860px\)[\s\S]*\.factory-pipeline-stage-strip-label,[\s\S]*\.factory-pipeline-status-chip-label[\s\S]*clip:\s*rect\(0, 0, 0, 0\)/)
+    expect(css).toMatch(/\.factory-pipeline-status-chip-number\s*\{[\s\S]*min-width:\s*18px;[\s\S]*border:\s*1px solid rgb\(255 255 255 \/ 0\.12\)/)
+    expect(css).toMatch(/\.factory-pipeline-status-chip-stage\s*\{[\s\S]*min-width:\s*10px;[\s\S]*font-weight:\s*400/)
+    expect(css).toMatch(/\.factory-pipeline-status-chip-active \.factory-pipeline-status-chip-count\s*\{[\s\S]*border-color:/)
+    expect(css).toMatch(/@media \(max-width: 520px\)[\s\S]*\.factory-pipeline-status-chip-count\s*\{[\s\S]*display:\s*none;/)
+    expect(css).toMatch(/@media \(max-width: 520px\)[\s\S]*\.factory-pipeline-status-chip\s*\{[\s\S]*width:\s*48px;/)
   })
 
   it('uses the regular brand color for dashboard pipeline screening segments', () => {
@@ -286,7 +314,7 @@ describe('brand-neutral theme variables', () => {
       {
         path: 'app/pages/dashboard/source-tracking/index.vue',
         recipes: [
-          'getApplicationStatusBadgeClass',
+          'ApplicationStatusBadge',
           'getSourceChannelBadgeClass',
           'getSourceChannelDotClass',
           'getSourceChannelLabel',
@@ -323,7 +351,7 @@ describe('brand-neutral theme variables', () => {
       {
         path: 'app/pages/dashboard/source-tracking/[id].vue',
         recipes: [
-          'getApplicationStatusBadgeClass',
+          'ApplicationStatusBadge',
           'getSourceChannelBadgeClass',
           'getSourceChannelDotClass',
           'getSourceChannelLabel',
@@ -465,7 +493,7 @@ describe('brand-neutral theme variables', () => {
           'ui-dashboard-panel',
           'ui-dashboard-panel-header',
           'ui-empty-panel',
-          'ui-field',
+          'GooeySearchInput',
           'ui-alert-danger',
         ],
       },

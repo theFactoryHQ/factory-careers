@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { CURRENCY_VALUES } from '~~/shared/currency-options'
+import { SALARY_UNIT_VALUES } from '~~/shared/salary-options'
 
 export { JOB_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 
@@ -17,12 +19,14 @@ export const createJobSchema = z.object({
   /** Salary range fields for SEO-rich job postings (Google Jobs) */
   salaryMin: z.coerce.number().int().min(0).nullable().optional(),
   salaryMax: z.coerce.number().int().min(0).nullable().optional(),
-  salaryCurrency: z.string().length(3).nullable().optional(),
-  salaryUnit: z.enum(['YEAR', 'MONTH', 'HOUR']).nullable().optional(),
+  salaryCurrency: z.enum(CURRENCY_VALUES).nullable().optional(),
+  salaryUnit: z.enum(SALARY_UNIT_VALUES).nullable().optional(),
   /** Whether salary is negotiable (hides min/max range on public listing) */
   salaryNegotiable: z.boolean().optional().default(false),
   /** Remote work status: remote, hybrid, or onsite */
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).nullable().optional(),
+  /** When this job listing goes live publicly */
+  activeFrom: z.coerce.date().optional().default(() => new Date()),
   /** When this job listing expires (required for Google Jobs rich results) */
   validThrough: z.coerce.date().nullable().optional(),
   /** Whether the application form requires a resume/CV upload */
@@ -30,7 +34,7 @@ export const createJobSchema = z.object({
   /** Whether the application form asks for a cover letter upload */
   requireCoverLetter: z.boolean().optional().default(false),
   /** Whether to automatically run AI scoring when a candidate applies */
-  autoScoreOnApply: z.boolean().optional().default(false),
+  autoScoreOnApply: z.boolean().optional().default(true),
   /** Experience level required for this role */
   experienceLevel: z.enum(['junior', 'mid', 'senior', 'lead']).optional(),
 })
@@ -45,10 +49,11 @@ export const updateJobSchema = z.object({
   /** Pass null to explicitly clear a salary field */
   salaryMin: z.coerce.number().int().min(0).nullable().optional(),
   salaryMax: z.coerce.number().int().min(0).nullable().optional(),
-  salaryCurrency: z.string().length(3).nullable().optional(),
-  salaryUnit: z.enum(['YEAR', 'MONTH', 'HOUR']).nullable().optional(),
+  salaryCurrency: z.enum(CURRENCY_VALUES).nullable().optional(),
+  salaryUnit: z.enum(SALARY_UNIT_VALUES).nullable().optional(),
   salaryNegotiable: z.boolean().optional(),
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).nullable().optional(),
+  activeFrom: z.coerce.date().optional(),
   /** Pass null to explicitly clear the expiry date */
   validThrough: z.coerce.date().nullable().optional(),
   requireResume: z.boolean().optional(),

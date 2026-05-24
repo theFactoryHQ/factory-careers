@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { X, ExternalLink, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Download, Eye } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
-import { getApplicationStatusBadgeClass } from '~/utils/status-display'
 
 const props = defineProps<{
   candidateId: string
@@ -327,9 +326,10 @@ onUnmounted(() => {
                     <h4 class="truncate text-sm font-semibold text-white transition-colors group-hover:text-brand-400">
                       {{ app.job.title }}
                     </h4>
-                    <span class="text-xs text-white/42">
-                      Applied <TimelineDateLink :date="app.createdAt">{{ new Date(app.createdAt).toLocaleDateString() }}</TimelineDateLink>
-                    </span>
+                    <ApplicationTimestampStack
+                      :applied-at="app.createdAt"
+                      class="mt-1 items-start sm:items-start"
+                    />
                   </NuxtLink>
                   <div class="flex items-center gap-2 shrink-0 sm:ml-3">
                     <button
@@ -340,12 +340,7 @@ onUnmounted(() => {
                       <Calendar class="size-3" />
                       Schedule
                     </button>
-                    <span
-                      class="inline-flex h-8 min-h-8 shrink-0 items-center border px-2.5 py-0 text-[10px] font-semibold uppercase"
-                      :class="getApplicationStatusBadgeClass(app.status, 'factory')"
-                    >
-                      {{ app.status }}
-                    </span>
+                    <ApplicationStatusBadge :status="app.status" />
                   </div>
                 </div>
               </div>
@@ -357,7 +352,7 @@ onUnmounted(() => {
               <template v-if="showPreview">
                 <div class="flex items-center justify-between mb-3">
                   <button
-                    class="factory-toolbar-button inline-flex items-center gap-1.5 border px-3 py-0 text-xs font-medium transition-colors"
+                    class="factory-toolbar-button inline-flex h-10 min-h-10 items-center gap-1.5 border px-3 py-0 text-xs font-medium transition-colors hover:bg-white hover:text-black"
                     @click="closePreview"
                   >
                     ← Back to documents

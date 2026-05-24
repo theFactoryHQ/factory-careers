@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Users, Plus, Search, Mail, Phone, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, X, StickyNote, Maximize2, Minimize2, Check } from 'lucide-vue-next'
+import { Users, Plus, Mail, Phone, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, X, StickyNote, Maximize2, Minimize2, Check } from 'lucide-vue-next'
 
 definePageMeta({
   layout: 'dashboard',
@@ -68,6 +68,15 @@ const filterGender = ref<string | undefined>(undefined)
 const filterDobFrom = ref<string | undefined>(undefined)
 const filterDobTo = ref<string | undefined>(undefined)
 const propertyFilters = ref<import('~~/shared/properties').PropertyFilter[]>([])
+
+function handleFullscreenKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && isFullscreen.value) {
+    isFullscreen.value = false
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', handleFullscreenKeydown))
+onUnmounted(() => window.removeEventListener('keydown', handleFullscreenKeydown))
 
 const activeFilterCount = computed(() =>
   [filterGender.value, filterDobFrom.value, filterDobTo.value].filter(Boolean).length
@@ -289,15 +298,13 @@ const selectedCandidateId = ref<string | null>(null)
 
     <!-- Search + Views + Filters -->
     <div class="flex items-center gap-2 mb-4">
-      <div class="relative flex-1">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/60" />
-        <input
-          v-model="searchInput"
-          type="text"
-          placeholder="Search by name or email…"
-          class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 pl-10 pr-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-        />
-      </div>
+      <GooeySearchInput
+        v-model="searchInput"
+        aria-label="Search candidates"
+        class="min-w-0 flex-1 sm:max-w-sm"
+        placeholder="Search by name or email…"
+        reserve-expanded-space
+      />
       <SavedViewsMenu
         :views="views"
         :active-view-id="activeViewId"
@@ -472,7 +479,7 @@ const selectedCandidateId = ref<string | null>(null)
     <!-- Candidate table -->
     <div v-else>
       <Teleport to="body" :disabled="!isFullscreen">
-        <div :class="isFullscreen ? 'fixed inset-0 z-50 bg-black text-white flex flex-col factory-dashboard-portal' : ''">
+        <div :class="isFullscreen ? 'factory-fullscreen-surface fixed inset-0 z-50 flex flex-col factory-dashboard-portal' : ''">
           <!-- Fullscreen header -->
           <div v-if="isFullscreen" class="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0 bg-white/[0.02]">
             <span class="text-sm font-semibold text-white">
@@ -546,7 +553,7 @@ const selectedCandidateId = ref<string | null>(null)
             <tr
               v-for="c in sortedCandidates"
               :key="c.id"
-              class="ui-table-row group cursor-pointer [&>td]:align-top"
+              class="ui-table-row group cursor-pointer [&>td]:align-middle"
               @click="selectedCandidateId = c.id"
             >
               <td class="px-4 py-3">
@@ -588,7 +595,7 @@ const selectedCandidateId = ref<string | null>(null)
                 <TimelineDateLink :date="c.createdAt">{{ formatDateTime(c.createdAt) }}</TimelineDateLink>
               </td>
               <!-- Quick notes — inline editable (must match header order) -->
-              <td v-if="visibleColumns.quickNotes" class="px-4 py-3 hidden lg:table-cell w-52 align-top" @click.stop>
+              <td v-if="visibleColumns.quickNotes" class="px-4 py-3 hidden lg:table-cell w-52" @click.stop>
                 <div v-if="editingNotesId === c.id" class="flex items-start gap-1.5">
                   <textarea
                     v-model="editingNotesValue"
@@ -632,14 +639,13 @@ const selectedCandidateId = ref<string | null>(null)
                 >
                   <span class="inline-flex items-center gap-1.5 italic">
                     <StickyNote class="size-3.5 shrink-0 text-surface-400 transition-colors group-hover/notes:text-brand-400" />
-                    No notes yet.
                   </span>
                   <span class="text-xs font-semibold uppercase text-brand-400 transition-colors group-hover/notes:text-brand-300">Add Notes</span>
                 </button>
               </td>
               <!-- Property columns (must come AFTER quick notes to match header order) -->
               <template v-for="d in propertyDefs" :key="d.id">
-                <td v-if="visibleColumns[`prop_${d.id}`]" class="px-4 py-3 text-white/60 align-top">
+                <td v-if="visibleColumns[`prop_${d.id}`]" class="px-4 py-3 text-white/60">
                   <PropertyTableCell
                     entity-type="candidate"
                     :entity-id="c.id"

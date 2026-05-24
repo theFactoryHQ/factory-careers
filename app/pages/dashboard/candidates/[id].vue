@@ -2,7 +2,6 @@
 import { ArrowLeft, Pencil, Trash2, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Upload, Download, Eye, AlertTriangle } from 'lucide-vue-next'
 import { z } from 'zod'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
-import { getApplicationStatusBadgeClass } from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -488,9 +487,10 @@ async function handleDeleteDoc(docId: string) {
                 <h4 class="truncate text-sm font-semibold text-white transition-colors group-hover:text-brand-400">
                   {{ app.job.title }}
                 </h4>
-                <span class="text-xs text-white/42">
-                  Applied <TimelineDateLink :date="app.createdAt">{{ new Date(app.createdAt).toLocaleDateString() }}</TimelineDateLink>
-                </span>
+                <ApplicationTimestampStack
+                  :applied-at="app.createdAt"
+                  class="mt-1 items-start sm:items-start"
+                />
               </NuxtLink>
               <div class="flex shrink-0 items-center gap-2 sm:ml-3">
                 <button
@@ -501,12 +501,7 @@ async function handleDeleteDoc(docId: string) {
                   <Calendar class="size-3" />
                   Schedule
                 </button>
-                <span
-                  class="inline-flex shrink-0 items-center border px-2 py-0.5 text-[10px] font-semibold uppercase"
-                  :class="getApplicationStatusBadgeClass(app.status, 'factory')"
-                >
-                  {{ app.status }}
-                </span>
+                <ApplicationStatusBadge :status="app.status" />
               </div>
             </div>
           </div>

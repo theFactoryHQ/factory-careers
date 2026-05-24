@@ -30,14 +30,38 @@ describe('dashboard top bar responsiveness', () => {
     expect(source).not.toContain('border-transparent text-white/50')
   })
 
+  it('keeps the job application form tab label compact', () => {
+    expect(source).toContain("{ label: 'Application', to: `${base}/application-form`")
+    expect(source).not.toContain("{ label: 'Application Form', to: `${base}/application-form`")
+  })
+
   it('renders the job context back link as icon-only', () => {
     expect(source).toContain('aria-label="All jobs"')
     expect(source).toContain('title="All jobs"')
     expect(source).not.toMatch(/<ChevronLeft class="size-3\.5" \/>\s*All Jobs/)
   })
 
+  it('stacks mobile job context with a labeled back link above job tabs', () => {
+    expect(source).toContain('factory-job-mobile-context')
+    expect(source).toContain('factory-job-mobile-back')
+    expect(source).toContain('Back to jobs')
+    expect(source).toContain('lg:hidden')
+    expect(source).toContain('hidden lg:flex size-8')
+  })
+
   it('uses white-fill hover treatment for dashboard back links', () => {
+    expect(backLinkSource).toContain('border border-transparent')
     expect(backLinkSource).toContain('hover:border-white hover:bg-white hover:text-black')
+    expect(backLinkSource).not.toContain('border border-white/16')
     expect(backLinkSource).not.toContain('hover:border-brand-500')
+  })
+
+  it('keeps mobile navigation in the hamburger menu, not the user menu', () => {
+    const userDropdown = source.match(/<!-- User dropdown -->[\s\S]*?<!-- Mobile hamburger -->/)?.[0] ?? ''
+    const mobileNav = source.match(/<!-- Mobile navigation menu -->[\s\S]*?<!-- Get Started CTA/)?.[0] ?? ''
+
+    expect(userDropdown).not.toContain('v-for="item in navItems"')
+    expect(userDropdown).not.toContain('Mobile-only items')
+    expect(mobileNav).toContain('v-for="item in navItems"')
   })
 })

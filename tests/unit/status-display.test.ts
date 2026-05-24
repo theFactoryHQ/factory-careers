@@ -6,6 +6,7 @@ import {
   getApplicationStatusBadgeClass,
   getApplicationStatusDotClass,
   getApplicationStatusLabel,
+  getApplicationTransitionActionLabel,
   getApplicationTransitionButtonClass,
   getApplicationTransitionDotClass,
   getApplicationTransitionLabel,
@@ -37,6 +38,8 @@ describe('status display helpers', () => {
   it('returns centralized labels with readable fallbacks', () => {
     expect(getApplicationStatusLabel('screening')).toBe('Screening')
     expect(getApplicationTransitionLabel('new')).toBe('Re-open')
+    expect(getApplicationTransitionActionLabel('interview')).toBe('Move to Interview')
+    expect(getApplicationTransitionActionLabel('rejected')).toBe('Reject')
     expect(getApplicationStatusLabel('phone_screen')).toBe('Phone Screen')
   })
 
@@ -46,6 +49,10 @@ describe('status display helpers', () => {
     expect(getApplicationStatusBadgeClass('hired', 'subtle-ring')).toContain('ring-green-200/60')
     expect(getApplicationStatusBadgeClass('hired', 'factory')).toContain('text-success-200')
     expect(getApplicationStatusBadgeClass(' SCREENING ', 'ring')).toContain('ring-violet-200')
+    expect(getApplicationStatusBadgeClass('new', 'factory')).toContain('blue')
+    expect(getApplicationStatusBadgeClass('screening', 'factory')).toContain('violet')
+    expect(getApplicationStatusBadgeClass('interview', 'factory')).toContain('amber')
+    expect(getApplicationStatusBadgeClass('offer', 'factory')).toContain('teal')
     expect(getApplicationStatusBadgeClass('unknown', 'factory')).toContain('text-white/58')
   })
 

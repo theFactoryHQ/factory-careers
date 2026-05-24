@@ -44,6 +44,7 @@ export function useJobs(options?: {
     type?: 'full_time' | 'part_time' | 'contract' | 'internship'
     experienceLevel?: 'junior' | 'mid' | 'senior' | 'lead'
     remoteStatus?: 'remote' | 'hybrid' | 'onsite'
+    activeFrom?: Date
     requireResume?: boolean
     requireCoverLetter?: boolean
     autoScoreOnApply?: boolean

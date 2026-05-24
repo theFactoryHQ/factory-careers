@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  Calendar, Clock, Search, X, ChevronDown, Video, Phone,
+  Calendar, Clock, ChevronDown, Video, Phone,
   Building2, Code2, FileText, UsersRound, MoreHorizontal,
   CheckCircle2, XCircle, AlertTriangle, UserRound, Briefcase,
   Pencil, Trash2, MapPin, Users, CalendarDays,
@@ -312,22 +312,13 @@ const statusCounts = computed(() => {
     <!-- Status filter pills + search -->
     <div class="flex flex-col gap-3 mb-4 lg:flex-row lg:items-center lg:gap-2">
       <!-- Search -->
-      <div class="relative w-full flex-1">
-        <Search class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
-        <input
-          v-model="searchInput"
-          type="text"
-          placeholder="Search interviews, candidates, jobs…"
-          class="ui-field w-full py-2 pl-10 pr-9 text-sm"
-        />
-        <button
-          v-if="searchInput"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 cursor-pointer"
-          @click="searchInput = ''"
-        >
-          <X class="size-4" />
-        </button>
-      </div>
+      <GooeySearchInput
+        v-model="searchInput"
+        aria-label="Search interviews"
+        class="w-full min-w-0 flex-1 sm:max-w-sm"
+        placeholder="Search interviews, candidates, jobs…"
+        reserve-expanded-space
+      />
 
       <!-- Status pills -->
       <div class="flex shrink-0 items-center gap-1.5">

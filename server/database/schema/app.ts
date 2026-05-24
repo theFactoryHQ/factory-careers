@@ -60,6 +60,7 @@ export const job = pgTable('job', {
   salaryUnit: text('salary_unit'),
   salaryNegotiable: boolean('salary_negotiable').notNull().default(false),
   remoteStatus: text('remote_status'),
+  activeFrom: timestamp('active_from').notNull().defaultNow(),
   validThrough: timestamp('valid_through'),
   /** Experience level required for this role */
   experienceLevel: experienceLevelEnum('experience_level'),
@@ -67,7 +68,7 @@ export const job = pgTable('job', {
   requireResume: boolean('require_resume').notNull().default(false),
   requireCoverLetter: boolean('require_cover_letter').notNull().default(false),
   // ── AI scoring settings ──
-  autoScoreOnApply: boolean('auto_score_on_apply').notNull().default(false),
+  autoScoreOnApply: boolean('auto_score_on_apply').notNull().default(true),
   // ── Timestamps ──
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -87,6 +88,8 @@ export const candidate = pgTable('candidate', {
   displayName: text('display_name'),
   email: text('email').notNull(),
   phone: text('phone'),
+  country: text('country'),
+  state: text('state'),
   /** Gender — stored as enum for structured filtering */
   gender: genderEnum('gender'),
   /** Date of birth — stored as text in ISO 8601 format (YYYY-MM-DD) to avoid timezone issues */
@@ -268,6 +271,8 @@ export const orgSettings = pgTable('org_settings', {
   dateFormat: dateFormatEnum('date_format').notNull().default('mdy'),
   /** When true (in Microsoft application auth mode), interview events are also created on each interviewer's personal calendar */
   calendarSyncInterviewers: boolean('calendar_sync_interviewers').notNull().default(false),
+  /** Default salary pay period used by job settings when a job has no explicit override */
+  defaultSalaryUnit: text('default_salary_unit').notNull().default('YEAR'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => ([

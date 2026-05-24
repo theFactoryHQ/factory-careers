@@ -2,10 +2,8 @@
 import { User, Briefcase, Calendar, Clock, FileText, MessageSquare, Brain, Loader2 } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 import {
-  getApplicationStatusBadgeClass,
+  getApplicationTransitionActionLabel,
   getApplicationTransitionButtonClass,
-  getApplicationTransitionDotClass,
-  getApplicationTransitionLabel,
 } from '~/utils/status-display'
 
 definePageMeta({
@@ -196,32 +194,14 @@ function formatResponseValue(value: unknown): string {
                 {{ application.job.title }}
               </NuxtLink>
             </div>
-            <span
-              class="inline-flex items-center border px-2.5 py-1 text-xs font-semibold uppercase"
-              :class="getApplicationStatusBadgeClass(application.status, 'factory')"
-            >
-              {{ application.status }}
-            </span>
+            <ApplicationStatusBadge :status="application.status" />
           </div>
 
-          <div class="flex shrink-0 flex-wrap gap-x-3 gap-y-1 text-xs sm:absolute sm:right-5 sm:top-5 sm:flex-col sm:items-end">
-            <TimelineDateLink
-              :date="application.createdAt"
-              class="inline-flex items-center gap-1.5 text-xs font-medium text-white/58 no-underline transition-colors hover:text-white"
-            >
-              <Calendar class="size-3.5 text-brand-500" />
-              <span class="uppercase text-white/36">Applied</span>
-              <span class="text-white/78">{{ new Date(application.createdAt).toLocaleDateString() }}</span>
-            </TimelineDateLink>
-            <TimelineDateLink
-              :date="application.updatedAt"
-              class="inline-flex items-center gap-1.5 text-xs font-medium text-white/58 no-underline transition-colors hover:text-white"
-            >
-              <Clock class="size-3.5 text-brand-500" />
-              <span class="uppercase text-white/36">Updated</span>
-              <span class="text-white/78">{{ new Date(application.updatedAt).toLocaleDateString() }}</span>
-            </TimelineDateLink>
-          </div>
+          <ApplicationTimestampStack
+            :applied-at="application.createdAt"
+            :updated-at="application.updatedAt"
+            floating
+          />
         </div>
       </div>
 
@@ -233,15 +213,12 @@ function formatResponseValue(value: unknown): string {
             v-for="nextStatus in allowedTransitions"
             :key="nextStatus"
             :disabled="isTransitioning"
-            class="inline-flex shrink-0 cursor-pointer items-center whitespace-nowrap px-2.5 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
+            class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
             :class="getApplicationTransitionButtonClass(nextStatus, 'factory')"
             @click="handleTransition(nextStatus)"
           >
-            <span
-              class="mr-1.5 inline-flex size-1 rounded-full"
-              :class="getApplicationTransitionDotClass(nextStatus)"
-            />
-            {{ getApplicationTransitionLabel(nextStatus) }}
+            <ApplicationTransitionIcon :status="nextStatus" />
+            {{ getApplicationTransitionActionLabel(nextStatus) }}
           </button>
           <button
             class="inline-flex shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap border border-white/16 bg-black px-2.5 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal text-white/80 hover:border-brand-500 hover:bg-brand-500/12 hover:text-white transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40"

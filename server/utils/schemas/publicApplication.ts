@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { COUNTRY_VALUES, US_STATE_VALUES } from '~~/shared/location-options'
 
 // ─────────────────────────────────────────────
 // Public application submission schemas
@@ -21,6 +22,8 @@ export const publicApplicationSchema = z.object({
   lastName: z.string().min(1, 'Last name is required').max(100),
   email: z.string().email('Invalid email address').max(254),
   phone: z.string().max(50).optional(),
+  country: z.enum(COUNTRY_VALUES, 'Country is required'),
+  state: z.enum(US_STATE_VALUES, 'State is required'),
   responses: z.array(questionResponseSchema).default([]),
   /** Optional cover letter text submitted by the candidate */
   coverLetterText: z.string().max(10000).optional(),

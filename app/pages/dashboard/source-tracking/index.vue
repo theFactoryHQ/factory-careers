@@ -975,12 +975,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                   </td>
                   <!-- Status -->
                   <td class="px-4 py-3.5 text-center">
-                    <span
-                      class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ring-1 ring-inset"
-                      :class="getApplicationStatusBadgeClass(app.status)"
-                    >
-                      {{ app.status }}
-                    </span>
+                    <ApplicationStatusBadge :status="app.status" />
                   </td>
                   <!-- Applied date -->
                   <td class="px-4 py-3.5 text-right text-[11px] text-surface-400 tabular-nums font-medium">

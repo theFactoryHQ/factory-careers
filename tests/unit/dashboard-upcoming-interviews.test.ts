@@ -33,4 +33,12 @@ describe('dashboard upcoming interviews', () => {
     expect(source).toContain("if (diffMs <= 0) return 'Now'")
     expect(source).not.toContain("if (diffHours <= 0) return 'Now'")
   })
+
+  it('keeps dashboard stat cards compact before the desktop breakpoint', () => {
+    expect(source).toContain('ui-dashboard-stat-card p-3 sm:p-4 lg:p-6')
+    expect(source).toContain('text-2xl sm:text-3xl lg:text-4xl')
+    expect(source).toContain('mt-2 lg:mt-3')
+    expect(source).toContain('size-16 sm:size-20 lg:size-24')
+    expect(source).not.toContain('ui-dashboard-stat-card p-5 sm:p-6')
+  })
 })

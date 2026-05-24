@@ -47,6 +47,7 @@ export function useJob(id: MaybeRefOrGetter<string>) {
     salaryUnit: 'YEAR' | 'MONTH' | 'HOUR' | null
     salaryNegotiable: boolean
     remoteStatus: 'remote' | 'hybrid' | 'onsite' | null
+    activeFrom: Date
     validThrough: Date | null
     requireResume: boolean
     requireCoverLetter: boolean

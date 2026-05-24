@@ -6,7 +6,6 @@ import {
 } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 import {
-  getApplicationStatusBadgeClass,
   getApplicationTransitionButtonClass,
   getApplicationTransitionLabel,
 } from '~/utils/status-display'
@@ -558,15 +557,11 @@ function formatInterviewDate(dateStr: string) {
             <!-- Status & transitions -->
             <div>
               <div class="flex items-center gap-2 mb-3">
-                <span
-                  class="inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold capitalize ring-1 ring-inset"
-                  :class="getApplicationStatusBadgeClass(application.status, 'ring')"
-                >
-                  {{ application.status }}
-                </span>
-                <span class="text-sm text-surface-400">
-                  Applied {{ new Date(application.createdAt).toLocaleDateString() }}
-                </span>
+                <ApplicationStatusBadge :status="application.status" />
+                <ApplicationTimestampStack
+                  :applied-at="application.createdAt"
+                  :updated-at="application.updatedAt"
+                />
               </div>
 
               <div v-if="allowedTransitions.length > 0" class="flex flex-wrap items-center gap-2">
@@ -575,10 +570,11 @@ function formatInterviewDate(dateStr: string) {
                   v-for="nextStatus in allowedTransitions"
                   :key="nextStatus"
                   :disabled="isTransitioning"
-                  class="ui-button px-3 py-1.5 text-sm disabled:opacity-50"
+                  class="ui-button inline-flex items-center gap-1.5 px-3 py-1.5 text-sm disabled:opacity-50"
                   :class="getApplicationTransitionButtonClass(nextStatus)"
                   @click="handleTransition(nextStatus)"
                 >
+                  <ApplicationTransitionIcon :status="nextStatus" />
                   {{ getApplicationTransitionLabel(nextStatus) }}
                 </button>
               </div>
@@ -635,26 +631,18 @@ function formatInterviewDate(dateStr: string) {
                 </div>
                 <div>
                   <dt class="text-xs font-medium text-surface-400 dark:text-surface-500 mb-1">Status</dt>
-                  <dd class="text-surface-800 dark:text-surface-200 font-medium capitalize">
-                    {{ application.status }}
+                  <dd>
+                    <ApplicationStatusBadge :status="application.status" />
                   </dd>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-surface-400 dark:text-surface-500 mb-1 inline-flex items-center gap-1">
-                    <Calendar class="size-3.5" />
-                    Applied
-                  </dt>
-                  <dd class="text-surface-800 dark:text-surface-200 font-medium">
-                    {{ new Date(application.createdAt).toLocaleDateString() }}
-                  </dd>
-                </div>
-                <div>
-                  <dt class="text-xs font-medium text-surface-400 dark:text-surface-500 mb-1 inline-flex items-center gap-1">
-                    <Clock class="size-3.5" />
-                    Updated
-                  </dt>
-                  <dd class="text-surface-800 dark:text-surface-200 font-medium">
-                    {{ new Date(application.updatedAt).toLocaleDateString() }}
+                  <dt class="sr-only">Application timestamps</dt>
+                  <dd>
+                    <ApplicationTimestampStack
+                      :applied-at="application.createdAt"
+                      :updated-at="application.updatedAt"
+                      class="items-start sm:items-start"
+                    />
                   </dd>
                 </div>
               </dl>
@@ -804,7 +792,7 @@ function formatInterviewDate(dateStr: string) {
               <!-- Preview toolbar -->
               <div class="flex items-center justify-between">
                 <button
-                  class="ui-inline-link-brand inline-flex items-center gap-1.5 text-sm font-medium"
+                  class="factory-toolbar-button inline-flex h-10 min-h-10 items-center gap-1.5 border px-3 py-0 text-xs font-medium transition-colors hover:bg-white hover:text-black"
                   @click="closePreview"
                 >
                   <ArrowLeft class="size-3.5" />

@@ -10,6 +10,7 @@ export function useOrgSettings() {
 
   const nameDisplayFormat = computed(() => data.value?.nameDisplayFormat ?? 'first_last')
   const dateFormat = computed(() => data.value?.dateFormat ?? 'mdy')
+  const defaultSalaryUnit = computed(() => data.value?.defaultSalaryUnit ?? 'YEAR')
 
   /**
    * Format a candidate's full name according to the org's display preference.
@@ -75,6 +76,7 @@ export function useOrgSettings() {
   async function updateSettings(payload: {
     nameDisplayFormat?: 'first_last' | 'last_first'
     dateFormat?: 'mdy' | 'dmy' | 'ymd'
+    defaultSalaryUnit?: 'YEAR' | 'MONTH' | 'HOUR'
   }) {
     await $fetch('/api/org-settings', {
       method: 'PATCH',
@@ -86,6 +88,7 @@ export function useOrgSettings() {
   return {
     nameDisplayFormat,
     dateFormat,
+    defaultSalaryUnit,
     status,
     formatCandidateName,
     formatPersonName,

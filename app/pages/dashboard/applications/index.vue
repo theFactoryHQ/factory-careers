@@ -2,8 +2,6 @@
 import { FileText, Search, X, Briefcase, Mail, Clock, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, Maximize2, Minimize2, Check } from 'lucide-vue-next'
 import {
   formatRelativeTime,
-  getApplicationStatusBadgeClass,
-  getApplicationStatusDotClass,
   getApplicationStatusLabel,
   getScoreBadgeClass,
 } from '~/utils/status-display'
@@ -228,6 +226,15 @@ const currentSettings = computed<ApplicationsViewSettings>(() => ({
   visibleColumns: { ...visibleColumns.value },
 }))
 
+function handleFullscreenKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && isFullscreen.value) {
+    isFullscreen.value = false
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', handleFullscreenKeydown))
+onUnmounted(() => window.removeEventListener('keydown', handleFullscreenKeydown))
+
 function applySettings(s: ApplicationsViewSettings) {
   activeStatus.value = s.status
   activeJobId.value = s.jobId
@@ -326,15 +333,13 @@ const selectedApplicationId = ref<string | null>(null)
 
     <!-- Search + Views + Filters -->
     <div class="flex items-center gap-2 mb-4">
-      <div class="relative flex-1">
-        <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-surface-400" />
-        <input
-          v-model="searchInput"
-          type="text"
-          placeholder="Search by candidate name, email, or job title…"
-          class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 pl-10 pr-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-        />
-      </div>
+      <GooeySearchInput
+        v-model="searchInput"
+        aria-label="Search applications"
+        class="min-w-0 flex-1 sm:max-w-sm"
+        placeholder="Search by candidate name, email, or job title…"
+        reserve-expanded-space
+      />
       <SavedViewsMenu
         :views="views"
         :active-view-id="activeViewId"
@@ -510,7 +515,7 @@ const selectedApplicationId = ref<string | null>(null)
     <!-- Application table -->
     <div v-else>
       <Teleport to="body" :disabled="!isFullscreen">
-        <div :class="isFullscreen ? 'fixed inset-0 z-50 bg-black text-white flex flex-col factory-dashboard-portal' : ''">
+        <div :class="isFullscreen ? 'factory-fullscreen-surface fixed inset-0 z-50 flex flex-col factory-dashboard-portal' : ''">
           <!-- Fullscreen header -->
           <div v-if="isFullscreen" class="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0 bg-white/[0.02]">
             <span class="text-sm font-semibold text-white">
@@ -614,13 +619,7 @@ const selectedApplicationId = ref<string | null>(null)
                 </span>
               </td>
               <td v-if="visibleColumns.status" class="px-4 py-3">
-                <span
-                  class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold capitalize ring-1 ring-inset"
-                  :class="getApplicationStatusBadgeClass(app.status, 'ring')"
-                >
-                  <span class="size-1.5 rounded-full" :class="getApplicationStatusDotClass(app.status)" />
-                  {{ getApplicationStatusLabel(app.status) }}
-                </span>
+                <ApplicationStatusBadge :status="app.status" />
               </td>
               <td v-if="visibleColumns.score" class="px-4 py-3 text-center hidden sm:table-cell">
                 <span

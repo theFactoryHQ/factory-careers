@@ -1,4 +1,4 @@
-import { eq, and, asc, sql } from 'drizzle-orm'
+import { eq, and, asc, lte, sql } from 'drizzle-orm'
 import { fileTypeFromBuffer } from 'file-type'
 import { job, candidate, application, jobQuestion, questionResponse, document, organization, applicationSource, trackingLink } from '../../../../database/schema'
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
@@ -8,6 +8,7 @@ import { sendApplicationReceiptEmail, sendApplicationTeamAlertEmail } from '../.
 import { parseDocument } from '../../../../utils/resume-parser'
 import { assertUploadContentLength } from '../../../../utils/uploadLimits'
 import { readPositiveIntegerEnv } from '../../../../utils/rateLimitConfig'
+import { isBuiltInLocationQuestion } from '~~/shared/built-in-application-fields'
 import {
   ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE,
@@ -83,6 +84,8 @@ export default defineEventHandler(async (event) => {
   let lastName: string
   let email: string
   let phone: string | undefined
+  let country: string
+  let state: string
   let website: string | undefined
   let responseArray: { questionId: string; value: string | string[] | number | boolean }[] = []
   let coverLetterText: string | undefined
@@ -144,6 +147,8 @@ export default defineEventHandler(async (event) => {
       lastName: fields.lastName?.trim() ?? '',
       email: fields.email?.trim() ?? '',
       phone: fields.phone?.trim() || undefined,
+      country: fields.country?.trim() ?? '',
+      state: fields.state?.trim() ?? '',
       website: fields.website || undefined,
       coverLetterText: fields.coverLetterText?.trim() || undefined,
       responses: rawResponses,
@@ -159,6 +164,8 @@ export default defineEventHandler(async (event) => {
     lastName = validated.lastName
     email = validated.email
     phone = validated.phone
+    country = validated.country
+    state = validated.state
     website = validated.website
     coverLetterText = validated.coverLetterText
     responseArray = validated.responses
@@ -175,6 +182,8 @@ export default defineEventHandler(async (event) => {
     lastName = body.lastName
     email = body.email
     phone = body.phone
+    country = body.country
+    state = body.state
     website = body.website
     coverLetterText = body.coverLetterText
     responseArray = body.responses
@@ -197,7 +206,7 @@ export default defineEventHandler(async (event) => {
   // ─────────────────────────────────────────────
 
   const existingJob = await db.query.job.findFirst({
-    where: and(eq(job.slug, slug), eq(job.status, 'open')),
+    where: and(eq(job.slug, slug), eq(job.status, 'open'), lte(job.activeFrom, new Date())),
     columns: { id: true, title: true, organizationId: true, requireResume: true, requireCoverLetter: true, autoScoreOnApply: true },
   })
 
@@ -235,10 +244,11 @@ export default defineEventHandler(async (event) => {
   // 3. Fetch questions and validate responses
   // ─────────────────────────────────────────────
 
-  const questions = await db.query.jobQuestion.findMany({
+  const rawQuestions = await db.query.jobQuestion.findMany({
     where: and(eq(jobQuestion.jobId, jobId), eq(jobQuestion.organizationId, orgId)),
     orderBy: [asc(jobQuestion.displayOrder)],
   })
+  const questions = rawQuestions.filter((q) => !isBuiltInLocationQuestion(q))
 
   const requiredQuestionIds = questions
     .filter((q) => q.required)
@@ -357,7 +367,7 @@ export default defineEventHandler(async (event) => {
       eq(candidate.organizationId, orgId),
       eq(candidate.email, email.toLowerCase()),
     ),
-    columns: { id: true, firstName: true, lastName: true, phone: true },
+    columns: { id: true, firstName: true, lastName: true, phone: true, country: true, state: true },
   })
 
   let candidateId: string
@@ -367,6 +377,8 @@ export default defineEventHandler(async (event) => {
     if (!existingCandidate.firstName) updates.firstName = firstName
     if (!existingCandidate.lastName) updates.lastName = lastName
     if (!existingCandidate.phone && phone) updates.phone = phone
+    if (existingCandidate.country !== country) updates.country = country
+    if (existingCandidate.state !== state) updates.state = state
 
     const [updated] = await db.update(candidate)
       .set(updates)
@@ -381,6 +393,8 @@ export default defineEventHandler(async (event) => {
       lastName,
       email: email.toLowerCase(),
       phone,
+      country,
+      state,
     }).returning({ id: candidate.id })
 
     candidateId = created!.id

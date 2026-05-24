@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { MapPin, Briefcase, Building2 } from 'lucide-vue-next'
+import { COUNTRY_OPTIONS, US_STATE_OPTIONS } from '~~/shared/location-options'
 
 definePageMeta({
   layout: 'public',
@@ -40,6 +41,8 @@ const form = ref({
   lastName: '',
   email: '',
   phone: '',
+  country: 'United States',
+  state: '',
   website: '', // honeypot
 })
 
@@ -103,6 +106,12 @@ function validate(): boolean {
     errors.value.email = 'Email is required'
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
     errors.value.email = 'Invalid email address'
+  }
+  if (!COUNTRY_OPTIONS.some((country) => country.value === form.value.country)) {
+    errors.value.country = 'Country is required'
+  }
+  if (!US_STATE_OPTIONS.some((state) => state.value === form.value.state)) {
+    errors.value.state = 'State is required'
   }
 
   // Validate required resume
@@ -186,6 +195,8 @@ async function handleSubmit() {
       formData.append('firstName', form.value.firstName.trim())
       formData.append('lastName', form.value.lastName.trim())
       formData.append('email', form.value.email.trim())
+      formData.append('country', form.value.country)
+      formData.append('state', form.value.state)
       if (form.value.phone.trim()) {
         formData.append('phone', form.value.phone.trim())
       }
@@ -231,6 +242,8 @@ async function handleSubmit() {
           lastName: form.value.lastName.trim(),
           email: form.value.email.trim(),
           phone: form.value.phone.trim() || undefined,
+          country: form.value.country,
+          state: form.value.state,
           website: form.value.website, // honeypot
           coverLetterText: coverLetterText.value.trim() || undefined,
           responses: responseArray,
@@ -305,15 +318,12 @@ const typeLabels: Record<string, string> = {
     <template v-else-if="job">
 
       <!-- Back link -->
-      <NuxtLink
+      <AppBackLink
         :to="$localePath(`/jobs/${jobSlug}`)"
-        class="group mb-6 inline-flex items-center gap-1.5 text-sm text-white/45 transition-colors hover:text-brand-500"
+        class="mb-6"
       >
-        <svg class="size-3.5 transition-transform group-hover:-translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m15 18-6-6 6-6"/>
-        </svg>
         Back to job details
-      </NuxtLink>
+      </AppBackLink>
 
       <!-- Job hero card -->
       <div class="mb-6 overflow-hidden border border-white/10 bg-white/[0.03]">
@@ -454,6 +464,61 @@ const typeLabels: Record<string, string> = {
                 autocomplete="tel"
                 :class="fieldClass(false)"
               />
+            </div>
+
+            <!-- Location -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="country" :class="labelClass">
+                  Country <span class="text-danger-300">*</span>
+                </label>
+                <select
+                  id="country"
+                  v-model="form.country"
+                  autocomplete="country-name"
+                  :class="fieldClass(!!errors.country)"
+                  @change="delete errors.country"
+                >
+                  <option disabled value="">Select country</option>
+                  <option
+                    v-for="country in COUNTRY_OPTIONS"
+                    :key="country.value"
+                    :value="country.value"
+                  >
+                    {{ country.label }}
+                  </option>
+                </select>
+                <p v-if="errors.country" :class="errorMessageClass">
+                  <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  {{ errors.country }}
+                </p>
+              </div>
+
+              <div>
+                <label for="state" :class="labelClass">
+                  State <span class="text-danger-300">*</span>
+                </label>
+                <select
+                  id="state"
+                  v-model="form.state"
+                  autocomplete="address-level1"
+                  :class="fieldClass(!!errors.state)"
+                  @change="delete errors.state"
+                >
+                  <option disabled value="">Select state</option>
+                  <option
+                    v-for="state in US_STATE_OPTIONS"
+                    :key="state.value"
+                    :value="state.value"
+                  >
+                    {{ state.label }}
+                  </option>
+                </select>
+                <p v-if="errors.state" :class="errorMessageClass">
+                  <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  {{ errors.state }}
+                </p>
+              </div>
             </div>
 
             <!-- Resume / Cover Letter uploads -->
