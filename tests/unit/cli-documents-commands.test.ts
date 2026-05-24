@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { runCli } from '../../cli/program'
+import { runCli } from '../../packages/careers-cli/src/program'
 
 const tempDirs: string[] = []
 

@@ -59,11 +59,11 @@ jobs:
       - name: Run CLI smoke tests
         id: cli_smoke
         run: |
-          ./bin/factory-careers.mjs --help
-          ./bin/factory-careers.mjs auth status --json
-          ./bin/factory-careers.mjs jobs --help
-          ./bin/factory-careers.mjs feedback --help
-          ./bin/factory-careers.mjs system --help
+          ./packages/careers-cli/bin/factory-careers.mjs --help
+          ./packages/careers-cli/bin/factory-careers.mjs auth status --json
+          ./packages/careers-cli/bin/factory-careers.mjs jobs --help
+          ./packages/careers-cli/bin/factory-careers.mjs feedback --help
+          ./packages/careers-cli/bin/factory-careers.mjs system --help
 
       - name: Audit dependencies (high severity+)
         id: audit

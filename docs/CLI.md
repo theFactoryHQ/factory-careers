@@ -7,15 +7,21 @@
 The package exposes a `factory-careers` binary:
 
 ```bash
-npm install
-npm link
+npm install -g @thefactory/careers-cli
 factory-careers --help
 ```
 
 During local development you can also run:
 
 ```bash
-./bin/factory-careers.mjs --help
+./packages/careers-cli/bin/factory-careers.mjs --help
+```
+
+Package maintainers can verify and publish the dedicated npm package from the repo root:
+
+```bash
+npm run cli:pack
+npm run cli:publish
 ```
 
 Use `--base-url` to point the CLI at a deployment:

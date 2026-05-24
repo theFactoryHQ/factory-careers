@@ -2,9 +2,9 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { resolveActiveProfile, resolveConfigPath, saveProfile } from '../../cli/config'
-import { normalizeCliError } from '../../cli/errors'
-import { runCli } from '../../cli/program'
+import { resolveActiveProfile, resolveConfigPath, saveProfile } from '../../packages/careers-cli/src/config'
+import { normalizeCliError } from '../../packages/careers-cli/src/errors'
+import { runCli } from '../../packages/careers-cli/src/program'
 
 const tempDirs: string[] = []
 
