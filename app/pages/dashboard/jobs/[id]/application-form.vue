@@ -194,12 +194,12 @@ async function copyTrackingUrl(code: string) {
           Share this link with candidates so they can apply to this position.
         </p>
         <div class="flex items-center gap-2">
-          <input
-            type="text"
-            readonly
-            :value="applicationUrl"
-            class="ui-field flex-1 px-3 py-1.5 text-sm select-all"
-          />
+          <div
+            aria-label="Application link"
+            class="flex-1 cursor-default border border-surface-200 bg-surface-100 px-3 py-1.5 text-sm text-surface-500 select-text dark:border-surface-800 dark:bg-surface-950/70 dark:text-surface-500"
+          >
+            {{ applicationUrl }}
+          </div>
           <button
             class="ui-button ui-button-primary px-3 py-1.5 text-sm"
             @click="copyApplicationLink"
