@@ -36,6 +36,14 @@ describe('dashboard top bar responsiveness', () => {
     expect(source).not.toMatch(/<ChevronLeft class="size-3\.5" \/>\s*All Jobs/)
   })
 
+  it('stacks mobile job context with a labeled back link above job tabs', () => {
+    expect(source).toContain('factory-job-mobile-context')
+    expect(source).toContain('factory-job-mobile-back')
+    expect(source).toContain('Back to jobs')
+    expect(source).toContain('lg:hidden')
+    expect(source).toContain('hidden lg:flex size-8')
+  })
+
   it('uses white-fill hover treatment for dashboard back links', () => {
     expect(backLinkSource).toContain('border border-transparent')
     expect(backLinkSource).toContain('hover:border-white hover:bg-white hover:text-black')
