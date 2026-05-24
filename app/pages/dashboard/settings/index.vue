@@ -77,7 +77,6 @@ async function handleSaveOrg() {
     saveError.value = slugError.value || 'Organization slug cannot be empty.'
     return
   }
-
   isSaving.value = true
   saveError.value = ''
   saveSuccess.value = false

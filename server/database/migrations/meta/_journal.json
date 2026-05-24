@@ -281,6 +281,13 @@
       "when": 1779586560000,
       "tag": "0038_job_active_from",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1779587160000,
+      "tag": "0039_signup_allowed_domains",
+      "breakpoints": true
     }
   ]
 }
