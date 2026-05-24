@@ -55,6 +55,18 @@ This adds a `Signed-off-by:` line to your commit message. Pull requests fail CI 
 - [ ] I did not introduce tenant-scope or auth regressions.
 - [ ] All commits are DCO signed (`git commit -s`).
 
+### Keyboard and accessibility acceptance checks
+
+For UI work, verify the interaction path without a mouse before opening the PR:
+
+- [ ] Visible focus is preserved for every interactive control.
+- [ ] No core action is pointer-only; keyboard users can reach and trigger it.
+- [ ] `Escape` closes or cancels transient UI only when that behavior is expected.
+- [ ] Focus returns to the triggering control after closing a modal, popover, or drawer.
+- [ ] Modal dialogs trap focus while open and do not leak tab order behind the overlay.
+- [ ] Custom listbox, menu, and combobox patterns support the expected arrow-key and selection behavior.
+- [ ] New custom controls ship with keyboard-focused tests, not just pointer-path checks.
+
 ## Coding and Product Conventions
 
 - Follow Nuxt 4 `app/` + root `server/` structure.
