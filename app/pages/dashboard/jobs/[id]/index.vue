@@ -1461,8 +1461,9 @@ function closeDocPreview() {
                     : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'overview'"
                 >
-                  <UserRound class="factory-candidate-detail-tab-icon size-3.5" />
+                  <UserRound class="factory-candidate-detail-tab-icon size-4" />
                   <span class="factory-candidate-detail-tab-label">Overview</span>
+                  <span class="factory-candidate-detail-tab-tooltip">Overview</span>
                 </button>
                 <button
                   class="factory-candidate-detail-tab cursor-pointer"
@@ -1473,8 +1474,9 @@ function closeDocPreview() {
                     : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'ai-analysis'"
                 >
-                  <Brain class="factory-candidate-detail-tab-icon size-3.5" />
+                  <Brain class="factory-candidate-detail-tab-icon size-4" />
                   <span class="factory-candidate-detail-tab-label">AI</span>
+                  <span class="factory-candidate-detail-tab-tooltip">AI</span>
                 </button>
                 <button
                   class="factory-candidate-detail-tab cursor-pointer"
@@ -1485,13 +1487,16 @@ function closeDocPreview() {
                     : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'interviews'"
                 >
-                  <Calendar class="factory-candidate-detail-tab-icon size-3.5" />
+                  <Calendar class="factory-candidate-detail-tab-icon size-4" />
                   <span class="factory-candidate-detail-tab-label">Interviews</span>
                   <span
                     v-if="currentApplicationInterviews.length > 0"
                     class="factory-candidate-detail-tab-count"
                   >
                     {{ currentApplicationInterviews.length }}
+                  </span>
+                  <span class="factory-candidate-detail-tab-tooltip">
+                    Interviews<span v-if="currentApplicationInterviews.length > 0"> ({{ currentApplicationInterviews.length }})</span>
                   </span>
                 </button>
                 <button
@@ -1503,13 +1508,16 @@ function closeDocPreview() {
                     : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'documents'"
                 >
-                  <FileText class="factory-candidate-detail-tab-icon size-3.5" />
+                  <FileText class="factory-candidate-detail-tab-icon size-4" />
                   <span class="factory-candidate-detail-tab-label">Documents</span>
                   <span
                     v-if="resolvedCurrentApplication?.candidate.documents?.length"
                     class="factory-candidate-detail-tab-count"
                   >
                     {{ resolvedCurrentApplication.candidate.documents.length }}
+                  </span>
+                  <span class="factory-candidate-detail-tab-tooltip">
+                    Documents<span v-if="resolvedCurrentApplication?.candidate.documents?.length"> ({{ resolvedCurrentApplication.candidate.documents.length }})</span>
                   </span>
                 </button>
                 <button
@@ -1521,13 +1529,16 @@ function closeDocPreview() {
                     : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'responses'"
                 >
-                  <MessageSquare class="factory-candidate-detail-tab-icon size-3.5" />
+                  <MessageSquare class="factory-candidate-detail-tab-icon size-4" />
                   <span class="factory-candidate-detail-tab-label">Responses</span>
                   <span
                     v-if="resolvedCurrentApplication?.responses?.length"
                     class="factory-candidate-detail-tab-count"
                   >
                     {{ resolvedCurrentApplication.responses.length }}
+                  </span>
+                  <span class="factory-candidate-detail-tab-tooltip">
+                    Responses<span v-if="resolvedCurrentApplication?.responses?.length"> ({{ resolvedCurrentApplication.responses.length }})</span>
                   </span>
                 </button>
                 <button
@@ -1539,8 +1550,9 @@ function closeDocPreview() {
                     : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'timeline'"
                 >
-                  <History class="factory-candidate-detail-tab-icon size-3.5" />
+                  <History class="factory-candidate-detail-tab-icon size-4" />
                   <span class="factory-candidate-detail-tab-label">Timeline</span>
+                  <span class="factory-candidate-detail-tab-tooltip">Timeline</span>
                 </button>
                 <button
                   class="factory-candidate-detail-tab cursor-pointer"
@@ -1551,8 +1563,9 @@ function closeDocPreview() {
                     : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'properties'"
                 >
-                  <SlidersHorizontal class="factory-candidate-detail-tab-icon size-3.5" />
+                  <SlidersHorizontal class="factory-candidate-detail-tab-icon size-4" />
                   <span class="factory-candidate-detail-tab-label">Properties</span>
+                  <span class="factory-candidate-detail-tab-tooltip">Properties</span>
                 </button>
               </div>
             </div>

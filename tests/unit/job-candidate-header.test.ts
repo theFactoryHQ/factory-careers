@@ -59,10 +59,12 @@ describe('job candidate header', () => {
     expect(detailTabs).not.toContain('overflow-x-auto')
     expect(detailTabs).not.toContain('whitespace-nowrap')
     for (const icon of ['UserRound', 'Brain', 'Calendar', 'FileText', 'MessageSquare', 'History', 'SlidersHorizontal']) {
-      expect(detailTabs).toContain(`<${icon} class="factory-candidate-detail-tab-icon size-3.5"`)
+      expect(detailTabs).toContain(`<${icon} class="factory-candidate-detail-tab-icon size-4"`)
     }
+    expect(detailTabs).toContain('factory-candidate-detail-tab-tooltip')
     expect(styles).toContain('@media (max-width: 1280px)')
     expect(styles).toContain('.factory-candidate-detail-tab-label')
+    expect(styles).toContain('.factory-candidate-detail-tab-tooltip')
     expect(styles).toContain('clip: rect(0, 0, 0, 0);')
   })
 })
