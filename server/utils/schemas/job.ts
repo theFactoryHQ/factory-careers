@@ -32,7 +32,7 @@ export const createJobSchema = z.object({
   /** Whether the application form asks for a cover letter upload */
   requireCoverLetter: z.boolean().optional().default(false),
   /** Whether to automatically run AI scoring when a candidate applies */
-  autoScoreOnApply: z.boolean().optional().default(false),
+  autoScoreOnApply: z.boolean().optional().default(true),
   /** Experience level required for this role */
   experienceLevel: z.enum(['junior', 'mid', 'senior', 'lead']).optional(),
 })

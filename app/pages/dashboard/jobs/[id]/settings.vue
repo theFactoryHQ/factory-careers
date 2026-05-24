@@ -47,7 +47,7 @@ const form = ref({
   validThrough: '',
   requireResume: false,
   requireCoverLetter: false,
-  autoScoreOnApply: false,
+  autoScoreOnApply: true,
 })
 
 watch([job, defaultSalaryUnit], ([j]) => {
@@ -68,7 +68,7 @@ watch([job, defaultSalaryUnit], ([j]) => {
       validThrough: j.validThrough ? new Date(j.validThrough).toISOString().split('T')[0] ?? '' : '',
       requireResume: j.requireResume ?? false,
       requireCoverLetter: j.requireCoverLetter ?? false,
-      autoScoreOnApply: j.autoScoreOnApply ?? false,
+      autoScoreOnApply: j.autoScoreOnApply ?? true,
     }
   }
 }, { immediate: true })

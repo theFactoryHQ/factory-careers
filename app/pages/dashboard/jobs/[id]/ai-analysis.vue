@@ -107,11 +107,11 @@ watch(criteriaData, (data) => {
 // Auto-score toggle
 // ─────────────────────────────────────────────
 
-const autoScoreOnApply = ref(false)
+const autoScoreOnApply = ref(true)
 const isSavingAutoScore = ref(false)
 
 watch(job, (j) => {
-  if (j) autoScoreOnApply.value = (j as any).autoScoreOnApply ?? false
+  if (j) autoScoreOnApply.value = (j as any).autoScoreOnApply ?? true
 }, { immediate: true })
 
 async function toggleAutoScore() {

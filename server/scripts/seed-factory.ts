@@ -84,7 +84,7 @@ async function main() {
       salaryNegotiable: true,
       requireResume: true,
       requireCoverLetter: false,
-      autoScoreOnApply: false,
+      autoScoreOnApply: true,
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
@@ -104,7 +104,7 @@ async function main() {
         salaryNegotiable: true,
         requireResume: true,
         requireCoverLetter: false,
-        autoScoreOnApply: false,
+        autoScoreOnApply: true,
         updatedAt: new Date(),
       },
     })

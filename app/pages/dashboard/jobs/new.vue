@@ -113,7 +113,7 @@ const selectedTemplate = ref<'standard' | 'technical' | 'non_technical'>('standa
 const isGeneratingCriteria = ref(false)
 const showCustomForm = ref(false)
 const editingCriterion = ref<ScoringCriterionDraft | null>(null)
-const autoScoreOnApply = ref(false)
+const autoScoreOnApply = ref(true)
 
 const customCriterionForm = ref({
   key: '',
@@ -334,7 +334,7 @@ function resetState() {
   }
   scoringCriteria.value = []
   scoringMode.value = 'none'
-  autoScoreOnApply.value = false
+  autoScoreOnApply.value = true
   isPublished.value = false
   createdJobId.value = ''
   createdJobSlug.value = ''

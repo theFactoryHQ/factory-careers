@@ -67,7 +67,7 @@ export const job = pgTable('job', {
   requireResume: boolean('require_resume').notNull().default(false),
   requireCoverLetter: boolean('require_cover_letter').notNull().default(false),
   // ── AI scoring settings ──
-  autoScoreOnApply: boolean('auto_score_on_apply').notNull().default(false),
+  autoScoreOnApply: boolean('auto_score_on_apply').notNull().default(true),
   // ── Timestamps ──
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
