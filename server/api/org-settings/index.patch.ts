@@ -16,6 +16,7 @@ export default defineEventHandler(async (event) => {
       nameDisplayFormat: body.nameDisplayFormat ?? 'first_last',
       dateFormat: body.dateFormat ?? 'mdy',
       calendarSyncInterviewers: body.calendarSyncInterviewers ?? false,
+      defaultSalaryUnit: body.defaultSalaryUnit ?? 'YEAR',
     })
     .onConflictDoUpdate({
       target: orgSettings.organizationId,
@@ -23,6 +24,7 @@ export default defineEventHandler(async (event) => {
         ...(body.nameDisplayFormat !== undefined && { nameDisplayFormat: body.nameDisplayFormat }),
         ...(body.dateFormat !== undefined && { dateFormat: body.dateFormat }),
         ...(body.calendarSyncInterviewers !== undefined && { calendarSyncInterviewers: body.calendarSyncInterviewers }),
+        ...(body.defaultSalaryUnit !== undefined && { defaultSalaryUnit: body.defaultSalaryUnit }),
         updatedAt: new Date(),
       },
     })
@@ -30,6 +32,7 @@ export default defineEventHandler(async (event) => {
       nameDisplayFormat: orgSettings.nameDisplayFormat,
       dateFormat: orgSettings.dateFormat,
       calendarSyncInterviewers: orgSettings.calendarSyncInterviewers,
+      defaultSalaryUnit: orgSettings.defaultSalaryUnit,
     })
 
   if (!result) {

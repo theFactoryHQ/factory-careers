@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { CURRENCY_VALUES } from '~~/shared/currency-options'
+import { SALARY_UNIT_VALUES } from '~~/shared/salary-options'
 
 export { JOB_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 
@@ -19,7 +20,7 @@ export const createJobSchema = z.object({
   salaryMin: z.coerce.number().int().min(0).nullable().optional(),
   salaryMax: z.coerce.number().int().min(0).nullable().optional(),
   salaryCurrency: z.enum(CURRENCY_VALUES).nullable().optional(),
-  salaryUnit: z.enum(['YEAR', 'MONTH', 'HOUR']).nullable().optional(),
+  salaryUnit: z.enum(SALARY_UNIT_VALUES).nullable().optional(),
   /** Whether salary is negotiable (hides min/max range on public listing) */
   salaryNegotiable: z.boolean().optional().default(false),
   /** Remote work status: remote, hybrid, or onsite */
@@ -47,7 +48,7 @@ export const updateJobSchema = z.object({
   salaryMin: z.coerce.number().int().min(0).nullable().optional(),
   salaryMax: z.coerce.number().int().min(0).nullable().optional(),
   salaryCurrency: z.enum(CURRENCY_VALUES).nullable().optional(),
-  salaryUnit: z.enum(['YEAR', 'MONTH', 'HOUR']).nullable().optional(),
+  salaryUnit: z.enum(SALARY_UNIT_VALUES).nullable().optional(),
   salaryNegotiable: z.boolean().optional(),
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).nullable().optional(),
   /** Pass null to explicitly clear the expiry date */

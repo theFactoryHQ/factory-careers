@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
     columns: {
       nameDisplayFormat: true,
       dateFormat: true,
+      defaultSalaryUnit: true,
     },
   })
 
@@ -17,5 +18,6 @@ export default defineEventHandler(async (event) => {
   return {
     nameDisplayFormat: settings?.nameDisplayFormat ?? 'first_last',
     dateFormat: settings?.dateFormat ?? 'mdy',
+    defaultSalaryUnit: settings?.defaultSalaryUnit ?? 'YEAR',
   }
 })

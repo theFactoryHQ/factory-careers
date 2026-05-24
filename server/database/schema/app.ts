@@ -270,6 +270,8 @@ export const orgSettings = pgTable('org_settings', {
   dateFormat: dateFormatEnum('date_format').notNull().default('mdy'),
   /** When true (in Microsoft application auth mode), interview events are also created on each interviewer's personal calendar */
   calendarSyncInterviewers: boolean('calendar_sync_interviewers').notNull().default(false),
+  /** Default salary pay period used by job settings when a job has no explicit override */
+  defaultSalaryUnit: text('default_salary_unit').notNull().default('YEAR'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => ([

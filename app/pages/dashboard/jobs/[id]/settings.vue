@@ -4,6 +4,7 @@ import {
 } from 'lucide-vue-next'
 import { z } from 'zod'
 import { CURRENCY_OPTIONS, CURRENCY_VALUES } from '~~/shared/currency-options'
+import { SALARY_UNIT_OPTIONS, SALARY_UNIT_VALUES } from '~~/shared/salary-options'
 
 definePageMeta({
   layout: 'dashboard',
@@ -18,6 +19,7 @@ const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 const { track } = useTrack()
 
 const { job, status: fetchStatus, error: fetchError, updateJob, deleteJob } = useJob(jobId)
+const { defaultSalaryUnit } = useOrgSettings()
 
 useSeoMeta({
   title: computed(() =>
@@ -38,7 +40,7 @@ const form = ref({
   salaryMin: null as number | null,
   salaryMax: null as number | null,
   salaryCurrency: 'USD',
-  salaryUnit: '' as string,
+  salaryUnit: 'YEAR',
   salaryNegotiable: false,
   remoteStatus: '' as string,
   experienceLevel: '' as string,
@@ -48,7 +50,7 @@ const form = ref({
   autoScoreOnApply: false,
 })
 
-watch(job, (j) => {
+watch([job, defaultSalaryUnit], ([j]) => {
   if (j) {
     form.value = {
       title: j.title ?? '',
@@ -59,7 +61,7 @@ watch(job, (j) => {
       salaryMin: j.salaryMin ?? null,
       salaryMax: j.salaryMax ?? null,
       salaryCurrency: j.salaryCurrency ?? 'USD',
-      salaryUnit: j.salaryUnit ?? '',
+      salaryUnit: j.salaryUnit ?? defaultSalaryUnit.value,
       salaryNegotiable: j.salaryNegotiable ?? false,
       remoteStatus: j.remoteStatus ?? '',
       experienceLevel: j.experienceLevel ?? '',
@@ -80,6 +82,9 @@ watch(() => form.value.salaryNegotiable, (negotiable) => {
     form.value.salaryUnit = ''
   } else if (!form.value.salaryCurrency) {
     form.value.salaryCurrency = 'USD'
+    form.value.salaryUnit = defaultSalaryUnit.value
+  } else if (!form.value.salaryUnit) {
+    form.value.salaryUnit = defaultSalaryUnit.value
   }
 })
 
@@ -96,7 +101,7 @@ const editSchema = z.object({
   salaryMin: z.union([z.coerce.number().int().min(0), z.null()]).optional(),
   salaryMax: z.union([z.coerce.number().int().min(0), z.null()]).optional(),
   salaryCurrency: z.enum(CURRENCY_VALUES),
-  salaryUnit: z.enum(['YEAR', 'MONTH', 'HOUR']).optional().or(z.literal('')),
+  salaryUnit: z.enum(SALARY_UNIT_VALUES).optional().or(z.literal('')),
   salaryNegotiable: z.boolean().optional(),
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).optional().or(z.literal('')),
   experienceLevel: z.enum(['junior', 'mid', 'senior', 'lead']).optional().or(z.literal('')),
@@ -138,7 +143,7 @@ async function handleSave() {
       salaryMin: form.value.salaryNegotiable ? null : (form.value.salaryMin ?? null),
       salaryMax: form.value.salaryNegotiable ? null : (form.value.salaryMax ?? null),
       salaryCurrency: form.value.salaryNegotiable ? null : (form.value.salaryCurrency || 'USD'),
-      salaryUnit: form.value.salaryNegotiable ? null : (form.value.salaryUnit || null),
+      salaryUnit: form.value.salaryNegotiable ? null : (form.value.salaryUnit || defaultSalaryUnit.value),
       remoteStatus: form.value.remoteStatus || null,
       experienceLevel: (form.value.experienceLevel as 'junior' | 'mid' | 'senior' | 'lead' | null) || null,
       // Send null when cleared so the DB column is set to NULL
@@ -223,13 +228,6 @@ const experienceLevelOptions = [
   { value: 'mid', label: 'Mid-level' },
   { value: 'senior', label: 'Senior' },
   { value: 'lead', label: 'Lead' },
-]
-
-const salaryUnitOptions = [
-  { value: '', label: 'Not specified' },
-  { value: 'YEAR', label: 'Per year' },
-  { value: 'MONTH', label: 'Per month' },
-  { value: 'HOUR', label: 'Per hour' },
 ]
 
 function onSalaryMinChange(e: Event) {
@@ -449,7 +447,7 @@ function onSalaryMaxChange(e: Event) {
                   <FactorySelect
                     id="settings-salary-unit"
                     v-model="form.salaryUnit"
-                    :options="salaryUnitOptions"
+                    :options="SALARY_UNIT_OPTIONS"
                   />
                 </div>
               </div>

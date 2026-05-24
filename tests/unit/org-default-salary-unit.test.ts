@@ -1,0 +1,32 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+
+const readProjectFile = (path: string) =>
+  readFileSync(join(process.cwd(), path), 'utf8')
+
+describe('organization default salary pay period', () => {
+  it('exposes a validated organization-level default in settings', () => {
+    const settingsPage = readProjectFile('app/pages/dashboard/settings/index.vue')
+    const orgSettingsSchema = readProjectFile('server/utils/schemas/orgSettings.ts')
+    const getEndpoint = readProjectFile('server/api/org-settings/index.get.ts')
+    const patchEndpoint = readProjectFile('server/api/org-settings/index.patch.ts')
+
+    expect(settingsPage).toContain('Default pay period')
+    expect(settingsPage).toContain('defaultSalaryUnit')
+    expect(settingsPage).toContain('SALARY_UNIT_OPTIONS')
+    expect(orgSettingsSchema).toContain('defaultSalaryUnit: z.enum(SALARY_UNIT_VALUES).optional()')
+    expect(getEndpoint).toContain('defaultSalaryUnit: settings?.defaultSalaryUnit ?? \'YEAR\'')
+    expect(patchEndpoint).toContain('defaultSalaryUnit: body.defaultSalaryUnit ?? \'YEAR\'')
+  })
+
+  it('makes job pay period inherit the organization default instead of Not specified', () => {
+    const jobSettingsPage = readProjectFile('app/pages/dashboard/jobs/[id]/settings.vue')
+
+    expect(jobSettingsPage).toContain('defaultSalaryUnit')
+    expect(jobSettingsPage).toContain("salaryUnit: 'YEAR'")
+    expect(jobSettingsPage).toContain('salaryUnit: j.salaryUnit ?? defaultSalaryUnit.value')
+    expect(jobSettingsPage).toContain(':options="SALARY_UNIT_OPTIONS"')
+    expect(jobSettingsPage).not.toContain('const salaryUnitOptions')
+  })
+})

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Building2, Save, AlertTriangle, Trash2, Loader2, CircleHelp } from 'lucide-vue-next'
+import { SALARY_UNIT_OPTIONS } from '~~/shared/salary-options'
 
 definePageMeta({})
 
@@ -11,6 +12,7 @@ useSeoMeta({
 const { activeOrg } = useCurrentOrg()
 const { allowed: canUpdateOrg, isLoading: isUpdateOrgPermissionLoading } = usePermission({ organization: ['update'] })
 const { allowed: canDeleteOrg } = usePermission({ organization: ['delete'] })
+const { defaultSalaryUnit, updateSettings } = useOrgSettings()
 const { track } = useTrack()
 const config = useRuntimeConfig()
 const factoryOrgName = computed(() => String(config.public.factoryOrgName || 'Factory').trim())
@@ -33,6 +35,7 @@ const publicBoardDisplayUrl = computed(() => `${publicBoardPrefix.value}${public
 // ─────────────────────────────────────────────
 const orgName = ref(factoryOrgName.value)
 const orgSlug = ref(factoryOrgSlug.value)
+const localDefaultSalaryUnit = ref<'YEAR' | 'MONTH' | 'HOUR'>('YEAR')
 const isSaving = ref(false)
 const saveSuccess = ref(false)
 const saveError = ref('')
@@ -53,6 +56,10 @@ watch(activeOrg, (org) => {
     orgName.value = org.name ?? ''
     orgSlug.value = isFactorySlugLocked.value ? factoryOrgSlug.value : (org.slug ?? '')
   }
+}, { immediate: true })
+
+watch(defaultSalaryUnit, (unit) => {
+  localDefaultSalaryUnit.value = unit as 'YEAR' | 'MONTH' | 'HOUR'
 }, { immediate: true })
 
 async function handleSaveOrg() {
@@ -81,6 +88,9 @@ async function handleSaveOrg() {
         name: trimmedName,
         slug: trimmedSlug,
       },
+    })
+    await updateSettings({
+      defaultSalaryUnit: localDefaultSalaryUnit.value,
     })
     track('org_settings_saved')
     saveSuccess.value = true
@@ -206,6 +216,21 @@ async function handleDeleteOrg() {
               aria-describedby="public-board-url-tooltip"
             />
           </div>
+        </div>
+
+        <div>
+          <label for="org-default-salary-unit" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+            Default pay period
+          </label>
+          <FactorySelect
+            id="org-default-salary-unit"
+            v-model="localDefaultSalaryUnit"
+            :options="SALARY_UNIT_OPTIONS"
+            :disabled="!canUpdateOrg"
+          />
+          <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">
+            New and unconfigured jobs use this pay period until a job-specific value is saved.
+          </p>
         </div>
 
         <!-- Save button & feedback -->
