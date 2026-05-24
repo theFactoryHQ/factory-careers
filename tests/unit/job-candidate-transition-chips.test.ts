@@ -12,10 +12,12 @@ describe('job candidate transition chips', () => {
     const css = readProjectFile('app/assets/css/main.css')
     const chipRule = css.match(/\.factory-application-transition-chip\s*\{[^}]+\}/)?.[0] ?? ''
     const shortcutRule = css.match(/\.factory-application-transition-shortcut\s*\{[^}]+\}/)?.[0] ?? ''
+    const transitionChip = page.match(/factory-application-transition-chip[\s\S]*?<\/button>/)?.[0] ?? ''
 
     expect(page).toContain('factory-application-transition-chip')
-    expect(page).toContain('pipeline-status-dot size-2 rounded-full')
-    expect(page).toContain('getApplicationTransitionDotClass(nextStatus)')
+    expect(transitionChip).toContain('ApplicationTransitionIcon :status="nextStatus"')
+    expect(transitionChip).not.toContain('getApplicationTransitionDotClass(nextStatus)')
+    expect(transitionChip).not.toContain('pipeline-status-dot')
     expect(page).toContain('factory-application-transition-shortcut')
     expect(page).not.toContain('getApplicationTransitionButtonClass(nextStatus)')
     expect(page).not.toContain('rounded-lg px-3 py-1.5 text-xs font-semibold')

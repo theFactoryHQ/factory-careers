@@ -4,7 +4,6 @@ import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 import {
   getApplicationStatusBadgeClass,
   getApplicationTransitionButtonClass,
-  getApplicationTransitionDotClass,
   getApplicationTransitionLabel,
 } from '~/utils/status-display'
 
@@ -220,14 +219,11 @@ function formatResponseValue(value: unknown): string {
             v-for="nextStatus in allowedTransitions"
             :key="nextStatus"
             :disabled="isTransitioning"
-            class="inline-flex shrink-0 cursor-pointer items-center whitespace-nowrap px-2.5 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
+            class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
             :class="getApplicationTransitionButtonClass(nextStatus, 'factory')"
             @click="handleTransition(nextStatus)"
           >
-            <span
-              class="mr-1.5 inline-flex size-1 rounded-full"
-              :class="getApplicationTransitionDotClass(nextStatus)"
-            />
+            <ApplicationTransitionIcon :status="nextStatus" />
             {{ getApplicationTransitionLabel(nextStatus) }}
           </button>
           <button

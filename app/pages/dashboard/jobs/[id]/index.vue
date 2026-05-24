@@ -13,7 +13,6 @@ import { APPLICATION_STATUS_TRANSITIONS, INTERVIEW_STATUS_TRANSITIONS } from '~~
 import {
   formatRelativeTime,
   getApplicationStatusBadgeClass,
-  getApplicationTransitionDotClass,
   getApplicationTransitionLabel,
   getInterviewStatusBadgeClass,
   getScoreBadgeClass,
@@ -1421,10 +1420,7 @@ function closeDocPreview() {
                   class="ui-filter-chip factory-application-transition-chip inline-flex h-8 min-h-8 cursor-pointer items-center gap-2 px-3 text-xs !font-light uppercase leading-none tracking-normal transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50"
                   @click="nextStatus === 'interview' ? openInterviewScheduler() : changeStatus(nextStatus)"
                 >
-                  <span
-                    class="pipeline-status-dot size-2 rounded-full"
-                    :class="getApplicationTransitionDotClass(nextStatus)"
-                  />
+                  <ApplicationTransitionIcon :status="nextStatus" />
                   {{ getApplicationTransitionLabel(nextStatus) }}
                   <kbd class="factory-application-transition-shortcut inline-flex items-center justify-center px-1 text-[10px] font-mono leading-none">{{ idx + 1 }}</kbd>
                 </button>

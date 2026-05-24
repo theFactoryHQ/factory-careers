@@ -576,10 +576,11 @@ function formatInterviewDate(dateStr: string) {
                   v-for="nextStatus in allowedTransitions"
                   :key="nextStatus"
                   :disabled="isTransitioning"
-                  class="ui-button px-3 py-1.5 text-sm disabled:opacity-50"
+                  class="ui-button inline-flex items-center gap-1.5 px-3 py-1.5 text-sm disabled:opacity-50"
                   :class="getApplicationTransitionButtonClass(nextStatus)"
                   @click="handleTransition(nextStatus)"
                 >
+                  <ApplicationTransitionIcon :status="nextStatus" />
                   {{ getApplicationTransitionLabel(nextStatus) }}
                 </button>
               </div>

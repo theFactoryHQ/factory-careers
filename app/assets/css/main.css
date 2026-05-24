@@ -2260,6 +2260,11 @@
     color: rgb(255 255 255 / 0.46);
   }
 
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-icon {
+    color: currentColor;
+    opacity: 0.82;
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-timestamps {
     color: rgb(255 255 255 / 0.58);
   }
