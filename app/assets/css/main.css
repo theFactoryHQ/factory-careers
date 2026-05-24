@@ -781,6 +781,10 @@
     overflow: hidden;
   }
 
+  .factory-org-profile-panel {
+    overflow: visible;
+  }
+
   .ui-dashboard-stat-card {
     position: relative;
     isolation: isolate;
@@ -1510,6 +1514,10 @@
     border-radius: 0 !important;
     background-color: var(--ui-panel) !important;
     color: var(--ui-text) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-org-profile-panel {
+    overflow: visible !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-dashboard-stat-card {

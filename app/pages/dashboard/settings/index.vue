@@ -154,7 +154,7 @@ async function handleDeleteOrg() {
     </div>
 
     <!-- Organization profile -->
-    <section class="ui-panel ui-settings-panel">
+    <section class="ui-panel ui-settings-panel factory-org-profile-panel">
       <div class="ui-panel-header ui-settings-panel-header">
         <div class="flex items-center gap-3">
           <Building2 class="size-6 text-brand-400 shrink-0" />
