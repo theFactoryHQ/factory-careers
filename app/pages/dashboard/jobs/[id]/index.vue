@@ -1061,6 +1061,7 @@ function closeDocPreview() {
             style="font-weight: 300 !important"
             @click="setFocusStatus(status)"
           >
+            <span class="factory-pipeline-status-chip-stage tabular-nums">{{ idx + 1 }}</span>
             <span class="pipeline-status-dot size-2 rounded-full" :class="{
               'bg-blue-500 dark:bg-blue-400': status === 'new',
               'bg-violet-500 dark:bg-violet-400': status === 'screening',
@@ -1070,7 +1071,6 @@ function closeDocPreview() {
               'bg-surface-400 dark:bg-surface-500': status === 'rejected',
             }" />
             <span class="factory-pipeline-status-chip-label">{{ formatStatusLabel(status) }}</span>
-            <span class="factory-pipeline-status-chip-number factory-pipeline-status-chip-stage tabular-nums">{{ idx + 1 }}</span>
             <span
               class="factory-pipeline-status-chip-number factory-pipeline-status-chip-count tabular-nums text-xs font-normal transition-colors duration-200"
               :class="isFocusStatus(status)

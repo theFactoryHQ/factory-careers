@@ -2250,10 +2250,14 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-status-chip-stage {
+    min-width: 10px;
     color: rgb(255 255 255 / 0.44) !important;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-status-chip-active .factory-pipeline-status-chip-number {
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-status-chip-active .factory-pipeline-status-chip-count {
     border-color: color-mix(in srgb, var(--color-brand-500) 45%, transparent);
     background-color: color-mix(in srgb, var(--color-brand-500) 16%, transparent);
     color: var(--color-brand-200) !important;

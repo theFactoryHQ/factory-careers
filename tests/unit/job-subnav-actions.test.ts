@@ -81,6 +81,8 @@ describe('job subnav actions', () => {
     expect(jobDetail).toContain('factory-pipeline-status-chip-label')
     expect(jobDetail).toContain('factory-pipeline-status-chip-stage')
     expect(jobDetail).toContain('factory-pipeline-status-chip-count')
+    expect(jobDetail).toContain('<span class="factory-pipeline-status-chip-stage tabular-nums">{{ idx + 1 }}</span>')
+    expect(jobDetail).not.toContain('factory-pipeline-status-chip-number factory-pipeline-status-chip-stage')
     expect(jobDetail).toContain(':title="`${formatStatusLabel(status)} stage ${idx + 1}, ${statusCounts[status] ?? 0} applicants`"')
   })
 
