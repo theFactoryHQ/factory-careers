@@ -34,4 +34,21 @@ describe('application form requirement cards', () => {
     expect(linkSection).not.toContain('readonly')
     expect(linkSection).not.toContain('class="ui-field')
   })
+
+  it('lets admins preview the applicant-facing form in a modal', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
+
+    expect(source).toContain('showApplicationPreview')
+    expect(source).toContain('Preview form')
+    expect(source).toContain('Application Preview')
+    expect(source).toContain('Applicant view')
+    expect(source).toContain('Name <span')
+    expect(source).toContain('Email <span')
+    expect(source).toContain('Phone')
+    expect(source).toContain('Country <span')
+    expect(source).toContain('State <span')
+    expect(source).toContain('Resume / CV')
+    expect(source).toContain('Cover Letter')
+    expect(source).toContain('v-for="q in previewQuestions"')
+  })
 })

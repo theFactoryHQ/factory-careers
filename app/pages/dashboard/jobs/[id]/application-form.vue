@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FileText, Link2, Check, Plus, Copy, CheckCircle2, XCircle, ToggleLeft, ToggleRight, Trash2, Radio, ChevronDown, X, ExternalLink } from 'lucide-vue-next'
+import { FileText, Link2, Check, Plus, Copy, CheckCircle2, XCircle, ToggleLeft, ToggleRight, Trash2, Radio, ChevronDown, X, ExternalLink, Eye } from 'lucide-vue-next'
 import { getSourceChannelLabel } from '~/utils/status-display'
 
 definePageMeta({
@@ -13,6 +13,20 @@ const jobId = route.params.id as string
 const toast = useToast()
 
 const { job, status: fetchStatus, error, updateJob } = useJob(jobId)
+const { questions: previewQuestions } = useJobQuestions(jobId)
+const showApplicationPreview = ref(false)
+
+const previewQuestionTypeLabels: Record<string, string> = {
+  short_text: 'Short answer',
+  long_text: 'Long answer',
+  single_select: 'Single select',
+  multi_select: 'Multiple select',
+  number: 'Number',
+  date: 'Date',
+  url: 'URL',
+  checkbox: 'Checkbox',
+  file_upload: 'File upload',
+}
 
 useSeoMeta({
   title: computed(() =>
@@ -164,11 +178,21 @@ async function copyTrackingUrl(code: string) {
 
     <template v-else-if="job">
       <!-- Header -->
-      <div class="mb-6">
-        <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50">Application Form</h1>
-        <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">
-          Configure the application experience for <strong>{{ job.title }}</strong>.
-        </p>
+      <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50">Application Form</h1>
+          <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">
+            Configure the application experience for <strong>{{ job.title }}</strong>.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="ui-button ui-button-secondary h-10 shrink-0 px-4 text-sm"
+          @click="showApplicationPreview = true"
+        >
+          <Eye class="size-4" />
+          Preview form
+        </button>
       </div>
 
       <!-- Shareable application link (only when job is open) -->
@@ -368,6 +392,156 @@ async function copyTrackingUrl(code: string) {
         </div>
       </div>
     </template>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Modal: Application preview              -->
+    <!-- ═══════════════════════════════════════ -->
+    <Teleport to="body">
+      <div
+        v-if="showApplicationPreview && job"
+        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
+        @click.self="showApplicationPreview = false"
+      >
+        <div class="ui-modal-panel relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden">
+          <div class="ui-panel-header flex items-center justify-between px-6 py-4">
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-600 dark:text-brand-400">Applicant view</p>
+              <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Application Preview</h2>
+            </div>
+            <button
+              type="button"
+              class="ui-button ui-button-ghost size-8 p-0"
+              aria-label="Close preview"
+              @click="showApplicationPreview = false"
+            >
+              <X class="size-4" />
+            </button>
+          </div>
+          <div class="overflow-y-auto px-6 py-5">
+            <div class="mx-auto max-w-2xl">
+              <div class="mb-5 border border-white/10 bg-black p-5 text-white">
+                <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-400">Factory Careers</p>
+                <h3 class="text-2xl font-semibold">Apply for {{ job.title }}</h3>
+                <p class="mt-2 text-sm text-white/60">
+                  This is a preview of the form candidates will complete.
+                </p>
+              </div>
+
+              <div class="space-y-5 border border-surface-200 bg-surface-50 p-5 dark:border-surface-800 dark:bg-surface-950/70">
+                <section>
+                  <h4 class="mb-4 text-sm font-semibold text-surface-900 dark:text-surface-100">Contact information</h4>
+                  <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                      Name <span class="text-brand-600 dark:text-brand-400">*</span>
+                      <input disabled placeholder="First and last name" class="ui-field mt-1 px-3 py-2 text-sm opacity-80" />
+                    </label>
+                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                      Email <span class="text-brand-600 dark:text-brand-400">*</span>
+                      <input disabled placeholder="you@example.com" class="ui-field mt-1 px-3 py-2 text-sm opacity-80" />
+                    </label>
+                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                      Phone
+                      <input disabled placeholder="Optional" class="ui-field mt-1 px-3 py-2 text-sm opacity-80" />
+                    </label>
+                  </div>
+                </section>
+
+                <section class="border-t border-surface-200 pt-5 dark:border-surface-800">
+                  <h4 class="mb-4 text-sm font-semibold text-surface-900 dark:text-surface-100">Location</h4>
+                  <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                      Country <span class="text-brand-600 dark:text-brand-400">*</span>
+                      <select disabled class="ui-field mt-1 px-3 py-2 text-sm opacity-80">
+                        <option>United States</option>
+                      </select>
+                    </label>
+                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                      State <span class="text-brand-600 dark:text-brand-400">*</span>
+                      <select disabled class="ui-field mt-1 px-3 py-2 text-sm opacity-80">
+                        <option>Select state</option>
+                      </select>
+                    </label>
+                  </div>
+                </section>
+
+                <section
+                  v-if="requireResume || requireCoverLetter"
+                  class="space-y-4 border-t border-surface-200 pt-5 dark:border-surface-800"
+                >
+                  <div v-if="requireResume">
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                      Resume / CV <span class="text-brand-600 dark:text-brand-400">*</span>
+                    </p>
+                    <div class="border border-dashed border-surface-300 px-4 py-5 text-center text-sm text-surface-500 dark:border-surface-700 dark:text-surface-400">
+                      Upload PDF, DOC, or DOCX
+                    </div>
+                  </div>
+                  <label
+                    v-if="requireCoverLetter"
+                    class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400"
+                  >
+                    Cover Letter
+                    <textarea disabled rows="5" placeholder="Tell us why this role interests you." class="ui-field mt-1 px-3 py-2 text-sm opacity-80"></textarea>
+                  </label>
+                </section>
+
+                <section
+                  v-if="previewQuestions.length > 0"
+                  class="space-y-4 border-t border-surface-200 pt-5 dark:border-surface-800"
+                >
+                  <h4 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Additional questions</h4>
+                  <div
+                    v-for="q in previewQuestions"
+                    :key="q.id"
+                    class="border border-surface-200 p-4 dark:border-surface-800"
+                  >
+                    <div class="mb-2 flex flex-wrap items-center gap-2">
+                      <p class="text-sm font-medium text-surface-900 dark:text-surface-100">{{ q.label }}</p>
+                      <span v-if="q.required" class="ui-pill ui-pill-brand">Required</span>
+                    </div>
+                    <p v-if="q.description" class="mb-3 text-xs text-surface-500 dark:text-surface-400">
+                      {{ q.description }}
+                    </p>
+                    <select
+                      v-if="q.type === 'single_select' || q.type === 'multi_select'"
+                      disabled
+                      class="ui-field px-3 py-2 text-sm opacity-80"
+                    >
+                      <option>{{ q.options?.[0] ?? 'Select an option' }}</option>
+                    </select>
+                    <textarea
+                      v-else-if="q.type === 'long_text'"
+                      disabled
+                      rows="4"
+                      :placeholder="previewQuestionTypeLabels[q.type]"
+                      class="ui-field px-3 py-2 text-sm opacity-80"
+                    ></textarea>
+                    <div
+                      v-else-if="q.type === 'file_upload'"
+                      class="border border-dashed border-surface-300 px-4 py-4 text-sm text-surface-500 dark:border-surface-700 dark:text-surface-400"
+                    >
+                      Upload file
+                    </div>
+                    <input
+                      v-else
+                      disabled
+                      :placeholder="previewQuestionTypeLabels[q.type] ?? 'Answer'"
+                      class="ui-field px-3 py-2 text-sm opacity-80"
+                    />
+                  </div>
+                </section>
+
+                <div class="border-t border-surface-200 pt-5 dark:border-surface-800">
+                  <button type="button" disabled class="factory-button-cta factory-button-premium h-10 px-5 opacity-80">
+                    Submit Application
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- ═══════════════════════════════════════ -->
     <!-- Modal: Create tracking link             -->
