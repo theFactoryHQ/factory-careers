@@ -23,10 +23,12 @@ describe('score breakdown actions', () => {
     expect(source).not.toContain('text-xs text-brand-600 dark:text-brand-400 hover:underline')
   })
 
-  it('uses the shared Factory button recipe for the selected candidate score action', () => {
+  it('keeps re-score actions inside the score breakdown section', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
 
-    expect(source).toMatch(/currentSummary\.score != null[\s\S]*factory-button-cta factory-button-premium/)
+    expect(source).toContain('<ScoreBreakdown')
+    expect(source).not.toContain('scoreIndividualCandidate')
+    expect(source).not.toContain('Score Candidate')
     expect(source).not.toContain('inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium')
   })
 })

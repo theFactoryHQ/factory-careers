@@ -5,7 +5,7 @@ import {
   Pencil, Trash2, Globe, ChevronDown, X,
   Video, Building2, Code2, UsersRound, Save, Check, MapPin, Users, Plus,
   CheckCircle2, XCircle, AlertTriangle, ArrowUpDown, ListFilter,
-  Maximize2, Minimize2, Brain, Loader2, History, SlidersHorizontal,
+  Maximize2, Minimize2, Brain, History, SlidersHorizontal,
 } from 'lucide-vue-next'
 import type { PropertyEntry, PropertyFilter } from '~~/shared/properties'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
@@ -991,39 +991,11 @@ onBeforeUnmount(() => {
 // Job status transitions (Publish, Close, etc.)
 // ─────────────────────────────────────────────
 
-const isScoringIndividual = ref(false)
-
-async function scoreIndividualCandidate(applicationId: string) {
-  isScoringIndividual.value = true
-  try {
-    await $fetch(`/api/applications/${applicationId}/analyze`, {
-      method: 'POST',
-    })
-    await refreshApps()
-    // Re-fetch the detail so score updates in the detail panel
-    if (currentApplicationId.value === applicationId) {
-      await executeDetailFetch()
-    }
-    track('individual_scoring_completed', { application_id: applicationId })
-    toast.success('Candidate scored', 'AI analysis complete.')
-  } catch (err: any) {
-    const statusMessage = err?.data?.statusMessage ?? ''
-    if (statusMessage.includes('AI provider not configured')) {
-      toast.add({
-        type: 'warning',
-        title: 'AI provider not configured',
-        message: 'Set up your AI provider in Settings first.',
-        link: { label: 'Go to AI Settings', href: '/dashboard/settings/ai' },
-        duration: 8000,
-      })
-    } else if (statusMessage.includes('No scoring criteria')) {
-      toast.warning('No scoring criteria', 'Add scoring criteria to this job first.')
-    } else {
-      toast.error('Scoring failed', { message: statusMessage || 'An unexpected error occurred.', statusCode: err?.data?.statusCode })
-    }
-  } finally {
-    isScoringIndividual.value = false
-  }
+const jobStatusBadgeClasses: Record<string, string> = {
+  draft: 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400',
+  open: 'bg-success-50 dark:bg-success-950 text-success-700 dark:text-success-400',
+  closed: 'bg-warning-50 dark:bg-warning-950 text-warning-700 dark:text-warning-400',
+  archived: 'bg-surface-100 dark:bg-surface-800 text-surface-400',
 }
 
 onBeforeUnmount(() => {
@@ -1472,15 +1444,6 @@ function closeDocPreview() {
                       >
                         {{ currentSummary.score }} pts
                       </span>
-                      <button
-                        :disabled="isScoringIndividual"
-                        class="factory-button-cta factory-button-premium inline-flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1.5 px-2.5 py-0 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                        @click="scoreIndividualCandidate(currentSummary.id)"
-                      >
-                        <Loader2 v-if="isScoringIndividual" class="size-3 animate-spin" />
-                        <Brain v-else class="size-3" />
-                        {{ isScoringIndividual ? 'Scoring…' : (currentSummary.score != null ? 'Re-score' : 'Score Candidate') }}
-                      </button>
                     </div>
                   </div>
                 </div>
