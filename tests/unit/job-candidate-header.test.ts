@@ -19,4 +19,17 @@ describe('job candidate header', () => {
     expect(header).not.toContain('title="Full application page"')
     expect(header).not.toContain('<ExternalLink class="size-4"')
   })
+
+  it('positions timestamps at the bottom of the selected candidate header actions', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+    const headerActions = source.slice(
+      source.indexOf('flex shrink-0 flex-col items-end justify-between'),
+      source.indexOf('<!-- Detail tabs -->'),
+    )
+
+    expect(headerActions).toContain('sm:self-stretch')
+    expect(headerActions.indexOf('@click="goToNextCard"')).toBeLessThan(headerActions.indexOf('<ApplicationTimestampStack'))
+    expect(headerActions).toContain(':applied-at="currentSummary.createdAt"')
+    expect(headerActions).toContain(':updated-at="currentSummary.updatedAt"')
+  })
 })

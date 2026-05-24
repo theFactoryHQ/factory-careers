@@ -1455,11 +1455,7 @@ function closeDocPreview() {
                     </div>
                   </div>
                 </div>
-                <div class="flex shrink-0 items-start gap-4">
-                  <ApplicationTimestampStack
-                    :applied-at="currentSummary.createdAt"
-                    :updated-at="currentSummary.updatedAt"
-                  />
+                <div class="flex shrink-0 flex-col items-end justify-between gap-4 sm:self-stretch">
                   <div class="flex items-center gap-1.5 mr-2">
                     <button
                       :disabled="currentIndex === 0"
@@ -1479,6 +1475,10 @@ function closeDocPreview() {
                       <ArrowRight class="size-4" />
                     </button>
                   </div>
+                  <ApplicationTimestampStack
+                    :applied-at="currentSummary.createdAt"
+                    :updated-at="currentSummary.updatedAt"
+                  />
                 </div>
               </div>
               </div>
