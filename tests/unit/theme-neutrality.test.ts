@@ -125,6 +125,15 @@ describe('brand-neutral theme variables', () => {
     expect(css).toMatch(/:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) \.factory-job-status-action\s*\{[\s\S]*height:\s*32px;[\s\S]*font-weight:\s*400 !important/)
   })
 
+  it('keeps selectable panels dark inside the dashboard shell', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+    const applicationForm = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
+
+    expect(applicationForm).toContain('ui-selectable-panel')
+    expect(css).toMatch(/:where\(\.factory-dashboard-shell,\s*\.factory-dashboard-portal\)\s+\.ui-selectable-panel\s*\{[\s\S]*background-color:\s*#050505 !important;[\s\S]*color:\s*rgb\(255 255 255 \/ 0\.78\) !important;/)
+    expect(css).toMatch(/:where\(\.factory-dashboard-shell,\s*\.factory-dashboard-portal\)\s+\.ui-selectable-panel-active\s*\{[\s\S]*background-color:\s*color-mix\(in srgb,\s*var\(--color-brand-500\) 16%,\s*#050505\) !important;/)
+  })
+
   it('explains job status actions with tooltips', () => {
     const actions = readProjectFile('app/components/JobSubNavActions.vue')
 
