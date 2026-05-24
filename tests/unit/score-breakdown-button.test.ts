@@ -31,4 +31,14 @@ describe('score breakdown actions', () => {
     expect(source).not.toContain('Score Candidate')
     expect(source).not.toContain('inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium')
   })
+
+  it('formats the selected candidate score like the score breakdown value', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+
+    expect(source).toContain('getScoreTextClass')
+    expect(source).toContain('class="inline-flex items-baseline gap-1"')
+    expect(source).toContain('{{ currentSummary.score }}')
+    expect(source).toContain('/ 100')
+    expect(source).not.toContain('{{ currentSummary.score }} pts')
+  })
 })

@@ -16,6 +16,7 @@ import {
   getApplicationTransitionLabel,
   getInterviewStatusBadgeClass,
   getScoreBadgeClass,
+  getScoreTextClass,
 } from '~/utils/status-display'
 
 definePageMeta({
@@ -1439,10 +1440,12 @@ function closeDocPreview() {
                     <div class="mt-2 flex flex-wrap items-center gap-2">
                       <span
                         v-if="currentSummary.score != null"
-                        class="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset"
-                        :class="getScoreBadgeClass(currentSummary.score, 'muted')"
+                        class="inline-flex items-baseline gap-1"
                       >
-                        {{ currentSummary.score }} pts
+                        <span class="text-lg font-bold tabular-nums" :class="getScoreTextClass(currentSummary.score)">
+                          {{ currentSummary.score }}
+                        </span>
+                        <span class="text-xs text-surface-400 dark:text-surface-500">/ 100</span>
                       </span>
                     </div>
                   </div>
