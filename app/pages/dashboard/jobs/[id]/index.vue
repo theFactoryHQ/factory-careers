@@ -1413,8 +1413,13 @@ function closeDocPreview() {
                   </div>
                   <div class="min-w-0">
                     <div class="flex items-center gap-2.5">
-                      <h2 class="text-xl font-semibold tracking-tight text-surface-900 dark:text-surface-50 truncate">
-                        {{ formatPersonName(currentSummary.candidateFirstName, currentSummary.candidateLastName) }}
+                      <h2 class="truncate text-xl font-semibold tracking-tight text-surface-900 dark:text-surface-50">
+                        <NuxtLink
+                          :to="$localePath(`/dashboard/applications/${currentSummary.id}`)"
+                          class="truncate transition-colors hover:text-brand-600 dark:hover:text-brand-400"
+                        >
+                          {{ formatPersonName(currentSummary.candidateFirstName, currentSummary.candidateLastName) }}
+                        </NuxtLink>
                       </h2>
                       <span
                         class="inline-flex shrink-0 items-center rounded-lg px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset"
@@ -1474,13 +1479,6 @@ function closeDocPreview() {
                       <ArrowRight class="size-4" />
                     </button>
                   </div>
-                  <NuxtLink
-                    :to="$localePath(`/dashboard/applications/${currentSummary.id}`)"
-                    class="flex items-center justify-center rounded-lg border border-surface-200 p-1.5 text-surface-500 transition-all duration-150 hover:bg-white hover:border-surface-300 hover:text-surface-700 dark:border-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:border-surface-600 dark:hover:text-surface-300"
-                    title="Full application page"
-                  >
-                    <ExternalLink class="size-4" />
-                  </NuxtLink>
                 </div>
               </div>
               </div>
