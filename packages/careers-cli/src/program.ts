@@ -217,6 +217,14 @@ async function readStdinJson(io: CliIo, enabled?: boolean): Promise<unknown> {
 }
 
 function validateStdinPayload(schema: CliPayloadSchema, body: unknown): unknown {
+  if (body === undefined) {
+    throw {
+      status: 400,
+      code: 'MISSING_STDIN_PAYLOAD',
+      message: 'Pass --stdin and pipe a JSON request body for this command.',
+    }
+  }
+
   try {
     return schema.parse(body)
   } catch (error) {
