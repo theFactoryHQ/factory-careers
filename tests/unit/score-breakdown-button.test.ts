@@ -23,6 +23,14 @@ describe('score breakdown actions', () => {
     expect(source).not.toContain('text-xs text-brand-600 dark:text-brand-400 hover:underline')
   })
 
+  it('uses the AI provider logo in score run metadata', () => {
+    const source = readProjectFile('app/components/ScoreBreakdown.vue')
+
+    expect(source).toContain('<AiProviderLogo :provider="resolvedScoreData!.latestRun.provider"')
+    expect(source).toContain(':title="`${resolvedScoreData!.latestRun.provider} · ${resolvedScoreData!.latestRun.model}`"')
+    expect(source).not.toContain('{{ resolvedScoreData!.latestRun.provider }} · {{ resolvedScoreData!.latestRun.model }}')
+  })
+
   it('keeps re-score actions inside the score breakdown section', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
 

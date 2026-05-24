@@ -232,7 +232,13 @@ async function retryParse() {
 
         <!-- Run metadata -->
         <div v-if="resolvedScoreData!.latestRun" class="mt-3 pt-3 border-t border-surface-100 dark:border-surface-800 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-surface-400">
-          <span>{{ resolvedScoreData!.latestRun.provider }} · {{ resolvedScoreData!.latestRun.model }}</span>
+          <span
+            class="inline-flex items-center gap-1.5"
+            :title="`${resolvedScoreData!.latestRun.provider} · ${resolvedScoreData!.latestRun.model}`"
+          >
+            <AiProviderLogo :provider="resolvedScoreData!.latestRun.provider" class="size-3.5 shrink-0" />
+            <span>{{ resolvedScoreData!.latestRun.model }}</span>
+          </span>
           <span>{{ new Date(resolvedScoreData!.latestRun.createdAt).toLocaleString() }}</span>
         </div>
       </div>
