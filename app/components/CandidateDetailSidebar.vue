@@ -564,9 +564,10 @@ function formatInterviewDate(dateStr: string) {
                 >
                   {{ application.status }}
                 </span>
-                <span class="text-sm text-surface-400">
-                  Applied {{ new Date(application.createdAt).toLocaleDateString() }}
-                </span>
+                <ApplicationTimestampStack
+                  :applied-at="application.createdAt"
+                  :updated-at="application.updatedAt"
+                />
               </div>
 
               <div v-if="allowedTransitions.length > 0" class="flex flex-wrap items-center gap-2">
@@ -640,21 +641,13 @@ function formatInterviewDate(dateStr: string) {
                   </dd>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-surface-400 dark:text-surface-500 mb-1 inline-flex items-center gap-1">
-                    <Calendar class="size-3.5" />
-                    Applied
-                  </dt>
-                  <dd class="text-surface-800 dark:text-surface-200 font-medium">
-                    {{ new Date(application.createdAt).toLocaleDateString() }}
-                  </dd>
-                </div>
-                <div>
-                  <dt class="text-xs font-medium text-surface-400 dark:text-surface-500 mb-1 inline-flex items-center gap-1">
-                    <Clock class="size-3.5" />
-                    Updated
-                  </dt>
-                  <dd class="text-surface-800 dark:text-surface-200 font-medium">
-                    {{ new Date(application.updatedAt).toLocaleDateString() }}
+                  <dt class="sr-only">Application timestamps</dt>
+                  <dd>
+                    <ApplicationTimestampStack
+                      :applied-at="application.createdAt"
+                      :updated-at="application.updatedAt"
+                      class="items-start sm:items-start"
+                    />
                   </dd>
                 </div>
               </dl>

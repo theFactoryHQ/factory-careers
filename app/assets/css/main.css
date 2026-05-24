@@ -2260,6 +2260,41 @@
     color: rgb(255 255 255 / 0.46);
   }
 
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-timestamps {
+    color: rgb(255 255 255 / 0.58);
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-timestamp-link {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgb(255 255 255 / 0.58) !important;
+    line-height: 1;
+    text-decoration: none !important;
+    transition: color 150ms ease;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-timestamp-link:hover {
+    color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-timestamp-link-offset {
+    padding-left: 20px;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-timestamp-icon {
+    color: var(--color-brand-500);
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-timestamp-label {
+    color: rgb(255 255 255 / 0.36);
+    text-transform: uppercase;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-timestamp-value {
+    color: rgb(255 255 255 / 0.78);
+    font-variant-numeric: tabular-nums;
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button {
     min-height: 40px;
     border-color: var(--ui-border-strong) !important;

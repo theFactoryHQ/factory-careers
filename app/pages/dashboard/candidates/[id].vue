@@ -488,9 +488,10 @@ async function handleDeleteDoc(docId: string) {
                 <h4 class="truncate text-sm font-semibold text-white transition-colors group-hover:text-brand-400">
                   {{ app.job.title }}
                 </h4>
-                <span class="text-xs text-white/42">
-                  Applied <TimelineDateLink :date="app.createdAt">{{ new Date(app.createdAt).toLocaleDateString() }}</TimelineDateLink>
-                </span>
+                <ApplicationTimestampStack
+                  :applied-at="app.createdAt"
+                  class="mt-1 items-start sm:items-start"
+                />
               </NuxtLink>
               <div class="flex shrink-0 items-center gap-2 sm:ml-3">
                 <button

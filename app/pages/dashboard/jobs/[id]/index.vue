@@ -1485,17 +1485,14 @@ function closeDocPreview() {
                         <Brain v-else class="size-3" />
                         {{ isScoringIndividual ? 'Scoring…' : (currentSummary.score != null ? 'Re-score' : 'Score Candidate') }}
                       </button>
-                      <TimelineDateLink :date="currentSummary.createdAt" class="inline-flex items-center gap-1 text-[11px] text-surface-400 dark:text-surface-500">
-                        <Clock class="size-3" />
-                        Applied {{ new Date(currentSummary.createdAt).toLocaleDateString() }}
-                      </TimelineDateLink>
-                      <span v-if="currentSummary.updatedAt !== currentSummary.createdAt" class="inline-flex items-center gap-1 text-[11px] text-surface-400 dark:text-surface-500">
-                        · <TimelineDateLink :date="currentSummary.updatedAt">Updated {{ new Date(currentSummary.updatedAt).toLocaleDateString() }}</TimelineDateLink>
-                      </span>
                     </div>
                   </div>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
+                <div class="flex shrink-0 items-start gap-4">
+                  <ApplicationTimestampStack
+                    :applied-at="currentSummary.createdAt"
+                    :updated-at="currentSummary.updatedAt"
+                  />
                   <div class="flex items-center gap-1.5 mr-2">
                     <button
                       :disabled="currentIndex === 0"

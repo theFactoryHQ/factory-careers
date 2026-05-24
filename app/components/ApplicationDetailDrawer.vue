@@ -228,24 +228,11 @@ onUnmounted(() => {
                   </span>
                 </div>
 
-                <div class="flex shrink-0 flex-wrap gap-x-3 gap-y-1 text-xs sm:absolute sm:right-5 sm:top-5 sm:flex-col sm:items-end">
-                  <TimelineDateLink
-                    :date="application.createdAt"
-                    class="inline-flex items-center gap-1.5 text-xs font-medium text-white/58 no-underline transition-colors hover:text-white"
-                  >
-                    <Calendar class="size-3.5 text-brand-500" />
-                    <span class="uppercase text-white/36">Applied</span>
-                    <span class="text-white/78">{{ new Date(application.createdAt).toLocaleDateString() }}</span>
-                  </TimelineDateLink>
-                  <TimelineDateLink
-                    :date="application.updatedAt"
-                    class="inline-flex items-center gap-1.5 text-xs font-medium text-white/58 no-underline transition-colors hover:text-white"
-                  >
-                    <Clock class="size-3.5 text-brand-500" />
-                    <span class="uppercase text-white/36">Updated</span>
-                    <span class="text-white/78">{{ new Date(application.updatedAt).toLocaleDateString() }}</span>
-                  </TimelineDateLink>
-                </div>
+                <ApplicationTimestampStack
+                  :applied-at="application.createdAt"
+                  :updated-at="application.updatedAt"
+                  floating
+                />
               </div>
             </div>
 
