@@ -13,4 +13,11 @@ describe('Dockerfile private package auth', () => {
     expect(dockerfile).toContain('@caffeinebounce:registry=https://npm.pkg.github.com/')
     expect(dockerfile).toContain('//npm.pkg.github.com/:_authToken=%s')
   })
+
+  it('copies npm lifecycle scripts before npm ci runs', () => {
+    expect(dockerfile.indexOf('COPY scripts/install-git-hooks.mjs')).toBeGreaterThan(-1)
+    expect(dockerfile.indexOf('COPY scripts/install-git-hooks.mjs')).toBeLessThan(
+      dockerfile.indexOf('npm ci'),
+    )
+  })
 })

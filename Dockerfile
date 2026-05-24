@@ -6,6 +6,7 @@ WORKDIR /app
 
 # Install dependencies first (layer-cached unless package.json changes)
 COPY package*.json ./
+COPY scripts/install-git-hooks.mjs ./scripts/install-git-hooks.mjs
 RUN --mount=type=secret,id=npm_token,dst=/etc/secrets/npm_token,required=false \
   set -eu; \
   if [ -s /etc/secrets/npm_token ]; then \
