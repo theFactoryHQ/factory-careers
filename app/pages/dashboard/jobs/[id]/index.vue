@@ -2193,7 +2193,7 @@ function closeDocPreview() {
       <!-- ═══════════════════════════════════════ -->
       <div
         v-if="filteredApplications.length > 0"
-        class="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-white/[0.02] ui-dashboard-panel-header"
+        class="factory-mobile-candidate-bar md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-white/[0.02] ui-dashboard-panel-header"
         :style="{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }"
       >
         <!-- Horizontal scrollable candidate cards -->
@@ -2205,10 +2205,10 @@ function closeDocPreview() {
             v-for="(app, idx) in filteredApplications"
             :key="app.id"
             :data-candidate-idx="idx"
-            class="snap-center shrink-0 flex items-center gap-2.5 rounded-xl px-3 py-2 min-w-[130px] max-w-[180px] transition-all duration-150 cursor-pointer"
+            class="factory-mobile-candidate-card snap-center shrink-0 flex items-center gap-2.5 rounded-xl px-3 py-2 min-w-[130px] max-w-[180px] transition-all duration-150 cursor-pointer"
             :class="currentIndex === idx
-              ? 'bg-brand-50 ring-2 ring-brand-500 shadow-sm dark:bg-brand-950/30 dark:ring-brand-400'
-              : 'bg-surface-50 ring-1 ring-surface-200 hover:ring-surface-300 dark:bg-surface-800/60 dark:ring-surface-700 dark:hover:ring-surface-600'"
+              ? 'factory-mobile-candidate-card-active bg-brand-50 ring-2 ring-brand-500 shadow-sm dark:bg-brand-950/30 dark:ring-brand-400'
+              : 'factory-mobile-candidate-card-inactive bg-surface-50 ring-1 ring-surface-200 hover:ring-surface-300 dark:bg-surface-800/60 dark:ring-surface-700 dark:hover:ring-surface-600'"
             @click="currentIndex = idx"
           >
             <div

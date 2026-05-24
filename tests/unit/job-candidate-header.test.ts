@@ -58,6 +58,17 @@ describe('job candidate header', () => {
     expect(styles).toMatch(/@media \(max-width: 640px\)[\s\S]*\.factory-candidate-header-actions\s*\{[\s\S]*align-items:\s*flex-end;[\s\S]*flex-direction:\s*row-reverse;/)
   })
 
+  it('keeps the mobile candidate selector opaque over page content', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+    const styles = readProjectFile('app/assets/css/main.css')
+
+    expect(source).toContain('factory-mobile-candidate-bar')
+    expect(source).toContain('factory-mobile-candidate-card')
+    expect(styles).toMatch(/\.factory-mobile-candidate-bar\s*\{[\s\S]*background-color:\s*#050505 !important;/)
+    expect(styles).toMatch(/\.factory-mobile-candidate-card\s*\{[\s\S]*background-color:\s*#050505 !important;/)
+    expect(styles).toMatch(/\.factory-mobile-candidate-card-active\s*\{[\s\S]*background-color:\s*color-mix\(in srgb, var\(--color-brand-500\) 18%, #050505\) !important;/)
+  })
+
   it('keeps overview as a plain detail tab without section checkboxes', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
     const detailTabs = source.slice(
