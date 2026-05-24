@@ -216,7 +216,7 @@ function openPropertyEditor(scope: 'org' | 'job') {
         @click="showApplyModal = true"
       >
         <UserPlus class="size-3" />
-        Add Candidate
+        Add
       </button>
 
       <!-- Primary job action (e.g., Publish) -->

@@ -95,10 +95,12 @@ describe('job subnav actions', () => {
   it('keeps job subnav action buttons the same 32px height as sibling tabs', () => {
     const actions = readProjectFile('app/components/JobSubNavActions.vue')
     const css = readProjectFile('app/assets/css/main.css')
-    const addCandidateButton = actions.match(/Add Candidate[\s\S]*?<\/button>/)?.[0] ?? ''
+    const addCandidateButton = actions.match(/<button[\s\S]*?<UserPlus class="size-3" \/>[\s\S]*?<\/button>/)?.[0] ?? ''
     const statusActionRule = css.match(/\.factory-job-status-action\s*\{[^}]+\}/)?.[0] ?? ''
     const moreButtonRule = css.match(/\.factory-job-more-button\s*\{[^}]+\}/)?.[0] ?? ''
 
+    expect(addCandidateButton).toContain('Add')
+    expect(addCandidateButton).not.toContain('Add Candidate')
     expect(addCandidateButton).toContain('h-8 min-h-8')
     expect(addCandidateButton).not.toContain('h-7 min-h-7')
     expect(statusActionRule).toContain('height: 32px')
