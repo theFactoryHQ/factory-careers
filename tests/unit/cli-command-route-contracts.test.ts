@@ -37,7 +37,7 @@ function expectedMethod(route: string): string {
   return METHOD_BY_SUFFIX[suffix]!
 }
 
-function expectedStaticApiFragments(route: string): string[] {
+function staticApiParts(route: string): string[] {
   const routePath = route
     .replace(/^server\/api\//, '/api/')
     .replace(/\.(delete|get|patch|post|put)\.ts$/, '')
@@ -45,24 +45,96 @@ function expectedStaticApiFragments(route: string): string[] {
 
   return routePath
     .split('/')
-    .filter((part) => part && !part.startsWith('['))
-    .map((part) => `/${part}`)
+    .filter((part) => part && !part.startsWith('[') && part !== 'index')
 }
 
-function hasDynamicRouteRepresentation(source: string, route: string): boolean {
+type RequestBlock = {
+  helper: string
+  source: string
+}
+
+function requestBlocks(source: string): RequestBlock[] {
+  const blocks: RequestBlock[] = []
+  const pattern = /request(Json|Text|FormJson|Binary)(?:<[^>]*>)?\(\{/g
+  let match: RegExpExecArray | null
+  while ((match = pattern.exec(source))) {
+    const start = match.index
+    const end = source.indexOf('\n    })', start)
+    if (end === -1) continue
+    blocks.push({
+      helper: match[1]!,
+      source: source.slice(start, end),
+    })
+  }
+  return blocks
+}
+
+function blockUsesMethod(block: RequestBlock, method: string): boolean {
+  if (block.source.includes(`method: '${method}'`)) return true
+  if (method === 'GET' && block.helper === 'Binary' && !block.source.includes('method:')) return true
+  if (method === 'POST' && block.helper === 'FormJson' && !block.source.includes('method:')) return true
+  if (method === 'GET' && block.helper === 'Json' && !block.source.includes('body,') && !block.source.includes('method:')) return true
+  if (method === 'POST' && block.helper === 'Json' && block.source.includes('body,') && !block.source.includes('method:')) return true
+  return false
+}
+
+function blockContainsParts(block: RequestBlock, parts: string[]): boolean {
+  let searchStart = 0
+  for (const part of parts) {
+    const index = block.source.indexOf(part, searchStart)
+    if (index === -1) return false
+    searchStart = index + part.length
+  }
+  return true
+}
+
+function dynamicRouteEvidence(source: string, route: string): string[] {
   if (/^server\/api\/calendar\/(google|microsoft)\/connect\.get\.ts$/.test(route)) {
-    return source.includes('/api/calendar/${normalizedProvider}/connect')
+    const provider = route.includes('/google/') ? 'google' : 'microsoft'
+    return [
+      `/api/calendar/\${normalizedProvider}/connect`,
+      provider === 'microsoft' ? `provider === 'microsoft'` : `: 'google'`,
+    ]
   }
 
   if (/^server\/api\/chatbot\/(agents|folders)\//.test(route)) {
-    return source.includes('/api/chatbot/${resource.path}')
+    const resource = route.includes('/agents/') ? 'agents' : 'folders'
+    return [
+      `/api/chatbot/\${resource.path}`,
+      `path: '${resource}'`,
+    ]
   }
 
   if (/^server\/api\/updates\/(changelog|system|version)\.get\.ts$/.test(route)) {
-    return source.includes('/api/updates/${commandConfig.path}')
+    const updatePath = route.match(/updates\/([^/]+)\.get\.ts$/)?.[1]
+    return [
+      `/api/updates/\${commandConfig.path}`,
+      `path: '${updatePath}'`,
+    ]
   }
 
-  return false
+  return []
+}
+
+function routeSpecificRequestExists(source: string, route: string): boolean {
+  const method = expectedMethod(route)
+  const dynamicEvidence = dynamicRouteEvidence(source, route)
+  if (dynamicEvidence.length > 0 && !dynamicEvidence.every((evidence) => source.includes(evidence))) {
+    return false
+  }
+
+  if (/^server\/api\/calendar\/(google|microsoft)\/connect\.get\.ts$/.test(route)) {
+    return true
+  }
+
+  const parts = staticApiParts(route)
+    .filter((part) => !['google', 'microsoft'].includes(part))
+    .filter((part) => !(/^server\/api\/chatbot\/(agents|folders)\//.test(route) && ['agents', 'folders'].includes(part)))
+    .filter((part) => !(/^server\/api\/updates\/(changelog|system|version)\.get\.ts$/.test(route) && ['changelog', 'system', 'version'].includes(part)))
+
+  return requestBlocks(source).some((block) =>
+    blockUsesMethod(block, method) && blockContainsParts(block, parts),
+  )
 }
 
 describe('CLI command route contracts', () => {
@@ -81,26 +153,8 @@ describe('CLI command route contracts', () => {
     const programSource = readFileSync(join(root, 'packages/careers-cli/src/program.ts'), 'utf8')
     const missing = cliRouteCoverage
       .filter((entry) => entry.status === 'supported')
-      .flatMap((entry) => {
-        const failures: string[] = []
-        const method = expectedMethod(entry.route)
-
-        if (!programSource.includes(`method: '${method}'`)) {
-          failures.push(`${entry.route} missing method ${method}`)
-        }
-
-        if (hasDynamicRouteRepresentation(programSource, entry.route)) {
-          return failures
-        }
-
-        for (const fragment of expectedStaticApiFragments(entry.route)) {
-          if (!programSource.includes(fragment)) {
-            failures.push(`${entry.route} missing path fragment ${fragment}`)
-          }
-        }
-
-        return failures
-      })
+      .filter((entry) => !routeSpecificRequestExists(programSource, entry.route))
+      .map((entry) => `${entry.route} missing route-specific ${expectedMethod(entry.route)} request`)
 
     expect(missing).toEqual([])
   })

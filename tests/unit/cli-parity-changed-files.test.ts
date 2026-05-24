@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 import { evaluateCliParityEvidence } from '../../scripts/cli-parity-check'
 
@@ -27,5 +28,17 @@ describe('CLI parity changed-file guard', () => {
     expect(evaluateCliParityEvidence([
       'server/api/jobs/index.get.ts',
     ], { override: true })).toMatchObject({ ok: true })
+  })
+
+  it('runs the CLI entrypoint when invoked through tsx with a relative script path', () => {
+    expect(() => execFileSync(
+      'npx',
+      ['tsx', 'scripts/cli-parity-check.ts', '--stdin'],
+      {
+        cwd: process.cwd(),
+        input: 'server/api/jobs/index.post.ts\n',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      },
+    )).toThrow(/CLI parity evidence is required/)
   })
 })

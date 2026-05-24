@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { pathToFileURL } from 'node:url'
 
 const PARITY_SENSITIVE_PATTERNS = [
   /^server\/api\//,
@@ -89,6 +89,6 @@ function main(): void {
   console.log(result.message)
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main()
 }
