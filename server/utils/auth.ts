@@ -279,6 +279,7 @@ function getAuth(): Auth {
         deviceAuthorization({
           verificationUri: "/device",
           validateClient: validateFactoryCareersCliClient,
+          schema: {},
         }),
 
         organization({

@@ -68,6 +68,7 @@ describe('API route security coverage', () => {
     const envSource = read('server/utils/env.ts')
 
     expect(authSource).toContain('deviceAuthorization({')
+    expect(authSource).toContain('schema: {')
     expect(authSource).toContain('bearer()')
     expect(authSource).toContain('validateFactoryCareersCliClient')
     expect(authSource).toContain('FACTORY_CAREERS_CLI_CLIENT_ID')
