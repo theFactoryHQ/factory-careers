@@ -273,6 +273,8 @@ export const orgSettings = pgTable('org_settings', {
   calendarSyncInterviewers: boolean('calendar_sync_interviewers').notNull().default(false),
   /** Default salary pay period used by job settings when a job has no explicit override */
   defaultSalaryUnit: text('default_salary_unit').notNull().default('YEAR'),
+  /** Email domains allowed to create accounts when public signup is otherwise restricted */
+  signupAllowedDomains: jsonb('signup_allowed_domains').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => ([

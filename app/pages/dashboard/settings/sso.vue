@@ -11,8 +11,10 @@ useSeoMeta({
   description: 'Configure enterprise SSO for your organization',
 })
 
-const { allowed: canManageSso } = usePermission({ organization: ['update'] })
+const { allowed: canManageSso, role: currentOrgRole } = usePermission({ organization: ['update'] })
 const { track } = useTrack()
+const { signupAllowedDomains, updateSettings } = useOrgSettings()
+const canManageSignupDomains = computed(() => currentOrgRole.value === 'owner')
 
 // ─────────────────────────────────────────────
 // Fetch existing SSO providers
@@ -48,6 +50,63 @@ const form = reactive({
   clientId: '',
   clientSecret: '',
 })
+
+// ─────────────────────────────────────────────
+// Signup domain allowlist
+// ─────────────────────────────────────────────
+const localSignupAllowedDomains = ref('')
+const isSavingDomains = ref(false)
+const domainSaveSuccess = ref(false)
+const domainSaveError = ref('')
+
+watch(signupAllowedDomains, (domains) => {
+  localSignupAllowedDomains.value = domains.join('\n')
+}, { immediate: true })
+
+const domainPattern = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/
+
+const parsedSignupAllowedDomains = computed(() => {
+  const domains = localSignupAllowedDomains.value
+    .split(/[\n,]/)
+    .map(domain => domain.trim().toLowerCase().replace(/^@+/, '').replace(/\.$/, ''))
+    .filter(Boolean)
+
+  return Array.from(new Set(domains)).sort((a, b) => a.localeCompare(b))
+})
+
+const invalidSignupDomains = computed(() =>
+  parsedSignupAllowedDomains.value.filter(domain => domain.length > 253 || !domainPattern.test(domain)),
+)
+
+async function handleSaveSignupDomains() {
+  if (!canManageSignupDomains.value) return
+
+  domainSaveError.value = ''
+  domainSaveSuccess.value = false
+
+  if (invalidSignupDomains.value.length > 0) {
+    domainSaveError.value = `Invalid domain: ${invalidSignupDomains.value[0]}`
+    return
+  }
+
+  isSavingDomains.value = true
+
+  try {
+    await updateSettings({
+      signupAllowedDomains: parsedSignupAllowedDomains.value,
+    })
+    track('signup_domain_allowlist_saved', { domain_count: parsedSignupAllowedDomains.value.length })
+    domainSaveSuccess.value = true
+    setTimeout(() => { domainSaveSuccess.value = false }, 3000)
+  }
+  catch (err: unknown) {
+    const fetchErr = err as { data?: { statusMessage?: string }; message?: string }
+    domainSaveError.value = fetchErr.data?.statusMessage ?? fetchErr.message ?? 'Failed to save signup domain allowlist'
+  }
+  finally {
+    isSavingDomains.value = false
+  }
+}
 
 const siteOrigin = computed(() => {
   if (import.meta.client) {
@@ -160,7 +219,7 @@ async function copyCallbackUrl(providerId: string) {
         Single Sign-On
       </h1>
       <p class="mt-1 text-sm text-surface-500 dark:text-surface-400">
-        Allow your team to sign in with their corporate identity provider (Okta, Azure AD, Google Workspace, etc.).
+        Manage trusted identity domains, SSO providers, and work-account access.
       </p>
     </div>
 
@@ -202,6 +261,72 @@ async function copyCallbackUrl(providerId: string) {
     </div>
 
     <template v-else>
+      <!-- Signup domain allowlist -->
+      <section class="ui-panel ui-settings-panel mb-6">
+        <div class="ui-panel-header ui-settings-panel-header">
+          <div class="flex items-center gap-3">
+            <ShieldCheck class="size-5 text-brand-400 shrink-0" />
+            <div>
+              <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">
+                Signup domain allowlist
+              </h2>
+              <p class="text-xs text-surface-500 dark:text-surface-400">
+                Allow known work email domains to create user accounts after the domain is proven by SSO or calendar.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="ui-settings-panel-body space-y-3">
+          <textarea
+            id="signup-allowed-domains"
+            v-model="localSignupAllowedDomains"
+            :disabled="!canManageSignupDomains"
+            rows="4"
+            class="ui-field min-h-24 resize-y disabled:cursor-not-allowed disabled:opacity-60"
+            placeholder="example.com&#10;factory.dev"
+            aria-label="Signup domain allowlist"
+          />
+          <p class="text-xs text-surface-400 dark:text-surface-500">
+            One domain per line or comma. Matching email domains can create a user account, but organization access still requires SSO provisioning, an invitation, or approval.
+          </p>
+          <p class="text-xs text-surface-400 dark:text-surface-500">
+            Domains must match a configured SSO provider or a connected calendar account. Only owners can save changes.
+          </p>
+          <p v-if="invalidSignupDomains.length" class="text-xs text-danger-500 dark:text-danger-400">
+            Invalid domain: {{ invalidSignupDomains[0] }}
+          </p>
+          <div class="flex items-center gap-3 pt-1">
+            <button
+              type="button"
+              :disabled="!canManageSignupDomains || isSavingDomains"
+              class="ui-button ui-button-primary disabled:opacity-60 disabled:cursor-not-allowed"
+              @click="handleSaveSignupDomains"
+            >
+              <Loader2 v-if="isSavingDomains" class="size-4 animate-spin" />
+              <Check v-else class="size-4" />
+              {{ isSavingDomains ? 'Saving…' : 'Save domains' }}
+            </button>
+            <Transition
+              enter-active-class="transition-opacity duration-300"
+              leave-active-class="transition-opacity duration-300"
+              enter-from-class="opacity-0"
+              leave-to-class="opacity-0"
+            >
+              <span v-if="domainSaveSuccess" class="text-sm text-success-600 dark:text-success-400 font-medium">
+                Domains saved
+              </span>
+            </Transition>
+          </div>
+          <div v-if="domainSaveError" class="ui-alert ui-alert-danger">
+            {{ domainSaveError }}
+          </div>
+          <div v-if="!canManageSignupDomains" class="ui-alert ui-alert-info">
+            Only organization owners can manage signup domain allowlists.
+          </div>
+        </div>
+      </section>
+
       <!-- Existing providers -->
       <div v-if="hasProvider" class="space-y-3 mb-6">
         <div

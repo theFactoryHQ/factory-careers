@@ -1,5 +1,6 @@
 import type { H3Event } from 'h3'
 import { isFactoryInitialOwnerEmail } from '../../utils/factoryAccess'
+import { isSignupEmailAllowedByOrgSettings } from '../../utils/signupDomainAllowlist'
 
 export default defineEventHandler(async (event) => {
   await enforceFactoryAuthPolicy(event)
@@ -63,6 +64,10 @@ async function enforceFactoryAuthPolicy(event: H3Event) {
     .replace(/\/+$/, '')
 
   if (env.FACTORY_DISABLE_PUBLIC_SIGNUP && authPath.startsWith('/sign-up')) {
+    const body = await readBody<{ email?: unknown }>(event)
+    const isAllowedDomainSignup = await isSignupEmailAllowedByOrgSettings(body?.email)
+    if (isAllowedDomainSignup) return
+
     throw createError({
       statusCode: 403,
       statusMessage: 'Factory Careers account creation is invitation-only. Sign in with Microsoft or use an invitation link.',
