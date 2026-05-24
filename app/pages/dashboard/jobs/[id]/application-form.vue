@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FileText, Link2, ClipboardCopy, Check, Plus, Copy, CheckCircle2, XCircle, ToggleLeft, ToggleRight, Trash2, Radio, ChevronDown, X, ExternalLink } from 'lucide-vue-next'
+import { FileText, Link2, Check, Plus, Copy, CheckCircle2, XCircle, ToggleLeft, ToggleRight, Trash2, Radio, ChevronDown, X, ExternalLink } from 'lucide-vue-next'
 import { getSourceChannelLabel } from '~/utils/status-display'
 
 definePageMeta({
@@ -29,19 +29,6 @@ const applicationUrl = computed(() => {
   const base = `${requestUrl.protocol}//${requestUrl.host}`
   return `${base}/jobs/${job.value?.slug ?? jobId}/apply`
 })
-
-const linkCopied = ref(false)
-
-async function copyApplicationLink() {
-  try {
-    await navigator.clipboard.writeText(applicationUrl.value)
-    linkCopied.value = true
-    setTimeout(() => { linkCopied.value = false }, 2000)
-  } catch {
-    // Fallback for non-HTTPS contexts
-    toast.info(applicationUrl.value)
-  }
-}
 
 // ─────────────────────────────────────────────
 // Application requirements (resume / cover letter)
@@ -193,21 +180,12 @@ async function copyTrackingUrl(code: string) {
         <p class="text-xs text-surface-600 dark:text-surface-400 mb-3">
           Share this link with candidates so they can apply to this position.
         </p>
-        <div class="flex items-center gap-2">
-          <div
-            aria-label="Application link"
-            class="flex-1 cursor-default border border-surface-200 bg-surface-100 px-3 py-1.5 text-sm text-surface-500 select-text dark:border-surface-800 dark:bg-surface-950/70 dark:text-surface-500"
-          >
-            {{ applicationUrl }}
-          </div>
-          <button
-            class="ui-button ui-button-primary px-3 py-1.5 text-sm"
-            @click="copyApplicationLink"
-          >
-            <ClipboardCopy class="size-3.5" />
-            {{ linkCopied ? 'Copied!' : 'Copy' }}
-          </button>
-        </div>
+        <CopyField
+          :value="applicationUrl"
+          label="application link"
+          title="Copy application link"
+          tone="brand"
+        />
       </div>
 
       <div v-else class="ui-panel-muted p-4 mb-6 text-sm text-surface-500 dark:text-surface-400">

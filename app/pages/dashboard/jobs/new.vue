@@ -8,7 +8,6 @@ import {
   ChevronDown,
   GripVertical,
   Link2,
-  ClipboardCopy,
   Rocket,
   FileEdit,
   ExternalLink,
@@ -264,7 +263,6 @@ const isSubmitting = ref(false)
 const errors = ref<Record<string, string>>({})
 const showAddForm = ref(false)
 const editingQuestion = ref<DraftQuestion | null>(null)
-const linkCopied = ref(false)
 const questionActionError = ref<string | null>(null)
 const nextQuestionId = ref(1)
 
@@ -378,8 +376,6 @@ const isPublished = ref(false)
 const createdJobSlug = ref('')
 const createdJobId = ref('')
 const finalApplicationLink = ref('')
-const linkCopiedFinal = ref(false)
-
 // Distribution channels for quick tracking link creation
 const distributionChannels = [
   { channel: 'linkedin', name: 'LinkedIn', description: 'Post on LinkedIn Jobs or share in your feed', category: 'job_board' },
@@ -613,36 +609,7 @@ function moveQuestion(index: number, direction: 'up' | 'down') {
   ;[list[index], list[targetIndex]] = [list[targetIndex]!, list[index]!]
 }
 
-function slugifyTitle(raw: string) {
-  return raw
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 60)
-}
-
 const requestUrl = useRequestURL()
-const applicationLink = computed(() => {
-  const base = `${requestUrl.protocol}//${requestUrl.host}`
-  const slugBase = slugifyTitle(form.value.title) || 'new-job'
-  return `${base}/jobs/${slugBase}-xxxxxxxx/apply`
-})
-
-async function copyApplicationLink() {
-  try {
-    await navigator.clipboard.writeText(applicationLink.value)
-    linkCopied.value = true
-    setTimeout(() => {
-      linkCopied.value = false
-    }, 2000)
-  } catch {
-    // ignore clipboard issues silently
-  }
-}
-
 async function handleSubmit(mode: 'publish' | 'draft' = publishChoice.value) {
   // Ensure step 1 is valid before submit (only enforce when still on step 1)
   if (currentStep.value === 1 && !validateStep1()) {
@@ -722,15 +689,6 @@ async function handleSubmit(mode: 'publish' | 'draft' = publishChoice.value) {
 
       track('job_published')
 
-      // Auto-copy to clipboard
-      try {
-        await navigator.clipboard.writeText(finalApplicationLink.value)
-        linkCopiedFinal.value = true
-        setTimeout(() => { linkCopiedFinal.value = false }, 3000)
-      } catch {
-        // Clipboard may not be available
-      }
-
       isPublished.value = true
     } else {
       // Saved as draft — go to jobs list
@@ -745,17 +703,6 @@ async function handleSubmit(mode: 'publish' | 'draft' = publishChoice.value) {
     })
   } finally {
     isSubmitting.value = false
-  }
-}
-
-async function copyFinalLink() {
-  try {
-    await navigator.clipboard.writeText(finalApplicationLink.value)
-    linkCopiedFinal.value = true
-    setTimeout(() => { linkCopiedFinal.value = false }, 3000)
-  } catch {
-    // fallback: show the link so the user can copy manually
-    toast.info(finalApplicationLink.value)
   }
 }
 
@@ -1559,22 +1506,12 @@ const questionTypeLabels: Record<QuestionType, string> = {
                     <span class="text-sm font-semibold text-surface-700 dark:text-surface-300">Direct application link</span>
                     <span class="text-xs text-surface-400 dark:text-surface-500">(no tracking)</span>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <input
-                      type="text"
-                      readonly
-                      :value="finalApplicationLink"
-                      class="flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-600 dark:text-surface-400 select-all font-mono"
-                    />
-                    <button
-                      type="button"
-                      class="inline-flex items-center gap-1.5 rounded-lg bg-surface-200 dark:bg-surface-700 px-4 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-300 dark:hover:bg-surface-600 transition-colors shrink-0"
-                      @click="copyFinalLink"
-                    >
-                      <Copy class="size-3.5" />
-                      {{ linkCopiedFinal ? 'Copied!' : 'Copy' }}
-                    </button>
-                  </div>
+                  <CopyField
+                    :value="finalApplicationLink"
+                    label="direct application link"
+                    title="Copy direct application link"
+                    tone="muted"
+                  />
                 </div>
 
                 <!-- Distribution hub -->

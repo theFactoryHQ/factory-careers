@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  Save, Trash2, ArrowLeft, ExternalLink, Link2, ClipboardCopy, ChevronDown,
+  Save, Trash2, ArrowLeft, ExternalLink, Link2, ChevronDown,
 } from 'lucide-vue-next'
 import { z } from 'zod'
 import { CURRENCY_OPTIONS, CURRENCY_VALUES } from '~~/shared/currency-options'
@@ -176,18 +176,6 @@ const applicationUrl = computed(() => {
   const base = `${requestUrl.protocol}//${requestUrl.host}`
   return `${base}/jobs/${job.value?.slug ?? jobId}/apply`
 })
-
-const linkCopied = ref(false)
-
-async function copyApplicationLink() {
-  try {
-    await navigator.clipboard.writeText(applicationUrl.value)
-    linkCopied.value = true
-    setTimeout(() => { linkCopied.value = false }, 2000)
-  } catch {
-    toast.info(applicationUrl.value)
-  }
-}
 
 // ─────────────────────────────────────────────
 // Delete
@@ -562,22 +550,12 @@ function onSalaryMaxChange(e: Event) {
           <p class="text-xs text-surface-600 dark:text-surface-400 mb-3">
             Share this link with candidates so they can apply to this position.
           </p>
-          <div class="flex items-center gap-2">
-            <input
-              type="text"
-              readonly
-              :value="applicationUrl"
-              class="flex-1 rounded-lg border border-brand-200 dark:border-brand-800 bg-white dark:bg-surface-900 px-3 py-1.5 text-sm text-surface-700 dark:text-surface-300 select-all"
-            />
-            <button
-              type="button"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
-              @click="copyApplicationLink"
-            >
-              <ClipboardCopy class="size-3.5" />
-              {{ linkCopied ? 'Copied!' : 'Copy' }}
-            </button>
-          </div>
+          <CopyField
+            :value="applicationUrl"
+            label="application link"
+            title="Copy application link"
+            tone="brand"
+          />
         </section>
 
         <!-- ═══════════════════════════════════════ -->

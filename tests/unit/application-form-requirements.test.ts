@@ -17,13 +17,14 @@ describe('application form requirement cards', () => {
     expect(css).toMatch(/\.factory-requirement-option-description\s*\{[\s\S]*color:\s*var\(--color-surface-700\) !important/)
   })
 
-  it('renders the application link as muted static text instead of a focusable readonly field', () => {
+  it('renders the application link with the global click-anywhere copy field', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
     const linkSection = source.slice(source.indexOf('Application Link'), source.indexOf('Application Requirements'))
 
-    expect(linkSection).toContain('aria-label="Application link"')
-    expect(linkSection).toContain('cursor-default')
-    expect(linkSection).toContain('select-text')
+    expect(linkSection).toContain('<CopyField')
+    expect(linkSection).toContain(':value="applicationUrl"')
+    expect(linkSection).toContain('label="application link"')
+    expect(linkSection).toContain('tone="brand"')
     expect(linkSection).not.toContain('readonly')
     expect(linkSection).not.toContain('class="ui-field')
   })

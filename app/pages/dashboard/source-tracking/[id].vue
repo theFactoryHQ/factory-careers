@@ -2,7 +2,7 @@
 import {
   Link2, Globe, BarChart3, Users,
   MousePointerClick, Target, Activity, TrendingUp,
-  CheckCircle2, XCircle, Copy, Clock,
+  XCircle, Clock,
   ExternalLink, AlertCircle, CalendarDays,
   Hash, Tag, Layers, Pencil, X, ChevronDown,
 } from 'lucide-vue-next'
@@ -80,18 +80,6 @@ const requestUrl = useRequestURL()
 function buildTrackingUrl(code: string): string {
   const base = `${requestUrl.protocol}//${requestUrl.host}`
   return `${base}/api/public/track/${encodeURIComponent(code)}`
-}
-
-const copied = ref(false)
-async function copyTrackingUrl() {
-  if (!link.value) return
-  try {
-    await navigator.clipboard.writeText(buildTrackingUrl(link.value.code))
-    copied.value = true
-    setTimeout(() => { copied.value = false }, 2000)
-  } catch {
-    toast.info(buildTrackingUrl(link.value.code))
-  }
 }
 
 // ─────────────────────────────────────────────
@@ -362,32 +350,18 @@ async function handleSidebarUpdated() {
               Edit
             </button>
 
-            <!-- Copy URL -->
-            <button
-              class="ui-button ui-button-secondary inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
-              @click="copyTrackingUrl"
-            >
-              <Copy v-if="!copied" class="size-3.5" />
-              <CheckCircle2 v-else class="size-3.5 text-green-500" />
-              {{ copied ? 'Copied!' : 'Copy URL' }}
-            </button>
           </div>
         </div>
       </div>
 
       <!-- ─── Tracking URL display ─── -->
-      <div class="mb-6 sm:mb-8 ui-panel-muted px-4 py-3 flex items-center gap-3">
-        <Link2 class="size-4 text-surface-400 shrink-0" />
-        <code class="ui-code font-mono truncate flex-1 text-xs">
-          {{ buildTrackingUrl(link.code) }}
-        </code>
-        <button
-          class="shrink-0 text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors"
-          @click="copyTrackingUrl"
-        >
-          {{ copied ? 'Copied!' : 'Copy' }}
-        </button>
-      </div>
+      <CopyField
+        class="ui-panel-muted mb-6 sm:mb-8"
+        :value="buildTrackingUrl(link.code)"
+        label="tracking URL"
+        title="Copy tracking URL"
+        tone="muted"
+      />
 
       <!-- ─── Stat cards ─── -->
       <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
