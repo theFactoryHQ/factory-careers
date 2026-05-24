@@ -6,7 +6,8 @@
  * accept/decline/tentative an interview via a simple link — no
  * authentication required, no inbound email infrastructure needed.
  */
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createHmac } from 'node:crypto'
+import { timingSafeStringEqual } from './secureCompare'
 
 export type CandidateAction = 'accepted' | 'declined' | 'tentative'
 
@@ -69,14 +70,11 @@ export function verifyInterviewToken(
   const payloadStr = token.slice(0, dotIndex)
   const providedSig = token.slice(dotIndex + 1)
 
-  // Verify signature with timing-safe comparison
+  // Verify signature with a byte-safe, timing-safe comparison. Avoid checking
+  // attacker-controlled signature length before comparison; that recreates the
+  // length oracle that timingSafeEqual call sites are meant to avoid.
   const expectedSig = sign(payloadStr, secret)
-  if (providedSig.length !== expectedSig.length) return null
-
-  const sigValid = timingSafeEqual(
-    Buffer.from(providedSig, 'hex'),
-    Buffer.from(expectedSig, 'hex'),
-  )
+  const sigValid = timingSafeStringEqual(providedSig, expectedSig)
   if (!sigValid) return null
 
   // Decode and validate payload
