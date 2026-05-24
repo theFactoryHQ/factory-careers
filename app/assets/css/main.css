@@ -2423,6 +2423,49 @@
     font-variant-numeric: tabular-nums;
   }
 
+  @media (max-width: 640px) {
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-header {
+      padding-block: 20px !important;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-header-inner {
+      gap: 18px;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-header-primary {
+      width: 100%;
+      gap: 14px;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-header-title-row {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-header-score {
+      margin-top: 14px;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-header-actions {
+      width: 100%;
+      align-items: flex-end;
+      flex-direction: row-reverse;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-header-pager {
+      margin-right: 0 !important;
+      padding-top: 2px;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-header-actions .factory-application-timestamps {
+      min-width: 0;
+      align-items: flex-start;
+    }
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button {
     min-height: 40px;
     border-color: var(--ui-border-strong) !important;

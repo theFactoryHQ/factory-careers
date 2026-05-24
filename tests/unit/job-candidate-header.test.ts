@@ -23,7 +23,7 @@ describe('job candidate header', () => {
   it('positions timestamps at the bottom of the selected candidate header actions', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
     const headerActions = source.slice(
-      source.indexOf('flex shrink-0 flex-col items-end justify-between'),
+      source.indexOf('factory-candidate-header-actions'),
       source.indexOf('<!-- Detail tabs -->'),
     )
 
@@ -31,6 +31,31 @@ describe('job candidate header', () => {
     expect(headerActions.indexOf('@click="goToNextCard"')).toBeLessThan(headerActions.indexOf('<ApplicationTimestampStack'))
     expect(headerActions).toContain(':applied-at="currentSummary.createdAt"')
     expect(headerActions).toContain(':updated-at="currentSummary.updatedAt"')
+  })
+
+  it('uses a dedicated mobile layout recipe for the selected candidate header', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+    const styles = readProjectFile('app/assets/css/main.css')
+    const header = source.slice(
+      source.indexOf('<!-- Candidate header -->'),
+      source.indexOf('<!-- Detail tabs -->'),
+    )
+
+    for (const className of [
+      'factory-candidate-header',
+      'factory-candidate-header-inner',
+      'factory-candidate-header-primary',
+      'factory-candidate-header-title-row',
+      'factory-candidate-header-score',
+      'factory-candidate-header-actions',
+      'factory-candidate-header-pager',
+    ]) {
+      expect(header).toContain(className)
+    }
+
+    expect(styles).toMatch(/@media \(max-width: 640px\)[\s\S]*\.factory-candidate-header-inner\s*\{[\s\S]*gap:\s*18px;/)
+    expect(styles).toMatch(/@media \(max-width: 640px\)[\s\S]*\.factory-candidate-header-title-row\s*\{[\s\S]*align-items:\s*flex-start;[\s\S]*flex-direction:\s*column;/)
+    expect(styles).toMatch(/@media \(max-width: 640px\)[\s\S]*\.factory-candidate-header-actions\s*\{[\s\S]*align-items:\s*flex-end;[\s\S]*flex-direction:\s*row-reverse;/)
   })
 
   it('keeps overview as a plain detail tab without section checkboxes', () => {

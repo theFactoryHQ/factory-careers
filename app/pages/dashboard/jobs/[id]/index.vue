@@ -1382,15 +1382,14 @@ function closeDocPreview() {
             <div ref="detailScrollContainer" class="flex-1 overflow-y-auto scrollbar-thin pb-20 md:pb-0">
 
             <!-- Candidate header -->
-            <div class="border-b border-white/10 bg-white/[0.02] px-4 sm:px-6 py-4 sm:py-6 ui-dashboard-panel-header">
-              <div class="mx-auto max-w-4xl">
-              <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div class="flex items-start gap-4 min-w-0">
+            <div class="factory-candidate-header border-b border-white/10 bg-white/[0.02] px-4 sm:px-6 py-4 sm:py-6 ui-dashboard-panel-header">
+              <div class="factory-candidate-header-inner mx-auto flex max-w-4xl flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="factory-candidate-header-primary flex min-w-0 items-start gap-4">
                   <div class="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 text-lg font-bold text-white shadow-lg shadow-brand-500/20 dark:from-brand-500 dark:to-brand-700 dark:shadow-brand-500/10">
                     {{ getCandidateInitials(currentSummary.candidateFirstName, currentSummary.candidateLastName) }}
                   </div>
                   <div class="min-w-0">
-                    <div class="flex items-center gap-2.5">
+                    <div class="factory-candidate-header-title-row flex items-center gap-2.5">
                       <h2 class="truncate text-xl font-semibold tracking-tight text-surface-900 dark:text-surface-50">
                         <NuxtLink
                           :to="$localePath(`/dashboard/applications/${currentSummary.id}`)"
@@ -1415,7 +1414,7 @@ function closeDocPreview() {
                         {{ resolvedCurrentApplication.candidate.phone }}
                       </span>
                     </div>
-                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <div class="factory-candidate-header-score mt-2 flex flex-wrap items-center gap-2">
                       <span
                         v-if="currentSummary.score != null"
                         class="inline-flex items-baseline gap-1"
@@ -1428,8 +1427,8 @@ function closeDocPreview() {
                     </div>
                   </div>
                 </div>
-                <div class="flex shrink-0 flex-col items-end justify-between gap-4 sm:self-stretch">
-                  <div class="flex items-center gap-1.5 mr-2">
+                <div class="factory-candidate-header-actions flex shrink-0 flex-col items-end justify-between gap-4 sm:self-stretch">
+                  <div class="factory-candidate-header-pager mr-2 flex items-center gap-1.5">
                     <button
                       :disabled="currentIndex === 0"
                       class="flex cursor-pointer items-center justify-center rounded-lg border border-surface-200 p-1.5 text-surface-500 transition-all duration-150 hover:bg-white hover:border-surface-300 hover:text-surface-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:border-surface-600 dark:hover:text-surface-300"
@@ -1453,7 +1452,6 @@ function closeDocPreview() {
                     :updated-at="currentSummary.updatedAt"
                   />
                 </div>
-              </div>
               </div>
             </div>
 
