@@ -31,6 +31,11 @@ type Fixtures = {
   authenticatedPage: Page
 }
 
+export async function selectFactorySelectOption(page: Page, label: string | RegExp, optionName: string) {
+  await page.getByLabel(label).click()
+  await page.getByRole('option', { name: optionName, exact: true }).click()
+}
+
 export const test = base.extend<Fixtures>({
   testAccount: [
     // eslint-disable-next-line no-empty-pattern

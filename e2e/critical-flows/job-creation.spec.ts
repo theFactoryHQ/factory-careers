@@ -51,15 +51,21 @@ test.describe('Job Creation Flow', () => {
     await expect(page.getByRole('heading', { name: /Ready to go\?/i })).toBeVisible({ timeout: 10_000 })
     const publishButton = page.locator('form').getByRole('button', { name: /Publish & copy link/i })
     await publishButton.waitFor({ state: 'visible', timeout: 10_000 })
-    await publishButton.click()
+    const [publishResponse] = await Promise.all([
+      page.waitForResponse(
+        resp => resp.url().includes('/api/jobs') && ['POST', 'PATCH'].includes(resp.request().method()),
+        { timeout: 30_000 },
+      ),
+      publishButton.click(),
+    ])
+    expect([200, 201], `Publish API returned ${publishResponse.status()}`).toContain(publishResponse.status())
 
     // ── Verify the success state ("Your job is live!") ───
-    await page.waitForResponse((resp) => resp.url().includes('/api/jobs') && [201, 200].includes(resp.status()), { timeout: 30_000 }).catch(() => {})
-    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {})
     await expect(page.getByRole('heading', { name: 'Your job is live!' })).toBeVisible({ timeout: 30_000 })
 
     // ── Extract job slug from the application link ────────
-    const applicationLink = await page.locator('input[readonly]').inputValue()
+    const applicationLink = await page.getByRole('link', { name: 'Preview' }).getAttribute('href') ?? ''
+    expect(applicationLink, 'Preview link must include the public application URL').not.toBe('')
     expect(applicationLink).toMatch(/\/jobs\/[^/]+\/apply(?:$|[?#])/)
     const slugMatch = applicationLink.match(/\/jobs\/([^/]+)\/apply(?:$|[?#])/)
     const jobSlug = slugMatch?.[1] ?? ''
