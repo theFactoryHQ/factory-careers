@@ -827,9 +827,18 @@ describe('brand-neutral theme variables', () => {
         patterns: [
           /const statusBadgeClasses:/,
           /const transitionClasses:/,
+          /function getTimelineStatusBadge/,
+          /const interviewStatusClasses:/,
+          /const jobStatusBadgeClasses:/,
+          /'bg-success-50[^']+': app\.score >= 75/,
+          /'bg-success-50[^']+': currentSummary\.score >= 75/,
           /function timeAgo/,
           /function scoreClass/,
         ],
+      },
+      {
+        path: 'app/pages/dashboard/chatbot/[[id]].vue',
+        patterns: [/function formatBytes/],
       },
       {
         path: 'app/pages/dashboard/jobs/[id]/candidates.vue',
