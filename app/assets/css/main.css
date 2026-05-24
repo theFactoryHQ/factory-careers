@@ -2330,6 +2330,7 @@
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-tooltip {
     position: absolute;
+    display: none;
     bottom: calc(100% + 8px);
     left: 50%;
     z-index: 50;
@@ -2348,7 +2349,7 @@
     transition: opacity 150ms ease, transform 150ms ease;
   }
 
-  @media (max-width: 640px) {
+  @media (max-width: 520px) {
     :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-strip {
       justify-content: flex-start;
       overflow-x: visible;
@@ -2368,6 +2369,10 @@
       overflow: hidden;
       clip: rect(0, 0, 0, 0);
       white-space: nowrap;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-tooltip {
+      display: block;
     }
 
     :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-chip:hover .factory-application-transition-tooltip,

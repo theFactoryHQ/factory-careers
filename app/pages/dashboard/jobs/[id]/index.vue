@@ -1371,7 +1371,7 @@ function closeDocPreview() {
                   <ApplicationTransitionIcon :status="nextStatus" />
                   <span class="factory-application-transition-label">{{ getApplicationTransitionLabel(nextStatus) }}</span>
                   <kbd class="factory-application-transition-shortcut inline-flex items-center justify-center px-1 text-[10px] font-mono leading-none">{{ idx + 1 }}</kbd>
-                  <span class="factory-application-transition-tooltip" role="tooltip">
+                  <span class="factory-application-transition-tooltip" role="tooltip" aria-hidden="true">
                     {{ getApplicationTransitionLabel(nextStatus) }}
                   </span>
                 </button>
