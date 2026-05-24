@@ -30,6 +30,11 @@ describe('dashboard top bar responsiveness', () => {
     expect(source).not.toContain('border-transparent text-white/50')
   })
 
+  it('keeps the job application form tab label compact', () => {
+    expect(source).toContain("{ label: 'Application', to: `${base}/application-form`")
+    expect(source).not.toContain("{ label: 'Application Form', to: `${base}/application-form`")
+  })
+
   it('renders the job context back link as icon-only', () => {
     expect(source).toContain('aria-label="All jobs"')
     expect(source).toContain('title="All jobs"')
