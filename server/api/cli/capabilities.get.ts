@@ -14,8 +14,6 @@ export default defineEventHandler(async (event) => {
     route: CLI_CAPABILITIES_ROUTE,
     contractVersion: CLI_API_CONTRACT_VERSION,
     minimumCliVersion: MINIMUM_SUPPORTED_CLI_VERSION,
-    CLI_API_CONTRACT_VERSION,
-    MINIMUM_SUPPORTED_CLI_VERSION,
     resourceGroups: CLI_RESOURCE_GROUPS,
     routes: cliRouteCoverage,
   }

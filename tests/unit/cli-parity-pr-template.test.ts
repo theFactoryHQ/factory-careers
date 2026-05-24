@@ -9,6 +9,6 @@ describe('CLI parity pull request checklist', () => {
     expect(template).toContain('CLI parity')
     expect(template).toContain('packages/careers-cli/src/routeCoverage.ts')
     expect(template).toContain('docs/CLI.md')
-    expect(template).toContain('payload shapes changed')
+    expect(template).toContain('payload shapes, response shapes, auth requirements, or resource coverage')
   })
 })
