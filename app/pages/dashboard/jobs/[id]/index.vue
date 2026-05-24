@@ -962,17 +962,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeyNavigation)
 })
 
-// ─────────────────────────────────────────────
-// Job status transitions (Publish, Close, etc.)
-// ─────────────────────────────────────────────
-
-const jobStatusBadgeClasses: Record<string, string> = {
-  draft: 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400',
-  open: 'bg-success-50 dark:bg-success-950 text-success-700 dark:text-success-400',
-  closed: 'bg-warning-50 dark:bg-warning-950 text-warning-700 dark:text-warning-400',
-  archived: 'bg-surface-100 dark:bg-surface-800 text-surface-400',
-}
-
 const isLoading = computed(() => {
   return jobFetchStatus.value === 'pending' || appFetchStatus.value === 'pending'
 })
