@@ -56,6 +56,15 @@ jobs:
         id: typecheck
         run: npm run typecheck
 
+      - name: Run CLI smoke tests
+        id: cli_smoke
+        run: |
+          ./bin/factory-careers.mjs --help
+          ./bin/factory-careers.mjs auth status --json
+          ./bin/factory-careers.mjs jobs --help
+          ./bin/factory-careers.mjs feedback --help
+          ./bin/factory-careers.mjs system --help
+
       - name: Audit dependencies (high severity+)
         id: audit
         shell: bash
@@ -112,6 +121,7 @@ jobs:
             echo "| Lint | $(status_icon '${{ steps.lint.outcome }}') ${{ steps.lint.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           fi
           echo "| Typecheck | $(status_icon '${{ steps.typecheck.outcome }}') ${{ steps.typecheck.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| CLI smoke tests | $(status_icon '${{ steps.cli_smoke.outcome }}') ${{ steps.cli_smoke.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Dependency audit | $(status_icon '${{ steps.audit.outcome }}') ${{ steps.audit.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Production env contract | $(status_icon '${{ steps.production_env.outcome }}') ${{ steps.production_env.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
 

@@ -69,6 +69,30 @@ export const verification = pgTable('verification', {
 ]))
 
 // ─────────────────────────────────────────────
+// Better Auth Device Authorization Tables
+// ─────────────────────────────────────────────
+// Required by the deviceAuthorization plugin. This backs CLI sign-in via
+// OAuth 2.0 Device Authorization without weakening the existing web session
+// and organization permission checks.
+
+export const deviceCode = pgTable('device_code', {
+  id: text('id').primaryKey(),
+  deviceCode: text('device_code').notNull(),
+  userCode: text('user_code').notNull(),
+  userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+  clientId: text('client_id'),
+  scope: text('scope'),
+  status: text('status').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  lastPolledAt: timestamp('last_polled_at'),
+  pollingInterval: integer('polling_interval'),
+}, (t) => ([
+  index('device_code_device_code_idx').on(t.deviceCode),
+  index('device_code_user_code_idx').on(t.userCode),
+  index('device_code_user_id_idx').on(t.userId),
+]))
+
+// ─────────────────────────────────────────────
 // Organization Plugin Tables (Multi-tenancy)
 // ─────────────────────────────────────────────
 
@@ -130,6 +154,7 @@ export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
   members: many(member),
+  deviceCodes: many(deviceCode),
 }))
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -153,4 +178,8 @@ export const memberRelations = relations(member, ({ one }) => ({
 export const invitationRelations = relations(invitation, ({ one }) => ({
   inviter: one(user, { fields: [invitation.inviterId], references: [user.id] }),
   organization: one(organization, { fields: [invitation.organizationId], references: [organization.id] }),
+}))
+
+export const deviceCodeRelations = relations(deviceCode, ({ one }) => ({
+  user: one(user, { fields: [deviceCode.userId], references: [user.id] }),
 }))

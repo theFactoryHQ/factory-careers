@@ -22,6 +22,12 @@ function showSignInError(message: string, details?: string) {
     toast.error("Microsoft sign-in failed", { message, details });
 }
 
+function getSafeRedirectPath(value: unknown): string | null {
+    if (typeof value !== "string") return null;
+    if (!value.startsWith("/") || value.startsWith("//")) return null;
+    return value;
+}
+
 onMounted(() => {
     track("signin_page_viewed");
 
@@ -43,11 +49,16 @@ async function handleFactorySso() {
     ssoRedirecting.value = true;
 
     const pendingInvitation = route.query.invitation as string | undefined;
+    const safeRedirect = getSafeRedirectPath(route.query.redirect);
     const callbackURL = pendingInvitation
         ? localePath(`/auth/accept-invitation/${pendingInvitation}`)
+        : safeRedirect
+            ? localePath(safeRedirect)
         : localePath("/dashboard");
     const errorCallbackURL = pendingInvitation
         ? localePath(`/auth/sign-in?invitation=${encodeURIComponent(pendingInvitation)}`)
+        : safeRedirect
+            ? localePath(`/auth/sign-in?redirect=${encodeURIComponent(safeRedirect)}`)
         : localePath("/auth/sign-in");
 
     try {

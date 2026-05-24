@@ -60,6 +60,45 @@ describe('API route security coverage', () => {
 
     expect(unsafeCalls).toEqual([])
   })
+
+  it('keeps CLI authentication on device authorization and bearer tokens', () => {
+    const authSource = read('server/utils/auth.ts')
+    const clientSource = read('app/utils/auth-client.ts')
+    const devicePageSource = read('app/pages/device.vue')
+    const envSource = read('server/utils/env.ts')
+
+    expect(authSource).toContain('deviceAuthorization({')
+    expect(authSource).toContain('bearer()')
+    expect(authSource).toContain('validateFactoryCareersCliClient')
+    expect(authSource).toContain('FACTORY_CAREERS_CLI_CLIENT_ID')
+    expect(clientSource).toContain('deviceAuthorizationClient()')
+    expect(devicePageSource).toContain('authClient.device')
+    expect(devicePageSource).toContain('authClient.device.approve')
+    expect(devicePageSource).toContain('authClient.device.deny')
+    expect(envSource).toContain('FACTORY_CAREERS_CLI_CLIENT_ID')
+  })
+
+  it('keeps device authorization persistence covered by schema and migration', () => {
+    const schemaSource = read('server/database/schema/auth.ts')
+    const migrationSource = read('server/database/migrations/0035_device_authorization.sql')
+    const journalSource = read('server/database/migrations/meta/_journal.json')
+
+    for (const snippet of [
+      'export const deviceCode',
+      'device_code',
+      'deviceCode',
+      'userCode',
+      'clientId',
+      'pollingInterval',
+    ]) {
+      expect(schemaSource, `schema missing ${snippet}`).toContain(snippet)
+    }
+
+    expect(migrationSource).toContain('CREATE TABLE "device_code"')
+    expect(migrationSource).toContain('"device_code" text NOT NULL')
+    expect(migrationSource).toContain('"user_code" text NOT NULL')
+    expect(journalSource).toContain('0035_device_authorization')
+  })
 })
 
 describe('P0 tenant-isolation route coverage', () => {
@@ -78,8 +117,30 @@ describe('P0 tenant-isolation route coverage', () => {
     'server/api/documents/[id]/download.get.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, orgId)'],
     'server/api/documents/[id]/parse.post.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, orgId)'],
     'server/api/documents/[id]/preview.get.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, orgId)'],
+    'server/api/documents/parse-all.post.ts': ['eq(document.id, doc.id),\n            eq(document.organizationId, orgId)'],
     'server/api/comments/[id].patch.ts': ['eq(comment.id, id)', 'eq(comment.organizationId, orgId)'],
     'server/api/comments/[id].delete.ts': ['eq(comment.id, id)', 'eq(comment.organizationId, orgId)'],
+    'server/api/interviews/[id]/index.get.ts': ['eq(interview.id, id)', 'eq(interview.organizationId, orgId)'],
+    'server/api/interviews/[id]/index.patch.ts': ['eq(interview.id, id)', 'eq(interview.organizationId, orgId)'],
+    'server/api/interviews/[id]/index.delete.ts': ['eq(interview.id, id)', 'eq(interview.organizationId, orgId)'],
+    'server/api/interviews/[id]/send-invitation.post.ts': ['eq(interview.id, id)', 'eq(interview.organizationId, orgId)'],
+    'server/api/tracking-links/[id].get.ts': ['eq(trackingLink.id, id)', 'eq(trackingLink.organizationId, orgId)'],
+    'server/api/tracking-links/[id].patch.ts': ['eq(trackingLink.id, id)', 'eq(trackingLink.organizationId, orgId)'],
+    'server/api/tracking-links/[id].delete.ts': ['eq(trackingLink.id, id)', 'eq(trackingLink.organizationId, orgId)'],
+    'server/api/tracking-links/[id]/stats.get.ts': ['eq(trackingLink.id, id)', 'eq(trackingLink.organizationId, orgId)'],
+    'server/api/email-templates/[id]/index.patch.ts': ['eq(emailTemplate.id, id)', 'eq(emailTemplate.organizationId, orgId)'],
+    'server/api/email-templates/[id]/index.delete.ts': ['eq(emailTemplate.id, id)', 'eq(emailTemplate.organizationId, orgId)'],
+    'server/api/properties/[id].patch.ts': ['eq(propertyDefinition.id, id)', 'eq(propertyDefinition.organizationId, orgId)'],
+    'server/api/properties/[id].delete.ts': ['eq(propertyDefinition.id, id)', 'eq(propertyDefinition.organizationId, orgId)'],
+    'server/api/ai-config/[id].get.ts': ['eq(aiConfig.id, id)', 'eq(aiConfig.organizationId, orgId)'],
+    'server/api/ai-config/[id].patch.ts': ['eq(aiConfig.id, id)', 'eq(aiConfig.organizationId, orgId)'],
+    'server/api/ai-config/[id].delete.ts': ['eq(aiConfig.id, id)', 'eq(aiConfig.organizationId, orgId)'],
+    'server/api/ai-config/[id]/set-default.post.ts': ['eq(aiConfig.id, id)', 'eq(aiConfig.organizationId, orgId)'],
+    'server/api/ai-config/[id]/test-connection.post.ts': ['eq(aiConfig.id, id)', 'eq(aiConfig.organizationId, orgId)'],
+    'server/api/invite-links/[id].delete.ts': ['eq(inviteLink.id, linkId)', 'eq(inviteLink.organizationId, orgId)'],
+    'server/api/join-requests/[id]/approve.post.ts': ['eq(joinRequest.id, requestId)', 'eq(joinRequest.organizationId, orgId)'],
+    'server/api/join-requests/[id]/reject.post.ts': ['eq(joinRequest.id, requestId)', 'eq(joinRequest.organizationId, orgId)'],
+    'server/api/sso/providers/[id].delete.ts': ['eq(ssoProvider.id, id)', 'eq(ssoProvider.organizationId, orgId)'],
   }
 
   it('keeps direct resource lookups scoped by active organization', () => {
@@ -98,6 +159,15 @@ describe('P0 tenant-isolation route coverage', () => {
       'server/api/applications/index.get.ts': 'const conditions = [eq(application.organizationId, orgId)]',
       'server/api/comments/index.get.ts': 'eq(comment.organizationId, orgId)',
       'server/api/activity-log/index.get.ts': 'const conditions = [eq(activityLog.organizationId, orgId)]',
+      'server/api/interviews/index.get.ts': 'const conditions = [eq(interview.organizationId, orgId)]',
+      'server/api/tracking-links/index.get.ts': 'const conditions = [eq(trackingLink.organizationId, orgId)]',
+      'server/api/email-templates/index.get.ts': 'where: eq(emailTemplate.organizationId, orgId)',
+      'server/api/properties/index.get.ts': 'organizationId: orgId',
+      'server/api/org-settings/index.get.ts': 'where: eq(orgSettings.organizationId, orgId)',
+      'server/api/ai-config/index.get.ts': 'where: eq(aiConfig.organizationId, orgId)',
+      'server/api/invite-links/index.get.ts': 'eq(inviteLink.organizationId, orgId)',
+      'server/api/join-requests/index.get.ts': 'eq(joinRequest.organizationId, orgId)',
+      'server/api/sso/providers.get.ts': 'where(eq(ssoProvider.organizationId, orgId))',
     }
 
     for (const [path, snippet] of Object.entries(scopedListRoutes)) {
@@ -109,7 +179,14 @@ describe('P0 tenant-isolation route coverage', () => {
     const createRoutes: Record<string, string[]> = {
       'server/api/jobs/index.post.ts': ['const orgId = session.session.activeOrganizationId', 'organizationId: orgId'],
       'server/api/candidates/index.post.ts': ['const orgId = session.session.activeOrganizationId', 'organizationId: orgId'],
+      'server/api/applications/index.post.ts': ['const orgId = session.session.activeOrganizationId', 'organizationId: orgId'],
       'server/api/comments/index.post.ts': ['const orgId = session.session.activeOrganizationId', 'organizationId: orgId'],
+      'server/api/interviews/index.post.ts': ['const orgId = session.session.activeOrganizationId', 'organizationId: orgId'],
+      'server/api/tracking-links/index.post.ts': ['const orgId = session.session.activeOrganizationId', 'organizationId: orgId'],
+      'server/api/email-templates/index.post.ts': ['const orgId = session.session.activeOrganizationId', 'organizationId: orgId'],
+      'server/api/properties/index.post.ts': ['const orgId = session.session.activeOrganizationId', 'organizationId: orgId'],
+      'server/api/ai-config/index.post.ts': ['const orgId = session.session.activeOrganizationId', 'organizationId: orgId'],
+      'server/api/invite-links/index.post.ts': ['const orgId = session.session.activeOrganizationId', 'organizationId: orgId'],
     }
 
     for (const [path, snippets] of Object.entries(createRoutes)) {
@@ -246,5 +323,49 @@ describe('P0 tenant-isolation route coverage', () => {
     expect(source).toContain('Failed to upload an application document. Please try again.')
     expect(source).toContain('Failed to upload your resume. Please try again.')
     expect(source).not.toContain("don't fail the entire application for a file upload error")
+  })
+
+  it('keeps organization search authenticated while allowing users without an active organization', () => {
+    const source = read('server/api/org-search/index.get.ts')
+
+    expect(source).toContain('auth.api.getSession({ headers: event.headers })')
+    expect(source).not.toContain('requireAuth(event)')
+    expect(source).not.toContain('requirePermission(event')
+    expect(source).toContain('id: organization.id')
+    expect(source).toContain('name: organization.name')
+    expect(source).toContain('slug: organization.slug')
+    expect(source).toContain('.limit(5)')
+  })
+
+  it('keeps join-request creation authenticated while allowing users without an active organization', () => {
+    const source = read('server/api/join-requests/index.post.ts')
+
+    expect(source).toContain('auth.api.getSession({ headers: event.headers })')
+    expect(source).not.toContain('requireAuth(event)')
+    expect(source).not.toContain('requirePermission(event')
+    expect(source).toContain('eq(organization.id, body.organizationId)')
+    expect(source).toContain('eq(member.userId, session.user.id)')
+    expect(source).toContain('eq(joinRequest.userId, session.user.id)')
+    expect(source).toContain("eq(joinRequest.status, 'pending')")
+  })
+
+  it('keeps invite-link info public and invite-link acceptance authenticated without active-org requirements', () => {
+    const infoSource = read('server/api/invite-links/info/[token].get.ts')
+    const acceptSource = read('server/api/invite-links/accept.post.ts')
+
+    expect(infoSource).not.toContain('requireAuth(event)')
+    expect(infoSource).not.toContain('requirePermission(event')
+    expect(infoSource).not.toContain('auth.api.getSession')
+    expect(infoSource).toContain('organizationName')
+    expect(infoSource).toContain('organizationSlug')
+    expect(infoSource).toContain('invitedByName')
+    expect(infoSource).not.toContain('token: inviteLink.token')
+    expect(infoSource).not.toContain('token: link')
+
+    expect(acceptSource).toContain('auth.api.getSession({ headers: event.headers })')
+    expect(acceptSource).not.toContain('requireAuth(event)')
+    expect(acceptSource).not.toContain('requirePermission(event')
+    expect(acceptSource).toContain('eq(inviteLink.token, body.token)')
+    expect(acceptSource).toContain('onConflictDoNothing({ target: [member.userId, member.organizationId] })')
   })
 })
