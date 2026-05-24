@@ -1,0 +1,28 @@
+{
+  "name": "@thefactory/careers-cli",
+  "version": "1.4.0",
+  "description": "Authenticated command-line interface for Factory Careers",
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "factory-careers": "bin/factory-careers.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22.22.0 <23 || >=24.11.0 <25"
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "tsx": "^4.21.0"
+  },
+  "scripts": {
+    "smoke": "./bin/factory-careers.mjs --help"
+  }
+}

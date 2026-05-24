@@ -45,7 +45,10 @@ export default defineEventHandler(async (event) => {
       if (parsedContent) {
         await db.update(document)
           .set({ parsedContent: parsedContent as any })
-          .where(eq(document.id, doc.id))
+          .where(and(
+            eq(document.id, doc.id),
+            eq(document.organizationId, orgId),
+          ))
         parsed++
       }
       else {

@@ -246,6 +246,13 @@
       "when": 1779494242740,
       "tag": "0034_dark_living_mummy",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1779495000000,
+      "tag": "0035_device_authorization",
+      "breakpoints": true
     }
   ]
 }

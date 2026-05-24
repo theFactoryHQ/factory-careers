@@ -4,6 +4,7 @@
 
 This repository is Factory's thin, AGPL-compatible fork of Reqcore for `careers.thefactoryhq.com`.
 Factory-specific deployment notes live in [FACTORY_CAREERS.md](FACTORY_CAREERS.md).
+The authenticated terminal interface is documented in the [Factory Careers CLI](docs/CLI.md) guide.
 
 ---
 

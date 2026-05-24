@@ -1,0 +1,5 @@
+#!/usr/bin/env -S node --import tsx
+
+import { main } from '../src/main.ts'
+
+process.exitCode = await main(process.argv.slice(2))

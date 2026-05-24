@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { organization, genericOAuth } from "better-auth/plugins";
+import { bearer, deviceAuthorization, organization, genericOAuth } from "better-auth/plugins";
 import { sso } from "@better-auth/sso";
 import { eq } from "drizzle-orm";
 import { Buffer } from "node:buffer";
@@ -8,6 +8,7 @@ import { ac, owner, admin, member } from "~~/shared/permissions";
 import { sendOrgInvitationEmail, sendPasswordResetEmail } from "./email";
 import { deleteFromS3 } from "./s3";
 import { readPositiveIntegerEnv } from "./rateLimitConfig";
+import { isFactoryCareersCliClient } from "./cliDeviceClient";
 import {
   collectRequestTrustedOrigins,
   normalizeTrustedOrigin,
@@ -173,6 +174,10 @@ async function fetchMicrosoftSsoProfileImage(options: {
   }
 }
 
+async function validateFactoryCareersCliClient(clientId: string): Promise<boolean> {
+  return isFactoryCareersCliClient(clientId, env.FACTORY_CAREERS_CLI_CLIENT_ID);
+}
+
 /**
  * Lazily create the Better Auth instance on first access.
  * Prevents build-time prerendering from crashing when auth env vars
@@ -269,6 +274,14 @@ function getAuth(): Auth {
           : {}),
       },
       plugins: [
+        bearer(),
+
+        deviceAuthorization({
+          verificationUri: "/device",
+          validateClient: validateFactoryCareersCliClient,
+          schema: {},
+        }),
+
         organization({
           // ── Access Control ──────────────────────────────────────
           // Declarative RBAC — permissions defined once in shared/permissions.ts,

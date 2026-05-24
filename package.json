@@ -3,6 +3,9 @@
   "version": "1.4.0",
   "type": "module",
   "private": true,
+  "workspaces": [
+    "packages/careers-cli"
+  ],
   "engines": {
     "node": ">=22.22.0 <23 || >=24.11.0 <25"
   },
@@ -25,6 +28,8 @@
     "test:unit": "vitest run",
     "typecheck": "nuxi typecheck",
     "test:e2e": "npx playwright test",
+    "cli:pack": "npm pack --workspace @thefactory/careers-cli --dry-run",
+    "cli:publish": "npm publish --workspace @thefactory/careers-cli",
     "ops:backup-restore-rehearsal": "bash scripts/backup-restore-rehearsal.sh",
     "ops:object-storage-restore-rehearsal": "bash scripts/object-storage-restore-rehearsal.sh",
     "ops:validate-production-env": "node scripts/validate-production-env.mjs",
