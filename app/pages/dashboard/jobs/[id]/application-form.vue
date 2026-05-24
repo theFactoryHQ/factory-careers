@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { FileText, Link2, Check, Plus, Copy, CheckCircle2, XCircle, ToggleLeft, ToggleRight, Trash2, Radio, ChevronDown, X, ExternalLink, Eye } from 'lucide-vue-next'
+import { FileText, Link2, Check, Plus, Copy, CheckCircle2, XCircle, ToggleLeft, ToggleRight, Trash2, Radio, ChevronDown, X, Eye, Save } from 'lucide-vue-next'
+import { z } from 'zod'
 import { getSourceChannelLabel } from '~/utils/status-display'
+import { CURRENCY_OPTIONS, CURRENCY_VALUES } from '~~/shared/currency-options'
+import { todayDateInputValue, toDateInputValue } from '~~/shared/date-input'
+import { SALARY_UNIT_OPTIONS, SALARY_UNIT_VALUES } from '~~/shared/salary-options'
 
 definePageMeta({
   layout: 'dashboard',
@@ -11,8 +15,10 @@ const route = useRoute()
 const localePath = useLocalePath()
 const jobId = route.params.id as string
 const toast = useToast()
+const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 
 const { job, status: fetchStatus, error, updateJob } = useJob(jobId)
+const { defaultSalaryUnit } = useOrgSettings()
 const { questions: previewQuestions } = useJobQuestions(jobId)
 const showApplicationPreview = ref(false)
 
@@ -43,6 +49,154 @@ const applicationUrl = computed(() => {
   const base = `${requestUrl.protocol}//${requestUrl.host}`
   return `${base}/jobs/${job.value?.slug ?? jobId}/apply`
 })
+
+// ─────────────────────────────────────────────
+// Applicant-facing posting details
+// ─────────────────────────────────────────────
+
+const form = ref({
+  title: '',
+  description: '',
+  location: '',
+  type: 'full_time' as string,
+  slug: '',
+  salaryMin: null as number | null,
+  salaryMax: null as number | null,
+  salaryCurrency: 'USD',
+  salaryUnit: 'YEAR',
+  salaryNegotiable: false,
+  remoteStatus: '' as string,
+  experienceLevel: '' as string,
+  activeFrom: todayDateInputValue(),
+  validThrough: '',
+})
+
+watch([job, defaultSalaryUnit], ([j]) => {
+  if (!j) return
+  form.value = {
+    title: j.title ?? '',
+    description: j.description ?? '',
+    location: j.location ?? '',
+    type: j.type ?? 'full_time',
+    slug: j.slug ?? '',
+    salaryMin: j.salaryMin ?? null,
+    salaryMax: j.salaryMax ?? null,
+    salaryCurrency: j.salaryCurrency ?? 'USD',
+    salaryUnit: j.salaryUnit ?? defaultSalaryUnit.value,
+    salaryNegotiable: j.salaryNegotiable ?? false,
+    remoteStatus: j.remoteStatus ?? '',
+    experienceLevel: j.experienceLevel ?? '',
+    activeFrom: j.activeFrom ? toDateInputValue(j.activeFrom) : todayDateInputValue(),
+    validThrough: j.validThrough ? toDateInputValue(j.validThrough) : '',
+  }
+}, { immediate: true })
+
+watch(() => form.value.salaryNegotiable, (negotiable) => {
+  if (negotiable) {
+    form.value.salaryMin = null
+    form.value.salaryMax = null
+    form.value.salaryCurrency = ''
+    form.value.salaryUnit = ''
+  } else if (!form.value.salaryCurrency) {
+    form.value.salaryCurrency = 'USD'
+    form.value.salaryUnit = defaultSalaryUnit.value
+  } else if (!form.value.salaryUnit) {
+    form.value.salaryUnit = defaultSalaryUnit.value
+  }
+})
+
+const postingSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200),
+  description: z.string().optional(),
+  location: z.string().optional(),
+  type: z.enum(['full_time', 'part_time', 'contract', 'internship']),
+  slug: z.string().max(80).optional(),
+  salaryMin: z.union([z.coerce.number().int().min(0), z.null()]).optional(),
+  salaryMax: z.union([z.coerce.number().int().min(0), z.null()]).optional(),
+  salaryCurrency: z.enum(CURRENCY_VALUES).optional().or(z.literal('')),
+  salaryUnit: z.enum(SALARY_UNIT_VALUES).optional().or(z.literal('')),
+  salaryNegotiable: z.boolean().optional(),
+  remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).optional().or(z.literal('')),
+  experienceLevel: z.enum(['junior', 'mid', 'senior', 'lead']).optional().or(z.literal('')),
+  activeFrom: z.string().optional(),
+  validThrough: z.string().optional(),
+})
+
+const postingErrors = ref<Record<string, string>>({})
+const isSavingPosting = ref(false)
+const postingSaved = ref(false)
+
+async function savePostingDetails() {
+  const result = postingSchema.safeParse(form.value)
+  if (!result.success) {
+    postingErrors.value = {}
+    for (const issue of result.error.issues) {
+      const field = issue.path[0]?.toString()
+      if (field) postingErrors.value[field] = issue.message
+    }
+    return
+  }
+
+  postingErrors.value = {}
+  isSavingPosting.value = true
+  try {
+    await updateJob({
+      title: form.value.title,
+      description: form.value.description || null,
+      location: form.value.location || null,
+      type: form.value.type,
+      slug: form.value.slug || undefined,
+      salaryNegotiable: form.value.salaryNegotiable,
+      salaryMin: form.value.salaryNegotiable ? null : (form.value.salaryMin ?? null),
+      salaryMax: form.value.salaryNegotiable ? null : (form.value.salaryMax ?? null),
+      salaryCurrency: form.value.salaryNegotiable ? null : (form.value.salaryCurrency || 'USD'),
+      salaryUnit: form.value.salaryNegotiable ? null : (form.value.salaryUnit || defaultSalaryUnit.value),
+      remoteStatus: form.value.remoteStatus || null,
+      experienceLevel: (form.value.experienceLevel as 'junior' | 'mid' | 'senior' | 'lead' | null) || null,
+      activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue()),
+      validThrough: form.value.validThrough ? new Date(form.value.validThrough) : null,
+    } as any)
+    postingSaved.value = true
+    setTimeout(() => { postingSaved.value = false }, 2000)
+  } catch (err: any) {
+    if (handlePreviewReadOnlyError(err)) return
+    toast.error('Failed to save application details', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
+  } finally {
+    isSavingPosting.value = false
+  }
+}
+
+const typeOptions = [
+  { value: 'full_time', label: 'Full-time' },
+  { value: 'part_time', label: 'Part-time' },
+  { value: 'contract', label: 'Contract' },
+  { value: 'internship', label: 'Internship' },
+]
+
+const remoteOptions = [
+  { value: '', label: 'Not specified' },
+  { value: 'remote', label: 'Remote' },
+  { value: 'hybrid', label: 'Hybrid' },
+  { value: 'onsite', label: 'On-site' },
+]
+
+const experienceLevelOptions = [
+  { value: '', label: 'Not specified' },
+  { value: 'junior', label: 'Junior' },
+  { value: 'mid', label: 'Mid-level' },
+  { value: 'senior', label: 'Senior' },
+  { value: 'lead', label: 'Lead' },
+]
+
+function onSalaryMinChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (!input.value) form.value.salaryMin = null
+}
+
+function onSalaryMaxChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (!input.value) form.value.salaryMax = null
+}
 
 // ─────────────────────────────────────────────
 // Application requirements (resume / cover letter)
@@ -215,6 +369,237 @@ async function copyTrackingUrl(code: string) {
       <div v-else class="ui-panel-muted p-4 mb-6 text-sm text-surface-500 dark:text-surface-400">
         The application link will be available when this job is published (status: <strong>open</strong>).
       </div>
+
+      <form class="space-y-6" @submit.prevent="savePostingDetails">
+        <!-- Basic Details -->
+        <section class="ui-panel p-5">
+          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-4">Basic Details</h2>
+          <div class="space-y-4">
+            <div>
+              <label for="application-title" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                Title <span class="text-danger-500">*</span>
+              </label>
+              <input
+                id="application-title"
+                v-model="form.title"
+                type="text"
+                class="ui-field px-3 py-2 text-sm"
+              />
+              <p v-if="postingErrors.title" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ postingErrors.title }}</p>
+            </div>
+
+            <div>
+              <label for="application-description" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                Description
+              </label>
+              <textarea
+                id="application-description"
+                v-model="form.description"
+                rows="6"
+                placeholder="Describe the role, responsibilities, and requirements..."
+                class="ui-field px-3 py-2 text-sm"
+              ></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label for="application-location" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  Location
+                </label>
+                <input
+                  id="application-location"
+                  v-model="form.location"
+                  type="text"
+                  placeholder="e.g. Remote / United States"
+                  class="ui-field px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label for="application-type" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  Employment Type
+                </label>
+                <FactorySelect
+                  id="application-type"
+                  v-model="form.type"
+                  :options="typeOptions"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label for="application-remote" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  Work Arrangement
+                </label>
+                <FactorySelect
+                  id="application-remote"
+                  v-model="form.remoteStatus"
+                  :options="remoteOptions"
+                />
+              </div>
+              <div>
+                <label for="application-experience-level" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  Experience Level
+                </label>
+                <FactorySelect
+                  id="application-experience-level"
+                  v-model="form.experienceLevel"
+                  :options="experienceLevelOptions"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label for="application-slug" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                URL Slug
+              </label>
+              <input
+                id="application-slug"
+                v-model="form.slug"
+                type="text"
+                placeholder="auto-generated-from-title"
+                class="ui-field px-3 py-2 text-xs font-mono"
+              />
+              <p class="mt-1 text-xs text-surface-400 dark:text-surface-500">
+                Used in the public application URL. Leave blank to auto-generate from title.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Salary & Compensation -->
+        <section class="ui-panel p-5">
+          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1">Salary & Compensation</h2>
+          <p class="text-xs text-surface-400 dark:text-surface-500 mb-5">
+            Adding salary information improves visibility on Google Jobs.
+          </p>
+          <div class="space-y-4">
+            <label class="flex cursor-pointer items-center gap-3">
+              <input
+                v-model="form.salaryNegotiable"
+                type="checkbox"
+                class="size-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600"
+              />
+              <div>
+                <span class="text-sm font-medium text-surface-900 dark:text-surface-100">Salary is negotiable</span>
+                <p class="text-xs text-surface-400 dark:text-surface-500">
+                  Show "Negotiable" instead of a specific salary range.
+                </p>
+              </div>
+            </label>
+
+            <template v-if="!form.salaryNegotiable">
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label for="application-salary-min" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                    Minimum Salary
+                  </label>
+                  <input
+                    id="application-salary-min"
+                    v-model.number="form.salaryMin"
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 50000"
+                    class="ui-field px-3 py-2 text-sm"
+                    @change="onSalaryMinChange"
+                  />
+                </div>
+                <div>
+                  <label for="application-salary-max" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                    Maximum Salary
+                  </label>
+                  <input
+                    id="application-salary-max"
+                    v-model.number="form.salaryMax"
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 80000"
+                    class="ui-field px-3 py-2 text-sm"
+                    @change="onSalaryMaxChange"
+                  />
+                </div>
+              </div>
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label for="application-currency" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                    Currency
+                  </label>
+                  <FactorySelect
+                    id="application-currency"
+                    v-model="form.salaryCurrency"
+                    :options="CURRENCY_OPTIONS"
+                  />
+                </div>
+                <div>
+                  <label for="application-salary-unit" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                    Pay Period
+                  </label>
+                  <FactorySelect
+                    id="application-salary-unit"
+                    v-model="form.salaryUnit"
+                    :options="SALARY_UNIT_OPTIONS"
+                  />
+                </div>
+              </div>
+            </template>
+          </div>
+        </section>
+
+        <!-- Listing Schedule -->
+        <section class="ui-panel p-5">
+          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1">Listing Schedule</h2>
+          <p class="text-xs text-surface-400 dark:text-surface-500 mb-5">
+            Set when this job posting goes live and when it automatically expires.
+          </p>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label for="application-active-from" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                Active From
+              </label>
+              <input
+                id="application-active-from"
+                v-model="form.activeFrom"
+                type="date"
+                class="ui-field px-3 py-2 text-sm"
+              />
+              <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Defaults to today for new jobs.</p>
+            </div>
+            <div>
+              <label for="application-valid-through" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                Valid Through
+              </label>
+              <div class="flex items-center gap-2">
+                <input
+                  id="application-valid-through"
+                  v-model="form.validThrough"
+                  type="date"
+                  class="ui-field px-3 py-2 text-sm"
+                />
+                <button
+                  v-if="form.validThrough"
+                  type="button"
+                  class="shrink-0 text-xs text-surface-400 underline transition-colors hover:text-danger-500 dark:hover:text-danger-400"
+                  @click="form.validThrough = ''"
+                >
+                  Clear
+                </button>
+              </div>
+              <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Leave blank if there is no fixed expiry date.</p>
+            </div>
+          </div>
+        </section>
+
+        <div class="flex items-center justify-start pb-2">
+          <button
+            type="submit"
+            :disabled="isSavingPosting"
+            class="ui-button ui-button-primary h-10 px-5 text-sm"
+          >
+            <Save class="size-4" />
+            {{ postingSaved ? 'Saved!' : isSavingPosting ? 'Saving...' : 'Save application details' }}
+          </button>
+        </div>
+      </form>
 
       <!-- Application Requirements -->
       <div class="ui-panel p-5 mb-6">

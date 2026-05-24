@@ -18,17 +18,14 @@ describe('global copy field', () => {
 
   it('uses the reusable copy field for URL copy affordances instead of standalone copy buttons', () => {
     const applicationForm = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
-    const settings = readProjectFile('app/pages/dashboard/jobs/[id]/settings.vue')
     const newJob = readProjectFile('app/pages/dashboard/jobs/new.vue')
     const sourceTracking = readProjectFile('app/pages/dashboard/source-tracking/[id].vue')
 
     expect(applicationForm).toContain('<CopyField')
-    expect(settings).toContain('<CopyField')
     expect(newJob).toContain('<CopyField')
     expect(sourceTracking).toContain('<CopyField')
 
     expect(applicationForm).not.toContain('linkCopied')
-    expect(settings).not.toContain('linkCopied')
     expect(newJob).not.toContain('linkCopiedFinal')
   })
 })

@@ -21,12 +21,14 @@ describe('organization default salary pay period', () => {
   })
 
   it('makes job pay period inherit the organization default instead of Not specified', () => {
+    const applicationPage = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
     const jobSettingsPage = readProjectFile('app/pages/dashboard/jobs/[id]/settings.vue')
 
-    expect(jobSettingsPage).toContain('defaultSalaryUnit')
-    expect(jobSettingsPage).toContain("salaryUnit: 'YEAR'")
-    expect(jobSettingsPage).toContain('salaryUnit: j.salaryUnit ?? defaultSalaryUnit.value')
-    expect(jobSettingsPage).toContain(':options="SALARY_UNIT_OPTIONS"')
-    expect(jobSettingsPage).not.toContain('const salaryUnitOptions')
+    expect(applicationPage).toContain('defaultSalaryUnit')
+    expect(applicationPage).toContain("salaryUnit: 'YEAR'")
+    expect(applicationPage).toContain('salaryUnit: j.salaryUnit ?? defaultSalaryUnit.value')
+    expect(applicationPage).toContain(':options="SALARY_UNIT_OPTIONS"')
+    expect(applicationPage).not.toContain('const salaryUnitOptions')
+    expect(jobSettingsPage).not.toContain(':options="SALARY_UNIT_OPTIONS"')
   })
 })

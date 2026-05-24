@@ -6,16 +6,18 @@ const readProjectFile = (path: string) =>
   readFileSync(join(process.cwd(), path), 'utf8')
 
 describe('job settings salary currency', () => {
-  it('uses a validated currency list and defaults to USD in the settings form', () => {
-    const source = readProjectFile('app/pages/dashboard/jobs/[id]/settings.vue')
+  it('uses a validated currency list and defaults to USD in the application form', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
+    const settingsSource = readProjectFile('app/pages/dashboard/jobs/[id]/settings.vue')
 
     expect(source).toContain('CURRENCY_OPTIONS')
     expect(source).toContain("salaryCurrency: 'USD'")
     expect(source).toContain("salaryCurrency: j.salaryCurrency ?? 'USD'")
     expect(source).toContain('z.enum(CURRENCY_VALUES)')
-    expect(source).toContain('id="settings-currency"')
+    expect(source).toContain('id="application-currency"')
     expect(source).toContain(':options="CURRENCY_OPTIONS"')
     expect(source).not.toContain('placeholder="e.g. USD, EUR, NOK"')
+    expect(settingsSource).not.toContain('CURRENCY_OPTIONS')
   })
 
   it('validates salary currency in shared server schemas', () => {

@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import {
-  Save, Trash2, ArrowLeft, ExternalLink, Link2, ChevronDown,
-} from 'lucide-vue-next'
-import { z } from 'zod'
-import { CURRENCY_OPTIONS, CURRENCY_VALUES } from '~~/shared/currency-options'
-import { todayDateInputValue, toDateInputValue } from '~~/shared/date-input'
-import { SALARY_UNIT_OPTIONS, SALARY_UNIT_VALUES } from '~~/shared/salary-options'
+import { Save, Trash2 } from 'lucide-vue-next'
 
 definePageMeta({
   layout: 'dashboard',
@@ -20,7 +14,6 @@ const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 const { track } = useTrack()
 
 const { job, status: fetchStatus, error: fetchError, updateJob, deleteJob } = useJob(jobId)
-const { defaultSalaryUnit } = useOrgSettings()
 
 useSeoMeta({
   title: computed(() =>
@@ -28,158 +21,35 @@ useSeoMeta({
   ),
 })
 
-// ─────────────────────────────────────────────
-// Form state — synced from fetched job
-// ─────────────────────────────────────────────
-
-const form = ref({
-  title: '',
-  description: '',
-  location: '',
-  type: 'full_time' as string,
-  slug: '',
-  salaryMin: null as number | null,
-  salaryMax: null as number | null,
-  salaryCurrency: 'USD',
-  salaryUnit: 'YEAR',
-  salaryNegotiable: false,
-  remoteStatus: '' as string,
-  experienceLevel: '' as string,
-  activeFrom: todayDateInputValue(),
-  validThrough: '',
-  requireResume: false,
-  requireCoverLetter: false,
+const settingsFormDefaults = {
   autoScoreOnApply: true,
-})
+}
 
-watch([job, defaultSalaryUnit], ([j]) => {
-  if (j) {
-    form.value = {
-      title: j.title ?? '',
-      description: j.description ?? '',
-      location: j.location ?? '',
-      type: j.type ?? 'full_time',
-      slug: j.slug ?? '',
-      salaryMin: j.salaryMin ?? null,
-      salaryMax: j.salaryMax ?? null,
-      salaryCurrency: j.salaryCurrency ?? 'USD',
-      salaryUnit: j.salaryUnit ?? defaultSalaryUnit.value,
-      salaryNegotiable: j.salaryNegotiable ?? false,
-      remoteStatus: j.remoteStatus ?? '',
-      experienceLevel: j.experienceLevel ?? '',
-      activeFrom: j.activeFrom ? toDateInputValue(j.activeFrom) : todayDateInputValue(),
-      validThrough: j.validThrough ? new Date(j.validThrough).toISOString().split('T')[0] ?? '' : '',
-      requireResume: j.requireResume ?? false,
-      requireCoverLetter: j.requireCoverLetter ?? false,
-      autoScoreOnApply: j.autoScoreOnApply ?? true,
-    }
-  }
-}, { immediate: true })
-
-// When "Negotiable" is toggled on, clear the salary range fields
-watch(() => form.value.salaryNegotiable, (negotiable) => {
-  if (negotiable) {
-    form.value.salaryMin = null
-    form.value.salaryMax = null
-    form.value.salaryCurrency = ''
-    form.value.salaryUnit = ''
-  } else if (!form.value.salaryCurrency) {
-    form.value.salaryCurrency = 'USD'
-    form.value.salaryUnit = defaultSalaryUnit.value
-  } else if (!form.value.salaryUnit) {
-    form.value.salaryUnit = defaultSalaryUnit.value
-  }
-})
-
-// ─────────────────────────────────────────────
-// Validation
-// ─────────────────────────────────────────────
-
-const editSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(200),
-  description: z.string().optional(),
-  location: z.string().optional(),
-  type: z.enum(['full_time', 'part_time', 'contract', 'internship']),
-  slug: z.string().max(80).optional(),
-  salaryMin: z.union([z.coerce.number().int().min(0), z.null()]).optional(),
-  salaryMax: z.union([z.coerce.number().int().min(0), z.null()]).optional(),
-  salaryCurrency: z.enum(CURRENCY_VALUES),
-  salaryUnit: z.enum(SALARY_UNIT_VALUES).optional().or(z.literal('')),
-  salaryNegotiable: z.boolean().optional(),
-  remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).optional().or(z.literal('')),
-  experienceLevel: z.enum(['junior', 'mid', 'senior', 'lead']).optional().or(z.literal('')),
-  activeFrom: z.string().optional(),
-  validThrough: z.string().optional(),
-  requireResume: z.boolean().optional(),
-  requireCoverLetter: z.boolean().optional(),
-  autoScoreOnApply: z.boolean().optional(),
-})
-
-const errors = ref<Record<string, string>>({})
+const autoScoreOnApply = ref(settingsFormDefaults.autoScoreOnApply)
 const isSaving = ref(false)
 const saved = ref(false)
 
+watch(job, (j) => {
+  if (!j) return
+  autoScoreOnApply.value = j.autoScoreOnApply ?? true
+}, { immediate: true })
+
 async function handleSave() {
-  const result = editSchema.safeParse(form.value)
-  if (!result.success) {
-    errors.value = {}
-    for (const issue of result.error.issues) {
-      const field = issue.path[0]?.toString()
-      if (field) errors.value[field] = issue.message
-    }
-    return
-  }
-  errors.value = {}
   isSaving.value = true
-
   try {
-    const payload: Record<string, unknown> = {
-      title: form.value.title,
-      description: form.value.description || null,
-      location: form.value.location || null,
-      type: form.value.type,
-      slug: form.value.slug || undefined,
-      requireResume: form.value.requireResume,
-      requireCoverLetter: form.value.requireCoverLetter,
-      autoScoreOnApply: form.value.autoScoreOnApply,
-      salaryNegotiable: form.value.salaryNegotiable,
-      // Always send salary fields so cleared values write null to the DB
-      salaryMin: form.value.salaryNegotiable ? null : (form.value.salaryMin ?? null),
-      salaryMax: form.value.salaryNegotiable ? null : (form.value.salaryMax ?? null),
-      salaryCurrency: form.value.salaryNegotiable ? null : (form.value.salaryCurrency || 'USD'),
-      salaryUnit: form.value.salaryNegotiable ? null : (form.value.salaryUnit || defaultSalaryUnit.value),
-      remoteStatus: form.value.remoteStatus || null,
-      experienceLevel: (form.value.experienceLevel as 'junior' | 'mid' | 'senior' | 'lead' | null) || null,
-      activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue()),
-      // Send null when cleared so the DB column is set to NULL
-      validThrough: form.value.validThrough ? new Date(form.value.validThrough) : null,
-    }
-
-    await updateJob(payload as any)
+    await updateJob({
+      autoScoreOnApply: autoScoreOnApply.value,
+    })
     track('job_settings_saved', { job_id: jobId })
     saved.value = true
     setTimeout(() => { saved.value = false }, 2000)
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
-    toast.error('Failed to save changes', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
+    toast.error('Failed to save settings', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
   } finally {
     isSaving.value = false
   }
 }
-
-// ─────────────────────────────────────────────
-// Application link
-// ─────────────────────────────────────────────
-
-const requestUrl = useRequestURL()
-const applicationUrl = computed(() => {
-  const base = `${requestUrl.protocol}//${requestUrl.host}`
-  return `${base}/jobs/${job.value?.slug ?? jobId}/apply`
-})
-
-// ─────────────────────────────────────────────
-// Delete
-// ─────────────────────────────────────────────
 
 const showDeleteConfirm = ref(false)
 const isDeleting = ref(false)
@@ -196,389 +66,69 @@ async function handleDelete() {
     showDeleteConfirm.value = false
   }
 }
-
-// ─────────────────────────────────────────────
-// Options
-// ─────────────────────────────────────────────
-
-const typeOptions = [
-  { value: 'full_time', label: 'Full-time' },
-  { value: 'part_time', label: 'Part-time' },
-  { value: 'contract', label: 'Contract' },
-  { value: 'internship', label: 'Internship' },
-]
-
-const remoteOptions = [
-  { value: '', label: 'Not specified' },
-  { value: 'remote', label: 'Remote' },
-  { value: 'hybrid', label: 'Hybrid' },
-  { value: 'onsite', label: 'On-site' },
-]
-
-const experienceLevelOptions = [
-  { value: '', label: 'Not specified' },
-  { value: 'junior', label: 'Junior' },
-  { value: 'mid', label: 'Mid-level' },
-  { value: 'senior', label: 'Senior' },
-  { value: 'lead', label: 'Lead' },
-]
-
-function onSalaryMinChange(e: Event) {
-  const input = e.target as HTMLInputElement
-  if (!input.value) form.value.salaryMin = null
-}
-
-function onSalaryMaxChange(e: Event) {
-  const input = e.target as HTMLInputElement
-  if (!input.value) form.value.salaryMax = null
-}
 </script>
 
 <template>
   <div class="mx-auto max-w-3xl">
     <JobSubNavActions :job-id="jobId" />
 
-    <!-- Loading -->
-    <div v-if="fetchStatus === 'pending'" class="text-center py-12 text-surface-400">
-      Loading…
+    <div v-if="fetchStatus === 'pending'" class="py-12 text-center text-surface-400">
+      Loading...
     </div>
 
-    <!-- Error -->
     <div
       v-else-if="fetchError"
-      class="rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-4 text-sm text-danger-700 dark:text-danger-400"
+      class="rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700 dark:border-danger-800 dark:bg-danger-950 dark:text-danger-400"
     >
       {{ fetchError.statusCode === 404 ? 'Job not found.' : 'Failed to load job.' }}
-      <NuxtLink :to="$localePath('/dashboard/jobs')" class="underline ml-1">Back to Jobs</NuxtLink>
+      <NuxtLink :to="$localePath('/dashboard/jobs')" class="ml-1 underline">Back to Jobs</NuxtLink>
     </div>
 
     <template v-else-if="job">
-      <!-- Header -->
       <div class="mb-8">
         <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50">Job Settings</h1>
-        <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">
-          Edit the details for <strong>{{ job.title }}</strong>.
+        <p class="mt-1 text-sm text-surface-500 dark:text-surface-400">
+          Manage operational settings for <strong>{{ job.title }}</strong>.
         </p>
       </div>
 
-      <form @submit.prevent="handleSave" class="space-y-8">
-        <!-- ═══════════════════════════════════════ -->
-        <!-- SECTION: Basic Details                   -->
-        <!-- ═══════════════════════════════════════ -->
-        <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6">
-          <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-5">Basic Details</h2>
-          <div class="space-y-4">
-            <!-- Title -->
-            <div>
-              <label for="settings-title" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                Title <span class="text-danger-500">*</span>
-              </label>
-              <input
-                id="settings-title"
-                v-model="form.title"
-                type="text"
-                class="w-full rounded-lg border px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                :class="errors.title ? 'border-danger-300' : 'border-surface-300 dark:border-surface-700'"
-              />
-              <p v-if="errors.title" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ errors.title }}</p>
-            </div>
-
-            <!-- Description -->
-            <div>
-              <label for="settings-description" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                Description
-              </label>
-              <textarea
-                id="settings-description"
-                v-model="form.description"
-                rows="6"
-                placeholder="Describe the role, responsibilities, and requirements…"
-                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-              />
-            </div>
-
-            <!-- Location + Type row -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label for="settings-location" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                  Location
-                </label>
-                <input
-                  id="settings-location"
-                  v-model="form.location"
-                  type="text"
-                  placeholder="e.g. Oslo, Norway"
-                  class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                />
-              </div>
-              <div>
-                <label for="settings-type" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                  Employment Type
-                </label>
-                <FactorySelect
-                  id="settings-type"
-                  v-model="form.type"
-                  :options="typeOptions"
-                />
-              </div>
-            </div>
-
-            <!-- Remote status -->
-            <div>
-              <label for="settings-remote" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                Work Arrangement
-              </label>
-              <FactorySelect
-                id="settings-remote"
-                v-model="form.remoteStatus"
-                :options="remoteOptions"
-              />
-            </div>
-
-            <!-- Experience Level -->
-            <div>
-              <label for="settings-experience-level" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                Experience Level
-              </label>
-              <FactorySelect
-                id="settings-experience-level"
-                v-model="form.experienceLevel"
-                :options="experienceLevelOptions"
-              />
-            </div>
-
-            <!-- Slug -->
-            <div>
-              <label for="settings-slug" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                URL Slug
-              </label>
-              <input
-                id="settings-slug"
-                v-model="form.slug"
-                type="text"
-                placeholder="auto-generated-from-title"
-                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors font-mono text-xs"
-              />
-              <p class="mt-1 text-xs text-surface-400 dark:text-surface-500">
-                Used in the public application URL. Leave blank to auto-generate from title.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <!-- ═══════════════════════════════════════ -->
-        <!-- SECTION: Salary & Compensation           -->
-        <!-- ═══════════════════════════════════════ -->
-        <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6">
-          <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-1">Salary & Compensation</h2>
-          <p class="text-xs text-surface-400 dark:text-surface-500 mb-5">
-            Adding salary information improves visibility on Google Jobs.
+      <form class="space-y-8" @submit.prevent="handleSave">
+        <section class="ui-panel p-6">
+          <h2 class="mb-1 text-base font-semibold text-surface-900 dark:text-surface-100">Automation</h2>
+          <p class="mb-5 text-xs text-surface-400 dark:text-surface-500">
+            Control operational behavior for this job.
           </p>
-          <div class="space-y-4">
-            <!-- Negotiable toggle -->
-            <label class="flex items-center gap-3 cursor-pointer">
-              <input
-                v-model="form.salaryNegotiable"
-                type="checkbox"
-                class="size-4 rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500"
-              />
-              <div>
-                <span class="text-sm font-medium text-surface-900 dark:text-surface-100">Salary is negotiable</span>
-                <p class="text-xs text-surface-400 dark:text-surface-500">
-                  When checked, "Negotiable" is shown instead of a specific salary range. Salary fields below will be cleared.
-                </p>
-              </div>
-            </label>
 
-            <!-- Salary range fields — hidden when negotiable -->
-            <template v-if="!form.salaryNegotiable">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label for="settings-salary-min" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                    Minimum Salary
-                  </label>
-                  <input
-                    id="settings-salary-min"
-                    v-model.number="form.salaryMin"
-                    type="number"
-                    min="0"
-                    placeholder="e.g. 50000"
-                    class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                    @change="onSalaryMinChange"
-                  />
-                </div>
-                <div>
-                  <label for="settings-salary-max" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                    Maximum Salary
-                  </label>
-                  <input
-                    id="settings-salary-max"
-                    v-model.number="form.salaryMax"
-                    type="number"
-                    min="0"
-                    placeholder="e.g. 80000"
-                    class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                    @change="onSalaryMaxChange"
-                  />
-                </div>
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label for="settings-currency" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                    Currency
-                  </label>
-                  <FactorySelect
-                    id="settings-currency"
-                    v-model="form.salaryCurrency"
-                    :options="CURRENCY_OPTIONS"
-                  />
-                </div>
-                <div>
-                  <label for="settings-salary-unit" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                    Pay Period
-                  </label>
-                  <FactorySelect
-                    id="settings-salary-unit"
-                    v-model="form.salaryUnit"
-                    :options="SALARY_UNIT_OPTIONS"
-                  />
-                </div>
-              </div>
-            </template>
-          </div>
+          <label class="flex cursor-pointer items-center gap-3">
+            <input
+              v-model="autoScoreOnApply"
+              type="checkbox"
+              class="size-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600"
+            />
+            <span>
+              <span class="block text-sm font-medium text-surface-900 dark:text-surface-100">Auto-score on apply</span>
+              <span class="block text-xs text-surface-400 dark:text-surface-500">
+                Automatically run AI scoring when a candidate applies.
+              </span>
+            </span>
+          </label>
         </section>
 
-        <!-- ═══════════════════════════════════════ -->
-        <!-- SECTION: Application Options             -->
-        <!-- ═══════════════════════════════════════ -->
-        <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6">
-          <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-1">Application Options</h2>
-          <p class="text-xs text-surface-400 dark:text-surface-500 mb-5">
-            Control what candidates must provide when applying.
-          </p>
-          <div class="space-y-3">
-            <label class="flex items-center gap-3 cursor-pointer">
-              <input
-                v-model="form.requireResume"
-                type="checkbox"
-                class="size-4 rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500"
-              />
-              <div>
-                <span class="text-sm font-medium text-surface-900 dark:text-surface-100">Require resume/CV</span>
-                <p class="text-xs text-surface-400 dark:text-surface-500">Candidates must upload a resume file.</p>
-              </div>
-            </label>
-            <label class="flex items-center gap-3 cursor-pointer">
-              <input
-                v-model="form.requireCoverLetter"
-                type="checkbox"
-                class="size-4 rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500"
-              />
-              <div>
-                <span class="text-sm font-medium text-surface-900 dark:text-surface-100">Ask for cover letter</span>
-                <p class="text-xs text-surface-400 dark:text-surface-500">Candidates can write a cover letter.</p>
-              </div>
-            </label>
-            <label class="flex items-center gap-3 cursor-pointer">
-              <input
-                v-model="form.autoScoreOnApply"
-                type="checkbox"
-                class="size-4 rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500"
-              />
-              <div>
-                <span class="text-sm font-medium text-surface-900 dark:text-surface-100">Auto-score on apply</span>
-                <p class="text-xs text-surface-400 dark:text-surface-500">Automatically run AI scoring when a candidate applies.</p>
-              </div>
-            </label>
-          </div>
-        </section>
-
-        <!-- ═══════════════════════════════════════ -->
-        <!-- SECTION: Listing Schedule                -->
-        <!-- ═══════════════════════════════════════ -->
-        <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6">
-          <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-1">Listing Schedule</h2>
-          <p class="text-xs text-surface-400 dark:text-surface-500 mb-5">
-            Set when this job posting goes live and when it automatically expires.
-          </p>
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label for="settings-active-from" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                Active From
-              </label>
-              <input
-                id="settings-active-from"
-                v-model="form.activeFrom"
-                type="date"
-                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-              />
-              <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Defaults to today for new jobs.</p>
-            </div>
-            <div>
-              <label for="settings-valid-through" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                Valid Through
-              </label>
-              <div class="flex items-center gap-2">
-                <input
-                  id="settings-valid-through"
-                  v-model="form.validThrough"
-                  type="date"
-                  class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                />
-                <button
-                  v-if="form.validThrough"
-                  type="button"
-                  class="text-xs text-surface-400 hover:text-danger-500 dark:hover:text-danger-400 transition-colors underline shrink-0"
-                  @click="form.validThrough = ''"
-                >
-                  Clear
-                </button>
-              </div>
-              <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Leave blank if there is no fixed expiry date.</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- ═══════════════════════════════════════ -->
-        <!-- SECTION: Application Link                -->
-        <!-- ═══════════════════════════════════════ -->
-        <section v-if="job.status === 'open'" class="rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50/50 dark:bg-brand-950/30 p-6">
-          <div class="flex items-center gap-2 mb-2">
-            <Link2 class="size-4 text-brand-600 dark:text-brand-400" />
-            <h2 class="text-base font-semibold text-brand-700 dark:text-brand-300">Application Link</h2>
-          </div>
-          <p class="text-xs text-surface-600 dark:text-surface-400 mb-3">
-            Share this link with candidates so they can apply to this position.
-          </p>
-          <CopyField
-            :value="applicationUrl"
-            label="application link"
-            title="Copy application link"
-            tone="brand"
-          />
-        </section>
-
-        <!-- ═══════════════════════════════════════ -->
-        <!-- Save button                              -->
-        <!-- ═══════════════════════════════════════ -->
-        <div class="flex items-center justify-between pt-2 pb-8">
+        <div class="flex items-center justify-start pb-2">
           <button
             type="submit"
             :disabled="isSaving"
-            class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="ui-button ui-button-primary h-10 px-5 text-sm"
           >
             <Save class="size-4" />
-            {{ saved ? 'Saved!' : isSaving ? 'Saving…' : 'Save Changes' }}
+            {{ saved ? 'Saved!' : isSaving ? 'Saving...' : 'Save settings' }}
           </button>
         </div>
       </form>
 
-      <!-- ═══════════════════════════════════════ -->
-      <!-- DANGER ZONE                              -->
-      <!-- ═══════════════════════════════════════ -->
       <section class="factory-danger-zone rounded-xl border p-6 mb-12">
-        <h2 class="factory-danger-zone-title text-base font-semibold mb-1">Danger Zone</h2>
-        <p class="factory-danger-zone-copy text-xs mb-4">
+        <h2 class="factory-danger-zone-title mb-1 text-base font-semibold">Danger Zone</h2>
+        <p class="factory-danger-zone-copy mb-4 text-xs">
           Permanently delete this job and all associated applications.
         </p>
 
@@ -594,17 +144,17 @@ function onSalaryMaxChange(e: Event) {
         </div>
 
         <div v-else class="factory-danger-confirm rounded-lg border p-4">
-          <p class="text-sm text-surface-700 dark:text-surface-300 mb-3">
+          <p class="mb-3 text-sm text-surface-700 dark:text-surface-300">
             Are you sure you want to delete <strong>{{ job.title }}</strong>? This will also delete all associated applications. This action cannot be undone.
           </p>
           <div class="flex items-center gap-2">
             <button
               type="button"
               :disabled="isDeleting"
-              class="factory-button-cta inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-danger-600 px-4 py-2 text-sm font-medium text-white hover:bg-danger-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              class="factory-button-cta inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-danger-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-danger-700 disabled:cursor-not-allowed disabled:opacity-50"
               @click="handleDelete"
             >
-              {{ isDeleting ? 'Deleting…' : 'Yes, Delete' }}
+              {{ isDeleting ? 'Deleting...' : 'Yes, Delete' }}
             </button>
             <button
               type="button"

@@ -18,7 +18,7 @@ describe('job auto-score default', () => {
     expect(newJobPage).toContain('const autoScoreOnApply = ref(true)')
     expect(newJobPage).toContain('autoScoreOnApply.value = true')
     expect(settingsPage).toContain('autoScoreOnApply: true')
-    expect(settingsPage).toContain('autoScoreOnApply: j.autoScoreOnApply ?? true')
+    expect(settingsPage).toContain('autoScoreOnApply.value = j.autoScoreOnApply ?? true')
     expect(aiPage).toContain('(j as any).autoScoreOnApply ?? true')
   })
 

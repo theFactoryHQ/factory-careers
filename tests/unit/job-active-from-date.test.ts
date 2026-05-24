@@ -21,16 +21,16 @@ describe('job active-from date', () => {
     expect(patch).toContain('activeFrom: job.activeFrom')
   })
 
-  it('shows active-from in job settings and defaults new jobs to today', () => {
-    const settings = readProjectFile('app/pages/dashboard/jobs/[id]/settings.vue')
+  it('shows active-from in the application form and defaults new jobs to today', () => {
+    const applicationForm = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
     const newJob = readProjectFile('app/pages/dashboard/jobs/new.vue')
     const useJobs = readProjectFile('app/composables/useJobs.ts')
 
-    expect(settings).toContain('Active From')
-    expect(settings).toContain('id="settings-active-from"')
-    expect(settings).toContain('activeFrom: todayDateInputValue()')
-    expect(settings).toContain('activeFrom: j.activeFrom ? toDateInputValue(j.activeFrom) : todayDateInputValue()')
-    expect(settings).toContain('activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue())')
+    expect(applicationForm).toContain('Active From')
+    expect(applicationForm).toContain('id="application-active-from"')
+    expect(applicationForm).toContain('activeFrom: todayDateInputValue()')
+    expect(applicationForm).toContain('activeFrom: j.activeFrom ? toDateInputValue(j.activeFrom) : todayDateInputValue()')
+    expect(applicationForm).toContain('activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue())')
     expect(newJob).toContain('activeFrom: todayDateInputValue()')
     expect(newJob).toContain('activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue())')
     expect(useJobs).toContain('activeFrom?: Date')

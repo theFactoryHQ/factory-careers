@@ -13,6 +13,22 @@ function cssRule(source: string, selector: string) {
 }
 
 describe('application form requirement cards', () => {
+  it('owns the applicant-facing job posting configuration', () => {
+    const applicationPage = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
+    const settingsPage = readProjectFile('app/pages/dashboard/jobs/[id]/settings.vue')
+
+    expect(applicationPage).toContain('Basic Details')
+    expect(applicationPage).toContain('Salary & Compensation')
+    expect(applicationPage).toContain('Listing Schedule')
+    expect(applicationPage).toContain('Application requirements')
+    expect(applicationPage).toContain('Application Link')
+    expect(settingsPage).not.toContain('Basic Details')
+    expect(settingsPage).not.toContain('Salary & Compensation')
+    expect(settingsPage).not.toContain('Listing Schedule')
+    expect(settingsPage).not.toContain('Application Link')
+    expect(settingsPage).not.toContain('Application Options')
+  })
+
   it('uses readable Factory text colors inside selectable requirement panels', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
     const css = readProjectFile('app/assets/css/main.css')
@@ -25,7 +41,10 @@ describe('application form requirement cards', () => {
 
   it('renders the application link with the global click-anywhere copy field', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
-    const linkSection = source.slice(source.indexOf('Application Link'), source.indexOf('Application Requirements'))
+    const linkSection = source.slice(
+      source.indexOf('Shareable application link'),
+      source.indexOf('The application link will be available'),
+    )
 
     expect(linkSection).toContain('<CopyField')
     expect(linkSection).toContain(':value="applicationUrl"')
