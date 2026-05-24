@@ -150,6 +150,8 @@ describe('brand-neutral theme variables', () => {
     expect(css).toMatch(/\.factory-pipeline-status-chip-number\s*\{[\s\S]*min-width:\s*18px;[\s\S]*border:\s*1px solid rgb\(255 255 255 \/ 0\.12\)/)
     expect(css).toMatch(/\.factory-pipeline-status-chip-stage\s*\{[\s\S]*min-width:\s*10px;[\s\S]*font-weight:\s*400/)
     expect(css).toMatch(/\.factory-pipeline-status-chip-active \.factory-pipeline-status-chip-count\s*\{[\s\S]*border-color:/)
+    expect(css).toMatch(/@media \(max-width: 520px\)[\s\S]*\.factory-pipeline-status-chip-count\s*\{[\s\S]*display:\s*none;/)
+    expect(css).toMatch(/@media \(max-width: 520px\)[\s\S]*\.factory-pipeline-status-chip\s*\{[\s\S]*width:\s*48px;/)
   })
 
   it('uses the regular brand color for dashboard pipeline screening segments', () => {

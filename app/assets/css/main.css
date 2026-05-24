@@ -2287,6 +2287,17 @@
     }
   }
 
+  @media (max-width: 520px) {
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-status-chip-count {
+      display: none;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-status-chip {
+      width: 48px;
+      padding-inline: 6px !important;
+    }
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-chip {
     height: 32px !important;
     min-height: 32px !important;
