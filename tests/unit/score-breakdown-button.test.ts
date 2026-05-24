@@ -31,6 +31,16 @@ describe('score breakdown actions', () => {
     expect(source).not.toContain('{{ resolvedScoreData!.latestRun.provider }} · {{ resolvedScoreData!.latestRun.model }}')
   })
 
+  it('formats score run timestamps like application timestamps', () => {
+    const source = readProjectFile('app/components/ScoreBreakdown.vue')
+
+    expect(source).toContain('function formatScoreRunDate')
+    expect(source).toContain('factory-application-timestamp-link ml-auto')
+    expect(source).toContain('<span class="factory-application-timestamp-label">Updated</span>')
+    expect(source).toContain('{{ formatScoreRunDate(resolvedScoreData!.latestRun.createdAt) }}')
+    expect(source).not.toContain('new Date(resolvedScoreData!.latestRun.createdAt).toLocaleString()')
+  })
+
   it('keeps re-score actions inside the score breakdown section', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
 
