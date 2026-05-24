@@ -1,19 +1,41 @@
-import { eq, and, desc, ilike, lte, or, sql } from 'drizzle-orm'
+import { eq, and, desc, ilike, lte, or } from 'drizzle-orm'
 import { job } from '../../../database/schema'
 import { publicJobsQuerySchema } from '../../../utils/schemas/publicApplication'
 
-/**
- * GET /api/public/jobs
- * Lists all open jobs with pagination, search, and type filter.
- * No auth required — this is the public-facing job board endpoint.
- */
-export default defineEventHandler(async (event) => {
-  const query = await getValidatedQuery(event, publicJobsQuerySchema.parse)
+type PublicJobsQuery = Awaited<ReturnType<typeof publicJobsQuerySchema.parseAsync>>
 
-  const offset = (query.page - 1) * query.limit
+type PublicJobRow = {
+  id: string
+  title: string
+  slug: string
+  description: string | null
+  location: string | null
+  type: string
+  salaryMin: number | null
+  salaryMax: number | null
+  salaryCurrency: string | null
+  salaryUnit: string | null
+  remoteStatus: string | null
+  activeFrom?: Date | string | null
+  createdAt: Date | string
+  organization?: { name?: string | null } | null
+}
 
-  // Always filter to open jobs only
-  const conditions = [eq(job.status, 'open'), lte(job.activeFrom, new Date())]
+function isMissingActiveFromColumn(error: unknown) {
+  if (typeof error !== 'object' || error === null) return false
+
+  const queryError = error as { code?: string, message?: string, cause?: { code?: string, message?: string } }
+  const message = `${queryError.message ?? ''} ${queryError.cause?.message ?? ''}`
+
+  return (queryError.code === '42703' || queryError.cause?.code === '42703' || message.includes('Failed query'))
+    && message.includes('active_from')
+}
+
+function buildPublicJobsWhere(query: PublicJobsQuery, includeActiveFrom: boolean) {
+  // Always filter to open jobs only. Older local databases may not have active_from yet.
+  const conditions = [eq(job.status, 'open')]
+
+  if (includeActiveFrom) conditions.push(lte(job.activeFrom, new Date()))
 
   // Optional search — matches title OR location
   if (query.search) {
@@ -40,15 +62,14 @@ export default defineEventHandler(async (event) => {
     conditions.push(ilike(job.location, `%${escapedLoc}%`))
   }
 
-  const where = and(...conditions)
+  return and(...conditions)
+}
 
-  const [data, total] = await Promise.all([
-    db.query.job.findMany({
-      where,
-      limit: query.limit,
-      offset,
-      orderBy: [desc(job.activeFrom)],
-      columns: {
+async function listPublicJobs(query: PublicJobsQuery, offset: number, includeActiveFrom: boolean) {
+  const where = buildPublicJobsWhere(query, includeActiveFrom)
+
+  const columns = includeActiveFrom
+    ? {
         id: true,
         title: true,
         slug: true,
@@ -62,7 +83,29 @@ export default defineEventHandler(async (event) => {
         remoteStatus: true,
         activeFrom: true,
         createdAt: true,
-      },
+      }
+    : {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        location: true,
+        type: true,
+        salaryMin: true,
+        salaryMax: true,
+        salaryCurrency: true,
+        salaryUnit: true,
+        remoteStatus: true,
+        createdAt: true,
+      }
+
+  const [data, total] = await Promise.all([
+    db.query.job.findMany({
+      where,
+      limit: query.limit,
+      offset,
+      orderBy: [includeActiveFrom ? desc(job.activeFrom) : desc(job.createdAt)],
+      columns,
       with: {
         organization: {
           columns: { name: true },
@@ -72,11 +115,36 @@ export default defineEventHandler(async (event) => {
     db.$count(job, where),
   ])
 
-  // Flatten org name into each job object
-  const flatData = data.map(({ organization: org, ...j }) => ({
+  const rows = data as PublicJobRow[]
+
+  // Flatten org name into each job object. Legacy schemas fall back to createdAt for posted dates.
+  const flatData = rows.map(({ organization: org, ...j }) => ({
     ...j,
+    activeFrom: j.activeFrom ?? j.createdAt,
     organizationName: org?.name ?? null,
   }))
 
-  return { data: flatData, total, page: query.page, limit: query.limit }
+  return { data: flatData, total }
+}
+
+/**
+ * GET /api/public/jobs
+ * Lists all open jobs with pagination, search, and type filter.
+ * No auth required — this is the public-facing job board endpoint.
+ */
+export default defineEventHandler(async (event) => {
+  const query = await getValidatedQuery(event, publicJobsQuerySchema.parse)
+
+  const offset = (query.page - 1) * query.limit
+
+  try {
+    const result = await listPublicJobs(query, offset, true)
+    return { ...result, page: query.page, limit: query.limit }
+  }
+  catch (error) {
+    if (!isMissingActiveFromColumn(error)) throw error
+
+    const result = await listPublicJobs(query, offset, false)
+    return { ...result, page: query.page, limit: query.limit }
+  }
 })

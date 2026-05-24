@@ -11,6 +11,8 @@ describe('organization default salary pay period', () => {
     const orgSettingsSchema = readProjectFile('server/utils/schemas/orgSettings.ts')
     const getEndpoint = readProjectFile('server/api/org-settings/index.get.ts')
     const patchEndpoint = readProjectFile('server/api/org-settings/index.patch.ts')
+    const migration = readProjectFile('server/database/migrations/0036_default_salary_unit.sql')
+    const journal = readProjectFile('server/database/migrations/meta/_journal.json')
 
     expect(settingsPage).toContain('Default pay period')
     expect(settingsPage).toContain('defaultSalaryUnit')
@@ -18,6 +20,8 @@ describe('organization default salary pay period', () => {
     expect(orgSettingsSchema).toContain('defaultSalaryUnit: z.enum(SALARY_UNIT_VALUES).optional()')
     expect(getEndpoint).toContain('defaultSalaryUnit: settings?.defaultSalaryUnit ?? \'YEAR\'')
     expect(patchEndpoint).toContain('defaultSalaryUnit: body.defaultSalaryUnit ?? \'YEAR\'')
+    expect(migration).toContain('ADD COLUMN IF NOT EXISTS "default_salary_unit"')
+    expect(journal).toContain('"tag": "0036_default_salary_unit"')
   })
 
   it('makes job pay period inherit the organization default instead of Not specified', () => {

@@ -122,6 +122,16 @@ function formatDate(dateStr: string) {
     year: 'numeric',
   })
 }
+
+function formatType(type?: string | null) {
+  if (!type) return 'Role'
+  return typeLabels[type] ?? type
+}
+
+function formatPostedDate(activeFrom?: string | null, createdAt?: string | null) {
+  const date = activeFrom ?? createdAt
+  return date ? formatDate(date) : 'recently'
+}
 </script>
 
 <template>
@@ -188,38 +198,12 @@ function formatDate(dateStr: string) {
     </div>
 
     <!-- Loading state -->
-    <div v-if="fetchStatus === 'pending'" class="py-16 text-center text-white/42">
+    <div v-if="fetchStatus === 'pending' && jobs.length === 0" class="py-16 text-center text-white/42">
       Loading positions…
     </div>
 
-    <!-- Error state -->
-    <div
-      v-else-if="error"
-      class="border border-danger-500/30 bg-danger-950/55 p-4 text-sm text-danger-100"
-    >
-      Failed to load jobs. Please try again.
-      <button class="ml-1 cursor-pointer text-brand-500 underline" @click="refresh()">Retry</button>
-    </div>
-
-    <!-- Empty state -->
-    <div
-      v-else-if="jobs.length === 0"
-      class="border border-white/10 bg-white/[0.03] p-12 text-center"
-    >
-      <Briefcase class="mx-auto mb-3 size-10 text-brand-500" />
-      <h3 class="mb-1 text-base font-semibold text-white">No open positions</h3>
-      <p class="text-sm text-white/50">
-        <template v-if="searchQuery || typeFilter">
-          No jobs match your current filters. Try adjusting your search.
-        </template>
-        <template v-else>
-          There are no open positions right now. Check back soon!
-        </template>
-      </p>
-    </div>
-
     <!-- Job list -->
-    <div v-else class="space-y-3">
+    <div v-else-if="jobs.length > 0" class="space-y-3">
       <NuxtLink
         v-for="j in jobs"
         :key="j.id"
@@ -237,14 +221,14 @@ function formatDate(dateStr: string) {
             <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/42">
               <span class="inline-flex items-center gap-1">
                 <Briefcase class="size-3.5" />
-                {{ typeLabels[j.type] ?? j.type }}
+                {{ formatType(j.type) }}
               </span>
               <span v-if="j.location" class="inline-flex items-center gap-1">
                 <MapPin class="size-3.5" />
                 {{ j.location }}
               </span>
               <span class="text-white/34">
-                Posted {{ formatDate(j.activeFrom ?? j.createdAt) }}
+                Posted {{ formatPostedDate(j.activeFrom, j.createdAt) }}
               </span>
             </div>
 
@@ -287,6 +271,32 @@ function formatDate(dateStr: string) {
       <!-- Total count -->
       <p class="pt-1 text-xs text-white/34">
         {{ total }} open position{{ total === 1 ? '' : 's' }}
+      </p>
+    </div>
+
+    <!-- Error state -->
+    <div
+      v-else-if="error"
+      class="border border-danger-500/30 bg-danger-950/55 p-4 text-sm text-danger-100"
+    >
+      Failed to load jobs. Please try again.
+      <button class="ml-1 cursor-pointer text-brand-500 underline" @click="refresh()">Retry</button>
+    </div>
+
+    <!-- Empty state -->
+    <div
+      v-else
+      class="border border-white/10 bg-white/[0.03] p-12 text-center"
+    >
+      <Briefcase class="mx-auto mb-3 size-10 text-brand-500" />
+      <h3 class="mb-1 text-base font-semibold text-white">No open positions</h3>
+      <p class="text-sm text-white/50">
+        <template v-if="searchQuery || typeFilter">
+          No jobs match your current filters. Try adjusting your search.
+        </template>
+        <template v-else>
+          There are no open positions right now. Check back soon!
+        </template>
       </p>
     </div>
   </div>
