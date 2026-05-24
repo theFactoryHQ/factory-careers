@@ -277,8 +277,20 @@ async function copyTrackingUrl(code: string) {
         </p>
       </div>
 
-      <!-- Tracking Links for this Job -->
+      <!-- Application Form Questions -->
       <div class="ui-panel p-5 mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <FileText class="size-4 text-surface-500 dark:text-surface-400" />
+          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300">Custom Questions</h2>
+        </div>
+        <p class="text-xs text-surface-400 dark:text-surface-500 mb-4">
+          Customize the questions applicants must answer when applying. All applications include name, email, and phone by default.
+        </p>
+        <JobQuestions :job-id="jobId" />
+      </div>
+
+      <!-- Tracking Links for this Job -->
+      <div class="ui-panel p-5">
         <div class="flex items-center justify-between mb-1">
           <div class="flex items-center gap-2">
             <Radio class="size-4 text-surface-500 dark:text-surface-400" />
@@ -376,18 +388,6 @@ async function copyTrackingUrl(code: string) {
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Application Form Questions -->
-      <div class="ui-panel p-5">
-        <div class="flex items-center gap-2 mb-3">
-          <FileText class="size-4 text-surface-500 dark:text-surface-400" />
-          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300">Custom Questions</h2>
-        </div>
-        <p class="text-xs text-surface-400 dark:text-surface-500 mb-4">
-          Customize the questions applicants must answer when applying. All applications include name, email, and phone by default.
-        </p>
-        <JobQuestions :job-id="jobId" />
       </div>
     </template>
 
