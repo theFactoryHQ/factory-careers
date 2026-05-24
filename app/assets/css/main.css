@@ -412,8 +412,8 @@
   }
 
   .ui-button-danger-outline:hover:not(:disabled) {
-    background-color: var(--color-danger-50);
-    color: var(--color-danger-700);
+    background-color: var(--color-danger-600);
+    color: #ffffff;
   }
 
   .dark .ui-button-danger-outline {
@@ -423,7 +423,8 @@
   }
 
   .dark .ui-button-danger-outline:hover:not(:disabled) {
-    background-color: color-mix(in srgb, var(--color-danger-950) 40%, transparent);
+    background-color: var(--color-danger-600);
+    color: #ffffff;
   }
 
   .ui-button-success {
@@ -1359,9 +1360,9 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-danger-outline:hover:not(:disabled) {
-    border-color: rgb(253 164 175) !important;
-    background-color: rgb(253 164 175) !important;
-    color: #080808 !important;
+    border-color: var(--color-danger-600) !important;
+    background-color: var(--color-danger-600) !important;
+    color: #ffffff !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-field {
