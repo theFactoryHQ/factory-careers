@@ -155,7 +155,8 @@ onUnmounted(() => {
               Open full page
             </NuxtLink>
             <button
-              class="factory-toolbar-button p-1.5 text-white/58 hover:text-white transition-colors"
+              class="ui-panel-close-button p-1.5 transition-colors"
+              aria-label="Close candidate detail"
               @click="emit('close')"
             >
               <X class="size-4" />
@@ -340,7 +341,7 @@ onUnmounted(() => {
                       Schedule
                     </button>
                     <span
-                      class="inline-flex shrink-0 items-center border px-2 py-0.5 text-[10px] font-semibold uppercase"
+                      class="inline-flex h-8 min-h-8 shrink-0 items-center border px-2.5 py-0 text-[10px] font-semibold uppercase"
                       :class="getApplicationStatusBadgeClass(app.status, 'factory')"
                     >
                       {{ app.status }}

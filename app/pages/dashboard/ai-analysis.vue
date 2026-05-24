@@ -15,7 +15,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'AI Analysis — Factory Careers',
+  title: 'AI — Factory Careers',
   robots: 'noindex, nofollow',
 })
 
@@ -164,7 +164,7 @@ function formatDateTime(dateStr: string | Date): string {
       <!-- ─── Header ─── -->
       <div class="flex items-center justify-between mb-10">
         <div>
-          <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50 tracking-tight">AI Analysis</h1>
+          <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50 tracking-tight">AI</h1>
           <p class="text-sm text-surface-400 dark:text-surface-500 mt-1">Overview of AI scoring runs and token usage</p>
         </div>
       </div>

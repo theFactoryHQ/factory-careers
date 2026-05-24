@@ -111,7 +111,7 @@ onUnmounted(() => {
           </div>
           <button
             type="button"
-            class="ui-button ui-button-ghost shrink-0 p-1.5"
+            class="ui-button ui-button-ghost ui-panel-close-button shrink-0 p-1.5"
             aria-label="Close"
             @click="close"
           >
@@ -150,7 +150,7 @@ onUnmounted(() => {
             </button>
             <button
               type="button"
-              class="ui-button ui-button-ghost p-1.5"
+              class="ui-button ui-button-ghost ui-panel-close-button p-1.5"
               aria-label="Cancel"
               @click="showSaveForm = false; newName = ''"
             >

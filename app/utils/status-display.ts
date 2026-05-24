@@ -138,6 +138,7 @@ const APPLICATION_TRANSITION_DOT_CLASSES: Record<ApplicationStatusKey, string> =
 
 const INTERVIEW_STATUS_KEYS = [
   'scheduled',
+  'scheduled_past',
   'completed',
   'cancelled',
   'no_show',
@@ -147,6 +148,7 @@ type InterviewStatusKey = typeof INTERVIEW_STATUS_KEYS[number]
 
 const INTERVIEW_STATUS_LABELS: Record<InterviewStatusKey, string> = {
   scheduled: 'Scheduled',
+  scheduled_past: 'Past Due',
   completed: 'Completed',
   cancelled: 'Cancelled',
   no_show: 'No Show',
@@ -154,6 +156,7 @@ const INTERVIEW_STATUS_LABELS: Record<InterviewStatusKey, string> = {
 
 const INTERVIEW_TRANSITION_LABELS: Record<InterviewStatusKey, string> = {
   scheduled: 'Re-schedule',
+  scheduled_past: 'Past Due',
   completed: 'Completed',
   cancelled: 'Cancel',
   no_show: 'No Show',
@@ -162,6 +165,7 @@ const INTERVIEW_TRANSITION_LABELS: Record<InterviewStatusKey, string> = {
 const INTERVIEW_STATUS_BADGE_CLASSES: Record<InterviewStatusBadgeVariant, Record<InterviewStatusKey, string>> = {
   ring: {
     scheduled: 'bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-950/50 dark:text-brand-300 dark:ring-brand-800',
+    scheduled_past: 'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950/50 dark:text-warning-300 dark:ring-warning-800',
     completed: 'bg-success-50 text-success-700 ring-success-200 dark:bg-success-950/50 dark:text-success-300 dark:ring-success-800',
     cancelled: 'bg-surface-100 text-surface-500 ring-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:ring-surface-700',
     no_show: 'bg-danger-50 text-danger-700 ring-danger-200 dark:bg-danger-950/50 dark:text-danger-300 dark:ring-danger-800',
@@ -174,6 +178,7 @@ const INTERVIEW_STATUS_BADGE_FALLBACKS: Record<InterviewStatusBadgeVariant, stri
 
 const INTERVIEW_STATUS_DOT_CLASSES: Record<InterviewStatusKey, string> = {
   scheduled: 'ui-status-dot-brand',
+  scheduled_past: 'ui-status-dot-warning',
   completed: 'ui-status-dot-success',
   cancelled: 'ui-status-dot',
   no_show: 'ui-status-dot-danger',
@@ -182,6 +187,7 @@ const INTERVIEW_STATUS_DOT_CLASSES: Record<InterviewStatusKey, string> = {
 const INTERVIEW_TRANSITION_BUTTON_CLASSES: Record<InterviewTransitionButtonVariant, Record<InterviewStatusKey, string>> = {
   solid: {
     scheduled: 'ui-button-secondary',
+    scheduled_past: 'ui-button-secondary',
     completed: 'ui-button-success',
     cancelled: 'ui-button-secondary',
     no_show: 'ui-button-danger',

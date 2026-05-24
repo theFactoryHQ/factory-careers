@@ -43,6 +43,9 @@ describe('brand-neutral theme variables', () => {
       '.ui-button-danger-outline',
       '.ui-button-success',
       '.ui-field',
+      '.ui-filter-chip',
+      '.ui-filter-chip-active',
+      '.ui-filter-chip-inactive',
       '.ui-icon-state',
       '.ui-icon-state-danger',
       '.ui-icon-state-success',
@@ -76,7 +79,10 @@ describe('brand-neutral theme variables', () => {
       '.ui-icon-tile',
       '.ui-pill-success',
       '.ui-status-dot',
+      '.ui-status-dot-brand',
       '.ui-status-dot-success',
+      '.ui-status-dot-warning',
+      '.ui-status-dot-danger',
       '.ui-code',
       '.ui-inline-link',
       '.ui-inline-link-brand',
@@ -96,6 +102,55 @@ describe('brand-neutral theme variables', () => {
     expect(css).toContain('var(--color-success-')
     expect(css).toContain('var(--color-brand-')
     expect(css).not.toMatch(/\.factory-(panel|alert|field|icon-state)\b/)
+  })
+
+  it('keeps filter chips as bordered controls aligned with toolbar fields', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+
+    expect(css).toMatch(/\.ui-filter-chip\s*\{[\s\S]*min-height:\s*2\.375rem;[\s\S]*border:\s*1px solid/)
+    expect(css).toMatch(/\.factory-dashboard-shell,[\s\S]*\.factory-dashboard-portal\)[\s\S]*\.ui-filter-chip\s*\{[\s\S]*min-height:\s*38px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important/)
+    expect(css).toMatch(/\.factory-job-subnav-tab\s*\{[\s\S]*min-height:\s*32px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important/)
+    expect(css).toMatch(/\.factory-job-status-action\s*\{[\s\S]*height:\s*28px;[\s\S]*font-weight:\s*400 !important/)
+  })
+
+  it('explains job status actions with tooltips', () => {
+    const actions = readProjectFile('app/components/JobSubNavActions.vue')
+
+    expect(actions).toContain('factory-job-status-action')
+    expect(actions).toContain('Publish this job so candidates can apply.')
+    expect(actions).toContain(':title="jobTransitionTooltips[primaryJobTransition]')
+    expect(actions).toContain(':aria-label="jobTransitionTooltips[primaryJobTransition]')
+  })
+
+  it('uses the shared filter chip recipe for job pipeline stage tabs', () => {
+    const jobDetail = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+    const css = readProjectFile('app/assets/css/main.css')
+
+    expect(jobDetail).toContain('ui-filter-chip factory-pipeline-status-chip')
+    expect(jobDetail).toContain('ui-filter-chip-active factory-pipeline-status-chip-active')
+    expect(jobDetail).toContain('ui-filter-chip-inactive')
+    expect(jobDetail).toContain('factory-pipeline-status-chip relative flex h-8 shrink-0 cursor-pointer items-center gap-2 px-3.5 text-xs')
+    expect(jobDetail).toContain('tabular-nums text-xs font-normal')
+    expect(jobDetail).toContain('style="font-weight: 300 !important"')
+    expect(css).toMatch(/\.factory-pipeline-status-chip\s*\{[\s\S]*height:\s*32px !important;[\s\S]*min-height:\s*32px !important;[\s\S]*font-weight:\s*300 !important/)
+  })
+
+  it('uses the regular brand color for dashboard pipeline screening segments', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+    const screeningSegment = css.match(/\.factory-pipeline-segment-screening\s*\{[^}]+\}/)?.[0] ?? ''
+
+    expect(screeningSegment).toContain('background-color: var(--color-brand-500) !important')
+    expect(screeningSegment).not.toContain('color-mix')
+  })
+
+  it('uses an in-app focus mode for the job pipeline instead of native fullscreen', () => {
+    const jobDetail = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+
+    expect(jobDetail).toContain('fixed inset-0 z-50 flex h-screen')
+    expect(jobDetail).toContain("event.key === 'Escape' && isFullscreen.value")
+    expect(jobDetail).not.toContain('requestFullscreen')
+    expect(jobDetail).not.toContain('exitFullscreen')
+    expect(jobDetail).not.toContain('fullscreenchange')
   })
 
   it('adapts shared UI recipes inside the Factory dashboard shell', () => {
@@ -445,7 +500,7 @@ describe('brand-neutral theme variables', () => {
     const recipeUsage = [
       {
         path: 'app/pages/dashboard/settings/index.vue',
-        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-field', 'ui-alert-danger', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-field', 'ui-alert-danger', 'ui-button-primary', 'ui-button-danger', 'ui-button-danger-outline', 'ui-button-secondary'],
       },
       {
         path: 'app/pages/dashboard/settings/account.vue',

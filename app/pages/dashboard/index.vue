@@ -22,7 +22,7 @@ const localePath = useLocalePath()
 const { track } = useTrack()
 const { formatPersonName } = useOrgSettings()
 
-onMounted(() => track('dashboard_viewed'))
+let dashboardNowTimer: ReturnType<typeof setInterval> | undefined
 
 // ─────────────────────────────────────────────
 // Fetch dashboard stats
@@ -42,17 +42,38 @@ const {
 // Upcoming interviews (next 7 days)
 // ─────────────────────────────────────────────
 
-const now = new Date()
-// Truncate to start-of-day so the useFetch key is identical on server & client
-// (prevents SSR/hydration mismatch from sub-second timestamp drift)
-const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-const weekFromToday = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+const dashboardNowIso = useState('dashboard-upcoming-interviews-now', () => new Date().toISOString())
+const dashboardInterviewQueryFromIso = useState('dashboard-upcoming-interviews-query-from', () => new Date().toISOString())
+const dashboardNow = computed(() => new Date(dashboardNowIso.value))
+const dashboardInterviewQueryToIso = computed(() =>
+  new Date(new Date(dashboardInterviewQueryFromIso.value).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+)
 
 const { interviews: upcomingInterviews } = useInterviews({
   status: 'scheduled',
-  from: today.toISOString(),
-  to: weekFromToday.toISOString(),
+  from: dashboardInterviewQueryFromIso,
+  to: dashboardInterviewQueryToIso,
   limit: 5,
+})
+
+const upcomingInterviewsForCard = computed(() =>
+  upcomingInterviews.value.filter((interview) =>
+    new Date(interview.scheduledAt).getTime() >= dashboardNow.value.getTime(),
+  ),
+)
+
+onMounted(() => {
+  track('dashboard_viewed')
+  const mountedAtIso = new Date().toISOString()
+  dashboardNowIso.value = mountedAtIso
+  dashboardInterviewQueryFromIso.value = mountedAtIso
+  dashboardNowTimer = setInterval(() => {
+    dashboardNowIso.value = new Date().toISOString()
+  }, 60_000)
+})
+
+onUnmounted(() => {
+  if (dashboardNowTimer) clearInterval(dashboardNowTimer)
 })
 
 // ─────────────────────────────────────────────
@@ -101,12 +122,12 @@ const interviewTypeLabels: Record<string, string> = {
 
 function formatRelativeDate(dateStr: string) {
   const date = new Date(dateStr)
-  const diffMs = date.getTime() - now.getTime()
+  const diffMs = date.getTime() - dashboardNow.value.getTime()
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
 
+  if (diffMs <= 0) return 'Now'
   if (diffDays === 0) {
-    if (diffHours <= 0) return 'Now'
     return `In ${diffHours}h`
   }
   if (diffDays === 1) return 'Tomorrow'
@@ -120,7 +141,7 @@ function formatTime(dateStr: string) {
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr)
-  const diffMs = now.getTime() - date.getTime()
+  const diffMs = dashboardNow.value.getTime() - date.getTime()
   const diffMins = Math.floor(diffMs / 60000)
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
@@ -487,7 +508,7 @@ const isEmpty = computed(() =>
               </NuxtLink>
             </div>
 
-            <div v-if="upcomingInterviews.length === 0" class="px-5 py-10 text-center">
+            <div v-if="upcomingInterviewsForCard.length === 0" class="px-5 py-10 text-center">
               <div class="mx-auto mb-4 flex items-center justify-center size-12 rounded-2xl bg-surface-100 dark:bg-surface-800">
                 <Calendar class="size-5 text-surface-400 dark:text-surface-500" />
               </div>
@@ -497,7 +518,7 @@ const isEmpty = computed(() =>
 
             <div v-else class="divide-y divide-surface-100 dark:divide-surface-800">
               <NuxtLink
-                v-for="interview in upcomingInterviews"
+                v-for="interview in upcomingInterviewsForCard"
                 :key="interview.id"
                 :to="localePath(`/dashboard/interviews/${interview.id}`)"
                 class="block px-5 py-3.5 hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors no-underline group"

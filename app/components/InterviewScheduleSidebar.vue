@@ -458,7 +458,8 @@ async function handleMoveToInterview() {
                 </p>
               </div>
               <button
-                class="flex items-center justify-center rounded-lg p-2 -mr-1.5 -mt-0.5 text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:text-surface-500 dark:hover:text-surface-300 dark:hover:bg-surface-800 transition-colors cursor-pointer"
+                class="ui-panel-close-button flex items-center justify-center rounded-lg p-2 -mr-1.5 -mt-0.5 transition-colors cursor-pointer"
+                aria-label="Close interview scheduler"
                 @click="showSuccess ? emit('scheduled', createdInterview ?? undefined) : emit('close')"
               >
                 <X class="size-4" />

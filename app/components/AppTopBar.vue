@@ -104,6 +104,7 @@ const { data: feedbackConfig } = useFetch('/api/feedback/config', {
 const isFeedbackEnabled = computed(() => feedbackConfig.value?.enabled === true)
 
 const showChatbot = useFeatureFlagEnabled('chatbot-experience')
+const showFactoryMoreActions = false
 
 const jobTabs = computed(() => {
   if (!activeJobId.value) return []
@@ -112,7 +113,7 @@ const jobTabs = computed(() => {
     { label: 'Pipeline', to: base, icon: Kanban, exact: true },
     { label: 'Table', to: `${base}/candidates`, icon: Table2, exact: true },
     { label: 'Application Form', to: `${base}/application-form`, icon: FileText, exact: true },
-    { label: 'AI Analysis', to: `${base}/ai-analysis`, icon: Sparkles, exact: true },
+    { label: 'AI', to: `${base}/ai-analysis`, icon: Sparkles, exact: true },
     { label: 'Settings', to: `${base}/settings`, icon: Settings, exact: true },
   ]
 })
@@ -128,8 +129,8 @@ const mainNav: Array<{ label: string; to: string; icon: typeof Briefcase; exact:
   { label: 'Applications', to: '/dashboard/applications', icon: FileText, exact: false },
   { label: 'Interviews', to: '/dashboard/interviews', icon: Calendar, exact: false },
   { label: 'Timeline', to: '/dashboard/timeline', icon: History, exact: true },
-  { label: 'Source Tracking', to: '/dashboard/source-tracking', icon: Radio, exact: true },
-  { label: 'AI Analysis', to: '/dashboard/ai-analysis', icon: Sparkles, exact: true },
+  { label: 'Tracking', to: '/dashboard/source-tracking', icon: Radio, exact: true },
+  { label: 'AI', to: '/dashboard/ai-analysis', icon: Sparkles, exact: true },
   { label: 'Settings', to: '/dashboard/settings', icon: Settings, exact: false },
 ]
 
@@ -138,7 +139,7 @@ const mainNav: Array<{ label: string; to: string; icon: typeof Briefcase; exact:
 const flaggedNav = computed(() => {
   const items: Array<{ label: string; to: string; icon: typeof Briefcase; exact: boolean; afterLabel: string }> = []
   if (showChatbot.value) {
-    items.push({ label: 'Assistant', to: '/dashboard/chatbot', icon: MessageCircle, exact: false, afterLabel: 'AI Analysis' })
+    items.push({ label: 'Assistant', to: '/dashboard/chatbot', icon: MessageCircle, exact: false, afterLabel: 'AI' })
   }
   return items
 })
@@ -231,7 +232,7 @@ onUnmounted(() => {
           </NuxtLink>
 
           <!-- Desktop nav links -->
-          <nav class="hidden md:flex items-center gap-0.5">
+          <nav class="hidden md:flex min-w-0 items-center gap-0.5 overflow-visible">
             <NuxtLink
               v-for="item in primaryNavItems"
               :key="item.to"
@@ -243,8 +244,8 @@ onUnmounted(() => {
                 : 'border-transparent text-white/58 hover:text-white'"
             >
               <component :is="item.icon" class="size-4" />
-              <span class="hidden xl:inline">{{ item.label }}</span>
-              <span class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 translate-y-1 whitespace-nowrap border border-white/12 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white opacity-0 shadow-xl shadow-black/40 transition-all duration-150 xl:hidden group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
+              <span class="hidden min-[1500px]:inline">{{ item.label }}</span>
+              <span class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 translate-y-1 whitespace-nowrap border border-white/12 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white opacity-0 shadow-xl shadow-black/40 transition-all duration-150 min-[1500px]:hidden group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
                 {{ item.label }}
               </span>
             </NuxtLink>
@@ -260,8 +261,8 @@ onUnmounted(() => {
                 : 'border-transparent text-white/58 hover:text-white'"
             >
               <component :is="item.icon" class="size-4" />
-              <span class="hidden 2xl:inline">{{ item.label }}</span>
-              <span class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 translate-y-1 whitespace-nowrap border border-white/12 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white opacity-0 shadow-xl shadow-black/40 transition-all duration-150 2xl:hidden group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
+              <span class="hidden min-[1800px]:inline">{{ item.label }}</span>
+              <span class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 translate-y-1 whitespace-nowrap border border-white/12 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white opacity-0 shadow-xl shadow-black/40 transition-all duration-150 min-[1800px]:hidden group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
                 {{ item.label }}
               </span>
             </NuxtLink>
@@ -320,7 +321,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Right: Actions -->
-        <div class="flex items-center gap-1 lg:gap-1.5">
+        <div class="flex shrink-0 items-center gap-1 pl-2 lg:gap-1.5 lg:pl-3 xl:pl-4">
           <!-- Get Started CTA (demo mode only) -->
           <div v-if="isDemo" ref="getStartedMenuRoot" class="relative hidden sm:block">
             <button
@@ -384,7 +385,7 @@ onUnmounted(() => {
 
           <!-- New Job button (desktop) -->
           <button
-            class="factory-button-cta factory-button-premium hidden h-9 items-center gap-1.5 px-3.5 text-[13px] sm:inline-flex"
+            class="factory-button-cta factory-button-premium mx-1 hidden h-9 items-center gap-1.5 px-3.5 text-[13px] sm:inline-flex"
             @click="handleNewJobClick"
           >
             <Plus class="size-3.5" />
@@ -393,6 +394,7 @@ onUnmounted(() => {
 
           <!-- More actions dropdown -->
           <div
+            v-if="showFactoryMoreActions"
             ref="moreActionsMenuRoot"
             class="relative hidden sm:block"
             @mouseenter="showMoreActions = true"
@@ -492,7 +494,7 @@ onUnmounted(() => {
                 <div class="border-b border-white/10 p-2 space-y-2">
                   <div class="space-y-1.5">
                     <p class="px-1 text-[10px] font-semibold uppercase tracking-wide text-white/38">Organization</p>
-                    <OrgSwitcher />
+                    <OrgSwitcher inline-panel />
                   </div>
                   <div v-if="languageFeatureEnabled" class="space-y-1.5">
                     <p class="px-1 text-[10px] font-semibold uppercase tracking-wide text-white/38">Language</p>
@@ -560,10 +562,11 @@ onUnmounted(() => {
         <div class="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 lg:px-6 h-10 overflow-x-auto scrollbar-none">
           <NuxtLink
             :to="$localePath('/dashboard/jobs')"
-            class="hidden sm:flex items-center gap-1 text-xs font-medium text-white/45 hover:text-white transition-colors no-underline shrink-0"
+            class="hidden sm:flex size-8 items-center justify-center text-white/45 hover:text-white transition-colors no-underline shrink-0"
+            aria-label="All jobs"
+            title="All jobs"
           >
             <ChevronLeft class="size-3.5" />
-            All Jobs
           </NuxtLink>
 
           <div class="hidden sm:block w-px h-4 bg-white/10 shrink-0" />
@@ -587,10 +590,10 @@ onUnmounted(() => {
               v-for="tab in jobTabs"
               :key="tab.to"
               :to="$localePath(tab.to)"
-              class="factory-button-cta factory-button-cta-sm flex items-center gap-1.5 border px-2.5 py-1 text-xs transition-all duration-200 no-underline whitespace-nowrap shrink-0"
+              class="factory-button-cta factory-button-cta-sm factory-job-subnav-tab flex items-center gap-1.5 border px-2.5 py-1 text-xs transition-all duration-200 no-underline whitespace-nowrap shrink-0"
               :class="isActiveRoute(tab.to, tab.exact)
-                ? 'border-brand-500/50 bg-brand-500/12 text-white'
-                : 'border-transparent text-white/50 hover:bg-white/[0.04] hover:text-white'"
+                ? 'factory-job-subnav-tab-active border-brand-500/50 bg-brand-500/12 text-white'
+                : 'factory-job-subnav-tab-inactive text-white/50 hover:bg-white/[0.04] hover:text-white'"
             >
               <component :is="tab.icon" class="size-3.5" />
               <span class="hidden sm:inline">{{ tab.label }}</span>

@@ -916,27 +916,9 @@ const pipelineContainer = useTemplateRef<HTMLElement>('pipelineContainer')
 const teleportTarget = computed(() => isFullscreen.value && pipelineContainer.value ? pipelineContainer.value : 'body')
 
 async function toggleFullscreen() {
-  if (!isFullscreen.value) {
-    isFullscreen.value = true
-    await nextTick()
-    pipelineContainer.value?.requestFullscreen?.()
-  }
-  else {
-    isFullscreen.value = false
-    if (document.fullscreenElement) {
-      document.exitFullscreen?.()
-    }
-  }
+  isFullscreen.value = !isFullscreen.value
+  await nextTick()
 }
-
-function onFullscreenChange() {
-  if (!document.fullscreenElement) {
-    isFullscreen.value = false
-  }
-}
-
-onMounted(() => document.addEventListener('fullscreenchange', onFullscreenChange))
-onBeforeUnmount(() => document.removeEventListener('fullscreenchange', onFullscreenChange))
 
 function goToPreviousStage() {
   const idx = PIPELINE_STATUSES.indexOf(focusStatus.value)
@@ -955,6 +937,11 @@ function goToNextStage() {
 function handleKeyNavigation(event: KeyboardEvent) {
   if (event.key === 'Escape' && showDocPreview.value) {
     closeDocPreview()
+    return
+  }
+
+  if (event.key === 'Escape' && isFullscreen.value) {
+    isFullscreen.value = false
     return
   }
 
@@ -1089,7 +1076,7 @@ function closeDocPreview() {
   <div
     ref="pipelineContainer"
     :class="isFullscreen
-      ? 'flex h-screen flex-col overflow-hidden bg-surface-50 dark:bg-surface-950'
+      ? 'fixed inset-0 z-50 flex h-screen flex-col overflow-hidden bg-surface-50 dark:bg-surface-950 factory-dashboard-portal'
       : 'absolute inset-0 flex flex-col overflow-hidden'"
   >
     <!-- Loading -->
@@ -1111,36 +1098,23 @@ function closeDocPreview() {
       <!-- Quick actions teleported to sub-nav bar -->
       <JobSubNavActions :job-id="jobId" />
 
-      <!-- Keyboard shortcut hints in sub-nav bar (pipeline-specific) -->
-      <Teleport to="#job-sub-nav-actions">
-        <div class="hidden sm:flex items-center gap-2 text-[10px] font-medium text-surface-400 dark:text-surface-500">
-          <div class="flex items-center gap-1 rounded-md bg-surface-100/80 px-2 py-0.5 dark:bg-surface-800/60">
-            <span class="font-mono text-[10px]">↑↓</span>
-            <span>candidates</span>
-          </div>
-          <div class="flex items-center gap-1 rounded-md bg-surface-100/80 px-2 py-0.5 dark:bg-surface-800/60">
-            <span class="font-mono text-[10px]">←→</span>
-            <span>stages</span>
-          </div>
-          <div class="flex items-center gap-1 rounded-md bg-surface-100/80 px-2 py-0.5 dark:bg-surface-800/60">
-            <span class="font-mono text-[10px]">1-9</span>
-            <span>actions</span>
-          </div>
-        </div>
-      </Teleport>
-
       <!-- ═══════════════════════════════════════ -->
       <!-- PIPELINE STATUS TABS                     -->
       <!-- ═══════════════════════════════════════ -->
-      <div class="shrink-0 border-b border-white/10 bg-white/[0.02] ui-dashboard-panel-header">
-        <div class="factory-dashboard-tabs flex items-center gap-1 overflow-x-auto scrollbar-thin sm:scrollbar-none px-3 sm:px-5 py-2">
+      <div class="factory-pipeline-stage-strip shrink-0 border-b border-white/10 bg-white/[0.02]">
+        <div class="factory-dashboard-tabs flex items-center gap-1.5 overflow-x-auto scrollbar-thin sm:scrollbar-none px-3 sm:px-5 py-1">
+          <span class="shrink-0 pr-2 text-xs font-light uppercase leading-none text-white/48">
+            Pipeline stages
+          </span>
           <button
             v-for="status in PIPELINE_STATUSES"
             :key="`tab-${status}`"
-            class="relative flex shrink-0 cursor-pointer items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 focus:outline-none"
-            :class="isFocusStatus(status)
-              ? 'bg-brand-50 text-brand-700 shadow-sm ring-1 ring-brand-200/60 dark:bg-brand-950/40 dark:text-brand-300 dark:ring-brand-800/40'
-              : 'text-surface-500 hover:bg-surface-50 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-surface-800/60 dark:hover:text-surface-200'"
+            class="ui-filter-chip factory-pipeline-status-chip relative flex h-8 shrink-0 cursor-pointer items-center gap-2 px-3.5 text-xs !font-light uppercase leading-none tracking-normal transition-all duration-200 focus:outline-none"
+            :class="[
+              isFocusStatus(status) ? 'ui-filter-chip-active factory-pipeline-status-chip-active' : 'ui-filter-chip-inactive',
+              `factory-pipeline-status-chip-${status}`,
+            ]"
+            style="font-weight: 300 !important"
             @click="setFocusStatus(status)"
           >
             <span class="pipeline-status-dot size-2 rounded-full" :class="{
@@ -1153,10 +1127,10 @@ function closeDocPreview() {
             }" />
             {{ formatStatusLabel(status) }}
             <span
-              class="inline-flex min-w-[20px] items-center justify-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums transition-colors duration-200"
+              class="tabular-nums text-xs font-normal transition-colors duration-200"
               :class="isFocusStatus(status)
-                ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/50 dark:text-brand-300'
-                : 'bg-surface-100 text-surface-500 dark:bg-surface-800/80 dark:text-surface-400'"
+                ? 'text-brand-600 dark:text-brand-400'
+                : 'text-surface-400 dark:text-surface-500'"
             >
               {{ statusCounts[status] ?? 0 }}
             </span>
@@ -1164,8 +1138,10 @@ function closeDocPreview() {
 
           <!-- Fullscreen toggle -->
           <button
-            class="ml-auto flex shrink-0 cursor-pointer items-center justify-center rounded-lg p-2 text-surface-400 hover:bg-surface-100 hover:text-surface-600 dark:text-surface-500 dark:hover:bg-surface-800 dark:hover:text-surface-300 transition-all duration-200 focus:outline-none"
-            :title="isFullscreen ? 'Exit focus mode (Esc)' : 'Focus mode'"
+            type="button"
+            class="factory-toolbar-button ml-auto inline-flex h-8 min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2 py-0 text-sm font-medium transition-colors"
+            :title="isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'"
+            :aria-label="isFullscreen ? 'Exit fullscreen' : 'Fullscreen pipeline'"
             @click="toggleFullscreen"
           >
             <Minimize2 v-if="isFullscreen" class="size-4" />
@@ -1281,10 +1257,10 @@ function closeDocPreview() {
                     <button
                       v-for="opt in scoreFilterOptions"
                       :key="opt.value"
-                      class="cursor-pointer rounded-md px-2 py-1 text-[11px] font-medium transition-all duration-150"
+                      class="ui-filter-chip relative flex h-8 shrink-0 cursor-pointer items-center px-2.5 text-xs !font-light uppercase leading-none tracking-normal transition-all duration-200 focus:outline-none"
                       :class="scoreFilter === opt.value
-                        ? 'bg-brand-600 text-white shadow-sm dark:bg-brand-500'
-                        : 'bg-white text-surface-600 ring-1 ring-inset ring-surface-200 hover:bg-surface-50 dark:bg-surface-800 dark:text-surface-300 dark:ring-surface-700 dark:hover:bg-surface-700'"
+                        ? 'ui-filter-chip-active'
+                        : 'ui-filter-chip-inactive'"
                       @click="scoreFilter = opt.value"
                     >
                       {{ opt.label }}
@@ -1299,10 +1275,10 @@ function closeDocPreview() {
                     <button
                       v-for="opt in interviewFilterOptions"
                       :key="opt.value"
-                      class="cursor-pointer rounded-md px-2 py-1 text-[11px] font-medium transition-all duration-150"
+                      class="ui-filter-chip relative flex h-8 shrink-0 cursor-pointer items-center px-2.5 text-xs !font-light uppercase leading-none tracking-normal transition-all duration-200 focus:outline-none"
                       :class="interviewFilter === opt.value
-                        ? 'bg-brand-600 text-white shadow-sm dark:bg-brand-500'
-                        : 'bg-white text-surface-600 ring-1 ring-inset ring-surface-200 hover:bg-surface-50 dark:bg-surface-800 dark:text-surface-300 dark:ring-surface-700 dark:hover:bg-surface-700'"
+                        ? 'ui-filter-chip-active'
+                        : 'ui-filter-chip-inactive'"
                       @click="interviewFilter = opt.value"
                     >
                       {{ opt.label }}
@@ -1493,10 +1469,7 @@ function closeDocPreview() {
                       </span>
                       <button
                         :disabled="isScoringIndividual"
-                        class="inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-                        :class="currentSummary.score != null
-                          ? 'text-surface-500 hover:text-brand-600 hover:bg-brand-50 dark:text-surface-400 dark:hover:text-brand-400 dark:hover:bg-brand-950/40'
-                          : 'text-brand-600 bg-brand-50 hover:bg-brand-100 dark:text-brand-400 dark:bg-brand-950/40 dark:hover:bg-brand-950/60 ring-1 ring-brand-200 dark:ring-brand-800'"
+                        class="factory-button-cta factory-button-premium inline-flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1.5 px-2.5 py-0 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         @click="scoreIndividualCandidate(currentSummary.id)"
                       >
                         <Loader2 v-if="isScoringIndividual" class="size-3 animate-spin" />
@@ -1586,7 +1559,7 @@ function closeDocPreview() {
                       <span class="block px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500">Sections</span>
                       <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
                         <input v-model="overviewSections.aiAnalysis" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
-                        AI Analysis
+                        AI
                       </label>
                       <label class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/80 cursor-pointer select-none transition-colors">
                         <input v-model="overviewSections.interviews" type="checkbox" class="size-3.5 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600 dark:bg-surface-800" />
@@ -1614,7 +1587,7 @@ function closeDocPreview() {
                     : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
                   @click="detailTab = 'ai-analysis'"
                 >
-                  AI Analysis
+                  AI
                 </button>
                 <button
                   class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
@@ -1699,15 +1672,26 @@ function closeDocPreview() {
               <div v-if="showSection.profile" ref="overviewRef" class="space-y-5 max-w-4xl mx-auto">
                 <!-- Notes -->
                 <div class="ui-panel ui-dashboard-panel p-5">
-                  <div class="flex items-center gap-2.5 mb-4">
-                    <div class="flex size-7 items-center justify-center rounded-lg bg-warning-50 dark:bg-warning-950/40">
-                      <MessageSquare class="size-3.5 text-warning-600 dark:text-warning-400" />
+                  <div class="mb-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <MessageSquare class="size-4 text-surface-500 dark:text-surface-400" />
+                      <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Notes</h3>
                     </div>
-                    <h3 class="text-sm font-semibold text-surface-800 dark:text-surface-200">Notes</h3>
                   </div>
-                  <p class="text-sm leading-relaxed text-surface-600 dark:text-surface-300 whitespace-pre-wrap">
-                    {{ currentSummary.notes || 'No notes yet.' }}
+                  <p
+                    v-if="currentSummary.notes"
+                    class="text-sm text-surface-600 dark:text-surface-300 whitespace-pre-wrap"
+                  >
+                    {{ currentSummary.notes }}
                   </p>
+                  <NuxtLink
+                    v-else
+                    :to="$localePath(`/dashboard/applications/${currentSummary.id}`)"
+                    class="group flex w-full cursor-pointer items-center justify-between border border-dashed border-white/12 bg-black px-3 py-3 text-left text-sm text-surface-400 transition-colors hover:border-brand-500/70 hover:bg-brand-500/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40 no-underline"
+                  >
+                    <span class="italic">No notes yet.</span>
+                    <span class="text-xs font-semibold uppercase text-brand-400 transition-colors group-hover:text-brand-300">Add Notes</span>
+                  </NuxtLink>
                 </div>
 
                 <!-- Quick links -->

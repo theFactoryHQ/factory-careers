@@ -27,7 +27,7 @@ const { formatPersonName } = useOrgSettings()
 const linkId = computed(() => route.params.id as string)
 
 useSeoMeta({
-  title: 'Link Details — Source Tracking — Factory Careers',
+  title: 'Link Details — Tracking — Factory Careers',
   description: 'Detailed analytics for a tracking link',
 })
 
@@ -284,7 +284,7 @@ async function handleSidebarUpdated() {
         :to="localePath('/dashboard/source-tracking')"
         class="underline ml-auto font-medium"
       >
-        Back to Source Tracking
+        Back to Tracking
       </NuxtLink>
     </div>
 
@@ -296,7 +296,7 @@ async function handleSidebarUpdated() {
           :to="localePath('/dashboard/source-tracking')"
           class="mb-4"
         >
-          Back to Source Tracking
+          Back to Tracking
         </AppBackLink>
 
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">

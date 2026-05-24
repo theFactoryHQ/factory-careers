@@ -614,17 +614,27 @@ const selectedCandidateId = ref<string | null>(null)
                   </div>
                 </div>
                 <button
-                  v-else
+                  v-else-if="c.quickNotes"
                   type="button"
                   class="group/notes flex items-start gap-1 text-left w-full min-h-[1.5rem]"
                   @click="startEditNotes(c.id, c.quickNotes ?? null)"
                 >
                   <StickyNote class="size-3.5 shrink-0 mt-0.5 text-surface-300 dark:text-surface-600 group-hover/notes:text-brand-500 transition-colors" />
                   <span
-                    v-if="c.quickNotes"
                     class="text-xs text-surface-600 dark:text-white/60 line-clamp-2 group-hover/notes:text-surface-900 dark:group-hover/notes:text-surface-100 transition-colors"
                   >{{ c.quickNotes }}</span>
-                  <span v-else class="text-xs text-surface-300 dark:text-surface-600 group-hover/notes:text-white/60 transition-colors italic">Add note…</span>
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="group/notes flex w-full cursor-pointer items-center justify-between border border-dashed border-white/12 bg-black px-3 py-2 text-left text-sm text-surface-400 transition-colors hover:border-brand-500/70 hover:bg-brand-500/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                  @click="startEditNotes(c.id, null)"
+                >
+                  <span class="inline-flex items-center gap-1.5 italic">
+                    <StickyNote class="size-3.5 shrink-0 text-surface-400 transition-colors group-hover/notes:text-brand-400" />
+                    No notes yet.
+                  </span>
+                  <span class="text-xs font-semibold uppercase text-brand-400 transition-colors group-hover/notes:text-brand-300">Add Notes</span>
                 </button>
               </td>
               <!-- Property columns (must come AFTER quick notes to match header order) -->
