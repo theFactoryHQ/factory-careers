@@ -87,6 +87,8 @@ export const candidate = pgTable('candidate', {
   displayName: text('display_name'),
   email: text('email').notNull(),
   phone: text('phone'),
+  country: text('country'),
+  state: text('state'),
   /** Gender — stored as enum for structured filtering */
   gender: genderEnum('gender'),
   /** Date of birth — stored as text in ISO 8601 format (YYYY-MM-DD) to avoid timezone issues */

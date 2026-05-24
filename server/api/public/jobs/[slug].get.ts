@@ -1,6 +1,7 @@
 import { eq, and, asc } from 'drizzle-orm'
 import { job, organization } from '../../../database/schema'
 import { publicJobSlugSchema } from '../../../utils/schemas/publicApplication'
+import { isBuiltInLocationQuestion } from '~~/shared/built-in-application-fields'
 
 /**
  * GET /api/public/jobs/:slug
@@ -62,6 +63,7 @@ export default defineEventHandler(async (event) => {
   const { organization: org, ...jobData } = result
   return {
     ...jobData,
+    questions: jobData.questions.filter((q) => !isBuiltInLocationQuestion(q)),
     organizationName: org?.name ?? null,
     organizationLogo: org?.logo ?? null,
   }

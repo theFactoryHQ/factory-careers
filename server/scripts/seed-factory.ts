@@ -144,18 +144,10 @@ async function main() {
     {
       organizationId: factoryOrgId,
       jobId: factoryJobId,
-      type: 'short_text',
-      label: 'Where are you based?',
-      required: true,
-      displayOrder: 2,
-    },
-    {
-      organizationId: factoryOrgId,
-      jobId: factoryJobId,
       type: 'long_text',
       label: 'Anything else you want us to know?',
       required: false,
-      displayOrder: 3,
+      displayOrder: 2,
     },
   ])
 
