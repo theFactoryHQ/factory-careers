@@ -397,6 +397,10 @@ const SOURCE_CHANNEL_DOT_FALLBACK_CLASS = 'bg-surface-400 dark:bg-surface-500'
 
 type ScoreBucket = 'high' | 'medium' | 'low' | 'empty'
 
+function normalizeApplicationStatus(status: string): string {
+  return status.trim().toLowerCase()
+}
+
 function isApplicationStatus(status: string): status is ApplicationStatusKey {
   return APPLICATION_STATUS_KEYS.includes(status as ApplicationStatusKey)
 }
@@ -444,37 +448,43 @@ export function formatFileSize(bytes: number | null | undefined): string {
 }
 
 export function getApplicationStatusLabel(status: string): string {
-  return isApplicationStatus(status) ? APPLICATION_STATUS_LABELS[status] : titleizeStatus(status)
+  const normalized = normalizeApplicationStatus(status)
+  return isApplicationStatus(normalized) ? APPLICATION_STATUS_LABELS[normalized] : titleizeStatus(status)
 }
 
 export function getApplicationTransitionLabel(status: string): string {
-  return isApplicationStatus(status) ? APPLICATION_TRANSITION_LABELS[status] : titleizeStatus(status)
+  const normalized = normalizeApplicationStatus(status)
+  return isApplicationStatus(normalized) ? APPLICATION_TRANSITION_LABELS[normalized] : titleizeStatus(status)
 }
 
 export function getApplicationStatusBadgeClass(
   status: string,
   variant: ApplicationStatusBadgeVariant = 'soft',
 ): string {
-  return isApplicationStatus(status)
-    ? APPLICATION_STATUS_BADGE_CLASSES[variant][status]
+  const normalized = normalizeApplicationStatus(status)
+  return isApplicationStatus(normalized)
+    ? APPLICATION_STATUS_BADGE_CLASSES[variant][normalized]
     : APPLICATION_STATUS_BADGE_FALLBACKS[variant]
 }
 
 export function getApplicationStatusDotClass(status: string): string {
-  return isApplicationStatus(status) ? APPLICATION_STATUS_DOT_CLASSES[status] : 'bg-surface-400 dark:bg-surface-500'
+  const normalized = normalizeApplicationStatus(status)
+  return isApplicationStatus(normalized) ? APPLICATION_STATUS_DOT_CLASSES[normalized] : 'bg-surface-400 dark:bg-surface-500'
 }
 
 export function getApplicationTransitionButtonClass(
   status: string,
   variant: ApplicationTransitionButtonVariant = 'solid',
 ): string {
-  return isApplicationStatus(status)
-    ? APPLICATION_TRANSITION_BUTTON_CLASSES[variant][status]
+  const normalized = normalizeApplicationStatus(status)
+  return isApplicationStatus(normalized)
+    ? APPLICATION_TRANSITION_BUTTON_CLASSES[variant][normalized]
     : APPLICATION_TRANSITION_BUTTON_FALLBACKS[variant]
 }
 
 export function getApplicationTransitionDotClass(status: string): string {
-  return isApplicationStatus(status) ? APPLICATION_TRANSITION_DOT_CLASSES[status] : 'bg-surface-400 dark:bg-surface-500'
+  const normalized = normalizeApplicationStatus(status)
+  return isApplicationStatus(normalized) ? APPLICATION_TRANSITION_DOT_CLASSES[normalized] : 'bg-surface-400 dark:bg-surface-500'
 }
 
 export function getInterviewStatusLabel(status: string): string {

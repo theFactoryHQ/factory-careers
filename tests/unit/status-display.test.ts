@@ -38,6 +38,7 @@ describe('status display helpers', () => {
     expect(getApplicationStatusBadgeClass('hired', 'ring')).toContain('ring-green-200')
     expect(getApplicationStatusBadgeClass('hired', 'subtle-ring')).toContain('ring-green-200/60')
     expect(getApplicationStatusBadgeClass('hired', 'factory')).toContain('text-success-200')
+    expect(getApplicationStatusBadgeClass(' SCREENING ', 'ring')).toContain('ring-violet-200')
     expect(getApplicationStatusBadgeClass('unknown', 'factory')).toContain('text-white/58')
   })
 
