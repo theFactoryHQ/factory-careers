@@ -1,361 +1,254 @@
-<div align="center">
-
 # Factory Careers
 
-This repository is Factory's thin, AGPL-compatible fork of Reqcore for `careers.thefactoryhq.com`.
-Factory-specific deployment notes live in [FACTORY_CAREERS.md](FACTORY_CAREERS.md).
-The authenticated terminal interface is documented in the [Factory Careers CLI](docs/CLI.md) guide.
+Factory Careers is Factory's hiring and applicant-tracking system for
+`careers.thefactoryhq.com`.
 
----
+It started as an AGPL-compatible fork of
+[Reqcore](https://github.com/reqcore-inc/reqcore), but this repository has
+since moved well beyond a thin branding pass. The product now carries
+Factory-specific access controls, deployment shape, CLI automation, operational
+runbooks, security hardening, AI-assisted recruiting workflows, and a larger
+test surface around the Factory Careers experience.
 
-# Upstream Reqcore
+## Current Shape
 
-**The simple, open-source ATS. Self-hosted. No per-seat fees.**
+- **Production app:** `https://careers.thefactoryhq.com`
+- **Package name:** `factory-careers`
+- **Primary stack:** Nuxt 4, Vue 3, Nitro, PostgreSQL, Drizzle ORM, Better Auth,
+  Tailwind CSS, MinIO/S3-compatible storage
+- **Deployment target:** Render plus Supabase Postgres and Supabase Storage S3
+- **License:** AGPL-3.0, inherited from Reqcore
+- **CLI:** authenticated agent and operator interface in the
+  [Factory Careers CLI](docs/CLI.md) guide
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
-[![E2E Tests](https://github.com/reqcore-inc/reqcore/actions/workflows/e2e-tests.yml/badge.svg)](https://github.com/reqcore-inc/reqcore/actions/workflows/e2e-tests.yml)
-[![PR Validation](https://github.com/reqcore-inc/reqcore/actions/workflows/pr-validation.yml/badge.svg)](https://github.com/reqcore-inc/reqcore/actions/workflows/pr-validation.yml)
-[![Docker Integration](https://github.com/reqcore-inc/reqcore/actions/workflows/docker-readme-validation.yml/badge.svg)](https://github.com/reqcore-inc/reqcore/actions/workflows/docker-readme-validation.yml)
-[![Docker Image](https://ghcr-badge.egpl.dev/reqcore-inc/reqcore/latest_tag?trim=major&label=docker)](https://github.com/reqcore-inc/reqcore/pkgs/container/reqcore)
+## Relationship To Reqcore
 
-[Live Demo](https://reqcore.com) · [Documentation](ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Report Bug](https://github.com/reqcore-inc/reqcore/issues/new)
+Factory Careers keeps Reqcore's core ATS foundation: jobs, candidates,
+applications, custom application questions, pipeline states, interviews,
+private documents, source tracking, and dashboard workflows.
 
+The fork has substantial additional development, including:
 
-<a href="https://openalternative.co/reqcore?utm_source=openalternative&utm_medium=badge&utm_campaign=embed&utm_content=tool-reqcore" target="_blank"><img src="https://openalternative.co/reqcore/badge.svg?theme=dark&width=200&height=50" width="200" height="50" alt="Reqcore badge" loading="lazy" /></a>
-<a href="https://railway.com/deploy/reqcore" target="_blank"><img src="public/deploy-on-railway.svg" width="183" height="40" alt="Deploy on Railway" /></a>
+- Factory branding across the public job board, dashboard shell, auth views,
+  transactional email, and theme.
+- Microsoft SSO and invitation/approval-gated dashboard access.
+- Public email/password signup and arbitrary organization creation disabled by
+  default.
+- Factory organization seeding via `npm run db:seed:factory`.
+- Factory production configuration for Render, Supabase Postgres, Supabase
+  Storage S3, Microsoft calendar integration, and Factory hiring inboxes.
+- Authenticated `factory-careers` CLI with JSON output, stdin payload support,
+  and deterministic route coverage for external agents.
+- AI configuration, scoring, chatbot workflows, resume parsing, source tracking,
+  candidate properties, feedback intake, and operational backup rehearsals.
+- Layered unit, security, e2e, release, backup, and deployment validation
+  workflows.
 
+Factory-specific launch and environment notes live in
+[`FACTORY_CAREERS.md`](FACTORY_CAREERS.md).
 
-</div>
+## Product Capabilities
 
----
+- **Public job board** with SEO-friendly listings and Factory-branded
+  application flows.
+- **Job management** for draft, open, closed, and archived roles.
+- **Custom application forms** with job-specific questions and file uploads.
+- **Candidate and application tracking** with status transitions, quick notes,
+  comments, properties, activity history, and timeline views.
+- **Pipeline dashboard** for recruiter overview, active jobs, candidate
+  progress, AI stats, and recent activity.
+- **Interview scheduling** with Microsoft and Google calendar integration paths.
+- **Private document storage** through S3-compatible storage; resumes and cover
+  letters are authenticated, streamed assets rather than public URLs.
+- **Source tracking** for attribution links, link statistics, and application
+  source reporting.
+- **AI-assisted workflows** for criteria generation, application analysis,
+  provider configuration, model catalog refresh, and chatbot support.
+- **Organization controls** for SSO providers, invite links, join requests,
+  signup domain allowlists, and role-based access.
+- **Agent-friendly CLI** for authenticated operations without browser cookies or
+  direct database access.
 
-Hiring software shouldn't be complicated or expensive. Most applicant tracking systems charge per seat, lock your data in their cloud, and overwhelm you with features you don't need. Reqcore is a lightweight, open-source ATS you can self-host in minutes. No per-seat fees, no vendor lock-in, no bloat — just a clean tool that helps you hire.
+## Local Development
 
-> **Early open-source release** — Reqcore is actively developed and improving every week. The foundation is solid (jobs, pipeline, applications, documents, job board), but some features are still on the roadmap. Check the [Roadmap](ROADMAP.md) for what's shipped and what's next.
-
-## Why Reqcore?
-
-*Simple hiring software you actually own.*
-
-| | **Reqcore** | Greenhouse | Lever | Ashby | OpenCATS |
-|---|:---:|:---:|:---:|:---:|:---:|
-| **Open source** | ✅ | ❌ | ❌ | ❌ | ✅ |
-| **Self-hosted** | ✅ | ❌ | ❌ | ❌ | ✅ |
-| **No per-seat pricing** | ✅ | ❌ | ❌ | ❌ | ✅ |
-| **Own your data** | ✅ | ❌ | ❌ | ❌ | ✅ |
-| **Transparent AI ranking** | 🔜 | ❌ | ❌ | ❌ | ❌ |
-| **Modern tech stack** | Nuxt 4 / Vue 3 | — | — | — | PHP 5 |
-| **Active development** | ✅ 2026 | ✅ | ✅ | ✅ | ❌ Stale |
-| **Resume parsing** | 🔜 | ✅ | ✅ | ✅ | ❌ |
-| **Pipeline / Kanban** | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Public job board** | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Document storage** | ✅ MinIO | ✅ | ✅ | ✅ | ✅ |
-| **Custom application forms** | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Local AI (privacy-first)** | 🔜 Ollama | ❌ | ❌ | ❌ | ❌ |
-
-## Features
-
-- **Job management** — Create, edit, and track jobs through draft → open → closed → archived
-- **Candidate pipeline** — Drag candidates through screening → interview → offer → hired with a Kanban board
-- **Public job board** — SEO-friendly job listings with custom slugs that applicants can browse and apply to
-- **Custom application forms** — Add custom questions (text, select, file upload, etc.) per job
-- **Document storage** — Upload and manage resumes and cover letters via S3-compatible storage (MinIO)
-- **Multi-tenant organizations** — Isolated data per organization with role-based membership
-- **Recruiter dashboard** — At-a-glance stats, pipeline breakdown, recent applications, and top active jobs
-- **Secure document access** — Resumes are never exposed via public URLs; all access is authenticated and streamed
-- **Built-in rate limiting** — Protection against abuse on all endpoints out of the box
-
-## Quick Start
-
-> **Windows users:** Open [Git Bash](https://gitforwindows.org) and run all commands there instead of Command Prompt or PowerShell.
-
----
-
-### Option A — Use the pre-built image (fastest)
-
-No cloning, no building. Pull the official image and run:
+This repo expects Node.js `22.22.x` or a compatible Node 24 LTS release, npm,
+Docker, and access to Factory's package registry when installing private
+`@caffeinebounce/*` packages.
 
 ```bash
-mkdir reqcore && cd reqcore
-curl -fsSLO https://raw.githubusercontent.com/reqcore-inc/reqcore/main/docker-compose.production.yml
-curl -fsSLO https://raw.githubusercontent.com/reqcore-inc/reqcore/main/setup.sh
-chmod +x setup.sh
+npm ci
+cp .env.example .env
 ./setup.sh
-docker compose -f docker-compose.production.yml up -d
+npm run dev
 ```
 
-Open **[http://localhost:3000](http://localhost:3000)** and sign up. That's it.
+Open [http://localhost:3000](http://localhost:3000).
 
-To update: `docker compose -f docker-compose.production.yml pull app && docker compose -f docker-compose.production.yml up -d`
-
----
-
-### Option B — Build from source
-
----
-
-### Step 1 — Install Docker
-
-Docker packages the app, database, and file storage into containers so you don't have to install anything else manually.
-
-| Your OS | How to install |
-|---------|---------------|
-| **Mac** | [Download Docker Desktop for Mac](https://www.docker.com/products/docker-desktop/) → install → open it |
-| **Windows** | [Download Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/) → install → open it |
-| **Linux** | Follow the [Docker Engine install guide](https://docs.docker.com/engine/install/) for your distro |
-
-Once installed, verify Docker is running:
-
-```bash
-docker --version
-```
-
-You should see something like `Docker version 27.x.x`. If you get `command not found`, Docker isn't running yet — open Docker Desktop and try again.
-
----
-
-### Step 2 — Download Reqcore
-
-Clone the repository (this downloads the source code):
-
-```bash
-git clone https://github.com/reqcore-inc/reqcore.git
-cd reqcore
-```
-
-> Don't have `git`? [Download it here](https://git-scm.com/downloads), or [download a ZIP](https://github.com/reqcore-inc/reqcore/archive/refs/heads/main.zip) and unzip it manually.
-
----
-
-### Step 3 — Generate your secret keys
-
-This creates a `.env` file containing random passwords and secrets. You only run this once.
+For a local Docker stack with Postgres, MinIO, and the Nuxt app:
 
 ```bash
 ./setup.sh
-```
-
-You'll see: `✅ .env generated with random secrets.`
-
-> **Windows CMD / PowerShell?** Run `cp .env.example .env` instead, then open `.env` and replace every placeholder value with a random string of your choice.
-
----
-
-### Step 4 — Start the app
-
-```bash
-docker compose up
-```
-
-**The very first run takes 3–5 minutes** while Docker builds the app image and downloads dependencies. This is normal — you only wait this long once. Subsequent starts take seconds.
-
-When you see a line like:
-
-```
-app  | Listening on http://[::]:3000
-```
-
-...the app is ready.
-
----
-
-### Step 5 — Open Reqcore
-
-Go to **[http://localhost:3000](http://localhost:3000)** in your browser.
-
-Click **Sign up** to create your account and first organization. That's it — you're running your own ATS.
-
----
-
-### Optional: Load demo data
-
-Want to explore with pre-filled jobs, candidates, and a pipeline? Open a **new terminal window** while the app is running and run:
-
-```bash
-docker compose exec app npm run db:seed
-```
-
-Then sign in with:
-- **Email:** `demo@thefactoryhq.com`
-- **Password:** `demo1234`
-
----
-
-### Updating to a new release
-
-When a new version of Reqcore is released, follow these steps **in order** to update your instance. Your data is safe — updates never delete the database or your uploaded files.
-
-#### Pre-built image users
-
-```bash
-docker compose -f docker-compose.production.yml pull app
-docker compose -f docker-compose.production.yml up -d
-```
-
-#### Build from source users
-
-**Step 1 — Pull the latest code**
-
-```bash
-git pull origin main
-```
-
-**Step 2 — Rebuild and restart the app**
-
-```bash
-docker compose up --build -d
-```
-
-This rebuilds the app image with the new code, applies any new database migrations automatically on startup, and restarts in the background. The whole process typically takes under a minute.
-
-**Step 3 — Verify it's running**
-
-```bash
-docker compose logs app --tail 20
-```
-
-Look for `Listening on http://[::]:3000`. Then open [http://localhost:3000](http://localhost:3000) — you're on the latest version.
-
-> **Something wrong after an update?** Roll back by running `git checkout <previous-commit>` and then `docker compose up --build -d`.
-
-> **To find the latest release notes**, check the [CHANGELOG](CHANGELOG.md) or [GitHub Releases](https://github.com/reqcore-inc/reqcore/releases).
-
----
-
-### Managing your instance
-
-```bash
-# Stop the app (your data is kept)
-docker compose down
-
-# Start it again
-docker compose up
-
-# Rebuild after pulling new code
 docker compose up --build
-
-# Stop and delete ALL data (irreversible)
-docker compose down -v
 ```
 
----
-
-### What's running
-
-| Service | URL | Description |
-|---------|-----|-------------|
-| **App** | [localhost:3000](http://localhost:3000) | The Reqcore web UI |
-| **MinIO Console** | [localhost:9001](http://localhost:9001) | File storage browser (S3-compatible) |
-| **Adminer** | [localhost:8080](http://localhost:8080) | Database browser — only with `--profile tools` |
-
-To enable Adminer (a visual database browser):
+The first Docker build can take a few minutes. The app listens on port `3000`,
+MinIO's console is available at port `9001`, and Adminer can be enabled with:
 
 ```bash
 docker compose --profile tools up
-# Open http://localhost:8080
-# System: PostgreSQL  |  Server: db  |  Username & Password: from your .env
 ```
 
----
+The compose file still contains a few historical `reqcore_*` container names;
+that naming is operationally harmless but should be treated as legacy
+implementation detail, not product identity.
 
-### Troubleshooting
+## Environment
 
-| Problem | What to do |
-|---------|-----------|
-| `docker: command not found` | Docker isn't installed, or Docker Desktop isn't open yet |
-| `permission denied: ./setup.sh` | Run `chmod +x setup.sh` first, then try again |
-| App shows a connection error | The first build is still running — wait 30 seconds, then refresh |
-| Port 3000 or 5432 already in use | Another app is using that port — stop it, or edit the port in `docker-compose.yml` |
-| Upload / file errors | Run `docker compose logs minio` — MinIO may still be starting up |
-| Need to rotate a secret | Edit `.env`, then run `docker compose up --build` |
+Start with [`.env.example`](.env.example). Important Factory-specific variables
+include:
 
-## Tech Stack
+- `BETTER_AUTH_URL`
+- `BETTER_AUTH_SECRET`
+- `NUXT_PUBLIC_SITE_URL`
+- `NUXT_PUBLIC_MARKETING_URL`
+- `DATABASE_URL`
+- `S3_ENDPOINT`
+- `S3_ACCESS_KEY`
+- `S3_SECRET_KEY`
+- `S3_BUCKET`
+- `S3_FORCE_PATH_STYLE`
+- `S3_SKIP_BUCKET_POLICY`
+- `AUTH_MICROSOFT_CLIENT_ID`
+- `AUTH_MICROSOFT_CLIENT_SECRET`
+- `AUTH_MICROSOFT_TENANT_ID`
+- `MICROSOFT_CALENDAR_CLIENT_ID`
+- `MICROSOFT_CALENDAR_CLIENT_SECRET`
+- `MICROSOFT_CALENDAR_TENANT_ID`
+- `FACTORY_CAREERS_HIRING_INBOX`
+- `FACTORY_CAREERS_CALENDAR_EMAIL`
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | [Nuxt 4](https://nuxt.com) (Vue 3 + Nitro) |
-| Database | PostgreSQL 16 |
-| ORM | [Drizzle ORM](https://orm.drizzle.team) + postgres.js |
-| Auth | [Better Auth](https://www.better-auth.com) with organization plugin |
-| Storage | [MinIO](https://min.io) (S3-compatible) |
-| Validation | [Zod v4](https://zod.dev) |
-| Styling | [Tailwind CSS v4](https://tailwindcss.com) |
-| Icons | [Lucide](https://lucide.dev) (tree-shakeable) |
+Production-oriented Render and Supabase values are summarized in
+[`FACTORY_CAREERS.md`](FACTORY_CAREERS.md). Broader operational checks are in
+[`PRODUCTION-READINESS.md`](PRODUCTION-READINESS.md),
+[`PRODUCTION-RUNBOOK.md`](PRODUCTION-RUNBOOK.md), and
+[`PRODUCTION-DATA-RETENTION.md`](PRODUCTION-DATA-RETENTION.md).
+
+## CLI
+
+The authenticated CLI is the preferred automation surface for agents and
+operator scripts:
+
+```bash
+./packages/careers-cli/bin/factory-careers.mjs --help
+./packages/careers-cli/bin/factory-careers.mjs auth status --json
+```
+
+The published package exposes a `factory-careers` binary:
+
+```bash
+npm install -g @thefactory/careers-cli
+factory-careers --base-url https://careers.thefactoryhq.com auth status --json
+```
+
+The CLI supports OAuth device login, profiles, JSON output, explicit
+confirmation for mutating commands, stdin JSON payloads, and a server-side
+capabilities contract. See [`docs/CLI.md`](docs/CLI.md) for command coverage
+and agent usage guidance.
+
+## Common Commands
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Start the Nuxt development server |
+| `npm run build` | Build the production app |
+| `npm run start` | Run the built Nitro server |
+| `npm run db:generate` | Generate Drizzle migrations from schema changes |
+| `npm run db:migrate` | Apply Drizzle migrations |
+| `npm run db:seed` | Seed demo ATS data |
+| `npm run db:seed:factory` | Seed the Factory organization and default role |
+| `npm run db:studio` | Open Drizzle Studio |
+| `npm run test:unit` | Run Vitest unit tests |
+| `npm run typecheck` | Run Nuxt/Vue type checking |
+| `npm run test:e2e` | Run Playwright e2e tests |
+| `npm run preflight:pr` | Run the PR validation preflight |
+| `npm run cli:pack` | Dry-run package the CLI workspace |
+| `npm run cli:publish` | Publish the CLI workspace |
+| `npm run ops:backup-restore-rehearsal` | Rehearse database backup and restore |
+| `npm run ops:object-storage-restore-rehearsal` | Rehearse object storage restore |
+| `npm run ops:validate-production-env` | Validate production environment shape |
+
+## Testing And Validation
+
+Use the smallest meaningful proof set for the change. Typical local validation:
+
+```bash
+npm run test:unit
+npm run typecheck
+```
+
+For browser-facing changes, run the relevant Playwright pack or the full suite:
+
+```bash
+npm run test:e2e
+```
+
+The repo also has CI workflows for PR validation, e2e tests, CodeQL, secret
+scanning, Docker publish/readme validation, backup restore rehearsal, release
+verification, and release automation.
 
 ## Project Structure
 
-```
-app/                          # Frontend (Nuxt 4 srcDir)
-  pages/                      #   File-based routing
-  components/                 #   Auto-imported Vue components
-  composables/                #   Auto-imported composables (useJobs, useCandidates, etc.)
-  layouts/                    #   Dashboard, auth, and public layouts
-server/                       # Backend (Nitro)
-  api/                        #   REST API routes (authenticated + public)
-  database/schema/            #   Drizzle ORM table definitions
-  database/migrations/        #   Generated SQL migrations
-  utils/                      #   Auto-imported utilities (db, auth, env, s3)
-  plugins/                    #   Startup plugins (migrations, S3 bucket)
-Dockerfile                    # Multi-stage build for the app container
-docker-compose.yml            # App + Postgres + MinIO (+ optional Adminer)
-setup.sh                      # One-time secret generator → writes .env
+```text
+app/                         Nuxt 4 frontend: pages, layouts, components, composables
+server/                      Nitro backend: API routes, utilities, plugins, DB schema
+shared/                      Shared flags and cross-boundary helpers
+packages/careers-cli/        Authenticated Factory Careers CLI package
+docs/                        Operator and CLI documentation
+e2e/                         Playwright tests
+tests/                       Vitest unit and contract tests
+scripts/                     Validation, setup, migration, and ops scripts
+public/                      Static assets
+i18n/                        Locale files and i18n configuration
 ```
 
-## Deployment
+## Documentation Map
 
-Reqcore is designed to run on a single VPS. The reference deployment uses:
+- [`FACTORY_CAREERS.md`](FACTORY_CAREERS.md): Factory-specific fork and launch
+  notes.
+- [`docs/CLI.md`](docs/CLI.md): CLI install, auth, command coverage, JSON
+  contract, and portal parity rules.
+- [`ARCHITECTURE.md`](ARCHITECTURE.md): System architecture inherited from and
+  evolved beyond Reqcore.
+- [`SELF-HOSTING.md`](SELF-HOSTING.md): Self-hosting guidance for the upstream
+  ATS shape.
+- [`SECURITY.md`](SECURITY.md): Security policy and supported reporting path.
+- [`TESTING-SECURITY.md`](TESTING-SECURITY.md): Security test strategy.
+- [`THEME.md`](THEME.md): Theme and visual system notes.
+- [`I18N.md`](I18N.md): Nuxt i18n and Crowdin workflow.
+- [`PRODUCTION-APPROVAL-CHECKLIST.md`](PRODUCTION-APPROVAL-CHECKLIST.md):
+  production launch approval checklist.
 
-| Component | Role |
-|-----------|------|
-| **Hetzner Cloud CX23** | 2 vCPU, 4GB RAM, Ubuntu 24.04 (~€5/mo) |
-| **Caddy** | Reverse proxy with automatic HTTPS |
-| **Cloudflare** | DNS, DDoS protection, edge SSL (free tier) |
-| **Docker Compose** | Postgres + MinIO (localhost only) |
-| **systemd** | Process management with auto-restart |
+Some docs still describe upstream Reqcore concepts. Treat Factory-specific
+docs, environment files, current package scripts, and CI workflows as the source
+of truth for this fork.
 
-### Deploy
+## GitHub Workflow Notes
+
+This repository lives at `theFactoryHQ/factory-careers`. When using the GitHub
+CLI from local worktrees, pin the repo explicitly:
 
 ```bash
-ssh deploy@your-server '~/deploy.sh'
-# Pulls latest code, installs, builds, restarts — zero downtime
+gh --repo theFactoryHQ/factory-careers ...
 ```
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the full deployment architecture diagram.
+This avoids accidentally targeting the upstream Reqcore repository from a forked
+or reused checkout.
 
-## Scripts
+## Upstream And License
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run db:generate` | Generate migrations from schema changes |
-| `npm run db:seed` | Seed database with demo data |
-| `npm run db:studio` | Open Drizzle Studio (database browser) |
-| `npm run i18n:crowdin:upload` | Upload source locale file to Crowdin |
-| `npm run i18n:crowdin:download` | Download latest translations from Crowdin |
-| `npm run i18n:crowdin:sync` | Upload sources and then download translations |
+Factory Careers remains AGPL-3.0 software. See [`LICENSE`](LICENSE).
 
-## Internationalization
-
-Reqcore uses Nuxt i18n (`@nuxtjs/i18n`) with Crowdin for translation management.
-Implementation details and setup steps (including Crowdin native GitHub integration) are documented in [I18N.md](I18N.md).
-
-## Roadmap
-
-Reqcore is actively developed. Here's what's next:
-
-| Status | Milestone |
-|--------|-----------|
-| ✅ Shipped | Jobs, Candidates, Applications, Pipeline, Documents, Dashboard, Public Job Board, Custom Forms |
-| 🔨 Building | Resume parsing (PDF → structured data) |
-| 🔮 Planned | AI candidate ranking (visible matching logic), team collaboration, email notifications, candidate portal |
-
-See the full [Roadmap](ROADMAP.md) and [Product Vision](PRODUCT.md).
-
-## Contributing
-
-Reqcore is in early development and contributions are welcome. Check [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow, DCO sign-off requirements, and submission guidelines.
-
-## License
-
-Licensed under the [GNU Affero General Public License v3.0 (AGPL-3.0)](LICENSE).
+Where practical, upstream Reqcore improvements should remain easy to audit, but
+Factory Careers is now its own operational product. Product decisions, runtime
+configuration, and automation should be evaluated against Factory's deployment
+and recruiting workflows first.
