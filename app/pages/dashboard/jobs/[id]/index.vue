@@ -1045,7 +1045,7 @@ function closeDocPreview() {
       <!-- ═══════════════════════════════════════ -->
       <div class="factory-pipeline-stage-strip shrink-0 border-b border-white/10 bg-white/[0.02]">
         <div class="factory-dashboard-tabs flex items-center gap-1.5 overflow-x-auto scrollbar-thin sm:scrollbar-none px-3 sm:px-5 py-1">
-          <span class="shrink-0 pr-2 text-xs font-light uppercase leading-none text-white/48">
+          <span class="factory-pipeline-stage-strip-label shrink-0 pr-2 text-xs font-light uppercase leading-none text-white/48">
             Pipeline stages
           </span>
           <button
@@ -1056,6 +1056,8 @@ function closeDocPreview() {
               isFocusStatus(status) ? 'ui-filter-chip-active factory-pipeline-status-chip-active' : 'ui-filter-chip-inactive',
               `factory-pipeline-status-chip-${status}`,
             ]"
+            :title="`${formatStatusLabel(status)} ${statusCounts[status] ?? 0}`"
+            :aria-label="`${formatStatusLabel(status)} ${statusCounts[status] ?? 0}`"
             style="font-weight: 300 !important"
             @click="setFocusStatus(status)"
           >
@@ -1067,9 +1069,9 @@ function closeDocPreview() {
               'bg-green-600 dark:bg-green-300': status === 'hired',
               'bg-surface-400 dark:bg-surface-500': status === 'rejected',
             }" />
-            {{ formatStatusLabel(status) }}
+            <span class="factory-pipeline-status-chip-label">{{ formatStatusLabel(status) }}</span>
             <span
-              class="tabular-nums text-xs font-normal transition-colors duration-200"
+              class="factory-pipeline-status-chip-count tabular-nums text-xs font-normal transition-colors duration-200"
               :class="isFocusStatus(status)
                 ? 'text-brand-600 dark:text-brand-400'
                 : 'text-surface-400 dark:text-surface-500'"

@@ -2235,6 +2235,50 @@
     text-transform: uppercase !important;
   }
 
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-status-chip-count {
+    display: inline-flex;
+    min-width: 18px;
+    height: 18px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    background-color: rgb(255 255 255 / 0.045);
+    padding-inline: 4px;
+    color: rgb(255 255 255 / 0.62) !important;
+    font-size: 11px;
+    line-height: 1;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-status-chip-active .factory-pipeline-status-chip-count {
+    border-color: color-mix(in srgb, var(--color-brand-500) 45%, transparent);
+    background-color: color-mix(in srgb, var(--color-brand-500) 16%, transparent);
+    color: var(--color-brand-200) !important;
+  }
+
+  @media (max-width: 1100px) {
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-stage-strip-label,
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-status-chip-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-stage-strip .factory-dashboard-tabs {
+      gap: 6px !important;
+      overflow-x: visible !important;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-pipeline-status-chip {
+      width: 52px;
+      justify-content: center;
+      gap: 6px !important;
+      padding-inline: 7px !important;
+    }
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-chip {
     height: 32px !important;
     min-height: 32px !important;
