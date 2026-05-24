@@ -18,6 +18,7 @@ describe('job candidate header', () => {
     expect(header).toContain('formatPersonName(currentSummary.candidateFirstName, currentSummary.candidateLastName)')
     expect(header).not.toContain('title="Full application page"')
     expect(header).not.toContain('<ExternalLink class="size-4"')
+    expect(source).not.toContain('Full application page')
   })
 
   it('positions timestamps at the bottom of the selected candidate header actions', () => {

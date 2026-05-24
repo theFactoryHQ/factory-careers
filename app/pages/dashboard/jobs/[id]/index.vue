@@ -1612,17 +1612,6 @@ function closeDocPreview() {
                     <span class="text-xs font-semibold uppercase text-brand-400 transition-colors group-hover:text-brand-300">Add Notes</span>
                   </NuxtLink>
                 </div>
-
-                <!-- Quick links -->
-                <div class="flex items-center gap-4 pt-1">
-                  <NuxtLink
-                    :to="$localePath(`/dashboard/applications/${currentSummary.id}`)"
-                    class="inline-flex items-center gap-1.5 text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors group"
-                  >
-                    <ExternalLink class="size-3.5 transition-transform group-hover:translate-x-0.5" />
-                    Full application page
-                  </NuxtLink>
-                </div>
               </div>
 
               <!-- AI SCORE BREAKDOWN -->
