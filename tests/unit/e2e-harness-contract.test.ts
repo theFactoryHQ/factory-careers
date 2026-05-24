@@ -74,6 +74,15 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "false"')
   })
 
+  it('keeps the branch-protection E2E status as an aggregate of the split jobs', () => {
+    const workflow = read('.github/workflows/e2e-tests.yml')
+
+    expect(workflow).toContain('name: Playwright E2E')
+    expect(workflow).toContain('needs: [smoke, security-core]')
+    expect(workflow).toContain('needs.smoke.result')
+    expect(workflow).toContain('needs.security-core.result')
+  })
+
   it('keeps Playwright parallel-ready for independent smoke specs', () => {
     const config = read('playwright.config.ts')
 
