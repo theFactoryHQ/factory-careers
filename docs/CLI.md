@@ -135,6 +135,10 @@ Some routes intentionally remain outside the deterministic CLI surface:
 - Update apply/backup endpoints are destructive maintenance operations and are not exposed to agents. Use read-only `system info`, `system version`, and `system changelog`.
 - The demo-only auth helpers remain development and demo UI helpers, not supported automation APIs.
 
+## Portal Parity
+
+Server API coverage is tracked in `packages/careers-cli/src/routeCoverage.ts`. The unit test `tests/unit/cli-route-coverage-manifest.test.ts` walks `server/api` and fails if a route is missing from the manifest, if a supported route lacks a CLI command, or if an excluded/internal route lacks a reason. When adding or changing a portal/API workflow, update the CLI command surface or record the explicit exclusion in that manifest.
+
 ## Examples
 
 Create a job, add questions, create a candidate, and apply:
