@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -33,6 +35,15 @@ jobs:
         run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+
+      - name: Check CLI parity evidence
+        id: cli_parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_ref="${{ github.base_ref || 'main' }}"
+          git fetch --no-tags --depth=1 origin "$base_ref"
+          git diff --name-only "origin/${base_ref}"...HEAD | npx tsx scripts/cli-parity-check.ts --stdin
 
       - name: Run unit tests
         id: tests
@@ -114,6 +125,7 @@ jobs:
           status_icon() { [ "$1" = "success" ] && echo "✅" || echo "❌"; }
 
           echo "| Install dependencies | $(status_icon '${{ steps.install.outcome }}') ${{ steps.install.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| CLI parity evidence | $(status_icon '${{ steps.cli_parity.outcome }}') ${{ steps.cli_parity.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Tests | $(status_icon '${{ steps.tests.outcome }}') ${{ steps.tests.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           if [ "${{ steps.lint.outputs.configured }}" = "false" ]; then
             echo "| Lint | ⚪ not configured |" >> "$GITHUB_STEP_SUMMARY"
