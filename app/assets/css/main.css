@@ -2328,7 +2328,27 @@
     opacity: 0.82;
   }
 
-  @media (max-width: 1100px) {
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    z-index: 50;
+    transform: translateX(-50%) translateY(2px);
+    border: 1px solid rgb(255 255 255 / 0.12);
+    background-color: #050505;
+    padding: 6px 8px;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.42);
+    transition: opacity 150ms ease, transform 150ms ease;
+  }
+
+  @media (max-width: 640px) {
     :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-strip {
       justify-content: flex-start;
       overflow-x: visible;
@@ -2348,6 +2368,12 @@
       overflow: hidden;
       clip: rect(0, 0, 0, 0);
       white-space: nowrap;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-chip:hover .factory-application-transition-tooltip,
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-chip:focus-visible .factory-application-transition-tooltip {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
   }
 
