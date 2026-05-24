@@ -9,8 +9,10 @@ function readProjectFile(path: string) {
 describe('candidate detail drawer', () => {
   it('keeps application row schedule actions and status badges the same height', () => {
     const source = readProjectFile('app/components/CandidateDetailDrawer.vue')
+    const badge = readProjectFile('app/components/ApplicationStatusBadge.vue')
 
     expect(source).toContain('factory-toolbar-button inline-flex h-8 min-h-8 items-center gap-1 border')
-    expect(source).toContain('inline-flex h-8 min-h-8 shrink-0 items-center border px-2.5 py-0 text-[10px] font-semibold uppercase')
+    expect(source).toContain('<ApplicationStatusBadge :status="app.status" />')
+    expect(badge).toContain('inline-flex h-8 min-h-8 shrink-0 items-center border')
   })
 })

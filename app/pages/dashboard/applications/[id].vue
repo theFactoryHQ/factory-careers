@@ -2,7 +2,6 @@
 import { User, Briefcase, Calendar, Clock, FileText, MessageSquare, Brain, Loader2 } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 import {
-  getApplicationStatusBadgeClass,
   getApplicationTransitionActionLabel,
   getApplicationTransitionButtonClass,
 } from '~/utils/status-display'
@@ -195,12 +194,7 @@ function formatResponseValue(value: unknown): string {
                 {{ application.job.title }}
               </NuxtLink>
             </div>
-            <span
-              class="inline-flex items-center border px-2.5 py-1 text-xs font-semibold uppercase"
-              :class="getApplicationStatusBadgeClass(application.status, 'factory')"
-            >
-              {{ application.status }}
-            </span>
+            <ApplicationStatusBadge :status="application.status" />
           </div>
 
           <ApplicationTimestampStack

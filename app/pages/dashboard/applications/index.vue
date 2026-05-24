@@ -2,8 +2,6 @@
 import { FileText, Search, X, Briefcase, Mail, Clock, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, Maximize2, Minimize2, Check } from 'lucide-vue-next'
 import {
   formatRelativeTime,
-  getApplicationStatusBadgeClass,
-  getApplicationStatusDotClass,
   getApplicationStatusLabel,
   getScoreBadgeClass,
 } from '~/utils/status-display'
@@ -621,13 +619,7 @@ const selectedApplicationId = ref<string | null>(null)
                 </span>
               </td>
               <td v-if="visibleColumns.status" class="px-4 py-3">
-                <span
-                  class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold capitalize ring-1 ring-inset"
-                  :class="getApplicationStatusBadgeClass(app.status, 'ring')"
-                >
-                  <span class="size-1.5 rounded-full" :class="getApplicationStatusDotClass(app.status)" />
-                  {{ getApplicationStatusLabel(app.status) }}
-                </span>
+                <ApplicationStatusBadge :status="app.status" />
               </td>
               <td v-if="visibleColumns.score" class="px-4 py-3 text-center hidden sm:table-cell">
                 <span

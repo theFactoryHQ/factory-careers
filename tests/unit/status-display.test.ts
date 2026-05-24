@@ -49,6 +49,10 @@ describe('status display helpers', () => {
     expect(getApplicationStatusBadgeClass('hired', 'subtle-ring')).toContain('ring-green-200/60')
     expect(getApplicationStatusBadgeClass('hired', 'factory')).toContain('text-success-200')
     expect(getApplicationStatusBadgeClass(' SCREENING ', 'ring')).toContain('ring-violet-200')
+    expect(getApplicationStatusBadgeClass('new', 'factory')).toContain('blue')
+    expect(getApplicationStatusBadgeClass('screening', 'factory')).toContain('violet')
+    expect(getApplicationStatusBadgeClass('interview', 'factory')).toContain('amber')
+    expect(getApplicationStatusBadgeClass('offer', 'factory')).toContain('teal')
     expect(getApplicationStatusBadgeClass('unknown', 'factory')).toContain('text-white/58')
   })
 

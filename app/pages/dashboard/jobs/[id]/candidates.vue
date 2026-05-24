@@ -2,7 +2,6 @@
 import { Users, SlidersHorizontal, X, Check, ChevronsUpDown, ChevronUp, ChevronDown, UserRound } from 'lucide-vue-next'
 import {
   formatRelativeTime,
-  getApplicationStatusBadgeClass,
   getApplicationStatusLabel,
   getScoreBadgeClass,
 } from '~/utils/status-display'
@@ -296,12 +295,7 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
                   >
                     <Check v-if="selectedStatuses.includes(s)" class="size-3 text-white" :stroke-width="3" />
                   </span>
-                  <span
-                    class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold capitalize ring-1 ring-inset"
-                    :class="getApplicationStatusBadgeClass(s, 'ring')"
-                  >
-                    {{ getApplicationStatusLabel(s) }}
-                  </span>
+                  <ApplicationStatusBadge :status="s" />
                 </label>
               </div>
             </div>
@@ -346,16 +340,16 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
 
         <!-- Active filter pills -->
         <template v-if="selectedStatuses.length > 0">
-          <span
+          <ApplicationStatusBadge
             v-for="s in selectedStatuses"
             :key="s"
-            class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium capitalize cursor-pointer"
-            :class="getApplicationStatusBadgeClass(s, 'ring')"
+            :status="s"
+            class="cursor-pointer gap-1"
             @click="toggleStatus(s as Status)"
           >
             {{ getApplicationStatusLabel(s) }}
             <X class="size-2.5" />
-          </span>
+          </ApplicationStatusBadge>
         </template>
         <span
           v-if="scoreMin != null || scoreMax != null"
@@ -490,12 +484,7 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
                   <span v-else class="text-surface-400 dark:text-surface-500 text-xs">—</span>
                 </td>
                 <td v-if="visibleCols.status" class="px-4 py-3">
-                  <span
-                    class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold capitalize ring-1 ring-inset"
-                    :class="getApplicationStatusBadgeClass(app.status, 'ring')"
-                  >
-                    {{ app.status }}
-                  </span>
+                  <ApplicationStatusBadge :status="app.status" />
                 </td>
                 <td v-if="visibleCols.createdAt" class="hidden md:table-cell px-4 py-3 text-surface-500 dark:text-surface-400 whitespace-nowrap text-xs font-medium">
                   <TimelineDateLink :date="app.createdAt">{{ formatRelativeTime(app.createdAt) }}</TimelineDateLink>

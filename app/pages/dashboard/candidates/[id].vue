@@ -2,7 +2,6 @@
 import { ArrowLeft, Pencil, Trash2, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Upload, Download, Eye, AlertTriangle } from 'lucide-vue-next'
 import { z } from 'zod'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
-import { getApplicationStatusBadgeClass } from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -502,12 +501,7 @@ async function handleDeleteDoc(docId: string) {
                   <Calendar class="size-3" />
                   Schedule
                 </button>
-                <span
-                  class="inline-flex shrink-0 items-center border px-2 py-0.5 text-[10px] font-semibold uppercase"
-                  :class="getApplicationStatusBadgeClass(app.status, 'factory')"
-                >
-                  {{ app.status }}
-                </span>
+                <ApplicationStatusBadge :status="app.status" />
               </div>
             </div>
           </div>

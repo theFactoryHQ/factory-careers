@@ -3,7 +3,6 @@ import { X, ExternalLink, User, Briefcase, Calendar, Clock, FileText, MessageSqu
 import { APPLICATION_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 import {
-  getApplicationStatusBadgeClass,
   getApplicationTransitionActionLabel,
   getApplicationTransitionButtonClass,
 } from '~/utils/status-display'
@@ -219,12 +218,7 @@ onUnmounted(() => {
                       {{ application.job.title }}
                     </NuxtLink>
                   </div>
-                  <span
-                    class="inline-flex items-center border px-2.5 py-1 text-xs font-semibold uppercase"
-                    :class="getApplicationStatusBadgeClass(application.status, 'factory')"
-                  >
-                    {{ application.status }}
-                  </span>
+                  <ApplicationStatusBadge :status="application.status" />
                 </div>
 
                 <ApplicationTimestampStack

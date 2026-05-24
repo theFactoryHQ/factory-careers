@@ -298,7 +298,7 @@ describe('brand-neutral theme variables', () => {
       {
         path: 'app/pages/dashboard/source-tracking/index.vue',
         recipes: [
-          'getApplicationStatusBadgeClass',
+          'ApplicationStatusBadge',
           'getSourceChannelBadgeClass',
           'getSourceChannelDotClass',
           'getSourceChannelLabel',
@@ -335,7 +335,7 @@ describe('brand-neutral theme variables', () => {
       {
         path: 'app/pages/dashboard/source-tracking/[id].vue',
         recipes: [
-          'getApplicationStatusBadgeClass',
+          'ApplicationStatusBadge',
           'getSourceChannelBadgeClass',
           'getSourceChannelDotClass',
           'getSourceChannelLabel',

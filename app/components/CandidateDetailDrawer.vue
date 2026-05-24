@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { X, ExternalLink, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Download, Eye } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
-import { getApplicationStatusBadgeClass } from '~/utils/status-display'
 
 const props = defineProps<{
   candidateId: string
@@ -341,12 +340,7 @@ onUnmounted(() => {
                       <Calendar class="size-3" />
                       Schedule
                     </button>
-                    <span
-                      class="inline-flex h-8 min-h-8 shrink-0 items-center border px-2.5 py-0 text-[10px] font-semibold uppercase"
-                      :class="getApplicationStatusBadgeClass(app.status, 'factory')"
-                    >
-                      {{ app.status }}
-                    </span>
+                    <ApplicationStatusBadge :status="app.status" />
                   </div>
                 </div>
               </div>

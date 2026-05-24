@@ -7,7 +7,6 @@ import {
   Hash, Tag, Layers, Pencil, X, ChevronDown,
 } from 'lucide-vue-next'
 import {
-  getApplicationStatusBadgeClass,
   getSourceChannelBadgeClass,
   getSourceChannelDotClass,
   getSourceChannelLabel,
@@ -726,12 +725,7 @@ async function handleSidebarUpdated() {
                 </td>
                 <!-- Status -->
                 <td class="px-4 py-3.5 text-center">
-                  <span
-                    class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ring-1 ring-inset"
-                    :class="getApplicationStatusBadgeClass(app.status, 'subtle-ring')"
-                  >
-                    {{ app.status }}
-                  </span>
+                  <ApplicationStatusBadge :status="app.status" />
                 </td>
                 <!-- Applied date -->
                 <td class="px-4 py-3.5 text-right text-[11px] text-surface-400 tabular-nums font-medium">

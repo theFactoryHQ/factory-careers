@@ -5,7 +5,6 @@ import {
   Eye, UserPlus, ExternalLink,
   LayoutDashboard, Zap,
 } from 'lucide-vue-next'
-import { getApplicationStatusBadgeClass } from '~/utils/status-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -467,12 +466,7 @@ const isEmpty = computed(() =>
                     <span class="text-sm font-medium text-surface-900 dark:text-surface-100 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                       {{ formatPersonName(app.candidateFirstName, app.candidateLastName) }}
                     </span>
-                    <span
-                      class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize shrink-0 ring-1 ring-inset"
-                      :class="getApplicationStatusBadgeClass(app.status, 'subtle-ring')"
-                    >
-                      {{ app.status }}
-                    </span>
+                    <ApplicationStatusBadge :status="app.status" />
                   </div>
                   <div class="text-xs text-surface-400 dark:text-surface-500 truncate">
                     {{ app.jobTitle }}

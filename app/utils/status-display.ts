@@ -61,11 +61,11 @@ const APPLICATION_STATUS_BADGE_CLASSES: Record<ApplicationStatusBadgeVariant, Re
     rejected: 'bg-surface-100 text-surface-600 ring-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:ring-surface-700',
   },
   factory: {
-    new: 'border-brand-500/55 bg-brand-500/14 text-brand-200',
-    screening: 'border-brand-500/55 bg-brand-500/14 text-brand-200',
-    interview: 'border-brand-500/55 bg-brand-500/14 text-brand-200',
-    offer: 'border-brand-500/55 bg-brand-500/14 text-brand-200',
-    hired: 'border-success-500/45 bg-success-500/12 text-success-200',
+    new: 'border-blue-500/55 bg-blue-500/14 text-blue-200',
+    screening: 'border-violet-500/55 bg-violet-500/14 text-violet-200',
+    interview: 'border-amber-500/55 bg-amber-500/14 text-amber-200',
+    offer: 'border-teal-500/55 bg-teal-500/14 text-teal-200',
+    hired: 'border-success-500/55 bg-success-500/14 text-success-200',
     rejected: 'border-white/16 bg-white/[0.04] text-white/58',
   },
 }

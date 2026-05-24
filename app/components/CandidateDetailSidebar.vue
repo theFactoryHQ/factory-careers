@@ -6,7 +6,6 @@ import {
 } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 import {
-  getApplicationStatusBadgeClass,
   getApplicationTransitionButtonClass,
   getApplicationTransitionLabel,
 } from '~/utils/status-display'
@@ -558,12 +557,7 @@ function formatInterviewDate(dateStr: string) {
             <!-- Status & transitions -->
             <div>
               <div class="flex items-center gap-2 mb-3">
-                <span
-                  class="inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold capitalize ring-1 ring-inset"
-                  :class="getApplicationStatusBadgeClass(application.status, 'ring')"
-                >
-                  {{ application.status }}
-                </span>
+                <ApplicationStatusBadge :status="application.status" />
                 <ApplicationTimestampStack
                   :applied-at="application.createdAt"
                   :updated-at="application.updatedAt"
@@ -637,8 +631,8 @@ function formatInterviewDate(dateStr: string) {
                 </div>
                 <div>
                   <dt class="text-xs font-medium text-surface-400 dark:text-surface-500 mb-1">Status</dt>
-                  <dd class="text-surface-800 dark:text-surface-200 font-medium capitalize">
-                    {{ application.status }}
+                  <dd>
+                    <ApplicationStatusBadge :status="application.status" />
                   </dd>
                 </div>
                 <div>

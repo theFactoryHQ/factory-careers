@@ -1391,12 +1391,7 @@ function closeDocPreview() {
                           {{ formatPersonName(currentSummary.candidateFirstName, currentSummary.candidateLastName) }}
                         </NuxtLink>
                       </h2>
-                      <span
-                        class="inline-flex shrink-0 items-center rounded-lg px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset"
-                        :class="getApplicationStatusBadgeClass(currentSummary.status, 'ring')"
-                      >
-                        {{ currentSummary.status }}
-                      </span>
+                      <ApplicationStatusBadge :status="currentSummary.status" />
                     </div>
                     <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-surface-500 dark:text-surface-400">
                       <a
