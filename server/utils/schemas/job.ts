@@ -25,6 +25,8 @@ export const createJobSchema = z.object({
   salaryNegotiable: z.boolean().optional().default(false),
   /** Remote work status: remote, hybrid, or onsite */
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).nullable().optional(),
+  /** When this job listing goes live publicly */
+  activeFrom: z.coerce.date().optional().default(() => new Date()),
   /** When this job listing expires (required for Google Jobs rich results) */
   validThrough: z.coerce.date().nullable().optional(),
   /** Whether the application form requires a resume/CV upload */
@@ -51,6 +53,7 @@ export const updateJobSchema = z.object({
   salaryUnit: z.enum(SALARY_UNIT_VALUES).nullable().optional(),
   salaryNegotiable: z.boolean().optional(),
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).nullable().optional(),
+  activeFrom: z.coerce.date().optional(),
   /** Pass null to explicitly clear the expiry date */
   validThrough: z.coerce.date().nullable().optional(),
   requireResume: z.boolean().optional(),

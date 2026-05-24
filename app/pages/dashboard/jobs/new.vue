@@ -36,6 +36,7 @@ import {
   Search,
 } from 'lucide-vue-next'
 import { z } from 'zod'
+import { todayDateInputValue } from '~~/shared/date-input'
 
 definePageMeta({
   layout: 'dashboard',
@@ -89,6 +90,7 @@ const form = ref({
   type: 'full_time' as 'full_time' | 'part_time' | 'contract' | 'internship',
   experienceLevel: 'mid' as 'junior' | 'mid' | 'senior' | 'lead',
   remoteStatus: undefined as 'remote' | 'hybrid' | 'onsite' | undefined,
+  activeFrom: todayDateInputValue(),
 })
 
 // Step 2: Application form (client-only for now)
@@ -326,6 +328,7 @@ function resetState() {
     type: 'full_time',
     experienceLevel: 'mid',
     remoteStatus: undefined,
+    activeFrom: todayDateInputValue(),
   }
   applicationForm.value = {
     requireResume: true,
@@ -655,6 +658,7 @@ async function handleSubmit(mode: 'publish' | 'draft' = publishChoice.value) {
       type: form.value.type,
       experienceLevel: form.value.experienceLevel || undefined,
       remoteStatus: form.value.remoteStatus || undefined,
+      activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue()),
       requireResume: applicationForm.value.requireResume,
       requireCoverLetter: applicationForm.value.requireCoverLetter,
       autoScoreOnApply: autoScoreOnApply.value,

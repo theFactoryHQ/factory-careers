@@ -100,7 +100,7 @@ watchEffect(() => {
     '@type': 'JobPosting',
     'title': j.title,
     'description': jobDescriptionPlain.value || j.title,
-    'datePosted': j.createdAt,
+    'datePosted': j.activeFrom ?? j.createdAt,
     'employmentType': mapEmploymentType(j.type),
     'directApply': true,
   }
@@ -266,7 +266,7 @@ function formatSalary(min?: number | null, max?: number | null, currency?: strin
             <span class="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-normal text-white/50 sm:justify-end">
               <Calendar class="size-3.5 text-brand-500" />
               <span>Posted</span>
-              <time class="text-white/70" :datetime="job.createdAt">{{ formatDate(job.createdAt) }}</time>
+              <time class="text-white/70" :datetime="job.activeFrom ?? job.createdAt">{{ formatDate(job.activeFrom ?? job.createdAt) }}</time>
             </span>
           </div>
 

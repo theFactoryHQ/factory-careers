@@ -244,7 +244,7 @@ function formatDate(dateStr: string) {
                 {{ j.location }}
               </span>
               <span class="text-white/34">
-                Posted {{ formatDate(j.createdAt) }}
+                Posted {{ formatDate(j.activeFrom ?? j.createdAt) }}
               </span>
             </div>
 

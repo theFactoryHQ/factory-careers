@@ -1,4 +1,4 @@
-import { eq, and, asc, sql } from 'drizzle-orm'
+import { eq, and, asc, lte, sql } from 'drizzle-orm'
 import { fileTypeFromBuffer } from 'file-type'
 import { job, candidate, application, jobQuestion, questionResponse, document, organization, applicationSource, trackingLink } from '../../../../database/schema'
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
@@ -206,7 +206,7 @@ export default defineEventHandler(async (event) => {
   // ─────────────────────────────────────────────
 
   const existingJob = await db.query.job.findFirst({
-    where: and(eq(job.slug, slug), eq(job.status, 'open')),
+    where: and(eq(job.slug, slug), eq(job.status, 'open'), lte(job.activeFrom, new Date())),
     columns: { id: true, title: true, organizationId: true, requireResume: true, requireCoverLetter: true, autoScoreOnApply: true },
   })
 

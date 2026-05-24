@@ -4,6 +4,7 @@ import {
 } from 'lucide-vue-next'
 import { z } from 'zod'
 import { CURRENCY_OPTIONS, CURRENCY_VALUES } from '~~/shared/currency-options'
+import { todayDateInputValue, toDateInputValue } from '~~/shared/date-input'
 import { SALARY_UNIT_OPTIONS, SALARY_UNIT_VALUES } from '~~/shared/salary-options'
 
 definePageMeta({
@@ -44,6 +45,7 @@ const form = ref({
   salaryNegotiable: false,
   remoteStatus: '' as string,
   experienceLevel: '' as string,
+  activeFrom: todayDateInputValue(),
   validThrough: '',
   requireResume: false,
   requireCoverLetter: false,
@@ -65,6 +67,7 @@ watch([job, defaultSalaryUnit], ([j]) => {
       salaryNegotiable: j.salaryNegotiable ?? false,
       remoteStatus: j.remoteStatus ?? '',
       experienceLevel: j.experienceLevel ?? '',
+      activeFrom: j.activeFrom ? toDateInputValue(j.activeFrom) : todayDateInputValue(),
       validThrough: j.validThrough ? new Date(j.validThrough).toISOString().split('T')[0] ?? '' : '',
       requireResume: j.requireResume ?? false,
       requireCoverLetter: j.requireCoverLetter ?? false,
@@ -105,6 +108,7 @@ const editSchema = z.object({
   salaryNegotiable: z.boolean().optional(),
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).optional().or(z.literal('')),
   experienceLevel: z.enum(['junior', 'mid', 'senior', 'lead']).optional().or(z.literal('')),
+  activeFrom: z.string().optional(),
   validThrough: z.string().optional(),
   requireResume: z.boolean().optional(),
   requireCoverLetter: z.boolean().optional(),
@@ -146,6 +150,7 @@ async function handleSave() {
       salaryUnit: form.value.salaryNegotiable ? null : (form.value.salaryUnit || defaultSalaryUnit.value),
       remoteStatus: form.value.remoteStatus || null,
       experienceLevel: (form.value.experienceLevel as 'junior' | 'mid' | 'senior' | 'lead' | null) || null,
+      activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue()),
       // Send null when cleared so the DB column is set to NULL
       validThrough: form.value.validThrough ? new Date(form.value.validThrough) : null,
     }
@@ -501,34 +506,48 @@ function onSalaryMaxChange(e: Event) {
         </section>
 
         <!-- ═══════════════════════════════════════ -->
-        <!-- SECTION: Listing Expiry                  -->
+        <!-- SECTION: Listing Schedule                -->
         <!-- ═══════════════════════════════════════ -->
         <section class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6">
-          <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-1">Listing Expiry</h2>
+          <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-1">Listing Schedule</h2>
           <p class="text-xs text-surface-400 dark:text-surface-500 mb-5">
-            Set when this job posting automatically expires. Required for Google Jobs rich results.
+            Set when this job posting goes live and when it automatically expires.
           </p>
-          <div>
-            <label for="settings-valid-through" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-              Valid Through
-            </label>
-            <div class="flex items-center gap-2">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label for="settings-active-from" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                Active From
+              </label>
               <input
-                id="settings-valid-through"
-                v-model="form.validThrough"
+                id="settings-active-from"
+                v-model="form.activeFrom"
                 type="date"
-                class="w-full sm:w-64 rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
               />
-              <button
-                v-if="form.validThrough"
-                type="button"
-                class="text-xs text-surface-400 hover:text-danger-500 dark:hover:text-danger-400 transition-colors underline shrink-0"
-                @click="form.validThrough = ''"
-              >
-                Clear
-              </button>
+              <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Defaults to today for new jobs.</p>
             </div>
-            <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Leave blank if there is no fixed expiry date.</p>
+            <div>
+              <label for="settings-valid-through" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                Valid Through
+              </label>
+              <div class="flex items-center gap-2">
+                <input
+                  id="settings-valid-through"
+                  v-model="form.validThrough"
+                  type="date"
+                  class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                />
+                <button
+                  v-if="form.validThrough"
+                  type="button"
+                  class="text-xs text-surface-400 hover:text-danger-500 dark:hover:text-danger-400 transition-colors underline shrink-0"
+                  @click="form.validThrough = ''"
+                >
+                  Clear
+                </button>
+              </div>
+              <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Leave blank if there is no fixed expiry date.</p>
+            </div>
           </div>
         </section>
 

@@ -60,6 +60,7 @@ export const job = pgTable('job', {
   salaryUnit: text('salary_unit'),
   salaryNegotiable: boolean('salary_negotiable').notNull().default(false),
   remoteStatus: text('remote_status'),
+  activeFrom: timestamp('active_from').notNull().defaultNow(),
   validThrough: timestamp('valid_through'),
   /** Experience level required for this role */
   experienceLevel: experienceLevelEnum('experience_level'),
