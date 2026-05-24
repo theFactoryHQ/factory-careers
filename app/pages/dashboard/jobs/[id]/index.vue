@@ -1049,15 +1049,15 @@ function closeDocPreview() {
             Pipeline stages
           </span>
           <button
-            v-for="status in PIPELINE_STATUSES"
+            v-for="(status, idx) in PIPELINE_STATUSES"
             :key="`tab-${status}`"
             class="ui-filter-chip factory-pipeline-status-chip relative flex h-8 shrink-0 cursor-pointer items-center gap-2 px-3.5 text-xs !font-light uppercase leading-none tracking-normal transition-all duration-200 focus:outline-none"
             :class="[
               isFocusStatus(status) ? 'ui-filter-chip-active factory-pipeline-status-chip-active' : 'ui-filter-chip-inactive',
               `factory-pipeline-status-chip-${status}`,
             ]"
-            :title="`${formatStatusLabel(status)} ${statusCounts[status] ?? 0}`"
-            :aria-label="`${formatStatusLabel(status)} ${statusCounts[status] ?? 0}`"
+            :title="`${formatStatusLabel(status)} stage ${idx + 1}, ${statusCounts[status] ?? 0} applicants`"
+            :aria-label="`${formatStatusLabel(status)} stage ${idx + 1}, ${statusCounts[status] ?? 0} applicants`"
             style="font-weight: 300 !important"
             @click="setFocusStatus(status)"
           >
@@ -1070,8 +1070,9 @@ function closeDocPreview() {
               'bg-surface-400 dark:bg-surface-500': status === 'rejected',
             }" />
             <span class="factory-pipeline-status-chip-label">{{ formatStatusLabel(status) }}</span>
+            <span class="factory-pipeline-status-chip-number factory-pipeline-status-chip-stage tabular-nums">{{ idx + 1 }}</span>
             <span
-              class="factory-pipeline-status-chip-count tabular-nums text-xs font-normal transition-colors duration-200"
+              class="factory-pipeline-status-chip-number factory-pipeline-status-chip-count tabular-nums text-xs font-normal transition-colors duration-200"
               :class="isFocusStatus(status)
                 ? 'text-brand-600 dark:text-brand-400'
                 : 'text-surface-400 dark:text-surface-500'"

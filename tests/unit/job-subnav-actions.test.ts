@@ -79,8 +79,9 @@ describe('job subnav actions', () => {
     expect(jobDetail).toContain('px-3 sm:px-5 py-1')
     expect(jobDetail).toContain('factory-pipeline-status-chip relative flex h-8')
     expect(jobDetail).toContain('factory-pipeline-status-chip-label')
+    expect(jobDetail).toContain('factory-pipeline-status-chip-stage')
     expect(jobDetail).toContain('factory-pipeline-status-chip-count')
-    expect(jobDetail).toContain(':title="`${formatStatusLabel(status)} ${statusCounts[status] ?? 0}`"')
+    expect(jobDetail).toContain(':title="`${formatStatusLabel(status)} stage ${idx + 1}, ${statusCounts[status] ?? 0} applicants`"')
   })
 
   it('keeps job subnav action buttons the same 32px height as sibling tabs', () => {
