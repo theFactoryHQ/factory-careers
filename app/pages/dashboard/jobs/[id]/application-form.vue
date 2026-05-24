@@ -317,20 +317,11 @@ async function copyTrackingUrl(code: string) {
     <JobSubNavActions :job-id="jobId" />
 
     <!-- Loading -->
-    <div v-if="fetchStatus === 'pending'" class="text-center py-12 text-surface-400">
+    <div v-if="fetchStatus === 'pending' && !job" class="text-center py-12 text-surface-400">
       Loading…
     </div>
 
-    <!-- Error -->
-    <div
-      v-else-if="error"
-      class="ui-alert ui-alert-danger p-4 text-sm"
-    >
-      {{ error.statusCode === 404 ? 'Job not found.' : 'Failed to load job.' }}
-      <NuxtLink :to="$localePath('/dashboard')" class="underline ml-1">Back to Jobs</NuxtLink>
-    </div>
-
-    <template v-else-if="job">
+    <template v-if="job">
       <!-- Header -->
       <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -348,7 +339,6 @@ async function copyTrackingUrl(code: string) {
           Preview form
         </button>
       </div>
-
       <!-- Shareable application link (only when job is open) -->
       <div v-if="job.status === 'open'" class="ui-panel-brand p-5 mb-6">
         <div class="flex items-center gap-2 mb-2">
@@ -1044,5 +1034,14 @@ async function copyTrackingUrl(code: string) {
         </div>
       </div>
     </Teleport>
+
+    <!-- Error -->
+    <div
+      v-if="fetchStatus !== 'pending' && !job && error"
+      class="ui-alert ui-alert-danger p-4 text-sm"
+    >
+      {{ error.statusCode === 404 ? 'Job not found.' : 'Failed to load job.' }}
+      <NuxtLink :to="$localePath('/dashboard')" class="underline ml-1">Back to Jobs</NuxtLink>
+    </div>
   </div>
 </template>

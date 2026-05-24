@@ -304,20 +304,11 @@ function resetCriteria() {
     <JobSubNavActions :job-id="jobId" />
 
     <!-- Loading -->
-    <div v-if="jobFetchStatus === 'pending' || criteriaFetchStatus === 'pending'" class="text-center py-12 text-surface-400">
+    <div v-if="(jobFetchStatus === 'pending' && !job) || criteriaFetchStatus === 'pending'" class="text-center py-12 text-surface-400">
       Loading…
     </div>
 
-    <!-- Error -->
-    <div
-      v-else-if="jobError"
-      class="rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-4 text-sm text-danger-700 dark:text-danger-400"
-    >
-      {{ jobError.statusCode === 404 ? 'Job not found.' : 'Failed to load job.' }}
-      <NuxtLink :to="$localePath('/dashboard')" class="underline ml-1">Back to Jobs</NuxtLink>
-    </div>
-
-    <template v-else-if="job">
+    <template v-if="job && criteriaFetchStatus !== 'pending'">
       <!-- Header -->
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50">AI</h1>
@@ -325,7 +316,6 @@ function resetCriteria() {
           Configure how AI evaluates and scores candidates for <strong>{{ job.title }}</strong>.
         </p>
       </div>
-
       <!-- Empty state: mode selection -->
       <div v-if="scoringCriteria.length === 0" class="space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -609,5 +599,14 @@ function resetCriteria() {
         </label>
       </div>
     </template>
+
+    <!-- Error -->
+    <div
+      v-if="jobFetchStatus !== 'pending' && !job && jobError"
+      class="rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-4 text-sm text-danger-700 dark:text-danger-400"
+    >
+      {{ jobError.statusCode === 404 ? 'Job not found.' : 'Failed to load job.' }}
+      <NuxtLink :to="$localePath('/dashboard')" class="underline ml-1">Back to Jobs</NuxtLink>
+    </div>
   </div>
 </template>

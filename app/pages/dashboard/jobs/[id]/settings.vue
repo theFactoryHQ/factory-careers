@@ -72,26 +72,17 @@ async function handleDelete() {
   <div class="mx-auto max-w-3xl">
     <JobSubNavActions :job-id="jobId" />
 
-    <div v-if="fetchStatus === 'pending'" class="py-12 text-center text-surface-400">
+    <div v-if="fetchStatus === 'pending' && !job" class="py-12 text-center text-surface-400">
       Loading...
     </div>
 
-    <div
-      v-else-if="fetchError"
-      class="rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700 dark:border-danger-800 dark:bg-danger-950 dark:text-danger-400"
-    >
-      {{ fetchError.statusCode === 404 ? 'Job not found.' : 'Failed to load job.' }}
-      <NuxtLink :to="$localePath('/dashboard/jobs')" class="ml-1 underline">Back to Jobs</NuxtLink>
-    </div>
-
-    <template v-else-if="job">
+    <template v-if="job">
       <div class="mb-8">
         <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50">Job Settings</h1>
         <p class="mt-1 text-sm text-surface-500 dark:text-surface-400">
           Manage operational settings for <strong>{{ job.title }}</strong>.
         </p>
       </div>
-
       <form class="space-y-8" @submit.prevent="handleSave">
         <section class="ui-panel p-6">
           <h2 class="mb-1 text-base font-semibold text-surface-900 dark:text-surface-100">Automation</h2>
@@ -168,5 +159,13 @@ async function handleDelete() {
         </div>
       </section>
     </template>
+
+    <div
+      v-if="fetchStatus !== 'pending' && !job && fetchError"
+      class="rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700 dark:border-danger-800 dark:bg-danger-950 dark:text-danger-400"
+    >
+      {{ fetchError.statusCode === 404 ? 'Job not found.' : 'Failed to load job.' }}
+      <NuxtLink :to="$localePath('/dashboard/jobs')" class="ml-1 underline">Back to Jobs</NuxtLink>
+    </div>
   </div>
 </template>

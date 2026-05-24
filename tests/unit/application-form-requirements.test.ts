@@ -70,4 +70,22 @@ describe('application form requirement cards', () => {
     expect(source).toContain('Cover Letter')
     expect(source).toContain('v-for="q in previewQuestions"')
   })
+
+  it('renders loaded job content before showing stale job fetch errors', () => {
+    const applicationPage = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
+    const settingsPage = readProjectFile('app/pages/dashboard/jobs/[id]/settings.vue')
+    const aiPage = readProjectFile('app/pages/dashboard/jobs/[id]/ai-analysis.vue')
+
+    expect(applicationPage).toContain('fetchStatus === \'pending\' && !job')
+    expect(applicationPage.indexOf('<template v-if="job">')).toBeLessThan(applicationPage.indexOf('Failed to load job.'))
+    expect(applicationPage).toContain('fetchStatus !== \'pending\' && !job && error')
+
+    expect(settingsPage).toContain('fetchStatus === \'pending\' && !job')
+    expect(settingsPage.indexOf('<template v-if="job">')).toBeLessThan(settingsPage.indexOf('Failed to load job.'))
+    expect(settingsPage).toContain('fetchStatus !== \'pending\' && !job && fetchError')
+
+    expect(aiPage).toContain('jobFetchStatus === \'pending\' && !job')
+    expect(aiPage.indexOf('<template v-if="job && criteriaFetchStatus !== \'pending\'">')).toBeLessThan(aiPage.indexOf('Failed to load job.'))
+    expect(aiPage).toContain('jobFetchStatus !== \'pending\' && !job && jobError')
+  })
 })
