@@ -2309,6 +2309,29 @@
     opacity: 0.82;
   }
 
+  @media (max-width: 1100px) {
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-strip {
+      justify-content: flex-start;
+      overflow-x: visible;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-chip {
+      width: 60px;
+      justify-content: center;
+      gap: 6px !important;
+      padding-inline: 8px !important;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-transition-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+    }
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-application-timestamps {
     color: rgb(255 255 255 / 0.58);
   }

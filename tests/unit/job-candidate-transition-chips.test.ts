@@ -14,8 +14,11 @@ describe('job candidate transition chips', () => {
     const shortcutRule = css.match(/\.factory-application-transition-shortcut\s*\{[^}]+\}/)?.[0] ?? ''
     const transitionChip = page.match(/factory-application-transition-chip[\s\S]*?<\/button>/)?.[0] ?? ''
 
+    expect(page).toContain('factory-application-transition-strip mx-auto flex max-w-4xl flex-nowrap')
     expect(page).toContain('factory-application-transition-chip')
     expect(transitionChip).toContain('ApplicationTransitionIcon :status="nextStatus"')
+    expect(transitionChip).toContain('factory-application-transition-label')
+    expect(transitionChip).toContain(':title="`${getApplicationTransitionLabel(nextStatus)} ${idx + 1}`"')
     expect(transitionChip).not.toContain('getApplicationTransitionDotClass(nextStatus)')
     expect(transitionChip).not.toContain('pipeline-status-dot')
     expect(page).toContain('factory-application-transition-shortcut')
@@ -26,5 +29,7 @@ describe('job candidate transition chips', () => {
     expect(chipRule).toContain('background-color: #050505 !important')
     expect(chipRule).toContain('font-weight: 300 !important')
     expect(shortcutRule).toContain('border-left: 1px solid rgb(255 255 255 / 0.12)')
+    expect(css).toMatch(/@media \(max-width: 1100px\)[\s\S]*\.factory-application-transition-label[\s\S]*clip:\s*rect\(0, 0, 0, 0\)/)
+    expect(css).toMatch(/@media \(max-width: 1100px\)[\s\S]*\.factory-application-transition-chip\s*\{[\s\S]*width:\s*60px/)
   })
 })
