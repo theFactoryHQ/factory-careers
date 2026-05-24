@@ -46,4 +46,23 @@ describe('job candidate header', () => {
     expect(detailTabs).not.toContain('type="checkbox"')
     expect(detailTabs).not.toContain('Sections')
   })
+
+  it('keeps candidate detail tabs fixed-width and icon-first instead of horizontally scrollable', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+    const styles = readProjectFile('app/assets/css/main.css')
+    const detailTabs = source.slice(
+      source.indexOf('<!-- Detail tabs -->'),
+      source.indexOf('<!-- Detail content -->'),
+    )
+
+    expect(detailTabs).toContain('factory-candidate-detail-tabs mx-auto grid h-11 max-w-4xl grid-cols-7')
+    expect(detailTabs).not.toContain('overflow-x-auto')
+    expect(detailTabs).not.toContain('whitespace-nowrap')
+    for (const icon of ['UserRound', 'Brain', 'Calendar', 'FileText', 'MessageSquare', 'History', 'SlidersHorizontal']) {
+      expect(detailTabs).toContain(`<${icon} class="factory-candidate-detail-tab-icon size-3.5"`)
+    }
+    expect(styles).toContain('@media (max-width: 1280px)')
+    expect(styles).toContain('.factory-candidate-detail-tab-label')
+    expect(styles).toContain('clip: rect(0, 0, 0, 0);')
+  })
 })

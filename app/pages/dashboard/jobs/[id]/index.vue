@@ -1451,89 +1451,108 @@ function closeDocPreview() {
 
             <!-- Detail tabs -->
             <div class="border-b border-white/10 bg-white/[0.02] px-4 sm:px-6 ui-dashboard-panel-header">
-              <div class="factory-dashboard-tabs mx-auto max-w-4xl flex gap-1 -mb-px overflow-x-auto scrollbar-none whitespace-nowrap">
+              <div class="factory-dashboard-tabs factory-candidate-detail-tabs mx-auto grid h-11 max-w-4xl grid-cols-7 gap-0.5">
                 <button
-                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
+                  class="factory-candidate-detail-tab cursor-pointer"
+                  title="Overview"
+                  aria-label="Overview"
                   :class="detailTab === 'overview'
-                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
+                    ? 'factory-candidate-detail-tab-active'
+                    : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'overview'"
                 >
-                  Overview
+                  <UserRound class="factory-candidate-detail-tab-icon size-3.5" />
+                  <span class="factory-candidate-detail-tab-label">Overview</span>
                 </button>
                 <button
-                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
+                  class="factory-candidate-detail-tab cursor-pointer"
+                  title="AI"
+                  aria-label="AI"
                   :class="detailTab === 'ai-analysis'
-                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
+                    ? 'factory-candidate-detail-tab-active'
+                    : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'ai-analysis'"
                 >
-                  AI
+                  <Brain class="factory-candidate-detail-tab-icon size-3.5" />
+                  <span class="factory-candidate-detail-tab-label">AI</span>
                 </button>
                 <button
-                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
+                  class="factory-candidate-detail-tab cursor-pointer"
+                  :title="`Interviews${currentApplicationInterviews.length > 0 ? ` (${currentApplicationInterviews.length})` : ''}`"
+                  :aria-label="`Interviews${currentApplicationInterviews.length > 0 ? ` (${currentApplicationInterviews.length})` : ''}`"
                   :class="detailTab === 'interviews'
-                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
+                    ? 'factory-candidate-detail-tab-active'
+                    : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'interviews'"
                 >
-                  Interviews
+                  <Calendar class="factory-candidate-detail-tab-icon size-3.5" />
+                  <span class="factory-candidate-detail-tab-label">Interviews</span>
                   <span
                     v-if="currentApplicationInterviews.length > 0"
-                    class="ml-1 text-xs text-surface-400"
+                    class="factory-candidate-detail-tab-count"
                   >
-                    ({{ currentApplicationInterviews.length }})
+                    {{ currentApplicationInterviews.length }}
                   </span>
                 </button>
                 <button
-                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
+                  class="factory-candidate-detail-tab cursor-pointer"
+                  :title="`Documents${resolvedCurrentApplication?.candidate.documents?.length ? ` (${resolvedCurrentApplication.candidate.documents.length})` : ''}`"
+                  :aria-label="`Documents${resolvedCurrentApplication?.candidate.documents?.length ? ` (${resolvedCurrentApplication.candidate.documents.length})` : ''}`"
                   :class="detailTab === 'documents'
-                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
+                    ? 'factory-candidate-detail-tab-active'
+                    : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'documents'"
                 >
-                  Documents
+                  <FileText class="factory-candidate-detail-tab-icon size-3.5" />
+                  <span class="factory-candidate-detail-tab-label">Documents</span>
                   <span
                     v-if="resolvedCurrentApplication?.candidate.documents?.length"
-                    class="ml-1 text-xs text-surface-400"
+                    class="factory-candidate-detail-tab-count"
                   >
-                    ({{ resolvedCurrentApplication.candidate.documents.length }})
+                    {{ resolvedCurrentApplication.candidate.documents.length }}
                   </span>
                 </button>
                 <button
-                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px"
+                  class="factory-candidate-detail-tab cursor-pointer"
+                  :title="`Responses${resolvedCurrentApplication?.responses?.length ? ` (${resolvedCurrentApplication.responses.length})` : ''}`"
+                  :aria-label="`Responses${resolvedCurrentApplication?.responses?.length ? ` (${resolvedCurrentApplication.responses.length})` : ''}`"
                   :class="detailTab === 'responses'
-                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
+                    ? 'factory-candidate-detail-tab-active'
+                    : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'responses'"
                 >
-                  Responses
+                  <MessageSquare class="factory-candidate-detail-tab-icon size-3.5" />
+                  <span class="factory-candidate-detail-tab-label">Responses</span>
                   <span
                     v-if="resolvedCurrentApplication?.responses?.length"
-                    class="ml-1 text-xs text-surface-400"
+                    class="factory-candidate-detail-tab-count"
                   >
-                    ({{ resolvedCurrentApplication.responses.length }})
+                    {{ resolvedCurrentApplication.responses.length }}
                   </span>
                 </button>
                 <button
-                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px flex items-center gap-1.5"
+                  class="factory-candidate-detail-tab cursor-pointer"
+                  title="Timeline"
+                  aria-label="Timeline"
                   :class="detailTab === 'timeline'
-                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
+                    ? 'factory-candidate-detail-tab-active'
+                    : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'timeline'"
                 >
-                  <History class="size-3.5" />
-                  Timeline
+                  <History class="factory-candidate-detail-tab-icon size-3.5" />
+                  <span class="factory-candidate-detail-tab-label">Timeline</span>
                 </button>
                 <button
-                  class="cursor-pointer px-3.5 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px flex items-center gap-1.5"
+                  class="factory-candidate-detail-tab cursor-pointer"
+                  title="Properties"
+                  aria-label="Properties"
                   :class="detailTab === 'properties'
-                    ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                    : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:text-surface-400 dark:hover:text-surface-300 dark:hover:border-surface-600'"
+                    ? 'factory-candidate-detail-tab-active'
+                    : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'properties'"
                 >
-                  <SlidersHorizontal class="size-3.5" />
-                  Properties
+                  <SlidersHorizontal class="factory-candidate-detail-tab-icon size-3.5" />
+                  <span class="factory-candidate-detail-tab-label">Properties</span>
                 </button>
               </div>
             </div>

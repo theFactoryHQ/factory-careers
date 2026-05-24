@@ -2346,6 +2346,82 @@
     color: #ffffff !important;
   }
 
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tabs {
+    overflow: visible !important;
+    white-space: normal !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tab {
+    position: relative;
+    display: inline-flex;
+    min-width: 0;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-bottom: 2px solid transparent;
+    padding: 0 10px;
+    color: rgb(255 255 255 / 0.56);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1;
+    text-transform: uppercase;
+    transition:
+      border-color 150ms ease,
+      color 150ms ease,
+      background-color 150ms ease;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tab:hover {
+    border-bottom-color: rgb(255 255 255 / 0.26);
+    background-color: rgb(255 255 255 / 0.035);
+    color: #ffffff;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tab-active {
+    border-bottom-color: var(--color-brand-500);
+    color: var(--color-brand-300);
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tab-icon {
+    flex: 0 0 auto;
+    opacity: 0.86;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tab-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tab-count {
+    display: inline-flex;
+    min-width: 16px;
+    align-items: center;
+    justify-content: center;
+    border-left: 1px solid rgb(255 255 255 / 0.16);
+    padding-left: 6px;
+    color: rgb(255 255 255 / 0.46);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 1280px) {
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tab {
+      padding-inline: 6px;
+    }
+
+    :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tab-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+    }
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-status-action {
     height: 32px;
     min-height: 32px;
