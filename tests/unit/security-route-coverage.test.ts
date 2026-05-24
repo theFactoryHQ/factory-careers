@@ -118,7 +118,7 @@ describe('P0 tenant-isolation route coverage', () => {
     'server/api/documents/[id]/download.get.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, orgId)'],
     'server/api/documents/[id]/parse.post.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, orgId)'],
     'server/api/documents/[id]/preview.get.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, orgId)'],
-    'server/api/documents/parse-all.post.ts': ['eq(document.id, doc.id),\n            eq(document.organizationId, orgId)'],
+    'server/api/documents/parse-all.post.ts': ['eq(document.id, doc.id)', 'eq(document.organizationId, orgId)'],
     'server/api/comments/[id].patch.ts': ['eq(comment.id, id)', 'eq(comment.organizationId, orgId)'],
     'server/api/comments/[id].delete.ts': ['eq(comment.id, id)', 'eq(comment.organizationId, orgId)'],
     'server/api/interviews/[id]/index.get.ts': ['eq(interview.id, id)', 'eq(interview.organizationId, orgId)'],
