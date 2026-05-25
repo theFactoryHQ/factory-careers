@@ -147,7 +147,7 @@ async function submitForm() {
     const message = (err as { data?: { statusMessage?: string }; statusMessage?: string })?.data?.statusMessage
       ?? (err as { statusMessage?: string }).statusMessage
       ?? 'Failed to save property'
-    formError.value = message
+    toast.error('Failed to save property', { message })
   } finally {
     isSaving.value = false
   }

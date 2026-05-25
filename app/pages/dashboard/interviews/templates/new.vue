@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  Save, Eye, EyeOff, Mail, AlertCircle, FileText,
+  Save, Eye, EyeOff, Mail, FileText,
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -17,6 +17,7 @@ useSeoMeta({
 const localePath = useLocalePath()
 const { createTemplate } = useEmailTemplates()
 const { handlePreviewReadOnlyError } = usePreviewReadOnly()
+const toast = useToast()
 
 // ─── Form state ──────────────────────────────────────────────────
 const form = reactive({
@@ -27,7 +28,6 @@ const form = reactive({
 
 const showPreview = ref(false)
 const isSaving = ref(false)
-const saveError = ref('')
 
 const canSave = computed(() =>
   form.name.trim().length > 0
@@ -57,9 +57,8 @@ const previewBody = computed(() => renderTemplatePreview(form.body, sampleVariab
 
 // ─── Save ────────────────────────────────────────────────────────
 async function handleCreate() {
-  saveError.value = ''
   if (!canSave.value) {
-    saveError.value = 'All fields are required'
+    toast.error('All fields are required')
     return
   }
 
@@ -73,7 +72,7 @@ async function handleCreate() {
     await navigateTo(localePath(`/dashboard/interviews/templates/${(created as any).id}`))
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
-    saveError.value = err?.data?.statusMessage ?? 'Failed to create template'
+    toast.error('Failed to create template', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     isSaving.value = false
   }
@@ -122,12 +121,6 @@ async function handleCreate() {
           {{ isSaving ? 'Creating…' : 'Create Template' }}
         </button>
       </div>
-    </div>
-
-    <!-- Error -->
-    <div v-if="saveError" class="ui-alert-danger mb-6 flex items-start gap-2.5 rounded-xl p-4 text-sm">
-      <AlertCircle class="size-4 shrink-0 mt-0.5" />
-      {{ saveError }}
     </div>
 
     <div class="grid gap-6" :class="showPreview ? 'lg:grid-cols-2' : 'lg:grid-cols-[1fr_320px]'">

@@ -11,6 +11,7 @@ useSeoMeta({
 })
 
 const { data: session } = await authClient.useSession(useFetch)
+const toast = useToast()
 
 // ─────────────────────────────────────────────
 // Profile editing
@@ -18,7 +19,6 @@ const { data: session } = await authClient.useSession(useFetch)
 const profileName = ref('')
 const isSavingProfile = ref(false)
 const profileSuccess = ref(false)
-const profileError = ref('')
 
 watch(() => session.value?.user, (user) => {
   if (user) {
@@ -28,7 +28,6 @@ watch(() => session.value?.user, (user) => {
 
 async function handleSaveProfile() {
   isSavingProfile.value = true
-  profileError.value = ''
   profileSuccess.value = false
 
   try {
@@ -40,7 +39,7 @@ async function handleSaveProfile() {
     setTimeout(() => { profileSuccess.value = false }, 3000)
   }
   catch (err: unknown) {
-    profileError.value = err instanceof Error ? err.message : 'Failed to update profile'
+    toast.error('Failed to update profile', { message: err instanceof Error ? err.message : undefined })
   }
   finally {
     isSavingProfile.value = false
@@ -149,9 +148,6 @@ function getInitials(name: string | undefined): string {
           </Transition>
         </div>
 
-        <div v-if="profileError" class="ui-alert ui-alert-danger">
-          {{ profileError }}
-        </div>
       </div>
     </section>
 

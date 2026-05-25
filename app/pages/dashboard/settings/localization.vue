@@ -11,6 +11,7 @@ useSeoMeta({
 const { allowed: canUpdateOrg } = usePermission({ organization: ['update'] })
 const { nameDisplayFormat, dateFormat, updateSettings } = useOrgSettings()
 const { track } = useTrack()
+const toast = useToast()
 
 const localNameFormat = ref<'first_last' | 'last_first'>('first_last')
 const localDateFormat = ref<'mdy' | 'dmy' | 'ymd'>('mdy')
@@ -42,12 +43,10 @@ watch([nameDisplayFormat, dateFormat], ([nf, df]) => {
 
 const isSaving = ref(false)
 const saveSuccess = ref(false)
-const saveError = ref('')
 
 async function handleSave() {
   if (!canUpdateOrg.value) return
   isSaving.value = true
-  saveError.value = ''
   saveSuccess.value = false
 
   try {
@@ -60,7 +59,7 @@ async function handleSave() {
     setTimeout(() => { saveSuccess.value = false }, 3000)
   }
   catch (err: unknown) {
-    saveError.value = err instanceof Error ? err.message : 'Failed to save settings'
+    toast.error('Failed to save settings', { message: err instanceof Error ? err.message : undefined })
   }
   finally {
     isSaving.value = false
@@ -161,14 +160,6 @@ const previewDateFormatted = computed(() => {
               <span class="font-medium text-surface-900 dark:text-surface-100">{{ previewDateFormatted }}</span>
             </div>
           </div>
-        </div>
-
-        <!-- Error -->
-        <div
-          v-if="saveError"
-          class="ui-alert ui-alert-danger"
-        >
-          {{ saveError }}
         </div>
 
         <!-- Save button -->

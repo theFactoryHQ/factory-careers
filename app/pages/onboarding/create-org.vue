@@ -17,13 +17,13 @@ const { acceptInviteLink } = useInviteLinks()
 const localePath = useLocalePath()
 const config = useRuntimeConfig()
 const { track } = useTrack()
+const toast = useToast()
 
 onMounted(() => track('onboarding_viewed', { mode: viewMode.value }))
 
 const orgName = ref('')
 const slug = ref('')
 const slugEdited = ref(false)
-const error = ref('')
 const isLoading = ref(false)
 const showCreateForm = ref(false)
 const publicOrgCreationEnabled = computed(
@@ -90,25 +90,23 @@ function onSlugInput() {
 }
 
 async function handleCreateOrg() {
-  error.value = ''
-
   if (!publicOrgCreationEnabled.value) {
-    error.value = 'Factory Careers uses a single Factory organization. Ask an administrator for an invitation.'
+    toast.error('Organization creation disabled', { message: 'Factory Careers uses a single Factory organization. Ask an administrator for an invitation.' })
     return
   }
 
   if (!orgName.value.trim()) {
-    error.value = 'Organization name is required.'
+    toast.error('Organization name required')
     return
   }
 
   if (!slug.value.trim()) {
-    error.value = 'Slug is required.'
+    toast.error('Slug required')
     return
   }
 
   if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(slug.value)) {
-    error.value = 'Slug must be lowercase alphanumeric with hyphens, and cannot start or end with a hyphen.'
+    toast.error('Invalid slug', { message: 'Slug must be lowercase alphanumeric with hyphens, and cannot start or end with a hyphen.' })
     return
   }
 
@@ -121,7 +119,7 @@ async function handleCreateOrg() {
     await createOrg({ name: orgName.value.trim(), slug: slug.value.trim() })
   }
   catch (err: any) {
-    error.value = err?.message ?? 'Failed to create organization. The slug may already be taken.'
+    toast.error('Failed to create organization', { message: err?.message ?? 'The slug may already be taken.' })
     isLoading.value = false
   }
 }
@@ -130,7 +128,6 @@ async function handleCreateOrg() {
 // Join existing org — invite code
 // ─────────────────────────────────────────────
 const inviteCode = ref('')
-const inviteCodeError = ref('')
 const isAcceptingCode = ref(false)
 const inviteCodeSuccess = ref(false)
 
@@ -155,11 +152,10 @@ function extractToken(input: string): string {
 }
 
 async function handleAcceptInviteCode() {
-  inviteCodeError.value = ''
   const token = extractToken(inviteCode.value)
 
   if (!token) {
-    inviteCodeError.value = 'Please enter an invite link or code.'
+    toast.error('Invite code required', { message: 'Please enter an invite link or code.' })
     return
   }
 
@@ -182,7 +178,7 @@ async function handleAcceptInviteCode() {
     }, 1500)
   }
   catch (err: any) {
-    inviteCodeError.value = err?.data?.statusMessage || 'Invalid, expired, or already used invite link.'
+    toast.error('Could not join organization', { message: err?.data?.statusMessage || 'Invalid, expired, or already used invite link.' })
   }
   finally {
     isAcceptingCode.value = false
@@ -195,11 +191,9 @@ async function handleAcceptInviteCode() {
 const orgSearch = ref('')
 const orgSearchResults = ref<Array<{ id: string; name: string; slug: string }>>([])
 const isSearching = ref(false)
-const searchError = ref('')
 const joinRequestMessage = ref('')
 const isSubmittingRequest = ref(false)
 const requestSuccess = ref('')
-const requestError = ref('')
 const selectedOrg = ref<{ id: string; name: string; slug: string } | null>(null)
 
 let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined
@@ -218,7 +212,6 @@ async function handleOrgSearch() {
   if (q.length < 2) return
 
   isSearching.value = true
-  searchError.value = ''
 
   try {
     const data = await $fetch('/api/org-search', {
@@ -227,7 +220,7 @@ async function handleOrgSearch() {
     orgSearchResults.value = data as typeof orgSearchResults.value
   }
   catch (err: any) {
-    searchError.value = err?.data?.statusMessage || 'Search failed'
+    toast.error('Search failed', { message: err?.data?.statusMessage })
   }
   finally {
     isSearching.value = false
@@ -238,7 +231,6 @@ async function handleSubmitJoinRequest() {
   if (!selectedOrg.value) return
 
   isSubmittingRequest.value = true
-  requestError.value = ''
   requestSuccess.value = ''
 
   try {
@@ -255,7 +247,7 @@ async function handleSubmitJoinRequest() {
     joinRequestMessage.value = ''
   }
   catch (err: any) {
-    requestError.value = err?.data?.statusMessage || 'Failed to send join request'
+    toast.error('Failed to send join request', { message: err?.data?.statusMessage })
   }
   finally {
     isSubmittingRequest.value = false
@@ -350,7 +342,6 @@ async function handleSubmitJoinRequest() {
           Join
         </button>
       </div>
-      <div v-if="inviteCodeError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">{{ inviteCodeError }}</div>
     </div>
 
     <!-- Divider -->
@@ -382,8 +373,6 @@ async function handleSubmitJoinRequest() {
           <Loader2 v-if="isSearching" class="size-4 animate-spin text-surface-400" />
         </template>
       </GooeySearchInput>
-
-      <div v-if="searchError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">{{ searchError }}</div>
 
       <!-- Search results -->
       <div v-if="orgSearchResults.length > 0 && !selectedOrg" class="mt-2 border border-surface-200 dark:border-surface-700 rounded-md overflow-hidden">
@@ -442,8 +431,6 @@ async function handleSubmitJoinRequest() {
         </button>
       </div>
 
-      <div v-if="requestError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">{{ requestError }}</div>
-
       <!-- Request success -->
       <div v-if="requestSuccess" class="ui-alert ui-alert-success mt-2 flex items-center gap-2 text-xs">
         <Check class="size-4 flex-shrink-0" />
@@ -468,8 +455,6 @@ async function handleSubmitJoinRequest() {
     <p class="text-sm text-surface-500 dark:text-surface-400 text-center mb-2">
       Set up your workspace to start managing candidates and jobs.
     </p>
-
-    <div v-if="error" class="ui-alert ui-alert-danger">{{ error }}</div>
 
     <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
       <span>Organization name</span>

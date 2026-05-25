@@ -206,14 +206,12 @@ const requireResume = ref(false)
 const requireCoverLetter = ref(false)
 const isSavingRequirements = ref(false)
 const requirementsSaved = ref(false)
-const requirementsError = ref<string | null>(null)
 const applicationComplianceEnabled = ref(true)
 const includeEeo = ref(true)
 const includeVeteran = ref(true)
 const includeDisability = ref(true)
 const isSavingCompliance = ref(false)
 const complianceSaved = ref(false)
-const complianceError = ref<string | null>(null)
 const previewComplianceEnabled = computed(() =>
   applicationComplianceEnabled.value && (includeEeo.value || includeVeteran.value || includeDisability.value),
 )
@@ -232,13 +230,12 @@ watch(job, (j) => {
 
 async function saveRequirements() {
   isSavingRequirements.value = true
-  requirementsError.value = null
   try {
     await updateJob({ requireResume: requireResume.value, requireCoverLetter: requireCoverLetter.value })
     requirementsSaved.value = true
     setTimeout(() => { requirementsSaved.value = false }, 2000)
   } catch (err: any) {
-    requirementsError.value = err?.data?.statusMessage ?? 'Failed to save requirements.'
+    toast.error('Failed to save requirements', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     isSavingRequirements.value = false
   }
@@ -246,7 +243,6 @@ async function saveRequirements() {
 
 async function saveComplianceQuestions() {
   isSavingCompliance.value = true
-  complianceError.value = null
   try {
     await updateJob({
       applicationComplianceEnabled: applicationComplianceEnabled.value,
@@ -257,7 +253,7 @@ async function saveComplianceQuestions() {
     complianceSaved.value = true
     setTimeout(() => { complianceSaved.value = false }, 2000)
   } catch (err: any) {
-    complianceError.value = err?.data?.statusMessage ?? 'Failed to save compliance questions.'
+    toast.error('Failed to save compliance questions', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     isSavingCompliance.value = false
   }
@@ -682,9 +678,6 @@ async function copyTrackingUrl(code: string) {
         >
           {{ requirementsSaved ? 'Saved!' : isSavingRequirements ? 'Saving…' : 'Save requirements' }}
         </button>
-        <p v-if="requirementsError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">
-          {{ requirementsError }}
-        </p>
       </div>
 
       <!-- Compliance Questions -->
@@ -766,9 +759,6 @@ async function copyTrackingUrl(code: string) {
         >
           {{ complianceSaved ? 'Saved!' : isSavingCompliance ? 'Saving...' : 'Save compliance questions' }}
         </button>
-        <p v-if="complianceError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">
-          {{ complianceError }}
-        </p>
       </div>
 
       <!-- Application Form Questions -->

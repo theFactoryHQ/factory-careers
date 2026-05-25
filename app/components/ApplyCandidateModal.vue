@@ -38,14 +38,13 @@ const { data: candidateData, status: searchStatus } = useFetch('/api/candidates'
 const candidates = computed(() => candidateData.value?.data ?? [])
 const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 const { formatCandidateName } = useOrgSettings()
+const toast = useToast()
 
 // Apply candidate
 const isApplying = ref(false)
-const applyError = ref('')
 
 async function applyCandidate(candidateId: string) {
   isApplying.value = true
-  applyError.value = ''
   try {
     await $fetch('/api/applications', {
       method: 'POST',
@@ -54,7 +53,7 @@ async function applyCandidate(candidateId: string) {
     emit('created')
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
-    applyError.value = err.data?.statusMessage ?? 'Failed to apply candidate'
+    toast.error('Failed to apply candidate', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
   } finally {
     isApplying.value = false
   }
@@ -96,11 +95,6 @@ async function applyCandidate(candidateId: string) {
             reserve-expanded-space
             tone="inverse"
           />
-        </div>
-
-        <!-- Error -->
-        <div v-if="applyError" class="mx-5 mt-3 border border-danger-500/35 bg-danger-950/50 p-3 text-sm leading-6 text-danger-100">
-          {{ applyError }}
         </div>
 
         <!-- Candidate list -->

@@ -14,6 +14,7 @@ const { allowed: canUpdateOrg, isLoading: isUpdateOrgPermissionLoading } = usePe
 const { allowed: canDeleteOrg } = usePermission({ organization: ['delete'] })
 const { defaultSalaryUnit, updateSettings } = useOrgSettings()
 const { track } = useTrack()
+const toast = useToast()
 const config = useRuntimeConfig()
 const factoryOrgName = computed(() => String(config.public.factoryOrgName || 'Factory').trim())
 const factoryOrgSlug = computed(() => String(config.public.factoryOrgSlug || 'factory').trim().toLowerCase())
@@ -38,7 +39,6 @@ const orgSlug = ref(factoryOrgSlug.value)
 const localDefaultSalaryUnit = ref<'YEAR' | 'MONTH' | 'HOUR'>('YEAR')
 const isSaving = ref(false)
 const saveSuccess = ref(false)
-const saveError = ref('')
 
 /** Slug must be lowercase alphanumeric + hyphens, 2-48 chars, no leading/trailing hyphen */
 const slugPattern = /^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?$/
@@ -70,15 +70,14 @@ async function handleSaveOrg() {
 
   // Prevent saving empty or invalid values
   if (!trimmedName) {
-    saveError.value = 'Organization name cannot be empty.'
+    toast.error('Organization name required', { message: 'Organization name cannot be empty.' })
     return
   }
   if (!trimmedSlug || slugError.value) {
-    saveError.value = slugError.value || 'Organization slug cannot be empty.'
+    toast.error('Invalid organization slug', { message: slugError.value || 'Organization slug cannot be empty.' })
     return
   }
   isSaving.value = true
-  saveError.value = ''
   saveSuccess.value = false
 
   try {
@@ -96,7 +95,7 @@ async function handleSaveOrg() {
     setTimeout(() => { saveSuccess.value = false }, 3000)
   }
   catch (err: unknown) {
-    saveError.value = err instanceof Error ? err.message : 'Failed to update organization'
+    toast.error('Failed to update organization', { message: err instanceof Error ? err.message : undefined })
   }
   finally {
     isSaving.value = false
@@ -109,7 +108,6 @@ async function handleSaveOrg() {
 const showDeleteConfirm = ref(false)
 const deleteConfirmText = ref('')
 const isDeleting = ref(false)
-const deleteError = ref('')
 
 const canConfirmDelete = computed(() => {
   const name = activeOrg.value?.name
@@ -119,7 +117,6 @@ const canConfirmDelete = computed(() => {
 async function handleDeleteOrg() {
   if (!canDeleteOrg.value || !canConfirmDelete.value) return
   isDeleting.value = true
-  deleteError.value = ''
 
   try {
     track('org_deleted')
@@ -132,7 +129,7 @@ async function handleDeleteOrg() {
     await navigateTo(localePath('/onboarding/create-org'), { external: true })
   }
   catch (err: unknown) {
-    deleteError.value = err instanceof Error ? err.message : 'Failed to delete organization'
+    toast.error('Failed to delete organization', { message: err instanceof Error ? err.message : undefined })
   }
   finally {
     isDeleting.value = false
@@ -256,9 +253,6 @@ async function handleDeleteOrg() {
           </Transition>
         </div>
 
-        <div v-if="saveError" class="ui-alert ui-alert-danger">
-          {{ saveError }}
-        </div>
       </div>
     </section>
 
@@ -324,9 +318,6 @@ async function handleDeleteOrg() {
               >
                 Cancel
               </button>
-            </div>
-            <div v-if="deleteError" class="ui-alert ui-alert-danger">
-              {{ deleteError }}
             </div>
           </div>
         </Transition>
