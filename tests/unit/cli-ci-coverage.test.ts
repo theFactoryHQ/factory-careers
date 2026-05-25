@@ -16,7 +16,7 @@ describe('CLI CI coverage', () => {
     expect(workflow).toContain('npm run typecheck')
     expect(workflow).toContain('npm run build')
     expect(workflow).toContain('Check CLI parity evidence')
-    expect(workflow).toContain('scripts/cli-parity-check.ts --stdin')
+    expect(workflow).toContain('npm run preflight:cli-parity')
     expect(workflow).toContain('Run CLI smoke tests')
     expect(workflow).toContain('./packages/careers-cli/bin/factory-careers.mjs --help')
     expect(workflow).toContain('./packages/careers-cli/bin/factory-careers.mjs auth status --json')

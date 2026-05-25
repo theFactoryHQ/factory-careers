@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { exit } from 'node:process'
+import { argv, exit } from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 const productionEnv = {
@@ -44,7 +44,6 @@ export function getFetchArgsForBaseRef(baseRef, fallbackRemote = 'origin') {
 
     return [
       '--no-tags',
-      '--depth=1',
       remote,
       `+refs/heads/${branch}:refs/remotes/${remote}/${branch}`,
     ]
@@ -55,13 +54,12 @@ export function getFetchArgsForBaseRef(baseRef, fallbackRemote = 'origin') {
 
     return [
       '--no-tags',
-      '--depth=1',
       fallbackRemote,
       `+refs/heads/${branch}:refs/remotes/${fallbackRemote}/${branch}`,
     ]
   }
 
-  return ['--no-tags', '--depth=1', fallbackRemote, baseRef]
+  return ['--no-tags', fallbackRemote, baseRef]
 }
 
 function getChangedFiles() {
@@ -129,7 +127,7 @@ function runCliSmokeTests() {
 
 export function getPrPreflightSteps() {
   return [
-    { name: 'CLI parity evidence', run: runCliParityEvidence },
+    { name: 'CLI parity evidence', aliases: ['cli-parity'], run: runCliParityEvidence },
     { name: 'Unit tests', run: () => run('npm', ['run', 'test:unit']) },
     { name: 'Lint', run: runOptionalLint },
     { name: 'Typecheck', run: () => run('npm', ['run', 'typecheck']) },
@@ -142,8 +140,25 @@ export function getPrPreflightSteps() {
   ]
 }
 
+function getStepSlug(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
+
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  for (const step of getPrPreflightSteps()) {
+  const stepArgIndex = argv.indexOf('--step')
+  const requestedStep = stepArgIndex >= 0 ? argv[stepArgIndex + 1] : ''
+  const steps = requestedStep
+    ? getPrPreflightSteps().filter((step) => {
+        return getStepSlug(step.name) === requestedStep || step.aliases?.includes(requestedStep)
+      })
+    : getPrPreflightSteps()
+
+  if (requestedStep && steps.length === 0) {
+    console.error(`Unknown PR preflight step: ${requestedStep}`)
+    exit(1)
+  }
+
+  for (const step of steps) {
     console.log(`\n==> ${step.name}`)
 
     let status = 1
