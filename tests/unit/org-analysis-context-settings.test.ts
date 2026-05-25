@@ -33,4 +33,19 @@ describe('organization analysis context settings', () => {
     expect(scorer).not.toContain('athletes, entertainers, and founders')
     expect(scorer).toContain('organizationAnalysisContext')
   })
+
+  it('seeds Factory analysis context as editable organization data', () => {
+    const seedScript = readProjectFile('server/scripts/seed-factory.ts')
+    const migration = readProjectFile('server/database/migrations/0043_factory_analysis_context.sql')
+    const journal = readProjectFile('server/database/migrations/meta/_journal.json')
+
+    expect(seedScript).toContain('FACTORY_ANALYSIS_CONTEXT')
+    expect(seedScript).toContain('schema.orgSettings')
+    expect(seedScript).toContain('!factorySettings.analysisContext.trim()')
+    expect(seedScript).toContain('Factory is a multifamily office for athletes, entertainers, and founders')
+    expect(migration).toContain('ON CONFLICT ("organization_id") DO UPDATE')
+    expect(migration).toContain('btrim(COALESCE("org_settings"."analysis_context", \'\')) = \'\'')
+    expect(migration).toContain('Factory is a multifamily office for athletes, entertainers, and founders')
+    expect(journal).toContain('"tag": "0043_factory_analysis_context"')
+  })
 })

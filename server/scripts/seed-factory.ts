@@ -34,6 +34,11 @@ const FACTORY_ORG_ID = 'factory-org'
 const FACTORY_JOB_ID = 'factory-general-interest'
 const FACTORY_ORG_NAME = process.env.FACTORY_ORG_NAME || 'Factory'
 const FACTORY_ORG_SLUG = process.env.FACTORY_ORG_SLUG || 'factory'
+const FACTORY_ANALYSIS_CONTEXT = [
+  'Factory is a multifamily office for athletes, entertainers, and founders.',
+  'Factory provides advisory services and business management to help clients manage their lives, with additional offerings across private investment, media, entertainment, and brand work.',
+  'Candidate analysis should consider relevance to this high-touch client-services business and its client base, in addition to the specific role requirements.',
+].join(' ')
 
 const client = postgres(DATABASE_URL, { max: 1 })
 const db = drizzle(client, { schema })
@@ -64,6 +69,31 @@ async function main() {
     .limit(1)
 
   const factoryOrgId = factoryOrg?.id ?? FACTORY_ORG_ID
+
+  const [factorySettings] = await db
+    .select({
+      id: schema.orgSettings.id,
+      analysisContext: schema.orgSettings.analysisContext,
+    })
+    .from(schema.orgSettings)
+    .where(eq(schema.orgSettings.organizationId, factoryOrgId))
+    .limit(1)
+
+  if (!factorySettings) {
+    await db.insert(schema.orgSettings).values({
+      organizationId: factoryOrgId,
+      analysisContext: FACTORY_ANALYSIS_CONTEXT,
+    })
+  }
+  else if (!factorySettings.analysisContext.trim()) {
+    await db
+      .update(schema.orgSettings)
+      .set({
+        analysisContext: FACTORY_ANALYSIS_CONTEXT,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.orgSettings.id, factorySettings.id))
+  }
 
   await db
     .insert(schema.job)
