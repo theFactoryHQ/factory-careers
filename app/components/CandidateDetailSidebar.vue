@@ -109,7 +109,7 @@ const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicati
   },
 })
 
-const { isEditingNotes, notesInput, isSavingNotes, startEditNotes, saveNotes } = useEditableApplicationNotes({
+const { isEditingNotes, notesInput, isSavingNotes, notesSaveStatus, startEditNotes, saveNotes, autosaveNotes, finishEditNotes } = useEditableApplicationNotes({
   application,
   save: updateApplicationNotes,
   afterSave: async () => {
@@ -624,20 +624,19 @@ function formatInterviewDate(dateStr: string) {
                   rows="4"
                   placeholder="Add notes about this application…"
                   class="ui-field"
+                  @input="autosaveNotes"
+                  @blur="saveNotes"
                 />
                 <div class="flex items-center gap-2 mt-2">
-                  <button
-                    :disabled="isSavingNotes"
-                    class="ui-button ui-button-primary px-3 py-1.5 text-sm disabled:opacity-50"
-                    @click="saveNotes"
-                  >
-                    {{ isSavingNotes ? 'Saving…' : 'Save' }}
-                  </button>
+                  <p class="min-w-0 flex-1 text-xs text-surface-400" role="status">
+                    {{ notesSaveStatus === 'saving' || isSavingNotes ? 'Saving notes...' : notesSaveStatus === 'saved' ? 'Notes saved' : notesSaveStatus === 'error' ? 'Autosave failed' : 'Automatically saves changes' }}
+                  </p>
                   <button
                     class="ui-button ui-button-secondary px-3 py-1.5 text-sm"
-                    @click="isEditingNotes = false"
+                    :disabled="isSavingNotes"
+                    @click="finishEditNotes"
                   >
-                    Cancel
+                    Done
                   </button>
                 </div>
               </div>

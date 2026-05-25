@@ -1,5 +1,5 @@
 import type { MaybeRefOrGetter } from 'vue'
-import { nextTick, ref, toValue } from 'vue'
+import { nextTick, onBeforeUnmount, ref, toValue } from 'vue'
 
 type ApplicationWithNotes = {
   notes?: string | null
@@ -19,11 +19,31 @@ export function useEditableApplicationNotes(options: UseEditableApplicationNotes
   const isEditingNotes = ref(false)
   const notesInput = ref('')
   const isSavingNotes = ref(false)
+  const notesSaveStatus = ref<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const notesTextarea = ref<HTMLTextAreaElement | null>(null)
+  let autosaveTimer: ReturnType<typeof setTimeout> | null = null
+  let savedStatusTimer: ReturnType<typeof setTimeout> | null = null
+  let activeNotesSave: Promise<boolean> | null = null
+  let queuedNotesSave = false
+
+  function clearAutosaveTimer() {
+    if (autosaveTimer) {
+      clearTimeout(autosaveTimer)
+      autosaveTimer = null
+    }
+  }
+
+  function clearSavedStatusTimer() {
+    if (savedStatusTimer) {
+      clearTimeout(savedStatusTimer)
+      savedStatusTimer = null
+    }
+  }
 
   async function startEditNotes() {
     notesInput.value = toValue(options.application)?.notes ?? ''
     isEditingNotes.value = true
+    notesSaveStatus.value = 'idle'
 
     if (options.focusOnEdit) {
       await nextTick()
@@ -31,26 +51,82 @@ export function useEditableApplicationNotes(options: UseEditableApplicationNotes
     }
   }
 
-  async function saveNotes() {
+  async function runQueuedNotesSave(): Promise<boolean> {
     isSavingNotes.value = true
+    let allSavesSucceeded = true
+
     try {
-      await options.save(notesInput.value || null)
-      await options.afterSave?.()
-      isEditingNotes.value = false
-    } catch (err: any) {
-      if (handlePreviewReadOnlyError(err)) return
-      toast.error('Failed to save notes', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
+      do {
+        queuedNotesSave = false
+        notesSaveStatus.value = 'saving'
+
+        try {
+          await options.save(notesInput.value || null)
+          await options.afterSave?.()
+          notesSaveStatus.value = 'saved'
+          clearSavedStatusTimer()
+          savedStatusTimer = setTimeout(() => {
+            notesSaveStatus.value = 'idle'
+          }, 2500)
+        } catch (err: any) {
+          if (!handlePreviewReadOnlyError(err)) {
+            notesSaveStatus.value = 'error'
+            toast.error('Failed to save notes', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
+          }
+          allSavesSucceeded = false
+          break
+        }
+      } while (queuedNotesSave)
     } finally {
       isSavingNotes.value = false
     }
+
+    return allSavesSucceeded
   }
+
+  function saveNotes(): Promise<boolean> {
+    clearAutosaveTimer()
+    clearSavedStatusTimer()
+
+    if (activeNotesSave) {
+      queuedNotesSave = true
+      return activeNotesSave
+    }
+
+    activeNotesSave = runQueuedNotesSave().finally(() => {
+      activeNotesSave = null
+    })
+    return activeNotesSave
+  }
+
+  function autosaveNotes() {
+    // Save notes after typing stops so each keystroke does not issue a PATCH.
+    clearAutosaveTimer()
+    notesSaveStatus.value = 'idle'
+    autosaveTimer = setTimeout(() => {
+      void saveNotes()
+    }, 700)
+  }
+
+  async function finishEditNotes() {
+    const saved = await saveNotes()
+    if (saved) isEditingNotes.value = false
+  }
+
+  onBeforeUnmount(() => {
+    clearAutosaveTimer()
+    clearSavedStatusTimer()
+  })
 
   return {
     isEditingNotes,
     notesInput,
     isSavingNotes,
+    notesSaveStatus,
     notesTextarea,
     startEditNotes,
     saveNotes,
+    autosaveNotes,
+    finishEditNotes,
   }
 }
