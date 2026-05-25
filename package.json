@@ -29,6 +29,7 @@
     "test:unit": "vitest run",
     "test:smoke:ai-candidate-review": "vitest run --config vitest.smoke.config.ts tests/smoke/ai-candidate-review-context-smoke.smoke.ts",
     "check:conventions": "bash scripts/check-conventions.sh",
+    "preflight:pr-title": "node scripts/validate-current-pr-title.mjs",
     "preflight:pr": "node scripts/run-pr-validation-preflight.mjs",
     "preflight:cli-parity": "node scripts/run-pr-validation-preflight.mjs --step cli-parity",
     "typecheck": "nuxi typecheck",

@@ -16,6 +16,8 @@ describe('agent guidance', () => {
     const agents = read('AGENTS.md')
 
     expect(read('CLAUDE.md')).toBe(agents)
+    expect(agents).not.toContain('/Users/')
+    expect(agents).not.toContain('douglasebanks')
 
     for (const snippet of [
       'Factory Careers',

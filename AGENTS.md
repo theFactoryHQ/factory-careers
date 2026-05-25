@@ -52,9 +52,9 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-In Codex worktrees, the sibling checkout at
-`/Users/douglasebanks/code/repos/factory-careers` is the usual source of truth
-for `.env` and `.env.local`.
+In Codex worktrees, a sibling or primary checkout may be the source of truth for
+local `.env` and `.env.local` files. Do not commit machine-specific paths or
+local secrets to this repo.
 
 ## Authenticated CLI
 
