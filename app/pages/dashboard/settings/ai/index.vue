@@ -260,22 +260,25 @@ function modelTitle(c: AiConfigRow): string {
 
     <section
       v-if="!isPermissionLoading && canManageAi"
-      class="ui-panel ui-dashboard-panel mb-5 overflow-hidden"
+      class="mb-5 space-y-3"
     >
-      <div class="px-5 py-4 border-b border-surface-100 dark:border-surface-800">
-        <div class="flex items-start gap-3">
-          <div class="ui-icon-state ui-icon-state-brand flex size-9 items-center justify-center rounded-lg">
-            <Sparkles class="size-4" />
-          </div>
-          <div>
-            <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Org Context</h2>
-            <p class="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
-              Organization background the AI uses before generating criteria or scoring candidates.
-            </p>
-          </div>
-        </div>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Org Context</h2>
+        <p
+          class="inline-flex items-center gap-1.5 text-[11px]"
+          :class="analysisContextSaveStatus === 'error'
+            ? 'text-danger-500 dark:text-danger-400'
+            : analysisContextSaveStatus === 'dirty'
+              ? 'text-warning-500 dark:text-warning-400'
+              : 'text-surface-500 dark:text-surface-400'"
+        >
+          <Loader2 v-if="isSavingAnalysisContext" class="size-3 animate-spin" />
+          <Check v-else-if="analysisContextSaveStatus === 'saved'" class="size-3" />
+          <AlertTriangle v-else-if="analysisContextSaveStatus === 'error'" class="size-3" />
+          {{ analysisContextSaveLabel }}
+        </p>
       </div>
-      <div class="px-5 py-4 space-y-3">
+      <div class="ui-panel ui-dashboard-panel px-5 py-4 space-y-3">
         <textarea
           v-model="localAnalysisContext"
           :disabled="!canUpdateOrg"
@@ -287,19 +290,6 @@ function modelTitle(c: AiConfigRow): string {
         <div class="flex flex-wrap items-center justify-between gap-3">
           <p class="text-[11px] text-surface-500 dark:text-surface-400">
             {{ localAnalysisContext.length.toLocaleString() }} / 4,000 characters
-          </p>
-          <p
-            class="inline-flex items-center gap-1.5 text-[11px]"
-            :class="analysisContextSaveStatus === 'error'
-              ? 'text-danger-500 dark:text-danger-400'
-              : analysisContextSaveStatus === 'dirty'
-                ? 'text-warning-500 dark:text-warning-400'
-                : 'text-surface-500 dark:text-surface-400'"
-          >
-            <Loader2 v-if="isSavingAnalysisContext" class="size-3 animate-spin" />
-            <Check v-else-if="analysisContextSaveStatus === 'saved'" class="size-3" />
-            <AlertTriangle v-else-if="analysisContextSaveStatus === 'error'" class="size-3" />
-            {{ analysisContextSaveLabel }}
           </p>
         </div>
       </div>
