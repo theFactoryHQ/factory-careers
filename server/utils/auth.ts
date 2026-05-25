@@ -14,6 +14,7 @@ import {
   normalizeTrustedOrigin,
   uniqueTrustedOrigins,
 } from "./authOrigins";
+import { createEnterpriseSsoOptions } from "./ssoProvisioning";
 import * as schema from "../database/schema";
 
 type Auth = ReturnType<typeof betterAuth>;
@@ -406,37 +407,34 @@ function getAuth(): Auth {
         // Each organization can register their own Identity Provider (Okta,
         // Azure AD, Google Workspace, etc.). Users are auto-provisioned into
         // the linked organization on first SSO login.
-        sso({
-          // Auto-provision SSO users into the linked organization
-          organizationProvisioning: {
-            disabled: false,
-            defaultRole: "member",
-          },
-          // Run provisioning on every login to keep profile data in sync
-          provisionUserOnEveryLogin: true,
-          provisionUser: async ({ user, userInfo, token, provider }) => {
-            // Sync name/image from IdP on each login
-            const providerName = typeof userInfo.name === "string" ? userInfo.name : null;
-            const providerImage = typeof userInfo.image === "string" ? userInfo.image : null;
-            const microsoftImage = await fetchMicrosoftSsoProfileImage({
-              accessToken: token?.accessToken,
-              providerIssuer: provider.issuer,
-              userId: user.id,
-            });
-            const nextImage = microsoftImage || providerImage;
+        sso(
+          createEnterpriseSsoOptions({
+            provisionUser: async ({ user, userInfo, token, provider }) => {
+              // Sync name/image from IdP on each login
+              const providerName =
+                typeof userInfo.name === "string" ? userInfo.name : null;
+              const providerImage =
+                typeof userInfo.image === "string" ? userInfo.image : null;
+              const microsoftImage = await fetchMicrosoftSsoProfileImage({
+                accessToken: token?.accessToken,
+                providerIssuer: provider.issuer,
+                userId: user.id,
+              });
+              const nextImage = microsoftImage || providerImage;
 
-            if (providerName || nextImage) {
-              await db
-                .update(schema.user)
-                .set({
-                  ...(providerName ? { name: providerName } : {}),
-                  ...(nextImage ? { image: nextImage } : {}),
-                  updatedAt: new Date(),
-                })
-                .where(eq(schema.user.id, user.id));
-            }
-          },
-        }),
+              if (providerName || nextImage) {
+                await db
+                  .update(schema.user)
+                  .set({
+                    ...(providerName ? { name: providerName } : {}),
+                    ...(nextImage ? { image: nextImage } : {}),
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(schema.user.id, user.id));
+              }
+            },
+          }),
+        ),
       ],
     }) as unknown as Auth;
   }

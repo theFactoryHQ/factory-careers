@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { registerSsoSchema } from '../../server/utils/ssoSecurity'
+import { enterpriseSsoOrganizationProvisioning } from '../../server/utils/ssoProvisioning'
 
 /**
  * SSO Security-focused tests.
@@ -169,14 +170,9 @@ describe('SSO organization isolation — cross-org access prevention', () => {
 
 describe('SSO auto-provisioning security', () => {
   it('new SSO users are provisioned with "member" role only', () => {
-    const provisioningConfig = {
-      disabled: false,
-      defaultRole: 'member' as const,
-    }
-
-    expect(provisioningConfig.defaultRole).toBe('member')
-    expect(provisioningConfig.defaultRole).not.toBe('owner')
-    expect(provisioningConfig.defaultRole).not.toBe('admin')
+    expect(enterpriseSsoOrganizationProvisioning.defaultRole).toBe('member')
+    expect(enterpriseSsoOrganizationProvisioning.defaultRole).not.toBe('owner')
+    expect(enterpriseSsoOrganizationProvisioning.defaultRole).not.toBe('admin')
   })
 
   it('provisioned users cannot bypass role hierarchy', () => {
