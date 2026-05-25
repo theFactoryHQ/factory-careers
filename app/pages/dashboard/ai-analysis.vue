@@ -171,19 +171,10 @@ function formatDateTime(dateStr: string | Date): string {
 
       <!-- ─── Stat cards ─── -->
       <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
-        <!-- Total Runs -->
-        <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-brand-500/25 dark:hover:ring-brand-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-500/[0.08]">
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <Activity class="absolute -bottom-3 -right-3 size-24 text-brand-500/[0.03] dark:text-brand-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-          <div class="relative">
-            <div class="flex items-baseline gap-2">
-              <span class="text-3xl sm:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-brand-600 dark:group-hover:text-brand-400">
-                {{ formatNumber(summary.totalRuns) }}
-              </span>
-              <span class="size-1.5 rounded-full bg-brand-500 shrink-0 mb-1" />
-            </div>
-            <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Total Runs</span>
-            <div class="mt-1 flex items-center gap-3 text-[11px]">
+        <DashboardStatCard label="Total Runs" :icon="Activity" accent="brand">
+          <template #value>{{ formatNumber(summary.totalRuns) }}</template>
+          <template #caption>
+            <span class="flex items-center gap-3">
               <span class="flex items-center gap-1 text-success-600 dark:text-success-400">
                 <CheckCircle2 class="size-3" />
                 {{ summary.completedRuns }}
@@ -192,80 +183,47 @@ function formatDateTime(dateStr: string | Date): string {
                 <XCircle class="size-3" />
                 {{ summary.failedRuns }}
               </span>
-            </div>
-          </div>
-        </div>
+            </span>
+          </template>
+        </DashboardStatCard>
 
-        <!-- Success Rate -->
-        <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-success-500/25 dark:hover:ring-success-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-success-500/[0.08]">
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-success-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <TrendingUp class="absolute -bottom-3 -right-3 size-24 text-success-500/[0.03] dark:text-success-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-          <div class="relative">
-            <div class="flex items-baseline gap-2">
-              <span class="text-3xl sm:text-4xl font-black tracking-tight tabular-nums leading-none transition-colors duration-300" :class="successRate >= 90 ? 'text-success-600 dark:text-success-400' : successRate >= 70 ? 'text-warning-600 dark:text-warning-400' : 'text-danger-600 dark:text-danger-400'">
-                {{ successRate }}%
-              </span>
-              <span class="size-1.5 rounded-full shrink-0 mb-1" :class="successRate >= 90 ? 'bg-success-500' : successRate >= 70 ? 'bg-warning-500' : 'bg-danger-500'" />
-            </div>
-            <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Success Rate</span>
-            <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">
-              {{ summary.completedRuns }} of {{ summary.totalRuns }} successful
-            </p>
-          </div>
-        </div>
+        <DashboardStatCard
+          label="Success Rate"
+          :icon="TrendingUp"
+          accent="success"
+          :value-class="successRate >= 90 ? 'text-success-600 dark:text-success-400' : successRate >= 70 ? 'text-warning-600 dark:text-warning-400' : 'text-danger-600 dark:text-danger-400'"
+          :dot-class="successRate >= 90 ? 'bg-success-500' : successRate >= 70 ? 'bg-warning-500' : 'bg-danger-500'"
+        >
+          <template #value>{{ successRate }}%</template>
+          <template #caption>{{ summary.completedRuns }} of {{ summary.totalRuns }} successful</template>
+        </DashboardStatCard>
 
-        <!-- Prompt Tokens -->
-        <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-violet-500/25 dark:hover:ring-violet-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/[0.08]">
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <Zap class="absolute -bottom-3 -right-3 size-24 text-violet-500/[0.03] dark:text-violet-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-          <div class="relative">
-            <div class="flex items-baseline gap-2">
-              <span class="text-3xl sm:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-violet-600 dark:group-hover:text-violet-400">
-                {{ formatNumber(summary.totalPromptTokens) }}
-              </span>
-              <span class="size-1.5 rounded-full bg-violet-500 shrink-0 mb-1" />
-            </div>
-            <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Prompt Tokens</span>
-            <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">Input tokens sent</p>
-          </div>
-        </div>
+        <DashboardStatCard label="Prompt Tokens" :icon="Zap" accent="violet">
+          <template #value>{{ formatNumber(summary.totalPromptTokens) }}</template>
+          <template #caption>Input tokens sent</template>
+        </DashboardStatCard>
 
-        <!-- Completion Tokens -->
-        <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-amber-500/25 dark:hover:ring-amber-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/[0.08]">
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <Sparkles class="absolute -bottom-3 -right-3 size-24 text-amber-500/[0.03] dark:text-amber-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-          <div class="relative">
-            <div class="flex items-baseline gap-2">
-              <span class="text-3xl sm:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-amber-600 dark:group-hover:text-amber-400">
-                {{ formatNumber(summary.totalCompletionTokens) }}
-              </span>
-              <span class="size-1.5 rounded-full bg-amber-500 shrink-0 mb-1" />
-            </div>
-            <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Completion Tokens</span>
-            <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">Output tokens generated</p>
-          </div>
-        </div>
+        <DashboardStatCard label="Completion Tokens" :icon="Sparkles" accent="amber">
+          <template #value>{{ formatNumber(summary.totalCompletionTokens) }}</template>
+          <template #caption>Output tokens generated</template>
+        </DashboardStatCard>
 
-        <!-- Total Cost -->
-        <div class="group relative rounded-2xl bg-white dark:bg-surface-900 p-5 sm:p-6 overflow-hidden isolate ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-emerald-500/25 dark:hover:ring-emerald-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/[0.08] col-span-2 lg:col-span-1">
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <DollarSign class="absolute -bottom-3 -right-3 size-24 text-emerald-500/[0.03] dark:text-emerald-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-          <div class="relative">
-            <div class="flex items-baseline gap-2">
-              <span class="text-3xl sm:text-4xl font-black tracking-tight tabular-nums leading-none transition-colors duration-300" :class="pricing.configured ? 'text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-700 dark:group-hover:text-emerald-300' : 'text-surface-300 dark:text-surface-600'">
-                {{ pricing.configured ? formatCost(totalCost) : '—' }}
-              </span>
-              <span class="size-1.5 rounded-full shrink-0 mb-1" :class="pricing.configured ? 'bg-emerald-500' : 'bg-surface-300 dark:bg-surface-600'" />
-            </div>
-            <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Total Cost</span>
-            <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">
-              <template v-if="pricing.configured">Estimated from token usage</template>
-              <template v-else>
-                <NuxtLink to="/dashboard/settings/ai" class="text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300 underline underline-offset-2">Set pricing</NuxtLink> to track costs
-              </template>
-            </p>
-          </div>
-        </div>
+        <DashboardStatCard
+          label="Total Cost"
+          :icon="DollarSign"
+          accent="emerald"
+          card-class="col-span-2 lg:col-span-1"
+          :value-class="pricing.configured ? 'text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-700 dark:group-hover:text-emerald-300' : 'text-surface-300 dark:text-surface-600'"
+          :dot-class="pricing.configured ? 'bg-emerald-500' : 'bg-surface-300 dark:bg-surface-600'"
+        >
+          <template #value>{{ pricing.configured ? formatCost(totalCost) : '—' }}</template>
+          <template #caption>
+            <template v-if="pricing.configured">Estimated from token usage</template>
+            <template v-else>
+              <NuxtLink to="/dashboard/settings/ai" class="text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300 underline underline-offset-2">Set pricing</NuxtLink> to track costs
+            </template>
+          </template>
+        </DashboardStatCard>
       </div>
 
       <!-- ─── Usage chart (last 30 days) ─── -->

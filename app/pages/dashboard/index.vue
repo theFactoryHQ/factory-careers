@@ -238,101 +238,76 @@ const isEmpty = computed(() =>
 
       <!-- ─── Stat cards ─── -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-10">
-        <!-- Open Jobs -->
-        <NuxtLink
+        <DashboardStatCard
           :to="localePath('/dashboard/jobs')"
-          class="group ui-dashboard-stat-card p-3 sm:p-4 lg:p-6 no-underline ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-brand-500/25 dark:hover:ring-brand-400/25 hover:shadow-lg hover:shadow-brand-500/[0.08]"
+          label="Open Jobs"
+          :icon="Briefcase"
+          accent="brand"
+          padding-class="p-3 sm:p-4 lg:p-6"
+          label-class="mt-2 lg:mt-3"
+          accent-line-class="via-brand-500 opacity-60 group-hover:opacity-100"
+          icon-class="size-16 sm:size-20 lg:size-24 text-brand-500/[0.05] dark:text-brand-400/[0.085]"
+          value-class="text-2xl sm:text-3xl lg:text-4xl text-surface-900 dark:text-surface-50 group-hover:text-brand-600 dark:group-hover:text-brand-400"
         >
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-          <Briefcase class="absolute -bottom-3 -right-3 size-16 sm:size-20 lg:size-24 text-brand-500/[0.05] dark:text-brand-400/[0.085] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-          <div class="relative">
-            <div class="flex items-baseline gap-2">
-              <span class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-brand-600 dark:group-hover:text-brand-400">
-                {{ counts.openJobs }}
-              </span>
-              <span class="factory-dashboard-stat-dot bg-brand-500 shrink-0 mb-1" />
-            </div>
-            <span class="block mt-2 lg:mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Open Jobs</span>
-            <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">
-              {{ jobsByStatus.draft }} draft{{ jobsByStatus.draft === 1 ? '' : 's' }}
-            </p>
-          </div>
-        </NuxtLink>
+          <template #value>{{ counts.openJobs }}</template>
+          <template #caption>{{ jobsByStatus.draft }} draft{{ jobsByStatus.draft === 1 ? '' : 's' }}</template>
+        </DashboardStatCard>
 
-        <!-- Total Candidates -->
-        <NuxtLink
+        <DashboardStatCard
           :to="localePath('/dashboard/candidates')"
-          class="group ui-dashboard-stat-card p-3 sm:p-4 lg:p-6 no-underline ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-violet-500/25 dark:hover:ring-violet-400/25 hover:shadow-lg hover:shadow-violet-500/[0.08]"
+          label="Candidates"
+          :icon="Users"
+          accent="violet"
+          padding-class="p-3 sm:p-4 lg:p-6"
+          label-class="mt-2 lg:mt-3"
+          accent-line-class="via-violet-500 opacity-60 group-hover:opacity-100"
+          icon-class="size-16 sm:size-20 lg:size-24 text-violet-500/[0.05] dark:text-violet-400/[0.085]"
+          value-class="text-2xl sm:text-3xl lg:text-4xl text-surface-900 dark:text-surface-50 group-hover:text-violet-600 dark:group-hover:text-violet-400"
         >
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-          <Users class="absolute -bottom-3 -right-3 size-16 sm:size-20 lg:size-24 text-violet-500/[0.05] dark:text-violet-400/[0.085] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-          <div class="relative">
-            <div class="flex items-baseline gap-2">
-              <span class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-violet-600 dark:group-hover:text-violet-400">
-                {{ counts.totalCandidates }}
-              </span>
-              <span class="factory-dashboard-stat-dot bg-violet-500 shrink-0 mb-1" />
-            </div>
-            <span class="block mt-2 lg:mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Candidates</span>
-            <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">Talent pool</p>
-          </div>
-        </NuxtLink>
+          <template #value>{{ counts.totalCandidates }}</template>
+          <template #caption>Talent pool</template>
+        </DashboardStatCard>
 
-        <!-- Total Applications -->
-        <NuxtLink
+        <DashboardStatCard
           :to="localePath('/dashboard/applications')"
-          class="group ui-dashboard-stat-card p-3 sm:p-4 lg:p-6 no-underline ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-teal-500/25 dark:hover:ring-teal-400/25 hover:shadow-lg hover:shadow-teal-500/[0.08]"
+          label="Applications"
+          :icon="FileText"
+          accent="teal"
+          padding-class="p-3 sm:p-4 lg:p-6"
+          label-class="mt-2 lg:mt-3"
+          accent-line-class="via-teal-500 opacity-60 group-hover:opacity-100"
+          icon-class="size-16 sm:size-20 lg:size-24 text-teal-500/[0.05] dark:text-teal-400/[0.085]"
+          value-class="text-2xl sm:text-3xl lg:text-4xl text-surface-900 dark:text-surface-50 group-hover:text-teal-600 dark:group-hover:text-teal-400"
         >
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-          <FileText class="absolute -bottom-3 -right-3 size-16 sm:size-20 lg:size-24 text-teal-500/[0.05] dark:text-teal-400/[0.085] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-          <div class="relative">
-            <div class="flex items-baseline gap-2">
-              <span class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-teal-600 dark:group-hover:text-teal-400">
-                {{ counts.totalApplications }}
-              </span>
-              <span class="factory-dashboard-stat-dot bg-teal-500 shrink-0 mb-1" />
-            </div>
-            <span class="block mt-2 lg:mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Applications</span>
-            <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">Total received</p>
-          </div>
-        </NuxtLink>
+          <template #value>{{ counts.totalApplications }}</template>
+          <template #caption>Total received</template>
+        </DashboardStatCard>
 
-        <!-- To Review -->
-        <NuxtLink
+        <DashboardStatCard
           :to="localePath({ path: '/dashboard/applications', query: { status: 'new' } })"
-          class="group ui-dashboard-stat-card p-3 sm:p-4 lg:p-6 no-underline"
-          :class="counts.newApplications > 0
-            ? 'ring-1 ring-warning-400/30 dark:ring-warning-500/20 hover:ring-warning-500/40 dark:hover:ring-warning-400/30 shadow-sm shadow-warning-500/[0.06] hover:shadow-lg hover:shadow-warning-500/[0.12]'
-            : 'ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-surface-300/50 dark:hover:ring-surface-600/30 hover:shadow-lg hover:shadow-surface-500/[0.04]'"
+          label="To Review"
+          :icon="AlertCircle"
+          :accent="counts.newApplications > 0 ? 'warning' : 'surface'"
+          padding-class="p-3 sm:p-4 lg:p-6"
+          label-class="mt-2 lg:mt-3"
+          :accent-line-class="counts.newApplications > 0
+            ? 'via-warning-500 opacity-60 group-hover:opacity-100'
+            : 'via-surface-400 opacity-40 group-hover:opacity-70'"
+          :icon-class="counts.newApplications > 0
+            ? 'size-16 sm:size-20 lg:size-24 text-warning-500/[0.06] dark:text-warning-400/[0.095]'
+            : 'size-16 sm:size-20 lg:size-24 text-surface-400/[0.05] dark:text-surface-500/[0.085]'"
+          :value-class="counts.newApplications > 0
+            ? 'text-2xl sm:text-3xl lg:text-4xl text-warning-600 dark:text-warning-400 group-hover:text-warning-700 dark:group-hover:text-warning-300'
+            : 'text-2xl sm:text-3xl lg:text-4xl text-surface-900 dark:text-surface-50 group-hover:text-surface-600 dark:group-hover:text-surface-300'"
+          :dot-class="counts.newApplications > 0 ? 'bg-warning-500' : 'bg-surface-300 dark:bg-surface-600'"
+          :caption-class="counts.newApplications > 0 ? 'text-warning-500 dark:text-warning-500 font-medium' : 'text-surface-300 dark:text-surface-600'"
         >
-          <div
-            class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent transition-opacity duration-500"
-            :class="counts.newApplications > 0
-              ? 'via-warning-500 opacity-60 group-hover:opacity-100'
-              : 'via-surface-400 opacity-40 group-hover:opacity-70'"
-          />
-          <AlertCircle class="absolute -bottom-3 -right-3 size-16 sm:size-20 lg:size-24 rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" :class="counts.newApplications > 0 ? 'text-warning-500/[0.06] dark:text-warning-400/[0.095]' : 'text-surface-400/[0.05] dark:text-surface-500/[0.085]'" />
-          <div class="relative">
-            <div class="flex items-baseline gap-2">
-              <span
-                class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight tabular-nums leading-none transition-colors duration-300"
-                :class="counts.newApplications > 0
-                  ? 'text-warning-600 dark:text-warning-400 group-hover:text-warning-700 dark:group-hover:text-warning-300'
-                  : 'text-surface-900 dark:text-surface-50 group-hover:text-surface-600 dark:group-hover:text-surface-300'"
-              >
-                {{ counts.newApplications }}
-              </span>
-              <span class="relative shrink-0 mb-1">
-                <span class="factory-dashboard-stat-dot" :class="counts.newApplications > 0 ? 'bg-warning-500' : 'bg-surface-300 dark:bg-surface-600'" />
-                <span v-if="counts.newApplications > 0" class="factory-dashboard-stat-dot factory-dashboard-stat-dot-ping absolute inset-0 bg-warning-500 animate-ping" />
-              </span>
-            </div>
-            <span class="block mt-2 lg:mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">To Review</span>
-            <p class="text-[11px] mt-1" :class="counts.newApplications > 0 ? 'text-warning-500 dark:text-warning-500 font-medium' : 'text-surface-300 dark:text-surface-600'">
-              {{ counts.newApplications > 0 ? 'Needs attention' : 'All reviewed' }}
-            </p>
-          </div>
-        </NuxtLink>
+          <template #value>{{ counts.newApplications }}</template>
+          <template #dot>
+            <span v-if="counts.newApplications > 0" class="factory-dashboard-stat-dot factory-dashboard-stat-dot-ping absolute inset-0 bg-warning-500 animate-ping" />
+          </template>
+          <template #caption>{{ counts.newApplications > 0 ? 'Needs attention' : 'All reviewed' }}</template>
+        </DashboardStatCard>
       </div>
 
       <!-- ─── Main content grid ─── -->

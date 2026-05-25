@@ -385,89 +385,37 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
       <div v-if="showTab === 'overview'">
         <!-- ─── Stat cards ─── -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-10">
-          <!-- Tracked Applications -->
-          <div class="group ui-dashboard-stat-card p-5 sm:p-6 ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-brand-500/25 dark:hover:ring-brand-400/25 hover:shadow-lg hover:shadow-brand-500/[0.08]">
-            <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <Target class="absolute -bottom-3 -right-3 size-24 text-brand-500/[0.03] dark:text-brand-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-            <div class="relative">
-              <div class="flex items-baseline gap-2">
-                <span class="text-3xl sm:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-brand-600 dark:group-hover:text-brand-400">
-                  {{ summary.totalTracked }}
-                </span>
-                <span class="size-1.5 rounded-full bg-brand-500 shrink-0 mb-1" />
-              </div>
-              <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Tracked</span>
-              <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">With source attribution</p>
-            </div>
-          </div>
+          <DashboardStatCard label="Tracked" :icon="Target" accent="brand">
+            <template #value>{{ summary.totalTracked }}</template>
+            <template #caption>With source attribution</template>
+          </DashboardStatCard>
 
-          <!-- Attribution Rate -->
-          <div class="group ui-dashboard-stat-card p-5 sm:p-6 ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-teal-500/25 dark:hover:ring-teal-400/25 hover:shadow-lg hover:shadow-teal-500/[0.08]">
-            <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <Activity class="absolute -bottom-3 -right-3 size-24 text-teal-500/[0.03] dark:text-teal-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-            <div class="relative">
-              <div class="flex items-baseline gap-2">
-                <span class="text-3xl sm:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-teal-600 dark:group-hover:text-teal-400">
-                  {{ summary.attributionRate }}%
-                </span>
-                <span class="size-1.5 rounded-full bg-teal-500 shrink-0 mb-1" />
-              </div>
-              <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Attribution</span>
-              <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">Of all applications</p>
-            </div>
-          </div>
+          <DashboardStatCard label="Attribution" :icon="Activity" accent="teal">
+            <template #value>{{ summary.attributionRate }}%</template>
+            <template #caption>Of all applications</template>
+          </DashboardStatCard>
 
-          <!-- Active Links -->
-          <div class="group ui-dashboard-stat-card p-5 sm:p-6 ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-violet-500/25 dark:hover:ring-violet-400/25 hover:shadow-lg hover:shadow-violet-500/[0.08]">
-            <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <Link2 class="absolute -bottom-3 -right-3 size-24 text-violet-500/[0.03] dark:text-violet-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-            <div class="relative">
-              <div class="flex items-baseline gap-2">
-                <span class="text-3xl sm:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-violet-600 dark:group-hover:text-violet-400">
-                  {{ links.filter(l => l.isActive).length }}
-                </span>
-                <span class="size-1.5 rounded-full bg-violet-500 shrink-0 mb-1" />
-              </div>
-              <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Active Links</span>
-              <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">{{ totalLinks }} total created</p>
-            </div>
-          </div>
+          <DashboardStatCard label="Active Links" :icon="Link2" accent="violet">
+            <template #value>{{ links.filter(l => l.isActive).length }}</template>
+            <template #caption>{{ totalLinks }} total created</template>
+          </DashboardStatCard>
 
-          <!-- Untracked -->
-          <div
-            class="group ui-dashboard-stat-card p-5 sm:p-6"
-            :class="summary.totalUntracked > 0
-              ? 'ring-1 ring-warning-400/30 dark:ring-warning-500/20 hover:ring-warning-500/40 dark:hover:ring-warning-400/30 shadow-sm shadow-warning-500/[0.06] hover:shadow-lg hover:shadow-warning-500/[0.12]'
-              : 'ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-surface-300/50 dark:hover:ring-surface-600/30 hover:shadow-lg hover:shadow-surface-500/[0.04]'"
+          <DashboardStatCard
+            label="Untracked"
+            :icon="Eye"
+            :accent="summary.totalUntracked > 0 ? 'warning' : 'surface'"
+            :value-class="summary.totalUntracked > 0
+              ? 'text-warning-600 dark:text-warning-400 group-hover:text-warning-700 dark:group-hover:text-warning-300'
+              : 'text-surface-900 dark:text-surface-50 group-hover:text-surface-600 dark:group-hover:text-surface-300'"
+            :dot-class="summary.totalUntracked > 0 ? 'bg-warning-500' : 'bg-surface-300 dark:bg-surface-600'"
+            :caption-class="summary.totalUntracked > 0 ? 'text-warning-500 dark:text-warning-500 font-medium' : 'text-surface-300 dark:text-surface-600'"
           >
-            <div
-              class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent transition-opacity duration-500"
-              :class="summary.totalUntracked > 0
-                ? 'via-warning-500 opacity-60 group-hover:opacity-100'
-                : 'via-surface-400 opacity-0 group-hover:opacity-40'"
-            />
-            <Eye class="absolute -bottom-3 -right-3 size-24 rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" :class="summary.totalUntracked > 0 ? 'text-warning-500/[0.04] dark:text-warning-400/[0.06]' : 'text-surface-400/[0.03] dark:text-surface-500/[0.05]'" />
-            <div class="relative">
-              <div class="flex items-baseline gap-2">
-                <span
-                  class="text-3xl sm:text-4xl font-black tracking-tight tabular-nums leading-none transition-colors duration-300"
-                  :class="summary.totalUntracked > 0
-                    ? 'text-warning-600 dark:text-warning-400 group-hover:text-warning-700 dark:group-hover:text-warning-300'
-                    : 'text-surface-900 dark:text-surface-50 group-hover:text-surface-600 dark:group-hover:text-surface-300'"
-                >
-                  {{ summary.totalUntracked }}
-                </span>
-                <span class="relative shrink-0 mb-1">
-                  <span class="size-1.5 rounded-full block" :class="summary.totalUntracked > 0 ? 'bg-warning-500' : 'bg-surface-300 dark:bg-surface-600'" />
-                  <span v-if="summary.totalUntracked > 0" class="absolute inset-0 size-1.5 rounded-full bg-warning-500 animate-ping" />
-                </span>
-              </div>
-              <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Untracked</span>
-              <p class="text-[11px] mt-1" :class="summary.totalUntracked > 0 ? 'text-warning-500 dark:text-warning-500 font-medium' : 'text-surface-300 dark:text-surface-600'">
-                {{ summary.totalUntracked > 0 ? 'Without attribution' : 'All attributed' }}
-              </p>
-            </div>
-          </div>
+            <template #value>{{ summary.totalUntracked }}</template>
+            <template #dot>
+              <span v-if="summary.totalUntracked > 0" class="factory-dashboard-stat-dot factory-dashboard-stat-dot-ping absolute inset-0 bg-warning-500 animate-ping" />
+            </template>
+            <template #caption>{{ summary.totalUntracked > 0 ? 'Without attribution' : 'All attributed' }}</template>
+          </DashboardStatCard>
         </div>
 
         <!-- ─── Main layout ─── -->
