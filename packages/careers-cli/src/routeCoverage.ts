@@ -37,6 +37,7 @@ export const cliRouteCoverage: CliRouteCoverageEntry[] = [
   { route: 'server/api/auth/[...all].ts', status: 'internal', reason: 'Better Auth catch-all endpoint; CLI uses supported auth commands and bearer/device auth through this boundary.' },
   { route: 'server/api/auth/demo-check.get.ts', status: 'internal', reason: 'Demo-only auth helper, not a supported automation API.' },
   { route: 'server/api/auth/demo-fresh-signup.get.ts', status: 'internal', reason: 'Demo-only auth helper, not a supported automation API.' },
+  { route: 'server/api/auth/factory-sso.get.ts', status: 'internal', reason: 'Browser-only Microsoft SSO launcher that sets OAuth state before redirecting to the identity provider; CLI uses device authorization.' },
   { route: 'server/api/auth/providers.get.ts', status: 'internal', reason: 'Browser sign-in provider metadata used by the web UI, not a deterministic CLI workflow.' },
   { route: 'server/api/calendar/disconnect.post.ts', status: 'supported', command: 'calendar disconnect' },
   { route: 'server/api/calendar/google/callback.get.ts', status: 'internal', reason: 'OAuth provider callback handled by the browser/provider flow.' },
