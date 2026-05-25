@@ -325,12 +325,9 @@ function modelTitle(c: AiConfigRow): string {
     </div>
 
     <section v-else class="space-y-3">
-      <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Models</h2>
-          <p class="mt-0.5 text-sm text-surface-500 dark:text-surface-400">
-            Manage provider connections and choose defaults for chatbot and candidate analysis.
-          </p>
         </div>
         <div v-if="canManageAi" class="flex flex-wrap items-center gap-2">
           <NuxtLink
