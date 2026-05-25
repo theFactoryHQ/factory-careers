@@ -17,6 +17,14 @@ describe('CLI parity changed-file guard', () => {
     })
   })
 
+  it('accepts explicit CLI parity evidence for UI-only candidate detail refactors', () => {
+    expect(evaluateCliParityEvidence([
+      'app/components/CandidateDetailsCard.vue',
+      'app/pages/dashboard/candidates/[id].vue',
+      'tests/unit/cli-parity-changed-files.test.ts',
+    ])).toMatchObject({ ok: true })
+  })
+
   it('passes when parity-sensitive files include CLI evidence', () => {
     expect(evaluateCliParityEvidence([
       'server/api/jobs/index.post.ts',

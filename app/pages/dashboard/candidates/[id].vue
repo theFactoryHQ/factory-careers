@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ArrowLeft, Pencil, Trash2, Phone, Calendar, Clock, Briefcase, FileText, Plus, Upload, Download, Eye, AlertTriangle } from 'lucide-vue-next'
+import { Pencil, Trash2, Upload } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
-import { formatPhoneNumber } from '~/utils/phone-format'
 import {
   candidateEditFormSchema,
   normalizeEmptyCandidateFormFields,
@@ -18,7 +17,7 @@ const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 const toast = useToast()
 
 const { candidate, status: fetchStatus, error, refresh, updateCandidate, deleteCandidate } = useCandidate(candidateId)
-const { formatCandidateName, formatDate } = useOrgSettings()
+const { formatCandidateName } = useOrgSettings()
 
 useSeoMeta({
   title: computed(() =>
@@ -128,23 +127,6 @@ async function handleDelete() {
 }
 
 // ─────────────────────────────────────────────
-// Display helpers
-// ─────────────────────────────────────────────
-
-const genderLabels: Record<string, string> = {
-  male: 'Male',
-  female: 'Female',
-  other: 'Other',
-  prefer_not_to_say: 'Prefer not to say',
-}
-
-const documentTypeLabels: Record<string, string> = {
-  resume: 'Resume',
-  cover_letter: 'Cover Letter',
-  other: 'Other',
-}
-
-// ─────────────────────────────────────────────
 // Apply to job modal
 // ─────────────────────────────────────────────
 
@@ -179,47 +161,20 @@ const isUploading = ref(false)
 const uploadError = ref<string | null>(null)
 const showDocDeleteConfirm = ref<string | null>(null)
 const isDeletingDoc = ref(false)
-
-// Preview state
-const showPreview = ref(false)
-const previewUrl = ref<string | null>(null)
-const previewFilename = ref('')
-const previewMimeType = ref('')
-const previewDocId = ref<string | null>(null)
-const isLoadingPreview = ref(false)
-const previewError = ref<string | null>(null)
-
-/** Whether the current preview file is a PDF (renderable in iframe) */
-const isPdfPreview = computed(() => previewMimeType.value === 'application/pdf')
-
-async function handlePreview(docId: string, mimeType?: string) {
-  // Only PDFs can be previewed inline — for DOC/DOCX, download directly
-  if (mimeType && mimeType !== 'application/pdf') {
-    await handleDownload(docId)
-    return
-  }
-
-  previewError.value = null
-  showPreview.value = true
-  previewDocId.value = docId
-
-  // Find the document name from the candidate data
-  const doc = candidate.value?.documents?.find((d: any) => d.id === docId)
-  previewFilename.value = doc?.originalFilename ?? 'Document'
-  previewMimeType.value = doc?.mimeType ?? 'application/pdf'
-
-  // Use the API endpoint URL directly — server streams the PDF (same-origin)
-  previewUrl.value = getPreviewUrl(docId)
-}
-
-function closePreview() {
-  showPreview.value = false
-  previewUrl.value = null
-  previewFilename.value = ''
-  previewMimeType.value = ''
-  previewDocId.value = null
-  previewError.value = null
-}
+const documentPreview = useDocumentPreview({
+  documents: () => candidate.value?.documents,
+  getPreviewUrl,
+  downloadDocument,
+  onDownloadError: () => toast.error('Failed to download document'),
+})
+const documentPreviewState = computed(() => ({
+  showPreview: documentPreview.showPreview.value,
+  previewUrl: documentPreview.previewUrl.value,
+  previewFilename: documentPreview.previewFilename.value,
+  previewDocId: documentPreview.previewDocId.value,
+  previewError: documentPreview.previewError.value,
+  isPdfPreview: documentPreview.isPdfPreview.value,
+}))
 
 function triggerFileSelect() {
   fileInput.value?.click()
@@ -242,14 +197,6 @@ async function handleFileSelected(event: Event) {
     isUploading.value = false
     // Reset input so the same file can be re-selected
     input.value = ''
-  }
-}
-
-async function handleDownload(docId: string) {
-  try {
-    await downloadDocument(docId)
-  } catch {
-    toast.error('Failed to download document')
   }
 }
 
@@ -296,25 +243,14 @@ async function handleDeleteDoc(docId: string) {
     <template v-else-if="candidate">
       <!-- VIEW MODE -->
       <div v-if="!isEditing">
-        <!-- Header -->
-        <div class="mb-4 ui-panel ui-dashboard-panel p-5">
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div class="min-w-0">
-              <p class="mb-2 text-xs font-medium uppercase tracking-wide text-white/38">
-                Candidate profile
-              </p>
-              <h1 class="mb-1 truncate text-2xl font-bold text-white">
-                {{ formatCandidateName(candidate) }}
-              </h1>
-              <div class="flex flex-col gap-1 text-sm text-white/58 sm:flex-row sm:items-center sm:gap-4">
-                <CopyEmailButton :email="candidate.email" class="text-white/68" />
-                <span v-if="candidate.phone" class="inline-flex items-center gap-1 text-white/58">
-                  <Phone class="size-3.5" />
-                  {{ formatPhoneNumber(candidate.phone) }}
-                </span>
-              </div>
-            </div>
-
+        <CandidateDetailsCard
+          class="mb-4"
+          :candidate="candidate"
+          :candidate-id="candidateId"
+          surface="page"
+          @refresh="refresh()"
+        >
+          <template #actions>
             <div class="flex shrink-0 items-center gap-2">
               <button
                 class="factory-toolbar-button inline-flex h-10 min-h-10 cursor-pointer items-center gap-1.5 border px-3 py-0 text-xs font-medium transition-colors"
@@ -331,74 +267,8 @@ async function handleDeleteDoc(docId: string) {
                 Delete
               </button>
             </div>
-          </div>
-        </div>
-
-        <!-- Contact details -->
-        <div class="mb-4 ui-panel ui-dashboard-panel p-5">
-          <h2 class="mb-3 text-sm font-semibold text-white">Details</h2>
-          <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <dt class="text-white/38">Email</dt>
-              <dd class="font-medium text-white/82">
-                <CopyEmailButton :email="candidate.email" :show-icon="false" class="text-white/82" />
-              </dd>
-            </div>
-            <div>
-              <dt class="text-white/38">Phone</dt>
-              <dd class="font-medium text-white/82">
-                {{ formatPhoneNumber(candidate.phone) || '—' }}
-              </dd>
-            </div>
-            <div v-if="candidate.gender">
-              <dt class="text-white/38">Gender</dt>
-              <dd class="font-medium text-white/82">
-                {{ genderLabels[candidate.gender] ?? candidate.gender }}
-              </dd>
-            </div>
-            <div v-if="candidate.dateOfBirth">
-              <dt class="text-white/38">Date of Birth</dt>
-              <dd class="font-medium text-white/82">
-                {{ formatDate(candidate.dateOfBirth) }}
-              </dd>
-            </div>
-            <div v-if="candidate.displayName">
-              <dt class="text-white/38">Display Name</dt>
-              <dd class="font-medium text-white/82">
-                {{ candidate.displayName }}
-              </dd>
-            </div>
-            <div>
-              <dt class="inline-flex items-center gap-1 text-white/38">
-                <Calendar class="size-3.5" />
-                Created
-              </dt>
-              <dd class="font-medium text-white/82">
-                <TimelineDateLink :date="candidate.createdAt">{{ new Date(candidate.createdAt).toLocaleDateString() }}</TimelineDateLink>
-              </dd>
-            </div>
-            <div>
-              <dt class="inline-flex items-center gap-1 text-white/38">
-                <Clock class="size-3.5" />
-                Updated
-              </dt>
-              <dd class="font-medium text-white/82">
-                <TimelineDateLink :date="candidate.updatedAt">{{ new Date(candidate.updatedAt).toLocaleDateString() }}</TimelineDateLink>
-              </dd>
-            </div>
-          </dl>
-        </div>
-
-        <!-- Custom properties (Notion-style) -->
-        <div class="mb-4 ui-panel ui-dashboard-panel p-4">
-          <h2 class="mb-2 px-2 text-sm font-semibold text-white">Properties</h2>
-          <PropertyBlock
-            entity-type="candidate"
-            :entity-id="candidateId"
-            :entries="(candidate.properties ?? []) as import('~~/shared/properties').PropertyEntry[]"
-            @refresh="refresh()"
-          />
-        </div>
+          </template>
+        </CandidateDetailsCard>
 
         <!-- Tabs -->
         <div class="mb-4 border-b border-white/10">
@@ -424,59 +294,13 @@ async function handleDeleteDoc(docId: string) {
           </div>
         </div>
 
-        <!-- Applications tab -->
-        <div v-if="activeTab === 'applications'">
-          <!-- Apply to Job button -->
-          <div class="mb-3 flex justify-end">
-            <button
-              class="factory-toolbar-button inline-flex h-10 min-h-10 cursor-pointer items-center gap-1.5 border px-3 py-0 text-xs font-medium transition-colors"
-              @click="showApplyModal = true"
-            >
-              <Plus class="size-3.5" />
-              Apply to Job
-            </button>
-          </div>
-
-          <div
-            v-if="!candidate.applications?.length"
-            class="ui-panel ui-dashboard-panel p-8 text-center"
-          >
-            <Briefcase class="mx-auto mb-2 size-8 text-white/32" />
-            <p class="text-sm text-white/54">No applications yet.</p>
-          </div>
-
-          <div v-else class="space-y-2">
-            <div
-              v-for="app in candidate.applications"
-              :key="app.id"
-              class="group flex flex-col gap-2 ui-panel ui-dashboard-panel px-4 py-3 transition-all hover:border-brand-500/70 hover:bg-brand-500/10 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <NuxtLink
-                :to="$localePath(`/dashboard/applications/${app.id}`)"
-                class="block min-w-0 flex-1"
-              >
-                <h4 class="truncate text-sm font-semibold text-white transition-colors group-hover:text-brand-400">
-                  {{ app.job.title }}
-                </h4>
-                <ApplicationTimestampStack
-                  :applied-at="app.createdAt"
-                  class="mt-1 items-start sm:items-start"
-                />
-              </NuxtLink>
-              <div class="flex shrink-0 items-center gap-2 sm:ml-3">
-                <button
-                  class="factory-toolbar-button inline-flex h-8 min-h-8 cursor-pointer items-center gap-1 border px-2.5 py-0 text-[10px] font-medium transition-colors"
-                  title="Schedule Interview"
-                  @click="openScheduleInterview(app)"
-                >
-                  <Calendar class="size-3" />
-                  Schedule
-                </button>
-                <ApplicationStatusBadge :status="app.status" />
-              </div>
-            </div>
-          </div>
-        </div>
+        <CandidateApplicationsPanel
+          v-if="activeTab === 'applications'"
+          :applications="candidate.applications ?? []"
+          surface="page"
+          @apply="showApplyModal = true"
+          @schedule="openScheduleInterview"
+        />
 
         <!-- Apply to Job Modal -->
         <ApplyToJobModal
@@ -498,7 +322,6 @@ async function handleDeleteDoc(docId: string) {
 
         <!-- Documents tab -->
         <div v-if="activeTab === 'documents'">
-          <!-- Hidden file input -->
           <input
             ref="fileInput"
             type="file"
@@ -507,155 +330,50 @@ async function handleDeleteDoc(docId: string) {
             @change="handleFileSelected"
           />
 
-          <!-- ── Inline PDF preview (replaces document list when active) ── -->
-          <template v-if="showPreview">
-            <!-- Preview toolbar -->
-            <div class="mb-3 flex items-center justify-between">
-              <button
-                class="factory-toolbar-button inline-flex h-10 min-h-10 cursor-pointer items-center gap-1.5 border px-3 py-0 text-xs font-medium transition-colors"
-                @click="closePreview"
-              >
-                <ArrowLeft class="size-3.5" />
-                Back to documents
-              </button>
-              <div class="flex items-center gap-1">
+          <CandidateDocumentsPanel
+            :documents="candidate.documents ?? []"
+            :preview="documentPreviewState"
+            surface="page"
+            allow-delete
+            empty-description="Upload a resume, cover letter, or other document (PDF, DOC, DOCX — max 10 MB)."
+            @preview="documentPreview.handlePreview"
+            @download="documentPreview.handleDownload"
+            @delete="showDocDeleteConfirm = $event"
+            @close-preview="documentPreview.closePreview"
+          >
+            <template #toolbar>
+              <div class="mb-3 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <FactorySelect
+                    v-model="selectedDocType"
+                    :options="[
+                      { value: 'resume', label: 'Resume' },
+                      { value: 'cover_letter', label: 'Cover Letter' },
+                      { value: 'other', label: 'Other' },
+                    ]"
+                  />
+                </div>
                 <button
-                  v-if="previewDocId"
-                  class="factory-toolbar-button inline-flex size-10 min-h-10 cursor-pointer items-center justify-center border p-0 text-white/58 transition-colors hover:text-white"
-                  title="Download"
-                  @click="handleDownload(previewDocId!)"
+                  :disabled="isUploading"
+                  class="factory-toolbar-button inline-flex h-10 min-h-10 cursor-pointer items-center gap-1.5 border px-3 py-0 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  @click="triggerFileSelect"
                 >
-                  <Download class="size-4" />
+                  <Upload class="size-3.5" />
+                  {{ isUploading ? 'Uploading…' : 'Upload Document' }}
                 </button>
               </div>
-            </div>
+            </template>
 
-            <!-- Filename -->
-            <div v-if="previewFilename" class="mb-3 flex items-center gap-2 ui-panel ui-dashboard-panel px-3 py-2">
-              <FileText class="size-4 shrink-0 text-white/38" />
-              <span class="truncate text-sm font-medium text-white/78">
-                {{ previewFilename }}
-              </span>
-            </div>
-
-            <!-- Error state -->
-            <div
-              v-if="previewError"
-              class="border border-danger-500/45 bg-danger-500/10 p-6 text-center"
-            >
-              <AlertTriangle class="mx-auto mb-2 size-8 text-danger-300" />
-              <p class="text-sm text-danger-100">{{ previewError }}</p>
-              <button
-                class="mt-3 cursor-pointer text-sm font-medium text-brand-400 transition-colors hover:text-white"
-                @click="closePreview"
-              >
-                Go back
-              </button>
-            </div>
-
-            <!-- PDF iframe — same-origin, server streams the bytes -->
-            <iframe
-              v-else-if="previewUrl && isPdfPreview"
-              :src="previewUrl"
-              class="w-full border border-white/12"
-              style="height: 70vh;"
-              title="Document preview"
-            />
-          </template>
-
-          <!-- ── Document list (normal state) ── -->
-          <template v-else>
-            <!-- Upload controls -->
-            <div class="mb-3 flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <FactorySelect
-                  v-model="selectedDocType"
-                  :options="[
-                    { value: 'resume', label: 'Resume' },
-                    { value: 'cover_letter', label: 'Cover Letter' },
-                    { value: 'other', label: 'Other' },
-                  ]"
-                />
-              </div>
-              <button
-                :disabled="isUploading"
-                class="factory-toolbar-button inline-flex h-10 min-h-10 cursor-pointer items-center gap-1.5 border px-3 py-0 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                @click="triggerFileSelect"
-              >
-                <Upload class="size-3.5" />
-                {{ isUploading ? 'Uploading…' : 'Upload Document' }}
-              </button>
-            </div>
-
-            <!-- Upload error -->
-            <div
-              v-if="uploadError"
-              class="mb-3 border border-danger-500/45 bg-danger-500/10 p-3 text-sm text-danger-100"
-            >
-              {{ uploadError }}
-              <button class="ml-1 cursor-pointer underline transition-colors hover:text-white" @click="uploadError = null">Dismiss</button>
-            </div>
-
-            <!-- Empty state -->
-            <div
-              v-if="!candidate.documents?.length"
-              class="ui-panel ui-dashboard-panel p-8 text-center"
-            >
-              <FileText class="mx-auto mb-2 size-8 text-white/32" />
-              <p class="text-sm text-white/54">No documents yet.</p>
-              <p class="mt-1 text-xs text-white/38">
-                Upload a resume, cover letter, or other document (PDF, DOC, DOCX — max 10 MB).
-              </p>
-            </div>
-
-            <!-- Document list -->
-            <div v-else class="space-y-2">
+            <template #error>
               <div
-                v-for="doc in candidate.documents"
-                :key="doc.id"
-                class="group flex items-center justify-between ui-panel ui-dashboard-panel px-4 py-3 transition-colors"
-                :class="doc.mimeType === 'application/pdf' ? 'cursor-pointer hover:border-brand-500/70 hover:bg-brand-500/10' : ''"
-                @click="doc.mimeType === 'application/pdf' ? handlePreview(doc.id, doc.mimeType) : undefined"
+                v-if="uploadError"
+                class="mb-3 border border-danger-500/45 bg-danger-500/10 p-3 text-sm text-danger-100"
               >
-                <div class="flex min-w-0 items-center gap-3">
-                  <FileText class="size-4 shrink-0" :class="doc.mimeType === 'application/pdf' ? 'text-danger-300' : 'text-white/38'" />
-                  <div class="min-w-0">
-                    <p class="truncate text-sm font-medium text-white/82">
-                      {{ doc.originalFilename }}
-                    </p>
-                    <span class="text-xs text-white/42">
-                      {{ documentTypeLabels[doc.type] ?? doc.type }}
-                      · <TimelineDateLink :date="doc.createdAt">{{ new Date(doc.createdAt).toLocaleDateString() }}</TimelineDateLink>
-                    </span>
-                  </div>
-                </div>
-                <div class="flex shrink-0 items-center gap-1" @click.stop>
-                  <button
-                    v-if="doc.mimeType === 'application/pdf'"
-                    class="factory-toolbar-button inline-flex size-9 min-h-9 cursor-pointer items-center justify-center border p-0 text-white/58 transition-colors hover:text-white"
-                    title="Preview PDF"
-                    @click="handlePreview(doc.id, doc.mimeType)"
-                  >
-                    <Eye class="size-4" />
-                  </button>
-                  <button
-                    class="factory-toolbar-button inline-flex size-9 min-h-9 cursor-pointer items-center justify-center border p-0 text-white/58 transition-colors hover:text-white"
-                    title="Download"
-                    @click="handleDownload(doc.id)"
-                  >
-                    <Download class="size-4" />
-                  </button>
-                  <button
-                    class="factory-toolbar-button inline-flex size-9 min-h-9 cursor-pointer items-center justify-center border p-0 text-danger-200 transition-colors hover:border-danger-400 hover:bg-danger-500/12 hover:text-white"
-                    title="Delete"
-                    @click="showDocDeleteConfirm = doc.id"
-                  >
-                    <Trash2 class="size-4" />
-                  </button>
-                </div>
+                {{ uploadError }}
+                <button class="ml-1 cursor-pointer underline transition-colors hover:text-white" @click="uploadError = null">Dismiss</button>
               </div>
-            </div>
-          </template>
+            </template>
+          </CandidateDocumentsPanel>
 
           <!-- Document delete confirmation dialog -->
           <Teleport to="body">

@@ -33,10 +33,13 @@ describe('application timestamp stack', () => {
     const candidateSidebar = readProjectFile('app/components/CandidateDetailSidebar.vue')
     const candidateDrawer = readProjectFile('app/components/CandidateDetailDrawer.vue')
     const candidatePage = readProjectFile('app/pages/dashboard/candidates/[id].vue')
+    const candidateApplicationsPanel = readProjectFile('app/components/CandidateApplicationsPanel.vue')
 
-    for (const source of [drawer, fullPage, jobPage, candidateSidebar, candidateDrawer, candidatePage]) {
+    for (const source of [drawer, fullPage, jobPage, candidateSidebar, candidateApplicationsPanel]) {
       expect(source).toContain('ApplicationTimestampStack')
     }
+    expect(candidateDrawer).toContain('<CandidateApplicationsPanel')
+    expect(candidatePage).toContain('<CandidateApplicationsPanel')
     expect(drawer).not.toContain('uppercase text-white/36">Applied')
     expect(fullPage).not.toContain('uppercase text-white/36">Applied')
     expect(jobPage).not.toContain('Applied {{ new Date(currentSummary.createdAt).toLocaleDateString() }}')
