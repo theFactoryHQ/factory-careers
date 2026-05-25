@@ -176,4 +176,19 @@ describe('action error toast handling', () => {
       }
     }
   })
+
+  it('keeps client-side form validation anchored in the form', () => {
+    const onboardingSource = readProjectFile('app/pages/onboarding/create-org.vue')
+    const newTemplateSource = readProjectFile('app/pages/dashboard/interviews/templates/new.vue')
+
+    expect(onboardingSource).toContain('createOrgValidationError')
+    expect(onboardingSource).toContain('v-if="createOrgValidationError"')
+    expect(onboardingSource).not.toContain("toast.error('Organization name required')")
+    expect(onboardingSource).not.toContain("toast.error('Slug required')")
+    expect(onboardingSource).not.toContain("toast.error('Invalid slug'")
+
+    expect(newTemplateSource).toContain('validationError')
+    expect(newTemplateSource).toContain('v-if="validationError"')
+    expect(newTemplateSource).not.toContain("toast.error('All fields are required')")
+  })
 })

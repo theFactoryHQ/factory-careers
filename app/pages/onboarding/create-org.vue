@@ -25,6 +25,7 @@ const orgName = ref('')
 const slug = ref('')
 const slugEdited = ref(false)
 const isLoading = ref(false)
+const createOrgValidationError = ref('')
 const showCreateForm = ref(false)
 const publicOrgCreationEnabled = computed(
   () => config.public.factoryPublicOrgCreationEnabled === true,
@@ -90,23 +91,25 @@ function onSlugInput() {
 }
 
 async function handleCreateOrg() {
+  createOrgValidationError.value = ''
+
   if (!publicOrgCreationEnabled.value) {
     toast.error('Organization creation disabled', { message: 'Factory Careers uses a single Factory organization. Ask an administrator for an invitation.' })
     return
   }
 
   if (!orgName.value.trim()) {
-    toast.error('Organization name required')
+    createOrgValidationError.value = 'Organization name is required.'
     return
   }
 
   if (!slug.value.trim()) {
-    toast.error('Slug required')
+    createOrgValidationError.value = 'Slug is required.'
     return
   }
 
   if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(slug.value)) {
-    toast.error('Invalid slug', { message: 'Slug must be lowercase alphanumeric with hyphens, and cannot start or end with a hyphen.' })
+    createOrgValidationError.value = 'Slug must be lowercase alphanumeric with hyphens, and cannot start or end with a hyphen.'
     return
   }
 
@@ -479,6 +482,10 @@ async function handleSubmitJoinRequest() {
       />
       <span class="text-xs font-normal text-surface-400">Used in URLs. Lowercase letters, numbers, and hyphens only.</span>
     </label>
+
+    <p v-if="createOrgValidationError" class="ui-alert ui-alert-danger text-sm">
+      {{ createOrgValidationError }}
+    </p>
 
     <button
       type="submit"

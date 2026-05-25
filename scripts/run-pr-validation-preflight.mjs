@@ -147,6 +147,12 @@ function getStepSlug(name) {
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const stepArgIndex = argv.indexOf('--step')
   const requestedStep = stepArgIndex >= 0 ? argv[stepArgIndex + 1] : ''
+
+  if (stepArgIndex >= 0 && (!requestedStep || requestedStep.startsWith('-'))) {
+    console.error('Missing value for --step. Pass a PR preflight step name or alias.')
+    exit(1)
+  }
+
   const steps = requestedStep
     ? getPrPreflightSteps().filter((step) => {
         return getStepSlug(step.name) === requestedStep || step.aliases?.includes(requestedStep)

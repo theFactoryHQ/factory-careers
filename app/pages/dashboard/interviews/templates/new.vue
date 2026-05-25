@@ -28,6 +28,7 @@ const form = reactive({
 
 const showPreview = ref(false)
 const isSaving = ref(false)
+const validationError = ref('')
 
 const canSave = computed(() =>
   form.name.trim().length > 0
@@ -57,8 +58,10 @@ const previewBody = computed(() => renderTemplatePreview(form.body, sampleVariab
 
 // ─── Save ────────────────────────────────────────────────────────
 async function handleCreate() {
+  validationError.value = ''
+
   if (!canSave.value) {
-    toast.error('All fields are required')
+    validationError.value = 'All fields are required.'
     return
   }
 
@@ -122,6 +125,10 @@ async function handleCreate() {
         </button>
       </div>
     </div>
+
+    <p v-if="validationError" class="ui-alert ui-alert-danger mb-5 text-sm">
+      {{ validationError }}
+    </p>
 
     <div class="grid gap-6" :class="showPreview ? 'lg:grid-cols-2' : 'lg:grid-cols-[1fr_320px]'">
       <!-- Editor panel -->
