@@ -42,12 +42,10 @@ watch([nameDisplayFormat, dateFormat], ([nf, df]) => {
 }, { immediate: true })
 
 const isSaving = ref(false)
-const saveError = ref('')
 
 async function handleSave() {
   if (!canUpdateOrg.value) return
   isSaving.value = true
-  saveError.value = ''
 
   try {
     await updateSettings({
@@ -58,7 +56,7 @@ async function handleSave() {
     toast.success('Localization settings saved')
   }
   catch (err: unknown) {
-    saveError.value = err instanceof Error ? err.message : 'Failed to save settings'
+    toast.error('Failed to save settings', { message: err instanceof Error ? err.message : undefined })
   }
   finally {
     isSaving.value = false
@@ -159,14 +157,6 @@ const previewDateFormatted = computed(() => {
               <span class="font-medium text-surface-900 dark:text-surface-100">{{ previewDateFormatted }}</span>
             </div>
           </div>
-        </div>
-
-        <!-- Error -->
-        <div
-          v-if="saveError"
-          class="ui-alert ui-alert-danger"
-        >
-          {{ saveError }}
         </div>
 
         <!-- Save button -->

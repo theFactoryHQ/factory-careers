@@ -19,6 +19,7 @@ const localePath = useLocalePath()
 
 const { templates, status: fetchStatus, deleteTemplate } = useEmailTemplates()
 const { handlePreviewReadOnlyError } = usePreviewReadOnly()
+const toast = useToast()
 
 const deletingId = ref<string | null>(null)
 const showDeleteConfirm = ref(false)
@@ -35,7 +36,8 @@ async function handleDelete() {
   try {
     await deleteTemplate(templateToDelete.value.id)
   } catch (err: any) {
-    handlePreviewReadOnlyError(err)
+    if (handlePreviewReadOnlyError(err)) return
+    toast.error('Failed to delete template', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     deletingId.value = null
     showDeleteConfirm.value = false

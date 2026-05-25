@@ -5,6 +5,8 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
+const toast = useToast()
+
 // ── Form state ────────────────────────────────
 const feedbackType = ref<'bug' | 'feature'>('bug')
 const title = ref('')
@@ -190,7 +192,7 @@ async function handleSubmit() {
     })
     successUrl.value = result.issueUrl
   } catch (err: any) {
-    submitError.value = err.data?.statusMessage ?? 'Failed to submit feedback. Please try again.'
+    toast.error('Failed to submit feedback', { message: err.data?.statusMessage ?? 'Please try again.', statusCode: err.data?.statusCode })
   } finally {
     isSubmitting.value = false
   }

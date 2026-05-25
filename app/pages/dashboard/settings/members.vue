@@ -16,10 +16,10 @@ useSeoMeta({
 
 const { activeOrg } = useCurrentOrg()
 const { data: session } = await authClient.useSession(useFetch)
+const toast = useToast()
 const { allowed: canManageMembers, isLoading: isManageMembersPermissionLoading } = usePermission({ member: ['create'] })
 const { allowed: canInvite } = usePermission({ invitation: ['create'] })
 const { track } = useTrack()
-const toast = useToast()
 const { allowed: canCancelInvite } = usePermission({ invitation: ['cancel'] })
 const {
   listInviteLinks: fetchInviteLinksApi,
@@ -94,18 +94,15 @@ const showInviteForm = ref(false)
 const inviteEmail = ref('')
 const inviteRole = ref<'admin' | 'member'>('member')
 const isInviting = ref(false)
-const inviteError = ref('')
 
 function resetInviteForm() {
   inviteEmail.value = ''
   inviteRole.value = 'member'
-  inviteError.value = ''
 }
 
 async function handleInvite() {
   if (!canInvite.value || !inviteEmail.value.trim()) return
   isInviting.value = true
-  inviteError.value = ''
 
   try {
     const email = inviteEmail.value.trim()
@@ -121,7 +118,7 @@ async function handleInvite() {
     await fetchInvitations()
   }
   catch (err: unknown) {
-    inviteError.value = err instanceof Error ? err.message : 'Failed to send invitation'
+    toast.error('Failed to send invitation', { message: err instanceof Error ? err.message : undefined })
   }
   finally {
     isInviting.value = false
@@ -167,7 +164,6 @@ onMounted(fetchInvitations)
 
 async function handleResendInvitation(invitation: { id: string; email: string; role: string }) {
   resendingInvitation.value = invitation.id
-  inviteError.value = ''
 
   try {
     const result = await authClient.organization.inviteMember({
@@ -180,7 +176,7 @@ async function handleResendInvitation(invitation: { id: string; email: string; r
     await fetchInvitations()
   }
   catch (err: unknown) {
-    inviteError.value = err instanceof Error ? err.message : 'Failed to resend invitation'
+    toast.error('Failed to resend invitation', { message: err instanceof Error ? err.message : undefined })
   }
   finally {
     resendingInvitation.value = null
@@ -198,7 +194,7 @@ async function handleCancelInvitation(invitationId: string) {
     await fetchInvitations()
   }
   catch (err: unknown) {
-    invitationsError.value = err instanceof Error ? err.message : 'Failed to cancel invitation'
+    toast.error('Failed to cancel invitation', { message: err instanceof Error ? err.message : undefined })
   }
   finally {
     cancellingInvitation.value = null
@@ -284,7 +280,7 @@ async function handleCreateLink() {
     await fetchInviteLinks()
   }
   catch (err: any) {
-    createLinkError.value = err?.data?.statusMessage || 'Failed to create invite link'
+    toast.error('Failed to create invite link', { message: err?.data?.statusMessage })
   }
   finally {
     isCreatingLink.value = false
@@ -322,7 +318,7 @@ async function handleRevokeLink(linkId: string) {
     await fetchInviteLinks()
   }
   catch (err: any) {
-    linksError.value = err?.data?.statusMessage || 'Failed to revoke invite link'
+    toast.error('Failed to revoke invite link', { message: err?.data?.statusMessage })
   }
   finally {
     revokingLinkId.value = null
@@ -361,7 +357,6 @@ const isLoadingJoinRequests = ref(true)
 const joinRequestsError = ref('')
 const approvingRequestId = ref<string | null>(null)
 const rejectingRequestId = ref<string | null>(null)
-const joinRequestActionError = ref('')
 
 async function fetchJoinRequests() {
   isLoadingJoinRequests.value = true
@@ -382,14 +377,13 @@ onMounted(fetchJoinRequests)
 
 async function handleApproveRequest(requestId: string) {
   approvingRequestId.value = requestId
-  joinRequestActionError.value = ''
 
   try {
     await $fetch(`/api/join-requests/${requestId}/approve`, { method: 'POST' })
     await Promise.all([fetchJoinRequests(), fetchMembers()])
   }
   catch (err: any) {
-    joinRequestActionError.value = err?.data?.statusMessage || 'Failed to approve request'
+    toast.error('Failed to approve request', { message: err?.data?.statusMessage })
   }
   finally {
     approvingRequestId.value = null
@@ -398,14 +392,13 @@ async function handleApproveRequest(requestId: string) {
 
 async function handleRejectRequest(requestId: string) {
   rejectingRequestId.value = requestId
-  joinRequestActionError.value = ''
 
   try {
     await $fetch(`/api/join-requests/${requestId}/reject`, { method: 'POST' })
     await fetchJoinRequests()
   }
   catch (err: any) {
-    joinRequestActionError.value = err?.data?.statusMessage || 'Failed to reject request'
+    toast.error('Failed to reject request', { message: err?.data?.statusMessage })
   }
   finally {
     rejectingRequestId.value = null
@@ -417,7 +410,6 @@ async function handleRejectRequest(requestId: string) {
 // ─────────────────────────────────────────────
 const activeDropdown = ref<string | null>(null)
 const isUpdatingRole = ref<string | null>(null)
-const roleUpdateError = ref('')
 
 function toggleDropdown(memberId: string) {
   activeDropdown.value = activeDropdown.value === memberId ? null : memberId
@@ -429,7 +421,6 @@ function closeDropdown() {
 
 async function handleUpdateRole(memberId: string, newRole: 'admin' | 'member') {
   isUpdatingRole.value = memberId
-  roleUpdateError.value = ''
 
   try {
     const result = await authClient.organization.updateMemberRole({
@@ -440,7 +431,7 @@ async function handleUpdateRole(memberId: string, newRole: 'admin' | 'member') {
     await fetchMembers()
   }
   catch (err: unknown) {
-    roleUpdateError.value = err instanceof Error ? err.message : 'Failed to update role'
+    toast.error('Failed to update role', { message: err instanceof Error ? err.message : undefined })
   }
   finally {
     isUpdatingRole.value = null
@@ -453,7 +444,6 @@ async function handleUpdateRole(memberId: string, newRole: 'admin' | 'member') {
 // ─────────────────────────────────────────────
 const memberToRemove = ref<{ id: string; name: string } | null>(null)
 const isRemoving = ref(false)
-const removeError = ref('')
 
 async function handleRemoveMember() {
   if (!memberToRemove.value) return
@@ -462,12 +452,11 @@ async function handleRemoveMember() {
   const currentUserId = session.value?.user?.id
   const targetMember = members.value.find(m => m.id === memberToRemove.value?.id)
   if (targetMember && currentUserId && targetMember.userId === currentUserId) {
-    removeError.value = 'You cannot remove yourself from the organization.'
+    toast.error('Cannot remove yourself', { message: 'You cannot remove yourself from the organization.' })
     return
   }
 
   isRemoving.value = true
-  removeError.value = ''
 
   try {
     const result = await authClient.organization.removeMember({
@@ -478,7 +467,7 @@ async function handleRemoveMember() {
     await fetchMembers()
   }
   catch (err: unknown) {
-    removeError.value = err instanceof Error ? err.message : 'Failed to remove member'
+    toast.error('Failed to remove member', { message: err instanceof Error ? err.message : undefined })
   }
   finally {
     isRemoving.value = false
@@ -605,20 +594,9 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <div v-if="inviteError" class="ui-alert ui-alert-danger mt-3 px-3 py-2">
-            {{ inviteError }}
-          </div>
         </div>
       </Transition>
     </section>
-
-    <!-- Role update error banner -->
-    <div v-if="roleUpdateError" class="ui-alert ui-alert-danger mb-4 flex items-center justify-between">
-      <span>{{ roleUpdateError }}</span>
-      <button class="ui-button ui-button-ghost p-1" @click="roleUpdateError = ''">
-        <X class="size-4" />
-      </button>
-    </div>
 
     <!-- Pending invitations -->
     <section v-if="canInvite && (isLoadingInvitations || pendingInvitations.length > 0)" class="ui-panel ui-settings-panel mb-6">
@@ -908,14 +886,6 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Join request action error -->
-      <div v-if="joinRequestActionError" class="ui-alert ui-alert-danger rounded-none border-x-0 border-t-0 px-4 sm:px-6 py-2 flex items-center justify-between">
-        <span>{{ joinRequestActionError }}</span>
-        <button class="ui-button ui-button-ghost p-1" @click="joinRequestActionError = ''">
-          <X class="size-4" />
-        </button>
-      </div>
-
       <!-- Loading state -->
       <div v-if="isLoadingJoinRequests" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
         <Loader2 class="size-4 animate-spin mx-auto mb-1.5" />
@@ -1193,14 +1163,10 @@ onUnmounted(() => {
                 They will lose access to all organization data immediately.
               </p>
 
-              <div v-if="removeError" class="ui-alert ui-alert-danger mb-4 px-3 py-2">
-                {{ removeError }}
-              </div>
-
               <div class="flex items-center gap-3 justify-end">
                 <button
                   class="ui-button ui-button-secondary"
-                  @click="memberToRemove = null; removeError = ''"
+                  @click="memberToRemove = null"
                 >
                   Cancel
                 </button>

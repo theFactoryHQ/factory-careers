@@ -38,12 +38,9 @@ jobs:
 
       - name: Check CLI parity evidence
         id: cli_parity
-        shell: bash
-        run: |
-          set -euo pipefail
-          base_ref="${{ github.base_ref || 'main' }}"
-          git fetch --no-tags --depth=1 origin "$base_ref"
-          git diff --name-only "origin/${base_ref}"...HEAD | npx tsx scripts/cli-parity-check.ts --stdin
+        run: npm run preflight:cli-parity
+        env:
+          PR_PREFLIGHT_BASE_REF: origin/${{ github.base_ref || 'main' }}
 
       - name: Run unit tests
         id: tests

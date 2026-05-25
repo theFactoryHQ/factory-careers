@@ -47,7 +47,6 @@ const hasProvider = computed(() => (providers.value?.length ?? 0) > 0)
 // ─────────────────────────────────────────────
 const showForm = ref(false)
 const isRegistering = ref(false)
-const formError = ref('')
 
 const form = reactive({
   providerId: '',
@@ -63,7 +62,6 @@ const form = reactive({
 const localSignupAllowedDomains = ref<string[]>([])
 const newSignupDomain = ref('')
 const isSavingDomains = ref(false)
-const domainSaveError = ref('')
 const signupDomainPolicyTooltip = 'Domains must match a configured SSO provider or an organization-level calendar integration. Only owners can save changes.'
 
 watch(signupAllowedDomains, (domains) => {
@@ -100,8 +98,6 @@ const canAddSignupDomain = computed(() =>
 )
 
 function handleAddSignupDomain() {
-  domainSaveError.value = ''
-
   if (!canAddSignupDomain.value || !normalizedNewSignupDomain.value) return
 
   localSignupAllowedDomains.value = [...parsedSignupAllowedDomains.value, normalizedNewSignupDomain.value]
@@ -109,22 +105,19 @@ function handleAddSignupDomain() {
 }
 
 function handleRemoveSignupDomain(domain: string) {
-  domainSaveError.value = ''
   localSignupAllowedDomains.value = parsedSignupAllowedDomains.value.filter(item => item !== domain)
 }
 
 async function handleSaveSignupDomains() {
   if (!canManageSignupDomains.value) return
 
-  domainSaveError.value = ''
-
   if (invalidSignupDomains.value.length > 0) {
-    domainSaveError.value = `Invalid domain: ${invalidSignupDomains.value[0]}`
+    toast.error('Invalid domain', { message: invalidSignupDomains.value[0] })
     return
   }
 
   if (hasTooManySignupDomains.value) {
-    domainSaveError.value = `Add ${SIGNUP_ALLOWED_DOMAINS_MAX} or fewer domains.`
+    toast.error('Too many domains', { message: `Add ${SIGNUP_ALLOWED_DOMAINS_MAX} or fewer domains.` })
     return
   }
 
@@ -139,7 +132,7 @@ async function handleSaveSignupDomains() {
   }
   catch (err: unknown) {
     const fetchErr = err as { data?: { statusMessage?: string }; message?: string }
-    domainSaveError.value = fetchErr.data?.statusMessage ?? fetchErr.message ?? 'Failed to save signup domain allowlist'
+    toast.error('Failed to save signup domain allowlist', { message: fetchErr.data?.statusMessage ?? fetchErr.message })
   }
   finally {
     isSavingDomains.value = false
@@ -167,7 +160,6 @@ function resetForm() {
   form.domain = ''
   form.clientId = ''
   form.clientSecret = ''
-  formError.value = ''
 }
 
 /**
@@ -184,7 +176,6 @@ watch(() => form.domain, (domain) => {
 async function handleRegister() {
   if (!canManageSso.value) return
 
-  formError.value = ''
   isRegistering.value = true
 
   try {
@@ -206,7 +197,7 @@ async function handleRegister() {
     await refreshProviders()
   } catch (err: unknown) {
     const fetchErr = err as { data?: { statusMessage?: string }; message?: string }
-    formError.value = fetchErr.data?.statusMessage ?? fetchErr.message ?? 'Failed to register SSO provider'
+    toast.error('Failed to register SSO provider', { message: fetchErr.data?.statusMessage ?? fetchErr.message })
   } finally {
     isRegistering.value = false
   }
@@ -230,7 +221,7 @@ async function handleDelete(id: string) {
     await refreshProviders()
   } catch (err: unknown) {
     const fetchErr = err as { data?: { statusMessage?: string }; message?: string }
-    formError.value = fetchErr.data?.statusMessage ?? fetchErr.message ?? 'Failed to remove SSO provider'
+    toast.error('Failed to remove SSO provider', { message: fetchErr.data?.statusMessage ?? fetchErr.message })
   } finally {
     deletingId.value = null
   }
@@ -266,21 +257,6 @@ async function copyCallbackUrl(providerId: string) {
         Manage trusted identity domains, SSO providers, and work-account access.
       </p>
     </div>
-
-    <Transition name="fade">
-      <div
-        v-if="formError"
-        class="ui-alert ui-alert-danger mb-4 flex items-center gap-3"
-      >
-        <AlertTriangle class="size-4 shrink-0" />
-        <p class="flex-1">
-          {{ formError }}
-        </p>
-        <button class="text-danger-400 hover:text-danger-600 dark:hover:text-danger-200" @click="formError = ''">
-          <X class="size-4" />
-        </button>
-      </div>
-    </Transition>
 
     <!-- Loading state -->
     <div v-if="fetchStatus === 'pending'" class="flex items-center gap-3 py-12 justify-center">
@@ -387,9 +363,6 @@ async function copyCallbackUrl(providerId: string) {
               <Check v-else class="size-4" />
               {{ isSavingDomains ? 'Saving…' : 'Save domains' }}
             </button>
-          </div>
-          <div v-if="domainSaveError" class="ui-alert ui-alert-danger">
-            {{ domainSaveError }}
           </div>
           <div v-if="!canManageSignupDomains" class="ui-alert ui-alert-info">
             Only organization owners can manage signup domain allowlists.

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
   X, Calendar, Clock, MapPin, Users, ChevronLeft, ChevronRight,
-  Plus, AlertCircle, Mail, ChevronDown, RefreshCw, Globe,
+  Plus, Mail, ChevronDown, RefreshCw, Globe,
   Send, UserPlus, Bell, Pencil, CheckCircle2, ExternalLink,
   ArrowRight, Eye, Video,
 } from 'lucide-vue-next'
@@ -21,6 +21,8 @@ const emit = defineEmits<{
   close: []
   scheduled: [createdInterview?: { id: string; googleCalendarEventLink?: string | null }]
 }>()
+
+const toast = useToast()
 
 // ─── Success state ────────────────────────────────────────────────
 const showSuccess = ref(false)
@@ -386,7 +388,7 @@ async function handleSubmit() {
       // Non-critical; the success view is already shown.
     })
   } catch (err: any) {
-    errors.value.submit = err?.data?.statusMessage ?? 'Failed to schedule interview'
+    toast.error('Failed to schedule interview', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     isSubmitting.value = false
   }
@@ -405,7 +407,7 @@ async function handleMoveToInterview() {
     refreshNuxtData('interviews').catch(() => {})
     emit('scheduled')
   } catch (err: any) {
-    errors.value.submit = err?.data?.statusMessage ?? 'Failed to move to interview stage'
+    toast.error('Failed to move to interview stage', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     isMoving.value = false
   }
@@ -561,12 +563,6 @@ async function handleMoveToInterview() {
           <template v-else>
           <!-- Form content -->
           <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-            <!-- Error banner -->
-            <div v-if="errors.submit" class="flex items-start gap-2.5 rounded-xl border border-danger-200/60 bg-danger-50/80 p-3.5 text-sm text-danger-700 dark:border-danger-800/40 dark:bg-danger-950/30 dark:text-danger-300">
-              <AlertCircle class="size-4 shrink-0 mt-0.5" />
-              {{ errors.submit }}
-            </div>
-
             <!-- Candidate notification -->
             <div>
               <label class="block text-[13px] font-medium text-surface-700 dark:text-surface-300 mb-2.5">
