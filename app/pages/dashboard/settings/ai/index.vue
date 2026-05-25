@@ -7,7 +7,7 @@
  */
 import {
   Brain, Plus, Loader2, AlertTriangle, Sparkles, BarChart3, Star,
-  Pencil, Trash2, Zap, Check, Server, RefreshCw,
+  Pencil, Trash2, Zap, Check, Server, RefreshCw, Save,
 } from 'lucide-vue-next'
 
 definePageMeta({})
@@ -60,7 +60,9 @@ interface ProviderInfo {
 }
 
 const { allowed: canManageAi, isLoading: isPermissionLoading } = usePermission({ aiConfig: ['create'] })
+const { allowed: canUpdateOrg } = usePermission({ organization: ['update'] })
 const toast = useToast()
+const { analysisContext, updateSettings } = useOrgSettings()
 
 const { data: configsData, refresh: refreshConfigs, status: configsStatus } = useFetch<AiConfigRow[]>('/api/ai-config', {
   key: 'ai-configs',
@@ -75,6 +77,29 @@ const { data: providers } = useFetch<Record<string, ProviderInfo>>('/api/ai-conf
 
 const configs = computed(() => configsData.value ?? [])
 const isLoading = computed(() => configsStatus.value === 'pending' && configs.value.length === 0)
+
+const localAnalysisContext = ref('')
+const isSavingAnalysisContext = ref(false)
+
+watch(analysisContext, (context) => {
+  localAnalysisContext.value = context
+}, { immediate: true })
+
+async function saveAnalysisContext() {
+  if (!canUpdateOrg.value) return
+  isSavingAnalysisContext.value = true
+  try {
+    await updateSettings({ analysisContext: localAnalysisContext.value })
+    toast.success('Analysis context saved')
+  }
+  catch (err: any) {
+    const message = err?.data?.statusMessage ?? err?.message ?? 'Failed to save analysis context.'
+    toast.error('Save failed', { message })
+  }
+  finally {
+    isSavingAnalysisContext.value = false
+  }
+}
 
 // ── Per-row actions ──
 const togglingDefaultId = ref<string | null>(null)
@@ -220,6 +245,50 @@ function formatPrice(p: number | null): string {
         </NuxtLink>
       </div>
     </div>
+
+    <section
+      v-if="!isPermissionLoading && canManageAi"
+      class="ui-panel ui-dashboard-panel mb-5 overflow-hidden"
+    >
+      <div class="px-5 py-4 border-b border-surface-100 dark:border-surface-800">
+        <div class="flex items-start gap-3">
+          <div class="ui-icon-state ui-icon-state-brand flex size-9 items-center justify-center rounded-lg">
+            <Sparkles class="size-4" />
+          </div>
+          <div>
+            <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Analysis context</h2>
+            <p class="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
+              Organization background the AI uses before generating criteria or scoring candidates.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="px-5 py-4 space-y-3">
+        <textarea
+          v-model="localAnalysisContext"
+          :disabled="!canUpdateOrg || isSavingAnalysisContext"
+          rows="5"
+          maxlength="4000"
+          class="ui-field min-h-32 resize-y disabled:opacity-60 disabled:cursor-not-allowed"
+          placeholder="Describe the organization, customers, services, and domain signals candidates should be evaluated against."
+        />
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <p class="text-[11px] text-surface-500 dark:text-surface-400">
+            {{ localAnalysisContext.length.toLocaleString() }} / 4,000 characters
+          </p>
+          <button
+            type="button"
+            :disabled="!canUpdateOrg || isSavingAnalysisContext"
+            class="ui-button ui-button-primary h-8 px-3 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="saveAnalysisContext"
+          >
+            <Loader2 v-if="isSavingAnalysisContext" class="size-3.5 animate-spin" />
+            <Save v-else class="size-3.5" />
+            {{ isSavingAnalysisContext ? 'Saving…' : 'Save context' }}
+          </button>
+        </div>
+      </div>
+    </section>
 
     <!-- Permission guard -->
     <div v-if="isPermissionLoading" class="flex items-center justify-center py-12">

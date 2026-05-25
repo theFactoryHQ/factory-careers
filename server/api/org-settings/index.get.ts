@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
     nameDisplayFormat: 'first_last' | 'last_first'
     dateFormat: 'mdy' | 'dmy' | 'ymd'
     defaultSalaryUnit: string
+    analysisContext?: string
     signupAllowedDomains?: string[]
     applicationComplianceEnabled?: boolean
     includeEeo?: boolean
@@ -23,14 +24,15 @@ export default defineEventHandler(async (event) => {
       columns: {
         nameDisplayFormat: true,
         dateFormat: true,
-          defaultSalaryUnit: true,
-          signupAllowedDomains: true,
-          applicationComplianceEnabled: true,
-          includeEeo: true,
-          includeVeteran: true,
-          includeDisability: true,
-        },
-      })
+        defaultSalaryUnit: true,
+        analysisContext: true,
+        signupAllowedDomains: true,
+        applicationComplianceEnabled: true,
+        includeEeo: true,
+        includeVeteran: true,
+        includeDisability: true,
+      },
+    })
   }
   catch (error) {
     if (hasPostgresErrorCode(error, '42703')) {
@@ -53,6 +55,7 @@ export default defineEventHandler(async (event) => {
     nameDisplayFormat: settings?.nameDisplayFormat ?? 'first_last',
     dateFormat: settings?.dateFormat ?? 'mdy',
     defaultSalaryUnit: settings?.defaultSalaryUnit ?? 'YEAR',
+    analysisContext: settings?.analysisContext ?? '',
     signupAllowedDomains: settings?.signupAllowedDomains ?? [],
     applicationComplianceEnabled: settings?.applicationComplianceEnabled ?? true,
     includeEeo: settings?.includeEeo ?? true,

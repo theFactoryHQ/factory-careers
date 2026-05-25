@@ -27,6 +27,7 @@
     "db:reseed": "npx tsx server/scripts/delete-demo-org.ts && npx tsx server/scripts/seed.ts",
     "test": "vitest run",
     "test:unit": "vitest run",
+    "test:smoke:ai-candidate-review": "vitest run --config vitest.smoke.config.ts tests/smoke/ai-candidate-review-context-smoke.smoke.ts",
     "preflight:pr": "node scripts/run-pr-validation-preflight.mjs",
     "preflight:cli-parity": "node scripts/run-pr-validation-preflight.mjs --step cli-parity",
     "typecheck": "nuxi typecheck",

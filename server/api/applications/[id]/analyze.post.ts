@@ -1,7 +1,7 @@
 import { eq, and } from 'drizzle-orm'
 import {
   application, scoringCriterion, criterionScore,
-  analysisRun, document, candidate,
+  analysisRun, document, candidate, orgSettings,
 } from '../../../database/schema'
 import { scoreApplication, computeCompositeScore } from '../../../utils/ai/scoring'
 import type { CriterionDefinition } from '../../../utils/ai/scoring'
@@ -122,6 +122,10 @@ export default defineEventHandler(async (event) => {
     baseUrl: config.baseUrl,
     maxTokens: config.maxTokens,
   }
+  const settings = await db.query.orgSettings.findFirst({
+    where: eq(orgSettings.organizationId, orgId),
+    columns: { analysisContext: true },
+  })
 
   let result
   try {
@@ -132,6 +136,7 @@ export default defineEventHandler(async (event) => {
       resumeText,
       coverLetterText: app.coverLetterText,
       applicationNotes: app.notes,
+      organizationAnalysisContext: settings?.analysisContext ?? null,
     })
   } catch (err: any) {
     // Record failed analysis run

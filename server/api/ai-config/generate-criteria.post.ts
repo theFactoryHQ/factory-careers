@@ -3,6 +3,8 @@ import { generateCriteriaFromDescription } from '../../utils/ai/scoring'
 import type { SupportedProvider } from '../../utils/ai/provider'
 import { loadAiConfig } from '../../utils/ai/loadConfig'
 import { createRateLimiter } from '../../utils/rateLimit'
+import { orgSettings } from '../../database/schema'
+import { eq } from 'drizzle-orm'
 
 const bodySchema = z.object({
   title: z.string().min(1).max(200),
@@ -30,6 +32,10 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, bodySchema.parse)
 
   const config = await loadAiConfig(orgId, { purpose: 'analysis', preferId: body.aiConfigId })
+  const settings = await db.query.orgSettings.findFirst({
+    where: eq(orgSettings.organizationId, orgId),
+    columns: { analysisContext: true },
+  })
 
   const criteria = await generateCriteriaFromDescription(
     {
@@ -41,6 +47,7 @@ export default defineEventHandler(async (event) => {
     },
     body.title,
     body.description,
+    { organizationAnalysisContext: settings?.analysisContext ?? null },
   )
 
   return { criteria, source: 'ai' }

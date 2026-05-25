@@ -57,11 +57,23 @@ describe('CLI org commands', () => {
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url === 'https://careers.example.com/api/org-settings' && init?.method === 'GET') {
         expect(init.headers).toMatchObject({ Authorization: 'Bearer secret-token' })
-        return Response.json({ nameDisplayFormat: 'first_last', dateFormat: 'mdy' })
+        return Response.json({
+          nameDisplayFormat: 'first_last',
+          dateFormat: 'mdy',
+          analysisContext: 'Factory serves high-touch clients.',
+        })
       }
       if (url === 'https://careers.example.com/api/org-settings' && init?.method === 'PATCH') {
-        expect(JSON.parse(String(init.body))).toEqual({ dateFormat: 'ymd' })
-        return Response.json({ nameDisplayFormat: 'first_last', dateFormat: 'ymd', calendarSyncInterviewers: false })
+        expect(JSON.parse(String(init.body))).toEqual({
+          dateFormat: 'ymd',
+          analysisContext: 'Factory serves athletes, entertainers, and founders.',
+        })
+        return Response.json({
+          nameDisplayFormat: 'first_last',
+          dateFormat: 'ymd',
+          calendarSyncInterviewers: false,
+          analysisContext: 'Factory serves athletes, entertainers, and founders.',
+        })
       }
       throw new Error(`Unexpected URL ${url}`)
     })
@@ -78,14 +90,26 @@ describe('CLI org commands', () => {
         stdout: (value) => updateOut.push(value),
         stderr: () => {},
         fetch: fetchMock as typeof fetch,
-        stdin: async () => JSON.stringify({ dateFormat: 'ymd' }),
+        stdin: async () => JSON.stringify({
+          dateFormat: 'ymd',
+          analysisContext: 'Factory serves athletes, entertainers, and founders.',
+        }),
       },
     )
 
     expect(settingsExit).toBe(0)
     expect(updateExit).toBe(0)
-    expect(JSON.parse(settingsOut[0])).toEqual({ nameDisplayFormat: 'first_last', dateFormat: 'mdy' })
-    expect(JSON.parse(updateOut[0])).toEqual({ nameDisplayFormat: 'first_last', dateFormat: 'ymd', calendarSyncInterviewers: false })
+    expect(JSON.parse(settingsOut[0])).toEqual({
+      nameDisplayFormat: 'first_last',
+      dateFormat: 'mdy',
+      analysisContext: 'Factory serves high-touch clients.',
+    })
+    expect(JSON.parse(updateOut[0])).toEqual({
+      nameDisplayFormat: 'first_last',
+      dateFormat: 'ymd',
+      calendarSyncInterviewers: false,
+      analysisContext: 'Factory serves athletes, entertainers, and founders.',
+    })
   })
 
   it('lists, creates, and revokes invite links', async () => {
