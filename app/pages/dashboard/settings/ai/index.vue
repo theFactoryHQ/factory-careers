@@ -7,7 +7,7 @@
  */
 import {
   Brain, Plus, Loader2, AlertTriangle, Sparkles, BarChart3, Star,
-  Pencil, Trash2, Zap, Check, Server, Save,
+  Pencil, Trash2, Zap, Check, Server,
 } from 'lucide-vue-next'
 
 definePageMeta({})
@@ -79,27 +79,90 @@ const configs = computed(() => configsData.value ?? [])
 const isLoading = computed(() => configsStatus.value === 'pending' && configs.value.length === 0)
 
 const localAnalysisContext = ref('')
+const lastSavedAnalysisContext = ref('')
 const isSavingAnalysisContext = ref(false)
+const analysisContextSaveStatus = ref<'idle' | 'dirty' | 'saving' | 'saved' | 'error'>('idle')
+const analysisContextSaveError = ref('')
+let analysisContextSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 watch(analysisContext, (context) => {
-  localAnalysisContext.value = context
+  lastSavedAnalysisContext.value = context
+  if (analysisContextSaveStatus.value !== 'dirty' && analysisContextSaveStatus.value !== 'saving') {
+    localAnalysisContext.value = context
+  }
 }, { immediate: true })
+
+watch(localAnalysisContext, () => {
+  scheduleAnalysisContextSave()
+})
+
+watch(canUpdateOrg, (allowed) => {
+  if (allowed) scheduleAnalysisContextSave()
+})
+
+onBeforeUnmount(() => {
+  if (analysisContextSaveTimer) clearTimeout(analysisContextSaveTimer)
+})
+
+function scheduleAnalysisContextSave() {
+  if (analysisContextSaveTimer) clearTimeout(analysisContextSaveTimer)
+
+  analysisContextSaveError.value = ''
+  if (localAnalysisContext.value === lastSavedAnalysisContext.value) {
+    analysisContextSaveStatus.value = 'idle'
+    return
+  }
+
+  analysisContextSaveStatus.value = 'dirty'
+  if (!canUpdateOrg.value) return
+
+  analysisContextSaveTimer = setTimeout(() => {
+    void saveAnalysisContext()
+  }, 900)
+}
 
 async function saveAnalysisContext() {
   if (!canUpdateOrg.value) return
+  if (analysisContextSaveTimer) {
+    clearTimeout(analysisContextSaveTimer)
+    analysisContextSaveTimer = null
+  }
+
+  const contextToSave = localAnalysisContext.value
+  if (contextToSave === lastSavedAnalysisContext.value) {
+    analysisContextSaveStatus.value = 'idle'
+    return
+  }
+
   isSavingAnalysisContext.value = true
+  analysisContextSaveStatus.value = 'saving'
   try {
-    await updateSettings({ analysisContext: localAnalysisContext.value })
-    toast.success('Org context saved')
+    await updateSettings({ analysisContext: contextToSave })
+    lastSavedAnalysisContext.value = contextToSave
+    analysisContextSaveStatus.value = localAnalysisContext.value === contextToSave ? 'saved' : 'dirty'
+    if (localAnalysisContext.value !== contextToSave) scheduleAnalysisContextSave()
   }
   catch (err: any) {
     const message = err?.data?.statusMessage ?? err?.message ?? 'Failed to save org context.'
+    analysisContextSaveStatus.value = 'error'
+    analysisContextSaveError.value = message
     toast.error('Save failed', { message })
   }
   finally {
     isSavingAnalysisContext.value = false
   }
 }
+
+const analysisContextSaveLabel = computed(() => {
+  if (!canUpdateOrg.value) return 'View only'
+  switch (analysisContextSaveStatus.value) {
+    case 'dirty': return 'Unsaved changes'
+    case 'saving': return 'Saving...'
+    case 'saved': return 'Saved'
+    case 'error': return analysisContextSaveError.value || 'Save failed'
+    default: return 'Autosaves'
+  }
+})
 
 // ── Per-row actions ──
 const togglingDefaultId = ref<string | null>(null)
@@ -210,7 +273,7 @@ function formatPrice(p: number | null): string {
       <div class="px-5 py-4 space-y-3">
         <textarea
           v-model="localAnalysisContext"
-          :disabled="!canUpdateOrg || isSavingAnalysisContext"
+          :disabled="!canUpdateOrg"
           rows="5"
           maxlength="4000"
           class="ui-field min-h-32 resize-y disabled:opacity-60 disabled:cursor-not-allowed"
@@ -220,16 +283,19 @@ function formatPrice(p: number | null): string {
           <p class="text-[11px] text-surface-500 dark:text-surface-400">
             {{ localAnalysisContext.length.toLocaleString() }} / 4,000 characters
           </p>
-          <button
-            type="button"
-            :disabled="!canUpdateOrg || isSavingAnalysisContext"
-            class="ui-button ui-button-primary h-8 px-3 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="saveAnalysisContext"
+          <p
+            class="inline-flex items-center gap-1.5 text-[11px]"
+            :class="analysisContextSaveStatus === 'error'
+              ? 'text-danger-500 dark:text-danger-400'
+              : analysisContextSaveStatus === 'dirty'
+                ? 'text-warning-500 dark:text-warning-400'
+                : 'text-surface-500 dark:text-surface-400'"
           >
-            <Loader2 v-if="isSavingAnalysisContext" class="size-3.5 animate-spin" />
-            <Save v-else class="size-3.5" />
-            {{ isSavingAnalysisContext ? 'Saving…' : 'Save Org Context' }}
-          </button>
+            <Loader2 v-if="isSavingAnalysisContext" class="size-3 animate-spin" />
+            <Check v-else-if="analysisContextSaveStatus === 'saved'" class="size-3" />
+            <AlertTriangle v-else-if="analysisContextSaveStatus === 'error'" class="size-3" />
+            {{ analysisContextSaveLabel }}
+          </p>
         </div>
       </div>
     </section>
