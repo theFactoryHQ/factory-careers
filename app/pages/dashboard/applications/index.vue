@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FileText, Search, X, Briefcase, Mail, Clock, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, Maximize2, Minimize2, Check } from 'lucide-vue-next'
+import { FileText, Search, X, Briefcase, Clock, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, Maximize2, Minimize2, Check } from 'lucide-vue-next'
 import {
   formatRelativeTime,
   getApplicationStatusLabel,
@@ -607,10 +607,7 @@ const selectedApplicationId = ref<string | null>(null)
                 </button>
               </td>
               <td v-if="visibleColumns.email" class="px-4 py-3 text-white/60 hidden lg:table-cell">
-                <span class="inline-flex items-center gap-1.5">
-                  <Mail class="size-3.5 shrink-0" />
-                  <span class="truncate max-w-[200px]">{{ app.candidateEmail }}</span>
-                </span>
+                <CopyEmailButton :email="app.candidateEmail" class="max-w-[200px] text-white/60" />
               </td>
               <td v-if="visibleColumns.job" class="px-4 py-3 text-white/70 hidden md:table-cell">
                 <span class="inline-flex items-center gap-1.5 truncate max-w-[200px]">

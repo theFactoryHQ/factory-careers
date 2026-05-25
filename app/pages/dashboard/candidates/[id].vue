@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ArrowLeft, Pencil, Trash2, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Upload, Download, Eye, AlertTriangle } from 'lucide-vue-next'
+import { ArrowLeft, Pencil, Trash2, Phone, Calendar, Clock, Briefcase, FileText, Plus, Upload, Download, Eye, AlertTriangle } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
+import { formatPhoneNumber } from '~/utils/phone-format'
 import {
   candidateEditFormSchema,
   normalizeEmptyCandidateFormFields,
@@ -306,17 +307,10 @@ async function handleDeleteDoc(docId: string) {
                 {{ formatCandidateName(candidate) }}
               </h1>
               <div class="flex flex-col gap-1 text-sm text-white/58 sm:flex-row sm:items-center sm:gap-4">
-                <a
-                  :href="`mailto:${candidate.email}`"
-                  target="_blank"
-                  class="inline-flex cursor-pointer items-center gap-1 text-white/68 transition-colors hover:text-brand-400 hover:underline"
-                >
-                  <Mail class="size-3.5" />
-                  {{ candidate.email }}
-                </a>
+                <CopyEmailButton :email="candidate.email" class="text-white/68" />
                 <span v-if="candidate.phone" class="inline-flex items-center gap-1 text-white/58">
                   <Phone class="size-3.5" />
-                  {{ candidate.phone }}
+                  {{ formatPhoneNumber(candidate.phone) }}
                 </span>
               </div>
             </div>
@@ -347,17 +341,13 @@ async function handleDeleteDoc(docId: string) {
             <div>
               <dt class="text-white/38">Email</dt>
               <dd class="font-medium text-white/82">
-                <a
-                  :href="`mailto:${candidate.email}`"
-                  target="_blank"
-                  class="cursor-pointer transition-colors hover:text-brand-400 hover:underline"
-                >{{ candidate.email }}</a>
+                <CopyEmailButton :email="candidate.email" :show-icon="false" class="text-white/82" />
               </dd>
             </div>
             <div>
               <dt class="text-white/38">Phone</dt>
               <dd class="font-medium text-white/82">
-                {{ candidate.phone || '—' }}
+                {{ formatPhoneNumber(candidate.phone) || '—' }}
               </dd>
             </div>
             <div v-if="candidate.gender">
@@ -636,7 +626,6 @@ async function handleDeleteDoc(docId: string) {
                     <span class="text-xs text-white/42">
                       {{ documentTypeLabels[doc.type] ?? doc.type }}
                       · <TimelineDateLink :date="doc.createdAt">{{ new Date(doc.createdAt).toLocaleDateString() }}</TimelineDateLink>
-                      <template v-if="doc.mimeType === 'application/pdf'"> · <span class="text-brand-400">Click to preview</span></template>
                     </span>
                   </div>
                 </div>

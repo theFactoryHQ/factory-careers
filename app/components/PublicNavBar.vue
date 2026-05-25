@@ -13,7 +13,7 @@ const { isDark, toggle: toggleColorMode } = useColorMode()
 
 <template>
   <nav class="fixed inset-x-0 top-0 z-50 border-b border-surface-200/80 dark:border-white/[0.06] bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-xl">
-    <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
+    <div class="factory-layout-container flex h-14 items-center justify-between">
       <!-- Logo — links to Factory's public site -->
       <a
         :href="useRuntimeConfig().public.marketingUrl"

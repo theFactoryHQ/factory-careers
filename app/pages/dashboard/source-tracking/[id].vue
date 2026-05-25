@@ -327,14 +327,13 @@ async function handleSidebarUpdated() {
 
           <div class="flex items-center gap-2">
             <!-- Date range pill -->
-            <div class="ui-panel inline-flex p-0.5">
+            <div class="factory-view-toggle inline-flex h-10 overflow-hidden border">
               <button
                 v-for="range in (['7d', '30d', '90d', 'all'] as const)"
                 :key="range"
-                class="ui-filter-chip px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
-                :class="dateRange === range
-                  ? 'ui-filter-chip-active bg-brand-600 text-white shadow-sm'
-                  : 'ui-filter-chip-inactive text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200'"
+                type="button"
+                class="inline-flex h-full items-center border-l border-white/10 px-3 transition-colors first:border-l-0"
+                :class="{ 'is-active': dateRange === range }"
                 @click="dateRange = range"
               >
                 {{ range === 'all' ? 'All time' : range.toUpperCase() }}
@@ -681,7 +680,7 @@ async function handleSidebarUpdated() {
                       >
                         {{ formatPersonName(app.candidateFirstName, app.candidateLastName) }}
                       </NuxtLink>
-                      <div class="text-[11px] text-surface-400 truncate">{{ app.candidateEmail }}</div>
+                      <CopyEmailButton :email="app.candidateEmail" class="max-w-full text-[11px] text-surface-400" />
                     </div>
                   </div>
                 </td>

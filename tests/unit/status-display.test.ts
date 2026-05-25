@@ -59,6 +59,9 @@ describe('status display helpers', () => {
   it('returns centralized transition and pipeline colors', () => {
     expect(getApplicationTransitionButtonClass('rejected')).toContain('danger')
     expect(getApplicationTransitionButtonClass('screening', 'subtle')).toContain('violet')
+    expect(getApplicationTransitionButtonClass('interview', 'factory')).toContain('amber')
+    expect(getApplicationTransitionButtonClass('offer', 'factory')).toContain('teal')
+    expect(getApplicationTransitionButtonClass('interview', 'factory')).not.toBe(getApplicationTransitionButtonClass('offer', 'factory'))
     expect(getApplicationTransitionDotClass('offer')).toContain('teal')
     expect(getApplicationStatusDotClass('interview')).toContain('amber')
     expect(APPLICATION_PIPELINE_STAGES.map((stage) => stage.key)).toEqual([

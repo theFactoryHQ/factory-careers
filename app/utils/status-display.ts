@@ -114,8 +114,8 @@ const APPLICATION_TRANSITION_BUTTON_CLASSES: Record<ApplicationTransitionButtonV
   factory: {
     new: 'border border-white/16 bg-black text-white/80 hover:border-brand-500 hover:bg-brand-500/12 hover:text-white',
     screening: 'border border-brand-500 bg-brand-600 text-white hover:bg-brand-500',
-    interview: 'border border-brand-500 bg-brand-600 text-white hover:bg-brand-500',
-    offer: 'border border-brand-500 bg-brand-600 text-white hover:bg-brand-500',
+    interview: 'border border-amber-500 bg-amber-600 text-white hover:bg-amber-500',
+    offer: 'border border-teal-500 bg-teal-600 text-white hover:bg-teal-500',
     hired: 'border border-brand-500 bg-brand-600 text-white hover:bg-brand-500',
     rejected: 'border border-danger-500 bg-danger-600 text-white hover:bg-danger-500',
   },

@@ -17,11 +17,8 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
 </script>
 
 <template>
-  <div class="factory-dashboard-shell flex min-h-screen flex-col bg-black text-white">
-    <!-- AppTopBar: desktop only -->
-    <div class="hidden lg:block">
-      <AppTopBar />
-    </div>
+  <div class="factory-dashboard-shell flex h-screen flex-col overflow-hidden bg-black text-white">
+    <AppTopBar />
     <AppToasts />
     <PreviewUpsellModal v-if="isUpsellOpen" @close="closeUpsell" />
     <ClientOnly>
@@ -31,7 +28,7 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
     <!-- Demo mode banner -->
     <div
       v-if="isDemo"
-      class="mx-auto mb-6 flex max-w-5xl items-center gap-3 border border-brand-500/35 bg-brand-500/10 px-4 py-2.5 text-sm text-white/74"
+      class="mb-6 flex w-full items-center gap-3 border border-brand-500/35 bg-brand-500/10 px-4 py-2.5 text-sm text-white/74"
     >
       <Eye class="size-4 shrink-0" />
       <span>
@@ -45,21 +42,21 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
       </span>
     </div>
 
-    <div class="flex flex-1 flex-col lg:flex-row min-w-0">
+    <div class="flex min-h-0 flex-1 flex-col lg:flex-row min-w-0">
       <!-- Desktop sidebar -->
-      <div class="hidden lg:block sticky top-16 h-[calc(100vh-4rem)] shrink-0 z-10">
+      <div class="hidden lg:block h-full shrink-0 z-10">
         <SettingsSidebar />
       </div>
       <!-- Mobile top nav -->
-      <div class="lg:hidden sticky top-0 z-10">
+      <div class="lg:hidden shrink-0 z-10">
         <SettingsMobileNav />
       </div>
       <!-- Page content -->
-      <main class="flex flex-1 min-w-0 flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-        <div class="mx-auto w-full max-w-4xl flex-1">
+      <main class="factory-layout-main flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+        <div class="w-full flex-1">
           <slot />
         </div>
-        <AppDashboardFooter class="mx-auto w-full max-w-4xl" />
+        <AppDashboardFooter class="w-full" />
       </main>
     </div>
   </div>

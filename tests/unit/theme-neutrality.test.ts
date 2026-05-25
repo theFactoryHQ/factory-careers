@@ -5,6 +5,16 @@ import { describe, expect, it } from 'vitest'
 const readProjectFile = (path: string) =>
   readFileSync(join(process.cwd(), path), 'utf8')
 
+function sliceBetween(source: string, startMarker: string, endMarker: string) {
+  const start = source.indexOf(startMarker)
+  const end = source.indexOf(endMarker, start + startMarker.length)
+
+  expect(start, `missing start marker: ${startMarker}`).toBeGreaterThan(-1)
+  expect(end, `missing end marker after ${startMarker}: ${endMarker}`).toBeGreaterThan(start)
+
+  return source.slice(start, end)
+}
+
 describe('brand-neutral theme variables', () => {
   it('keeps Factory dark pages on a true black document background', () => {
     const css = readProjectFile('app/assets/css/main.css')
@@ -73,6 +83,9 @@ describe('brand-neutral theme variables', () => {
       '.ui-nav-link-active',
       '.ui-nav-icon',
       '.ui-nav-icon-active',
+      '.ui-tab',
+      '.ui-tab-active',
+      '.ui-tab-inactive',
       '.ui-panel-header',
       '.ui-modal-backdrop',
       '.ui-pill',
@@ -118,11 +131,54 @@ describe('brand-neutral theme variables', () => {
 
   it('keeps filter chips as bordered controls aligned with toolbar fields', () => {
     const css = readProjectFile('app/assets/css/main.css')
+    const interviews = readProjectFile('app/pages/dashboard/interviews/index.vue')
+    const interviewStatusFilters = sliceBetween(interviews, '<!-- Status pills -->', '<!-- View toggle -->')
 
-    expect(css).toMatch(/\.ui-filter-chip\s*\{[\s\S]*min-height:\s*2\.375rem;[\s\S]*border:\s*1px solid/)
-    expect(css).toMatch(/\.factory-dashboard-shell,[\s\S]*\.factory-dashboard-portal\)[\s\S]*\.ui-filter-chip\s*\{[\s\S]*min-height:\s*38px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important/)
+    expect(css).toMatch(/\.ui-filter-chip\s*\{[\s\S]*min-height:\s*2\.375rem;[\s\S]*border:\s*1px solid[\s\S]*font-size:\s*0\.75rem;[\s\S]*line-height:\s*1rem;/)
+    expect(css).toMatch(/\.ui-filter-chip \.tabular-nums\s*\{[\s\S]*font-size:\s*inherit;[\s\S]*line-height:\s*inherit;/)
+    expect(css).toMatch(/\.factory-dashboard-shell,[\s\S]*\.factory-dashboard-portal\)[\s\S]*\.ui-filter-chip\s*\{[\s\S]*min-height:\s*38px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important[\s\S]*font-size:\s*0\.75rem !important;[\s\S]*line-height:\s*1rem !important;/)
     expect(css).toMatch(/\.factory-job-subnav-tab\s*\{[\s\S]*min-height:\s*32px;[\s\S]*border:\s*1px solid var\(--ui-border-strong\) !important/)
     expect(css).toMatch(/:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) \.factory-job-status-action\s*\{[\s\S]*height:\s*32px;[\s\S]*font-weight:\s*400 !important/)
+    expect(css).toMatch(/\.factory-view-toggle button\s*\{[\s\S]*font-size:\s*0\.75rem !important;[\s\S]*font-weight:\s*400 !important;[\s\S]*text-transform:\s*uppercase !important;/)
+    expect(css).toMatch(/\.factory-filter-select\s*\{[\s\S]*text-transform:\s*uppercase !important;/)
+    expect(css).toMatch(/\.factory-filter-input,[\s\S]*\.factory-filter-select\s*\{[\s\S]*font-size:\s*0\.75rem !important;[\s\S]*font-weight:\s*400 !important;[\s\S]*letter-spacing:\s*0 !important;/)
+    expect(css).toMatch(/\.factory-filter-dropdown-option\s*\{[\s\S]*font-size:\s*0\.75rem !important;[\s\S]*font-weight:\s*400 !important;[\s\S]*letter-spacing:\s*0 !important;/)
+    expect(css).toMatch(/:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) \.ui-tab\s*\{[\s\S]*min-height:\s*38px;[\s\S]*font-size:\s*0\.75rem !important;[\s\S]*font-weight:\s*400 !important;[\s\S]*text-transform:\s*uppercase !important;/)
+    expect(css).toMatch(/:where\(\.factory-dashboard-shell, \.factory-dashboard-portal\) \.ui-tab-active\s*\{[\s\S]*border-color:\s*color-mix\(in srgb, var\(--color-brand-500\) 75%, transparent\) !important;[\s\S]*box-shadow:\s*inset 0 -2px 0 var\(--color-brand-500\) !important;/)
+    expect(interviewStatusFilters).toContain('ui-filter-chip inline-flex h-[38px]')
+    expect(interviewStatusFilters).not.toContain('text-[11px]')
+    expect(interviewStatusFilters).not.toContain('tabular-nums text-[10px]')
+  })
+
+  it('uses the Factory view toggle recipe on the interviews list controls', () => {
+    const interviews = readProjectFile('app/pages/dashboard/interviews/index.vue')
+    const viewToggle = sliceBetween(interviews, '<!-- View toggle -->', '<!-- Loading state -->')
+
+    expect(viewToggle).toContain('factory-view-toggle flex h-[38px]')
+    expect(viewToggle).toContain(":class=\"{ 'is-active': activeView === 'list' }\"")
+    expect(viewToggle).toContain(":class=\"{ 'is-active': activeView === 'calendar' }\"")
+    expect(viewToggle).not.toContain('bg-brand-600 text-white')
+    expect(viewToggle).not.toContain('style="font-weight')
+  })
+
+  it('uses a single segmented border for source tracking date filters', () => {
+    for (const path of [
+      'app/pages/dashboard/source-tracking/index.vue',
+      'app/pages/dashboard/source-tracking/[id].vue',
+    ]) {
+      const source = readProjectFile(path)
+      const dateRangeFilter = sliceBetween(
+        source,
+        '<!-- Date range pill -->',
+        path.endsWith('[id].vue') ? '<!-- Edit -->' : '<!-- Job filter -->',
+      )
+
+      expect(dateRangeFilter).toContain('factory-view-toggle inline-flex h-10 overflow-hidden border')
+      expect(dateRangeFilter).not.toContain('ui-panel inline-flex')
+      expect(dateRangeFilter).not.toContain('ui-filter-chip')
+      expect(dateRangeFilter).toContain("first:border-l-0")
+      expect(dateRangeFilter).toContain(":class=\"{ 'is-active': dateRange === range }\"")
+    }
   })
 
   it('keeps selectable panels dark inside the dashboard shell', () => {
@@ -330,9 +386,7 @@ describe('brand-neutral theme variables', () => {
           'ui-dashboard-stat-card',
           'ui-empty-panel',
           'ui-field',
-          'ui-filter-chip',
-          'ui-filter-chip-active',
-          'ui-filter-chip-inactive',
+          'factory-view-toggle',
           'ui-list-divider',
           'ui-list-row',
           'ui-meter-fill',
@@ -366,9 +420,7 @@ describe('brand-neutral theme variables', () => {
           'ui-dashboard-stat-card',
           'ui-empty-panel',
           'ui-field',
-          'ui-filter-chip',
-          'ui-filter-chip-active',
-          'ui-filter-chip-inactive',
+          'factory-view-toggle',
           'ui-list-row',
           'ui-meter-fill',
           'ui-meter-track',
@@ -639,7 +691,11 @@ describe('brand-neutral theme variables', () => {
     const settingsLayout = readProjectFile('app/layouts/settings.vue')
 
     expect(settingsLayout).not.toMatch(/<AppTopBar\s+class=/)
-    expect(settingsLayout).toMatch(/<div\s+class="hidden lg:block">\s*<AppTopBar\s*\/>\s*<\/div>/)
+    expect(settingsLayout).not.toMatch(/<div\s+class="hidden lg:block">\s*<AppTopBar\s*\/>\s*<\/div>/)
+    expect(settingsLayout).toMatch(/<AppTopBar\s*\/>/)
+    expect(settingsLayout).toContain('flex h-screen flex-col overflow-hidden')
+    expect(settingsLayout).toContain('flex min-h-0 flex-1 flex-col lg:flex-row min-w-0')
+    expect(settingsLayout).toContain('factory-layout-main flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto')
   })
 
   it('applies shared UI recipes to interview list and template surfaces', () => {

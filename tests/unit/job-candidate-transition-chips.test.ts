@@ -14,7 +14,7 @@ describe('job candidate transition chips', () => {
     const shortcutRule = css.match(/\.factory-application-transition-shortcut\s*\{[^}]+\}/)?.[0] ?? ''
     const transitionChip = page.match(/factory-application-transition-chip[\s\S]*?<\/button>/)?.[0] ?? ''
 
-    expect(page).toContain('factory-application-transition-strip mx-auto flex max-w-4xl flex-nowrap')
+    expect(page).toContain('factory-application-transition-strip flex w-full flex-nowrap')
     expect(page).toContain('factory-application-transition-chip')
     expect(transitionChip).toContain('ApplicationTransitionIcon :status="nextStatus"')
     expect(transitionChip).toContain('factory-application-transition-label')

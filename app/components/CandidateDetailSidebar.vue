@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
   X, User, Calendar, Clock, Hash, MessageSquare, FileText,
-  ExternalLink, Mail, Phone, Upload, Download, Eye, Trash2,
+  ExternalLink, Phone, Upload, Download, Eye, Trash2,
   ArrowLeft, AlertTriangle, Brain, History, RefreshCw,
 } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
@@ -9,6 +9,7 @@ import {
   getApplicationTransitionButtonClass,
   getApplicationTransitionLabel,
 } from '~/utils/status-display'
+import { formatPhoneNumber } from '~/utils/phone-format'
 
 const props = defineProps<{
   applicationId: string
@@ -448,17 +449,10 @@ function formatInterviewDate(dateStr: string) {
                 {{ formatCandidateName(application.candidate) }}
               </h2>
               <div class="flex items-center gap-3 text-sm text-surface-500 dark:text-surface-400">
-                <a
-                  :href="`mailto:${application.candidate.email}`"
-                  target="_blank"
-                  class="ui-inline-link-brand inline-flex items-center gap-1 truncate"
-                >
-                  <Mail class="size-3.5 shrink-0" />
-                  {{ application.candidate.email }}
-                </a>
+                <CopyEmailButton :email="application.candidate.email" class="ui-inline-link-brand truncate" />
                 <span v-if="application.candidate.phone" class="inline-flex items-center gap-1">
                   <Phone class="size-3.5 shrink-0" />
-                  {{ application.candidate.phone }}
+                  {{ formatPhoneNumber(application.candidate.phone) }}
                 </span>
               </div>
             </div>
@@ -598,17 +592,13 @@ function formatInterviewDate(dateStr: string) {
                 <div>
                   <dt class="text-xs font-medium text-surface-400 dark:text-surface-500 mb-1">Email</dt>
                   <dd class="text-surface-800 dark:text-surface-200 font-medium truncate">
-                    <a
-                      :href="`mailto:${application.candidate.email}`"
-                      target="_blank"
-                      class="ui-inline-link-brand"
-                    >{{ application.candidate.email }}</a>
+                    <CopyEmailButton :email="application.candidate.email" :show-icon="false" class="ui-inline-link-brand max-w-full" />
                   </dd>
                 </div>
                 <div v-if="application.candidate.phone">
                   <dt class="text-xs font-medium text-surface-400 dark:text-surface-500 mb-1">Phone</dt>
                   <dd class="text-surface-800 dark:text-surface-200 font-medium">
-                    {{ application.candidate.phone }}
+                    {{ formatPhoneNumber(application.candidate.phone) }}
                   </dd>
                 </div>
               </dl>

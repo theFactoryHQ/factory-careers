@@ -5,6 +5,7 @@ import {
   getApplicationTransitionActionLabel,
   getApplicationTransitionButtonClass,
 } from '~/utils/status-display'
+import { formatPhoneNumber } from '~/utils/phone-format'
 
 definePageMeta({
   layout: 'dashboard',
@@ -252,16 +253,12 @@ function formatResponseValue(value: unknown): string {
             <div>
               <dt class="text-surface-400">Email</dt>
               <dd class="text-surface-700 dark:text-surface-200 font-medium">
-                <a
-                  :href="`mailto:${application.candidate.email}`"
-                  target="_blank"
-                  class="hover:text-brand-600 dark:hover:text-brand-400 hover:underline cursor-pointer transition-colors"
-                >{{ application.candidate.email }}</a>
+                <CopyEmailButton :email="application.candidate.email" :show-icon="false" class="text-surface-700 dark:text-surface-200" />
               </dd>
             </div>
             <div v-if="application.candidate.phone">
               <dt class="text-surface-400">Phone</dt>
-              <dd class="text-surface-700 dark:text-surface-200 font-medium">{{ application.candidate.phone }}</dd>
+              <dd class="text-surface-700 dark:text-surface-200 font-medium">{{ formatPhoneNumber(application.candidate.phone) }}</dd>
             </div>
           </dl>
         </div>

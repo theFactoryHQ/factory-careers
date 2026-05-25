@@ -19,6 +19,8 @@ const { allowed: canManageSso, role: currentOrgRole } = usePermission({ organiza
 const { track } = useTrack()
 const { signupAllowedDomains, updateSettings } = useOrgSettings()
 const canManageSignupDomains = computed(() => currentOrgRole.value === 'owner')
+const config = useRuntimeConfig()
+const requestUrl = useRequestURL()
 
 // ─────────────────────────────────────────────
 // Fetch existing SSO providers
@@ -126,12 +128,20 @@ async function handleSaveSignupDomains() {
   }
 }
 
-const siteOrigin = computed(() => {
-  if (import.meta.client) {
-    return window.location.origin
+function getOriginFromUrl(value: unknown) {
+  const url = String(value ?? '').trim()
+  if (!url) return ''
+
+  try {
+    return new URL(url).origin
+  } catch {
+    return ''
   }
-  return 'https://careers.thefactoryhq.com'
-})
+}
+
+const siteOrigin = computed(() =>
+  requestUrl.origin || getOriginFromUrl(config.public.factoryCareersUrl) || getOriginFromUrl(config.public.siteUrl),
+)
 
 function resetForm() {
   form.providerId = ''
@@ -567,23 +577,46 @@ async function copyCallbackUrl(providerId: string) {
           </form>
 
           <!-- Setup guide -->
-          <div class="ui-panel-divider mt-6 pt-4">
-            <h4 class="text-xs font-semibold text-surface-600 dark:text-surface-400 uppercase tracking-wider mb-2">
-              Quick setup guide
-            </h4>
-            <ol class="text-xs text-surface-500 dark:text-surface-400 space-y-1.5 list-decimal list-inside">
-              <li>Create an OIDC application in your identity provider (Okta, Azure AD, Google Workspace, etc.).</li>
-              <li>Set the <strong>Redirect URI</strong> to: <code class="bg-surface-100 dark:bg-surface-800 px-1 py-0.5 rounded text-xs">{{ `${siteOrigin}/api/auth/sso/callback/{provider-id}` }}</code></li>
-              <li>Copy the <strong>Client ID</strong> and <strong>Client Secret</strong> from your IdP and paste them above.</li>
-              <li>Enter the <strong>Issuer URL</strong> — Factory Careers will auto-discover all OIDC endpoints.</li>
+          <div class="mx-4 mb-4 border border-white/10 bg-white/[0.025] p-4 sm:mx-6 sm:mb-6 sm:p-5">
+            <div class="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <h4 class="text-xs font-semibold uppercase tracking-wide text-white/72">
+                  Quick setup guide
+                </h4>
+                <p class="mt-1 text-xs text-white/42">
+                  Configure the matching OIDC app in your identity provider before registering this provider.
+                </p>
+              </div>
+            </div>
+
+            <ol class="grid gap-3 text-xs text-white/62">
+              <li class="grid grid-cols-[1.5rem_minmax(0,1fr)] gap-3">
+                <span class="flex size-6 items-center justify-center border border-white/12 bg-black text-[10px] font-semibold text-white/58">1</span>
+                <span class="pt-0.5">Create an OIDC application in your identity provider.</span>
+              </li>
+              <li class="grid grid-cols-[1.5rem_minmax(0,1fr)] gap-3">
+                <span class="flex size-6 items-center justify-center border border-white/12 bg-black text-[10px] font-semibold text-white/58">2</span>
+                <span class="min-w-0">
+                  Set the <strong class="font-semibold text-white/78">Redirect URI</strong> to
+                  <code class="mt-1 block overflow-x-auto border border-white/10 bg-black px-2 py-1.5 font-mono text-[11px] text-white/72">{{ `${siteOrigin}/api/auth/sso/callback/{provider-id}` }}</code>
+                </span>
+              </li>
+              <li class="grid grid-cols-[1.5rem_minmax(0,1fr)] gap-3">
+                <span class="flex size-6 items-center justify-center border border-white/12 bg-black text-[10px] font-semibold text-white/58">3</span>
+                <span class="pt-0.5">Copy the <strong class="font-semibold text-white/78">Client ID</strong> and <strong class="font-semibold text-white/78">Client Secret</strong> into the form above.</span>
+              </li>
+              <li class="grid grid-cols-[1.5rem_minmax(0,1fr)] gap-3">
+                <span class="flex size-6 items-center justify-center border border-white/12 bg-black text-[10px] font-semibold text-white/58">4</span>
+                <span class="pt-0.5">Enter the <strong class="font-semibold text-white/78">Issuer URL</strong>; Factory Careers will auto-discover the OIDC endpoints.</span>
+              </li>
             </ol>
 
-            <div class="mt-3 flex flex-wrap gap-2">
+            <div class="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
               <a
                 href="https://developer.okta.com/docs/guides/sign-into-web-app-redirect/node-express/main/"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline"
+                class="inline-flex h-8 items-center gap-1.5 border border-white/10 px-2.5 text-xs font-medium text-brand-300 no-underline transition-colors hover:border-brand-500/45 hover:bg-brand-500/12 hover:text-white"
               >
                 Okta guide <ExternalLink class="size-3" />
               </a>
@@ -591,7 +624,7 @@ async function copyCallbackUrl(providerId: string) {
                 href="https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline"
+                class="inline-flex h-8 items-center gap-1.5 border border-white/10 px-2.5 text-xs font-medium text-brand-300 no-underline transition-colors hover:border-brand-500/45 hover:bg-brand-500/12 hover:text-white"
               >
                 Azure AD guide <ExternalLink class="size-3" />
               </a>
@@ -599,7 +632,7 @@ async function copyCallbackUrl(providerId: string) {
                 href="https://support.google.com/a/answer/60224"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline"
+                class="inline-flex h-8 items-center gap-1.5 border border-white/10 px-2.5 text-xs font-medium text-brand-300 no-underline transition-colors hover:border-brand-500/45 hover:bg-brand-500/12 hover:text-white"
               >
                 Google Workspace guide <ExternalLink class="size-3" />
               </a>

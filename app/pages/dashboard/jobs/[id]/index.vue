@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  ArrowLeft, ArrowRight, Briefcase, Calendar, Clock, Hash, UserRound, Mail, MessageSquare,
+  ArrowLeft, ArrowRight, Briefcase, Calendar, Clock, Hash, UserRound, MessageSquare,
   FileText, Paperclip, Download, Eye, Phone, ExternalLink,
   Pencil, Trash2, Globe, ChevronDown, X,
   Video, Building2, Code2, UsersRound, Save, Check, MapPin, Users, Plus,
@@ -18,6 +18,7 @@ import {
   getScoreBadgeClass,
   getScoreTextClass,
 } from '~/utils/status-display'
+import { formatPhoneNumber } from '~/utils/phone-format'
 
 definePageMeta({
   layout: 'dashboard',
@@ -1289,7 +1290,7 @@ function closeDocPreview() {
                 <p class="truncate text-sm font-medium text-surface-900 dark:text-surface-100">
                   {{ formatPersonName(app.candidateFirstName, app.candidateLastName) }}
                 </p>
-                <p class="mt-0.5 block truncate text-xs text-surface-500 dark:text-surface-400">{{ app.candidateEmail }}</p>
+                <CopyEmailButton :email="app.candidateEmail" class="mt-0.5 max-w-full text-xs text-surface-500 dark:text-surface-400" />
                 <div class="mt-1.5 flex items-center gap-2">
                   <span
                     v-if="app.score != null"
@@ -1347,7 +1348,7 @@ function closeDocPreview() {
           <template v-else>
             <!-- Sticky status transitions (stays visible on scroll) -->
             <div v-if="allowedTransitions.length > 0" class="shrink-0 border-b border-white/10 bg-white/[0.02] px-4 sm:px-6 py-2.5 ui-dashboard-panel-header">
-              <div class="factory-application-transition-strip mx-auto flex max-w-4xl flex-nowrap items-center gap-1.5 sm:gap-2">
+              <div class="factory-application-transition-strip flex w-full flex-nowrap items-center gap-1.5 sm:gap-2">
                 <button
                   v-for="(nextStatus, idx) in allowedTransitions"
                   :key="nextStatus"
@@ -1372,7 +1373,7 @@ function closeDocPreview() {
 
             <!-- Candidate header -->
             <div class="factory-candidate-header border-b border-white/10 bg-white/[0.02] px-4 sm:px-6 py-4 sm:py-6 ui-dashboard-panel-header">
-              <div class="factory-candidate-header-inner mx-auto flex max-w-4xl flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div class="factory-candidate-header-inner flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div class="factory-candidate-header-primary flex min-w-0 items-start gap-4">
                   <div class="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 text-lg font-bold text-white shadow-lg shadow-brand-500/20 dark:from-brand-500 dark:to-brand-700 dark:shadow-brand-500/10">
                     {{ getCandidateInitials(currentSummary.candidateFirstName, currentSummary.candidateLastName) }}
@@ -1390,17 +1391,10 @@ function closeDocPreview() {
                       <ApplicationStatusBadge :status="currentSummary.status" />
                     </div>
                     <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-surface-500 dark:text-surface-400">
-                      <a
-                        :href="`mailto:${currentSummary.candidateEmail}`"
-                        target="_blank"
-                        class="inline-flex items-center gap-1.5 hover:text-brand-600 dark:hover:text-brand-400 hover:underline cursor-pointer transition-colors"
-                      >
-                        <Mail class="size-3.5" />
-                        {{ currentSummary.candidateEmail }}
-                      </a>
+                      <CopyEmailButton :email="currentSummary.candidateEmail" class="text-surface-600 dark:text-surface-300" />
                       <span v-if="resolvedCurrentApplication?.candidate.phone" class="inline-flex items-center gap-1.5">
                         <Phone class="size-3.5" />
-                        {{ resolvedCurrentApplication.candidate.phone }}
+                        {{ formatPhoneNumber(resolvedCurrentApplication.candidate.phone) }}
                       </span>
                     </div>
                     <div class="factory-candidate-header-score mt-2 flex flex-wrap items-center gap-2">
@@ -1445,8 +1439,8 @@ function closeDocPreview() {
             </div>
 
             <!-- Detail tabs -->
-            <div class="border-b border-white/10 bg-white/[0.02] px-4 sm:px-6 ui-dashboard-panel-header">
-              <div class="factory-dashboard-tabs factory-candidate-detail-tabs mx-auto grid h-11 max-w-4xl grid-cols-7 gap-0.5">
+            <div class="factory-candidate-detail-tab-bar border-b border-white/10 bg-white/[0.02] px-4 sm:px-6">
+              <div class="factory-dashboard-tabs factory-candidate-detail-tabs grid h-8 w-full grid-cols-7 gap-1">
                 <button
                   class="factory-candidate-detail-tab cursor-pointer"
                   title="Overview"
@@ -1456,7 +1450,7 @@ function closeDocPreview() {
                     : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'overview'"
                 >
-                  <UserRound class="factory-candidate-detail-tab-icon size-4" />
+                  <UserRound class="factory-candidate-detail-tab-icon size-3.5" />
                   <span class="factory-candidate-detail-tab-label">Overview</span>
                   <span class="factory-candidate-detail-tab-tooltip">Overview</span>
                 </button>
@@ -1469,7 +1463,7 @@ function closeDocPreview() {
                     : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'ai-analysis'"
                 >
-                  <Brain class="factory-candidate-detail-tab-icon size-4" />
+                  <Brain class="factory-candidate-detail-tab-icon size-3.5" />
                   <span class="factory-candidate-detail-tab-label">AI</span>
                   <span class="factory-candidate-detail-tab-tooltip">AI</span>
                 </button>
@@ -1482,7 +1476,7 @@ function closeDocPreview() {
                     : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'interviews'"
                 >
-                  <Calendar class="factory-candidate-detail-tab-icon size-4" />
+                  <Calendar class="factory-candidate-detail-tab-icon size-3.5" />
                   <span class="factory-candidate-detail-tab-label">Interviews</span>
                   <span
                     v-if="currentApplicationInterviews.length > 0"
@@ -1503,7 +1497,7 @@ function closeDocPreview() {
                     : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'documents'"
                 >
-                  <FileText class="factory-candidate-detail-tab-icon size-4" />
+                  <FileText class="factory-candidate-detail-tab-icon size-3.5" />
                   <span class="factory-candidate-detail-tab-label">Documents</span>
                   <span
                     v-if="resolvedCurrentApplication?.candidate.documents?.length"
@@ -1524,7 +1518,7 @@ function closeDocPreview() {
                     : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'responses'"
                 >
-                  <MessageSquare class="factory-candidate-detail-tab-icon size-4" />
+                  <MessageSquare class="factory-candidate-detail-tab-icon size-3.5" />
                   <span class="factory-candidate-detail-tab-label">Responses</span>
                   <span
                     v-if="resolvedCurrentApplication?.responses?.length"
@@ -1545,7 +1539,7 @@ function closeDocPreview() {
                     : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'timeline'"
                 >
-                  <History class="factory-candidate-detail-tab-icon size-4" />
+                  <History class="factory-candidate-detail-tab-icon size-3.5" />
                   <span class="factory-candidate-detail-tab-label">Timeline</span>
                   <span class="factory-candidate-detail-tab-tooltip">Timeline</span>
                 </button>
@@ -1558,7 +1552,7 @@ function closeDocPreview() {
                     : 'factory-candidate-detail-tab-inactive'"
                   @click="detailTab = 'properties'"
                 >
-                  <SlidersHorizontal class="factory-candidate-detail-tab-icon size-4" />
+                  <SlidersHorizontal class="factory-candidate-detail-tab-icon size-3.5" />
                   <span class="factory-candidate-detail-tab-label">Properties</span>
                   <span class="factory-candidate-detail-tab-tooltip">Properties</span>
                 </button>
@@ -1577,7 +1571,7 @@ function closeDocPreview() {
 
 
               <!-- PROFILE SECTION (overview only) -->
-              <div v-if="showSection.profile" ref="overviewRef" class="space-y-5 max-w-4xl mx-auto">
+              <div v-if="showSection.profile" ref="overviewRef" class="space-y-5">
                 <!-- Notes -->
                 <div class="ui-panel ui-dashboard-panel p-5">
                   <div class="mb-3 flex items-center justify-between">
@@ -1604,7 +1598,7 @@ function closeDocPreview() {
               </div>
 
               <!-- AI SCORE BREAKDOWN -->
-              <div v-if="showSection.aiAnalysis" class="max-w-4xl mx-auto" :class="detailTab === 'overview' ? 'mt-5' : ''">
+              <div v-if="showSection.aiAnalysis" class="w-full" :class="detailTab === 'overview' ? 'mt-5' : ''">
                 <ScoreBreakdown
                   v-if="currentSummary"
                   :application-id="currentSummary.id"
@@ -1613,7 +1607,7 @@ function closeDocPreview() {
               </div>
 
               <!-- INTERVIEWS SECTION -->
-              <div v-if="showSection.interviews" ref="interviewsRef" class="space-y-3 max-w-4xl mx-auto" :class="detailTab === 'overview' ? 'mt-10' : ''">
+              <div v-if="showSection.interviews" ref="interviewsRef" class="space-y-3" :class="detailTab === 'overview' ? 'mt-10' : ''">
                 <div class="flex items-center justify-between mb-3">
                   <h2 class="text-sm font-semibold text-surface-800 dark:text-surface-200 flex items-center gap-2">
                     <Calendar class="size-4 text-surface-400 dark:text-surface-500" />
@@ -1970,7 +1964,7 @@ function closeDocPreview() {
               </div>
 
               <!-- DOCUMENTS SECTION -->
-              <div v-if="showSection.documents" ref="documentsRef" class="space-y-3 max-w-4xl mx-auto" :class="detailTab === 'overview' ? 'mt-10' : ''">
+              <div v-if="showSection.documents" ref="documentsRef" class="space-y-3" :class="detailTab === 'overview' ? 'mt-10' : ''">
                 <h2 class="text-sm font-semibold text-surface-800 dark:text-surface-200 flex items-center gap-2 mb-3">
                   <Paperclip class="size-4 text-surface-400 dark:text-surface-500" />
                   Documents
@@ -2022,7 +2016,7 @@ function closeDocPreview() {
               </div>
 
               <!-- RESPONSES SECTION -->
-              <div v-if="showSection.responses" ref="responsesRef" class="space-y-3 max-w-4xl mx-auto" :class="detailTab === 'overview' ? 'mt-10' : ''">
+              <div v-if="showSection.responses" ref="responsesRef" class="space-y-3" :class="detailTab === 'overview' ? 'mt-10' : ''">
                 <h2 class="text-sm font-semibold text-surface-800 dark:text-surface-200 flex items-center gap-2 mb-3">
                   <MessageSquare class="size-4 text-surface-400 dark:text-surface-500" />
                   Responses
@@ -2052,7 +2046,7 @@ function closeDocPreview() {
               </div>
 
               <!-- PROPERTIES SECTION -->
-              <div v-if="showSection.properties && resolvedCurrentApplication" class="max-w-4xl mx-auto" :class="detailTab === 'overview' ? 'mt-10' : ''">
+              <div v-if="showSection.properties && resolvedCurrentApplication" class="w-full" :class="detailTab === 'overview' ? 'mt-10' : ''">
                 <div class="ui-panel ui-dashboard-panel p-5">
                   <div class="flex items-center gap-2.5 mb-4">
                     <div class="flex size-7 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-950/40">
@@ -2071,7 +2065,7 @@ function closeDocPreview() {
               </div>
 
               <!-- TIMELINE SECTION -->
-              <div v-if="showSection.timeline" class="space-y-3 max-w-4xl mx-auto">
+              <div v-if="showSection.timeline" class="space-y-3">
                 <h2 class="text-sm font-semibold text-surface-800 dark:text-surface-200 flex items-center gap-2 mb-3">
                   <History class="size-4 text-surface-400 dark:text-surface-500" />
                   Timeline

@@ -92,16 +92,22 @@ describe('job candidate header', () => {
       source.indexOf('<!-- Detail content -->'),
     )
 
-    expect(detailTabs).toContain('factory-candidate-detail-tabs mx-auto grid h-11 max-w-4xl grid-cols-7')
+    expect(detailTabs).toContain('factory-candidate-detail-tabs grid h-8 w-full grid-cols-7')
+    expect(detailTabs).toContain('factory-candidate-detail-tab-bar')
+    expect(detailTabs).not.toContain('ui-dashboard-panel-header')
     expect(detailTabs).not.toContain('overflow-x-auto')
     expect(detailTabs).not.toContain('whitespace-nowrap')
+    expect(detailTabs).not.toContain('max-w-4xl')
     for (const icon of ['UserRound', 'Brain', 'Calendar', 'FileText', 'MessageSquare', 'History', 'SlidersHorizontal']) {
-      expect(detailTabs).toContain(`<${icon} class="factory-candidate-detail-tab-icon size-4"`)
+      expect(detailTabs).toContain(`<${icon} class="factory-candidate-detail-tab-icon size-3.5"`)
     }
     expect(detailTabs).toContain('factory-candidate-detail-tab-tooltip')
     expect(styles).toContain('@media (max-width: 1280px)')
     expect(styles).toContain('.factory-candidate-detail-tab-label')
     expect(styles).toContain('.factory-candidate-detail-tab-tooltip')
     expect(styles).toContain('clip: rect(0, 0, 0, 0);')
+    expect(styles).toContain('height: 32px;')
+    expect(styles).toContain('border: 1px solid var(--ui-border-strong);')
+    expect(styles).toContain('padding-block: 0.25rem !important;')
   })
 })

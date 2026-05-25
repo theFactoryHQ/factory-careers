@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Users, Plus, Mail, Phone, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, X, StickyNote, Maximize2, Minimize2, Check } from 'lucide-vue-next'
+import { Users, Plus, Phone, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, X, StickyNote, Maximize2, Minimize2, Check } from 'lucide-vue-next'
+import { formatPhoneNumber } from '~/utils/phone-format'
 
 definePageMeta({
   layout: 'dashboard',
@@ -566,19 +567,12 @@ const selectedCandidateId = ref<string | null>(null)
                 </button>
               </td>
               <td v-if="visibleColumns.email" class="px-4 py-3 text-white/60">
-                <a
-                  :href="`mailto:${c.email}`"
-                  class="inline-flex items-center gap-1.5 hover:text-brand-600 dark:hover:text-brand-400 hover:underline transition-colors"
-                  @click.stop
-                >
-                  <Mail class="size-3.5 shrink-0" />
-                  <span class="truncate max-w-[200px]">{{ c.email }}</span>
-                </a>
+                <CopyEmailButton :email="c.email" class="max-w-[200px] text-white/60" />
               </td>
               <td v-if="visibleColumns.phone" class="px-4 py-3 text-white/60 hidden md:table-cell">
                 <span v-if="c.phone" class="inline-flex items-center gap-1.5 whitespace-nowrap">
                   <Phone class="size-3.5 shrink-0" />
-                  {{ c.phone }}
+                  {{ formatPhoneNumber(c.phone) }}
                 </span>
                 <span v-else class="text-surface-300 dark:text-surface-600">—</span>
               </td>
