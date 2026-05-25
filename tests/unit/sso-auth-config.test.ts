@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { enterpriseSsoOrganizationProvisioning } from '../../server/utils/ssoProvisioning'
 
 /**
  * SSO auth configuration tests.
@@ -147,17 +148,10 @@ describe('SSO profile mapping', () => {
 
 describe('SSO enterprise provisioning config', () => {
   it('configures default member role for auto-provisioned users', () => {
-    // This tests our configuration intent — the actual Better Auth SSO plugin
-    // consumes these values. Documenting them here as executable specs.
-    const provisioningConfig = {
-      disabled: false,
-      defaultRole: 'member',
-    }
-
-    expect(provisioningConfig.disabled).toBe(false)
-    expect(provisioningConfig.defaultRole).toBe('member')
+    expect(enterpriseSsoOrganizationProvisioning.disabled).toBe(false)
+    expect(enterpriseSsoOrganizationProvisioning.defaultRole).toBe('member')
     // Security: new SSO users must NOT be provisioned as admin/owner
-    expect(provisioningConfig.defaultRole).not.toBe('admin')
-    expect(provisioningConfig.defaultRole).not.toBe('owner')
+    expect(enterpriseSsoOrganizationProvisioning.defaultRole).not.toBe('admin')
+    expect(enterpriseSsoOrganizationProvisioning.defaultRole).not.toBe('owner')
   })
 })
