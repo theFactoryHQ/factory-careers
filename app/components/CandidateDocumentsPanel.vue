@@ -30,11 +30,7 @@ const emit = defineEmits<{
   closePreview: []
 }>()
 
-const panelClass = computed(() =>
-  props.surface === 'drawer'
-    ? 'border border-white/12 bg-white/[0.025]'
-    : 'ui-panel ui-dashboard-panel',
-)
+const panelClass = useCandidatePanelClass(() => props.surface)
 
 const documentTypeLabels: Record<string, string> = {
   resume: 'Resume',
