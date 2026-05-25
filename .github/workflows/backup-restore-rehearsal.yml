@@ -15,6 +15,7 @@ concurrency:
 jobs:
   rehearsal:
     name: Backup and restore rehearsal
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
