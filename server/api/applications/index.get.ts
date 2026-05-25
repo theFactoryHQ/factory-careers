@@ -1,12 +1,10 @@
 import { eq, and, desc, inArray } from 'drizzle-orm'
 import { application, candidate, job } from '../../database/schema'
 import { applicationQuerySchema } from '../../utils/schemas/application'
-import { propertyFiltersArraySchema } from '../../utils/schemas/property'
 import {
-  entityIdsMatchingFilters,
   loadPropertyEntriesForEntities,
-  type PropertyFilter,
 } from '../../utils/properties'
+import { matchingEntityIdsForPropertyFilters, parsePropertyFiltersParam } from '../../utils/propertyFilters'
 
 /**
  * GET /api/applications
@@ -32,23 +30,9 @@ export default defineEventHandler(async (event) => {
     conditions.push(eq(application.status, query.status))
   }
 
-  // ── Custom property filters ──
-  let propertyFilters: PropertyFilter[] = []
-  if (query.propertyFilters) {
-    let raw: unknown
-    try {
-      raw = JSON.parse(query.propertyFilters)
-    } catch {
-      throw createError({ statusCode: 400, statusMessage: 'Invalid propertyFilters' })
-    }
-    const result = propertyFiltersArraySchema.safeParse(raw)
-    if (!result.success) {
-      throw createError({ statusCode: 400, statusMessage: 'Invalid propertyFilters' })
-    }
-    propertyFilters = result.data as PropertyFilter[]
-  }
+  const propertyFilters = parsePropertyFiltersParam(query.propertyFilters)
   if (propertyFilters.length > 0) {
-    const matching = await entityIdsMatchingFilters({
+    const matching = await matchingEntityIdsForPropertyFilters({
       organizationId: orgId,
       entityType: 'application',
       filters: propertyFilters,
@@ -106,4 +90,3 @@ export default defineEventHandler(async (event) => {
 
   return { data: enriched, total, page: query.page, limit: query.limit }
 })
-

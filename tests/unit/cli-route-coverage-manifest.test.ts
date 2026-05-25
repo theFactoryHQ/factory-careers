@@ -41,4 +41,13 @@ describe('CLI route coverage manifest', () => {
       }
     }
   })
+
+  it('keeps refactored DRY helper routes on their existing CLI commands', () => {
+    expect(cliRouteCoverage).toEqual(expect.arrayContaining([
+      { route: 'server/api/applications/index.get.ts', status: 'supported', command: 'applications list' },
+      { route: 'server/api/candidates/index.get.ts', status: 'supported', command: 'candidates list' },
+      { route: 'server/api/documents/[id]/download.get.ts', status: 'supported', command: 'documents download' },
+      { route: 'server/api/documents/[id]/preview.get.ts', status: 'supported', command: 'documents preview' },
+    ]))
+  })
 })

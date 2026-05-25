@@ -1,7 +1,8 @@
-import { eq, and } from 'drizzle-orm'
-import { z } from 'zod'
-import { GetObjectCommand } from '@aws-sdk/client-s3'
-import { document } from '../../../database/schema'
+import {
+  getDocumentIdParam,
+  loadOrgDocumentForRead,
+  streamS3Document,
+} from '../../../utils/documentStreaming'
 
 /**
  * GET /api/documents/:id/preview
@@ -23,24 +24,8 @@ export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { document: ['read'] })
   const orgId = session.session.activeOrganizationId
 
-  const { id: documentId } = await getValidatedRouterParams(event, z.object({ id: z.string().uuid() }).parse)
-
-  // Query scoped by BOTH id AND organizationId — prevents IDOR
-  const doc = await db.query.document.findFirst({
-    where: and(
-      eq(document.id, documentId),
-      eq(document.organizationId, orgId),
-    ),
-    columns: {
-      storageKey: true,
-      originalFilename: true,
-      mimeType: true,
-    },
-  })
-
-  if (!doc) {
-    throw createError({ statusCode: 404, statusMessage: 'Document not found' })
-  }
+  const documentId = await getDocumentIdParam(event)
+  const doc = await loadOrgDocumentForRead(orgId, documentId)
 
   // Only allow inline preview for PDFs — DOC/DOCX can contain macros
   if (doc.mimeType !== 'application/pdf') {
@@ -50,41 +35,12 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Fetch the object from S3
-  const s3Response = await s3Client.send(
-    new GetObjectCommand({
-      Bucket: env.S3_BUCKET,
-      Key: doc.storageKey,
-    }),
-  )
-
-  if (!s3Response.Body) {
-    throw createError({ statusCode: 500, statusMessage: 'Failed to retrieve document' })
-  }
-
-  // Stream the PDF directly through the server (same-origin for iframe)
-  const encodedFilename = encodeURIComponent(doc.originalFilename)
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/pdf',
-    // RFC 5987: ASCII fallback + UTF-8 extended filename for international characters
-    'Content-Disposition': `inline; filename="${encodedFilename}"; filename*=UTF-8''${encodedFilename}`,
-    'Cache-Control': 'private, no-store',
+  return streamS3Document(event, doc, {
+    disposition: 'inline',
+    contentType: 'application/pdf',
     // Override global DENY — allow same-origin framing for preview iframe
-    'X-Frame-Options': 'SAMEORIGIN',
-    // Prevent MIME type sniffing
-    'X-Content-Type-Options': 'nosniff',
+    frameOptions: 'SAMEORIGIN',
     // Restrictive CSP — prevent a malicious PDF from loading external resources
-    'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
-  }
-
-  // Forward Content-Length from S3 so browsers can render the PDF efficiently
-  if (s3Response.ContentLength) {
-    headers['Content-Length'] = String(s3Response.ContentLength)
-  }
-
-  setResponseHeaders(event, headers)
-
-  // Stream the S3 body to the response
-  return s3Response.Body.transformToWebStream()
+    contentSecurityPolicy: "default-src 'none'; style-src 'unsafe-inline'",
+  })
 })

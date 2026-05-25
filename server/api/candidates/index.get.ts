@@ -1,12 +1,10 @@
 import { eq, and, or, ilike, desc, sql, gte, lte, inArray } from 'drizzle-orm'
 import { candidate, application } from '../../database/schema'
 import { candidateQuerySchema } from '../../utils/schemas/candidate'
-import { propertyFiltersArraySchema } from '../../utils/schemas/property'
 import {
-  entityIdsMatchingFilters,
   loadPropertyEntriesForEntities,
-  type PropertyFilter,
 } from '../../utils/properties'
+import { matchingEntityIdsForPropertyFilters, parsePropertyFiltersParam } from '../../utils/propertyFilters'
 
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { candidate: ['read'] })
@@ -42,23 +40,9 @@ export default defineEventHandler(async (event) => {
     conditions.push(lte(candidate.dateOfBirth, query.dobTo))
   }
 
-  // ── Custom property filters (intersection-based) ──
-  let propertyFilters: PropertyFilter[] = []
-  if (query.propertyFilters) {
-    let raw: unknown
-    try {
-      raw = JSON.parse(query.propertyFilters)
-    } catch {
-      throw createError({ statusCode: 400, statusMessage: 'Invalid propertyFilters' })
-    }
-    const result = propertyFiltersArraySchema.safeParse(raw)
-    if (!result.success) {
-      throw createError({ statusCode: 400, statusMessage: 'Invalid propertyFilters' })
-    }
-    propertyFilters = result.data as PropertyFilter[]
-  }
+  const propertyFilters = parsePropertyFiltersParam(query.propertyFilters)
   if (propertyFilters.length > 0) {
-    const matching = await entityIdsMatchingFilters({
+    const matching = await matchingEntityIdsForPropertyFilters({
       organizationId: orgId,
       entityType: 'candidate',
       filters: propertyFilters,
