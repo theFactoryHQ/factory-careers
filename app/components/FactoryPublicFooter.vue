@@ -24,6 +24,7 @@ const factoryLinks = computed<FooterLink[]>(() => [
 
 const legalLinks = computed<FooterLink[]>(() => [
   { label: 'Privacy Policy', href: localePath('/privacy') },
+  { label: 'Request Deletion', href: localePath('/privacy/delete-request') },
   { label: 'Terms of Service', href: localePath('/terms') },
 ])
 

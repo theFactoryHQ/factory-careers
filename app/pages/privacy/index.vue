@@ -57,9 +57,15 @@ const sections = [
   },
   {
     id: 'your-choices',
-    title: 'Your Choices',
+    title: 'Your Choices and CCPA Rights',
     body: [
-      'You can contact us to request access, correction, deletion, or restriction of your personal information. Some requests may require verification before we can act on them.',
+      {
+        parts: [
+          { text: 'California residents may have rights under the California Consumer Privacy Act (CCPA), including the right to request access, correction, deletion, or restriction of personal information. You may ' },
+          { text: 'submit a deletion request', href: '/privacy/delete-request' },
+          { text: '. Some requests require email verification before we can act on them.' },
+        ],
+      },
       'If you receive hiring emails from us, you can reply to the message or contact us directly to update your communication preferences.',
     ],
   },
@@ -74,7 +80,13 @@ const sections = [
     id: 'contact',
     title: 'Contact',
     body: [
-      'Questions about this Privacy Policy or Factory Careers privacy practices can be sent to legal@thefactoryhq.com.',
+      {
+        parts: [
+          { text: 'Questions about this Privacy Policy or Factory Careers privacy practices can be sent to ' },
+          { text: 'legal@thefactoryhq.com', href: 'mailto:legal@thefactoryhq.com' },
+          { text: '.' },
+        ],
+      },
     ],
   },
 ]

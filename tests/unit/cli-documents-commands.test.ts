@@ -85,6 +85,33 @@ describe('CLI document commands', () => {
     expect(JSON.parse(stdout[0])).toEqual({ id: 'doc_1', type: 'resume', originalFilename: 'resume.pdf' })
   })
 
+  it('surfaces server-side document MIME validation failures during upload', async () => {
+    const dir = tempDir()
+    const configPath = join(dir, 'config.json')
+    const resumePath = join(dir, 'resume.xls')
+    writeAuthedConfig(configPath)
+    writeFileSync(resumePath, Buffer.from('not a supported document'))
+    const fetchMock = vi.fn(async () => {
+      return Response.json(
+        { statusCode: 400, code: 'INVALID_FILE_TYPE', message: 'Invalid file type. Only PDF, DOC, and DOCX files are allowed.' },
+        { status: 400 },
+      )
+    })
+    const stdout: string[] = []
+
+    const exitCode = await runCli(
+      ['documents', 'upload', 'cand_1', '--file', resumePath, '--type', 'resume', '--yes', '--config', configPath, '--json'],
+      { stdout: (value) => stdout.push(value), stderr: () => {}, fetch: fetchMock as typeof fetch },
+    )
+
+    expect(exitCode).toBe(1)
+    expect(JSON.parse(stdout[0])).toMatchObject({
+      status: 400,
+      code: 'INVALID_FILE_TYPE',
+      message: 'Invalid file type. Only PDF, DOC, and DOCX files are allowed.',
+    })
+  })
+
   it('downloads a document to an output path', async () => {
     const dir = tempDir()
     const configPath = join(dir, 'config.json')

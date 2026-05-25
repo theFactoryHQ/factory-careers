@@ -1,5 +1,4 @@
 import { eq, and, asc, lte, sql } from 'drizzle-orm'
-import { fileTypeFromBuffer } from 'file-type'
 import { job, candidate, application, jobQuestion, questionResponse, document, organization, applicationSource, trackingLink, applicationComplianceResponse, orgSettings } from '../../../../database/schema'
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
 import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
@@ -8,9 +7,9 @@ import { sendApplicationReceiptEmail, sendApplicationTeamAlertEmail } from '../.
 import { parseDocument } from '../../../../utils/resume-parser'
 import { assertUploadContentLength } from '../../../../utils/uploadLimits'
 import { readPositiveIntegerEnv } from '../../../../utils/rateLimitConfig'
+import { detectAllowedDocumentMimeType } from '../../../../utils/documentMime'
 import { isBuiltInLocationQuestion } from '~~/shared/built-in-application-fields'
 import {
-  ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE,
   MAX_DOCUMENTS_PER_CANDIDATE,
   MIME_TO_EXTENSION,
@@ -348,20 +347,8 @@ export default defineEventHandler(async (event) => {
     }
 
     // Validate MIME from magic bytes (not Content-Type header)
-    const detectedType = await fileTypeFromBuffer(file.data)
-    let mimeType = detectedType?.mime
-
-    // file-type detects OLE2 compound binary documents (.doc) as 'application/x-cfb'.
-    // Newer versions no longer return undefined for these files, so we must also
-    // check the detected type (not only the !mimeType case) to remap to application/msword.
-    if (!mimeType || mimeType === 'application/x-cfb') {
-      const OLE2_MAGIC = Buffer.from([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1])
-      if (file.data.length >= 8 && Buffer.compare(file.data.subarray(0, 8), OLE2_MAGIC) === 0) {
-        mimeType = 'application/msword'
-      }
-    }
-
-    if (!mimeType || !ALLOWED_MIME_TYPES.includes(mimeType as typeof ALLOWED_MIME_TYPES[number])) {
+    const mimeType = await detectAllowedDocumentMimeType(file.data)
+    if (!mimeType) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Invalid file type. Allowed: PDF, DOC, DOCX',
@@ -385,17 +372,8 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const detectedType = await fileTypeFromBuffer(resumeUpload.data)
-    resumeMimeType = detectedType?.mime
-
-    if (!resumeMimeType || resumeMimeType === 'application/x-cfb') {
-      const OLE2_MAGIC = Buffer.from([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1])
-      if (resumeUpload.data.length >= 8 && Buffer.compare(resumeUpload.data.subarray(0, 8), OLE2_MAGIC) === 0) {
-        resumeMimeType = 'application/msword'
-      }
-    }
-
-    if (!resumeMimeType || !ALLOWED_MIME_TYPES.includes(resumeMimeType as typeof ALLOWED_MIME_TYPES[number])) {
+    resumeMimeType = await detectAllowedDocumentMimeType(resumeUpload.data) ?? undefined
+    if (!resumeMimeType) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Invalid file type for resume. Allowed: PDF, DOC, DOCX',
