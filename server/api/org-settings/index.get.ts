@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { orgSettings } from '../../database/schema'
-import { hasPostgresErrorCode } from '../../utils/signupDomainAllowlist'
+import { hasPostgresErrorCode, hasSignupAllowedDomainsColumn } from '../../utils/signupDomainAllowlist'
 
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { organization: ['read'] })
@@ -13,15 +13,23 @@ export default defineEventHandler(async (event) => {
     signupAllowedDomains?: string[]
   } | undefined
 
+  const includeSignupAllowedDomains = await hasSignupAllowedDomainsColumn()
+
   try {
     settings = await db.query.orgSettings.findFirst({
       where: eq(orgSettings.organizationId, orgId),
-      columns: {
-        nameDisplayFormat: true,
-        dateFormat: true,
-        defaultSalaryUnit: true,
-        signupAllowedDomains: true,
-      },
+      columns: includeSignupAllowedDomains
+        ? {
+            nameDisplayFormat: true,
+            dateFormat: true,
+            defaultSalaryUnit: true,
+            signupAllowedDomains: true,
+          }
+        : {
+            nameDisplayFormat: true,
+            dateFormat: true,
+            defaultSalaryUnit: true,
+          },
     })
   }
   catch (error) {

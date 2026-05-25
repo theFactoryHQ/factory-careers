@@ -12,6 +12,8 @@ import {
   normalizeSignupDomain,
 } from '~~/shared/signup-domains'
 
+let signupAllowedDomainsColumnExistsPromise: Promise<boolean> | undefined
+
 function emailDomain(value: string | null | undefined): string | null {
   if (!value) return null
   return extractSignupEmailDomain(value)
@@ -24,9 +26,26 @@ export function hasPostgresErrorCode(error: unknown, code: string): boolean {
   return false
 }
 
+export async function hasSignupAllowedDomainsColumn(): Promise<boolean> {
+  signupAllowedDomainsColumnExistsPromise ??= db
+    .execute<{ exists: boolean }>(sql`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'org_settings'
+          AND column_name = 'signup_allowed_domains'
+      ) AS exists
+    `)
+    .then(result => result[0]?.exists === true)
+
+  return signupAllowedDomainsColumnExistsPromise
+}
+
 export async function isSignupEmailAllowedByAnyOrgAllowlist(email: unknown): Promise<boolean> {
   const domain = extractSignupEmailDomain(email)
   if (!domain) return false
+  if (!(await hasSignupAllowedDomainsColumn())) return false
 
   try {
     const [match] = await db
@@ -115,6 +134,8 @@ export async function assertSignupDomainAllowlistUpdateAllowed(options: {
 }
 
 export async function getOrgSignupAllowedDomains(organizationId: string): Promise<string[]> {
+  if (!(await hasSignupAllowedDomainsColumn())) return []
+
   const settings = await db.query.orgSettings.findFirst({
     where: eq(orgSettings.organizationId, organizationId),
     columns: { signupAllowedDomains: true },
