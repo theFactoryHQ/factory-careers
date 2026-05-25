@@ -13,6 +13,7 @@ useSeoMeta({
 
 const route = useRoute()
 const { calendarStatus, isConnected, isAvailable, connect, disconnect, refresh, status } = useCalendarIntegration()
+const toast = useToast()
 
 const isDisconnecting = ref(false)
 const showDisconnectConfirm = ref(false)
@@ -32,7 +33,6 @@ const destinationTypeLabel = (type: string) => type === 'shared_mailbox' ? 'Shar
 
 // Handle OAuth callback query params
 const successMessage = ref('')
-const errorMessage = ref('')
 
 onMounted(() => {
   const success = route.query.success as string | undefined
@@ -43,13 +43,13 @@ onMounted(() => {
     refresh()
   }
   else if (error === 'consent_denied') {
-    errorMessage.value = 'Calendar connection was cancelled. You can try again anytime.'
+    toast.error('Calendar connection cancelled', { message: 'You can try again anytime.' })
   }
   else if (error === 'oauth_failed') {
-    errorMessage.value = `Failed to connect ${calendarProviderName.value}. Please try again.`
+    toast.error(`Failed to connect ${calendarProviderName.value}`, { message: 'Please try again.' })
   }
   else if (error === 'account_mismatch' || error === 'calendar_not_accessible') {
-    errorMessage.value = `Could not access ${sharedCalendarEmail.value}. Sign in with a Factory Microsoft account that can access that mailbox.`
+    toast.error(`Could not access ${sharedCalendarEmail.value}`, { message: 'Sign in with a Factory Microsoft account that can access that mailbox.' })
   }
 
   // Clear query params after reading
@@ -70,7 +70,7 @@ async function handleDisconnect() {
     successMessage.value = `${calendarProviderName.value} disconnected.`
   }
   catch {
-    errorMessage.value = 'Failed to disconnect. Please try again.'
+    toast.error('Failed to disconnect', { message: 'Please try again.' })
   }
   finally {
     isDisconnecting.value = false
@@ -88,7 +88,7 @@ async function updateSyncInterviewers(enabled: boolean) {
       ? 'Interviewer calendar sync enabled.'
       : 'Interviewer calendar sync disabled.'
   } catch {
-    errorMessage.value = 'Failed to update setting.'
+    toast.error('Failed to update setting')
   }
 }
 </script>
@@ -117,24 +117,6 @@ async function updateSyncInterviewers(enabled: boolean) {
         <button
           class="ui-button ui-button-ghost p-1"
           @click="successMessage = ''"
-        >
-          <X class="size-4" />
-        </button>
-      </div>
-    </Transition>
-
-    <Transition name="fade">
-      <div
-        v-if="errorMessage"
-        class="ui-alert ui-alert-danger mb-4 flex items-center gap-3"
-      >
-        <AlertTriangle class="size-4 shrink-0" />
-        <p class="flex-1">
-          {{ errorMessage }}
-        </p>
-        <button
-          class="ui-button ui-button-ghost p-1"
-          @click="errorMessage = ''"
         >
           <X class="size-4" />
         </button>

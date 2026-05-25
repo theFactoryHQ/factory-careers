@@ -158,7 +158,6 @@ const { uploadDocument, downloadDocument, getPreviewUrl, deleteDocument } = useD
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedDocType = ref<'resume' | 'cover_letter' | 'other'>('resume')
 const isUploading = ref(false)
-const uploadError = ref<string | null>(null)
 const showDocDeleteConfirm = ref<string | null>(null)
 const isDeletingDoc = ref(false)
 const documentPreview = useDocumentPreview({
@@ -185,14 +184,13 @@ async function handleFileSelected(event: Event) {
   const file = input.files?.[0]
   if (!file) return
 
-  uploadError.value = null
   isUploading.value = true
 
   try {
     await uploadDocument(candidateId, file, selectedDocType.value)
   } catch (err: any) {
     const msg = err.data?.statusMessage ?? err.statusMessage ?? 'Upload failed'
-    uploadError.value = msg
+    toast.error('Upload failed', { message: msg, statusCode: err.data?.statusCode ?? err.statusCode })
   } finally {
     isUploading.value = false
     // Reset input so the same file can be re-selected
@@ -364,15 +362,6 @@ async function handleDeleteDoc(docId: string) {
               </div>
             </template>
 
-            <template #error>
-              <div
-                v-if="uploadError"
-                class="mb-3 border border-danger-500/45 bg-danger-500/10 p-3 text-sm text-danger-100"
-              >
-                {{ uploadError }}
-                <button class="ml-1 cursor-pointer underline transition-colors hover:text-white" @click="uploadError = null">Dismiss</button>
-              </div>
-            </template>
           </CandidateDocumentsPanel>
 
           <!-- Document delete confirmation dialog -->

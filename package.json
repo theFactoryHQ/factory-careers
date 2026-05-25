@@ -28,6 +28,7 @@
     "test": "vitest run",
     "test:unit": "vitest run",
     "preflight:pr": "node scripts/run-pr-validation-preflight.mjs",
+    "preflight:cli-parity": "node scripts/run-pr-validation-preflight.mjs --step cli-parity",
     "typecheck": "nuxi typecheck",
     "test:e2e": "npx playwright test",
     "cli:pack": "npm pack --workspace @thefactory/careers-cli --dry-run",
