@@ -50,6 +50,13 @@ describe('git hook preflight checks', () => {
     })
   })
 
+  it('skips local PR title validation when gh is not installed', () => {
+    expect(getPrTitleValidationStatus('', '', { code: 'ENOENT', message: 'spawnSync gh ENOENT' })).toMatchObject({
+      ok: true,
+      skipped: true,
+    })
+  })
+
   it('rejects the current PR title when it would fail the PR title workflow', () => {
     expect(getPrTitleValidationStatus('[codex] skip heavyweight CI for draft PRs', '')).toMatchObject({
       ok: false,
