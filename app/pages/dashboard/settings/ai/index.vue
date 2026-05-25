@@ -90,10 +90,10 @@ async function saveAnalysisContext() {
   isSavingAnalysisContext.value = true
   try {
     await updateSettings({ analysisContext: localAnalysisContext.value })
-    toast.success('Analysis context saved')
+    toast.success('Org context saved')
   }
   catch (err: any) {
-    const message = err?.data?.statusMessage ?? err?.message ?? 'Failed to save analysis context.'
+    const message = err?.data?.statusMessage ?? err?.message ?? 'Failed to save org context.'
     toast.error('Save failed', { message })
   }
   finally {
@@ -218,31 +218,12 @@ function formatPrice(p: number | null): string {
 <template>
   <div class="w-full">
     <!-- Page header -->
-    <div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
+    <div class="mb-6">
       <div>
         <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">AI Configuration</h1>
         <p class="text-sm text-surface-500 dark:text-surface-400 mt-0.5">
           Add as many providers and models as you like. Pick which one powers the chatbot and which one scores candidates.
         </p>
-      </div>
-      <div v-if="canManageAi" class="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          :disabled="isRefreshingModels"
-          class="ui-button ui-button-secondary h-9 px-3.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-          @click="refreshModelCatalog"
-        >
-          <Loader2 v-if="isRefreshingModels" class="size-3.5 animate-spin" />
-          <RefreshCw v-else class="size-3.5" />
-          Refresh models
-        </button>
-        <NuxtLink
-          to="/dashboard/settings/ai/new"
-          class="ui-button ui-button-primary h-9 px-3.5 text-xs no-underline"
-        >
-          <Plus class="size-4" />
-          Add a model
-        </NuxtLink>
       </div>
     </div>
 
@@ -256,7 +237,7 @@ function formatPrice(p: number | null): string {
             <Sparkles class="size-4" />
           </div>
           <div>
-            <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Analysis context</h2>
+            <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Org Context</h2>
             <p class="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
               Organization background the AI uses before generating criteria or scoring candidates.
             </p>
@@ -270,7 +251,7 @@ function formatPrice(p: number | null): string {
           rows="5"
           maxlength="4000"
           class="ui-field min-h-32 resize-y disabled:opacity-60 disabled:cursor-not-allowed"
-          placeholder="Describe the organization, customers, services, and domain signals candidates should be evaluated against."
+          placeholder="Describe the org, customers, services, and domain signals candidates should be evaluated against."
         />
         <div class="flex flex-wrap items-center justify-between gap-3">
           <p class="text-[11px] text-surface-500 dark:text-surface-400">
@@ -284,7 +265,7 @@ function formatPrice(p: number | null): string {
           >
             <Loader2 v-if="isSavingAnalysisContext" class="size-3.5 animate-spin" />
             <Save v-else class="size-3.5" />
-            {{ isSavingAnalysisContext ? 'Saving…' : 'Save context' }}
+            {{ isSavingAnalysisContext ? 'Saving…' : 'Save Org Context' }}
           </button>
         </div>
       </div>
@@ -306,41 +287,70 @@ function formatPrice(p: number | null): string {
       </div>
     </div>
 
+    <section v-else class="space-y-3">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Models</h2>
+          <p class="mt-0.5 text-sm text-surface-500 dark:text-surface-400">
+            Manage provider connections and choose defaults for chatbot and candidate analysis.
+          </p>
+        </div>
+        <div v-if="canManageAi" class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            :disabled="isRefreshingModels"
+            class="ui-button ui-button-secondary h-9 px-3.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="refreshModelCatalog"
+          >
+            <Loader2 v-if="isRefreshingModels" class="size-3.5 animate-spin" />
+            <RefreshCw v-else class="size-3.5" />
+            Refresh models
+          </button>
+          <NuxtLink
+            to="/dashboard/settings/ai/new"
+            class="ui-button ui-button-primary h-9 px-3.5 text-xs no-underline"
+          >
+            <Plus class="size-4" />
+            Add a model
+          </NuxtLink>
+        </div>
+      </div>
+
     <!-- Loading -->
-    <div v-else-if="isLoading" class="ui-panel ui-dashboard-panel p-8 text-center text-sm text-surface-500">
-      <Loader2 class="size-5 animate-spin mx-auto mb-2 text-surface-400" />
-      Loading configurations…
-    </div>
+      <div v-if="isLoading" class="ui-panel ui-dashboard-panel p-8 text-center text-sm text-surface-500">
+        <Loader2 class="size-5 animate-spin mx-auto mb-2 text-surface-400" />
+        Loading configurations…
+      </div>
 
     <!-- Empty state -->
-    <div
-      v-else-if="configs.length === 0"
-      class="ui-empty-panel ui-empty-panel-dashed ui-settings-empty-panel"
-    >
-      <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile mx-auto size-12 mb-3">
-        <Brain class="size-6" />
-      </div>
-      <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">No AI models configured yet</h2>
-      <p class="mt-1 mb-4 text-sm text-surface-500 dark:text-surface-400">
-        Add your first model to enable the chatbot and candidate analysis. Pick from popular providers or bring your own OpenAI-compatible endpoint.
-      </p>
-      <NuxtLink
-        to="/dashboard/settings/ai/new"
-        class="ui-button ui-button-primary"
+      <div
+        v-else-if="configs.length === 0"
+        class="ui-empty-panel ui-empty-panel-dashed ui-settings-empty-panel"
       >
-        <Plus class="size-4" />
-        Add your first model
-      </NuxtLink>
-    </div>
+        <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile mx-auto size-12 mb-3">
+          <Brain class="size-6" />
+        </div>
+        <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">No AI models configured yet</h2>
+        <p class="mt-1 mb-4 text-sm text-surface-500 dark:text-surface-400">
+          Add your first model to enable the chatbot and candidate analysis. Pick from popular providers or bring your own OpenAI-compatible endpoint.
+        </p>
+        <NuxtLink
+          to="/dashboard/settings/ai/new"
+          class="ui-button ui-button-primary"
+        >
+          <Plus class="size-4" />
+          Add your first model
+        </NuxtLink>
+      </div>
 
     <!-- Config cards -->
-    <ul v-else class="space-y-3">
-      <li
-        v-for="c in configs"
-        :key="c.id"
-        class="ui-panel ui-dashboard-panel overflow-hidden"
-      >
-        <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-4">
+      <ul v-else class="space-y-3">
+        <li
+          v-for="c in configs"
+          :key="c.id"
+          class="ui-panel ui-dashboard-panel overflow-hidden"
+        >
+          <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-4">
           <!-- Identity -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
@@ -458,9 +468,10 @@ function formatPrice(p: number | null): string {
               <Trash2 v-else class="size-3.5" />
             </button>
           </div>
-        </div>
-      </li>
-    </ul>
+          </div>
+        </li>
+      </ul>
+    </section>
 
   </div>
 </template>

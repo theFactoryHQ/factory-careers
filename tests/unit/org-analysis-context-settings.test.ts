@@ -15,7 +15,8 @@ describe('organization analysis context settings', () => {
     const migration = readProjectFile('server/database/migrations/0042_org_analysis_context.sql')
     const journal = readProjectFile('server/database/migrations/meta/_journal.json')
 
-    expect(aiSettingsPage).toContain('Analysis context')
+    expect(aiSettingsPage).toContain('Org Context')
+    expect(aiSettingsPage).toContain('Models')
     expect(aiSettingsPage).toContain('localAnalysisContext')
     expect(aiSettingsPage).toContain('analysisContext: localAnalysisContext.value')
     expect(orgSettingsComposable).toContain('analysisContext')
