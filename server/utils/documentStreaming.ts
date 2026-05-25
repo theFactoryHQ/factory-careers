@@ -54,7 +54,7 @@ export function buildDocumentStreamHeaders(opts: {
     'X-Content-Type-Options': 'nosniff',
   }
 
-  if (opts.contentLength) {
+  if (opts.contentLength != null) {
     headers['Content-Length'] = String(opts.contentLength)
   }
   if (opts.frameOptions) {
