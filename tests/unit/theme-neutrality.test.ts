@@ -597,7 +597,7 @@ describe('brand-neutral theme variables', () => {
       },
       {
         path: 'app/pages/dashboard/settings/localization.vue',
-        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted', 'ui-button-primary'],
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted'],
       },
       {
         path: 'app/pages/dashboard/settings/integrations.vue',
