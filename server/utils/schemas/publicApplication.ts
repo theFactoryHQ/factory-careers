@@ -1,9 +1,9 @@
 import { z } from 'zod'
 import { COUNTRY_VALUES, US_STATE_VALUES } from '~~/shared/location-options'
 import {
+  candidateFirstNameSchema,
   candidateLastNameSchema,
   candidatePhoneSchema,
-  personNameSchema,
   publicCandidateEmailSchema,
 } from '~~/shared/schemas/candidate'
 
@@ -24,7 +24,7 @@ const questionResponseSchema = z.object({
 
 /** Schema for public application submission on an open job */
 export const publicApplicationSchema = z.object({
-  firstName: personNameSchema,
+  firstName: candidateFirstNameSchema,
   lastName: candidateLastNameSchema,
   email: publicCandidateEmailSchema,
   phone: candidatePhoneSchema.optional(),

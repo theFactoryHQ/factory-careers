@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   cliApplicationCreateSchema,
   cliCandidateCreateSchema,
@@ -19,5 +21,12 @@ describe('shared CLI request schemas', () => {
     expect(() => cliJobCreateSchema.parse({ title: '' })).toThrow()
     expect(() => cliCandidateCreateSchema.parse({ firstName: 'Ada', lastName: 'Lovelace', email: 'not-email' })).toThrow()
     expect(() => cliInterviewScheduleSchema.parse({ applicationId: 'app_1', title: 'Screen', scheduledAt: 'tomorrow-ish' })).toThrow()
+  })
+
+  it('keeps the published CLI schemas package self-contained', () => {
+    const source = readFileSync(join(process.cwd(), 'packages/careers-cli/src/schemas.ts'), 'utf8')
+
+    expect(source).not.toContain('../../../shared/')
+    expect(source).toContain('cliCandidateEmailSchema')
   })
 })

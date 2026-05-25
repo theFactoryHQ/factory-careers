@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest'
 import {
   candidateDateOfBirthSchema,
   candidateEmailSchema,
+  candidateFirstNameSchema,
   candidateGenderValues,
   normalizeEmptyCandidateFormFields,
-  personNameSchema,
   publicCandidateEmailSchema,
 } from '../../shared/schemas/candidate'
 
@@ -20,8 +20,8 @@ describe('shared candidate validation schemas', () => {
   })
 
   it('shares core person, phone, gender, and date validation primitives', () => {
-    expect(personNameSchema.safeParse('').success).toBe(false)
-    expect(personNameSchema.safeParse('A'.repeat(101)).success).toBe(false)
+    expect(candidateFirstNameSchema.safeParse('').success).toBe(false)
+    expect(candidateFirstNameSchema.safeParse('A'.repeat(101)).success).toBe(false)
     expect(candidateGenderValues).toEqual(['male', 'female', 'other', 'prefer_not_to_say'])
     expect(candidateDateOfBirthSchema.safeParse('1899-12-31').success).toBe(false)
     expect(candidateDateOfBirthSchema.safeParse('2000-02-29').success).toBe(true)
@@ -65,5 +65,12 @@ describe('shared candidate validation schemas', () => {
 
     expect(readProjectFile('app/pages/dashboard/candidates/new.vue')).not.toContain('const formSchema = z.object')
     expect(readProjectFile('app/pages/dashboard/candidates/[id].vue')).not.toContain('const editSchema = z.object')
+  })
+
+  it('names first-name validation explicitly to avoid accidental last-name reuse', () => {
+    const source = readProjectFile('shared/schemas/candidate.ts')
+
+    expect(source).toContain('candidateFirstNameSchema')
+    expect(source).not.toContain('personNameSchema')
   })
 })

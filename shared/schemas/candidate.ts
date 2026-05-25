@@ -4,7 +4,7 @@ export const candidateGenderValues = ['male', 'female', 'other', 'prefer_not_to_
 
 export type CandidateGender = typeof candidateGenderValues[number]
 
-export const personNameSchema = z.string().min(1, 'First name is required').max(100)
+export const candidateFirstNameSchema = z.string().min(1, 'First name is required').max(100)
 export const candidateLastNameSchema = z.string().min(1, 'Last name is required').max(100)
 export const candidateDisplayNameSchema = z.string().max(200)
 export const candidatePhoneSchema = z.string().max(50)
@@ -42,7 +42,7 @@ export const candidateDateOfBirthSchema = z
   }, 'Date of birth must be a valid past date')
 
 export const candidateCreateFieldsSchema = z.object({
-  firstName: personNameSchema,
+  firstName: candidateFirstNameSchema,
   lastName: candidateLastNameSchema,
   displayName: candidateDisplayNameSchema.optional(),
   email: candidateEmailSchema,
@@ -52,7 +52,7 @@ export const candidateCreateFieldsSchema = z.object({
 })
 
 export const candidateUpdateFieldsSchema = z.object({
-  firstName: personNameSchema.optional(),
+  firstName: candidateFirstNameSchema.optional(),
   lastName: candidateLastNameSchema.optional(),
   displayName: candidateDisplayNameSchema.nullish(),
   email: candidateEmailSchema.optional(),

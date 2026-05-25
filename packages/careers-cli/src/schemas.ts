@@ -1,7 +1,16 @@
 import { z } from 'zod'
-import { candidateEmailSchema } from '../../../shared/schemas/candidate'
 
 const optionalText = z.string().trim().min(1).optional()
+const cliCandidateEmailSchema = z
+  .preprocess(
+    (value) => typeof value === 'string' ? value.trim() : value,
+    z
+      .string()
+      .min(1, 'Email is required')
+      .email('Invalid email address')
+      .max(255)
+      .transform((value) => value.toLowerCase()),
+  )
 
 export const cliJobCreateSchema = z.object({
   title: z.string().trim().min(1),
@@ -14,7 +23,7 @@ export const cliJobCreateSchema = z.object({
 export const cliCandidateCreateSchema = z.object({
   firstName: z.string().trim().min(1),
   lastName: z.string().trim().min(1),
-  email: candidateEmailSchema,
+  email: cliCandidateEmailSchema,
   phone: optionalText,
 }).passthrough()
 
