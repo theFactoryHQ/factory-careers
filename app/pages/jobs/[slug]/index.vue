@@ -48,6 +48,15 @@ function markdownToPlainText(markdown?: string | null): string {
 
 const jobDescriptionPlain = computed(() => markdownToPlainText(job.value?.description))
 
+function serializeJsonLd(value: Record<string, unknown>): string {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003C')
+    .replace(/>/g, '\\u003E')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029')
+}
+
 // ─────────────────────────────────────────────
 // SEO — Meta tags (title, description, OG, Twitter)
 // ─────────────────────────────────────────────
@@ -165,7 +174,7 @@ watchEffect(() => {
     script: [
       {
         type: 'application/ld+json',
-        innerHTML: JSON.stringify({
+        innerHTML: serializeJsonLd({
           '@context': 'https://schema.org',
           ...posting,
         }),

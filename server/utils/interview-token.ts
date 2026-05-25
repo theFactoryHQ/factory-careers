@@ -6,7 +6,8 @@
  * accept/decline/tentative an interview via a simple link — no
  * authentication required, no inbound email infrastructure needed.
  */
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createHmac } from 'node:crypto'
+import { timingSafeStringEqual } from './secureCompare'
 
 export type CandidateAction = 'accepted' | 'declined' | 'tentative'
 
@@ -14,6 +15,9 @@ const VALID_ACTIONS: CandidateAction[] = ['accepted', 'declined', 'tentative']
 
 /** Default token expiry: 7 days */
 const DEFAULT_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000
+
+const MAX_TOKEN_LENGTH = 4096
+const MAX_SIGNATURE_LENGTH = 256
 
 interface TokenPayload {
   /** Interview UUID */
@@ -63,20 +67,20 @@ export function verifyInterviewToken(
   token: string,
   secret: string,
 ): TokenPayload | null {
+  if (token.length > MAX_TOKEN_LENGTH) return null
+
   const dotIndex = token.indexOf('.')
   if (dotIndex === -1) return null
 
   const payloadStr = token.slice(0, dotIndex)
   const providedSig = token.slice(dotIndex + 1)
+  if (providedSig.length > MAX_SIGNATURE_LENGTH) return null
 
-  // Verify signature with timing-safe comparison
+  // Verify signature with a byte-safe, timing-safe comparison. The fixed
+  // maximums above prevent attacker-controlled allocation growth without
+  // branching on the expected signature length.
   const expectedSig = sign(payloadStr, secret)
-  if (providedSig.length !== expectedSig.length) return null
-
-  const sigValid = timingSafeEqual(
-    Buffer.from(providedSig, 'hex'),
-    Buffer.from(expectedSig, 'hex'),
-  )
+  const sigValid = timingSafeStringEqual(providedSig, expectedSig)
   if (!sigValid) return null
 
   // Decode and validate payload
