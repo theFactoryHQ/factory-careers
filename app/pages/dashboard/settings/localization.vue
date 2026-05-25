@@ -43,6 +43,7 @@ watch([nameDisplayFormat, dateFormat], ([nf, df]) => {
 const isSaving = ref(false)
 const saveSuccess = ref(false)
 const saveError = ref('')
+let saveSuccessTimer: ReturnType<typeof setTimeout> | null = null
 const localizationSaveStatus = computed(() => {
   if (isSaving.value) return 'Saving...'
   if (saveSuccess.value) return 'Saved'
@@ -50,9 +51,17 @@ const localizationSaveStatus = computed(() => {
   return 'Automatically saves changes'
 })
 
+function clearSaveSuccessTimer() {
+  if (saveSuccessTimer) {
+    clearTimeout(saveSuccessTimer)
+    saveSuccessTimer = null
+  }
+}
+
 async function autosaveLocalizationSettings() {
   if (!canUpdateOrg.value) return
   await nextTick()
+  clearSaveSuccessTimer()
   isSaving.value = true
   saveError.value = ''
   saveSuccess.value = false
@@ -64,7 +73,10 @@ async function autosaveLocalizationSettings() {
     })
     track('localization_settings_saved')
     saveSuccess.value = true
-    setTimeout(() => { saveSuccess.value = false }, 3000)
+    saveSuccessTimer = setTimeout(() => {
+      saveSuccess.value = false
+      saveSuccessTimer = null
+    }, 3000)
   }
   catch (err: unknown) {
     saveError.value = err instanceof Error ? err.message : 'Failed to save settings'
@@ -73,6 +85,10 @@ async function autosaveLocalizationSettings() {
     isSaving.value = false
   }
 }
+
+onBeforeUnmount(() => {
+  clearSaveSuccessTimer()
+})
 
 // Preview helpers
 const previewCandidate = { firstName: 'Jane', lastName: 'Doe', displayName: null }

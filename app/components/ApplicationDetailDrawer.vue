@@ -55,7 +55,7 @@ const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicati
   updateStatus: status => updateApplication({ status: status as any }),
 })
 
-const { isEditingNotes, notesInput, isSavingNotes, notesSaveStatus, notesTextarea, startEditNotes, saveNotes, autosaveNotes } = useEditableApplicationNotes({
+const { isEditingNotes, notesInput, isSavingNotes, notesSaveStatus, notesTextarea, startEditNotes, saveNotes, autosaveNotes, finishEditNotes } = useEditableApplicationNotes({
   application,
   focusOnEdit: true,
   save: notes => updateApplication({ notes }),
@@ -348,7 +348,8 @@ onUnmounted(() => {
                   </p>
                   <button
                     class="factory-toolbar-button cursor-pointer border px-3 py-1.5 text-xs font-medium text-white/78 hover:text-white transition-colors"
-                    @click="isEditingNotes = false"
+                    :disabled="isSavingNotes"
+                    @click="finishEditNotes"
                   >
                     Done
                   </button>

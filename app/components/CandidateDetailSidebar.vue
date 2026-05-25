@@ -109,7 +109,7 @@ const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicati
   },
 })
 
-const { isEditingNotes, notesInput, isSavingNotes, notesSaveStatus, startEditNotes, saveNotes, autosaveNotes } = useEditableApplicationNotes({
+const { isEditingNotes, notesInput, isSavingNotes, notesSaveStatus, startEditNotes, saveNotes, autosaveNotes, finishEditNotes } = useEditableApplicationNotes({
   application,
   save: updateApplicationNotes,
   afterSave: async () => {
@@ -636,7 +636,8 @@ function formatInterviewDate(dateStr: string) {
                   </p>
                   <button
                     class="ui-button ui-button-secondary px-3 py-1.5 text-sm"
-                    @click="isEditingNotes = false"
+                    :disabled="isSavingNotes"
+                    @click="finishEditNotes"
                   >
                     Done
                   </button>

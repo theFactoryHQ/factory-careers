@@ -12,6 +12,8 @@ describe('settings autosave', () => {
 
     expect(source).toContain('autosaveLocalizationSettings')
     expect(source).toContain('localizationSaveStatus')
+    expect(source).toContain('clearSaveSuccessTimer')
+    expect(source).toContain('onBeforeUnmount')
     expect(source).toContain('@update:model-value="autosaveLocalizationSettings"')
     expect(source).toContain('Automatically saves changes')
     expect(source).not.toContain('Save changes')

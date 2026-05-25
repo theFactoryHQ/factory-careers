@@ -94,6 +94,10 @@ describe('application form requirement cards', () => {
 
     expect(source).toContain('autosaveRequirements')
     expect(source).toContain('autosaveComplianceQuestions')
+    expect(source).toContain('saveRequirementsAgain')
+    expect(source).toContain('activeRequirementsSave')
+    expect(source).toContain('saveComplianceAgain')
+    expect(source).toContain('activeComplianceSave')
     expect(source).toContain('@click="toggleRequirement(\'resume\')"')
     expect(source).toContain('@click="toggleRequirement(\'coverLetter\')"')
     expect(source).toContain('@click="toggleComplianceEnabled"')

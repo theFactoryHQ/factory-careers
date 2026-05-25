@@ -207,6 +207,9 @@ const requireCoverLetter = ref(false)
 const isSavingRequirements = ref(false)
 const requirementsSaved = ref(false)
 const requirementsError = ref<string | null>(null)
+let activeRequirementsSave: Promise<void> | null = null
+let saveRequirementsAgain = false
+let requirementsSavedTimer: ReturnType<typeof setTimeout> | null = null
 const requirementsSaveStatus = computed(() => {
   if (isSavingRequirements.value) return 'Saving...'
   if (requirementsSaved.value) return 'Requirements saved'
@@ -220,6 +223,9 @@ const includeDisability = ref(true)
 const isSavingCompliance = ref(false)
 const complianceSaved = ref(false)
 const complianceError = ref<string | null>(null)
+let activeComplianceSave: Promise<void> | null = null
+let saveComplianceAgain = false
+let complianceSavedTimer: ReturnType<typeof setTimeout> | null = null
 const complianceSaveStatus = computed(() => {
   if (isSavingCompliance.value) return 'Saving...'
   if (complianceSaved.value) return 'Compliance questions saved'
@@ -242,18 +248,53 @@ watch(job, (j) => {
   }
 }, { immediate: true })
 
-async function autosaveRequirements() {
+function clearRequirementsSavedTimer() {
+  if (requirementsSavedTimer) {
+    clearTimeout(requirementsSavedTimer)
+    requirementsSavedTimer = null
+  }
+}
+
+function clearComplianceSavedTimer() {
+  if (complianceSavedTimer) {
+    clearTimeout(complianceSavedTimer)
+    complianceSavedTimer = null
+  }
+}
+
+async function runRequirementsAutosave() {
   isSavingRequirements.value = true
   requirementsError.value = null
   try {
-    await updateJob({ requireResume: requireResume.value, requireCoverLetter: requireCoverLetter.value })
-    requirementsSaved.value = true
-    setTimeout(() => { requirementsSaved.value = false }, 2000)
+    do {
+      saveRequirementsAgain = false
+      await updateJob({ requireResume: requireResume.value, requireCoverLetter: requireCoverLetter.value })
+      requirementsSaved.value = true
+      clearRequirementsSavedTimer()
+      requirementsSavedTimer = setTimeout(() => {
+        requirementsSaved.value = false
+        requirementsSavedTimer = null
+      }, 2000)
+    } while (saveRequirementsAgain)
   } catch (err: any) {
     requirementsError.value = err?.data?.statusMessage ?? 'Failed to save requirements.'
   } finally {
     isSavingRequirements.value = false
   }
+}
+
+function autosaveRequirements() {
+  clearRequirementsSavedTimer()
+
+  if (activeRequirementsSave) {
+    saveRequirementsAgain = true
+    return activeRequirementsSave
+  }
+
+  activeRequirementsSave = runRequirementsAutosave().finally(() => {
+    activeRequirementsSave = null
+  })
+  return activeRequirementsSave
 }
 
 function toggleRequirement(type: 'resume' | 'coverLetter') {
@@ -262,18 +303,25 @@ function toggleRequirement(type: 'resume' | 'coverLetter') {
   void autosaveRequirements()
 }
 
-async function autosaveComplianceQuestions() {
+async function runComplianceAutosave() {
   isSavingCompliance.value = true
   complianceError.value = null
   try {
-    await updateJob({
-      applicationComplianceEnabled: applicationComplianceEnabled.value,
-      includeEeo: includeEeo.value,
-      includeVeteran: includeVeteran.value,
-      includeDisability: includeDisability.value,
-    })
-    complianceSaved.value = true
-    setTimeout(() => { complianceSaved.value = false }, 2000)
+    do {
+      saveComplianceAgain = false
+      await updateJob({
+        applicationComplianceEnabled: applicationComplianceEnabled.value,
+        includeEeo: includeEeo.value,
+        includeVeteran: includeVeteran.value,
+        includeDisability: includeDisability.value,
+      })
+      complianceSaved.value = true
+      clearComplianceSavedTimer()
+      complianceSavedTimer = setTimeout(() => {
+        complianceSaved.value = false
+        complianceSavedTimer = null
+      }, 2000)
+    } while (saveComplianceAgain)
   } catch (err: any) {
     complianceError.value = err?.data?.statusMessage ?? 'Failed to save compliance questions.'
   } finally {
@@ -281,10 +329,29 @@ async function autosaveComplianceQuestions() {
   }
 }
 
+function autosaveComplianceQuestions() {
+  clearComplianceSavedTimer()
+
+  if (activeComplianceSave) {
+    saveComplianceAgain = true
+    return activeComplianceSave
+  }
+
+  activeComplianceSave = runComplianceAutosave().finally(() => {
+    activeComplianceSave = null
+  })
+  return activeComplianceSave
+}
+
 function toggleComplianceEnabled() {
   applicationComplianceEnabled.value = !applicationComplianceEnabled.value
   void autosaveComplianceQuestions()
 }
+
+onBeforeUnmount(() => {
+  clearRequirementsSavedTimer()
+  clearComplianceSavedTimer()
+})
 
 // ─────────────────────────────────────────────
 // Tracking links for this job

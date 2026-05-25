@@ -23,6 +23,8 @@ export function useEditableApplicationNotes(options: UseEditableApplicationNotes
   const notesTextarea = ref<HTMLTextAreaElement | null>(null)
   let autosaveTimer: ReturnType<typeof setTimeout> | null = null
   let savedStatusTimer: ReturnType<typeof setTimeout> | null = null
+  let activeNotesSave: Promise<boolean> | null = null
+  let queuedNotesSave = false
 
   function clearAutosaveTimer() {
     if (autosaveTimer) {
@@ -49,25 +51,52 @@ export function useEditableApplicationNotes(options: UseEditableApplicationNotes
     }
   }
 
-  async function saveNotes() {
-    clearAutosaveTimer()
-    clearSavedStatusTimer()
+  async function runQueuedNotesSave(): Promise<boolean> {
     isSavingNotes.value = true
-    notesSaveStatus.value = 'saving'
+    let allSavesSucceeded = true
+
     try {
-      await options.save(notesInput.value || null)
-      await options.afterSave?.()
-      notesSaveStatus.value = 'saved'
-      savedStatusTimer = setTimeout(() => {
-        notesSaveStatus.value = 'idle'
-      }, 2500)
-    } catch (err: any) {
-      if (handlePreviewReadOnlyError(err)) return
-      notesSaveStatus.value = 'error'
-      toast.error('Failed to save notes', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
+      do {
+        queuedNotesSave = false
+        notesSaveStatus.value = 'saving'
+
+        try {
+          await options.save(notesInput.value || null)
+          await options.afterSave?.()
+          notesSaveStatus.value = 'saved'
+          clearSavedStatusTimer()
+          savedStatusTimer = setTimeout(() => {
+            notesSaveStatus.value = 'idle'
+          }, 2500)
+        } catch (err: any) {
+          if (!handlePreviewReadOnlyError(err)) {
+            notesSaveStatus.value = 'error'
+            toast.error('Failed to save notes', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
+          }
+          allSavesSucceeded = false
+          break
+        }
+      } while (queuedNotesSave)
     } finally {
       isSavingNotes.value = false
     }
+
+    return allSavesSucceeded
+  }
+
+  function saveNotes(): Promise<boolean> {
+    clearAutosaveTimer()
+    clearSavedStatusTimer()
+
+    if (activeNotesSave) {
+      queuedNotesSave = true
+      return activeNotesSave
+    }
+
+    activeNotesSave = runQueuedNotesSave().finally(() => {
+      activeNotesSave = null
+    })
+    return activeNotesSave
   }
 
   function autosaveNotes() {
@@ -77,6 +106,11 @@ export function useEditableApplicationNotes(options: UseEditableApplicationNotes
     autosaveTimer = setTimeout(() => {
       void saveNotes()
     }, 700)
+  }
+
+  async function finishEditNotes() {
+    const saved = await saveNotes()
+    if (saved) isEditingNotes.value = false
   }
 
   onBeforeUnmount(() => {
@@ -93,5 +127,6 @@ export function useEditableApplicationNotes(options: UseEditableApplicationNotes
     startEditNotes,
     saveNotes,
     autosaveNotes,
+    finishEditNotes,
   }
 }
