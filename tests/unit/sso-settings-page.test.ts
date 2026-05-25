@@ -13,6 +13,11 @@ describe('SSO settings page', () => {
 
     expect(getCallbackUrl).toContain('siteOrigin.value')
     expect(getCallbackUrl).not.toContain('window.location')
+    expect(source).toContain('const requestUrl = useRequestURL()')
+    expect(source).toContain('const config = useRuntimeConfig()')
+    expect(source).toContain('requestUrl.origin')
+    expect(source).toContain('getOriginFromUrl(config.public.factoryCareersUrl)')
+    expect(source).not.toContain("return 'https://careers.thefactoryhq.com'")
   })
 
   it('formats the quick setup guide as a padded help panel', () => {

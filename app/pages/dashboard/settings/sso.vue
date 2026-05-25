@@ -19,6 +19,8 @@ const { allowed: canManageSso, role: currentOrgRole } = usePermission({ organiza
 const { track } = useTrack()
 const { signupAllowedDomains, updateSettings } = useOrgSettings()
 const canManageSignupDomains = computed(() => currentOrgRole.value === 'owner')
+const config = useRuntimeConfig()
+const requestUrl = useRequestURL()
 
 // ─────────────────────────────────────────────
 // Fetch existing SSO providers
@@ -126,12 +128,20 @@ async function handleSaveSignupDomains() {
   }
 }
 
-const siteOrigin = computed(() => {
-  if (import.meta.client) {
-    return window.location.origin
+function getOriginFromUrl(value: unknown) {
+  const url = String(value ?? '').trim()
+  if (!url) return ''
+
+  try {
+    return new URL(url).origin
+  } catch {
+    return ''
   }
-  return 'https://careers.thefactoryhq.com'
-})
+}
+
+const siteOrigin = computed(() =>
+  requestUrl.origin || getOriginFromUrl(config.public.factoryCareersUrl) || getOriginFromUrl(config.public.siteUrl),
+)
 
 function resetForm() {
   form.providerId = ''

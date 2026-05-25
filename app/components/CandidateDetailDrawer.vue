@@ -40,7 +40,7 @@ function handleApplied() {
 
 const showInterviewSidebar = ref(false)
 const interviewTargetApp = ref<{ id: string; jobTitle: string } | null>(null)
-const transitioningApplicationId = ref<string | null>(null)
+const transitioningApplicationIds = ref<Set<string>>(new Set())
 
 function openScheduleInterview(app: { id: string; job: { title: string } }) {
   interviewTargetApp.value = { id: app.id, jobTitle: app.job.title }
@@ -52,7 +52,9 @@ function getApplicationTransitions(status: string) {
 }
 
 async function handleApplicationTransition(app: { id: string }, status: string) {
-  transitioningApplicationId.value = app.id
+  if (transitioningApplicationIds.value.has(app.id)) return
+
+  transitioningApplicationIds.value = new Set([...transitioningApplicationIds.value, app.id])
   try {
     await $fetch(`/api/applications/${app.id}`, {
       method: 'PATCH',
@@ -65,7 +67,9 @@ async function handleApplicationTransition(app: { id: string }, status: string) 
     if (handlePreviewReadOnlyError(err)) return
     toast.error('Failed to update status', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
   } finally {
-    transitioningApplicationId.value = null
+    const nextIds = new Set(transitioningApplicationIds.value)
+    nextIds.delete(app.id)
+    transitioningApplicationIds.value = nextIds
   }
 }
 
@@ -357,7 +361,7 @@ onUnmounted(() => {
                       :class="getApplicationTransitionButtonClass(nextStatus, 'factory')"
                       :title="getApplicationTransitionActionLabel(nextStatus)"
                       :aria-label="getApplicationTransitionActionLabel(nextStatus)"
-                      :disabled="transitioningApplicationId === app.id"
+                      :disabled="transitioningApplicationIds.has(app.id)"
                       @click.stop="handleApplicationTransition(app, nextStatus)"
                     >
                       <ApplicationTransitionIcon :status="nextStatus" class="size-3.5" />

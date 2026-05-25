@@ -5,6 +5,16 @@ import { describe, expect, it } from 'vitest'
 const readProjectFile = (path: string) =>
   readFileSync(join(process.cwd(), path), 'utf8')
 
+function sliceBetween(source: string, startMarker: string, endMarker: string) {
+  const start = source.indexOf(startMarker)
+  const end = source.indexOf(endMarker, start + startMarker.length)
+
+  expect(start, `missing start marker: ${startMarker}`).toBeGreaterThan(-1)
+  expect(end, `missing end marker after ${startMarker}: ${endMarker}`).toBeGreaterThan(start)
+
+  return source.slice(start, end)
+}
+
 describe('brand-neutral theme variables', () => {
   it('keeps Factory dark pages on a true black document background', () => {
     const css = readProjectFile('app/assets/css/main.css')
@@ -122,10 +132,7 @@ describe('brand-neutral theme variables', () => {
   it('keeps filter chips as bordered controls aligned with toolbar fields', () => {
     const css = readProjectFile('app/assets/css/main.css')
     const interviews = readProjectFile('app/pages/dashboard/interviews/index.vue')
-    const interviewStatusFilters = interviews.slice(
-      interviews.indexOf('<!-- Status pills -->'),
-      interviews.indexOf('<!-- View toggle -->'),
-    )
+    const interviewStatusFilters = sliceBetween(interviews, '<!-- Status pills -->', '<!-- View toggle -->')
 
     expect(css).toMatch(/\.ui-filter-chip\s*\{[\s\S]*min-height:\s*2\.375rem;[\s\S]*border:\s*1px solid[\s\S]*font-size:\s*0\.75rem;[\s\S]*line-height:\s*1rem;/)
     expect(css).toMatch(/\.ui-filter-chip \.tabular-nums\s*\{[\s\S]*font-size:\s*inherit;[\s\S]*line-height:\s*inherit;/)
@@ -145,10 +152,7 @@ describe('brand-neutral theme variables', () => {
 
   it('uses the Factory view toggle recipe on the interviews list controls', () => {
     const interviews = readProjectFile('app/pages/dashboard/interviews/index.vue')
-    const viewToggle = interviews.slice(
-      interviews.indexOf('<!-- View toggle -->'),
-      interviews.indexOf('</div>', interviews.indexOf('<!-- View toggle -->')) + '</div>'.length,
-    )
+    const viewToggle = sliceBetween(interviews, '<!-- View toggle -->', '<!-- Loading state -->')
 
     expect(viewToggle).toContain('factory-view-toggle flex h-[38px]')
     expect(viewToggle).toContain(":class=\"{ 'is-active': activeView === 'list' }\"")
@@ -163,9 +167,10 @@ describe('brand-neutral theme variables', () => {
       'app/pages/dashboard/source-tracking/[id].vue',
     ]) {
       const source = readProjectFile(path)
-      const dateRangeFilter = source.slice(
-        source.indexOf('<!-- Date range pill -->'),
-        source.indexOf('<!--', source.indexOf('<!-- Date range pill -->') + 1),
+      const dateRangeFilter = sliceBetween(
+        source,
+        '<!-- Date range pill -->',
+        path.endsWith('[id].vue') ? '<!-- Edit -->' : '<!-- Job filter -->',
       )
 
       expect(dateRangeFilter).toContain('factory-view-toggle inline-flex h-10 overflow-hidden border')
