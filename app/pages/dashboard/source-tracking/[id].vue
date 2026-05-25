@@ -2,7 +2,7 @@
 import {
   Link2, Globe, BarChart3, Users,
   MousePointerClick, Target, Activity, TrendingUp,
-  XCircle, Clock,
+  CheckCircle2, XCircle, Clock,
   ExternalLink, AlertCircle, CalendarDays,
   Hash, Tag, Layers, Pencil, X, ChevronDown,
 } from 'lucide-vue-next'
@@ -364,85 +364,40 @@ async function handleSidebarUpdated() {
 
       <!-- ─── Stat cards ─── -->
       <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <!-- Clicks -->
-        <div class="group ui-dashboard-stat-card p-5 sm:p-6 ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-blue-500/25 dark:hover:ring-blue-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/[0.08]">
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <MousePointerClick class="absolute -bottom-3 -right-3 size-24 text-blue-500/[0.03] dark:text-blue-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-          <div class="relative">
-            <div class="flex items-baseline gap-2">
-              <span class="text-3xl sm:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                {{ link.clickCount }}
-              </span>
-              <span class="size-1.5 rounded-full bg-blue-500 shrink-0 mb-1" />
-            </div>
-            <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Clicks</span>
-            <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">Total clicks</p>
-          </div>
-        </div>
+        <DashboardStatCard label="Clicks" :icon="MousePointerClick" accent="blue">
+          <template #value>{{ link.clickCount }}</template>
+          <template #caption>Total clicks</template>
+        </DashboardStatCard>
 
-        <!-- Applications -->
-        <div class="group ui-dashboard-stat-card p-5 sm:p-6 ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-brand-500/25 dark:hover:ring-brand-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-500/[0.08]">
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <Users class="absolute -bottom-3 -right-3 size-24 text-brand-500/[0.03] dark:text-brand-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-          <div class="relative">
-            <div class="flex items-baseline gap-2">
-              <span class="text-3xl sm:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-brand-600 dark:group-hover:text-brand-400">
-                {{ link.applicationCount }}
-              </span>
-              <span class="size-1.5 rounded-full bg-brand-500 shrink-0 mb-1" />
-            </div>
-            <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Applications</span>
-            <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">Total attributed</p>
-          </div>
-        </div>
+        <DashboardStatCard label="Applications" :icon="Users" accent="brand">
+          <template #value>{{ link.applicationCount }}</template>
+          <template #caption>Total attributed</template>
+        </DashboardStatCard>
 
-        <!-- CVR -->
-        <div class="group ui-dashboard-stat-card p-5 sm:p-6 ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-teal-500/25 dark:hover:ring-teal-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-teal-500/[0.08]">
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <Target class="absolute -bottom-3 -right-3 size-24 text-teal-500/[0.03] dark:text-teal-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-          <div class="relative">
-            <div class="flex items-baseline gap-2">
-              <span class="text-3xl sm:text-4xl font-black tracking-tight tabular-nums leading-none transition-colors duration-300" :class="link.cvr > 0 ? 'text-teal-600 dark:text-teal-400 group-hover:text-teal-700 dark:group-hover:text-teal-300' : 'text-surface-900 dark:text-surface-50 group-hover:text-teal-600 dark:group-hover:text-teal-400'">
-                {{ link.cvr }}%
-              </span>
-              <span class="size-1.5 rounded-full bg-teal-500 shrink-0 mb-1" />
-            </div>
-            <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">CVR</span>
-            <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">Click → Application</p>
-          </div>
-        </div>
+        <DashboardStatCard
+          label="CVR"
+          :icon="Target"
+          accent="teal"
+          :value-class="link.cvr > 0 ? 'text-teal-600 dark:text-teal-400 group-hover:text-teal-700 dark:group-hover:text-teal-300' : 'text-surface-900 dark:text-surface-50 group-hover:text-teal-600 dark:group-hover:text-teal-400'"
+        >
+          <template #value>{{ link.cvr }}%</template>
+          <template #caption>Click → Application</template>
+        </DashboardStatCard>
 
-        <!-- Hire Rate -->
-        <div class="group ui-dashboard-stat-card p-5 sm:p-6 ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-green-500/25 dark:hover:ring-green-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-green-500/[0.08]">
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <CheckCircle2 class="absolute -bottom-3 -right-3 size-24 text-green-500/[0.03] dark:text-green-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-          <div class="relative">
-            <div class="flex items-baseline gap-2">
-              <span class="text-3xl sm:text-4xl font-black tracking-tight tabular-nums leading-none transition-colors duration-300" :class="hireRate > 0 ? 'text-green-600 dark:text-green-400 group-hover:text-green-700 dark:group-hover:text-green-300' : 'text-surface-900 dark:text-surface-50 group-hover:text-green-600 dark:group-hover:text-green-400'">
-                {{ hireRate }}%
-              </span>
-              <span class="size-1.5 rounded-full bg-green-500 shrink-0 mb-1" />
-            </div>
-            <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Hire Rate</span>
-            <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">Application → Hired</p>
-          </div>
-        </div>
+        <DashboardStatCard
+          label="Hire Rate"
+          :icon="CheckCircle2"
+          accent="green"
+          :value-class="hireRate > 0 ? 'text-green-600 dark:text-green-400 group-hover:text-green-700 dark:group-hover:text-green-300' : 'text-surface-900 dark:text-surface-50 group-hover:text-green-600 dark:group-hover:text-green-400'"
+        >
+          <template #value>{{ hireRate }}%</template>
+          <template #caption>Application → Hired</template>
+        </DashboardStatCard>
 
-        <!-- Attributed -->
-        <div class="group ui-dashboard-stat-card p-5 sm:p-6 ring-1 ring-surface-950/[0.04] dark:ring-white/[0.06] hover:ring-violet-500/25 dark:hover:ring-violet-400/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/[0.08]">
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <Activity class="absolute -bottom-3 -right-3 size-24 text-violet-500/[0.03] dark:text-violet-400/[0.05] rotate-12 transition-transform duration-700 ease-out group-hover:rotate-3 group-hover:scale-110 pointer-events-none" />
-          <div class="relative">
-            <div class="flex items-baseline gap-2">
-              <span class="text-3xl sm:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 tabular-nums leading-none transition-colors duration-300 group-hover:text-violet-600 dark:group-hover:text-violet-400">
-                {{ totalAttributed }}
-              </span>
-              <span class="size-1.5 rounded-full bg-violet-500 shrink-0 mb-1" />
-            </div>
-            <span class="block mt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-400 dark:text-surface-500">Attributed</span>
-            <p class="text-[11px] text-surface-300 dark:text-surface-600 mt-1">All time</p>
-          </div>
-        </div>
+        <DashboardStatCard label="Attributed" :icon="Activity" accent="violet">
+          <template #value>{{ totalAttributed }}</template>
+          <template #caption>All time</template>
+        </DashboardStatCard>
       </div>
 
       <!-- ─── Main layout ─── -->
