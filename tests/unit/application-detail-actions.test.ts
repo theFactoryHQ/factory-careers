@@ -10,6 +10,10 @@ function readProjectFile(path: string) {
   return readFileSync(projectPath(path), 'utf-8')
 }
 
+function compactSource(source: string) {
+  return source.replace(/\s+/g, ' ')
+}
+
 const applicationDetailSurfaces = [
   'app/components/ApplicationDetailDrawer.vue',
   'app/pages/dashboard/applications/[id].vue',
@@ -41,9 +45,9 @@ describe('application detail shared actions', () => {
     expect(editableNotes).toContain('handlePreviewReadOnlyError')
     expect(editableNotes).toContain('Failed to save notes')
 
-    expect(responseFormat).toContain('formatResponseValue')
-    expect(responseFormat).toContain("Array.isArray(value)")
-    expect(responseFormat).toContain("value ? 'Yes' : 'No'")
+    expect(responseFormat).toMatch(/export\s+function\s+formatResponseValue\s*\(\s*value\s*:\s*unknown\s*\)\s*:\s*string/)
+    expect(responseFormat).toMatch(/Array\.isArray\s*\(\s*value\s*\)/)
+    expect(compactSource(responseFormat)).toMatch(/typeof value === ['"]boolean['"].*value \? ['"]Yes['"] : ['"]No['"]/)
   })
 
   it('uses the shared composables on every application detail surface', () => {
@@ -59,7 +63,7 @@ describe('application detail shared actions', () => {
       expect(source, `${path} should not define local note input state`).not.toContain('const notesInput = ref')
       expect(source, `${path} should not define local save handler`).not.toContain('function saveNotes')
       expect(source, `${path} should not define local response formatting`).not.toContain('function formatResponseValue(value')
-      expect(source, `${path} should call the shared transition handler`).toContain('@click="transitionToStatus(nextStatus)"')
+      expect(source, `${path} should call the shared transition handler`).toMatch(/@click=["']transitionToStatus\([^)]*Status[^)]*\)["']/)
     }
   })
 })

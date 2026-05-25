@@ -80,14 +80,14 @@ watch(candidateId, (id) => {
 const documents = computed(() => candidateData.value?.documents ?? [])
 
 async function updateApplicationStatus(status: string) {
-  await $fetch(`/api/applications/${props.applicationId}` as string, {
+  await $fetch(`/api/applications/${props.applicationId}`, {
     method: 'PATCH',
     body: { status },
   })
 }
 
 async function updateApplicationNotes(notes: string | null) {
-  await $fetch(`/api/applications/${props.applicationId}` as string, {
+  await $fetch(`/api/applications/${props.applicationId}`, {
     method: 'PATCH',
     body: { notes },
   })
