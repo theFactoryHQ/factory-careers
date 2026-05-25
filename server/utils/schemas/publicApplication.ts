@@ -1,5 +1,11 @@
 import { z } from 'zod'
 import { COUNTRY_VALUES, US_STATE_VALUES } from '~~/shared/location-options'
+import {
+  candidateFirstNameSchema,
+  candidateLastNameSchema,
+  candidatePhoneSchema,
+  publicCandidateEmailSchema,
+} from '~~/shared/schemas/candidate'
 
 // ─────────────────────────────────────────────
 // Public application submission schemas
@@ -18,10 +24,10 @@ const questionResponseSchema = z.object({
 
 /** Schema for public application submission on an open job */
 export const publicApplicationSchema = z.object({
-  firstName: z.string().min(1, 'First name is required').max(100),
-  lastName: z.string().min(1, 'Last name is required').max(100),
-  email: z.string().email('Invalid email address').max(254),
-  phone: z.string().max(50).optional(),
+  firstName: candidateFirstNameSchema,
+  lastName: candidateLastNameSchema,
+  email: publicCandidateEmailSchema,
+  phone: candidatePhoneSchema.optional(),
   country: z.enum(COUNTRY_VALUES, 'Country is required'),
   state: z.enum(US_STATE_VALUES, 'State is required'),
   responses: z.array(questionResponseSchema).default([]),

@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { z } from 'zod'
+import {
+  candidateFormSchema,
+  normalizeEmptyCandidateFormFields,
+} from '~~/shared/schemas/candidate'
 
 definePageMeta({
   layout: 'dashboard',
@@ -30,30 +33,8 @@ const isSubmitting = ref(false)
 const errors = ref<Record<string, string>>({})
 const submitError = ref<string | null>(null)
 
-const formSchema = z.object({
-  firstName: z.string().min(1, 'First name is required').max(100),
-  lastName: z.string().min(1, 'Last name is required').max(100),
-  displayName: z.string().max(200).optional(),
-  email: z.string().min(1, 'Email is required').email('Invalid email address').max(255),
-  phone: z.string().max(50).optional(),
-  gender: z.enum(['male', 'female', 'other', 'prefer_not_to_say']).optional(),
-  dateOfBirth: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD')
-    .refine((v) => {
-      const d = new Date(v)
-      return !isNaN(d.getTime()) && d.getFullYear() >= 1900 && d <= new Date()
-    }, 'Must be a valid past date')
-    .optional(),
-})
-
 function validate(): boolean {
-  const result = formSchema.safeParse({
-    ...form.value,
-    gender: form.value.gender || undefined,
-    dateOfBirth: form.value.dateOfBirth || undefined,
-    displayName: form.value.displayName || undefined,
-  })
+  const result = candidateFormSchema.safeParse(normalizeEmptyCandidateFormFields(form.value))
   if (!result.success) {
     errors.value = {}
     for (const issue of result.error.issues) {
