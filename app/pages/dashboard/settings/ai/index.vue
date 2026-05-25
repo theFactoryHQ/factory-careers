@@ -322,7 +322,7 @@ function modelTitle(c: AiConfigRow): string {
             class="ui-button ui-button-primary h-9 px-3.5 text-xs no-underline"
           >
             <Plus class="size-4" />
-            Add a model
+            Add
           </NuxtLink>
         </div>
       </div>
