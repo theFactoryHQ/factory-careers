@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -16,6 +16,17 @@ function sliceBetween(source: string, startMarker: string, endMarker: string) {
 }
 
 describe('brand-neutral theme variables', () => {
+  it('uses self-hosted Inter as the global sans font', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+    const packageJson = JSON.parse(readProjectFile('package.json'))
+
+    expect(packageJson.dependencies).toHaveProperty('@fontsource-variable/inter')
+    expect(css).toContain('@import "@fontsource-variable/inter";')
+    expect(existsSync(join(process.cwd(), 'node_modules/@fontsource-variable/inter/index.css'))).toBe(true)
+    expect(css).toMatch(/--font-sans:\s*"Inter Variable",\s*"Inter",\s*ui-sans-serif,/)
+    expect(css).toMatch(/body\s*\{[\s\S]*font-family:\s*var\(--font-sans\);/)
+  })
+
   it('keeps Factory dark pages on a true black document background', () => {
     const css = readProjectFile('app/assets/css/main.css')
     const baseLayer = css.match(/@layer base \{[\s\S]*?\n\}/)?.[0] ?? ''
