@@ -1,12 +1,6 @@
 <script setup lang="ts">
-import { X, ExternalLink, Phone, Calendar, Clock, Briefcase, FileText, Plus, Download, Eye } from 'lucide-vue-next'
-import { APPLICATION_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
+import { ExternalLink, X } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
-import { formatPhoneNumber } from '~/utils/phone-format'
-import {
-  getApplicationTransitionActionLabel,
-  getApplicationTransitionButtonClass,
-} from '~/utils/status-display'
 
 const props = defineProps<{
   candidateId: string
@@ -17,11 +11,10 @@ const emit = defineEmits<{
 }>()
 
 const localePath = useLocalePath()
-const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 const toast = useToast()
+const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 
 const { candidate, status: fetchStatus, error, refresh } = useCandidate(() => props.candidateId)
-const { formatCandidateName, formatDate } = useOrgSettings()
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
@@ -45,10 +38,6 @@ const transitioningApplicationIds = ref<Set<string>>(new Set())
 function openScheduleInterview(app: { id: string; job: { title: string } }) {
   interviewTargetApp.value = { id: app.id, jobTitle: app.job.title }
   showInterviewSidebar.value = true
-}
-
-function getApplicationTransitions(status: string) {
-  return APPLICATION_STATUS_TRANSITIONS[status] ?? []
 }
 
 async function handleApplicationTransition(app: { id: string }, status: string) {
@@ -76,59 +65,20 @@ async function handleApplicationTransition(app: { id: string }, status: string) 
 // ─── Documents ────────────────────────────────────────────────────────────────
 
 const { downloadDocument, getPreviewUrl } = useDocuments()
-
-// Preview state
-const showPreview = ref(false)
-const previewUrl = ref<string | null>(null)
-const previewFilename = ref('')
-const previewMimeType = ref('')
-const previewDocId = ref<string | null>(null)
-
-const isPdfPreview = computed(() => previewMimeType.value === 'application/pdf')
-
-async function handlePreview(docId: string, mimeType?: string) {
-  if (mimeType && mimeType !== 'application/pdf') {
-    await handleDownload(docId)
-    return
-  }
-  showPreview.value = true
-  previewDocId.value = docId
-  const doc = candidate.value?.documents?.find((d: any) => d.id === docId)
-  previewFilename.value = doc?.originalFilename ?? 'Document'
-  previewMimeType.value = doc?.mimeType ?? 'application/pdf'
-  previewUrl.value = getPreviewUrl(docId)
-}
-
-function closePreview() {
-  showPreview.value = false
-  previewUrl.value = null
-  previewFilename.value = ''
-  previewMimeType.value = ''
-  previewDocId.value = null
-}
-
-async function handleDownload(docId: string) {
-  try {
-    await downloadDocument(docId)
-  } catch {
-    toast.error('Failed to download document')
-  }
-}
-
-// ─── Display helpers ──────────────────────────────────────────────────────────
-
-const genderLabels: Record<string, string> = {
-  male: 'Male',
-  female: 'Female',
-  other: 'Other',
-  prefer_not_to_say: 'Prefer not to say',
-}
-
-const documentTypeLabels: Record<string, string> = {
-  resume: 'Resume',
-  cover_letter: 'Cover Letter',
-  other: 'Other',
-}
+const documentPreview = useDocumentPreview({
+  documents: () => candidate.value?.documents,
+  getPreviewUrl,
+  downloadDocument,
+  onDownloadError: () => toast.error('Failed to download document'),
+})
+const documentPreviewState = computed(() => ({
+  showPreview: documentPreview.showPreview.value,
+  previewUrl: documentPreview.previewUrl.value,
+  previewFilename: documentPreview.previewFilename.value,
+  previewDocId: documentPreview.previewDocId.value,
+  previewError: documentPreview.previewError.value,
+  isPdfPreview: documentPreview.isPdfPreview.value,
+}))
 
 // ─── Body scroll lock + keyboard handling ─────────────────────────────────────
 
@@ -212,84 +162,12 @@ onUnmounted(() => {
           </div>
 
           <template v-else-if="candidate">
-            <!-- Header -->
-            <div class="border border-white/12 bg-white/[0.025] p-5">
-              <p class="mb-2 text-xs font-medium uppercase tracking-wide text-white/38">
-                Candidate profile
-              </p>
-              <h2 class="mb-1 truncate text-2xl font-bold text-white">
-                {{ formatCandidateName(candidate) }}
-              </h2>
-              <div class="flex flex-col gap-1 text-sm text-white/58 sm:flex-row sm:items-center sm:gap-4">
-                <CopyEmailButton :email="candidate.email" class="text-white/68" />
-                <span v-if="candidate.phone" class="inline-flex items-center gap-1 text-white/58">
-                  <Phone class="size-3.5" />
-                  {{ formatPhoneNumber(candidate.phone) }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Contact details -->
-            <div class="border border-white/12 bg-white/[0.025] p-5">
-              <h3 class="mb-3 text-sm font-semibold text-white">Details</h3>
-              <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                <div>
-                  <dt class="text-white/38">Email</dt>
-                  <dd class="font-medium text-white/82">
-                    <CopyEmailButton :email="candidate.email" :show-icon="false" class="text-white/82" />
-                  </dd>
-                </div>
-                <div>
-                  <dt class="text-white/38">Phone</dt>
-                  <dd class="font-medium text-white/82">{{ formatPhoneNumber(candidate.phone) || '—' }}</dd>
-                </div>
-                <div v-if="candidate.gender">
-                  <dt class="text-white/38">Gender</dt>
-                  <dd class="font-medium text-white/82">
-                    {{ genderLabels[candidate.gender] ?? candidate.gender }}
-                  </dd>
-                </div>
-                <div v-if="candidate.dateOfBirth">
-                  <dt class="text-white/38">Date of Birth</dt>
-                  <dd class="font-medium text-white/82">
-                    {{ formatDate(candidate.dateOfBirth) }}
-                  </dd>
-                </div>
-                <div v-if="candidate.displayName">
-                  <dt class="text-white/38">Display Name</dt>
-                  <dd class="font-medium text-white/82">{{ candidate.displayName }}</dd>
-                </div>
-                <div>
-                  <dt class="inline-flex items-center gap-1 text-white/38">
-                    <Calendar class="size-3.5" />
-                    Created
-                  </dt>
-                  <dd class="font-medium text-white/82">
-                    <TimelineDateLink :date="candidate.createdAt">{{ new Date(candidate.createdAt).toLocaleDateString() }}</TimelineDateLink>
-                  </dd>
-                </div>
-                <div>
-                  <dt class="inline-flex items-center gap-1 text-white/38">
-                    <Clock class="size-3.5" />
-                    Updated
-                  </dt>
-                  <dd class="font-medium text-white/82">
-                    <TimelineDateLink :date="candidate.updatedAt">{{ new Date(candidate.updatedAt).toLocaleDateString() }}</TimelineDateLink>
-                  </dd>
-                </div>
-              </dl>
-            </div>
-
-            <!-- Properties -->
-            <div class="border border-white/12 bg-white/[0.025] p-4">
-              <h3 class="mb-2 px-2 text-sm font-semibold text-white">Properties</h3>
-              <PropertyBlock
-                entity-type="candidate"
-                :entity-id="candidateId"
-                :entries="(candidate.properties ?? []) as import('~~/shared/properties').PropertyEntry[]"
-                @refresh="refresh()"
-              />
-            </div>
+            <CandidateDetailsCard
+              :candidate="candidate"
+              :candidate-id="candidateId"
+              surface="drawer"
+              @refresh="refresh()"
+            />
 
             <!-- Tabs -->
             <div class="border-b border-white/10">
@@ -316,166 +194,28 @@ onUnmounted(() => {
             </div>
 
             <!-- Applications tab -->
-            <div v-if="activeTab === 'applications'">
-              <div class="flex justify-end mb-3">
-                <button
-                  class="factory-toolbar-button inline-flex h-10 min-h-10 cursor-pointer items-center gap-1.5 border px-3 py-0 text-xs font-medium transition-colors hover:border-brand-500 hover:bg-brand-500/12 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50"
-                  @click="showApplyModal = true"
-                >
-                  <Plus class="size-3.5" />
-                  Apply to Job
-                </button>
-              </div>
-
-              <div
-                v-if="!candidate.applications?.length"
-                class="border border-white/12 bg-white/[0.025] p-8 text-center"
-              >
-                <Briefcase class="mx-auto mb-2 size-8 text-white/32" />
-                <p class="text-sm text-white/54">No applications yet.</p>
-              </div>
-
-              <div v-else class="space-y-2">
-                <div
-                  v-for="app in candidate.applications"
-                  :key="app.id"
-                  class="group flex flex-col gap-2 border border-white/12 bg-white/[0.025] px-4 py-3 transition-all hover:border-brand-500/70 hover:bg-brand-500/10 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <NuxtLink
-                    :to="localePath(`/dashboard/applications/${app.id}`)"
-                    class="min-w-0 flex-1 block"
-                  >
-                    <h4 class="truncate text-sm font-semibold text-white transition-colors group-hover:text-brand-400">
-                      {{ app.job.title }}
-                    </h4>
-                    <ApplicationTimestampStack
-                      :applied-at="app.createdAt"
-                      class="mt-1 items-start sm:items-start"
-                    />
-                  </NuxtLink>
-                  <div class="flex items-center gap-1.5 shrink-0 sm:ml-3">
-                    <button
-                      v-for="nextStatus in getApplicationTransitions(app.status)"
-                      :key="nextStatus"
-                      class="group/action relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center border text-white transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
-                      :class="getApplicationTransitionButtonClass(nextStatus, 'factory')"
-                      :title="getApplicationTransitionActionLabel(nextStatus)"
-                      :aria-label="getApplicationTransitionActionLabel(nextStatus)"
-                      :disabled="transitioningApplicationIds.has(app.id)"
-                      @click.stop="handleApplicationTransition(app, nextStatus)"
-                    >
-                      <ApplicationTransitionIcon :status="nextStatus" class="size-3.5" />
-                      <span class="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2 translate-y-1 whitespace-nowrap border border-white/12 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-normal text-white opacity-0 shadow-xl shadow-black/40 transition-all duration-150 group-hover/action:translate-y-0 group-hover/action:opacity-100 group-focus-visible/action:translate-y-0 group-focus-visible/action:opacity-100">
-                        {{ getApplicationTransitionActionLabel(nextStatus) }}
-                      </span>
-                    </button>
-                    <button
-                      class="group/action relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center border border-white/16 bg-black text-white/80 transition-all duration-150 hover:border-brand-500 hover:bg-brand-500/12 hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40"
-                      title="Schedule Interview"
-                      aria-label="Schedule Interview"
-                      @click="openScheduleInterview(app)"
-                    >
-                      <Calendar class="size-3.5" />
-                      <span class="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2 translate-y-1 whitespace-nowrap border border-white/12 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-normal text-white opacity-0 shadow-xl shadow-black/40 transition-all duration-150 group-hover/action:translate-y-0 group-hover/action:opacity-100 group-focus-visible/action:translate-y-0 group-focus-visible/action:opacity-100">
-                        Schedule Interview
-                      </span>
-                    </button>
-                    <ApplicationStatusBadge :status="app.status" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <CandidateApplicationsPanel
+              v-if="activeTab === 'applications'"
+              :applications="candidate.applications ?? []"
+              surface="drawer"
+              show-status-transitions
+              :transitioning-application-ids="transitioningApplicationIds"
+              @apply="showApplyModal = true"
+              @schedule="openScheduleInterview"
+              @transition="handleApplicationTransition"
+            />
 
             <!-- Documents tab -->
-            <div v-if="activeTab === 'documents'">
-              <!-- Inline PDF preview -->
-              <template v-if="showPreview">
-                <div class="flex items-center justify-between mb-3">
-                  <button
-                    class="factory-toolbar-button inline-flex h-10 min-h-10 items-center gap-1.5 border px-3 py-0 text-xs font-medium transition-colors hover:bg-white hover:text-black"
-                    @click="closePreview"
-                  >
-                    ← Back to documents
-                  </button>
-                  <div class="flex items-center gap-1">
-                    <button
-                      v-if="previewDocId"
-                      class="factory-toolbar-button p-1.5 text-white/58 hover:text-white transition-colors"
-                      title="Download"
-                      @click="handleDownload(previewDocId!)"
-                    >
-                      <Download class="size-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <div v-if="previewFilename" class="flex items-center gap-2 mb-3">
-                  <FileText class="size-4 shrink-0 text-white/42" />
-                  <span class="truncate text-sm font-medium text-white/78">
-                    {{ previewFilename }}
-                  </span>
-                </div>
-
-                <iframe
-                  v-if="previewUrl && isPdfPreview"
-                  :src="previewUrl"
-                  class="w-full border border-white/12"
-                  style="height: 60vh;"
-                  title="Document preview"
-                />
-              </template>
-
-              <!-- Document list -->
-              <template v-else>
-                <div
-                  v-if="!candidate.documents?.length"
-                  class="border border-white/12 bg-white/[0.025] p-8 text-center"
-                >
-                  <FileText class="mx-auto mb-2 size-8 text-white/32" />
-                  <p class="text-sm text-white/54">No documents yet.</p>
-                </div>
-
-                <div v-else class="space-y-2">
-                  <div
-                    v-for="doc in candidate.documents"
-                    :key="doc.id"
-                    class="group flex items-center justify-between border border-white/12 bg-white/[0.025] px-4 py-3 transition-colors"
-                    :class="doc.mimeType === 'application/pdf' ? 'cursor-pointer hover:border-brand-500/70 hover:bg-brand-500/10' : ''"
-                    @click="doc.mimeType === 'application/pdf' ? handlePreview(doc.id, doc.mimeType) : undefined"
-                  >
-                    <div class="flex items-center gap-3 min-w-0">
-                      <FileText class="size-4 shrink-0" :class="doc.mimeType === 'application/pdf' ? 'text-danger-400' : 'text-white/42'" />
-                      <div class="min-w-0">
-                        <p class="truncate text-sm font-medium text-white/82">
-                          {{ doc.originalFilename }}
-                        </p>
-                        <span class="text-xs text-white/42">
-                          {{ documentTypeLabels[doc.type] ?? doc.type }}
-                          · <TimelineDateLink :date="doc.createdAt">{{ new Date(doc.createdAt).toLocaleDateString() }}</TimelineDateLink>
-                        </span>
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-1 shrink-0" @click.stop>
-                      <button
-                        v-if="doc.mimeType === 'application/pdf'"
-                        class="factory-toolbar-button inline-flex size-9 min-h-9 cursor-pointer items-center justify-center border p-0 text-white/58 transition-colors hover:text-white"
-                        title="Preview PDF"
-                        @click="handlePreview(doc.id, doc.mimeType)"
-                      >
-                        <Eye class="size-4" />
-                      </button>
-                      <button
-                        class="factory-toolbar-button inline-flex size-9 min-h-9 cursor-pointer items-center justify-center border p-0 text-white/58 transition-colors hover:text-white"
-                        title="Download"
-                        @click="handleDownload(doc.id)"
-                      >
-                        <Download class="size-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </template>
-            </div>
+            <CandidateDocumentsPanel
+              v-if="activeTab === 'documents'"
+              :documents="candidate.documents ?? []"
+              :preview="documentPreviewState"
+              surface="drawer"
+              preview-height="60vh"
+              @preview="documentPreview.handlePreview"
+              @download="documentPreview.handleDownload"
+              @close-preview="documentPreview.closePreview"
+            />
           </template>
         </div>
       </aside>

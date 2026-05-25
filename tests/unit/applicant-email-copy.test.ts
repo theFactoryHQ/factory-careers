@@ -19,8 +19,7 @@ describe('applicant email copy behavior', () => {
   it('does not use mailto links for applicant or candidate email displays', () => {
     const applicantEmailFiles = [
       'app/pages/dashboard/candidates/index.vue',
-      'app/pages/dashboard/candidates/[id].vue',
-      'app/components/CandidateDetailDrawer.vue',
+      'app/components/CandidateDetailsCard.vue',
       'app/components/CandidateDetailSidebar.vue',
       'app/components/ApplicationDetailDrawer.vue',
       'app/pages/dashboard/applications/index.vue',
@@ -37,6 +36,16 @@ describe('applicant email copy behavior', () => {
       const source = readProjectFile(path)
 
       expect(source, `${path} should use the shared copy email control`).toContain('CopyEmailButton')
+      expect(source, `${path} should not use mailto links for applicants`).not.toContain('mailto:')
+    }
+
+    for (const path of [
+      'app/pages/dashboard/candidates/[id].vue',
+      'app/components/CandidateDetailDrawer.vue',
+    ]) {
+      const source = readProjectFile(path)
+
+      expect(source, `${path} should use the shared candidate details card`).toContain('CandidateDetailsCard')
       expect(source, `${path} should not use mailto links for applicants`).not.toContain('mailto:')
     }
   })
