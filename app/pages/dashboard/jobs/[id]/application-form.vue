@@ -207,6 +207,12 @@ const requireCoverLetter = ref(false)
 const isSavingRequirements = ref(false)
 const requirementsSaved = ref(false)
 const requirementsError = ref<string | null>(null)
+const requirementsSaveStatus = computed(() => {
+  if (isSavingRequirements.value) return 'Saving...'
+  if (requirementsSaved.value) return 'Requirements saved'
+  if (requirementsError.value) return 'Autosave failed'
+  return 'Automatically saves changes'
+})
 const applicationComplianceEnabled = ref(true)
 const includeEeo = ref(true)
 const includeVeteran = ref(true)
@@ -214,6 +220,12 @@ const includeDisability = ref(true)
 const isSavingCompliance = ref(false)
 const complianceSaved = ref(false)
 const complianceError = ref<string | null>(null)
+const complianceSaveStatus = computed(() => {
+  if (isSavingCompliance.value) return 'Saving...'
+  if (complianceSaved.value) return 'Compliance questions saved'
+  if (complianceError.value) return 'Autosave failed'
+  return 'Automatically saves changes'
+})
 const previewComplianceEnabled = computed(() =>
   applicationComplianceEnabled.value && (includeEeo.value || includeVeteran.value || includeDisability.value),
 )
@@ -230,7 +242,7 @@ watch(job, (j) => {
   }
 }, { immediate: true })
 
-async function saveRequirements() {
+async function autosaveRequirements() {
   isSavingRequirements.value = true
   requirementsError.value = null
   try {
@@ -244,7 +256,13 @@ async function saveRequirements() {
   }
 }
 
-async function saveComplianceQuestions() {
+function toggleRequirement(type: 'resume' | 'coverLetter') {
+  if (type === 'resume') requireResume.value = !requireResume.value
+  else requireCoverLetter.value = !requireCoverLetter.value
+  void autosaveRequirements()
+}
+
+async function autosaveComplianceQuestions() {
   isSavingCompliance.value = true
   complianceError.value = null
   try {
@@ -261,6 +279,11 @@ async function saveComplianceQuestions() {
   } finally {
     isSavingCompliance.value = false
   }
+}
+
+function toggleComplianceEnabled() {
+  applicationComplianceEnabled.value = !applicationComplianceEnabled.value
+  void autosaveComplianceQuestions()
 }
 
 // ─────────────────────────────────────────────
@@ -638,7 +661,7 @@ async function copyTrackingUrl(code: string) {
               ? 'ui-selectable-panel-active'
               : ''"
             :aria-pressed="requireResume"
-            @click="requireResume = !requireResume"
+            @click="toggleRequirement('resume')"
           >
             <span
               v-if="requireResume"
@@ -659,7 +682,7 @@ async function copyTrackingUrl(code: string) {
               ? 'ui-selectable-panel-active'
               : ''"
             :aria-pressed="requireCoverLetter"
-            @click="requireCoverLetter = !requireCoverLetter"
+            @click="toggleRequirement('coverLetter')"
           >
             <span
               v-if="requireCoverLetter"
@@ -674,14 +697,9 @@ async function copyTrackingUrl(code: string) {
             </div>
           </button>
         </div>
-        <button
-          type="button"
-          :disabled="isSavingRequirements"
-          class="ui-button ui-button-primary px-4 py-2 text-sm"
-          @click="saveRequirements"
-        >
-          {{ requirementsSaved ? 'Saved!' : isSavingRequirements ? 'Saving…' : 'Save requirements' }}
-        </button>
+        <p class="text-xs text-surface-400 dark:text-surface-500" role="status">
+          {{ requirementsSaveStatus }}
+        </p>
         <p v-if="requirementsError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">
           {{ requirementsError }}
         </p>
@@ -703,7 +721,7 @@ async function copyTrackingUrl(code: string) {
             class="ui-selectable-panel relative flex w-full items-center gap-3 p-4 text-left transition-colors"
             :class="applicationComplianceEnabled ? 'ui-selectable-panel-active' : ''"
             :aria-pressed="applicationComplianceEnabled"
-            @click="applicationComplianceEnabled = !applicationComplianceEnabled"
+            @click="toggleComplianceEnabled"
           >
             <span
               v-if="applicationComplianceEnabled"
@@ -727,6 +745,7 @@ async function copyTrackingUrl(code: string) {
                 v-model="includeEeo"
                 type="checkbox"
                 class="mt-0.5 size-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600"
+                @change="autosaveComplianceQuestions"
               />
               <span>
                 <span class="block text-sm font-medium text-surface-900 dark:text-surface-100">EEO demographics</span>
@@ -738,6 +757,7 @@ async function copyTrackingUrl(code: string) {
                 v-model="includeVeteran"
                 type="checkbox"
                 class="mt-0.5 size-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600"
+                @change="autosaveComplianceQuestions"
               />
               <span>
                 <span class="block text-sm font-medium text-surface-900 dark:text-surface-100">Veteran status</span>
@@ -749,6 +769,7 @@ async function copyTrackingUrl(code: string) {
                 v-model="includeDisability"
                 type="checkbox"
                 class="mt-0.5 size-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600"
+                @change="autosaveComplianceQuestions"
               />
               <span>
                 <span class="block text-sm font-medium text-surface-900 dark:text-surface-100">Disability status</span>
@@ -758,14 +779,9 @@ async function copyTrackingUrl(code: string) {
           </div>
         </div>
 
-        <button
-          type="button"
-          :disabled="isSavingCompliance"
-          class="ui-button ui-button-primary px-4 py-2 text-sm"
-          @click="saveComplianceQuestions"
-        >
-          {{ complianceSaved ? 'Saved!' : isSavingCompliance ? 'Saving...' : 'Save compliance questions' }}
-        </button>
+        <p class="text-xs text-surface-400 dark:text-surface-500" role="status">
+          {{ complianceSaveStatus }}
+        </p>
         <p v-if="complianceError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">
           {{ complianceError }}
         </p>

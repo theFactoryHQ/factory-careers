@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Globe, Save, Check, Loader2, ChevronDown } from 'lucide-vue-next'
+import { Globe, Check, Loader2 } from 'lucide-vue-next'
 
 definePageMeta({})
 
@@ -43,9 +43,16 @@ watch([nameDisplayFormat, dateFormat], ([nf, df]) => {
 const isSaving = ref(false)
 const saveSuccess = ref(false)
 const saveError = ref('')
+const localizationSaveStatus = computed(() => {
+  if (isSaving.value) return 'Saving...'
+  if (saveSuccess.value) return 'Saved'
+  if (saveError.value) return 'Autosave failed'
+  return 'Automatically saves changes'
+})
 
-async function handleSave() {
+async function autosaveLocalizationSettings() {
   if (!canUpdateOrg.value) return
+  await nextTick()
   isSaving.value = true
   saveError.value = ''
   saveSuccess.value = false
@@ -124,6 +131,7 @@ const previewDateFormatted = computed(() => {
               v-model="localNameFormat"
               :options="nameFormatOptions.map(o => ({ value: o.value, label: `${o.label} - ${o.example}` }))"
               :disabled="!canUpdateOrg"
+              @update:model-value="autosaveLocalizationSettings"
             />
             <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">
               Currently: {{ selectedNameFormatOption.example }}
@@ -140,6 +148,7 @@ const previewDateFormatted = computed(() => {
               v-model="localDateFormat"
               :options="dateFormatOptions.map(o => ({ value: o.value, label: `${o.label} - ${o.example}` }))"
               :disabled="!canUpdateOrg"
+              @update:model-value="autosaveLocalizationSettings"
             />
             <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">
               {{ selectedDateFormatOption.example }}
@@ -171,18 +180,12 @@ const previewDateFormatted = computed(() => {
           {{ saveError }}
         </div>
 
-        <!-- Save button -->
         <div class="flex items-center gap-3">
-          <button
-            :disabled="!canUpdateOrg || isSaving"
-            class="ui-button ui-button-primary disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="handleSave"
-          >
-            <Check v-if="saveSuccess" class="size-4" />
-            <Loader2 v-else-if="isSaving" class="size-4 animate-spin" />
-            <Save v-else class="size-4" />
-            {{ saveSuccess ? 'Saved!' : isSaving ? 'Saving…' : 'Save changes' }}
-          </button>
+          <p class="inline-flex items-center gap-1.5 text-xs text-surface-400" role="status">
+            <Check v-if="saveSuccess" class="size-4 text-success-500" />
+            <Loader2 v-else-if="isSaving" class="size-4 animate-spin text-brand-500" />
+            {{ localizationSaveStatus }}
+          </p>
           <p v-if="!canUpdateOrg" class="text-xs text-surface-400">Only admins and owners can change organization settings.</p>
         </div>
       </div>

@@ -55,7 +55,7 @@ const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicati
   updateStatus: status => updateApplication({ status: status as any }),
 })
 
-const { isEditingNotes, notesInput, isSavingNotes, notesTextarea, startEditNotes, saveNotes } = useEditableApplicationNotes({
+const { isEditingNotes, notesInput, isSavingNotes, notesSaveStatus, notesTextarea, startEditNotes, saveNotes, autosaveNotes } = useEditableApplicationNotes({
   application,
   focusOnEdit: true,
   save: notes => updateApplication({ notes }),
@@ -339,20 +339,18 @@ onUnmounted(() => {
                   rows="4"
                   placeholder="Add notes about this application…"
                   class="w-full border border-white/16 bg-black/45 px-3 py-2 text-sm text-white placeholder:text-white/34 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                  @input="autosaveNotes"
+                  @blur="saveNotes"
                 />
                 <div class="flex items-center gap-2 mt-2">
-                  <button
-                    :disabled="isSavingNotes"
-                    class="factory-button-cta factory-button-premium cursor-pointer px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    @click="saveNotes"
-                  >
-                    {{ isSavingNotes ? 'Saving…' : 'Save' }}
-                  </button>
+                  <p class="min-w-0 flex-1 text-xs text-surface-400" role="status">
+                    {{ notesSaveStatus === 'saving' || isSavingNotes ? 'Saving notes...' : notesSaveStatus === 'saved' ? 'Notes saved' : notesSaveStatus === 'error' ? 'Autosave failed' : 'Automatically saves changes' }}
+                  </p>
                   <button
                     class="factory-toolbar-button cursor-pointer border px-3 py-1.5 text-xs font-medium text-white/78 hover:text-white transition-colors"
                     @click="isEditingNotes = false"
                   >
-                    Cancel
+                    Done
                   </button>
                 </div>
               </div>

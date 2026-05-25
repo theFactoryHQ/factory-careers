@@ -66,4 +66,20 @@ describe('application detail shared actions', () => {
       expect(source, `${path} should call the shared transition handler`).toMatch(/@click=["']transitionToStatus\([^)]*Status[^)]*\)["']/)
     }
   })
+
+  it('autosaves application notes instead of rendering manual save buttons', () => {
+    const editableNotes = readProjectFile('app/composables/useEditableApplicationNotes.ts')
+
+    expect(editableNotes).toContain('autosaveNotes')
+    expect(editableNotes).toContain('notesSaveStatus')
+    expect(editableNotes).toContain('Save notes after typing stops')
+
+    for (const path of applicationDetailSurfaces) {
+      const source = readProjectFile(path)
+
+      expect(source, `${path} should use the autosave note handler`).toContain('@input="autosaveNotes"')
+      expect(source, `${path} should surface autosave status`).toContain('notesSaveStatus')
+      expect(source, `${path} should not render the old manual notes save label`).not.toContain("{{ isSavingNotes ? 'Saving…' : 'Save' }}")
+    }
+  })
 })

@@ -88,4 +88,19 @@ describe('application form requirement cards', () => {
     expect(aiPage.indexOf('<template v-if="job && criteriaFetchStatus !== \'pending\'">')).toBeLessThan(aiPage.indexOf('Failed to load job.'))
     expect(aiPage).toContain('jobFetchStatus !== \'pending\' && !job && jobError')
   })
+
+  it('autosaves low-risk application form toggles without separate save buttons', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
+
+    expect(source).toContain('autosaveRequirements')
+    expect(source).toContain('autosaveComplianceQuestions')
+    expect(source).toContain('@click="toggleRequirement(\'resume\')"')
+    expect(source).toContain('@click="toggleRequirement(\'coverLetter\')"')
+    expect(source).toContain('@click="toggleComplianceEnabled"')
+    expect(source).toContain('@change="autosaveComplianceQuestions"')
+    expect(source).toContain('requirementsSaveStatus')
+    expect(source).toContain('complianceSaveStatus')
+    expect(source).not.toContain('Save requirements')
+    expect(source).not.toContain('Save compliance questions')
+  })
 })
