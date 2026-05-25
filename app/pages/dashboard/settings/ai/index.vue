@@ -374,8 +374,12 @@ function formatPrice(p: number | null): string {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
               <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 truncate">{{ c.name }}</h3>
-              <span class="inline-flex items-center gap-1 rounded-full bg-surface-50 dark:bg-surface-800 px-2 py-0.5 text-[11px] font-medium text-surface-700 dark:text-surface-300">
-                {{ providerLabel(c.provider) }}
+              <span
+                class="inline-flex size-6 items-center justify-center rounded border border-surface-200 bg-surface-50 text-surface-700 dark:border-surface-800 dark:bg-surface-900 dark:text-surface-300"
+                :title="providerLabel(c.provider)"
+                :aria-label="providerLabel(c.provider)"
+              >
+                <AiProviderLogo :provider="c.provider" class="max-h-3.5 max-w-4" />
               </span>
               <span
                 v-if="c.isDefaultChatbot"
