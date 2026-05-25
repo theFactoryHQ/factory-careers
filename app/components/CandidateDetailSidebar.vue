@@ -10,6 +10,7 @@ import {
   getApplicationTransitionLabel,
 } from '~/utils/status-display'
 import { formatPhoneNumber } from '~/utils/phone-format'
+import { formatResponseValue } from '~/utils/application-response-format'
 
 const props = defineProps<{
   applicationId: string
@@ -78,70 +79,44 @@ watch(candidateId, (id) => {
 
 const documents = computed(() => candidateData.value?.documents ?? [])
 
-// ─────────────────────────────────────────────
-// Status transitions
-// ─────────────────────────────────────────────
-import { APPLICATION_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
+async function updateApplicationStatus(status: string) {
+  await $fetch(`/api/applications/${props.applicationId}` as string, {
+    method: 'PATCH',
+    body: { status },
+  })
+}
 
-const allowedTransitions = computed(() => {
-  if (!application.value) return []
-  return APPLICATION_STATUS_TRANSITIONS[application.value.status] ?? []
-})
+async function updateApplicationNotes(notes: string | null) {
+  await $fetch(`/api/applications/${props.applicationId}` as string, {
+    method: 'PATCH',
+    body: { notes },
+  })
+}
 
-const isTransitioning = ref(false)
-
-async function handleTransition(newStatus: string) {
-  isTransitioning.value = true
-  try {
-    await $fetch(`/api/applications/${props.applicationId}`, {
-      method: 'PATCH',
-      body: { status: newStatus },
-    })
+const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicationStatusActions({
+  application,
+  updateStatus: updateApplicationStatus,
+  trackTransition: ({ fromStatus, toStatus }) => {
     track('sidebar_status_changed', {
       application_id: props.applicationId,
-      from_status: application.value?.status,
-      to_status: newStatus,
+      from_status: fromStatus,
+      to_status: toStatus,
     })
+  },
+  afterTransition: async () => {
     await refresh()
     emit('updated')
-  } catch (err: any) {
-    if (handlePreviewReadOnlyError(err)) return
-    toast.error('Failed to update status', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
-  } finally {
-    isTransitioning.value = false
-  }
-}
+  },
+})
 
-// ─────────────────────────────────────────────
-// Notes editing
-// ─────────────────────────────────────────────
-
-const isEditingNotes = ref(false)
-const notesInput = ref('')
-const isSavingNotes = ref(false)
-
-function startEditNotes() {
-  notesInput.value = application.value?.notes ?? ''
-  isEditingNotes.value = true
-}
-
-async function saveNotes() {
-  isSavingNotes.value = true
-  try {
-    await $fetch(`/api/applications/${props.applicationId}`, {
-      method: 'PATCH',
-      body: { notes: notesInput.value || null },
-    })
+const { isEditingNotes, notesInput, isSavingNotes, startEditNotes, saveNotes } = useEditableApplicationNotes({
+  application,
+  save: updateApplicationNotes,
+  afterSave: async () => {
     await refresh()
     emit('updated')
-    isEditingNotes.value = false
-  } catch (err: any) {
-    if (handlePreviewReadOnlyError(err)) return
-    toast.error('Failed to save notes', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
-  } finally {
-    isSavingNotes.value = false
-  }
-}
+  },
+})
 
 // ─────────────────────────────────────────────
 // Documents — upload, download, preview, delete
@@ -394,16 +369,6 @@ watch(() => props.applicationId, () => {
   closePreview()
 })
 
-// ─────────────────────────────────────────────
-// Display helpers
-// ─────────────────────────────────────────────
-
-function formatResponseValue(value: unknown): string {
-  if (Array.isArray(value)) return value.join(', ')
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
-  return String(value ?? '—')
-}
-
 const responsesCount = computed(() => application.value?.responses?.length ?? 0)
 
 // ─────────────────────────────────────────────
@@ -566,7 +531,7 @@ function formatInterviewDate(dateStr: string) {
                   :disabled="isTransitioning"
                   class="ui-button inline-flex items-center gap-1.5 px-3 py-1.5 text-sm disabled:opacity-50"
                   :class="getApplicationTransitionButtonClass(nextStatus)"
-                  @click="handleTransition(nextStatus)"
+                  @click="transitionToStatus(nextStatus)"
                 >
                   <ApplicationTransitionIcon :status="nextStatus" />
                   {{ getApplicationTransitionLabel(nextStatus) }}

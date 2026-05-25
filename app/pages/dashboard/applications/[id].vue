@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { User, Briefcase, Calendar, Clock, FileText, MessageSquare, Brain, Loader2 } from 'lucide-vue-next'
-import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 import {
   getApplicationTransitionActionLabel,
   getApplicationTransitionButtonClass,
 } from '~/utils/status-display'
 import { formatPhoneNumber } from '~/utils/phone-format'
+import { formatResponseValue } from '~/utils/application-response-format'
 
 definePageMeta({
   layout: 'dashboard',
@@ -14,8 +14,6 @@ definePageMeta({
 
 const route = useRoute()
 const applicationId = route.params.id as string
-const { handlePreviewReadOnlyError } = usePreviewReadOnly()
-const toast = useToast()
 
 type ApplicationScoresResponse = {
   compositeScore: number | null
@@ -64,17 +62,6 @@ useSeoMeta({
   ),
 })
 
-// ─────────────────────────────────────────────
-// Status transitions
-// ─────────────────────────────────────────────
-import { APPLICATION_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
-
-const allowedTransitions = computed(() => {
-  if (!application.value) return []
-  return APPLICATION_STATUS_TRANSITIONS[application.value.status] ?? []
-})
-
-const isTransitioning = ref(false)
 const showInterviewSidebar = ref(false)
 const scoringSummary = computed(() => {
   const summary = scoringData.value?.latestRun?.summary
@@ -88,46 +75,16 @@ const scoringSummaryFallback = computed(() => {
   return 'Run analysis to generate an AI scoring summary.'
 })
 
-async function handleTransition(newStatus: string) {
-  isTransitioning.value = true
-  try {
-    await updateApplication({ status: newStatus as any })
-  } catch (err: any) {
-    if (handlePreviewReadOnlyError(err)) return
-    toast.error('Failed to update status', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
-  } finally {
-    isTransitioning.value = false
-  }
-}
+const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicationStatusActions({
+  application,
+  updateStatus: status => updateApplication({ status: status as any }),
+})
 
-// ─────────────────────────────────────────────
-// Notes editing
-// ─────────────────────────────────────────────
-
-const isEditingNotes = ref(false)
-const notesInput = ref('')
-const isSavingNotes = ref(false)
-const notesTextarea = ref<HTMLTextAreaElement | null>(null)
-
-async function startEditNotes() {
-  notesInput.value = application.value?.notes ?? ''
-  isEditingNotes.value = true
-  await nextTick()
-  notesTextarea.value?.focus()
-}
-
-async function saveNotes() {
-  isSavingNotes.value = true
-  try {
-    await updateApplication({ notes: notesInput.value || null })
-    isEditingNotes.value = false
-  } catch (err: any) {
-    if (handlePreviewReadOnlyError(err)) return
-    toast.error('Failed to save notes', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
-  } finally {
-    isSavingNotes.value = false
-  }
-}
+const { isEditingNotes, notesInput, isSavingNotes, notesTextarea, startEditNotes, saveNotes } = useEditableApplicationNotes({
+  application,
+  focusOnEdit: true,
+  save: notes => updateApplication({ notes }),
+})
 
 async function scoreCurrentApplication() {
   if (!application.value) return
@@ -139,15 +96,6 @@ async function scoreCurrentApplication() {
   await refreshScoring()
 }
 
-// ─────────────────────────────────────────────
-// Display helpers
-// ─────────────────────────────────────────────
-
-function formatResponseValue(value: unknown): string {
-  if (Array.isArray(value)) return value.join(', ')
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
-  return String(value ?? '—')
-}
 </script>
 
 <template>
@@ -216,7 +164,7 @@ function formatResponseValue(value: unknown): string {
             :disabled="isTransitioning"
             class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
             :class="getApplicationTransitionButtonClass(nextStatus, 'factory')"
-            @click="handleTransition(nextStatus)"
+            @click="transitionToStatus(nextStatus)"
           >
             <ApplicationTransitionIcon :status="nextStatus" />
             {{ getApplicationTransitionActionLabel(nextStatus) }}
