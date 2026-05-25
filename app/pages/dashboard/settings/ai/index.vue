@@ -359,7 +359,7 @@ function modelTitle(c: AiConfigRow): string {
         <li
           v-for="c in configs"
           :key="c.id"
-          class="ui-panel ui-dashboard-panel overflow-hidden"
+          class="ui-panel ui-dashboard-panel overflow-visible"
         >
           <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4">
           <!-- Identity -->
