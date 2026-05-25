@@ -53,8 +53,8 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: |
-            ghcr.io/${{ github.repository }}
-            name=reqcore/reqcore,enable=${{ vars.DOCKERHUB_USERNAME != '' }}
+            ghcr.io/thefactoryhq/factory-careers
+            name=thefactoryhq/factory-careers,enable=${{ vars.DOCKERHUB_USERNAME != '' }}
           tags: |
             type=edge,branch=main
             type=raw,value=latest,enable={{is_default_branch}}
@@ -87,8 +87,8 @@ jobs:
       # ── 6. Keyless cosign signature (Sigstore OIDC) ────────────────────────
       # Self-hosters can verify the image they pulled was actually built by
       # this workflow with:
-      #   cosign verify ghcr.io/reqcore-inc/reqcore@<digest> \
-      #     --certificate-identity-regexp 'https://github.com/reqcore-inc/reqcore/.github/workflows/docker-publish.yml@.*' \
+      #   cosign verify ghcr.io/thefactoryhq/factory-careers@<digest> \
+      #     --certificate-identity-regexp 'https://github.com/theFactoryHQ/factory-careers/.github/workflows/docker-publish.yml@.*' \
       #     --certificate-oidc-issuer 'https://token.actions.githubusercontent.com'
       - name: Install cosign
         uses: sigstore/cosign-installer@v3
