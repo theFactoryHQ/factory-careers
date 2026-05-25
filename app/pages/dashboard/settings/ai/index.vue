@@ -60,9 +60,7 @@ interface ProviderInfo {
 }
 
 const { allowed: canManageAi, isLoading: isPermissionLoading } = usePermission({ aiConfig: ['create'] })
-const { allowed: canUpdateOrg } = usePermission({ organization: ['update'] })
 const toast = useToast()
-const { analysisContext, updateSettings } = useOrgSettings()
 
 const { data: configsData, refresh: refreshConfigs, status: configsStatus } = useFetch<AiConfigRow[]>('/api/ai-config', {
   key: 'ai-configs',
@@ -77,92 +75,6 @@ const { data: providers } = useFetch<Record<string, ProviderInfo>>('/api/ai-conf
 
 const configs = computed(() => configsData.value ?? [])
 const isLoading = computed(() => configsStatus.value === 'pending' && configs.value.length === 0)
-
-const localAnalysisContext = ref('')
-const lastSavedAnalysisContext = ref('')
-const isSavingAnalysisContext = ref(false)
-const analysisContextSaveStatus = ref<'idle' | 'dirty' | 'saving' | 'saved' | 'error'>('idle')
-const analysisContextSaveError = ref('')
-let analysisContextSaveTimer: ReturnType<typeof setTimeout> | null = null
-
-watch(analysisContext, (context) => {
-  lastSavedAnalysisContext.value = context
-  if (analysisContextSaveStatus.value !== 'dirty' && analysisContextSaveStatus.value !== 'saving') {
-    localAnalysisContext.value = context
-  }
-}, { immediate: true })
-
-watch(localAnalysisContext, () => {
-  scheduleAnalysisContextSave()
-})
-
-watch(canUpdateOrg, (allowed) => {
-  if (allowed) scheduleAnalysisContextSave()
-})
-
-onBeforeUnmount(() => {
-  if (analysisContextSaveTimer) clearTimeout(analysisContextSaveTimer)
-})
-
-function scheduleAnalysisContextSave() {
-  if (analysisContextSaveTimer) clearTimeout(analysisContextSaveTimer)
-
-  analysisContextSaveError.value = ''
-  if (localAnalysisContext.value === lastSavedAnalysisContext.value) {
-    analysisContextSaveStatus.value = 'idle'
-    return
-  }
-
-  analysisContextSaveStatus.value = 'dirty'
-  if (!canUpdateOrg.value) return
-
-  analysisContextSaveTimer = setTimeout(() => {
-    void saveAnalysisContext()
-  }, 900)
-}
-
-async function saveAnalysisContext() {
-  if (!canUpdateOrg.value) return
-  if (analysisContextSaveTimer) {
-    clearTimeout(analysisContextSaveTimer)
-    analysisContextSaveTimer = null
-  }
-
-  const contextToSave = localAnalysisContext.value
-  if (contextToSave === lastSavedAnalysisContext.value) {
-    analysisContextSaveStatus.value = 'idle'
-    return
-  }
-
-  isSavingAnalysisContext.value = true
-  analysisContextSaveStatus.value = 'saving'
-  try {
-    await updateSettings({ analysisContext: contextToSave })
-    lastSavedAnalysisContext.value = contextToSave
-    analysisContextSaveStatus.value = localAnalysisContext.value === contextToSave ? 'saved' : 'dirty'
-    if (localAnalysisContext.value !== contextToSave) scheduleAnalysisContextSave()
-  }
-  catch (err: any) {
-    const message = err?.data?.statusMessage ?? err?.message ?? 'Failed to save org context.'
-    analysisContextSaveStatus.value = 'error'
-    analysisContextSaveError.value = message
-    toast.error('Save failed', { message })
-  }
-  finally {
-    isSavingAnalysisContext.value = false
-  }
-}
-
-const analysisContextSaveLabel = computed(() => {
-  if (!canUpdateOrg.value) return 'View only'
-  switch (analysisContextSaveStatus.value) {
-    case 'dirty': return 'Unsaved changes'
-    case 'saving': return 'Saving...'
-    case 'saved': return 'Saved'
-    case 'error': return analysisContextSaveError.value || 'Save failed'
-    default: return 'Autosaves'
-  }
-})
 
 // ── Per-row actions ──
 const togglingDefaultId = ref<string | null>(null)
@@ -258,42 +170,9 @@ function modelTitle(c: AiConfigRow): string {
       </div>
     </div>
 
-    <section
+    <OrgContextEditor
       v-if="!isPermissionLoading && canManageAi"
-      class="mb-5 space-y-3"
-    >
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Org Context</h2>
-        <p
-          class="inline-flex items-center gap-1.5 text-[11px]"
-          :class="analysisContextSaveStatus === 'error'
-            ? 'text-danger-500 dark:text-danger-400'
-            : analysisContextSaveStatus === 'dirty'
-              ? 'text-warning-500 dark:text-warning-400'
-              : 'text-surface-500 dark:text-surface-400'"
-        >
-          <Loader2 v-if="isSavingAnalysisContext" class="size-3 animate-spin" />
-          <Check v-else-if="analysisContextSaveStatus === 'saved'" class="size-3" />
-          <AlertTriangle v-else-if="analysisContextSaveStatus === 'error'" class="size-3" />
-          {{ analysisContextSaveLabel }}
-        </p>
-      </div>
-      <div class="ui-panel ui-dashboard-panel px-5 py-4 space-y-3">
-        <textarea
-          v-model="localAnalysisContext"
-          :disabled="!canUpdateOrg"
-          rows="5"
-          maxlength="4000"
-          class="ui-field min-h-32 resize-y disabled:opacity-60 disabled:cursor-not-allowed"
-          placeholder="Describe the org, customers, services, and domain signals candidates should be evaluated against."
-        />
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <p class="text-[11px] text-surface-500 dark:text-surface-400">
-            {{ localAnalysisContext.length.toLocaleString() }} / 4,000 characters
-          </p>
-        </div>
-      </div>
-    </section>
+    />
 
     <!-- Permission guard -->
     <div v-if="isPermissionLoading" class="flex items-center justify-center py-12">

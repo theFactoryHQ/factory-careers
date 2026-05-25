@@ -8,6 +8,7 @@ const readProjectFile = (path: string) =>
 describe('organization analysis context settings', () => {
   it('exposes editable organization analysis context through settings', () => {
     const aiSettingsPage = readProjectFile('app/pages/dashboard/settings/ai/index.vue')
+    const orgContextEditor = readProjectFile('app/components/OrgContextEditor.vue')
     const orgSettingsComposable = readProjectFile('app/composables/useOrgSettings.ts')
     const orgSettingsSchema = readProjectFile('server/utils/schemas/orgSettings.ts')
     const getEndpoint = readProjectFile('server/api/org-settings/index.get.ts')
@@ -15,11 +16,13 @@ describe('organization analysis context settings', () => {
     const migration = readProjectFile('server/database/migrations/0042_org_analysis_context.sql')
     const journal = readProjectFile('server/database/migrations/meta/_journal.json')
 
-    expect(aiSettingsPage).toContain('Org Context')
+    expect(aiSettingsPage).toContain('OrgContextEditor')
     expect(aiSettingsPage).toContain('Models')
-    expect(aiSettingsPage).toContain('localAnalysisContext')
-    expect(aiSettingsPage).toContain('analysisContext: contextToSave')
-    expect(aiSettingsPage).toContain('analysisContextSaveLabel')
+    expect(orgContextEditor).toContain('Org Context')
+    expect(orgContextEditor).toContain('localContext')
+    expect(orgContextEditor).toContain('isEditing')
+    expect(orgContextEditor).toContain('analysisContext: contextToSave')
+    expect(orgContextEditor).toContain('characterCount')
     expect(orgSettingsComposable).toContain('analysisContext')
     expect(orgSettingsSchema).toContain('analysisContext: z.string().trim().max(4000).optional()')
     expect(getEndpoint).toContain("analysisContext: settings?.analysisContext ?? ''")
