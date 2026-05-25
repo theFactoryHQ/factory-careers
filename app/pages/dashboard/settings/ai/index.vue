@@ -255,9 +255,6 @@ function modelTitle(c: AiConfigRow): string {
     <div class="mb-6">
       <div>
         <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">AI Configuration</h1>
-        <p class="text-sm text-surface-500 dark:text-surface-400 mt-0.5">
-          Add as many providers and models as you like. Pick which one powers the chatbot and which one scores candidates.
-        </p>
       </div>
     </div>
 
