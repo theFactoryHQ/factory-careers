@@ -85,4 +85,13 @@ describe('signup domain allowlist', () => {
     expect(inviteAccept).toContain('.insert(member)')
     expect(joinApprove).toContain('.insert(member)')
   })
+
+  it('renders the allowlist as add-domain locked chips instead of a textbox', () => {
+    const ssoSettingsPage = readProjectFile('app/pages/dashboard/settings/sso.vue')
+
+    expect(ssoSettingsPage).toContain('Add domain')
+    expect(ssoSettingsPage).toContain('<Lock class="size-3')
+    expect(ssoSettingsPage).not.toContain('<textarea')
+    expect(ssoSettingsPage).toContain('Domains must match a configured SSO provider or an organization-level calendar integration. Only owners can save changes.')
+  })
 })

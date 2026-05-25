@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
   ShieldCheck, Plus, Trash2, Loader2, Check, X, AlertTriangle,
-  ExternalLink, Copy, Globe, KeyRound,
+  ExternalLink, Copy, Globe, KeyRound, Lock, CircleHelp,
 } from 'lucide-vue-next'
 import {
   normalizeSignupDomain,
@@ -60,38 +60,61 @@ const form = reactive({
 // ─────────────────────────────────────────────
 // Signup domain allowlist
 // ─────────────────────────────────────────────
-const localSignupAllowedDomains = ref('')
+const localSignupAllowedDomains = ref<string[]>([])
+const newSignupDomain = ref('')
 const isSavingDomains = ref(false)
 const domainSaveSuccess = ref(false)
 const domainSaveError = ref('')
+const signupDomainPolicyTooltip = 'Domains must match a configured SSO provider or an organization-level calendar integration. Only owners can save changes.'
 
 watch(signupAllowedDomains, (domains) => {
-  localSignupAllowedDomains.value = domains.join('\n')
+  localSignupAllowedDomains.value = [...domains].sort((a, b) => a.localeCompare(b))
 }, { immediate: true })
 
 const parsedSignupAllowedDomains = computed(() => {
-  const domains = localSignupAllowedDomains.value
-    .split(/[\n,]/)
-    .map(normalizeSignupDomain)
-    .filter((domain): domain is string => !!domain)
+  const domains = localSignupAllowedDomains.value.map(normalizeSignupDomain).filter((domain): domain is string => !!domain)
 
   return Array.from(new Set(domains)).sort((a, b) => a.localeCompare(b))
 })
 
-const rawSignupDomainEntries = computed(() =>
-  localSignupAllowedDomains.value
-    .split(/[\n,]/)
-    .map(domain => domain.trim())
-    .filter(Boolean),
-)
+const normalizedNewSignupDomain = computed(() => normalizeSignupDomain(newSignupDomain.value))
 
 const invalidSignupDomains = computed(() =>
-  rawSignupDomainEntries.value.filter(domain => !normalizeSignupDomain(domain)),
+  localSignupAllowedDomains.value.filter(domain => !normalizeSignupDomain(domain)),
 )
 
 const hasTooManySignupDomains = computed(() =>
-  rawSignupDomainEntries.value.length > SIGNUP_ALLOWED_DOMAINS_MAX,
+  localSignupAllowedDomains.value.length > SIGNUP_ALLOWED_DOMAINS_MAX,
 )
+
+const addSignupDomainError = computed(() => {
+  const candidate = newSignupDomain.value.trim()
+  if (!candidate) return ''
+  if (!normalizedNewSignupDomain.value) return `Invalid domain: ${candidate}`
+  if (parsedSignupAllowedDomains.value.includes(normalizedNewSignupDomain.value)) return 'Domain already added'
+  if (parsedSignupAllowedDomains.value.length >= SIGNUP_ALLOWED_DOMAINS_MAX) return `Add ${SIGNUP_ALLOWED_DOMAINS_MAX} or fewer domains.`
+  return ''
+})
+
+const canAddSignupDomain = computed(() =>
+  canManageSignupDomains.value && !!normalizedNewSignupDomain.value && !addSignupDomainError.value,
+)
+
+function handleAddSignupDomain() {
+  domainSaveError.value = ''
+  domainSaveSuccess.value = false
+
+  if (!canAddSignupDomain.value || !normalizedNewSignupDomain.value) return
+
+  localSignupAllowedDomains.value = [...parsedSignupAllowedDomains.value, normalizedNewSignupDomain.value]
+  newSignupDomain.value = ''
+}
+
+function handleRemoveSignupDomain(domain: string) {
+  domainSaveError.value = ''
+  domainSaveSuccess.value = false
+  localSignupAllowedDomains.value = parsedSignupAllowedDomains.value.filter(item => item !== domain)
+}
 
 async function handleSaveSignupDomains() {
   if (!canManageSignupDomains.value) return
@@ -294,9 +317,19 @@ async function copyCallbackUrl(providerId: string) {
           <div class="flex items-center gap-3">
             <ShieldCheck class="size-5 text-brand-400 shrink-0" />
             <div>
-              <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">
-                Signup domain allowlist
-              </h2>
+              <div class="flex items-center gap-2">
+                <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">
+                  Signup domain allowlist
+                </h2>
+                <button
+                  type="button"
+                  class="inline-flex size-6 items-center justify-center rounded-full text-surface-400 transition-colors hover:bg-surface-100 hover:text-surface-700 dark:hover:bg-surface-800 dark:hover:text-surface-200"
+                  :title="signupDomainPolicyTooltip"
+                  :aria-label="signupDomainPolicyTooltip"
+                >
+                  <CircleHelp class="size-4" />
+                </button>
+              </div>
               <p class="text-xs text-surface-500 dark:text-surface-400">
                 Allow known work email domains to create user accounts after the domain is proven by SSO or calendar.
               </p>
@@ -305,20 +338,59 @@ async function copyCallbackUrl(providerId: string) {
         </div>
 
         <div class="ui-settings-panel-body space-y-3">
-          <textarea
-            id="signup-allowed-domains"
-            v-model="localSignupAllowedDomains"
-            :disabled="!canManageSignupDomains"
-            rows="4"
-            class="ui-field min-h-24 resize-y disabled:cursor-not-allowed disabled:opacity-60"
-            placeholder="example.com&#10;factory.dev"
-            aria-label="Signup domain allowlist"
-          />
-          <p class="text-xs text-surface-400 dark:text-surface-500">
-            One domain per line or comma. Matching email domains can create a user account, but organization access still requires SSO provisioning, an invitation, or approval.
+          <form class="flex flex-col gap-2 sm:flex-row" @submit.prevent="handleAddSignupDomain">
+            <label for="signup-allowed-domain-input" class="sr-only">Add signup domain</label>
+            <input
+              id="signup-allowed-domain-input"
+              v-model="newSignupDomain"
+              :disabled="!canManageSignupDomains"
+              class="ui-field h-10 disabled:cursor-not-allowed disabled:opacity-60"
+              placeholder="example.com"
+              inputmode="url"
+              autocomplete="off"
+              aria-label="Add signup domain"
+            >
+            <button
+              type="submit"
+              :disabled="!canAddSignupDomain"
+              class="ui-button ui-button-secondary h-10 shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <Plus class="size-4" />
+              Add domain
+            </button>
+          </form>
+          <p v-if="addSignupDomainError" class="text-xs text-danger-500 dark:text-danger-400">
+            {{ addSignupDomainError }}
           </p>
+          <div
+            class="min-h-11 rounded-lg border border-surface-200 bg-surface-50/70 p-2 dark:border-surface-800 dark:bg-surface-900/50"
+            aria-label="Signup domain allowlist"
+          >
+            <div v-if="parsedSignupAllowedDomains.length" class="flex flex-wrap gap-2">
+              <span
+                v-for="domain in parsedSignupAllowedDomains"
+                :key="domain"
+                class="inline-flex h-7 items-center gap-1.5 rounded-full border border-surface-200 bg-white px-2.5 text-xs font-medium text-surface-700 shadow-sm dark:border-surface-700 dark:bg-surface-800 dark:text-surface-200"
+              >
+                <Lock class="size-3 text-surface-400" />
+                <span>{{ domain }}</span>
+                <button
+                  v-if="canManageSignupDomains"
+                  type="button"
+                  class="-mr-1 inline-flex size-5 items-center justify-center rounded-full text-surface-400 transition-colors hover:bg-surface-100 hover:text-danger-500 dark:hover:bg-surface-700"
+                  :aria-label="`Remove ${domain}`"
+                  @click="handleRemoveSignupDomain(domain)"
+                >
+                  <X class="size-3" />
+                </button>
+              </span>
+            </div>
+            <p v-else class="px-1 py-1.5 text-sm text-surface-400 dark:text-surface-500">
+              No domains added
+            </p>
+          </div>
           <p class="text-xs text-surface-400 dark:text-surface-500">
-            Domains must match a configured SSO provider or an organization-level calendar integration. Only owners can save changes.
+            Matching email domains can create a user account, but organization access still requires SSO provisioning, an invitation, or approval.
           </p>
           <p v-if="invalidSignupDomains.length" class="text-xs text-danger-500 dark:text-danger-400">
             Invalid domain: {{ invalidSignupDomains[0] }}
