@@ -76,7 +76,11 @@ const complianceEnabled = computed(() => !!job.value?.compliance?.enabled)
 const complianceIncludesEeo = computed(() => complianceEnabled.value && !!job.value?.compliance?.includeEeo)
 const complianceIncludesVeteran = computed(() => complianceEnabled.value && !!job.value?.compliance?.includeVeteran)
 const complianceIncludesDisability = computed(() => complianceEnabled.value && !!job.value?.compliance?.includeDisability)
-const hasComplianceStep = computed(() => complianceEnabled.value)
+const hasComplianceStep = computed(() => (
+  complianceIncludesEeo.value ||
+  complianceIncludesVeteran.value ||
+  complianceIncludesDisability.value
+))
 const hasResumeAndQuestionsStep = computed(() => !!(
   job.value?.requireResume ||
   job.value?.requireCoverLetter ||

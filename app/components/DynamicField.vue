@@ -55,6 +55,41 @@ const isProfileLinksQuestion = computed(() => (
   /(portfolio|personal site)/i.test(props.question.label)
 ))
 
+function parseProfileLinksValue(value: unknown) {
+  const next = {
+    linkedin: '',
+    github: '',
+    portfolio: '',
+  }
+
+  if (typeof value !== 'string') return next
+
+  for (const line of value.split(/\r?\n/)) {
+    const match = line.match(/^\s*([^:]+):\s*(.*?)\s*$/)
+    if (!match) continue
+
+    const label = match[1]!.toLowerCase()
+    const url = match[2] ?? ''
+
+    if (label.includes('linkedin')) {
+      next.linkedin = url
+    } else if (label.includes('github')) {
+      next.github = url
+    } else if (label.includes('portfolio') || label.includes('personal')) {
+      next.portfolio = url
+    }
+  }
+
+  return next
+}
+
+function applyProfileLinksFromModel(value: unknown) {
+  const next = parseProfileLinksValue(value)
+  profileLinks.linkedin = next.linkedin
+  profileLinks.github = next.github
+  profileLinks.portfolio = next.portfolio
+}
+
 function syncProfileLinksModel() {
   const lines = [
     ['LinkedIn', profileLinks.linkedin],
@@ -67,6 +102,16 @@ function syncProfileLinksModel() {
 
   model.value = lines.length > 0 ? lines.join('\n') : undefined
 }
+
+watch(
+  [isProfileLinksQuestion, () => model.value],
+  ([isProfileLinks, value]) => {
+    if (isProfileLinks) {
+      applyProfileLinksFromModel(value)
+    }
+  },
+  { immediate: true },
+)
 
 // For multi_select, ensure model value is always an array
 if (props.question.type === 'multi_select' && !Array.isArray(model.value)) {

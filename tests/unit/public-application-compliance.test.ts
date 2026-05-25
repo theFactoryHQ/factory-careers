@@ -81,6 +81,10 @@ describe('public application compliance self-identification', () => {
 
     expect(publicApply).toContain('Voluntary self-identification')
     expect(publicApply).toContain('complianceEnabled')
+    expect(publicApply).toContain('const hasComplianceStep = computed(() => (')
+    expect(publicApply).toContain('complianceIncludesEeo.value ||')
+    expect(publicApply).toContain('complianceIncludesVeteran.value ||')
+    expect(publicApply).toContain('complianceIncludesDisability.value')
     expect(publicApply).toContain('currentApplicationStep')
     expect(publicApply).toContain('goToResumeAndQuestionsStep')
     expect(publicApply).toContain('goToComplianceStep')
@@ -126,6 +130,9 @@ describe('public application compliance self-identification', () => {
     const dynamicField = readProjectFile('app/components/DynamicField.vue')
 
     expect(dynamicField).toContain('isProfileLinksQuestion')
+    expect(dynamicField).toContain('parseProfileLinksValue')
+    expect(dynamicField).toContain('applyProfileLinksFromModel')
+    expect(dynamicField).toContain('watch(')
     expect(dynamicField).toContain("['LinkedIn', profileLinks.linkedin]")
     expect(dynamicField).toContain("['GitHub', profileLinks.github]")
     expect(dynamicField).toContain("['Portfolio', profileLinks.portfolio]")
