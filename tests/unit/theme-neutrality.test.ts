@@ -313,7 +313,7 @@ describe('brand-neutral theme variables', () => {
       {
         path: 'app/pages/onboarding/create-org.vue',
         recipes: [
-          'ui-alert-success',
+          'ui-alert-danger',
           'ui-button-primary',
           'ui-empty-state',
           'ui-field',
@@ -590,11 +590,11 @@ describe('brand-neutral theme variables', () => {
       },
       {
         path: 'app/pages/dashboard/settings/integrations.vue',
-        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted', 'ui-alert-success', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
       },
       {
         path: 'app/pages/dashboard/settings/sso.vue',
-        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted', 'ui-empty-panel', 'ui-field', 'ui-alert-success', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline'],
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted', 'ui-empty-panel', 'ui-field', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline'],
       },
     ]
 
@@ -618,7 +618,6 @@ describe('brand-neutral theme variables', () => {
       'ui-settings-panel-body',
       'ui-list-row',
       'ui-field',
-      'ui-alert-success',
       'ui-button-primary',
       'ui-button-secondary',
       'ui-button-danger',
