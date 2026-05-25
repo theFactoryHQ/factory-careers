@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 import { getFetchArgsForBaseRef, getPrPreflightSteps } from '../../scripts/run-pr-validation-preflight.mjs'
 import { validateConventionalTitle } from '../../scripts/validate-conventional-title.mjs'
+import { getPrTitleValidationStatus } from '../../scripts/validate-current-pr-title.mjs'
 
 describe('git hook preflight checks', () => {
   it('accepts PR-title-compatible conventional commit subjects', () => {
@@ -38,7 +39,29 @@ describe('git hook preflight checks', () => {
 
     expect(packageJson.scripts.prepare).toBe('node scripts/install-git-hooks.mjs')
     expect(readFileSync('.githooks/commit-msg', 'utf8')).toContain('validate-conventional-title.mjs')
+    expect(readFileSync('.githooks/pre-push', 'utf8')).toContain('validate-current-pr-title.mjs')
     expect(readFileSync('.githooks/pre-push', 'utf8')).toContain('preflight:pr')
+  })
+
+  it('skips local PR title validation before a branch has an open PR', () => {
+    expect(getPrTitleValidationStatus('', 'failed to find pull request')).toMatchObject({
+      ok: true,
+      skipped: true,
+    })
+  })
+
+  it('skips local PR title validation when gh is not installed', () => {
+    expect(getPrTitleValidationStatus('', '', { code: 'ENOENT', message: 'spawnSync gh ENOENT' })).toMatchObject({
+      ok: true,
+      skipped: true,
+    })
+  })
+
+  it('rejects the current PR title when it would fail the PR title workflow', () => {
+    expect(getPrTitleValidationStatus('[codex] skip heavyweight CI for draft PRs', '')).toMatchObject({
+      ok: false,
+      skipped: false,
+    })
   })
 
   it('fetches the configured base ref instead of hard-coding main', () => {
