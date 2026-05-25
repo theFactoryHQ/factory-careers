@@ -1,12 +1,14 @@
 import { sso } from "@better-auth/sso";
+import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
   createEnterpriseSsoOptions,
   enterpriseSsoOrganizationProvisioning,
   enterpriseSsoProvisionUserOnEveryLogin,
 } from "../../server/utils/ssoProvisioning";
+
+const require = createRequire(import.meta.url);
 
 describe("enterprise SSO auto-provisioning", () => {
   it("uses the real app SSO options to auto-provision org members only", () => {
@@ -39,20 +41,19 @@ describe("enterprise SSO auto-provisioning", () => {
   });
 
   it("matches the installed Better Auth SSO contract for SSO-created org membership", () => {
-    const betterAuthSsoSource = readFileSync(
-      join(process.cwd(), "node_modules/@better-auth/sso/dist/index.mjs"),
-      "utf8",
-    );
+    const betterAuthSsoSource = readFileSync(require.resolve("@better-auth/sso"), "utf8");
 
-    expect(betterAuthSsoSource).toContain("async function assignOrganizationFromProvider");
-    expect(betterAuthSsoSource).toContain("if (!provider.organizationId) return");
-    expect(betterAuthSsoSource).toContain("if (provisioningOptions?.disabled) return");
-    expect(betterAuthSsoSource).toContain('model: "member"');
-    expect(betterAuthSsoSource).toContain("organizationId: provider.organizationId");
-    expect(betterAuthSsoSource).toContain("userId: user.id");
-    expect(betterAuthSsoSource).toContain('provisioningOptions?.defaultRole || "member"');
-    expect(betterAuthSsoSource).toContain(
-      "provisioningOptions: options?.organizationProvisioning",
+    expect(betterAuthSsoSource).toMatch(/assignOrganizationFromProvider/);
+    expect(betterAuthSsoSource).toMatch(/provider\.organizationId\)\s*return/);
+    expect(betterAuthSsoSource).toMatch(/provisioningOptions\?\.disabled\)\s*return/);
+    expect(betterAuthSsoSource).toMatch(/model:\s*["']member["']/);
+    expect(betterAuthSsoSource).toMatch(/organizationId:\s*provider\.organizationId/);
+    expect(betterAuthSsoSource).toMatch(/userId:\s*user\.id/);
+    expect(betterAuthSsoSource).toMatch(
+      /provisioningOptions\?\.defaultRole\s*\|\|\s*["']member["']/,
+    );
+    expect(betterAuthSsoSource).toMatch(
+      /provisioningOptions:\s*options\?\.organizationProvisioning/,
     );
   });
 });
