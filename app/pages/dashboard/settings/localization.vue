@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Globe, Save, Check, Loader2, ChevronDown } from 'lucide-vue-next'
+import { Globe, Save, Loader2, ChevronDown } from 'lucide-vue-next'
 
 definePageMeta({})
 
@@ -42,12 +42,10 @@ watch([nameDisplayFormat, dateFormat], ([nf, df]) => {
 }, { immediate: true })
 
 const isSaving = ref(false)
-const saveSuccess = ref(false)
 
 async function handleSave() {
   if (!canUpdateOrg.value) return
   isSaving.value = true
-  saveSuccess.value = false
 
   try {
     await updateSettings({
@@ -55,8 +53,7 @@ async function handleSave() {
       dateFormat: localDateFormat.value,
     })
     track('localization_settings_saved')
-    saveSuccess.value = true
-    setTimeout(() => { saveSuccess.value = false }, 3000)
+    toast.success('Localization settings saved')
   }
   catch (err: unknown) {
     toast.error('Failed to save settings', { message: err instanceof Error ? err.message : undefined })
@@ -169,10 +166,9 @@ const previewDateFormatted = computed(() => {
             class="ui-button ui-button-primary disabled:opacity-50 disabled:cursor-not-allowed"
             @click="handleSave"
           >
-            <Check v-if="saveSuccess" class="size-4" />
-            <Loader2 v-else-if="isSaving" class="size-4 animate-spin" />
+            <Loader2 v-if="isSaving" class="size-4 animate-spin" />
             <Save v-else class="size-4" />
-            {{ saveSuccess ? 'Saved!' : isSaving ? 'Saving…' : 'Save changes' }}
+            {{ isSaving ? 'Saving…' : 'Save changes' }}
           </button>
           <p v-if="!canUpdateOrg" class="text-xs text-surface-400">Only admins and owners can change organization settings.</p>
         </div>

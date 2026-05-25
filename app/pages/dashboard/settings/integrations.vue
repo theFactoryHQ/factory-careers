@@ -31,15 +31,12 @@ const sharedCalendarEmail = computed(() => calendarStatus.value.expectedAccountE
 const calendarDestinations = computed(() => calendarStatus.value.destinations ?? [])
 const destinationTypeLabel = (type: string) => type === 'shared_mailbox' ? 'Shared mailbox' : 'User mailbox'
 
-// Handle OAuth callback query params
-const successMessage = ref('')
-
 onMounted(() => {
   const success = route.query.success as string | undefined
   const error = route.query.error as string | undefined
 
   if (success === 'connected') {
-    successMessage.value = `${calendarProviderLabel.value} connected successfully! Your interviews will now sync automatically.`
+    toast.success(`${calendarProviderLabel.value} connected`, 'Your interviews will now sync automatically.')
     refresh()
   }
   else if (error === 'consent_denied') {
@@ -67,7 +64,7 @@ async function handleDisconnect() {
   try {
     await disconnect()
     showDisconnectConfirm.value = false
-    successMessage.value = `${calendarProviderName.value} disconnected.`
+    toast.success(`${calendarProviderName.value} disconnected`)
   }
   catch {
     toast.error('Failed to disconnect', { message: 'Please try again.' })
@@ -84,9 +81,7 @@ async function updateSyncInterviewers(enabled: boolean) {
       body: { calendarSyncInterviewers: enabled },
     })
     await refresh()
-    successMessage.value = enabled
-      ? 'Interviewer calendar sync enabled.'
-      : 'Interviewer calendar sync disabled.'
+    toast.success(enabled ? 'Interviewer calendar sync enabled' : 'Interviewer calendar sync disabled')
   } catch {
     toast.error('Failed to update setting')
   }
@@ -103,25 +98,6 @@ async function updateSyncInterviewers(enabled: boolean) {
         Connect external services to enhance your recruiting workflow.
       </p>
     </div>
-
-    <!-- Success/Error Messages -->
-    <Transition name="fade">
-      <div
-        v-if="successMessage"
-        class="ui-alert ui-alert-success mb-4 flex items-center gap-3"
-      >
-        <Check class="size-4 shrink-0" />
-        <p class="flex-1">
-          {{ successMessage }}
-        </p>
-        <button
-          class="ui-button ui-button-ghost p-1"
-          @click="successMessage = ''"
-        >
-          <X class="size-4" />
-        </button>
-      </div>
-    </Transition>
 
     <!-- Calendar Integration Card -->
     <div class="ui-panel ui-dashboard-panel ui-settings-panel">

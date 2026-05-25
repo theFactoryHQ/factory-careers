@@ -12,8 +12,8 @@ definePageMeta({
 const route = useRoute()
 const localePath = useLocalePath()
 const templateId = route.params.id as string
-const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 const toast = useToast()
+const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 
 const isSystemTemplate = computed(() => templateId.startsWith('system-'))
 
@@ -62,7 +62,6 @@ watchEffect(() => {
 
 // ─── Save ────────────────────────────────────────────────────────
 const isSaving = ref(false)
-const saveSuccess = ref(false)
 
 async function handleSave() {
   if (isSystemTemplate.value) return
@@ -78,9 +77,8 @@ async function handleSave() {
       subject: form.subject.trim(),
       body: form.body.trim(),
     })
-    saveSuccess.value = true
+    toast.success('Template saved')
     hasLoaded.value = false // Re-sync
-    setTimeout(() => { saveSuccess.value = false }, 2000)
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
     toast.error('Failed to save template', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
@@ -233,7 +231,7 @@ useSeoMeta({
               @click="handleSave"
             >
               <Save class="size-4" />
-              {{ isSaving ? 'Saving…' : saveSuccess ? 'Saved!' : 'Save Changes' }}
+              {{ isSaving ? 'Saving…' : 'Save Changes' }}
             </button>
           </template>
         </div>

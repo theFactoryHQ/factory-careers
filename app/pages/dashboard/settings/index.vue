@@ -38,7 +38,6 @@ const orgName = ref(factoryOrgName.value)
 const orgSlug = ref(factoryOrgSlug.value)
 const localDefaultSalaryUnit = ref<'YEAR' | 'MONTH' | 'HOUR'>('YEAR')
 const isSaving = ref(false)
-const saveSuccess = ref(false)
 
 /** Slug must be lowercase alphanumeric + hyphens, 2-48 chars, no leading/trailing hyphen */
 const slugPattern = /^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?$/
@@ -78,7 +77,6 @@ async function handleSaveOrg() {
     return
   }
   isSaving.value = true
-  saveSuccess.value = false
 
   try {
     await authClient.organization.update({
@@ -91,8 +89,7 @@ async function handleSaveOrg() {
       defaultSalaryUnit: localDefaultSalaryUnit.value,
     })
     track('org_settings_saved')
-    saveSuccess.value = true
-    setTimeout(() => { saveSuccess.value = false }, 3000)
+    toast.success('Organization settings saved')
   }
   catch (err: unknown) {
     toast.error('Failed to update organization', { message: err instanceof Error ? err.message : undefined })
@@ -241,16 +238,6 @@ async function handleDeleteOrg() {
             {{ isSaving ? 'Saving…' : 'Save changes' }}
           </button>
 
-          <Transition
-            enter-active-class="transition-opacity duration-300"
-            leave-active-class="transition-opacity duration-300"
-            enter-from-class="opacity-0"
-            leave-to-class="opacity-0"
-          >
-            <span v-if="saveSuccess" class="text-sm text-success-600 dark:text-success-400 font-medium">
-              Changes saved
-            </span>
-          </Transition>
         </div>
 
       </div>
