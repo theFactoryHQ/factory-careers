@@ -336,63 +336,23 @@ function applySettings(s: JobsViewSettings) {
 const {
   views,
   activeViewId,
-  applyView,
-  saveView,
-  updateView,
   deleteView,
   setDefault,
-  clearActive,
-} = useSavedViews<JobsViewSettings>('jobs', defaultSettings)
+  isDirty,
+  onSelectView,
+  onSaveView,
+  onUpdateView,
+} = useSavedViewState<JobsViewSettings>('jobs', defaultSettings, currentSettings, applySettings)
 
 onMounted(() => {
   document.addEventListener('mousedown', handleSortMenuOutside)
   document.addEventListener('keydown', handleSortMenuKeydown)
-  nextTick(() => {
-    if (activeViewId.value) {
-      const s = applyView(activeViewId.value)
-      if (s) applySettings(s)
-    }
-  })
 })
 
 onUnmounted(() => {
   document.removeEventListener('mousedown', handleSortMenuOutside)
   document.removeEventListener('keydown', handleSortMenuKeydown)
 })
-
-function settingsEqual(a: JobsViewSettings, b: JobsViewSettings) {
-  return a.viewMode === b.viewMode
-    && a.sortKey === b.sortKey
-    && a.sortDir === b.sortDir
-    && JSON.stringify(a.statusFilter ?? []) === JSON.stringify(b.statusFilter ?? [])
-    && JSON.stringify(a.typeFilter ?? []) === JSON.stringify(b.typeFilter ?? [])
-    && JSON.stringify(a.experienceFilter ?? []) === JSON.stringify(b.experienceFilter ?? [])
-    && JSON.stringify(a.remoteFilter ?? []) === JSON.stringify(b.remoteFilter ?? [])
-}
-
-const isDirty = computed(() => {
-  const view = views.value.find(v => v.id === activeViewId.value)
-  if (!view) return false
-  return !settingsEqual(currentSettings.value, { ...defaultSettings, ...view.settings })
-})
-
-function onSelectView(id: string | null) {
-  if (id == null) {
-    clearActive()
-    applySettings(defaultSettings)
-    return
-  }
-  const s = applyView(id)
-  if (s) applySettings(s)
-}
-
-function onSaveView(name: string) {
-  saveView(name, currentSettings.value)
-}
-
-function onUpdateView(id: string) {
-  updateView(id, { settings: currentSettings.value })
-}
 
 // ─────────────────────────────────────────────
 // Helpers

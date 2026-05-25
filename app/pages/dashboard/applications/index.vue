@@ -18,8 +18,6 @@ useSeoMeta({
 
 // ── Column visibility ─────────────────────────────────────────────────────────
 
-const COLUMNS_STORAGE_KEY = 'reqcore:columns:applications'
-
 const defaultColumnVisibility = {
   email: true,
   job: true,
@@ -28,7 +26,7 @@ const defaultColumnVisibility = {
   applied: true,
 }
 
-const visibleColumns = ref<Record<string, boolean>>({ ...defaultColumnVisibility })
+const { visibleColumns, mergeColumnVisibility } = useColumnVisibility('applications', defaultColumnVisibility)
 
 const { definitions: propertyDefs } = useProperties({ entityType: () => 'application' })
 
@@ -41,18 +39,6 @@ const applicationColumns = computed(() => [
   { key: 'applied', label: 'Applied' },
   ...propertyDefs.value.map((d) => ({ key: `prop_${d.id}`, label: d.name })),
 ])
-
-onMounted(() => {
-  try {
-    const raw = window.localStorage.getItem(COLUMNS_STORAGE_KEY)
-    if (raw) visibleColumns.value = { ...defaultColumnVisibility, ...JSON.parse(raw) }
-  } catch {}
-})
-
-watch(visibleColumns, (val) => {
-  if (typeof window === 'undefined') return
-  try { window.localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(val)) } catch {}
-}, { deep: true })
 
 const route = useRoute()
 const router = useRouter()
@@ -241,70 +227,19 @@ function applySettings(s: ApplicationsViewSettings) {
   propertyFilters.value = [...(s.propertyFilters ?? [])]
   sortKey.value = s.sortKey
   sortDir.value = s.sortDir
-  if (s.visibleColumns) visibleColumns.value = { ...defaultColumnVisibility, ...s.visibleColumns }
+  if (s.visibleColumns) mergeColumnVisibility(s.visibleColumns)
 }
 
 const {
   views,
   activeViewId,
-  applyView,
-  saveView,
-  updateView,
   deleteView,
   setDefault,
-  clearActive,
-} = useSavedViews<ApplicationsViewSettings>('applications', defaultSettings)
-
-// On first mount, if a default view exists, apply its settings.
-onMounted(() => {
-  nextTick(() => {
-    if (activeViewId.value) {
-      const s = applyView(activeViewId.value)
-      if (s) applySettings(s)
-    }
-  })
-})
-
-function settingsEqual(a: ApplicationsViewSettings, b: ApplicationsViewSettings) {
-  return a.status === b.status
-    && a.jobId === b.jobId
-    && a.sortKey === b.sortKey
-    && a.sortDir === b.sortDir
-    && JSON.stringify(a.propertyFilters ?? []) === JSON.stringify(b.propertyFilters ?? [])
-    && JSON.stringify(a.visibleColumns ?? {}) === JSON.stringify(b.visibleColumns ?? {})
-}
-
-const isDirty = computed(() => {
-  const view = views.value.find(v => v.id === activeViewId.value)
-  if (!view) return false
-  return !settingsEqual(currentSettings.value, { ...defaultSettings, ...view.settings })
-})
-
-// Mark the view inactive (chip-level highlight) when the user manually edits filters.
-watch(currentSettings, () => {
-  if (!activeViewId.value) return
-  if (isDirty.value) {
-    // Keep the chip active but show the dirty marker via SavedViewsBar.
-  }
-}, { deep: true })
-
-function onSelectView(id: string | null) {
-  if (id == null) {
-    clearActive()
-    applySettings(defaultSettings)
-    return
-  }
-  const s = applyView(id)
-  if (s) applySettings(s)
-}
-
-function onSaveView(name: string) {
-  saveView(name, currentSettings.value)
-}
-
-function onUpdateView(id: string) {
-  updateView(id, { settings: currentSettings.value })
-}
+  isDirty,
+  onSelectView,
+  onSaveView,
+  onUpdateView,
+} = useSavedViewState<ApplicationsViewSettings>('applications', defaultSettings, currentSettings, applySettings)
 
 const drawerActiveCount = computed(() =>
   [activeStatus.value, activeJobId.value].filter(Boolean).length + propertyFilters.value.length,
