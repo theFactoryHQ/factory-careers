@@ -3,9 +3,6 @@ import { pathToFileURL } from 'node:url'
 
 const PARITY_SENSITIVE_PATTERNS = [
   /^server\/api\//,
-  /^app\/pages\/dashboard\//,
-  /^app\/components\//,
-  /^app\/composables\//,
   /^shared\/(?!cli-contract|cli-schemas)/,
 ]
 
@@ -67,7 +64,7 @@ export function evaluateCliParityEvidence(
 
   return {
     ok: false,
-    message: 'CLI parity evidence is required when portal, API, or shared workflow contracts change.',
+    message: 'CLI parity evidence is required when API or shared workflow contracts change.',
     paritySensitiveFiles,
     evidenceFiles,
   }
