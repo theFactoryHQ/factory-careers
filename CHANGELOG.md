@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Reqcore are documented here, organized by date.
+All notable changes to Factory Careers are documented here, organized by date. Historical entries before the fork may still link to upstream Reqcore commits.
 
 Format follows [Keep a Changelog](https://keepachangelog.com). Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 

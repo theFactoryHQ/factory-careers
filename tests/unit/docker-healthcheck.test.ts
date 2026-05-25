@@ -18,7 +18,7 @@ describe('Docker app health checks', () => {
     expect(dockerfile).toContain('FROM node:22.22.0-alpine AS runner')
 
     for (const source of [compose, productionCompose]) {
-      expect(source).toContain('container_name: reqcore_app')
+      expect(source).toContain('container_name: factory_careers_app')
       expect(source).toContain('healthcheck:')
       expect(source).toContain('/api/readyz')
       expect(source).toContain('start_period: 60s')

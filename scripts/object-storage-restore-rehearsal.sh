@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Rehearses S3-compatible object storage backup/restore mechanics for Reqcore
+# Rehearses S3-compatible object storage backup/restore mechanics for Factory Careers.
 # document storage. This uses disposable MinIO containers and a sentinel object,
 # so it never touches real candidate documents.
 
-SOURCE_CONTAINER="${SOURCE_CONTAINER:-reqcore-object-rehearsal-source-$$}"
-TARGET_CONTAINER="${TARGET_CONTAINER:-reqcore-object-rehearsal-target-$$}"
-NETWORK="${NETWORK:-reqcore-object-rehearsal-$$}"
+SOURCE_CONTAINER="${SOURCE_CONTAINER:-factory-careers-object-rehearsal-source-$$}"
+TARGET_CONTAINER="${TARGET_CONTAINER:-factory-careers-object-rehearsal-target-$$}"
+NETWORK="${NETWORK:-factory-careers-object-rehearsal-$$}"
 MINIO_IMAGE="${MINIO_IMAGE:-minio/minio:RELEASE.2025-09-07T16-13-09Z}"
 MC_IMAGE="${MC_IMAGE:-minio/mc:RELEASE.2025-08-13T08-35-41Z}"
 CLEANUP_IMAGE="${CLEANUP_IMAGE:-alpine:3.20}"
-MINIO_ROOT_USER="${MINIO_ROOT_USER:-reqcore}"
-MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-reqcore-object-rehearsal-secret}"
-BUCKET="${S3_BUCKET:-reqcore}"
+MINIO_ROOT_USER="${MINIO_ROOT_USER:-factory_careers}"
+MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-factory-careers-object-rehearsal-secret}"
+BUCKET="${S3_BUCKET:-factory-careers}"
 TMP_DIR="$(mktemp -d)"
 BACKUP_DIR="${TMP_DIR}/object-storage-backup"
 SENTINEL_KEY="org-rehearsal/candidate-rehearsal/documents/sentinel.txt"
-SENTINEL_CONTENT="reqcore-object-restore-rehearsal-${RANDOM}-$$"
+SENTINEL_CONTENT="factory-careers-object-restore-rehearsal-${RANDOM}-$$"
 
 cleanup() {
   docker rm -f "$SOURCE_CONTAINER" "$TARGET_CONTAINER" >/dev/null 2>&1 || true

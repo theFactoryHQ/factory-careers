@@ -549,7 +549,7 @@ function main() {
   }
 
   const result = validateProductionEnv(env)
-  console.log(`Reqcore production environment preflight: ${result.ok ? 'PASS' : 'FAIL'}`)
+  console.log(`Factory Careers production environment preflight: ${result.ok ? 'PASS' : 'FAIL'}`)
   console.log(`Source: ${source}`)
 
   const errorText = formatIssues('Errors:', result.errors)
