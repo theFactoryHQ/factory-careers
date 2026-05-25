@@ -115,9 +115,7 @@ describe('P0 tenant-isolation route coverage', () => {
     'server/api/applications/[id]/analyze.post.ts': ['eq(application.id, applicationId)', 'eq(application.organizationId, orgId)'],
     'server/api/applications/[id]/scores.get.ts': ['eq(application.id, applicationId)', 'eq(application.organizationId, orgId)'],
     'server/api/documents/[id].delete.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, orgId)'],
-    'server/api/documents/[id]/download.get.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, orgId)'],
     'server/api/documents/[id]/parse.post.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, orgId)'],
-    'server/api/documents/[id]/preview.get.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, orgId)'],
     'server/api/documents/parse-all.post.ts': ['eq(document.id, doc.id)', 'eq(document.organizationId, orgId)'],
     'server/api/comments/[id].patch.ts': ['eq(comment.id, id)', 'eq(comment.organizationId, orgId)'],
     'server/api/comments/[id].delete.ts': ['eq(comment.id, id)', 'eq(comment.organizationId, orgId)'],
@@ -150,6 +148,21 @@ describe('P0 tenant-isolation route coverage', () => {
       for (const snippet of snippets) {
         expect(source, `${path} missing ${snippet}`).toContain(snippet)
       }
+    }
+  })
+
+  it('keeps shared document stream lookups scoped by active organization', () => {
+    const helperSource = read('server/utils/documentStreaming.ts')
+    expect(helperSource).toContain('eq(document.id, documentId)')
+    expect(helperSource).toContain('eq(document.organizationId, orgId)')
+
+    for (const route of [
+      'server/api/documents/[id]/download.get.ts',
+      'server/api/documents/[id]/preview.get.ts',
+    ]) {
+      const source = read(route)
+      expect(source, `${route} missing shared document lookup`).toContain('loadOrgDocumentForRead(orgId, documentId)')
+      expect(source, `${route} missing document read permission`).toContain("requirePermission(event, { document: ['read'] })")
     }
   })
 
