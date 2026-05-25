@@ -1,8 +1,15 @@
 <script setup lang="ts">
+type LegalParagraph = string | {
+  parts: Array<{
+    text: string
+    href?: string
+  }>
+}
+
 interface LegalSection {
   id: string
   title: string
-  body: string[]
+  body: LegalParagraph[]
 }
 
 interface TableOfContentsItem {
@@ -35,6 +42,12 @@ const tocItems = computed(() => (
 ))
 
 const isActiveLegalLink = (href: string) => route.path === href
+
+const paragraphKey = (paragraph: LegalParagraph) => (
+  typeof paragraph === 'string'
+    ? paragraph
+    : paragraph.parts.map(part => `${part.text}:${part.href ?? ''}`).join('|')
+)
 
 const observeSections = async () => {
   await nextTick()
@@ -216,8 +229,29 @@ onBeforeUnmount(() => {
             </div>
             <div class="px-5 py-5 sm:px-6">
               <div class="space-y-4 text-sm leading-7 text-white/62">
-                <p v-for="paragraph in section.body" :key="paragraph">
-                  {{ paragraph }}
+                <p v-for="paragraph in section.body" :key="paragraphKey(paragraph)">
+                  <template v-if="typeof paragraph === 'string'">
+                    {{ paragraph }}
+                  </template>
+                  <template v-else>
+                    <template v-for="part in paragraph.parts" :key="`${part.text}:${part.href ?? ''}`">
+                      <NuxtLink
+                        v-if="part.href && !part.href.includes(':')"
+                        :to="part.href"
+                        class="font-medium text-brand-500 underline decoration-brand-500 underline-offset-4 transition-colors hover:text-brand-400 hover:decoration-brand-400"
+                      >
+                        {{ part.text }}
+                      </NuxtLink>
+                      <a
+                        v-else-if="part.href"
+                        :href="part.href"
+                        class="font-medium text-brand-500 underline decoration-brand-500 underline-offset-4 transition-colors hover:text-brand-400 hover:decoration-brand-400"
+                      >
+                        {{ part.text }}
+                      </a>
+                      <template v-else>{{ part.text }}</template>
+                    </template>
+                  </template>
                 </p>
               </div>
             </div>

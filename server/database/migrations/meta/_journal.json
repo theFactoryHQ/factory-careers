@@ -295,6 +295,13 @@
       "when": 1779587760000,
       "tag": "0040_application_compliance_response",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1779688000000,
+      "tag": "0041_privacy_requests",
+      "breakpoints": true
     }
   ]
 }
