@@ -35,8 +35,16 @@ test.describe('Invitation Management Flow', () => {
     await emailInput.waitFor({ state: 'visible', timeout: 10_000 })
     await emailInput.fill(INVITED_EMAIL)
 
-    // Submit the invitation
-    await page.getByRole('button', { name: 'Send invite' }).click()
+    // Submit the invitation and wait for the server mutation.
+    const [inviteResponse] = await Promise.all([
+      page.waitForResponse(
+        resp => resp.url().includes('/api/auth/organization/invite-member')
+          && resp.request().method() === 'POST',
+        { timeout: 30_000 },
+      ),
+      page.getByRole('button', { name: 'Send invite' }).click(),
+    ])
+    expect(inviteResponse.status(), `Invite API returned ${inviteResponse.status()}`).toBe(200)
 
     // Wait for success message
     await expect(page.getByText(`Invitation sent to ${INVITED_EMAIL}`)).toBeVisible({ timeout: 15_000 })
@@ -49,7 +57,15 @@ test.describe('Invitation Management Flow', () => {
     // ── Step 3: Resend the invitation ─────────────────────
     const resendButton = page.getByRole('button', { name: 'Resend' })
     await resendButton.waitFor({ state: 'visible', timeout: 10_000 })
-    await resendButton.click()
+    const [resendResponse] = await Promise.all([
+      page.waitForResponse(
+        resp => resp.url().includes('/api/auth/organization/invite-member')
+          && resp.request().method() === 'POST',
+        { timeout: 30_000 },
+      ),
+      resendButton.click(),
+    ])
+    expect(resendResponse.status(), `Resend API returned ${resendResponse.status()}`).toBe(200)
 
     // Wait for resend success message
     await expect(page.getByText(`Invitation resent to ${INVITED_EMAIL}`)).toBeVisible({ timeout: 15_000 })
@@ -58,12 +74,27 @@ test.describe('Invitation Management Flow', () => {
     await expect(page.getByText(INVITED_EMAIL).last()).toBeVisible()
 
     // ── Step 4: Cancel the invitation ─────────────────────
-    const cancelButton = page.getByRole('button', { name: 'Cancel' }).last()
-    await cancelButton.waitFor({ state: 'visible', timeout: 10_000 })
-    await cancelButton.click()
+    const pendingInviteRow = page
+      .locator('.ui-list-row')
+      .filter({ has: page.getByRole('link', { name: INVITED_EMAIL }) })
+    await expect(pendingInviteRow).toBeVisible()
 
-    // Give it time to process
-    await page.waitForTimeout(2000)
+    const cancelButton = pendingInviteRow.getByRole('button', { name: 'Cancel' })
+    await cancelButton.waitFor({ state: 'visible', timeout: 10_000 })
+    await Promise.all([
+      page.waitForResponse(
+        resp => resp.url().includes('/api/auth/organization/cancel-invitation')
+          && resp.request().method() === 'POST'
+          && resp.status() === 200,
+        { timeout: 30_000 },
+      ),
+      page.waitForResponse(
+        resp => resp.url().includes('/api/auth/organization/list-invitations')
+          && resp.status() === 200,
+        { timeout: 30_000 },
+      ),
+      cancelButton.click(),
+    ])
 
     // After cancellation, the invitation should no longer appear
     // (or the pending invitations section could be hidden entirely if empty)

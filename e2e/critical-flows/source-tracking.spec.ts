@@ -1,4 +1,5 @@
-import { test, expect } from '../fixtures'
+import type { Page } from '@playwright/test'
+import { test, expect, selectFactorySelectOption } from '../fixtures'
 
 /**
  * Critical flow: Source tracking query parameters (?ref=, utm_*) propagate
@@ -22,16 +23,35 @@ import { test, expect } from '../fixtures'
 
 const JOB_TITLE = 'Source Tracking Test Job'
 
+async function advanceToSubmitButton(page: Page) {
+  const submitButton = page.getByRole('button', { name: /submit/i })
+
+  for (let step = 0; step < 3; step += 1) {
+    if (await submitButton.isVisible()) {
+      return submitButton
+    }
+
+    const continueButton = page.getByRole('button', { name: 'Continue' }).first()
+    await expect(continueButton).toBeVisible({ timeout: 10_000 })
+    await expect(continueButton).toBeEnabled()
+    await continueButton.click()
+  }
+
+  await expect(submitButton).toBeVisible({ timeout: 10_000 })
+  return submitButton
+}
+
 test.describe('Source Tracking — Query Parameter Propagation', () => {
   test('ref and utm params propagate from job listing → detail → apply → submission', async ({ authenticatedPage, browser }, testInfo) => {
     const page = authenticatedPage
+    const jobTitle = `${JOB_TITLE} ${Date.now()} r${testInfo.retry}`
 
     // ── Step 1: Create and publish a minimal job ───────────────────────────────
 
     await page.goto('/dashboard/jobs/new')
     await page.waitForLoadState('networkidle')
     await page.getByLabel('Job title').waitFor({ state: 'visible', timeout: 15_000 })
-    await page.getByLabel('Job title').fill(JOB_TITLE)
+    await page.getByLabel('Job title').fill(jobTitle)
 
     // Step 1 → Step 2
     await page.locator('form').getByRole('button', { name: 'Save & continue' }).first().waitFor({ state: 'attached', timeout: 10_000 })
@@ -54,14 +74,19 @@ test.describe('Source Tracking — Query Parameter Propagation', () => {
     await expect(page.getByRole('heading', { name: /Ready to go\?/i })).toBeVisible({ timeout: 10_000 })
     const publishButton = page.locator('form').getByRole('button', { name: /Publish & copy link/i })
     await publishButton.waitFor({ state: 'visible', timeout: 10_000 })
-    await publishButton.click()
-
-    await page.waitForResponse((resp) => resp.url().includes('/api/jobs') && [201, 200].includes(resp.status()), { timeout: 30_000 }).catch(() => {})
-    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {})
+    const [publishResponse] = await Promise.all([
+      page.waitForResponse(
+        resp => resp.url().includes('/api/jobs') && ['POST', 'PATCH'].includes(resp.request().method()),
+        { timeout: 30_000 },
+      ),
+      publishButton.click(),
+    ])
+    expect([200, 201], `Publish API returned ${publishResponse.status()}`).toContain(publishResponse.status())
     await expect(page.getByRole('heading', { name: 'Your job is live!' })).toBeVisible({ timeout: 30_000 })
 
     // Capture the slug from the application link
-    const applicationLink = await page.locator('input[readonly]').inputValue()
+    const applicationLink = await page.getByRole('link', { name: 'Preview' }).getAttribute('href') ?? ''
+    expect(applicationLink, 'Preview link must include the public application URL').not.toBe('')
     const slugMatch = applicationLink.match(/\/jobs\/([^/]+)\/apply/)
     const jobSlug = slugMatch?.[1] ?? ''
     expect(jobSlug.length, 'Job slug must not be empty').toBeGreaterThan(0)
@@ -79,7 +104,7 @@ test.describe('Source Tracking — Query Parameter Propagation', () => {
     await candidatePage.waitForLoadState('networkidle')
 
     // Find the job listing and click on it
-    const jobLink = candidatePage.getByRole('link', { name: JOB_TITLE }).first()
+    const jobLink = candidatePage.getByRole('link', { name: jobTitle }).first()
     await expect(jobLink).toBeVisible({ timeout: 15_000 })
     await jobLink.click()
 
@@ -108,10 +133,12 @@ test.describe('Source Tracking — Query Parameter Propagation', () => {
       email: `tracking.test.${Date.now()}.r${testInfo.retry}@example.com`,
     }
 
-    await candidatePage.getByRole('button', { name: /submit/i }).waitFor({ state: 'visible', timeout: 15_000 })
     await candidatePage.getByLabel('First name').fill(APPLICANT.firstName)
     await candidatePage.getByLabel('Last name').fill(APPLICANT.lastName)
     await candidatePage.getByLabel('Email').fill(APPLICANT.email)
+    await selectFactorySelectOption(candidatePage, /Country/, 'United States')
+    await selectFactorySelectOption(candidatePage, /State/, 'California')
+    const submitButton = await advanceToSubmitButton(candidatePage)
 
     // Intercept the POST to verify the body includes source tracking params
     const [applyResponse] = await Promise.all([
@@ -121,7 +148,7 @@ test.describe('Source Tracking — Query Parameter Propagation', () => {
           resp.request().method() === 'POST',
         { timeout: 30_000 },
       ),
-      candidatePage.getByRole('button', { name: /submit/i }).click(),
+      submitButton.click(),
     ])
 
     // Verify 2xx response
@@ -139,7 +166,7 @@ test.describe('Source Tracking — Query Parameter Propagation', () => {
       waitUntil: 'commit',
       timeout: 15_000,
     })
-    await expect(candidatePage.getByRole('heading', { name: 'Application Submitted!' })).toBeVisible()
+    await expect(candidatePage.getByRole('heading', { name: 'Application submitted' })).toBeVisible()
 
     await candidatePage.close()
     await candidateContext.close()

@@ -82,6 +82,18 @@ const CUSTOM_QUESTIONS = [
   },
 ]
 
+const FIELD_TYPE_LABELS: Record<string, string> = {
+  short_text: 'Short Text',
+  long_text: 'Long Text',
+  single_select: 'Single Select',
+  multi_select: 'Multi Select',
+  number: 'Number',
+  date: 'Date',
+  url: 'URL',
+  checkbox: 'Checkbox (Yes/No)',
+  file_upload: 'File Upload',
+}
+
 /**
  * Opens the QuestionForm in the wizard Step 2 and saves a single question.
  * Assumes the "Add Question" trigger button is visible before calling.
@@ -105,8 +117,9 @@ async function addCustomQuestion(
   // Fill the question label
   await page.locator('#q-label').fill(question.label)
 
-  // Select the field type
-  await page.locator('#q-type').selectOption(question.type)
+  // Select the field type from the design-system listbox.
+  await page.locator('#q-type').click()
+  await page.getByRole('option', { name: FIELD_TYPE_LABELS[question.type] ?? question.type }).click()
 
   // For single_select / multi_select: populate the option inputs
   if (question.type === 'single_select' || question.type === 'multi_select') {
@@ -186,16 +199,22 @@ test.describe('Candidate Application Flow — All Custom Question Field Types', 
     // publishChoice defaults to 'publish' → the footer button reads "Publish & copy link"
     const publishButton = page.locator('form').getByRole('button', { name: /Publish & copy link/i })
     await publishButton.waitFor({ state: 'visible', timeout: 10_000 })
-    await publishButton.click()
+    const [publishResponse] = await Promise.all([
+      page.waitForResponse(
+        resp => resp.url().includes('/api/jobs') && ['POST', 'PATCH'].includes(resp.request().method()),
+        { timeout: 30_000 },
+      ),
+      publishButton.click(),
+    ])
+    expect([200, 201], `Publish API returned ${publishResponse.status()}`).toContain(publishResponse.status())
 
-    // Wait for the API response and the success state ("Your job is live!")
-    await page.waitForResponse((resp) => resp.url().includes('/api/jobs') && [201, 200].includes(resp.status()), { timeout: 30_000 }).catch(() => {})
-    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {})
+    // Wait for the success state ("Your job is live!")
     await expect(page.getByRole('heading', { name: 'Your job is live!' })).toBeVisible({ timeout: 30_000 })
 
-    // Read the application link from the readonly input in the success card.
+    // Read the application link from the success card preview action.
     // The link has the form: https://<host>/jobs/<slug>/apply
-    const applicationLink = await page.locator('input[readonly]').inputValue()
+    const applicationLink = await page.getByRole('link', { name: 'Preview' }).getAttribute('href') ?? ''
+    expect(applicationLink, 'Preview link must include the public application URL').not.toBe('')
     expect(applicationLink).toMatch(/\/jobs\/[^/]+\/apply(?:$|[?#])/)
     const slugMatch = applicationLink.match(/\/jobs\/([^/]+)\/apply(?:$|[?#])/)
     const jobSlug = slugMatch?.[1] ?? ''
@@ -229,6 +248,8 @@ test.describe('Candidate Application Flow — All Custom Question Field Types', 
     await candidatePage.getByLabel('Last name').fill(APPLICANT.lastName)
     await candidatePage.getByLabel('Email').fill(APPLICANT.email)
     await candidatePage.getByLabel('Phone').fill(APPLICANT.phone)
+    await candidatePage.getByLabel(/Country/).selectOption({ label: 'United States' })
+    await candidatePage.getByLabel(/State/).selectOption({ label: 'California' })
 
     // ── Fill each custom question field type ──────────────────────────────────
 
@@ -310,7 +331,7 @@ test.describe('Candidate Application Flow — All Custom Question Field Types', 
       waitUntil: 'commit',
       timeout: 15_000,
     })
-    await expect(candidatePage.getByRole('heading', { name: 'Application Submitted!' })).toBeVisible()
+    await expect(candidatePage.getByRole('heading', { name: 'Application submitted' })).toBeVisible()
     await expect(candidatePage.getByText(JOB_TITLE)).toBeVisible()
 
     await candidatePage.close()
@@ -322,7 +343,7 @@ test.describe('Candidate Application Flow — All Custom Question Field Types', 
     // stored and rendered in the dashboard.
 
     // Navigate to the dashboard jobs list
-    await page.goto('/dashboard')
+    await page.goto('/dashboard/jobs')
     await page.waitForLoadState('networkidle')
 
     // Find the job card by title and extract the job ID from its href
@@ -506,15 +527,25 @@ test.describe('Candidate Application — Required Cover Letter Validation', () =
     await expect(page.getByRole('heading', { name: /Ready to go\?/i })).toBeVisible({ timeout: 10_000 })
     await page.locator('form').getByRole('button', { name: /Publish & copy link/i })
       .waitFor({ state: 'visible', timeout: 10_000 })
-    await page.locator('form').getByRole('button', { name: /Publish & copy link/i }).click()
+    const requiredCoverLetterPublishButton = page.locator('form').getByRole('button', { name: /Publish & copy link/i })
+    const [requiredCoverLetterPublishResponse] = await Promise.all([
+      page.waitForResponse(
+        resp => resp.url().includes('/api/jobs') && ['POST', 'PATCH'].includes(resp.request().method()),
+        { timeout: 30_000 },
+      ),
+      requiredCoverLetterPublishButton.click(),
+    ])
+    expect(
+      [200, 201],
+      `Publish API returned ${requiredCoverLetterPublishResponse.status()}`,
+    ).toContain(requiredCoverLetterPublishResponse.status())
 
-    // Wait for the API response and the success state ("Your job is live!")
-    await page.waitForResponse((resp) => resp.url().includes('/api/jobs') && [201, 200].includes(resp.status()), { timeout: 30_000 }).catch(() => {})
-    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {})
+    // Wait for the success state ("Your job is live!")
     await expect(page.getByRole('heading', { name: 'Your job is live!' })).toBeVisible({ timeout: 30_000 })
 
     // Capture the application link
-    const applicationLink = await page.locator('input[readonly]').inputValue()
+    const applicationLink = await page.getByRole('link', { name: 'Preview' }).getAttribute('href') ?? ''
+    expect(applicationLink, 'Preview link must include the public application URL').not.toBe('')
     expect(applicationLink).toMatch(/\/jobs\/[^/]+\/apply(?:$|[?#])/)
 
     // ── Candidate flow ────────────────────────────────────────────────────────

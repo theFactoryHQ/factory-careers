@@ -1,9 +1,7 @@
 import { eq, and } from 'drizzle-orm'
 import { z } from 'zod'
-import { fileTypeFromBuffer } from 'file-type'
 import { candidate, document } from '../../../../database/schema'
 import {
-  ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE,
   MAX_DOCUMENTS_PER_CANDIDATE,
   MIME_TO_EXTENSION,
@@ -12,6 +10,7 @@ import {
 } from '../../../../utils/schemas/document'
 import { parseDocument } from '../../../../utils/resume-parser'
 import { assertUploadContentLength } from '../../../../utils/uploadLimits'
+import { detectAllowedDocumentMimeType } from '../../../../utils/documentMime'
 
 const MULTIPART_OVERHEAD_BYTES = 1024 * 1024
 const MAX_DOCUMENT_UPLOAD_BODY_BYTES = MAX_FILE_SIZE + MULTIPART_OVERHEAD_BYTES
@@ -99,18 +98,8 @@ export default defineEventHandler(async (event) => {
   // 5. Validate MIME type from magic bytes (not just Content-Type header)
   // ─────────────────────────────────────────────
 
-  const detectedType = await fileTypeFromBuffer(fileBuffer)
-  let mimeType = detectedType?.mime
-
-  // file-type can't detect legacy .doc (OLE2 compound documents) — validate magic bytes manually
+  const mimeType = await detectAllowedDocumentMimeType(fileBuffer)
   if (!mimeType) {
-    const OLE2_MAGIC = Buffer.from([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1])
-    if (fileBuffer.length >= 8 && Buffer.compare(fileBuffer.subarray(0, 8), OLE2_MAGIC) === 0) {
-      mimeType = 'application/msword'
-    }
-  }
-
-  if (!mimeType || !ALLOWED_MIME_TYPES.includes(mimeType as typeof ALLOWED_MIME_TYPES[number])) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Invalid file type. Allowed: PDF, DOC, DOCX',
