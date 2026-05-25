@@ -18,6 +18,7 @@ useSeoMeta({
 const { allowed: canManageSso, role: currentOrgRole } = usePermission({ organization: ['update'] })
 const { track } = useTrack()
 const { signupAllowedDomains, updateSettings } = useOrgSettings()
+const toast = useToast()
 const canManageSignupDomains = computed(() => currentOrgRole.value === 'owner')
 const config = useRuntimeConfig()
 const requestUrl = useRequestURL()
@@ -47,7 +48,6 @@ const hasProvider = computed(() => (providers.value?.length ?? 0) > 0)
 const showForm = ref(false)
 const isRegistering = ref(false)
 const formError = ref('')
-const formSuccess = ref('')
 
 const form = reactive({
   providerId: '',
@@ -63,7 +63,6 @@ const form = reactive({
 const localSignupAllowedDomains = ref<string[]>([])
 const newSignupDomain = ref('')
 const isSavingDomains = ref(false)
-const domainSaveSuccess = ref(false)
 const domainSaveError = ref('')
 const signupDomainPolicyTooltip = 'Domains must match a configured SSO provider or an organization-level calendar integration. Only owners can save changes.'
 
@@ -102,7 +101,6 @@ const canAddSignupDomain = computed(() =>
 
 function handleAddSignupDomain() {
   domainSaveError.value = ''
-  domainSaveSuccess.value = false
 
   if (!canAddSignupDomain.value || !normalizedNewSignupDomain.value) return
 
@@ -112,7 +110,6 @@ function handleAddSignupDomain() {
 
 function handleRemoveSignupDomain(domain: string) {
   domainSaveError.value = ''
-  domainSaveSuccess.value = false
   localSignupAllowedDomains.value = parsedSignupAllowedDomains.value.filter(item => item !== domain)
 }
 
@@ -120,7 +117,6 @@ async function handleSaveSignupDomains() {
   if (!canManageSignupDomains.value) return
 
   domainSaveError.value = ''
-  domainSaveSuccess.value = false
 
   if (invalidSignupDomains.value.length > 0) {
     domainSaveError.value = `Invalid domain: ${invalidSignupDomains.value[0]}`
@@ -139,8 +135,7 @@ async function handleSaveSignupDomains() {
       signupAllowedDomains: parsedSignupAllowedDomains.value,
     })
     track('signup_domain_allowlist_saved', { domain_count: parsedSignupAllowedDomains.value.length })
-    domainSaveSuccess.value = true
-    setTimeout(() => { domainSaveSuccess.value = false }, 3000)
+    toast.success('Signup domain allowlist saved')
   }
   catch (err: unknown) {
     const fetchErr = err as { data?: { statusMessage?: string }; message?: string }
@@ -190,7 +185,6 @@ async function handleRegister() {
   if (!canManageSso.value) return
 
   formError.value = ''
-  formSuccess.value = ''
   isRegistering.value = true
 
   try {
@@ -206,7 +200,7 @@ async function handleRegister() {
     })
 
     track('sso_provider_registered')
-    formSuccess.value = 'SSO provider registered successfully. Your team can now sign in with their corporate credentials.'
+    toast.success('SSO provider registered', 'Your team can now sign in with their corporate credentials.')
     resetForm()
     showForm.value = false
     await refreshProviders()
@@ -231,7 +225,7 @@ async function handleDelete(id: string) {
   try {
     await $fetch(`/api/sso/providers/${id}`, { method: 'DELETE' })
     track('sso_provider_deleted')
-    formSuccess.value = 'SSO provider removed.'
+    toast.success('SSO provider removed')
     confirmDeleteId.value = null
     await refreshProviders()
   } catch (err: unknown) {
@@ -272,22 +266,6 @@ async function copyCallbackUrl(providerId: string) {
         Manage trusted identity domains, SSO providers, and work-account access.
       </p>
     </div>
-
-    <!-- Success/Error Messages -->
-    <Transition name="fade">
-      <div
-        v-if="formSuccess"
-        class="ui-alert ui-alert-success mb-4 flex items-center gap-3"
-      >
-        <Check class="size-4 shrink-0" />
-        <p class="flex-1">
-          {{ formSuccess }}
-        </p>
-        <button class="text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-200" @click="formSuccess = ''">
-          <X class="size-4" />
-        </button>
-      </div>
-    </Transition>
 
     <Transition name="fade">
       <div
@@ -409,16 +387,6 @@ async function copyCallbackUrl(providerId: string) {
               <Check v-else class="size-4" />
               {{ isSavingDomains ? 'Saving…' : 'Save domains' }}
             </button>
-            <Transition
-              enter-active-class="transition-opacity duration-300"
-              leave-active-class="transition-opacity duration-300"
-              enter-from-class="opacity-0"
-              leave-to-class="opacity-0"
-            >
-              <span v-if="domainSaveSuccess" class="text-sm text-success-600 dark:text-success-400 font-medium">
-                Domains saved
-              </span>
-            </Transition>
           </div>
           <div v-if="domainSaveError" class="ui-alert ui-alert-danger">
             {{ domainSaveError }}

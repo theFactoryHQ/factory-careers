@@ -17,6 +17,7 @@ const { acceptInviteLink } = useInviteLinks()
 const localePath = useLocalePath()
 const config = useRuntimeConfig()
 const { track } = useTrack()
+const toast = useToast()
 
 onMounted(() => track('onboarding_viewed', { mode: viewMode.value }))
 
@@ -198,7 +199,6 @@ const isSearching = ref(false)
 const searchError = ref('')
 const joinRequestMessage = ref('')
 const isSubmittingRequest = ref(false)
-const requestSuccess = ref('')
 const requestError = ref('')
 const selectedOrg = ref<{ id: string; name: string; slug: string } | null>(null)
 
@@ -239,7 +239,6 @@ async function handleSubmitJoinRequest() {
 
   isSubmittingRequest.value = true
   requestError.value = ''
-  requestSuccess.value = ''
 
   try {
     await $fetch('/api/join-requests', {
@@ -249,7 +248,7 @@ async function handleSubmitJoinRequest() {
         message: joinRequestMessage.value.trim() || undefined,
       },
     })
-    requestSuccess.value = `Join request sent to ${selectedOrg.value.name}! An admin will review it.`
+    toast.success(`Join request sent to ${selectedOrg.value.name}`, 'An admin will review it.')
     track('org_joined', { method: 'search_request' })
     selectedOrg.value = null
     joinRequestMessage.value = ''
@@ -444,11 +443,6 @@ async function handleSubmitJoinRequest() {
 
       <div v-if="requestError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">{{ requestError }}</div>
 
-      <!-- Request success -->
-      <div v-if="requestSuccess" class="ui-alert ui-alert-success mt-2 flex items-center gap-2 text-xs">
-        <Check class="size-4 flex-shrink-0" />
-        {{ requestSuccess }}
-      </div>
     </div>
 
     <!-- Back links -->

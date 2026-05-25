@@ -14,6 +14,7 @@ const { allowed: canUpdateOrg, isLoading: isUpdateOrgPermissionLoading } = usePe
 const { allowed: canDeleteOrg } = usePermission({ organization: ['delete'] })
 const { defaultSalaryUnit, updateSettings } = useOrgSettings()
 const { track } = useTrack()
+const toast = useToast()
 const config = useRuntimeConfig()
 const factoryOrgName = computed(() => String(config.public.factoryOrgName || 'Factory').trim())
 const factoryOrgSlug = computed(() => String(config.public.factoryOrgSlug || 'factory').trim().toLowerCase())
@@ -37,7 +38,6 @@ const orgName = ref(factoryOrgName.value)
 const orgSlug = ref(factoryOrgSlug.value)
 const localDefaultSalaryUnit = ref<'YEAR' | 'MONTH' | 'HOUR'>('YEAR')
 const isSaving = ref(false)
-const saveSuccess = ref(false)
 const saveError = ref('')
 
 /** Slug must be lowercase alphanumeric + hyphens, 2-48 chars, no leading/trailing hyphen */
@@ -79,7 +79,6 @@ async function handleSaveOrg() {
   }
   isSaving.value = true
   saveError.value = ''
-  saveSuccess.value = false
 
   try {
     await authClient.organization.update({
@@ -92,8 +91,7 @@ async function handleSaveOrg() {
       defaultSalaryUnit: localDefaultSalaryUnit.value,
     })
     track('org_settings_saved')
-    saveSuccess.value = true
-    setTimeout(() => { saveSuccess.value = false }, 3000)
+    toast.success('Organization settings saved')
   }
   catch (err: unknown) {
     saveError.value = err instanceof Error ? err.message : 'Failed to update organization'
@@ -244,16 +242,6 @@ async function handleDeleteOrg() {
             {{ isSaving ? 'Saving…' : 'Save changes' }}
           </button>
 
-          <Transition
-            enter-active-class="transition-opacity duration-300"
-            leave-active-class="transition-opacity duration-300"
-            enter-from-class="opacity-0"
-            leave-to-class="opacity-0"
-          >
-            <span v-if="saveSuccess" class="text-sm text-success-600 dark:text-success-400 font-medium">
-              Changes saved
-            </span>
-          </Transition>
         </div>
 
         <div v-if="saveError" class="ui-alert ui-alert-danger">

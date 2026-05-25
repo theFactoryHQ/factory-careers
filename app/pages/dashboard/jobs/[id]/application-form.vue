@@ -124,7 +124,6 @@ const postingSchema = z.object({
 
 const postingErrors = ref<Record<string, string>>({})
 const isSavingPosting = ref(false)
-const postingSaved = ref(false)
 
 async function savePostingDetails() {
   const result = postingSchema.safeParse(form.value)
@@ -156,8 +155,7 @@ async function savePostingDetails() {
       activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue()),
       validThrough: form.value.validThrough ? new Date(form.value.validThrough) : null,
     } as any)
-    postingSaved.value = true
-    setTimeout(() => { postingSaved.value = false }, 2000)
+    toast.success('Application details saved')
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
     toast.error('Failed to save application details', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
@@ -205,14 +203,12 @@ function onSalaryMaxChange(e: Event) {
 const requireResume = ref(false)
 const requireCoverLetter = ref(false)
 const isSavingRequirements = ref(false)
-const requirementsSaved = ref(false)
 const requirementsError = ref<string | null>(null)
 const applicationComplianceEnabled = ref(true)
 const includeEeo = ref(true)
 const includeVeteran = ref(true)
 const includeDisability = ref(true)
 const isSavingCompliance = ref(false)
-const complianceSaved = ref(false)
 const complianceError = ref<string | null>(null)
 const previewComplianceEnabled = computed(() =>
   applicationComplianceEnabled.value && (includeEeo.value || includeVeteran.value || includeDisability.value),
@@ -235,8 +231,7 @@ async function saveRequirements() {
   requirementsError.value = null
   try {
     await updateJob({ requireResume: requireResume.value, requireCoverLetter: requireCoverLetter.value })
-    requirementsSaved.value = true
-    setTimeout(() => { requirementsSaved.value = false }, 2000)
+    toast.success('Application requirements saved')
   } catch (err: any) {
     requirementsError.value = err?.data?.statusMessage ?? 'Failed to save requirements.'
   } finally {
@@ -254,8 +249,7 @@ async function saveComplianceQuestions() {
       includeVeteran: includeVeteran.value,
       includeDisability: includeDisability.value,
     })
-    complianceSaved.value = true
-    setTimeout(() => { complianceSaved.value = false }, 2000)
+    toast.success('Compliance questions saved')
   } catch (err: any) {
     complianceError.value = err?.data?.statusMessage ?? 'Failed to save compliance questions.'
   } finally {
@@ -619,7 +613,7 @@ async function copyTrackingUrl(code: string) {
             class="ui-button ui-button-primary h-10 px-5 text-sm"
           >
             <Save class="size-4" />
-            {{ postingSaved ? 'Saved!' : isSavingPosting ? 'Saving...' : 'Save application details' }}
+            {{ isSavingPosting ? 'Saving...' : 'Save application details' }}
           </button>
         </div>
       </form>
@@ -680,7 +674,7 @@ async function copyTrackingUrl(code: string) {
           class="ui-button ui-button-primary px-4 py-2 text-sm"
           @click="saveRequirements"
         >
-          {{ requirementsSaved ? 'Saved!' : isSavingRequirements ? 'Saving…' : 'Save requirements' }}
+          {{ isSavingRequirements ? 'Saving…' : 'Save requirements' }}
         </button>
         <p v-if="requirementsError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">
           {{ requirementsError }}
@@ -764,7 +758,7 @@ async function copyTrackingUrl(code: string) {
           class="ui-button ui-button-primary px-4 py-2 text-sm"
           @click="saveComplianceQuestions"
         >
-          {{ complianceSaved ? 'Saved!' : isSavingCompliance ? 'Saving...' : 'Save compliance questions' }}
+          {{ isSavingCompliance ? 'Saving...' : 'Save compliance questions' }}
         </button>
         <p v-if="complianceError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">
           {{ complianceError }}

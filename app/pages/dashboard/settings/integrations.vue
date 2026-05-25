@@ -13,6 +13,7 @@ useSeoMeta({
 
 const route = useRoute()
 const { calendarStatus, isConnected, isAvailable, connect, disconnect, refresh, status } = useCalendarIntegration()
+const toast = useToast()
 
 const isDisconnecting = ref(false)
 const showDisconnectConfirm = ref(false)
@@ -31,7 +32,6 @@ const calendarDestinations = computed(() => calendarStatus.value.destinations ??
 const destinationTypeLabel = (type: string) => type === 'shared_mailbox' ? 'Shared mailbox' : 'User mailbox'
 
 // Handle OAuth callback query params
-const successMessage = ref('')
 const errorMessage = ref('')
 
 onMounted(() => {
@@ -39,7 +39,7 @@ onMounted(() => {
   const error = route.query.error as string | undefined
 
   if (success === 'connected') {
-    successMessage.value = `${calendarProviderLabel.value} connected successfully! Your interviews will now sync automatically.`
+    toast.success(`${calendarProviderLabel.value} connected`, 'Your interviews will now sync automatically.')
     refresh()
   }
   else if (error === 'consent_denied') {
@@ -67,7 +67,7 @@ async function handleDisconnect() {
   try {
     await disconnect()
     showDisconnectConfirm.value = false
-    successMessage.value = `${calendarProviderName.value} disconnected.`
+    toast.success(`${calendarProviderName.value} disconnected`)
   }
   catch {
     errorMessage.value = 'Failed to disconnect. Please try again.'
@@ -84,9 +84,7 @@ async function updateSyncInterviewers(enabled: boolean) {
       body: { calendarSyncInterviewers: enabled },
     })
     await refresh()
-    successMessage.value = enabled
-      ? 'Interviewer calendar sync enabled.'
-      : 'Interviewer calendar sync disabled.'
+    toast.success(enabled ? 'Interviewer calendar sync enabled' : 'Interviewer calendar sync disabled')
   } catch {
     errorMessage.value = 'Failed to update setting.'
   }
@@ -104,25 +102,7 @@ async function updateSyncInterviewers(enabled: boolean) {
       </p>
     </div>
 
-    <!-- Success/Error Messages -->
-    <Transition name="fade">
-      <div
-        v-if="successMessage"
-        class="ui-alert ui-alert-success mb-4 flex items-center gap-3"
-      >
-        <Check class="size-4 shrink-0" />
-        <p class="flex-1">
-          {{ successMessage }}
-        </p>
-        <button
-          class="ui-button ui-button-ghost p-1"
-          @click="successMessage = ''"
-        >
-          <X class="size-4" />
-        </button>
-      </div>
-    </Transition>
-
+    <!-- Error Messages -->
     <Transition name="fade">
       <div
         v-if="errorMessage"
