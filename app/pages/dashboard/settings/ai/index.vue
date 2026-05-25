@@ -361,64 +361,71 @@ function modelTitle(c: AiConfigRow): string {
           :key="c.id"
           class="ui-panel ui-dashboard-panel overflow-hidden"
         >
-          <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-4">
+          <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4">
           <!-- Identity -->
           <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex min-w-0 items-center gap-2 overflow-visible">
               <h3
-                class="text-base font-semibold text-surface-900 dark:text-surface-100 truncate"
+                class="min-w-0 truncate text-base font-semibold text-surface-900 dark:text-surface-100"
                 :title="modelTitle(c)"
               >
                 {{ c.name }}
               </h3>
               <span
-                class="inline-flex size-6 items-center justify-center rounded border border-surface-200 bg-surface-50 text-surface-700 dark:border-surface-800 dark:bg-surface-900 dark:text-surface-300"
+                class="inline-flex size-6 shrink-0 items-center justify-center rounded border border-surface-200 bg-surface-50 text-surface-700 dark:border-surface-800 dark:bg-surface-900 dark:text-surface-300"
                 :title="providerLabel(c.provider)"
                 :aria-label="providerLabel(c.provider)"
               >
                 <AiProviderLogo :provider="c.provider" class="max-h-3.5 max-w-4" />
               </span>
               <span
+                v-if="c.baseUrl"
+                class="inline-flex min-w-0 items-center gap-1 text-xs text-surface-500"
+              >
+                <Server class="size-3 shrink-0" />
+                <span class="font-mono truncate max-w-[260px]" :title="c.baseUrl">{{ c.baseUrl }}</span>
+              </span>
+              <span
+                v-if="c.inputPricePer1m != null || c.outputPricePer1m != null"
+                class="group/pricing relative inline-flex size-5 shrink-0 items-center justify-center rounded border border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                tabindex="0"
+                :aria-label="pricingTitle(c)"
+              >
+                <DollarSign class="size-3" />
+                <span
+                  role="tooltip"
+                  class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 translate-y-1 whitespace-nowrap border border-white/12 bg-black px-2 py-1 text-[10px] font-medium text-white opacity-0 shadow-xl shadow-black/40 transition-all duration-150 group-hover/pricing:translate-y-0 group-hover/pricing:opacity-100 group-focus/pricing:translate-y-0 group-focus/pricing:opacity-100"
+                >
+                  {{ pricingTitle(c) }}
+                </span>
+              </span>
+              <span
                 v-if="c.isDefaultChatbot"
-                class="inline-flex items-center gap-1 rounded-full bg-brand-50 dark:bg-brand-950/50 px-2 py-0.5 text-[11px] font-medium text-brand-700 dark:text-brand-300"
+                class="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-50 dark:bg-brand-950/50 px-2 py-0.5 text-[11px] font-medium text-brand-700 dark:text-brand-300"
                 title="Default for the chatbot"
               >
                 <Sparkles class="size-3" /> Chatbot default
               </span>
               <span
                 v-if="c.isDefaultAnalysis"
-                class="inline-flex items-center gap-1 rounded-full bg-warning-50 dark:bg-warning-950/50 px-2 py-0.5 text-[11px] font-medium text-warning-700 dark:text-warning-300"
+                class="inline-flex shrink-0 items-center gap-1 rounded-full bg-warning-50 dark:bg-warning-950/50 px-2 py-0.5 text-[11px] font-medium text-warning-700 dark:text-warning-300"
                 title="Default for candidate analysis"
               >
                 <Star class="size-3" /> Analysis default
               </span>
               <span
                 v-if="!c.hasApiKey"
-                class="inline-flex items-center gap-1 rounded-full bg-danger-50 dark:bg-danger-950/50 px-2 py-0.5 text-[11px] font-medium text-danger-700 dark:text-danger-300"
+                class="inline-flex shrink-0 items-center gap-1 rounded-full bg-danger-50 dark:bg-danger-950/50 px-2 py-0.5 text-[11px] font-medium text-danger-700 dark:text-danger-300"
               >
                 <AlertTriangle class="size-3" /> Missing API key
               </span>
               <span
                 v-if="modelMeta(c)?.stale"
-                class="inline-flex items-center gap-1 bg-brand-500/10 px-2 py-0.5 text-[11px] font-medium text-brand-300"
+                class="inline-flex shrink-0 items-center gap-1 bg-brand-500/10 px-2 py-0.5 text-[11px] font-medium text-brand-300"
                 title="The provider model-list API did not return this configured model on the latest refresh."
               >
                 <AlertTriangle class="size-3" />
                 {{ modelMeta(c)?.replacementId ? `Try ${modelMeta(c)?.replacementId}` : 'Not returned by provider' }}
-              </span>
-            </div>
-            <div class="mt-1 flex items-center gap-2 flex-wrap text-xs text-surface-500">
-              <span v-if="c.baseUrl" class="inline-flex items-center gap-1">
-                <Server class="size-3" />
-                <span class="font-mono truncate max-w-[260px]" :title="c.baseUrl">{{ c.baseUrl }}</span>
-              </span>
-              <span
-                v-if="c.inputPricePer1m != null || c.outputPricePer1m != null"
-                class="inline-flex size-4 items-center justify-center rounded border border-surface-200 bg-surface-50 text-surface-500 dark:border-surface-800 dark:bg-surface-900 dark:text-surface-400"
-                :title="pricingTitle(c)"
-                :aria-label="pricingTitle(c)"
-              >
-                <DollarSign class="size-3" />
               </span>
             </div>
 
