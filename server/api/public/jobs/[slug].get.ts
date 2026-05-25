@@ -1,5 +1,5 @@
 import { eq, and, asc, lte } from 'drizzle-orm'
-import { job, organization } from '../../../database/schema'
+import { job, organization, orgSettings } from '../../../database/schema'
 import { publicJobSlugSchema } from '../../../utils/schemas/publicApplication'
 import { isBuiltInLocationQuestion } from '~~/shared/built-in-application-fields'
 
@@ -16,6 +16,7 @@ export default defineEventHandler(async (event) => {
     where: and(eq(job.slug, slug), eq(job.status, 'open'), lte(job.activeFrom, new Date())),
     columns: {
       id: true,
+      organizationId: true,
       title: true,
       slug: true,
       description: true,
@@ -32,6 +33,10 @@ export default defineEventHandler(async (event) => {
       validThrough: true,
       requireResume: true,
       requireCoverLetter: true,
+      applicationComplianceEnabled: true,
+      includeEeo: true,
+      includeVeteran: true,
+      includeDisability: true,
       createdAt: true,
     },
     with: {
@@ -60,11 +65,40 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Job not found' })
   }
 
+  const settings = await db.query.orgSettings.findFirst({
+    where: eq(orgSettings.organizationId, result.organizationId),
+    columns: {
+      applicationComplianceEnabled: true,
+      includeEeo: true,
+      includeVeteran: true,
+      includeDisability: true,
+    },
+  })
+
+  const complianceEnabled = (settings?.applicationComplianceEnabled ?? true) && result.applicationComplianceEnabled
+  const compliance = {
+    enabled: complianceEnabled,
+    jurisdiction: 'US',
+    formVersion: 'US-SELF-ID-2026-05',
+    includeEeo: complianceEnabled && (settings?.includeEeo ?? true) && result.includeEeo,
+    includeVeteran: complianceEnabled && (settings?.includeVeteran ?? true) && result.includeVeteran,
+    includeDisability: complianceEnabled && (settings?.includeDisability ?? true) && result.includeDisability,
+  }
+
   // Flatten organization name into the response for SEO consumers
-  const { organization: org, ...jobData } = result
+  const {
+    organization: org,
+    organizationId: _organizationId,
+    applicationComplianceEnabled: _applicationComplianceEnabled,
+    includeEeo: _includeEeo,
+    includeVeteran: _includeVeteran,
+    includeDisability: _includeDisability,
+    ...jobData
+  } = result
   return {
     ...jobData,
     questions: jobData.questions.filter((q) => !isBuiltInLocationQuestion(q)),
+    compliance,
     organizationName: org?.name ?? null,
     organizationLogo: org?.logo ?? null,
   }

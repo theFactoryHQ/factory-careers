@@ -54,14 +54,88 @@ const fileUploads = ref<Record<string, File>>({})
 
 // Built-in document uploads (resume) and cover letter text
 const resumeFile = ref<File | null>(null)
+const resumeInputRef = ref<HTMLInputElement | null>(null)
+const isResumeDragging = ref(false)
 const coverLetterText = ref('')
+const complianceForm = ref({
+  sex: '',
+  raceEthnicity: '',
+  veteranStatus: '',
+  disabilityStatus: '',
+})
 
 const isSubmitting = ref(false)
 const errors = ref<Record<string, string>>({})
 const submitError = ref<string | null>(null)
+const currentApplicationStep = ref<1 | 2 | 3>(1)
 
 const labelClass = 'mb-1.5 block text-sm font-medium text-white/70'
 const errorMessageClass = 'mt-1.5 flex items-center gap-1 text-xs text-danger-300'
+
+const complianceEnabled = computed(() => !!job.value?.compliance?.enabled)
+const complianceIncludesEeo = computed(() => complianceEnabled.value && !!job.value?.compliance?.includeEeo)
+const complianceIncludesVeteran = computed(() => complianceEnabled.value && !!job.value?.compliance?.includeVeteran)
+const complianceIncludesDisability = computed(() => complianceEnabled.value && !!job.value?.compliance?.includeDisability)
+const hasComplianceStep = computed(() => complianceEnabled.value)
+const hasResumeAndQuestionsStep = computed(() => !!(
+  job.value?.requireResume ||
+  job.value?.requireCoverLetter ||
+  (job.value?.questions && job.value.questions.length > 0)
+))
+const finalApplicationStep = computed<1 | 2 | 3>(() => {
+  if (hasComplianceStep.value) return 3
+  if (hasResumeAndQuestionsStep.value) return 2
+  return 1
+})
+const normalizedCompliance = computed(() => {
+  if (!complianceEnabled.value) return undefined
+
+  const payload = {
+    sex: complianceIncludesEeo.value ? complianceForm.value.sex : '',
+    raceEthnicity: complianceIncludesEeo.value ? complianceForm.value.raceEthnicity : '',
+    veteranStatus: complianceIncludesVeteran.value ? complianceForm.value.veteranStatus : '',
+    disabilityStatus: complianceIncludesDisability.value ? complianceForm.value.disabilityStatus : '',
+  }
+
+  const normalized = Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => !!value),
+  )
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined
+})
+
+const sexOptions = [
+  { value: '', label: 'No answer selected' },
+  { value: 'female', label: 'Female' },
+  { value: 'male', label: 'Male' },
+  { value: 'prefer_not_to_answer', label: 'Prefer not to answer' },
+]
+
+const raceEthnicityOptions = [
+  { value: '', label: 'No answer selected' },
+  { value: 'hispanic_or_latino', label: 'Hispanic or Latino' },
+  { value: 'white', label: 'White' },
+  { value: 'black_or_african_american', label: 'Black or African American' },
+  { value: 'asian', label: 'Asian' },
+  { value: 'native_hawaiian_or_pacific_islander', label: 'Native Hawaiian or Pacific Islander' },
+  { value: 'american_indian_or_alaska_native', label: 'American Indian or Alaska Native' },
+  { value: 'two_or_more_races', label: 'Two or more races' },
+  { value: 'prefer_not_to_answer', label: 'Prefer not to answer' },
+]
+
+const veteranStatusOptions = [
+  { value: '', label: 'No answer selected' },
+  { value: 'protected_veteran', label: 'I identify as a protected veteran' },
+  { value: 'not_protected_veteran', label: 'I do not identify as a protected veteran' },
+  { value: 'prefer_not_to_answer', label: 'Prefer not to answer' },
+]
+
+const disabilityStatusOptions = [
+  { value: '', label: 'No answer selected' },
+  { value: 'yes', label: 'Yes, I have a disability or have had one in the past' },
+  { value: 'no', label: 'No, I do not have a disability and have not had one in the past' },
+  { value: 'prefer_not_to_answer', label: 'Prefer not to answer' },
+]
 
 function fieldClass(hasError?: boolean) {
   return [
@@ -70,11 +144,25 @@ function fieldClass(hasError?: boolean) {
   ]
 }
 
-function fileDropClass(hasError?: boolean) {
+function fileDropClass(hasError?: boolean, isDragging?: boolean) {
   return [
     'relative flex items-center gap-3 border border-dashed px-4 py-3 transition-colors',
-    hasError ? 'border-danger-500/70 bg-danger-500/10' : 'border-white/14 bg-black/35',
+    hasError
+      ? 'border-danger-500/70 bg-danger-500/10'
+      : isDragging
+        ? 'border-brand-500/70 bg-brand-500/10'
+        : 'border-white/14 bg-black/35',
   ]
+}
+
+function selectClass(hasError?: boolean) {
+  return hasError ? 'is-error' : ''
+}
+
+function clearErrors(predicate: (key: string) => boolean) {
+  for (const key of Object.keys(errors.value)) {
+    if (predicate(key)) delete errors.value[key]
+  }
 }
 
 /** Whether the form has any file_upload type questions OR built-in document fields */
@@ -96,9 +184,39 @@ function handleFileSelected(questionId: string, file: File | null) {
   }
 }
 
-function validate(): boolean {
-  errors.value = {}
-  const maxSize = 10 * 1024 * 1024
+function setResumeFile(file: File | null) {
+  resumeFile.value = file
+  delete errors.value.resume
+}
+
+function handleResumeInputChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  setResumeFile(input.files?.[0] ?? null)
+}
+
+function handleResumeDragOver(event: DragEvent) {
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'
+  isResumeDragging.value = true
+}
+
+function handleResumeDragLeave(event: DragEvent) {
+  const currentTarget = event.currentTarget as HTMLElement
+  if (event.relatedTarget instanceof Node && currentTarget.contains(event.relatedTarget)) return
+  isResumeDragging.value = false
+}
+
+function handleResumeDrop(event: DragEvent) {
+  event.preventDefault()
+  isResumeDragging.value = false
+  setResumeFile(event.dataTransfer?.files?.[0] ?? null)
+  if (resumeInputRef.value) {
+    resumeInputRef.value.value = ''
+  }
+}
+
+function validateContactFields(): boolean {
+  clearErrors((key) => ['firstName', 'lastName', 'email', 'country', 'state'].includes(key))
 
   if (!form.value.firstName.trim()) errors.value.firstName = 'First name is required'
   if (!form.value.lastName.trim()) errors.value.lastName = 'Last name is required'
@@ -113,6 +231,13 @@ function validate(): boolean {
   if (!US_STATE_OPTIONS.some((state) => state.value === form.value.state)) {
     errors.value.state = 'State is required'
   }
+
+  return !['firstName', 'lastName', 'email', 'country', 'state'].some((key) => !!errors.value[key])
+}
+
+function validateResumeAndQuestionsFields(): boolean {
+  clearErrors((key) => key === 'resume' || key === 'coverLetter' || key.startsWith('q-'))
+  const maxSize = 10 * 1024 * 1024
 
   // Validate required resume
   if (job.value?.requireResume && !resumeFile.value) {
@@ -160,12 +285,51 @@ function validate(): boolean {
     }
   }
 
+  return !Object.keys(errors.value).some((key) => key === 'resume' || key === 'coverLetter' || key.startsWith('q-'))
+}
+
+function validate(): boolean {
+  errors.value = {}
+  validateContactFields()
+  validateResumeAndQuestionsFields()
+
   return Object.keys(errors.value).length === 0
+}
+
+function goToResumeAndQuestionsStep() {
+  submitError.value = null
+  if (!validateContactFields()) return
+  currentApplicationStep.value = 2
+}
+
+function goToComplianceStep() {
+  submitError.value = null
+  if (!validateContactFields()) {
+    currentApplicationStep.value = 1
+    return
+  }
+  if (!validateResumeAndQuestionsFields()) {
+    currentApplicationStep.value = 2
+    return
+  }
+  currentApplicationStep.value = 3
+}
+
+function goToPreviousApplicationStep() {
+  submitError.value = null
+  if (currentApplicationStep.value > 1) currentApplicationStep.value--
 }
 
 async function handleSubmit() {
   submitError.value = null
-  if (!validate()) return
+  if (!validate()) {
+    if (['firstName', 'lastName', 'email', 'country', 'state'].some((key) => !!errors.value[key])) {
+      currentApplicationStep.value = 1
+    } else if (Object.keys(errors.value).some((key) => key === 'resume' || key === 'coverLetter' || key.startsWith('q-'))) {
+      currentApplicationStep.value = 2
+    }
+    return
+  }
 
   isSubmitting.value = true
   try {
@@ -220,6 +384,9 @@ async function handleSubmit() {
       if (coverLetterText.value.trim()) {
         formData.append('coverLetterText', coverLetterText.value.trim())
       }
+      if (normalizedCompliance.value) {
+        formData.append('compliance', JSON.stringify(normalizedCompliance.value))
+      }
 
       // Source tracking params
       if (sourceRef) formData.append('ref', sourceRef)
@@ -247,6 +414,7 @@ async function handleSubmit() {
           website: form.value.website, // honeypot
           coverLetterText: coverLetterText.value.trim() || undefined,
           responses: responseArray,
+          compliance: normalizedCompliance.value,
           ref: sourceRef,
           utmSource,
           utmMedium,
@@ -288,7 +456,7 @@ const typeLabels: Record<string, string> = {
 </script>
 
 <template>
-  <div>
+  <div class="factory-public-form">
     <!-- Loading skeleton -->
     <div v-if="fetchStatus === 'pending'" class="animate-pulse space-y-4">
       <div class="h-7 w-48 bg-white/10" />
@@ -364,7 +532,7 @@ const typeLabels: Record<string, string> = {
       </div>
 
       <!-- Application form card -->
-      <div class="overflow-hidden border border-white/10 bg-white/[0.03]">
+      <div class="overflow-visible border border-white/10 bg-white/[0.03]">
         <!-- Card header -->
         <div class="border-b border-white/10 px-6 py-5 sm:px-8">
           <h2 class="text-base font-semibold text-white">Your application</h2>
@@ -391,6 +559,41 @@ const typeLabels: Record<string, string> = {
               <input id="website" v-model="form.website" type="text" tabindex="-1" autocomplete="off" />
             </div>
 
+            <div v-if="finalApplicationStep > 1" class="flex items-center gap-3 border-b border-white/10 pb-5">
+              <div class="flex items-center gap-2">
+                <span
+                  class="flex size-7 items-center justify-center border text-xs font-semibold"
+                  :class="currentApplicationStep === 1 ? 'border-brand-500 bg-brand-500 text-black' : 'border-brand-500/45 bg-brand-500/10 text-brand-300'"
+                >
+                  1
+                </span>
+                <span class="text-sm font-medium text-white">Contact</span>
+              </div>
+              <div class="h-px flex-1 bg-white/10" />
+              <div class="flex items-center gap-2">
+                <span
+                  class="flex size-7 items-center justify-center border text-xs font-semibold"
+                  :class="currentApplicationStep === 2 ? 'border-brand-500 bg-brand-500 text-black' : currentApplicationStep > 2 ? 'border-brand-500/45 bg-brand-500/10 text-brand-300' : 'border-white/14 bg-black/35 text-white/45'"
+                >
+                  2
+                </span>
+                <span class="text-sm font-medium" :class="currentApplicationStep >= 2 ? 'text-white' : 'text-white/45'">Resume & questions</span>
+              </div>
+              <template v-if="hasComplianceStep">
+                <div class="h-px flex-1 bg-white/10" />
+                <div class="flex items-center gap-2">
+                  <span
+                    class="flex size-7 items-center justify-center border text-xs font-semibold"
+                    :class="currentApplicationStep === 3 ? 'border-brand-500 bg-brand-500 text-black' : 'border-white/14 bg-black/35 text-white/45'"
+                  >
+                    3
+                  </span>
+                  <span class="text-sm font-medium" :class="currentApplicationStep === 3 ? 'text-white' : 'text-white/45'">Voluntary self-ID</span>
+                </div>
+              </template>
+              </div>
+
+            <div v-show="currentApplicationStep === 1" class="space-y-5">
             <!-- Name row -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <!-- First Name -->
@@ -472,22 +675,14 @@ const typeLabels: Record<string, string> = {
                 <label for="country" :class="labelClass">
                   Country <span class="text-danger-300">*</span>
                 </label>
-                <select
+                <FactorySelect
                   id="country"
                   v-model="form.country"
-                  autocomplete="country-name"
-                  :class="fieldClass(!!errors.country)"
-                  @change="delete errors.country"
-                >
-                  <option disabled value="">Select country</option>
-                  <option
-                    v-for="country in COUNTRY_OPTIONS"
-                    :key="country.value"
-                    :value="country.value"
-                  >
-                    {{ country.label }}
-                  </option>
-                </select>
+                  :options="COUNTRY_OPTIONS"
+                  placeholder="Select country"
+                  :class="selectClass(!!errors.country)"
+                  @update:model-value="delete errors.country"
+                />
                 <p v-if="errors.country" :class="errorMessageClass">
                   <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   {{ errors.country }}
@@ -498,22 +693,14 @@ const typeLabels: Record<string, string> = {
                 <label for="state" :class="labelClass">
                   State <span class="text-danger-300">*</span>
                 </label>
-                <select
+                <FactorySelect
                   id="state"
                   v-model="form.state"
-                  autocomplete="address-level1"
-                  :class="fieldClass(!!errors.state)"
-                  @change="delete errors.state"
-                >
-                  <option disabled value="">Select state</option>
-                  <option
-                    v-for="state in US_STATE_OPTIONS"
-                    :key="state.value"
-                    :value="state.value"
-                  >
-                    {{ state.label }}
-                  </option>
-                </select>
+                  :options="US_STATE_OPTIONS"
+                  placeholder="Select state"
+                  :class="selectClass(!!errors.state)"
+                  @update:model-value="delete errors.state"
+                />
                 <p v-if="errors.state" :class="errorMessageClass">
                   <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   {{ errors.state }}
@@ -521,16 +708,35 @@ const typeLabels: Record<string, string> = {
               </div>
             </div>
 
+              <div
+                v-if="finalApplicationStep > 1"
+                class="flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-end"
+              >
+                <button
+                  type="button"
+                  class="factory-button-cta factory-button-premium inline-flex h-[48px] min-h-[48px] items-center justify-center gap-2 px-7 py-0 transition-colors"
+                  @click="goToResumeAndQuestionsStep"
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+
             <!-- Resume / Cover Letter uploads -->
+            <div v-show="currentApplicationStep === 2" class="space-y-5">
             <template v-if="job.requireResume || job.requireCoverLetter">
-              <div class="space-y-5 border-t border-white/10 pt-5">
+              <div class="space-y-5">
                 <!-- Resume -->
                 <div v-if="job.requireResume">
                   <label for="resume" :class="labelClass">
                     Resume / CV <span class="text-danger-300">*</span>
                   </label>
                   <div
-                    :class="fileDropClass(!!errors.resume)"
+                    :class="fileDropClass(!!errors.resume, isResumeDragging)"
+                    @dragenter.prevent="isResumeDragging = true"
+                    @dragover="handleResumeDragOver"
+                    @dragleave="handleResumeDragLeave"
+                    @drop="handleResumeDrop"
                   >
                     <svg class="size-5 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
@@ -548,10 +754,11 @@ const typeLabels: Record<string, string> = {
                     </label>
                     <input
                       id="resume"
+                      ref="resumeInputRef"
                       type="file"
                       accept=".pdf,.doc,.docx"
                       class="sr-only"
-                      @change="(e: Event) => { const t = e.target as HTMLInputElement; resumeFile = t.files?.[0] ?? null; delete errors.resume }"
+                      @change="handleResumeInputChange"
                     />
                   </div>
                   <p v-if="errors.resume" :class="errorMessageClass">
@@ -600,8 +807,128 @@ const typeLabels: Record<string, string> = {
               </div>
             </template>
 
+              <div
+                v-if="hasComplianceStep"
+                class="flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-end"
+              >
+                <button
+                  type="button"
+                  class="factory-button-cta factory-button-outline inline-flex h-[48px] min-h-[48px] items-center justify-center gap-2 px-5 py-0 transition-colors"
+                  @click="goToPreviousApplicationStep"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  class="factory-button-cta factory-button-premium inline-flex h-[48px] min-h-[48px] items-center justify-center gap-2 px-7 py-0 transition-colors"
+                  @click="goToComplianceStep"
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+
+            <!-- Voluntary compliance questions -->
+            <section
+              v-if="hasComplianceStep"
+              v-show="currentApplicationStep === 3"
+              class="space-y-5"
+            >
+              <div>
+                <p class="text-sm font-medium text-white">Voluntary self-identification</p>
+                <p class="mt-1 max-w-2xl text-xs leading-5 text-white/46">
+                  Completion of this section is voluntary. Any information you provide is kept confidential, stored separately from your application materials, and used only for equal employment opportunity, affirmative action, reporting, and audit purposes. Hiring decision-makers do not see individual answers, and your decision to answer or not answer will not affect your application.
+                </p>
+              </div>
+
+              <div v-if="complianceIncludesEeo" class="space-y-4">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-[0.14em] text-white/48">EEO demographics</p>
+                  <p class="mt-1.5 text-xs leading-5 text-white/42">
+                    Employers may ask applicants to voluntarily identify race, ethnicity, and sex for EEO reporting and workforce analysis. These answers are reported only in aggregate and are not used to evaluate your qualifications.
+                  </p>
+                </div>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label for="compliance-sex" :class="labelClass">Sex</label>
+                    <FactorySelect
+                      id="compliance-sex"
+                      v-model="complianceForm.sex"
+                      :options="sexOptions"
+                    />
+                  </div>
+
+                  <div>
+                    <label for="compliance-race-ethnicity" :class="labelClass">Race / ethnicity</label>
+                    <FactorySelect
+                      id="compliance-race-ethnicity"
+                      v-model="complianceForm.raceEthnicity"
+                      :options="raceEthnicityOptions"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="complianceIncludesVeteran" class="space-y-3 border-t border-white/10 pt-5">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-[0.14em] text-white/48">Protected veteran status</p>
+                  <p class="mt-1.5 text-xs leading-5 text-white/42">
+                    Some employers, including certain federal contractors, invite applicants to self-identify as protected veterans to support affirmative action obligations and measure outreach effectiveness under VEVRAA. Providing this information is voluntary, confidential, and will not subject you to adverse treatment.
+                  </p>
+                </div>
+                <label for="compliance-veteran-status" :class="labelClass">Veteran status</label>
+                <FactorySelect
+                  id="compliance-veteran-status"
+                  v-model="complianceForm.veteranStatus"
+                  :options="veteranStatusOptions"
+                />
+              </div>
+
+              <div v-if="complianceIncludesDisability" class="space-y-3 border-t border-white/10 pt-5">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-[0.14em] text-white/48">Disability self-identification</p>
+                  <p class="mt-1.5 text-xs leading-5 text-white/42">
+                    Some employers, including certain federal contractors, are required to ask applicants and employees whether they have a disability or have had one in the past. The information helps measure progress toward equal employment opportunity goals for people with disabilities.
+                  </p>
+                </div>
+
+                <details class="border border-white/10 bg-black/25 px-4 py-3 text-xs text-white/46">
+                  <summary class="cursor-pointer text-sm font-medium text-white/72">Why am I being asked?</summary>
+                  <div class="mt-3 space-y-3 leading-5">
+                    <p>
+                      Answering is voluntary. Your answer is confidential, no one who makes hiring decisions will see it, and your decision to answer or not answer will not harm you in any way.
+                    </p>
+                    <p>
+                      A disability generally means a physical or mental impairment or medical condition that substantially limits one or more major life activities. Examples can include cancer, diabetes, epilepsy, autism spectrum disorder, depression, bipolar disorder, PTSD, missing limbs, mobility impairments, blindness or low vision, deafness or serious difficulty hearing, and other conditions.
+                    </p>
+                    <p>
+                      Disability self-identification follows the intent of OFCCP Form CC-305, OMB Control Number 1250-0005.
+                    </p>
+                  </div>
+                </details>
+
+                <label for="compliance-disability-status" :class="labelClass">Disability status</label>
+                <FactorySelect
+                  id="compliance-disability-status"
+                  v-model="complianceForm.disabilityStatus"
+                  :options="disabilityStatusOptions"
+                />
+              </div>
+            </section>
+
             <!-- Submit row -->
-            <div class="flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center">
+            <div
+              v-if="currentApplicationStep === finalApplicationStep"
+              class="flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-end"
+            >
+              <button
+                v-if="finalApplicationStep > 1"
+                type="button"
+                class="factory-button-cta factory-button-outline inline-flex h-[48px] min-h-[48px] items-center justify-center gap-2 px-5 py-0 transition-colors"
+                @click="goToPreviousApplicationStep"
+              >
+                Back
+              </button>
               <button
                 type="submit"
                 :disabled="isSubmitting"
@@ -620,7 +947,6 @@ const typeLabels: Record<string, string> = {
                 </svg>
                 {{ isSubmitting ? 'Submitting…' : 'Submit Application' }}
               </button>
-              <p class="text-xs text-white/42">Your information is kept confidential.</p>
             </div>
           </form>
         </div>

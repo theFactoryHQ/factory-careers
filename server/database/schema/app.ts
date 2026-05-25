@@ -36,6 +36,27 @@ export const genderEnum = pgEnum('gender', ['male', 'female', 'other', 'prefer_n
 export const experienceLevelEnum = pgEnum('experience_level', ['junior', 'mid', 'senior', 'lead'])
 export const nameDisplayFormatEnum = pgEnum('name_display_format', ['first_last', 'last_first'])
 export const dateFormatEnum = pgEnum('date_format', ['mdy', 'dmy', 'ymd'])
+export const complianceSexEnum = pgEnum('compliance_sex', ['male', 'female', 'prefer_not_to_answer'])
+export const complianceRaceEthnicityEnum = pgEnum('compliance_race_ethnicity', [
+  'hispanic_or_latino',
+  'white',
+  'black_or_african_american',
+  'asian',
+  'native_hawaiian_or_pacific_islander',
+  'american_indian_or_alaska_native',
+  'two_or_more_races',
+  'prefer_not_to_answer',
+])
+export const complianceVeteranStatusEnum = pgEnum('compliance_veteran_status', [
+  'protected_veteran',
+  'not_protected_veteran',
+  'prefer_not_to_answer',
+])
+export const complianceDisabilityStatusEnum = pgEnum('compliance_disability_status', [
+  'yes',
+  'no',
+  'prefer_not_to_answer',
+])
 
 // ─────────────────────────────────────────────
 // ATS Domain Tables — ALL scoped by organizationId
@@ -67,6 +88,10 @@ export const job = pgTable('job', {
   // ── Application form settings ──
   requireResume: boolean('require_resume').notNull().default(false),
   requireCoverLetter: boolean('require_cover_letter').notNull().default(false),
+  applicationComplianceEnabled: boolean('application_compliance_enabled').notNull().default(true),
+  includeEeo: boolean('include_eeo').notNull().default(true),
+  includeVeteran: boolean('include_veteran').notNull().default(true),
+  includeDisability: boolean('include_disability').notNull().default(true),
   // ── AI scoring settings ──
   autoScoreOnApply: boolean('auto_score_on_apply').notNull().default(true),
   // ── Timestamps ──
@@ -190,6 +215,30 @@ export const questionResponse = pgTable('question_response', {
   index('question_response_question_id_idx').on(t.questionId),
 ]))
 
+/**
+ * Voluntary self-identification answers for compliance reporting.
+ * Kept separate from candidate profile data and recruiter-authored questions
+ * so it does not appear in day-to-day hiring evaluation surfaces.
+ */
+export const applicationComplianceResponse = pgTable('application_compliance_response', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  applicationId: text('application_id').notNull().references(() => application.id, { onDelete: 'cascade' }),
+  candidateId: text('candidate_id').notNull().references(() => candidate.id, { onDelete: 'cascade' }),
+  sex: complianceSexEnum('sex'),
+  raceEthnicity: complianceRaceEthnicityEnum('race_ethnicity'),
+  veteranStatus: complianceVeteranStatusEnum('veteran_status'),
+  disabilityStatus: complianceDisabilityStatusEnum('disability_status'),
+  jurisdiction: text('jurisdiction').notNull().default('US'),
+  formVersion: text('form_version').notNull(),
+  submittedAt: timestamp('submitted_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => ([
+  index('application_compliance_response_org_idx').on(t.organizationId),
+  index('application_compliance_response_candidate_idx').on(t.candidateId),
+  uniqueIndex('application_compliance_response_application_idx').on(t.applicationId),
+]))
+
 // ─────────────────────────────────────────────
 // Custom Properties (Notion-style "database properties")
 // ─────────────────────────────────────────────
@@ -275,6 +324,11 @@ export const orgSettings = pgTable('org_settings', {
   defaultSalaryUnit: text('default_salary_unit').notNull().default('YEAR'),
   /** Email domains allowed to create accounts when public signup is otherwise restricted */
   signupAllowedDomains: jsonb('signup_allowed_domains').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  /** Default compliance question visibility for public job applications */
+  applicationComplianceEnabled: boolean('application_compliance_enabled').notNull().default(true),
+  includeEeo: boolean('include_eeo').notNull().default(true),
+  includeVeteran: boolean('include_veteran').notNull().default(true),
+  includeDisability: boolean('include_disability').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => ([
@@ -768,6 +822,7 @@ export const applicationRelations = relations(application, ({ one, many }) => ({
   candidate: one(candidate, { fields: [application.candidateId], references: [candidate.id] }),
   job: one(job, { fields: [application.jobId], references: [job.id] }),
   responses: many(questionResponse),
+  complianceResponse: one(applicationComplianceResponse),
   interviews: many(interview),
   criterionScores: many(criterionScore),
   analysisRuns: many(analysisRun),
@@ -788,6 +843,12 @@ export const questionResponseRelations = relations(questionResponse, ({ one }) =
   organization: one(organization, { fields: [questionResponse.organizationId], references: [organization.id] }),
   application: one(application, { fields: [questionResponse.applicationId], references: [application.id] }),
   question: one(jobQuestion, { fields: [questionResponse.questionId], references: [jobQuestion.id] }),
+}))
+
+export const applicationComplianceResponseRelations = relations(applicationComplianceResponse, ({ one }) => ({
+  organization: one(organization, { fields: [applicationComplianceResponse.organizationId], references: [organization.id] }),
+  application: one(application, { fields: [applicationComplianceResponse.applicationId], references: [application.id] }),
+  candidate: one(candidate, { fields: [applicationComplianceResponse.candidateId], references: [candidate.id] }),
 }))
 
 export const propertyDefinitionRelations = relations(propertyDefinition, ({ one, many }) => ({

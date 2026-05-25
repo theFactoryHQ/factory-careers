@@ -33,6 +33,11 @@ export const createJobSchema = z.object({
   requireResume: z.boolean().optional().default(false),
   /** Whether the application form asks for a cover letter upload */
   requireCoverLetter: z.boolean().optional().default(false),
+  /** Whether voluntary compliance self-identification questions appear on this job */
+  applicationComplianceEnabled: z.boolean().optional().default(true),
+  includeEeo: z.boolean().optional().default(true),
+  includeVeteran: z.boolean().optional().default(true),
+  includeDisability: z.boolean().optional().default(true),
   /** Whether to automatically run AI scoring when a candidate applies */
   autoScoreOnApply: z.boolean().optional().default(true),
   /** Experience level required for this role */
@@ -58,6 +63,10 @@ export const updateJobSchema = z.object({
   validThrough: z.coerce.date().nullable().optional(),
   requireResume: z.boolean().optional(),
   requireCoverLetter: z.boolean().optional(),
+  applicationComplianceEnabled: z.boolean().optional(),
+  includeEeo: z.boolean().optional(),
+  includeVeteran: z.boolean().optional(),
+  includeDisability: z.boolean().optional(),
   /** Whether to automatically run AI scoring when a candidate applies */
   autoScoreOnApply: z.boolean().optional(),
   /** Experience level required for this role */

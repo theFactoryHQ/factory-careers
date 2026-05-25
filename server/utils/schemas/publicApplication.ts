@@ -22,6 +22,27 @@ const questionResponseSchema = z.object({
   ]),
 })
 
+export const complianceSexValues = ['male', 'female', 'prefer_not_to_answer'] as const
+export const complianceRaceEthnicityValues = [
+  'hispanic_or_latino',
+  'white',
+  'black_or_african_american',
+  'asian',
+  'native_hawaiian_or_pacific_islander',
+  'american_indian_or_alaska_native',
+  'two_or_more_races',
+  'prefer_not_to_answer',
+] as const
+export const complianceVeteranStatusValues = ['protected_veteran', 'not_protected_veteran', 'prefer_not_to_answer'] as const
+export const complianceDisabilityStatusValues = ['yes', 'no', 'prefer_not_to_answer'] as const
+
+export const publicApplicationComplianceSchema = z.object({
+  sex: z.enum(complianceSexValues).optional(),
+  raceEthnicity: z.enum(complianceRaceEthnicityValues).optional(),
+  veteranStatus: z.enum(complianceVeteranStatusValues).optional(),
+  disabilityStatus: z.enum(complianceDisabilityStatusValues).optional(),
+}).strict()
+
 /** Schema for public application submission on an open job */
 export const publicApplicationSchema = z.object({
   firstName: candidateFirstNameSchema,
@@ -31,6 +52,8 @@ export const publicApplicationSchema = z.object({
   country: z.enum(COUNTRY_VALUES, 'Country is required'),
   state: z.enum(US_STATE_VALUES, 'State is required'),
   responses: z.array(questionResponseSchema).default([]),
+  /** Optional voluntary self-identification answers for compliance reporting. */
+  compliance: publicApplicationComplianceSchema.optional(),
   /** Optional cover letter text submitted by the candidate */
   coverLetterText: z.string().max(10000).optional(),
   /** Honeypot field — bots fill it, humans don't see it. Validated at runtime in the handler. */

@@ -8,7 +8,7 @@ defineOptions({
 const props = defineProps<{
   id?: string
   modelValue: any
-  options: Array<{ value: any; label: string }>
+  options: ReadonlyArray<{ value: any; label: string }>
   placeholder?: string
   disabled?: boolean
   class?: string

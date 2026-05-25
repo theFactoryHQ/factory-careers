@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FileText, Link2, Check, Plus, Copy, CheckCircle2, XCircle, ToggleLeft, ToggleRight, Trash2, Radio, ChevronDown, X, Eye, Save } from 'lucide-vue-next'
+import { FileText, Link2, Check, Plus, Copy, CheckCircle2, XCircle, ToggleLeft, ToggleRight, Trash2, Radio, ChevronDown, X, Eye, Save, ShieldCheck } from 'lucide-vue-next'
 import { z } from 'zod'
 import { getSourceChannelLabel } from '~/utils/status-display'
 import { CURRENCY_OPTIONS, CURRENCY_VALUES } from '~~/shared/currency-options'
@@ -207,12 +207,26 @@ const requireCoverLetter = ref(false)
 const isSavingRequirements = ref(false)
 const requirementsSaved = ref(false)
 const requirementsError = ref<string | null>(null)
+const applicationComplianceEnabled = ref(true)
+const includeEeo = ref(true)
+const includeVeteran = ref(true)
+const includeDisability = ref(true)
+const isSavingCompliance = ref(false)
+const complianceSaved = ref(false)
+const complianceError = ref<string | null>(null)
+const previewComplianceEnabled = computed(() =>
+  applicationComplianceEnabled.value && (includeEeo.value || includeVeteran.value || includeDisability.value),
+)
 
 // Sync with fetched job data
 watch(job, (j) => {
   if (j) {
     requireResume.value = j.requireResume ?? false
     requireCoverLetter.value = j.requireCoverLetter ?? false
+    applicationComplianceEnabled.value = j.applicationComplianceEnabled ?? true
+    includeEeo.value = j.includeEeo ?? true
+    includeVeteran.value = j.includeVeteran ?? true
+    includeDisability.value = j.includeDisability ?? true
   }
 }, { immediate: true })
 
@@ -227,6 +241,25 @@ async function saveRequirements() {
     requirementsError.value = err?.data?.statusMessage ?? 'Failed to save requirements.'
   } finally {
     isSavingRequirements.value = false
+  }
+}
+
+async function saveComplianceQuestions() {
+  isSavingCompliance.value = true
+  complianceError.value = null
+  try {
+    await updateJob({
+      applicationComplianceEnabled: applicationComplianceEnabled.value,
+      includeEeo: includeEeo.value,
+      includeVeteran: includeVeteran.value,
+      includeDisability: includeDisability.value,
+    })
+    complianceSaved.value = true
+    setTimeout(() => { complianceSaved.value = false }, 2000)
+  } catch (err: any) {
+    complianceError.value = err?.data?.statusMessage ?? 'Failed to save compliance questions.'
+  } finally {
+    isSavingCompliance.value = false
   }
 }
 
@@ -654,6 +687,90 @@ async function copyTrackingUrl(code: string) {
         </p>
       </div>
 
+      <!-- Compliance Questions -->
+      <div class="ui-panel p-5 mb-6">
+        <div class="mb-3 flex items-center gap-2">
+          <ShieldCheck class="size-4 text-surface-500 dark:text-surface-400" />
+          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300">Compliance questions</h2>
+        </div>
+        <p class="mb-4 text-xs text-surface-400 dark:text-surface-500">
+          Add voluntary self-identification questions for US equal employment opportunity reporting.
+        </p>
+
+        <div class="mb-4 space-y-3">
+          <button
+            type="button"
+            class="ui-selectable-panel relative flex w-full items-center gap-3 p-4 text-left transition-colors"
+            :class="applicationComplianceEnabled ? 'ui-selectable-panel-active' : ''"
+            :aria-pressed="applicationComplianceEnabled"
+            @click="applicationComplianceEnabled = !applicationComplianceEnabled"
+          >
+            <span
+              v-if="applicationComplianceEnabled"
+              class="ui-pill ui-pill-brand absolute right-3 top-3 size-5 justify-center p-0"
+              aria-hidden="true"
+            >
+              <Check class="size-3" />
+            </span>
+            <div>
+              <span class="factory-requirement-option-title block text-sm font-medium">Show voluntary self-identification</span>
+              <span class="factory-requirement-option-description text-xs">Answers stay separate from candidate profiles and application questions.</span>
+            </div>
+          </button>
+
+          <div
+            v-if="applicationComplianceEnabled"
+            class="grid grid-cols-1 gap-3 sm:grid-cols-3"
+          >
+            <label class="ui-list-row flex cursor-pointer items-start gap-3 p-3">
+              <input
+                v-model="includeEeo"
+                type="checkbox"
+                class="mt-0.5 size-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600"
+              />
+              <span>
+                <span class="block text-sm font-medium text-surface-900 dark:text-surface-100">EEO demographics</span>
+                <span class="text-xs text-surface-400 dark:text-surface-500">Sex and race / ethnicity</span>
+              </span>
+            </label>
+            <label class="ui-list-row flex cursor-pointer items-start gap-3 p-3">
+              <input
+                v-model="includeVeteran"
+                type="checkbox"
+                class="mt-0.5 size-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600"
+              />
+              <span>
+                <span class="block text-sm font-medium text-surface-900 dark:text-surface-100">Veteran status</span>
+                <span class="text-xs text-surface-400 dark:text-surface-500">Protected veteran self-ID</span>
+              </span>
+            </label>
+            <label class="ui-list-row flex cursor-pointer items-start gap-3 p-3">
+              <input
+                v-model="includeDisability"
+                type="checkbox"
+                class="mt-0.5 size-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600"
+              />
+              <span>
+                <span class="block text-sm font-medium text-surface-900 dark:text-surface-100">Disability status</span>
+                <span class="text-xs text-surface-400 dark:text-surface-500">US disability self-ID</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          :disabled="isSavingCompliance"
+          class="ui-button ui-button-primary px-4 py-2 text-sm"
+          @click="saveComplianceQuestions"
+        >
+          {{ complianceSaved ? 'Saved!' : isSavingCompliance ? 'Saving...' : 'Save compliance questions' }}
+        </button>
+        <p v-if="complianceError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">
+          {{ complianceError }}
+        </p>
+      </div>
+
       <!-- Application Form Questions -->
       <div class="ui-panel p-5 mb-6">
         <div class="flex items-center gap-2 mb-3">
@@ -904,6 +1021,50 @@ async function copyTrackingUrl(code: string) {
                       class="ui-field px-3 py-2 text-sm opacity-80"
                     />
                   </div>
+                </section>
+
+                <section
+                  v-if="previewComplianceEnabled"
+                  class="space-y-4 border-t border-surface-200 pt-5 dark:border-surface-800"
+                >
+                  <div>
+                    <h4 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Voluntary self-identification</h4>
+                    <p class="mt-1 text-xs text-surface-500 dark:text-surface-400">
+                      Voluntary, confidential, and not used in hiring decisions.
+                    </p>
+                  </div>
+                  <div v-if="includeEeo" class="grid gap-3 sm:grid-cols-2">
+                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                      Sex
+                      <select disabled class="ui-field mt-1 px-3 py-2 text-sm opacity-80">
+                        <option>Prefer not to answer</option>
+                      </select>
+                    </label>
+                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                      Race / ethnicity
+                      <select disabled class="ui-field mt-1 px-3 py-2 text-sm opacity-80">
+                        <option>Prefer not to answer</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label
+                    v-if="includeVeteran"
+                    class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400"
+                  >
+                    Veteran status
+                    <select disabled class="ui-field mt-1 px-3 py-2 text-sm opacity-80">
+                      <option>Prefer not to answer</option>
+                    </select>
+                  </label>
+                  <label
+                    v-if="includeDisability"
+                    class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400"
+                  >
+                    Disability status
+                    <select disabled class="ui-field mt-1 px-3 py-2 text-sm opacity-80">
+                      <option>Prefer not to answer</option>
+                    </select>
+                  </label>
                 </section>
 
                 <div class="border-t border-surface-200 pt-5 dark:border-surface-800">

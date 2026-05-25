@@ -2269,8 +2269,8 @@
     box-shadow: inset 0 -2px 0 var(--color-brand-500) !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-filter-input,
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-filter-select {
+  :where(.factory-dashboard-shell, .factory-dashboard-portal, .factory-public-form) .factory-filter-input,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal, .factory-public-form) .factory-filter-select {
     border-color: var(--ui-border-strong) !important;
     background-color: rgb(0 0 0 / 0.55) !important;
     color: #ffffff !important;
@@ -2285,13 +2285,13 @@
     text-transform: uppercase !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-filter-input:focus,
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-filter-select:focus {
+  :where(.factory-dashboard-shell, .factory-dashboard-portal, .factory-public-form) .factory-filter-input:focus,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal, .factory-public-form) .factory-filter-select:focus {
     border-color: color-mix(in srgb, var(--color-brand-500) 72%, transparent) !important;
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-500) 18%, transparent) !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) select.factory-filter-select {
+  :where(.factory-dashboard-shell, .factory-dashboard-portal, .factory-public-form) select.factory-filter-select {
     appearance: none;
     padding-right: 2rem;
     background-image:
@@ -2304,18 +2304,20 @@
     background-size: 5px 5px !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-filter-dropdown-trigger {
+  :where(.factory-dashboard-shell, .factory-dashboard-portal, .factory-public-form) .factory-filter-dropdown-trigger {
     min-height: 40px;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-filter-dropdown-menu {
+  :where(.factory-dashboard-shell, .factory-dashboard-portal, .factory-public-form) .factory-filter-dropdown-menu {
+    max-height: min(18rem, calc(100vh - 8rem));
+    overflow-y: auto;
     border-color: var(--ui-border-strong) !important;
     background-color: #050505 !important;
     color: #ffffff !important;
     box-shadow: 0 18px 48px rgb(0 0 0 / 0.55) !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-filter-dropdown-option {
+  :where(.factory-dashboard-shell, .factory-dashboard-portal, .factory-public-form) .factory-filter-dropdown-option {
     color: rgb(255 255 255 / 0.7) !important;
     font-size: 0.75rem !important;
     font-weight: 400 !important;
@@ -2323,14 +2325,37 @@
     letter-spacing: 0 !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-filter-dropdown-option:hover {
+  :where(.factory-dashboard-shell, .factory-dashboard-portal, .factory-public-form) .factory-filter-dropdown-option:hover {
     background-color: rgb(255 255 255 / 0.08) !important;
     color: #ffffff !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-filter-dropdown-option.is-active {
+  :where(.factory-dashboard-shell, .factory-dashboard-portal, .factory-public-form) .factory-filter-dropdown-option.is-active {
     background-color: color-mix(in srgb, var(--color-brand-500) 16%, transparent) !important;
     color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal, .factory-public-form) .factory-filter-dropdown.is-error .factory-filter-select {
+    border-color: color-mix(in srgb, var(--color-danger-500) 72%, transparent) !important;
+  }
+
+  :where(.factory-public-form) .factory-filter-select {
+    border-color: rgb(255 255 255 / 0.14) !important;
+    background-color: #050505 !important;
+  }
+
+  :where(.factory-public-form) .factory-filter-dropdown-menu {
+    border-color: rgb(255 255 255 / 0.14) !important;
+    background-color: #050505 !important;
+  }
+
+  :where(.factory-public-form) .factory-filter-select:focus {
+    border-color: var(--color-brand-500) !important;
+    box-shadow: 0 0 0 2px rgb(255 59 36 / 0.25) !important;
+  }
+
+  :where(.factory-public-form) .factory-filter-dropdown.is-error .factory-filter-select {
+    border-color: rgb(244 63 94 / 0.7) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-filter-reset {

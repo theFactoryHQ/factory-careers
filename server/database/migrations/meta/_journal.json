@@ -288,6 +288,13 @@
       "when": 1779587160000,
       "tag": "0039_signup_allowed_domains",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1779587760000,
+      "tag": "0040_application_compliance_response",
+      "breakpoints": true
     }
   ]
 }
