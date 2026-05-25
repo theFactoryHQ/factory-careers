@@ -26,6 +26,7 @@ describe('Factory dashboard tone consolidation', () => {
       '--factory-tone-danger-border',
       '--factory-tone-danger-bg',
       '--factory-tone-danger-text',
+      '--factory-tone-danger-outline-border',
       '--factory-tone-success-border',
       '--factory-tone-success-pill-border',
       '--factory-tone-success-bg',
@@ -65,10 +66,14 @@ describe('Factory dashboard tone consolidation', () => {
       expect(cssBlock(css, selector), selector).toContain('var(--factory-tone-')
     }
 
-    const semanticUtilityLayer = css.slice(
-      css.indexOf(':where(.factory-dashboard-shell, .factory-dashboard-portal) :is(.bg-blue-50'),
-      css.indexOf(':where(.factory-dashboard-shell, .factory-dashboard-portal) :is(\n    .text-surface-900,'),
-    )
+    const utilityStart = css.indexOf(':where(.factory-dashboard-shell, .factory-dashboard-portal) :is(.bg-blue-50')
+    const utilityEnd = css.indexOf(':where(.factory-dashboard-shell, .factory-dashboard-portal) :is(\n    .text-surface-900,')
+
+    expect(utilityStart, 'missing dashboard semantic utility start marker').toBeGreaterThan(-1)
+    expect(utilityEnd, 'missing dashboard semantic utility end marker').toBeGreaterThan(-1)
+    expect(utilityEnd, 'dashboard semantic utility end marker should follow start marker').toBeGreaterThan(utilityStart)
+
+    const semanticUtilityLayer = css.slice(utilityStart, utilityEnd)
 
     for (const token of [
       '--factory-tone-info-bg',

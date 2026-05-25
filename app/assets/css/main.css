@@ -1263,6 +1263,7 @@
     --factory-tone-danger-bg-soft: rgb(244 63 94 / 0.13);
     --factory-tone-danger-text: rgb(253 164 175);
     --factory-tone-danger-action-border: color-mix(in srgb, var(--color-danger-400) 65%, transparent);
+    --factory-tone-danger-outline-border: color-mix(in srgb, var(--color-danger-400) 62%, transparent);
     --factory-tone-danger-action-bg: color-mix(in srgb, var(--color-danger-600) 88%, #000000);
     --factory-tone-danger-action-hover-bg: rgb(253 164 175);
     --factory-tone-success-border: color-mix(in srgb, var(--color-success-500) 46%, transparent);
@@ -1450,7 +1451,7 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-danger-outline {
-    border-color: var(--factory-tone-danger-action-border) !important;
+    border-color: var(--factory-tone-danger-outline-border) !important;
     background-color: var(--ui-panel) !important;
     color: var(--factory-tone-danger-text) !important;
   }
