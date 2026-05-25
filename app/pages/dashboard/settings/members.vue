@@ -94,30 +94,27 @@ const showInviteForm = ref(false)
 const inviteEmail = ref('')
 const inviteRole = ref<'admin' | 'member'>('member')
 const isInviting = ref(false)
-const inviteSuccess = ref('')
 
 function resetInviteForm() {
   inviteEmail.value = ''
   inviteRole.value = 'member'
-  inviteSuccess.value = ''
 }
 
 async function handleInvite() {
   if (!canInvite.value || !inviteEmail.value.trim()) return
   isInviting.value = true
-  inviteSuccess.value = ''
 
   try {
+    const email = inviteEmail.value.trim()
     const result = await authClient.organization.inviteMember({
-      email: inviteEmail.value.trim().toLowerCase(),
+      email: email.toLowerCase(),
       role: inviteRole.value,
     })
     if (result.error) throw new Error(String(result.error.message ?? 'Failed to send invitation'))
-    inviteSuccess.value = `Invitation sent to ${inviteEmail.value.trim()}`
+    toast.success('Invitation sent', email)
     track('member_invited')
     inviteEmail.value = ''
     inviteRole.value = 'member'
-    setTimeout(() => { inviteSuccess.value = '' }, 5000)
     await fetchInvitations()
   }
   catch (err: unknown) {
@@ -143,7 +140,6 @@ const isLoadingInvitations = ref(true)
 const invitationsError = ref('')
 const resendingInvitation = ref<string | null>(null)
 const cancellingInvitation = ref<string | null>(null)
-const resendSuccess = ref('')
 
 async function fetchInvitations() {
   isLoadingInvitations.value = true
@@ -168,7 +164,6 @@ onMounted(fetchInvitations)
 
 async function handleResendInvitation(invitation: { id: string; email: string; role: string }) {
   resendingInvitation.value = invitation.id
-  resendSuccess.value = ''
 
   try {
     const result = await authClient.organization.inviteMember({
@@ -177,8 +172,7 @@ async function handleResendInvitation(invitation: { id: string; email: string; r
       resend: true,
     })
     if (result.error) throw new Error(String(result.error.message ?? 'Failed to resend invitation'))
-    resendSuccess.value = `Invitation resent to ${invitation.email}`
-    setTimeout(() => { resendSuccess.value = '' }, 5000)
+    toast.success('Invitation resent', invitation.email)
     await fetchInvitations()
   }
   catch (err: unknown) {
@@ -237,7 +231,6 @@ const newLinkMaxUses = ref<string | number>('')
 const newLinkExpiresInHours = ref(168) // 7 days default
 const isCreatingLink = ref(false)
 const createLinkError = ref('')
-const createLinkSuccess = ref('')
 const copiedLinkId = ref<string | null>(null)
 const revokingLinkId = ref<string | null>(null)
 
@@ -260,7 +253,6 @@ onMounted(fetchInviteLinks)
 async function handleCreateLink() {
   isCreatingLink.value = true
   createLinkError.value = ''
-  createLinkSuccess.value = ''
 
   try {
     // Vue 3 auto-coerces type="number" input values to numbers (even without .number
@@ -280,12 +272,11 @@ async function handleCreateLink() {
       expiresInHours: newLinkExpiresInHours.value,
     })
 
-    createLinkSuccess.value = 'Invite link created!'
+    toast.success('Invite link created')
     showCreateLinkForm.value = false
     newLinkRole.value = 'member'
     newLinkMaxUses.value = ''
     newLinkExpiresInHours.value = 168
-    setTimeout(() => { createLinkSuccess.value = '' }, 5000)
     await fetchInviteLinks()
   }
   catch (err: any) {
@@ -603,34 +594,9 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <Transition
-            enter-active-class="transition-opacity duration-300"
-            leave-active-class="transition-opacity duration-300"
-            enter-from-class="opacity-0"
-            leave-to-class="opacity-0"
-          >
-            <div v-if="inviteSuccess" class="ui-feedback-success mt-3 text-sm">
-              <Check class="size-4" />
-              {{ inviteSuccess }}
-            </div>
-          </Transition>
-
         </div>
       </Transition>
     </section>
-
-    <!-- Resend success banner -->
-    <Transition
-      enter-active-class="transition-opacity duration-300"
-      leave-active-class="transition-opacity duration-300"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
-    >
-      <div v-if="resendSuccess" class="ui-alert ui-alert-success mb-4 flex items-center gap-2">
-        <Check class="size-4" />
-        {{ resendSuccess }}
-      </div>
-    </Transition>
 
     <!-- Pending invitations -->
     <section v-if="canInvite && (isLoadingInvitations || pendingInvitations.length > 0)" class="ui-panel ui-settings-panel mb-6">
@@ -817,19 +783,6 @@ onUnmounted(() => {
           <div v-if="createLinkError" class="ui-feedback-danger mt-2 text-xs">
             {{ createLinkError }}
           </div>
-        </div>
-      </Transition>
-
-      <!-- Success banner -->
-      <Transition
-        enter-active-class="transition-opacity duration-300"
-        leave-active-class="transition-opacity duration-300"
-        enter-from-class="opacity-0"
-        leave-to-class="opacity-0"
-      >
-        <div v-if="createLinkSuccess" class="ui-alert ui-alert-success rounded-none border-x-0 border-t-0 px-4 sm:px-6 py-2 flex items-center gap-2">
-          <Check class="size-4" />
-          {{ createLinkSuccess }}
         </div>
       </Transition>
 
