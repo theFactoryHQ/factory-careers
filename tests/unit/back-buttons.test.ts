@@ -59,10 +59,10 @@ describe('back button hover treatment', () => {
   })
 
   it('uses white-fill hover for inline document preview back buttons', () => {
-    const drawer = readSource('app/components/CandidateDetailDrawer.vue')
+    const documentsPanel = readSource('app/components/CandidateDocumentsPanel.vue')
     const sidebar = readSource('app/components/CandidateDetailSidebar.vue')
 
-    for (const source of [drawer, sidebar]) {
+    for (const source of [documentsPanel, sidebar]) {
       const backButton = elementContaining(source, 'button', 'Back to documents')
       expect(backButton).toContain(expectedHover)
       expect(backButton).not.toContain('ui-inline-link-brand')

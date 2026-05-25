@@ -14,8 +14,6 @@ useSeoMeta({
 
 // ── Column visibility ─────────────────────────────────────────────────────────
 
-const COLUMNS_STORAGE_KEY = 'reqcore:columns:candidates'
-
 const defaultColumnVisibility = {
   email: true,
   phone: true,
@@ -24,7 +22,7 @@ const defaultColumnVisibility = {
   quickNotes: true,
 }
 
-const visibleColumns = ref<Record<string, boolean>>({ ...defaultColumnVisibility })
+const { visibleColumns, mergeColumnVisibility } = useColumnVisibility('candidates', defaultColumnVisibility)
 
 const { definitions: propertyDefs } = useProperties({ entityType: () => 'candidate' })
 
@@ -37,18 +35,6 @@ const candidateColumns = computed(() => [
   { key: 'quickNotes', label: 'Quick notes' },
   ...propertyDefs.value.map((d) => ({ key: `prop_${d.id}`, label: d.name })),
 ])
-
-onMounted(() => {
-  try {
-    const raw = window.localStorage.getItem(COLUMNS_STORAGE_KEY)
-    if (raw) visibleColumns.value = { ...defaultColumnVisibility, ...JSON.parse(raw) }
-  } catch {}
-})
-
-watch(visibleColumns, (val) => {
-  if (typeof window === 'undefined') return
-  try { window.localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(val)) } catch {}
-}, { deep: true })
 
 const searchInput = ref('')
 const debouncedSearch = ref<string | undefined>(undefined)
@@ -217,62 +203,19 @@ function applySettings(s: CandidatesViewSettings) {
   propertyFilters.value = [...(s.propertyFilters ?? [])]
   sortKey.value = s.sortKey
   sortDir.value = s.sortDir
-  if (s.visibleColumns) visibleColumns.value = { ...defaultColumnVisibility, ...s.visibleColumns }
+  if (s.visibleColumns) mergeColumnVisibility(s.visibleColumns)
 }
 
 const {
   views,
   activeViewId,
-  applyView,
-  saveView,
-  updateView,
   deleteView,
   setDefault,
-  clearActive,
-} = useSavedViews<CandidatesViewSettings>('candidates', defaultSettings)
-
-onMounted(() => {
-  nextTick(() => {
-    if (activeViewId.value) {
-      const s = applyView(activeViewId.value)
-      if (s) applySettings(s)
-    }
-  })
-})
-
-function settingsEqual(a: CandidatesViewSettings, b: CandidatesViewSettings) {
-  return a.gender === b.gender
-    && a.dobFrom === b.dobFrom
-    && a.dobTo === b.dobTo
-    && a.sortKey === b.sortKey
-    && a.sortDir === b.sortDir
-    && JSON.stringify(a.propertyFilters ?? []) === JSON.stringify(b.propertyFilters ?? [])
-    && JSON.stringify(a.visibleColumns ?? {}) === JSON.stringify(b.visibleColumns ?? {})
-}
-
-const isDirty = computed(() => {
-  const view = views.value.find(v => v.id === activeViewId.value)
-  if (!view) return false
-  return !settingsEqual(currentSettings.value, { ...defaultSettings, ...view.settings })
-})
-
-function onSelectView(id: string | null) {
-  if (id == null) {
-    clearActive()
-    applySettings(defaultSettings)
-    return
-  }
-  const s = applyView(id)
-  if (s) applySettings(s)
-}
-
-function onSaveView(name: string) {
-  saveView(name, currentSettings.value)
-}
-
-function onUpdateView(id: string) {
-  updateView(id, { settings: currentSettings.value })
-}
+  isDirty,
+  onSelectView,
+  onSaveView,
+  onUpdateView,
+} = useSavedViewState<CandidatesViewSettings>('candidates', defaultSettings, currentSettings, applySettings)
 
 // ── Candidate detail drawer ───────────────────────────────────────────────────
 const selectedCandidateId = ref<string | null>(null)
