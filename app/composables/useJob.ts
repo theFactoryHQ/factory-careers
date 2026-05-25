@@ -51,6 +51,10 @@ export function useJob(id: MaybeRefOrGetter<string>) {
     validThrough: Date | null
     requireResume: boolean
     requireCoverLetter: boolean
+    applicationComplianceEnabled: boolean
+    includeEeo: boolean
+    includeVeteran: boolean
+    includeDisability: boolean
     autoScoreOnApply: boolean
     experienceLevel: 'junior' | 'mid' | 'senior' | 'lead' | null
   }>) {

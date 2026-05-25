@@ -30,4 +30,8 @@ export const updateOrgSettingsSchema = z.object({
   calendarSyncInterviewers: z.boolean().optional(),
   defaultSalaryUnit: z.enum(SALARY_UNIT_VALUES).optional(),
   signupAllowedDomains: signupAllowedDomainsSchema.optional(),
+  applicationComplianceEnabled: z.boolean().optional(),
+  includeEeo: z.boolean().optional(),
+  includeVeteran: z.boolean().optional(),
+  includeDisability: z.boolean().optional(),
 })

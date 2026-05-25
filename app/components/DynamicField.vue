@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, Upload, X } from 'lucide-vue-next'
+import { ChevronDown, Github, Globe, Linkedin, Upload, X } from 'lucide-vue-next'
 
 /**
  * Renders a custom question as the appropriate form field based on its type.
@@ -41,6 +41,77 @@ const booleanModel = computed({
   get: () => (model.value as boolean) ?? false,
   set: (v: boolean) => { model.value = v },
 })
+
+const profileLinks = reactive({
+  linkedin: '',
+  github: '',
+  portfolio: '',
+})
+
+const isProfileLinksQuestion = computed(() => (
+  props.question.type === 'url' &&
+  /linkedin/i.test(props.question.label) &&
+  /github/i.test(props.question.label) &&
+  /(portfolio|personal site)/i.test(props.question.label)
+))
+
+function parseProfileLinksValue(value: unknown) {
+  const next = {
+    linkedin: '',
+    github: '',
+    portfolio: '',
+  }
+
+  if (typeof value !== 'string') return next
+
+  for (const line of value.split(/\r?\n/)) {
+    const match = line.match(/^\s*([^:]+):\s*(.*?)\s*$/)
+    if (!match) continue
+
+    const label = match[1]!.toLowerCase()
+    const url = match[2] ?? ''
+
+    if (label.includes('linkedin')) {
+      next.linkedin = url
+    } else if (label.includes('github')) {
+      next.github = url
+    } else if (label.includes('portfolio') || label.includes('personal')) {
+      next.portfolio = url
+    }
+  }
+
+  return next
+}
+
+function applyProfileLinksFromModel(value: unknown) {
+  const next = parseProfileLinksValue(value)
+  profileLinks.linkedin = next.linkedin
+  profileLinks.github = next.github
+  profileLinks.portfolio = next.portfolio
+}
+
+function syncProfileLinksModel() {
+  const lines = [
+    ['LinkedIn', profileLinks.linkedin],
+    ['GitHub', profileLinks.github],
+    ['Portfolio', profileLinks.portfolio],
+  ]
+    .map(([label, value]) => [label, String(value).trim()])
+    .filter(([, value]) => value)
+    .map(([label, value]) => `${label}: ${value}`)
+
+  model.value = lines.length > 0 ? lines.join('\n') : undefined
+}
+
+watch(
+  [isProfileLinksQuestion, () => model.value],
+  ([isProfileLinks, value]) => {
+    if (isProfileLinks) {
+      applyProfileLinksFromModel(value)
+    }
+  },
+  { immediate: true },
+)
 
 // For multi_select, ensure model value is always an array
 if (props.question.type === 'multi_select' && !Array.isArray(model.value)) {
@@ -181,6 +252,56 @@ const normalBorderClass = 'border-white/14'
     />
 
     <!-- URL -->
+    <div v-else-if="isProfileLinksQuestion" class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div>
+        <label :for="`q-${question.id}-linkedin`" class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-white/56">
+          <Linkedin class="size-3.5 text-white/56" />
+          LinkedIn
+        </label>
+        <input
+          :id="`q-${question.id}-linkedin`"
+          v-model="profileLinks.linkedin"
+          type="url"
+          inputmode="url"
+          placeholder="https://linkedin.com/in/..."
+          :class="[inputClasses, error ? errorBorderClass : normalBorderClass]"
+          @input="syncProfileLinksModel"
+        />
+      </div>
+
+      <div>
+        <label :for="`q-${question.id}-github`" class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-white/56">
+          <Github class="size-3.5 text-white/56" />
+          GitHub
+        </label>
+        <input
+          :id="`q-${question.id}-github`"
+          v-model="profileLinks.github"
+          type="url"
+          inputmode="url"
+          placeholder="https://github.com/..."
+          :class="[inputClasses, error ? errorBorderClass : normalBorderClass]"
+          @input="syncProfileLinksModel"
+        />
+      </div>
+
+      <div>
+        <label :for="`q-${question.id}-portfolio`" class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-white/56">
+          <Globe class="size-3.5 text-white/56" />
+          Personal / Portfolio
+        </label>
+        <input
+          :id="`q-${question.id}-portfolio`"
+          v-model="profileLinks.portfolio"
+          type="url"
+          inputmode="url"
+          placeholder="https://..."
+          :class="[inputClasses, error ? errorBorderClass : normalBorderClass]"
+          @input="syncProfileLinksModel"
+        />
+      </div>
+    </div>
+
     <input
       v-else-if="question.type === 'url'"
       :id="`q-${question.id}`"

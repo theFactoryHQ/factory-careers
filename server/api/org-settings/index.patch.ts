@@ -27,6 +27,10 @@ export default defineEventHandler(async (event) => {
       calendarSyncInterviewers: body.calendarSyncInterviewers ?? false,
       defaultSalaryUnit: body.defaultSalaryUnit ?? 'YEAR',
       signupAllowedDomains: body.signupAllowedDomains ?? [],
+      applicationComplianceEnabled: body.applicationComplianceEnabled ?? true,
+      includeEeo: body.includeEeo ?? true,
+      includeVeteran: body.includeVeteran ?? true,
+      includeDisability: body.includeDisability ?? true,
     })
     .onConflictDoUpdate({
       target: orgSettings.organizationId,
@@ -36,6 +40,10 @@ export default defineEventHandler(async (event) => {
         ...(body.calendarSyncInterviewers !== undefined && { calendarSyncInterviewers: body.calendarSyncInterviewers }),
         ...(body.defaultSalaryUnit !== undefined && { defaultSalaryUnit: body.defaultSalaryUnit }),
         ...(body.signupAllowedDomains !== undefined && { signupAllowedDomains: body.signupAllowedDomains }),
+        ...(body.applicationComplianceEnabled !== undefined && { applicationComplianceEnabled: body.applicationComplianceEnabled }),
+        ...(body.includeEeo !== undefined && { includeEeo: body.includeEeo }),
+        ...(body.includeVeteran !== undefined && { includeVeteran: body.includeVeteran }),
+        ...(body.includeDisability !== undefined && { includeDisability: body.includeDisability }),
         updatedAt: new Date(),
       },
     })
@@ -45,6 +53,10 @@ export default defineEventHandler(async (event) => {
       calendarSyncInterviewers: orgSettings.calendarSyncInterviewers,
       defaultSalaryUnit: orgSettings.defaultSalaryUnit,
       signupAllowedDomains: orgSettings.signupAllowedDomains,
+      applicationComplianceEnabled: orgSettings.applicationComplianceEnabled,
+      includeEeo: orgSettings.includeEeo,
+      includeVeteran: orgSettings.includeVeteran,
+      includeDisability: orgSettings.includeDisability,
     })
 
   if (!result) {

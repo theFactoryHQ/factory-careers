@@ -1,6 +1,6 @@
 import { eq, and, asc, lte, sql } from 'drizzle-orm'
 import { fileTypeFromBuffer } from 'file-type'
-import { job, candidate, application, jobQuestion, questionResponse, document, organization, applicationSource, trackingLink } from '../../../../database/schema'
+import { job, candidate, application, jobQuestion, questionResponse, document, organization, applicationSource, trackingLink, applicationComplianceResponse, orgSettings } from '../../../../database/schema'
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
 import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
 import { autoScoreApplication } from '../../../../utils/ai/autoScore'
@@ -89,6 +89,12 @@ export default defineEventHandler(async (event) => {
   let website: string | undefined
   let responseArray: { questionId: string; value: string | string[] | number | boolean }[] = []
   let coverLetterText: string | undefined
+  let compliance: {
+    sex?: 'male' | 'female' | 'prefer_not_to_answer'
+    raceEthnicity?: 'hispanic_or_latino' | 'white' | 'black_or_african_american' | 'asian' | 'native_hawaiian_or_pacific_islander' | 'american_indian_or_alaska_native' | 'two_or_more_races' | 'prefer_not_to_answer'
+    veteranStatus?: 'protected_veteran' | 'not_protected_veteran' | 'prefer_not_to_answer'
+    disabilityStatus?: 'yes' | 'no' | 'prefer_not_to_answer'
+  } | undefined
   let sourceRef: string | undefined
   let utmSource: string | undefined
   let utmMedium: string | undefined
@@ -141,6 +147,15 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    let rawCompliance: unknown
+    if (fields.compliance) {
+      try {
+        rawCompliance = JSON.parse(fields.compliance)
+      } catch {
+        throw createError({ statusCode: 400, statusMessage: 'Invalid compliance format' })
+      }
+    }
+
     // Validate all multipart text fields through the same Zod schema as JSON
     const validated = publicApplicationSchema.parse({
       firstName: fields.firstName?.trim() ?? '',
@@ -152,6 +167,7 @@ export default defineEventHandler(async (event) => {
       website: fields.website || undefined,
       coverLetterText: fields.coverLetterText?.trim() || undefined,
       responses: rawResponses,
+      compliance: rawCompliance,
       ref: fields.ref || undefined,
       utmSource: fields.utmSource || undefined,
       utmMedium: fields.utmMedium || undefined,
@@ -169,6 +185,7 @@ export default defineEventHandler(async (event) => {
     website = validated.website
     coverLetterText = validated.coverLetterText
     responseArray = validated.responses
+    compliance = validated.compliance
     sourceRef = validated.ref
     utmSource = validated.utmSource
     utmMedium = validated.utmMedium
@@ -187,6 +204,7 @@ export default defineEventHandler(async (event) => {
     website = body.website
     coverLetterText = body.coverLetterText
     responseArray = body.responses
+    compliance = body.compliance
     sourceRef = body.ref
     utmSource = body.utmSource
     utmMedium = body.utmMedium
@@ -207,7 +225,18 @@ export default defineEventHandler(async (event) => {
 
   const existingJob = await db.query.job.findFirst({
     where: and(eq(job.slug, slug), eq(job.status, 'open'), lte(job.activeFrom, new Date())),
-    columns: { id: true, title: true, organizationId: true, requireResume: true, requireCoverLetter: true, autoScoreOnApply: true },
+    columns: {
+      id: true,
+      title: true,
+      organizationId: true,
+      requireResume: true,
+      requireCoverLetter: true,
+      autoScoreOnApply: true,
+      applicationComplianceEnabled: true,
+      includeEeo: true,
+      includeVeteran: true,
+      includeDisability: true,
+    },
   })
 
   if (!existingJob) {
@@ -226,6 +255,22 @@ export default defineEventHandler(async (event) => {
 
   const orgId = existingJob.organizationId
   const jobId = existingJob.id
+  const settings = await db.query.orgSettings.findFirst({
+    where: eq(orgSettings.organizationId, orgId),
+    columns: {
+      applicationComplianceEnabled: true,
+      includeEeo: true,
+      includeVeteran: true,
+      includeDisability: true,
+    },
+  })
+  const complianceEnabled = (settings?.applicationComplianceEnabled ?? true) && existingJob.applicationComplianceEnabled
+  const complianceConfig = {
+    enabled: complianceEnabled,
+    includeEeo: complianceEnabled && (settings?.includeEeo ?? true) && existingJob.includeEeo,
+    includeVeteran: complianceEnabled && (settings?.includeVeteran ?? true) && existingJob.includeVeteran,
+    includeDisability: complianceEnabled && (settings?.includeDisability ?? true) && existingJob.includeDisability,
+  }
 
   // Demo org is strictly read-only (defense in depth; middleware also blocks this route)
   if (env.DEMO_ORG_SLUG) {
@@ -431,6 +476,34 @@ export default defineEventHandler(async (event) => {
     status: 'new',
     coverLetterText: coverLetterText || null,
   }).returning({ id: application.id })
+
+  // ─────────────────────────────────────────────
+  // 8a. Store voluntary compliance self-identification
+  // ─────────────────────────────────────────────
+
+  const normalizedCompliance = complianceConfig.enabled
+    ? {
+        sex: complianceConfig.includeEeo ? compliance?.sex : undefined,
+        raceEthnicity: complianceConfig.includeEeo ? compliance?.raceEthnicity : undefined,
+        veteranStatus: complianceConfig.includeVeteran ? compliance?.veteranStatus : undefined,
+        disabilityStatus: complianceConfig.includeDisability ? compliance?.disabilityStatus : undefined,
+      }
+    : undefined
+
+  if (newApplication && hasComplianceResponse(normalizedCompliance)) {
+    await db.insert(applicationComplianceResponse).values({
+      organizationId: orgId,
+      applicationId: newApplication.id,
+      candidateId,
+      sex: normalizedCompliance.sex,
+      raceEthnicity: normalizedCompliance.raceEthnicity,
+      veteranStatus: normalizedCompliance.veteranStatus,
+      disabilityStatus: normalizedCompliance.disabilityStatus,
+      jurisdiction: 'US',
+      formVersion: 'US-SELF-ID-2026-05',
+      submittedAt: new Date(),
+    })
+  }
 
   // ─────────────────────────────────────────────
   // 8b. Record source attribution
@@ -764,6 +837,20 @@ async function rollbackApplicationSubmission(params: {
       error_message: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
     })
   }
+}
+
+function hasComplianceResponse(value: {
+  sex?: string
+  raceEthnicity?: string
+  veteranStatus?: string
+  disabilityStatus?: string
+} | undefined): value is {
+  sex?: string
+  raceEthnicity?: string
+  veteranStatus?: string
+  disabilityStatus?: string
+} {
+  return !!value && Object.values(value).some((answer) => answer !== undefined && answer !== null && answer !== '')
 }
 
 // ─────────────────────────────────────────────
