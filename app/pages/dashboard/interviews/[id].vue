@@ -841,9 +841,12 @@ const localePath = useLocalePath()
     </template>
 
     <!-- Reschedule Modal -->
-    <Teleport to="body">
-      <div v-if="showReschedule" class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showReschedule = false">
-        <div class="ui-modal-panel relative w-full max-w-md p-6">
+    <AppModalShell
+      v-if="showReschedule"
+      layout="flex"
+      @close="showReschedule = false"
+    >
+      <AppModalPanel class="max-w-md p-6">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-4">Reschedule Interview</h3>
 
           <form class="space-y-4" @submit.prevent="handleReschedule">
@@ -898,14 +901,16 @@ const localePath = useLocalePath()
               </button>
             </div>
           </form>
-        </div>
-      </div>
-    </Teleport>
+      </AppModalPanel>
+    </AppModalShell>
 
     <!-- Edit Details Modal -->
-    <Teleport to="body">
-      <div v-if="showEditDetails" class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showEditDetails = false">
-        <div class="ui-modal-panel relative w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+    <AppModalShell
+      v-if="showEditDetails"
+      layout="flex"
+      @close="showEditDetails = false"
+    >
+      <AppModalPanel class="max-w-lg max-h-[90vh] overflow-y-auto p-6">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-5">Edit Interview Details</h3>
 
           <form class="space-y-4" @submit.prevent="handleSaveDetails">
@@ -997,14 +1002,16 @@ const localePath = useLocalePath()
               </button>
             </div>
           </form>
-        </div>
-      </div>
-    </Teleport>
+      </AppModalPanel>
+    </AppModalShell>
 
     <!-- Delete Confirm Modal -->
-    <Teleport to="body">
-      <div v-if="showDeleteConfirm" class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="ui-modal-panel relative w-full max-w-sm p-6">
+    <AppModalShell
+      v-if="showDeleteConfirm"
+      layout="flex"
+      :close-on-backdrop="false"
+    >
+      <AppModalPanel class="max-w-sm p-6">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Interview</h3>
           <p class="text-sm text-surface-600 dark:text-surface-400 mb-5">
             Are you sure you want to delete <strong>{{ interview?.title }}</strong>? This action cannot be undone.
@@ -1025,9 +1032,8 @@ const localePath = useLocalePath()
               {{ isDeleting ? 'Deleting…' : 'Delete' }}
             </button>
           </div>
-        </div>
-      </div>
-    </Teleport>
+      </AppModalPanel>
+    </AppModalShell>
 
   </div>
 </template>

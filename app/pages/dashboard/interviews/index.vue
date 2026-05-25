@@ -795,9 +795,12 @@ const statusCounts = computed(() => {
     </Teleport>
 
     <!-- Delete Confirm Modal -->
-    <Teleport to="body">
-      <div v-if="showDeleteConfirm" class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="ui-modal-panel relative w-full max-w-sm p-6">
+    <AppModalShell
+      v-if="showDeleteConfirm"
+      layout="flex"
+      :close-on-backdrop="false"
+    >
+      <AppModalPanel class="max-w-sm p-6">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Interview</h3>
           <p class="text-sm text-surface-600 dark:text-surface-400 mb-5">
             Are you sure you want to delete <strong>{{ deletingInterview?.title }}</strong>? This action cannot be undone.
@@ -818,8 +821,7 @@ const statusCounts = computed(() => {
               {{ isDeleting ? 'Deleting…' : 'Delete' }}
             </button>
           </div>
-        </div>
-      </div>
-    </Teleport>
+      </AppModalPanel>
+    </AppModalShell>
   </div>
 </template>

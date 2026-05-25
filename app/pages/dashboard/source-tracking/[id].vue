@@ -678,9 +678,12 @@ async function handleSidebarUpdated() {
     <!-- ═══════════════════════════════════════ -->
     <!-- Modal: Edit tracking link                -->
     <!-- ═══════════════════════════════════════ -->
-    <Teleport to="body">
-      <div v-if="showEditModal" class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="ui-modal-panel relative w-full max-w-lg shadow-2xl">
+    <AppModalShell
+      v-if="showEditModal"
+      layout="flex"
+      @close="showEditModal = false"
+    >
+      <AppModalPanel class="max-w-lg shadow-2xl">
           <!-- Header -->
           <div class="ui-panel-header ui-dashboard-panel-header flex items-center justify-between px-6 py-4">
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Edit Tracking Link</h2>
@@ -766,8 +769,7 @@ async function handleSidebarUpdated() {
               </button>
             </div>
           </form>
-        </div>
-      </div>
-    </Teleport>
+      </AppModalPanel>
+    </AppModalShell>
   </div>
 </template>
