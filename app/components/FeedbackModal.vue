@@ -221,13 +221,9 @@ function resetAndClose() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-      @click.self="resetAndClose"
-    >
-      <!-- Modal -->
-      <div class="ui-modal-panel relative w-full max-w-lg flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden">
+  <AppModalShell @close="resetAndClose">
+    <!-- Modal -->
+    <AppModalPanel class="max-w-lg flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden">
         <!-- Header -->
         <div class="ui-panel-header flex items-center justify-between px-5 py-4">
           <div class="flex items-center gap-2">
@@ -544,7 +540,6 @@ function resetAndClose() {
             </button>
           </div>
         </form>
-      </div>
-    </div>
-  </Teleport>
+    </AppModalPanel>
+  </AppModalShell>
 </template>

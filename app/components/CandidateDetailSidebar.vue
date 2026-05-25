@@ -1027,13 +1027,11 @@ function formatInterviewDate(dateStr: string) {
 
 
   <!-- Document delete confirmation dialog -->
-  <Teleport to="body">
-    <div
-      v-if="showDocDeleteConfirm"
-      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-      @click.self="showDocDeleteConfirm = null"
-    >
-      <div class="ui-modal-panel relative p-6 max-w-sm w-full">
+  <AppModalShell
+    v-if="showDocDeleteConfirm"
+    @close="showDocDeleteConfirm = null"
+  >
+    <AppModalPanel class="p-6 max-w-sm">
         <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-50 mb-2">Delete Document</h3>
         <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
           Are you sure you want to delete this document? This action cannot be undone.
@@ -1054,9 +1052,8 @@ function formatInterviewDate(dateStr: string) {
             {{ isDeletingDoc ? 'Deleting…' : 'Delete' }}
           </button>
         </div>
-      </div>
-    </div>
-  </Teleport>
+    </AppModalPanel>
+  </AppModalShell>
 </template>
 
 <style scoped>

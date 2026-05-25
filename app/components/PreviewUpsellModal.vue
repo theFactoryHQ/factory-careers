@@ -13,12 +13,8 @@ function closeModal() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-      @click.self="closeModal"
-    >
-      <div class="ui-modal-panel relative w-full max-w-md">
+  <AppModalShell @close="closeModal">
+    <AppModalPanel class="max-w-md">
         <div class="ui-panel-header flex items-center justify-between px-5 py-4">
           <div class="flex items-center gap-2">
             <Eye class="size-5 text-brand-600 dark:text-brand-400" />
@@ -85,7 +81,6 @@ function closeModal() {
             View on GitHub
           </a>
         </div>
-      </div>
-    </div>
-  </Teleport>
+    </AppModalPanel>
+  </AppModalShell>
 </template>
