@@ -18,9 +18,12 @@ describe('dashboard top bar responsiveness', () => {
     expect(source).toContain('factory-button-cta factory-button-premium mx-1 hidden h-9')
   })
 
-  it('temporarily hides the desktop more actions menu pending a Factory refactor', () => {
-    expect(source).toContain('const showFactoryMoreActions = false')
-    expect(source).toMatch(/v-if="showFactoryMoreActions"[\s\S]*title="More options"/)
+  it('shows the desktop more actions menu as a keyboard-operable Factory menu', () => {
+    expect(source).not.toContain('const showFactoryMoreActions = false')
+    expect(source).toContain('title="More options"')
+    expect(source).toContain('aria-controls="topbar-more-actions-menu"')
+    expect(source).toContain('role="menu"')
+    expect(source).toContain('useMenuButton')
   })
 
   it('uses bordered Factory controls for job context sub-navigation tabs', () => {

@@ -713,7 +713,6 @@ const rescheduleForm = reactive({
   duration: 60,
 })
 const isRescheduling = ref(false)
-const rescheduleError = ref('')
 
 function toggleInterviewExpand(id: string) {
   if (expandedInterviewId.value === id) {
@@ -774,7 +773,7 @@ async function saveInterviewEdit() {
     await refreshJobInterviews()
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
-    interviewEditErrors.value.submit = err?.data?.statusMessage ?? 'Failed to save changes'
+    toast.error('Failed to save changes', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     isInterviewSaving.value = false
   }
@@ -802,18 +801,15 @@ function openReschedule(iv: Interview) {
   rescheduleForm.date = d.toISOString().slice(0, 10)
   rescheduleForm.time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
   rescheduleForm.duration = iv.duration
-  rescheduleError.value = ''
 }
 
 function cancelReschedule() {
   rescheduleInterviewId.value = null
-  rescheduleError.value = ''
 }
 
 async function handleReschedule() {
-  rescheduleError.value = ''
   if (!rescheduleForm.date || !rescheduleForm.time) {
-    rescheduleError.value = 'Date and time are required'
+    toast.error('Date and time required')
     return
   }
 
@@ -832,7 +828,7 @@ async function handleReschedule() {
     await refreshJobInterviews()
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
-    rescheduleError.value = err?.data?.statusMessage ?? 'Failed to reschedule'
+    toast.error('Failed to reschedule', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     isRescheduling.value = false
   }
@@ -1738,7 +1734,6 @@ function closeDocPreview() {
                             />
                           </div>
                         </div>
-                        <p v-if="rescheduleError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">{{ rescheduleError }}</p>
                         <div class="flex items-center justify-end gap-2 mt-3">
                           <button
                             class="cursor-pointer rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
@@ -1921,8 +1916,6 @@ function closeDocPreview() {
                                 Add interviewer
                               </button>
                             </div>
-
-                            <p v-if="interviewEditErrors.submit" class="text-xs text-danger-600 dark:text-danger-400">{{ interviewEditErrors.submit }}</p>
 
                             <div class="flex items-center justify-end gap-2 pt-2">
                               <button

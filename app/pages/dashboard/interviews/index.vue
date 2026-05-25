@@ -216,7 +216,7 @@ async function handleSaveEdit() {
     editingInterview.value = null
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
-    editErrors.value.submit = err?.data?.statusMessage ?? 'Failed to update interview'
+    toast.error('Failed to update interview', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     isSaving.value = false
   }
@@ -685,10 +685,6 @@ const statusCounts = computed(() => {
         <div class="ui-modal-backdrop absolute inset-0" @click="cancelEdit" />
         <div class="ui-modal-panel relative p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-5">Edit Interview</h3>
-
-          <div v-if="editErrors.submit" class="ui-alert-danger mb-4 p-3 text-sm">
-            {{ editErrors.submit }}
-          </div>
 
           <form class="space-y-4" @submit.prevent="handleSaveEdit">
             <div>

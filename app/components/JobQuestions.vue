@@ -7,6 +7,7 @@ const props = defineProps<{
 
 const { questions, status, addQuestion, updateQuestion, deleteQuestion, reorderQuestions } =
   useJobQuestions(props.jobId)
+const toast = useToast()
 
 // ─────────────────────────────────────────────
 // Add / Edit state
@@ -23,7 +24,6 @@ const editingQuestion = ref<{
 } | null>(null)
 
 const isSubmitting = ref(false)
-const actionError = ref<string | null>(null)
 
 async function handleAdd(data: {
   label: string
@@ -33,7 +33,6 @@ async function handleAdd(data: {
   options?: string[]
 }) {
   isSubmitting.value = true
-  actionError.value = null
   try {
     // Set displayOrder to the end of the list
     await addQuestion({
@@ -42,7 +41,7 @@ async function handleAdd(data: {
     })
     showAddForm.value = false
   } catch (err: any) {
-    actionError.value = err.data?.statusMessage ?? 'Failed to add question'
+    toast.error('Failed to add question', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
   } finally {
     isSubmitting.value = false
   }
@@ -57,12 +56,11 @@ async function handleUpdate(data: {
 }) {
   if (!editingQuestion.value) return
   isSubmitting.value = true
-  actionError.value = null
   try {
     await updateQuestion(editingQuestion.value.id, data)
     editingQuestion.value = null
   } catch (err: any) {
-    actionError.value = err.data?.statusMessage ?? 'Failed to update question'
+    toast.error('Failed to update question', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
   } finally {
     isSubmitting.value = false
   }
@@ -76,11 +74,10 @@ const deletingId = ref<string | null>(null)
 
 async function handleDelete(questionId: string) {
   deletingId.value = questionId
-  actionError.value = null
   try {
     await deleteQuestion(questionId)
   } catch (err: any) {
-    actionError.value = err.data?.statusMessage ?? 'Failed to delete question'
+    toast.error('Failed to delete question', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
   } finally {
     deletingId.value = null
   }
@@ -106,7 +103,7 @@ async function moveQuestion(index: number, direction: 'up' | 'down') {
   try {
     await reorderQuestions(order)
   } catch (err: any) {
-    actionError.value = err.data?.statusMessage ?? 'Failed to reorder questions'
+    toast.error('Failed to reorder questions', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
   }
 }
 
@@ -129,15 +126,6 @@ const typeLabels: Record<string, string> = {
 
 <template>
   <div>
-    <!-- Error banner -->
-    <div
-      v-if="actionError"
-      class="ui-alert ui-alert-danger mb-4"
-    >
-      {{ actionError }}
-      <button class="ml-2 underline" @click="actionError = null">Dismiss</button>
-    </div>
-
     <!-- Loading -->
     <div v-if="status === 'pending'" class="text-sm text-surface-400 py-4">
       Loading questions…

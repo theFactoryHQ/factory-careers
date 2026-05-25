@@ -124,7 +124,6 @@ const postingSchema = z.object({
 
 const postingErrors = ref<Record<string, string>>({})
 const isSavingPosting = ref(false)
-const postingSaved = ref(false)
 
 async function savePostingDetails() {
   const result = postingSchema.safeParse(form.value)
@@ -156,8 +155,7 @@ async function savePostingDetails() {
       activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue()),
       validThrough: form.value.validThrough ? new Date(form.value.validThrough) : null,
     } as any)
-    postingSaved.value = true
-    setTimeout(() => { postingSaved.value = false }, 2000)
+    toast.success('Application details saved')
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
     toast.error('Failed to save application details', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
@@ -205,15 +203,10 @@ function onSalaryMaxChange(e: Event) {
 const requireResume = ref(false)
 const requireCoverLetter = ref(false)
 const isSavingRequirements = ref(false)
-const requirementsSaved = ref(false)
-const requirementsError = ref<string | null>(null)
 let activeRequirementsSave: Promise<void> | null = null
 let saveRequirementsAgain = false
-let requirementsSavedTimer: ReturnType<typeof setTimeout> | null = null
 const requirementsSaveStatus = computed(() => {
   if (isSavingRequirements.value) return 'Saving...'
-  if (requirementsSaved.value) return 'Requirements saved'
-  if (requirementsError.value) return 'Autosave failed'
   return 'Automatically saves changes'
 })
 const applicationComplianceEnabled = ref(true)
@@ -221,15 +214,10 @@ const includeEeo = ref(true)
 const includeVeteran = ref(true)
 const includeDisability = ref(true)
 const isSavingCompliance = ref(false)
-const complianceSaved = ref(false)
-const complianceError = ref<string | null>(null)
 let activeComplianceSave: Promise<void> | null = null
 let saveComplianceAgain = false
-let complianceSavedTimer: ReturnType<typeof setTimeout> | null = null
 const complianceSaveStatus = computed(() => {
   if (isSavingCompliance.value) return 'Saving...'
-  if (complianceSaved.value) return 'Compliance questions saved'
-  if (complianceError.value) return 'Autosave failed'
   return 'Automatically saves changes'
 })
 const previewComplianceEnabled = computed(() =>
@@ -248,44 +236,22 @@ watch(job, (j) => {
   }
 }, { immediate: true })
 
-function clearRequirementsSavedTimer() {
-  if (requirementsSavedTimer) {
-    clearTimeout(requirementsSavedTimer)
-    requirementsSavedTimer = null
-  }
-}
-
-function clearComplianceSavedTimer() {
-  if (complianceSavedTimer) {
-    clearTimeout(complianceSavedTimer)
-    complianceSavedTimer = null
-  }
-}
-
 async function runRequirementsAutosave() {
   isSavingRequirements.value = true
-  requirementsError.value = null
   try {
     do {
       saveRequirementsAgain = false
       await updateJob({ requireResume: requireResume.value, requireCoverLetter: requireCoverLetter.value })
-      requirementsSaved.value = true
-      clearRequirementsSavedTimer()
-      requirementsSavedTimer = setTimeout(() => {
-        requirementsSaved.value = false
-        requirementsSavedTimer = null
-      }, 2000)
     } while (saveRequirementsAgain)
+    toast.success('Application requirements saved')
   } catch (err: any) {
-    requirementsError.value = err?.data?.statusMessage ?? 'Failed to save requirements.'
+    toast.error('Failed to save requirements', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     isSavingRequirements.value = false
   }
 }
 
 function autosaveRequirements() {
-  clearRequirementsSavedTimer()
-
   if (activeRequirementsSave) {
     saveRequirementsAgain = true
     return activeRequirementsSave
@@ -305,7 +271,6 @@ function toggleRequirement(type: 'resume' | 'coverLetter') {
 
 async function runComplianceAutosave() {
   isSavingCompliance.value = true
-  complianceError.value = null
   try {
     do {
       saveComplianceAgain = false
@@ -315,23 +280,16 @@ async function runComplianceAutosave() {
         includeVeteran: includeVeteran.value,
         includeDisability: includeDisability.value,
       })
-      complianceSaved.value = true
-      clearComplianceSavedTimer()
-      complianceSavedTimer = setTimeout(() => {
-        complianceSaved.value = false
-        complianceSavedTimer = null
-      }, 2000)
     } while (saveComplianceAgain)
+    toast.success('Compliance questions saved')
   } catch (err: any) {
-    complianceError.value = err?.data?.statusMessage ?? 'Failed to save compliance questions.'
+    toast.error('Failed to save compliance questions', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     isSavingCompliance.value = false
   }
 }
 
 function autosaveComplianceQuestions() {
-  clearComplianceSavedTimer()
-
   if (activeComplianceSave) {
     saveComplianceAgain = true
     return activeComplianceSave
@@ -347,11 +305,6 @@ function toggleComplianceEnabled() {
   applicationComplianceEnabled.value = !applicationComplianceEnabled.value
   void autosaveComplianceQuestions()
 }
-
-onBeforeUnmount(() => {
-  clearRequirementsSavedTimer()
-  clearComplianceSavedTimer()
-})
 
 // ─────────────────────────────────────────────
 // Tracking links for this job
@@ -709,7 +662,7 @@ async function copyTrackingUrl(code: string) {
             class="ui-button ui-button-primary h-10 px-5 text-sm"
           >
             <Save class="size-4" />
-            {{ postingSaved ? 'Saved!' : isSavingPosting ? 'Saving...' : 'Save application details' }}
+            {{ isSavingPosting ? 'Saving...' : 'Save application details' }}
           </button>
         </div>
       </form>
@@ -766,9 +719,6 @@ async function copyTrackingUrl(code: string) {
         </div>
         <p class="text-xs text-surface-400 dark:text-surface-500" role="status">
           {{ requirementsSaveStatus }}
-        </p>
-        <p v-if="requirementsError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">
-          {{ requirementsError }}
         </p>
       </div>
 
@@ -848,9 +798,6 @@ async function copyTrackingUrl(code: string) {
 
         <p class="text-xs text-surface-400 dark:text-surface-500" role="status">
           {{ complianceSaveStatus }}
-        </p>
-        <p v-if="complianceError" class="mt-2 text-xs text-danger-600 dark:text-danger-400">
-          {{ complianceError }}
         </p>
       </div>
 

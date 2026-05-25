@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
   X, Mail, Send, ChevronDown, Eye, Pencil, FileText,
-  Check, AlertCircle, Plus, Trash2, Save, Sparkles,
+  Check, Plus, Trash2, Save, Sparkles,
 } from 'lucide-vue-next'
 import type { Interview } from '~/composables/useInterviews'
 import type { EmailTemplate } from '~/composables/useEmailTemplates'
@@ -15,6 +15,7 @@ const emit = defineEmits<{
   sent: []
 }>()
 
+const toast = useToast()
 const { templates, createTemplate, deleteTemplate, sendInvitation } = useEmailTemplates()
 const { formatPersonName } = useOrgSettings()
 
@@ -26,7 +27,6 @@ const activeTab = ref<Tab>('template')
 const selectedTemplateId = ref<string>('system-standard')
 const showPreview = ref(false)
 const isSending = ref(false)
-const sendError = ref('')
 const sendSuccess = ref(false)
 
 // Custom email state
@@ -39,7 +39,6 @@ const newTemplateName = ref('')
 const newTemplateSubject = ref('')
 const newTemplateBody = ref('')
 const isSavingTemplate = ref(false)
-const templateSaveError = ref('')
 
 // ─── Computed ─────────────────────────────────────────────────────
 const allTemplates = computed(() => [
@@ -88,7 +87,6 @@ const previewBody = computed(() => {
 
 // ─── Actions ──────────────────────────────────────────────────────
 async function handleSend() {
-  sendError.value = ''
   isSending.value = true
 
   try {
@@ -100,16 +98,15 @@ async function handleSend() {
     sendSuccess.value = true
     setTimeout(() => emit('sent'), 1500)
   } catch (err: any) {
-    sendError.value = err?.data?.statusMessage ?? err?.message ?? 'Failed to send invitation email'
+    toast.error('Failed to send invitation email', { message: err?.data?.statusMessage ?? err?.message, statusCode: err?.data?.statusCode })
   } finally {
     isSending.value = false
   }
 }
 
 async function handleSaveTemplate() {
-  templateSaveError.value = ''
   if (!newTemplateName.value.trim() || !newTemplateSubject.value.trim() || !newTemplateBody.value.trim()) {
-    templateSaveError.value = 'All fields are required'
+    toast.error('All fields are required')
     return
   }
 
@@ -125,7 +122,7 @@ async function handleSaveTemplate() {
     newTemplateSubject.value = ''
     newTemplateBody.value = ''
   } catch (err: any) {
-    templateSaveError.value = err?.data?.statusMessage ?? 'Failed to save template'
+    toast.error('Failed to save template', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     isSavingTemplate.value = false
   }
@@ -218,12 +215,6 @@ const canSend = computed(() => {
                 {{ tab.label }}
               </button>
             </div>
-          </div>
-
-          <!-- Error -->
-          <div v-if="sendError" class="ui-alert ui-alert-danger mx-4 sm:mx-6 mt-4 flex items-start gap-2.5">
-            <AlertCircle class="size-4 shrink-0 mt-0.5" />
-            {{ sendError }}
           </div>
 
           <!-- Tab content -->
@@ -367,9 +358,6 @@ const canSend = computed(() => {
               <!-- New template form -->
               <div v-if="showNewTemplateForm" class="ui-panel-muted ui-email-modal-template-form">
                 <h4 class="text-sm font-semibold text-surface-800 dark:text-surface-200">Create Template</h4>
-                <div v-if="templateSaveError" class="ui-alert ui-alert-danger p-2.5 text-xs">
-                  {{ templateSaveError }}
-                </div>
                 <input
                   v-model="newTemplateName"
                   type="text"

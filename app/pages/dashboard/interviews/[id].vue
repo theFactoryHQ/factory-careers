@@ -4,7 +4,7 @@ import {
   FileText, UsersRound, CheckCircle2, XCircle, AlertTriangle,
   UserRound, Briefcase, Pencil, MapPin, Users, MessageSquare,
   Save, X, Mail, Send, CheckCheck, ChevronDown, ExternalLink,
-  Check, AlertCircle,
+  Check,
 } from 'lucide-vue-next'
 import {
   getInterviewStatusBadgeClass,
@@ -148,7 +148,6 @@ const rescheduleForm = reactive({
   duration: 60,
 })
 const isRescheduling = ref(false)
-const rescheduleError = ref('')
 
 function openReschedule() {
   if (!interview.value) return
@@ -156,14 +155,12 @@ function openReschedule() {
   rescheduleForm.date = d.toISOString().slice(0, 10)
   rescheduleForm.time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
   rescheduleForm.duration = interview.value.duration
-  rescheduleError.value = ''
   showReschedule.value = true
 }
 
 async function handleReschedule() {
-  rescheduleError.value = ''
   if (!rescheduleForm.date || !rescheduleForm.time) {
-    rescheduleError.value = 'Date and time are required'
+    toast.error('Date and time required')
     return
   }
 
@@ -178,7 +175,7 @@ async function handleReschedule() {
     showReschedule.value = false
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
-    rescheduleError.value = err.data?.statusMessage ?? 'Failed to reschedule'
+    toast.error('Failed to reschedule', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
   } finally {
     isRescheduling.value = false
   }
@@ -224,7 +221,7 @@ async function handleSaveDetails() {
     showEditDetails.value = false
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
-    editErrors.value.submit = err.data?.statusMessage ?? 'Failed to update'
+    toast.error('Failed to update interview', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
   } finally {
     isSavingEdit.value = false
   }
@@ -252,7 +249,6 @@ async function handleDelete() {
 const showSendInvitation = ref(false)
 const selectedTemplateId = ref<string>('system-standard')
 const isSendingEmail = ref(false)
-const sendEmailError = ref('')
 const sendEmailSuccess = ref(false)
 const showEmailPreview = ref(false)
 
@@ -302,7 +298,6 @@ const emailPreviewBody = computed(() =>
 )
 
 async function handleSendInvitation() {
-  sendEmailError.value = ''
   isSendingEmail.value = true
   try {
     await sendInvitation(interviewId, { templateId: selectedTemplateId.value })
@@ -314,7 +309,7 @@ async function handleSendInvitation() {
     }, 2000)
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
-    sendEmailError.value = err?.data?.statusMessage ?? err?.message ?? 'Failed to send invitation'
+    toast.error('Failed to send invitation', { message: err?.data?.statusMessage ?? err?.message, statusCode: err?.data?.statusCode })
   } finally {
     isSendingEmail.value = false
   }
@@ -506,12 +501,6 @@ const localePath = useLocalePath()
                   <X class="size-4" />
                 </button>
               </div>
-            </div>
-
-            <!-- Error -->
-            <div v-if="sendEmailError" class="mx-5 mt-4 flex items-start gap-2.5 rounded-xl border border-danger-200/80 bg-danger-50 p-3.5 text-sm text-danger-700 dark:border-danger-800/60 dark:bg-danger-950/40 dark:text-danger-300">
-              <AlertCircle class="size-4 shrink-0 mt-0.5" />
-              {{ sendEmailError }}
             </div>
 
             <!-- Template selection -->
@@ -857,10 +846,6 @@ const localePath = useLocalePath()
         <div class="ui-modal-panel relative w-full max-w-md p-6">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-4">Reschedule Interview</h3>
 
-          <div v-if="rescheduleError" class="mb-4 rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-700 dark:border-danger-800 dark:bg-danger-950/40 dark:text-danger-300">
-            {{ rescheduleError }}
-          </div>
-
           <form class="space-y-4" @submit.prevent="handleReschedule">
             <div>
               <label for="reschedule-date" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
@@ -922,10 +907,6 @@ const localePath = useLocalePath()
       <div v-if="showEditDetails" class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showEditDetails = false">
         <div class="ui-modal-panel relative w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
           <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-5">Edit Interview Details</h3>
-
-          <div v-if="editErrors.submit" class="mb-4 rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-700 dark:border-danger-800 dark:bg-danger-950/40 dark:text-danger-300">
-            {{ editErrors.submit }}
-          </div>
 
           <form class="space-y-4" @submit.prevent="handleSaveDetails">
             <div>

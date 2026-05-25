@@ -25,6 +25,7 @@ function close() {
 const showSaveForm = ref(false)
 const newName = ref('')
 const nameInput = ref<HTMLInputElement | null>(null)
+const drawerRef = ref<HTMLElement | null>(null)
 
 async function openSaveForm() {
   showSaveForm.value = true
@@ -56,13 +57,13 @@ watch(() => props.modelValue, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
 })
 
-// Close on Escape
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape' && props.modelValue) close()
-}
-onMounted(() => document.addEventListener('keydown', onKeydown))
+useFocusTrap({
+  root: drawerRef,
+  active: computed(() => props.modelValue),
+  onEscape: close,
+})
+
 onUnmounted(() => {
-  document.removeEventListener('keydown', onKeydown)
   if (typeof document !== 'undefined') document.body.style.overflow = ''
 })
 </script>
@@ -89,6 +90,7 @@ onUnmounted(() => {
       leave-to-class="translate-x-full"
     >
       <aside
+        ref="drawerRef"
         v-if="modelValue"
         class="factory-dashboard-portal ui-drawer-panel ui-filter-drawer fixed inset-y-0 right-0 z-[60] w-full max-w-md flex flex-col"
         role="dialog"

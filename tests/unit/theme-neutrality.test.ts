@@ -290,7 +290,6 @@ describe('brand-neutral theme variables', () => {
         recipes: [
           'ui-modal-panel',
           'ui-panel-muted',
-          'ui-alert-danger',
           'ui-field',
           'ui-button-primary',
           'ui-button-secondary',
@@ -315,7 +314,6 @@ describe('brand-neutral theme variables', () => {
         path: 'app/pages/onboarding/create-org.vue',
         recipes: [
           'ui-alert-danger',
-          'ui-alert-success',
           'ui-button-primary',
           'ui-empty-state',
           'ui-field',
@@ -584,19 +582,19 @@ describe('brand-neutral theme variables', () => {
       },
       {
         path: 'app/pages/dashboard/settings/account.vue',
-        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-field', 'ui-alert-danger', 'ui-button-primary'],
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-field', 'ui-button-primary'],
       },
       {
         path: 'app/pages/dashboard/settings/localization.vue',
-        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted', 'ui-alert-danger'],
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted'],
       },
       {
         path: 'app/pages/dashboard/settings/integrations.vue',
-        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted', 'ui-button-primary', 'ui-button-danger', 'ui-button-secondary'],
       },
       {
         path: 'app/pages/dashboard/settings/sso.vue',
-        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted', 'ui-empty-panel', 'ui-field', 'ui-alert-danger', 'ui-alert-success', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline'],
+        recipes: ['ui-settings-page', 'ui-settings-page-header', 'ui-settings-panel', 'ui-settings-panel-header', 'ui-settings-panel-body', 'ui-panel-muted', 'ui-empty-panel', 'ui-field', 'ui-button-primary', 'ui-button-secondary', 'ui-button-danger-outline'],
       },
     ]
 
@@ -620,8 +618,6 @@ describe('brand-neutral theme variables', () => {
       'ui-settings-panel-body',
       'ui-list-row',
       'ui-field',
-      'ui-alert-danger',
-      'ui-alert-success',
       'ui-button-primary',
       'ui-button-secondary',
       'ui-button-danger',
@@ -762,7 +758,6 @@ describe('brand-neutral theme variables', () => {
       {
         path: 'app/pages/dashboard/interviews/templates/new.vue',
         recipes: [
-          'ui-alert-danger',
           'ui-button-ghost',
           'ui-button-primary',
           'ui-button-secondary',
@@ -780,7 +775,6 @@ describe('brand-neutral theme variables', () => {
       {
         path: 'app/pages/dashboard/interviews/templates/[id].vue',
         recipes: [
-          'ui-alert-danger',
           'ui-button-danger',
           'ui-button-ghost',
           'ui-button-primary',
@@ -856,7 +850,6 @@ describe('brand-neutral theme variables', () => {
           /flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500/,
           /cursor-pointer inline-flex items-center gap-1\.5 rounded-xl border border-surface-200/,
           /cursor-pointer inline-flex items-center gap-1\.5 rounded-xl bg-brand-600/,
-          /rounded-xl border border-danger-200\/80 bg-danger-50/,
           /rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900/,
           /w-full rounded-lg border border-surface-200 dark:border-surface-700/,
           /rounded-xl border border-brand-200 dark:border-brand-800\/60 bg-white/,
@@ -868,7 +861,6 @@ describe('brand-neutral theme variables', () => {
         path: 'app/pages/dashboard/interviews/templates/[id].vue',
         patterns: [
           /inline-flex items-center gap-1 rounded-full border border-surface-200/,
-          /rounded-xl border border-danger-200 bg-danger-50/,
           /inline-flex items-center gap-1\.5 rounded-lg bg-brand-600/,
           /cursor-pointer inline-flex items-center gap-1\.5 rounded-xl border border-surface-200/,
           /cursor-pointer inline-flex items-center gap-1\.5 rounded-xl bg-brand-600/,
@@ -948,7 +940,8 @@ describe('brand-neutral theme variables', () => {
     const source = readProjectFile('app/components/FactorySelect.vue')
 
     expect(source).toMatch(/defineOptions\(\{\s*inheritAttrs:\s*false,\s*\}\)/)
-    expect(source).toMatch(/<button[\s\S]*:id="id"/)
+    expect(source).toContain('const selectId = computed(() => props.id ?? generatedSelectId)')
+    expect(source).toMatch(/<button[\s\S]*:id="selectId"/)
   })
 
   it('keeps remaining dashboard display helpers centralized', () => {

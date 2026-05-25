@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Globe, Check, Loader2 } from 'lucide-vue-next'
+import { Globe, Loader2 } from 'lucide-vue-next'
 
 definePageMeta({})
 
@@ -11,6 +11,7 @@ useSeoMeta({
 const { allowed: canUpdateOrg } = usePermission({ organization: ['update'] })
 const { nameDisplayFormat, dateFormat, updateSettings } = useOrgSettings()
 const { track } = useTrack()
+const toast = useToast()
 
 const localNameFormat = ref<'first_last' | 'last_first'>('first_last')
 const localDateFormat = ref<'mdy' | 'dmy' | 'ymd'>('mdy')
@@ -41,30 +42,15 @@ watch([nameDisplayFormat, dateFormat], ([nf, df]) => {
 }, { immediate: true })
 
 const isSaving = ref(false)
-const saveSuccess = ref(false)
-const saveError = ref('')
-let saveSuccessTimer: ReturnType<typeof setTimeout> | null = null
 const localizationSaveStatus = computed(() => {
   if (isSaving.value) return 'Saving...'
-  if (saveSuccess.value) return 'Saved'
-  if (saveError.value) return 'Autosave failed'
   return 'Automatically saves changes'
 })
-
-function clearSaveSuccessTimer() {
-  if (saveSuccessTimer) {
-    clearTimeout(saveSuccessTimer)
-    saveSuccessTimer = null
-  }
-}
 
 async function autosaveLocalizationSettings() {
   if (!canUpdateOrg.value) return
   await nextTick()
-  clearSaveSuccessTimer()
   isSaving.value = true
-  saveError.value = ''
-  saveSuccess.value = false
 
   try {
     await updateSettings({
@@ -72,23 +58,15 @@ async function autosaveLocalizationSettings() {
       dateFormat: localDateFormat.value,
     })
     track('localization_settings_saved')
-    saveSuccess.value = true
-    saveSuccessTimer = setTimeout(() => {
-      saveSuccess.value = false
-      saveSuccessTimer = null
-    }, 3000)
+    toast.success('Localization settings saved')
   }
   catch (err: unknown) {
-    saveError.value = err instanceof Error ? err.message : 'Failed to save settings'
+    toast.error('Failed to save settings', { message: err instanceof Error ? err.message : undefined })
   }
   finally {
     isSaving.value = false
   }
 }
-
-onBeforeUnmount(() => {
-  clearSaveSuccessTimer()
-})
 
 // Preview helpers
 const previewCandidate = { firstName: 'Jane', lastName: 'Doe', displayName: null }
@@ -188,18 +166,9 @@ const previewDateFormatted = computed(() => {
           </div>
         </div>
 
-        <!-- Error -->
-        <div
-          v-if="saveError"
-          class="ui-alert ui-alert-danger"
-        >
-          {{ saveError }}
-        </div>
-
         <div class="flex items-center gap-3">
           <p class="inline-flex items-center gap-1.5 text-xs text-surface-400" role="status">
-            <Check v-if="saveSuccess" class="size-4 text-success-500" />
-            <Loader2 v-else-if="isSaving" class="size-4 animate-spin text-brand-500" />
+            <Loader2 v-if="isSaving" class="size-4 animate-spin text-brand-500" />
             {{ localizationSaveStatus }}
           </p>
           <p v-if="!canUpdateOrg" class="text-xs text-surface-400">Only admins and owners can change organization settings.</p>

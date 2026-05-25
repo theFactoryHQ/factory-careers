@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
   Save, Eye, EyeOff, Copy, Trash2, Lock,
-  FileText, Mail, AlertCircle,
+  FileText, Mail,
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -12,6 +12,7 @@ definePageMeta({
 const route = useRoute()
 const localePath = useLocalePath()
 const templateId = route.params.id as string
+const toast = useToast()
 const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 
 const isSystemTemplate = computed(() => templateId.startsWith('system-'))
@@ -61,14 +62,11 @@ watchEffect(() => {
 
 // ─── Save ────────────────────────────────────────────────────────
 const isSaving = ref(false)
-const saveError = ref('')
-const saveSuccess = ref(false)
 
 async function handleSave() {
   if (isSystemTemplate.value) return
-  saveError.value = ''
   if (!form.name.trim() || !form.subject.trim() || !form.body.trim()) {
-    saveError.value = 'All fields are required'
+    toast.error('All fields are required')
     return
   }
 
@@ -79,12 +77,11 @@ async function handleSave() {
       subject: form.subject.trim(),
       body: form.body.trim(),
     })
-    saveSuccess.value = true
+    toast.success('Template saved')
     hasLoaded.value = false // Re-sync
-    setTimeout(() => { saveSuccess.value = false }, 2000)
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
-    saveError.value = err?.data?.statusMessage ?? 'Failed to save template'
+    toast.error('Failed to save template', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     isSaving.value = false
   }
@@ -104,7 +101,7 @@ async function handleDuplicate() {
     await navigateTo(localePath(`/dashboard/interviews/templates/${(created as any).id}`))
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
-    saveError.value = err?.data?.statusMessage ?? 'Failed to duplicate template'
+    toast.error('Failed to duplicate template', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     isDuplicating.value = false
   }
@@ -121,7 +118,7 @@ async function handleDelete() {
     await navigateTo(localePath('/dashboard/interviews/templates'))
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
-    saveError.value = err?.data?.statusMessage ?? 'Failed to delete template'
+    toast.error('Failed to delete template', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
   } finally {
     isDeleting.value = false
   }
@@ -234,16 +231,10 @@ useSeoMeta({
               @click="handleSave"
             >
               <Save class="size-4" />
-              {{ isSaving ? 'Saving…' : saveSuccess ? 'Saved!' : 'Save Changes' }}
+              {{ isSaving ? 'Saving…' : 'Save Changes' }}
             </button>
           </template>
         </div>
-      </div>
-
-      <!-- Error -->
-      <div v-if="saveError" class="mb-6 flex items-start gap-2.5 rounded-xl border border-danger-200/80 bg-danger-50 p-4 text-sm text-danger-700 dark:border-danger-800/60 dark:bg-danger-950/40 dark:text-danger-300">
-        <AlertCircle class="size-4 shrink-0 mt-0.5" />
-        {{ saveError }}
       </div>
 
       <div class="grid gap-6" :class="showPreview ? 'lg:grid-cols-2' : 'lg:grid-cols-[1fr_320px]'">

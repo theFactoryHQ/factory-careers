@@ -127,7 +127,6 @@ const { uploadDocument, downloadDocument, getPreviewUrl, deleteDocument } = useD
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedDocType = ref<'resume' | 'cover_letter' | 'other'>('resume')
 const isUploading = ref(false)
-const uploadError = ref<string | null>(null)
 const showDocDeleteConfirm = ref<string | null>(null)
 const isDeletingDoc = ref(false)
 const reparsingDocId = ref<string | null>(null)
@@ -157,14 +156,13 @@ async function handleFileSelected(event: Event) {
   const file = input.files?.[0]
   if (!file || !candidateId.value) return
 
-  uploadError.value = null
   isUploading.value = true
 
   try {
     await uploadDocument(candidateId.value, file, selectedDocType.value)
     await refreshCandidate()
   } catch (err: any) {
-    uploadError.value = err.data?.statusMessage ?? err.statusMessage ?? 'Upload failed'
+    toast.error('Upload failed', { message: err.data?.statusMessage ?? err.statusMessage, statusCode: err.data?.statusCode ?? err.statusCode })
   } finally {
     isUploading.value = false
     input.value = ''
@@ -361,7 +359,6 @@ watch(activeTab, (tab) => {
 watch(() => props.applicationId, () => {
   isEditingNotes.value = false
   activeTab.value = 'overview'
-  uploadError.value = null
   showDocDeleteConfirm.value = null
   timelineItems.value = []
   timelineLoaded.value = false
@@ -820,15 +817,6 @@ function formatInterviewDate(dateStr: string) {
                   <Upload class="size-3.5" />
                   {{ isUploading ? 'Uploading…' : 'Upload Document' }}
                 </button>
-              </div>
-
-              <!-- Upload error -->
-              <div
-                v-if="uploadError"
-                class="ui-alert ui-alert-danger p-3 text-sm"
-              >
-                {{ uploadError }}
-                <button class="ui-inline-link-brand ml-1" @click="uploadError = null">Dismiss</button>
               </div>
 
               <!-- Empty state -->

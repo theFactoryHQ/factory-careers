@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  User, Save, Loader2, Check, Mail,
+  User, Save, Loader2, Mail,
 } from 'lucide-vue-next'
 
 definePageMeta({})
@@ -11,14 +11,13 @@ useSeoMeta({
 })
 
 const { data: session } = await authClient.useSession(useFetch)
+const toast = useToast()
 
 // ─────────────────────────────────────────────
 // Profile editing
 // ─────────────────────────────────────────────
 const profileName = ref('')
 const isSavingProfile = ref(false)
-const profileSuccess = ref(false)
-const profileError = ref('')
 
 watch(() => session.value?.user, (user) => {
   if (user) {
@@ -28,19 +27,16 @@ watch(() => session.value?.user, (user) => {
 
 async function handleSaveProfile() {
   isSavingProfile.value = true
-  profileError.value = ''
-  profileSuccess.value = false
 
   try {
     const result = await authClient.updateUser({
       name: profileName.value.trim(),
     })
     if (result.error) throw new Error(String(result.error.message ?? 'Failed to update profile'))
-    profileSuccess.value = true
-    setTimeout(() => { profileSuccess.value = false }, 3000)
+    toast.success('Profile updated')
   }
   catch (err: unknown) {
-    profileError.value = err instanceof Error ? err.message : 'Failed to update profile'
+    toast.error('Failed to update profile', { message: err instanceof Error ? err.message : undefined })
   }
   finally {
     isSavingProfile.value = false
@@ -136,22 +132,8 @@ function getInitials(name: string | undefined): string {
             {{ isSavingProfile ? 'Saving…' : 'Save profile' }}
           </button>
 
-          <Transition
-            enter-active-class="transition-opacity duration-300"
-            leave-active-class="transition-opacity duration-300"
-            enter-from-class="opacity-0"
-            leave-to-class="opacity-0"
-          >
-            <span v-if="profileSuccess" class="text-sm text-success-600 dark:text-success-400 font-medium flex items-center gap-1.5">
-              <Check class="size-4" />
-              Profile updated
-            </span>
-          </Transition>
         </div>
 
-        <div v-if="profileError" class="ui-alert ui-alert-danger">
-          {{ profileError }}
-        </div>
       </div>
     </section>
 
