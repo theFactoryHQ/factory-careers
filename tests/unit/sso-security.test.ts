@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { registerSsoSchema } from '../../server/utils/ssoSecurity'
 
 /**
@@ -304,6 +306,14 @@ describe('SSO callback URL construction', () => {
     // Provider IDs are already restricted to [a-z0-9-] so no encoding needed
     const url = getCallbackUrl('https://app.reqcore.com', 'my-company-123')
     expect(url).not.toContain('%')
+  })
+
+  it('keeps settings page callback URL rendering SSR-safe', () => {
+    const source = readFileSync(join(process.cwd(), 'app/pages/dashboard/settings/sso.vue'), 'utf8')
+    const helper = source.match(/function getCallbackUrl[\s\S]*?\n}/)?.[0] ?? ''
+
+    expect(helper).toContain('siteOrigin.value')
+    expect(helper).not.toContain('window.location')
   })
 })
 

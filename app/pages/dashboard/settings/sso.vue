@@ -215,8 +215,7 @@ async function handleDelete(id: string) {
 const copiedProviderId = ref<string | null>(null)
 
 function getCallbackUrl(providerId: string) {
-  const base = window.location.origin
-  return `${base}/api/auth/sso/callback/${providerId}`
+  return `${siteOrigin.value}/api/auth/sso/callback/${providerId}`
 }
 
 async function copyCallbackUrl(providerId: string) {
