@@ -17,11 +17,8 @@ const { data: session } = await authClient.useSession(useFetch)
 const isSigningOut = ref(false)
 
 const showFeedbackModal = ref(false)
-const showUserMenu = ref(false)
 const showMobileMenu = ref(false)
-const showGetStartedMenu = ref(false)
 const showMoreNav = ref(false)
-const showMoreActions = ref(false)
 
 const config = useRuntimeConfig()
 const { activeOrg } = useCurrentOrg()
@@ -34,12 +31,14 @@ const isDemo = computed(() => {
   return slug && activeOrg.value?.slug === slug
 })
 
-const getStartedMenuRef = useTemplateRef<HTMLElement>('getStartedMenuRoot')
-function onClickOutsideGetStarted(e: MouseEvent) {
-  if (getStartedMenuRef.value && !getStartedMenuRef.value.contains(e.target as Node)) {
-    showGetStartedMenu.value = false
-  }
-}
+const getStartedTriggerRef = ref<HTMLElement | null>(null)
+const getStartedPanelRef = ref<HTMLElement | null>(null)
+const getStartedMenu = useMenuButton({
+  id: 'topbar-get-started-menu',
+  triggerRef: getStartedTriggerRef,
+  menuRef: getStartedPanelRef,
+})
+const showGetStartedMenu = getStartedMenu.isOpen
 
 const userName = computed(() => session.value?.user?.name ?? 'User')
 const userEmail = computed(() => session.value?.user?.email ?? '')
@@ -104,7 +103,25 @@ const { data: feedbackConfig } = useFetch('/api/feedback/config', {
 const isFeedbackEnabled = computed(() => feedbackConfig.value?.enabled === true)
 
 const showChatbot = useFeatureFlagEnabled('chatbot-experience')
-const showFactoryMoreActions = false
+
+const moreActionsTriggerRef = ref<HTMLElement | null>(null)
+const moreActionsPanelRef = ref<HTMLElement | null>(null)
+const moreActionsMenu = useMenuButton({
+  id: 'topbar-more-actions-menu',
+  triggerRef: moreActionsTriggerRef,
+  menuRef: moreActionsPanelRef,
+})
+const showMoreActions = moreActionsMenu.isOpen
+
+const userTriggerRef = ref<HTMLElement | null>(null)
+const userPanelRef = ref<HTMLElement | null>(null)
+const userMenu = useMenuButton({
+  id: 'topbar-user-menu',
+  triggerRef: userTriggerRef,
+  menuRef: userPanelRef,
+  focusOnOpen: false,
+})
+const showUserMenu = userMenu.isOpen
 
 const jobTabs = computed(() => {
   if (!activeJobId.value) return []
@@ -191,29 +208,6 @@ function handleNewJobClick() {
   }
 }
 
-// Close user menu on outside click
-const userMenuRef = useTemplateRef<HTMLElement>('userMenuRoot')
-const moreActionsMenuRef = useTemplateRef<HTMLElement>('moreActionsMenuRoot')
-function onClickOutsideUser(e: MouseEvent) {
-  if (userMenuRef.value && !userMenuRef.value.contains(e.target as Node)) {
-    showUserMenu.value = false
-  }
-}
-function onClickOutsideMoreActions(e: MouseEvent) {
-  if (moreActionsMenuRef.value && !moreActionsMenuRef.value.contains(e.target as Node)) {
-    showMoreActions.value = false
-  }
-}
-onMounted(() => {
-  document.addEventListener('click', onClickOutsideUser)
-  document.addEventListener('click', onClickOutsideMoreActions)
-  document.addEventListener('click', onClickOutsideGetStarted)
-})
-onUnmounted(() => {
-  document.removeEventListener('click', onClickOutsideUser)
-  document.removeEventListener('click', onClickOutsideMoreActions)
-  document.removeEventListener('click', onClickOutsideGetStarted)
-})
 </script>
 
 <template>
@@ -323,10 +317,15 @@ onUnmounted(() => {
         <!-- Right: Actions -->
         <div class="flex shrink-0 items-center gap-1 pl-2 lg:gap-1.5 lg:pl-3 xl:pl-4">
           <!-- Get Started CTA (demo mode only) -->
-          <div v-if="isDemo" ref="getStartedMenuRoot" class="relative hidden sm:block">
+          <div v-if="isDemo" class="relative hidden sm:block">
             <button
+              ref="getStartedTriggerRef"
               class="factory-button-cta factory-button-premium group inline-flex h-9 items-center gap-2 px-4 text-[13px] transition-all duration-200 cursor-pointer"
-              @click="showGetStartedMenu = !showGetStartedMenu"
+              aria-haspopup="menu"
+              :aria-expanded="showGetStartedMenu"
+              aria-controls="topbar-get-started-menu"
+              @click="getStartedMenu.toggleMenu"
+              @keydown="getStartedMenu.onTriggerKeydown"
             >
               <Sparkles class="size-3.5 transition-transform duration-300 group-hover:rotate-12" />
               Get Started
@@ -345,8 +344,12 @@ onUnmounted(() => {
               leave-to-class="opacity-0 scale-95 -translate-y-1"
             >
               <div
+                id="topbar-get-started-menu"
+                ref="getStartedPanelRef"
                 v-if="showGetStartedMenu"
                 class="absolute right-0 top-[calc(100%+6px)] w-72 border border-white/12 bg-black shadow-2xl shadow-black/50 overflow-hidden"
+                role="menu"
+                @keydown="getStartedMenu.onMenuKeydown"
               >
                 <div class="px-4 py-3 border-b border-white/10">
                   <p class="text-xs font-medium text-white/45 uppercase tracking-normal">Choose your setup</p>
@@ -355,6 +358,8 @@ onUnmounted(() => {
                   <NuxtLink
                     :to="$localePath('/auth/fresh-signup')"
                     class="flex items-start gap-3 px-3 py-2.5 transition-colors hover:bg-brand-500/12 no-underline group/item"
+                    role="menuitem"
+                    @click="getStartedMenu.closeMenu()"
                   >
                     <div class="flex items-center justify-center size-8 bg-brand-500/15 text-brand-400 shrink-0 mt-0.5">
                       <Cloud class="size-4" />
@@ -369,6 +374,8 @@ onUnmounted(() => {
                     target="_blank"
                     rel="noopener noreferrer"
                     class="flex items-start gap-3 px-3 py-2.5 transition-colors hover:bg-white/[0.05] no-underline group/item"
+                    role="menuitem"
+                    @click="getStartedMenu.closeMenu()"
                   >
                     <div class="flex items-center justify-center size-8 bg-white/[0.06] text-white/58 shrink-0 mt-0.5">
                       <Server class="size-4" />
@@ -394,18 +401,17 @@ onUnmounted(() => {
 
           <!-- More actions dropdown -->
           <div
-            v-if="showFactoryMoreActions"
-            ref="moreActionsMenuRoot"
             class="relative hidden sm:block"
-            @mouseenter="showMoreActions = true"
-            @mouseleave="showMoreActions = false"
           >
             <button
+              ref="moreActionsTriggerRef"
               class="inline-flex items-center justify-center size-8 bg-transparent text-white/55 transition-all duration-200 cursor-pointer hover:bg-white/[0.04] hover:text-white"
               title="More options"
               aria-haspopup="menu"
               :aria-expanded="showMoreActions"
-              @click.stop="showMoreActions = true"
+              aria-controls="topbar-more-actions-menu"
+              @click.stop="moreActionsMenu.toggleMenu"
+              @keydown="moreActionsMenu.onTriggerKeydown"
             >
               <MoreHorizontal class="size-4" />
             </button>
@@ -421,14 +427,22 @@ onUnmounted(() => {
                 v-if="showMoreActions"
                 class="absolute right-0 top-full z-50 pt-1.5"
               >
-                <div class="w-64 border border-white/12 bg-black shadow-2xl shadow-black/50 overflow-visible py-1">
+                <div
+                  id="topbar-more-actions-menu"
+                  ref="moreActionsPanelRef"
+                  class="w-64 border border-white/12 bg-black shadow-2xl shadow-black/50 overflow-visible py-1"
+                  role="menu"
+                  @keydown="moreActionsMenu.onMenuKeydown"
+                >
                   <div class="py-1">
                     <NuxtLink
                       :to="$localePath('/dashboard/updates')"
                       class="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors no-underline"
+                      role="menuitem"
                       :class="isActiveRoute('/dashboard/updates', false)
                         ? 'bg-brand-500/12 text-white'
                         : 'text-white/62 hover:text-white'"
+                      @click="moreActionsMenu.closeMenu()"
                     >
                       <ArrowUpCircle class="size-4" />
                       Updates & changelog
@@ -436,7 +450,8 @@ onUnmounted(() => {
                     <button
                       v-if="isFeedbackEnabled"
                       class="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] font-medium text-white/62 hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-left"
-                      @click="showFeedbackModal = true; showMoreActions = false"
+                      role="menuitem"
+                      @click="showFeedbackModal = true; moreActionsMenu.closeMenu()"
                     >
                       <MessageSquarePlus class="size-4" />
                       Report issue
@@ -451,10 +466,15 @@ onUnmounted(() => {
           <div class="hidden sm:block w-px h-6 bg-white/10 mx-0.5" />
 
           <!-- User menu -->
-          <div ref="userMenuRoot" class="relative">
+          <div class="relative">
             <button
+              ref="userTriggerRef"
               class="flex h-9 items-center gap-1.5 border-0 bg-transparent px-0 transition-colors duration-200 cursor-pointer hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500/60"
-              @click="showUserMenu = !showUserMenu"
+              aria-haspopup="menu"
+              :aria-expanded="showUserMenu"
+              aria-controls="topbar-user-menu"
+              @click="userMenu.toggleMenu"
+              @keydown="userMenu.onTriggerKeydown"
             >
               <img
                 v-if="userImage"
@@ -481,8 +501,12 @@ onUnmounted(() => {
               leave-to-class="opacity-0 scale-95 -translate-y-1"
             >
               <div
+                id="topbar-user-menu"
+                ref="userPanelRef"
                 v-if="showUserMenu"
                 class="absolute right-0 top-[calc(100%+6px)] w-64 border border-white/12 bg-black shadow-2xl shadow-black/50 overflow-hidden"
+                role="menu"
+                @keydown="userMenu.onMenuKeydown"
               >
                 <!-- User info header -->
                 <div class="px-4 py-3 border-b border-white/10">
@@ -507,6 +531,7 @@ onUnmounted(() => {
                   <button
                     class="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-left"
                     :disabled="isSigningOut"
+                    role="menuitem"
                     @click="handleSignOut"
                   >
                     <LogOut class="size-4" />
