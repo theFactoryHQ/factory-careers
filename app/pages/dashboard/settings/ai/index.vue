@@ -7,7 +7,7 @@
  */
 import {
   Brain, Plus, Loader2, AlertTriangle, Sparkles, BarChart3, Star,
-  Pencil, Trash2, Zap, Check, Server, RefreshCw, Save,
+  Pencil, Trash2, Zap, Check, Server, Save,
 } from 'lucide-vue-next'
 
 definePageMeta({})
@@ -164,43 +164,6 @@ async function deleteConfig(c: AiConfigRow) {
   }
 }
 
-const isRefreshingModels = ref(false)
-async function refreshModelCatalog() {
-  isRefreshingModels.value = true
-  try {
-    const result = await $fetch<{
-      providers: Record<string, ProviderInfo>
-      refreshedProviders: Array<{ provider: string, modelCount: number }>
-      errors: Array<{ provider: string, message: string }>
-    }>('/api/ai-config/providers/refresh', {
-      method: 'POST',
-      body: { force: true },
-      headers: useRequestHeaders(['cookie']),
-    })
-    providers.value = result.providers
-
-    if (result.refreshedProviders.length > 0) {
-      toast.success(
-        'Model catalog refreshed',
-        `${result.refreshedProviders.length} provider${result.refreshedProviders.length === 1 ? '' : 's'} updated.`,
-      )
-    }
-    else if (result.errors.length > 0) {
-      toast.error('Refresh did not complete', { message: result.errors[0]?.message ?? 'No provider models were refreshed.' })
-    }
-    else {
-      toast.info('No providers refreshed', 'Add a provider API key before refreshing the model catalog.')
-    }
-  }
-  catch (err: any) {
-    const message = err?.data?.statusMessage ?? err?.message ?? 'Failed to refresh model catalog.'
-    toast.error('Refresh failed', { message })
-  }
-  finally {
-    isRefreshingModels.value = false
-  }
-}
-
 function providerLabel(key: string): string {
   return providers.value?.[key]?.name ?? key
 }
@@ -296,16 +259,6 @@ function formatPrice(p: number | null): string {
           </p>
         </div>
         <div v-if="canManageAi" class="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            :disabled="isRefreshingModels"
-            class="ui-button ui-button-secondary h-9 px-3.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="refreshModelCatalog"
-          >
-            <Loader2 v-if="isRefreshingModels" class="size-3.5 animate-spin" />
-            <RefreshCw v-else class="size-3.5" />
-            Refresh models
-          </button>
           <NuxtLink
             to="/dashboard/settings/ai/new"
             class="ui-button ui-button-primary h-9 px-3.5 text-xs no-underline"
