@@ -220,7 +220,7 @@ onUnmounted(() => {
   <header class="factory-dashboard-topbar sticky top-0 z-50 w-full">
     <!-- Primary navigation bar -->
     <div class="relative z-20 border-b border-white/10 bg-black/90 backdrop-blur-xl">
-      <div class="flex h-16 items-center justify-between px-4 lg:px-6">
+      <div class="factory-layout-container flex h-16 items-center justify-between">
         <!-- Left: Logo + Nav -->
         <div class="flex min-w-0 items-center gap-2 lg:gap-3">
           <NuxtLink
@@ -539,7 +539,7 @@ onUnmounted(() => {
         v-if="activeJobId"
         class="relative z-10 border-b border-white/10 bg-black/92 backdrop-blur-lg"
       >
-        <div class="flex flex-col gap-2 px-3 py-2 lg:h-10 lg:flex-row lg:items-center lg:gap-4 lg:px-6 lg:py-0">
+        <div class="factory-layout-container flex flex-col gap-2 py-2 lg:h-10 lg:flex-row lg:items-center lg:gap-4 lg:py-0">
           <div class="factory-job-mobile-context flex min-w-0 items-center gap-2 lg:hidden">
             <NuxtLink
               :to="$localePath('/dashboard/jobs')"
@@ -628,7 +628,7 @@ onUnmounted(() => {
         v-if="showMobileMenu"
         class="relative z-10 md:hidden border-b border-white/10 bg-black/95 backdrop-blur-xl"
       >
-        <nav class="px-4 py-3 flex flex-col gap-1">
+        <nav class="factory-layout-container py-3 flex flex-col gap-1">
           <NuxtLink
             v-for="item in navItems"
             :key="item.to"

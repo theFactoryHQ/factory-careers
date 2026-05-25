@@ -5,11 +5,11 @@ const localePath = useLocalePath()
 const mainClass = computed(() => {
   if (route.meta.publicWide) {
     return route.meta.publicFlushTop
-      ? 'w-full px-4 pb-10 pt-0 sm:px-6 sm:pb-14 lg:px-6'
-      : 'w-full px-4 py-10 sm:px-6 sm:py-14 lg:px-6'
+      ? 'factory-layout-container pb-10 pt-0 sm:pb-14'
+      : 'factory-layout-container py-10 sm:py-14'
   }
 
-  return 'mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14'
+  return 'factory-layout-container py-10 sm:py-14'
 })
 </script>
 
@@ -19,7 +19,7 @@ const mainClass = computed(() => {
       class="border-b border-white/10 bg-black/90 backdrop-blur-xl"
       :class="route.meta.publicPinnedNav ? 'sticky top-0 z-50' : ''"
     >
-      <div class="flex h-16 items-center justify-between px-4 lg:px-6">
+      <div class="factory-layout-container flex h-16 items-center justify-between">
         <NuxtLink
           :to="localePath('/jobs')"
           class="inline-flex shrink-0 items-center gap-3 text-white no-underline transition-opacity hover:opacity-85"

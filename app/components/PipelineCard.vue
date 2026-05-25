@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { User, Calendar } from 'lucide-vue-next'
+import { Calendar } from 'lucide-vue-next'
 import {
   getApplicationTransitionButtonClass,
   getApplicationTransitionLabel,
@@ -34,15 +34,7 @@ const { formatPersonName, formatDateTime } = useOrgSettings()
         {{ formatPersonName(candidateFirstName, candidateLastName) }}
       </h4>
       <div class="flex items-center gap-2 text-xs text-surface-400 mt-0.5">
-        <a
-          :href="`mailto:${candidateEmail}`"
-          target="_blank"
-          class="inline-flex items-center gap-1 truncate hover:text-brand-600 dark:hover:text-brand-400 hover:underline cursor-pointer transition-colors"
-          @click.stop
-        >
-          <User class="size-3 shrink-0" />
-          {{ candidateEmail }}
-        </a>
+        <CopyEmailButton :email="candidateEmail" class="truncate text-surface-400" />
       </div>
     </NuxtLink>
 

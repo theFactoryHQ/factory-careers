@@ -318,12 +318,13 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
         </div>
         <div class="flex items-center gap-2">
           <!-- Date range pill -->
-          <div class="ui-panel inline-flex rounded-xl p-0.5">
+          <div class="factory-view-toggle inline-flex h-10 overflow-hidden border">
             <button
               v-for="range in (['7d', '30d', '90d', 'all'] as const)"
               :key="range"
-              class="ui-filter-chip px-3 py-1.5 text-xs font-medium transition-all"
-              :class="dateRange === range ? 'ui-filter-chip-active' : 'ui-filter-chip-inactive'"
+              type="button"
+              class="inline-flex h-full items-center border-l border-white/10 px-3 transition-colors first:border-l-0"
+              :class="{ 'is-active': dateRange === range }"
               @click="dateRange = range"
             >
               {{ range === 'all' ? 'All time' : range.toUpperCase() }}
@@ -944,7 +945,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
                         <div class="text-sm font-medium text-surface-800 dark:text-surface-200 truncate group-hover/candidate:text-brand-600 dark:group-hover/candidate:text-brand-400 transition-colors">
                           {{ formatPersonName(app.candidateFirstName, app.candidateLastName) }}
                         </div>
-                        <div class="text-[11px] text-surface-400 truncate">{{ app.candidateEmail }}</div>
+                        <CopyEmailButton :email="app.candidateEmail" class="max-w-full text-[11px] text-surface-400" />
                       </div>
                     </NuxtLink>
                   </td>

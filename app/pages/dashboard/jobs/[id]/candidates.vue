@@ -467,11 +467,7 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
                   </div>
                 </td>
                 <td v-if="visibleCols.email" class="hidden sm:table-cell px-4 py-3 text-surface-600 dark:text-surface-300 max-w-[220px] truncate">
-                  <a
-                    :href="`mailto:${app.candidateEmail}`"
-                    target="_blank"
-                    class="hover:text-brand-600 dark:hover:text-brand-400 hover:underline cursor-pointer transition-colors"
-                  >{{ app.candidateEmail }}</a>
+                  <CopyEmailButton :email="app.candidateEmail" :show-icon="false" class="text-surface-600 dark:text-surface-300" />
                 </td>
                 <td v-if="visibleCols.score" class="px-4 py-3">
                   <span

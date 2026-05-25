@@ -13,6 +13,7 @@ import {
   getInterviewTransitionButtonClass,
   getInterviewTransitionLabel,
 } from '~/utils/status-display'
+import { formatPhoneNumber } from '~/utils/phone-format'
 
 definePageMeta({
   layout: 'dashboard',
@@ -732,11 +733,13 @@ const localePath = useLocalePath()
             </div>
             <div>
               <dt class="text-surface-400">Email</dt>
-              <dd class="text-surface-700 dark:text-surface-200 font-medium">{{ interview.candidateEmail }}</dd>
+              <dd class="font-medium">
+                <CopyEmailButton :email="interview.candidateEmail" :show-icon="false" class="text-surface-700 dark:text-surface-200" />
+              </dd>
             </div>
             <div v-if="interview.candidatePhone">
               <dt class="text-surface-400">Phone</dt>
-              <dd class="text-surface-700 dark:text-surface-200 font-medium">{{ interview.candidatePhone }}</dd>
+              <dd class="text-surface-700 dark:text-surface-200 font-medium">{{ formatPhoneNumber(interview.candidatePhone) }}</dd>
             </div>
             <div>
               <dt class="text-surface-400">Job</dt>

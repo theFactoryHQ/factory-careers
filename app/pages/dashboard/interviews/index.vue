@@ -325,36 +325,34 @@ const statusCounts = computed(() => {
         <button
           v-for="s in STATUS_OPTIONS"
           :key="s"
-          class="ui-filter-chip inline-flex h-[38px] items-center gap-1.5 px-3 text-[11px] font-light uppercase leading-none tracking-normal cursor-pointer"
+          class="ui-filter-chip inline-flex h-[38px] items-center gap-1.5 px-3 font-light uppercase tracking-normal cursor-pointer"
           :class="activeStatus === s ? 'ui-filter-chip-active' : 'ui-filter-chip-inactive'"
           @click="activeStatus = activeStatus === s ? undefined : s"
         >
           <span class="ui-status-dot size-1.5 rounded-full" :class="getInterviewStatusDotClass(s)" />
           {{ getInterviewStatusLabel(s) }}
-          <span class="tabular-nums text-[10px] font-normal" :class="activeStatus === s ? 'text-brand-600 dark:text-brand-400' : 'text-surface-400 dark:text-surface-500'">{{ statusCounts[s] }}</span>
+          <span class="tabular-nums font-normal" :class="activeStatus === s ? 'text-brand-600 dark:text-brand-400' : 'text-surface-400 dark:text-surface-500'">{{ statusCounts[s] }}</span>
         </button>
       </div>
 
       <!-- View toggle -->
-      <div class="ui-panel flex shrink-0 overflow-hidden">
+      <div class="factory-view-toggle flex h-[38px] shrink-0 overflow-hidden border">
         <button
-          class="h-[38px] px-3 py-0 text-xs !font-semibold uppercase tracking-normal transition-all cursor-pointer"
-          :class="activeView === 'list'
-            ? 'bg-brand-600 text-white'
-            : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'"
+          type="button"
+          class="inline-flex h-full items-center px-3 transition-colors cursor-pointer"
+          :class="{ 'is-active': activeView === 'list' }"
           @click="activeView = 'list'"
         >
-          <span style="font-weight: 600">List</span>
+          List
         </button>
         <button
-          class="h-[38px] px-3 py-0 text-xs !font-semibold uppercase tracking-normal transition-all cursor-pointer"
-          :class="activeView === 'calendar'
-            ? 'bg-brand-600 text-white'
-            : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'"
+          type="button"
+          class="inline-flex h-full items-center gap-1.5 border-l border-white/10 px-3 transition-colors cursor-pointer"
+          :class="{ 'is-active': activeView === 'calendar' }"
           @click="activeView = 'calendar'"
         >
-          <CalendarDays class="inline size-3.5 mr-1 -mt-0.5" />
-          <span style="font-weight: 600">Timeline</span>
+          <CalendarDays class="size-3.5" />
+          Timeline
         </button>
       </div>
     </div>
