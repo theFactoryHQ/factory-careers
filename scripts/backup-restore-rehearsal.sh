@@ -3,14 +3,16 @@ set -euo pipefail
 
 # Rehearses the PostgreSQL dump/restore mechanics used by the production
 # runbook. This intentionally uses disposable Docker containers and a sentinel
-# table so it never touches a real Reqcore database.
+# table so it never touches a real Factory Careers database.
 
-SOURCE_CONTAINER="${SOURCE_CONTAINER:-reqcore-backup-rehearsal-source-$$}"
-TARGET_CONTAINER="${TARGET_CONTAINER:-reqcore-backup-rehearsal-target-$$}"
+SOURCE_CONTAINER="${SOURCE_CONTAINER:-factory-careers-backup-rehearsal-source-$$}"
+TARGET_CONTAINER="${TARGET_CONTAINER:-factory-careers-backup-rehearsal-target-$$}"
 POSTGRES_IMAGE="${POSTGRES_IMAGE:-postgres:16-alpine}"
-POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-reqcore-rehearsal}"
+POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-factory-careers-rehearsal}"
 TMP_DIR="$(mktemp -d)"
-BACKUP_PATH="${TMP_DIR}/reqcore-rehearsal.sql"
+BACKUP_PATH="${TMP_DIR}/factory-careers-rehearsal.sql"
+DB_NAME="${DB_NAME:-factory_careers}"
+SENTINEL_MARKER="${SENTINEL_MARKER:-factory-careers-restore-rehearsal}"
 
 cleanup() {
   docker rm -f "$SOURCE_CONTAINER" "$TARGET_CONTAINER" >/dev/null 2>&1 || true
@@ -43,8 +45,8 @@ docker run -d \
   "$POSTGRES_IMAGE" >/dev/null
 wait_for_postgres "$SOURCE_CONTAINER"
 
-docker exec -e PGHOST=127.0.0.1 "$SOURCE_CONTAINER" createdb -U postgres reqcore
-docker exec -i -e PGHOST=127.0.0.1 "$SOURCE_CONTAINER" psql -U postgres -d reqcore -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
+docker exec -e PGHOST=127.0.0.1 "$SOURCE_CONTAINER" createdb -U postgres "$DB_NAME"
+docker exec -i -e PGHOST=127.0.0.1 "$SOURCE_CONTAINER" psql -U postgres -d "$DB_NAME" -v ON_ERROR_STOP=1 -v sentinel_marker="$SENTINEL_MARKER" <<'SQL' >/dev/null
 create table restore_sentinel (
   id text primary key,
   marker text not null,
@@ -52,11 +54,11 @@ create table restore_sentinel (
 );
 
 insert into restore_sentinel (id, marker)
-values ('sentinel-1', 'reqcore-restore-rehearsal');
+values ('sentinel-1', :'sentinel_marker');
 SQL
 
 docker exec -e PGHOST=127.0.0.1 "$SOURCE_CONTAINER" \
-  pg_dump -U postgres --no-owner --no-acl reqcore > "$BACKUP_PATH"
+  pg_dump -U postgres --no-owner --no-acl "$DB_NAME" > "$BACKUP_PATH"
 
 if [[ ! -s "$BACKUP_PATH" ]]; then
   echo "Backup file was not created or is empty: $BACKUP_PATH" >&2
@@ -69,14 +71,15 @@ docker run -d \
   "$POSTGRES_IMAGE" >/dev/null
 wait_for_postgres "$TARGET_CONTAINER"
 
-docker exec -e PGHOST=127.0.0.1 "$TARGET_CONTAINER" createdb -U postgres reqcore
+docker exec -e PGHOST=127.0.0.1 "$TARGET_CONTAINER" createdb -U postgres "$DB_NAME"
 docker exec -i -e PGHOST=127.0.0.1 "$TARGET_CONTAINER" \
-  psql -U postgres -d reqcore -v ON_ERROR_STOP=1 < "$BACKUP_PATH" >/dev/null
+  psql -U postgres -d "$DB_NAME" -v ON_ERROR_STOP=1 < "$BACKUP_PATH" >/dev/null
 
 restored_count="$(
-  docker exec -e PGHOST=127.0.0.1 "$TARGET_CONTAINER" \
-    psql -U postgres -d reqcore -tAc \
-      "select count(*) from restore_sentinel where marker = 'reqcore-restore-rehearsal';"
+  docker exec -i -e PGHOST=127.0.0.1 "$TARGET_CONTAINER" \
+    psql -U postgres -d "$DB_NAME" -v sentinel_marker="$SENTINEL_MARKER" -tA <<'SQL'
+select count(*) from restore_sentinel where marker = :'sentinel_marker';
+SQL
 )"
 
 if [[ "$restored_count" != "1" ]]; then

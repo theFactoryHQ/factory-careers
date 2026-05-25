@@ -1,11 +1,11 @@
 # Factory Careers Fork
 
-Factory Careers is a thin Factory-branded fork of Reqcore for `careers.thefactoryhq.com`.
+Factory Careers is Factory's hiring and applicant-tracking system for `careers.thefactoryhq.com`.
 
 ## What This Fork Changes
 
 - Brands the public job board, auth shell, dashboard chrome, email sender, and theme as Factory Careers.
-- Keeps Reqcore's core ATS model intact: jobs, application questions, candidates, applications, pipeline statuses, interviews, private documents, source tracking, and dashboard workflows.
+- Keeps the inherited ATS model intact: jobs, application questions, candidates, applications, pipeline statuses, interviews, private documents, source tracking, and dashboard workflows.
 - Uses Microsoft SSO plus invitation/approval-gated dashboard access.
 - Blocks public email/password sign-up and arbitrary organization creation by default.
 - Seeds a single `Factory` organization and an open `General Interest` role via `npm run db:seed:factory`.
@@ -44,4 +44,3 @@ MICROSOFT_CALENDAR_TENANT_ID=...
 # Grant Microsoft Graph application Calendars.ReadWrite with admin consent.
 # FACTORY_CAREERS_CALENDAR_EMAIL should be a shared mailbox or user mailbox.
 # Scope Exchange app access to the shared mailbox and configured user mailboxes.
-

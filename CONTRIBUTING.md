@@ -1,21 +1,21 @@
-# Contributing to Reqcore
+# Contributing to Factory Careers
 
-Thanks for contributing to Reqcore.
+Thanks for contributing to Factory Careers.
 
 ## Before You Start
 
-- Read [PRODUCT.md](PRODUCT.md), [ARCHITECTURE.md](ARCHITECTURE.md), and [ROADMAP.md](ROADMAP.md) for product and technical context.
+- Read [docs/reference/PRODUCT.md](docs/reference/PRODUCT.md), [docs/reference/ARCHITECTURE.md](docs/reference/ARCHITECTURE.md), and [docs/reference/ROADMAP.md](docs/reference/ROADMAP.md) for product and technical context.
 - For bug reports and feature ideas, use GitHub Issues.
 - For security reports, do **not** open a public issue. Follow [SECURITY.md](SECURITY.md).
 
 ## Development Setup
 
 ```bash
-git clone https://github.com/reqcore-inc/reqcore.git
-cd reqcore
+git clone https://github.com/theFactoryHQ/factory-careers.git
+cd factory-careers
 cp .env.example .env
 docker compose up -d
-npm install
+npm ci
 npm run dev
 ```
 
@@ -37,7 +37,7 @@ Run `npm run prepare` if you need to reinstall the hooks in an existing checkout
 
 ### DCO Sign-off (Required)
 
-Reqcore uses the Developer Certificate of Origin (DCO) instead of a CLA.
+Factory Careers uses the Developer Certificate of Origin (DCO) instead of a CLA.
 
 Sign every commit with:
 
@@ -79,9 +79,9 @@ For UI work, verify the interaction path without a mouse before opening the PR:
 If your changes affect behavior, architecture, or roadmap status, update:
 
 - [CHANGELOG.md](CHANGELOG.md)
-- [ROADMAP.md](ROADMAP.md)
-- [ARCHITECTURE.md](ARCHITECTURE.md)
-- [PRODUCT.md](PRODUCT.md)
+- [docs/reference/ROADMAP.md](docs/reference/ROADMAP.md)
+- [docs/reference/ARCHITECTURE.md](docs/reference/ARCHITECTURE.md)
+- [docs/reference/PRODUCT.md](docs/reference/PRODUCT.md)
 
 ## Code of Conduct
 

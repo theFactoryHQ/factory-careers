@@ -111,7 +111,7 @@ jobs:
           set -euo pipefail
           echo "Waiting for db..."
           for i in $(seq 60); do
-            state="$(docker inspect --format='{{.State.Health.Status}}' reqcore_db 2>/dev/null || echo 'not-started')"
+            state="$(docker inspect --format='{{.State.Health.Status}}' factory_careers_db 2>/dev/null || echo 'not-started')"
             echo "  db: $state"
             [ "$state" = "healthy" ] && break
             if [ "$i" -eq 60 ]; then
@@ -129,7 +129,7 @@ jobs:
           set -euo pipefail
           echo "Waiting for minio..."
           for i in $(seq 60); do
-            state="$(docker inspect --format='{{.State.Health.Status}}' reqcore_minio 2>/dev/null || echo 'not-started')"
+            state="$(docker inspect --format='{{.State.Health.Status}}' factory_careers_minio 2>/dev/null || echo 'not-started')"
             echo "  minio: $state"
             [ "$state" = "healthy" ] && break
             if [ "$i" -eq 60 ]; then
@@ -147,7 +147,7 @@ jobs:
           set -euo pipefail
           echo "Waiting for app..."
           for i in $(seq 60); do
-            health="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' reqcore_app 2>/dev/null || echo 'missing')"
+            health="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' factory_careers_app 2>/dev/null || echo 'missing')"
             if [ "$health" = "healthy" ]; then
               echo "✅ App container is healthy via /api/readyz"
               exit 0
@@ -160,7 +160,7 @@ jobs:
               docker compose logs app --tail=100
               exit 1
             fi
-            state="$(docker inspect --format='{{.State.Status}}' reqcore_app 2>/dev/null || echo 'missing')"
+            state="$(docker inspect --format='{{.State.Status}}' factory_careers_app 2>/dev/null || echo 'missing')"
             if [ "$state" = "exited" ] || [ "$state" = "dead" ]; then
               echo "❌ App container exited unexpectedly"
               docker compose logs app --tail=100
@@ -191,7 +191,7 @@ jobs:
         run: |
           set -euo pipefail
           app_logs="$(docker compose logs app)"
-          if ! grep -Fq 'S3 bucket "reqcore" is ready' <<<"$app_logs"; then
+          if ! grep -Fq 'S3 bucket "factory-careers" is ready' <<<"$app_logs"; then
             echo "❌ S3 bucket ready message not found in app logs"
             printf '%s\n' "$app_logs"
             exit 1

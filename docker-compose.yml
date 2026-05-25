@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: reqcore_db
+    container_name: factory_careers_db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -19,7 +19,7 @@ services:
 
   minio:
     image: minio/minio
-    container_name: reqcore_minio
+    container_name: factory_careers_minio
     restart: unless-stopped
     ports:
       - "127.0.0.1:9000:9000" # S3 API — localhost only, never expose publicly
@@ -41,7 +41,7 @@ services:
       context: .
       secrets:
         - npm_token
-    container_name: reqcore_app
+    container_name: factory_careers_app
     restart: unless-stopped
     env_file: .env
     environment:
@@ -67,7 +67,7 @@ services:
   # Optional DB browser — run with: docker compose --profile tools up
   adminer:
     image: adminer
-    container_name: reqcore_adminer
+    container_name: factory_careers_adminer
     restart: unless-stopped
     profiles: [tools]
     ports:
@@ -79,6 +79,7 @@ services:
 volumes:
   postgres_data:
   minio_data:
+    name: factory_careers_minio_data
   backups_data:
 
 secrets:

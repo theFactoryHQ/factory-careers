@@ -104,9 +104,8 @@ minutes. The app listens on port `3000`, MinIO's console is available at port
 docker compose --profile tools up
 ```
 
-The compose file still contains a few historical `reqcore_*` container names;
-that naming is operationally harmless but should be treated as legacy
-implementation detail, not product identity.
+The compose services and generated local credentials use Factory Careers naming
+so logs and Docker state line up with this repository.
 
 ## Environment
 
@@ -135,9 +134,10 @@ include:
 
 Production-oriented Render and Supabase values are summarized in
 [`FACTORY_CAREERS.md`](FACTORY_CAREERS.md). Broader operational checks are in
-[`PRODUCTION-READINESS.md`](PRODUCTION-READINESS.md),
-[`PRODUCTION-RUNBOOK.md`](PRODUCTION-RUNBOOK.md), and
-[`PRODUCTION-DATA-RETENTION.md`](PRODUCTION-DATA-RETENTION.md).
+[`docs/operations/PRODUCTION-READINESS.md`](docs/operations/PRODUCTION-READINESS.md),
+[`docs/operations/PRODUCTION-RUNBOOK.md`](docs/operations/PRODUCTION-RUNBOOK.md),
+and
+[`docs/operations/PRODUCTION-DATA-RETENTION.md`](docs/operations/PRODUCTION-DATA-RETENTION.md).
 
 ## CLI
 
@@ -223,20 +223,21 @@ i18n/                        Locale files and i18n configuration
   notes.
 - [`docs/CLI.md`](docs/CLI.md): CLI install, auth, command coverage, JSON
   contract, and portal parity rules.
-- [`ARCHITECTURE.md`](ARCHITECTURE.md): System architecture inherited from and
-  evolved beyond Reqcore.
-- [`SELF-HOSTING.md`](SELF-HOSTING.md): Self-hosting guidance for the upstream
-  ATS shape.
+- [`docs/reference/ARCHITECTURE.md`](docs/reference/ARCHITECTURE.md): Current
+  Factory Careers architecture.
+- [`docs/reference/PRODUCT.md`](docs/reference/PRODUCT.md): Factory Careers
+  product brief.
+- [`docs/reference/ROADMAP.md`](docs/reference/ROADMAP.md): Current roadmap.
+- [`SELF-HOSTING.md`](SELF-HOSTING.md): Docker-based self-hosting guidance for
+  Factory Careers.
 - [`SECURITY.md`](SECURITY.md): Security policy and supported reporting path.
-- [`TESTING-SECURITY.md`](TESTING-SECURITY.md): Security test strategy.
-- [`THEME.md`](THEME.md): Theme and visual system notes.
-- [`I18N.md`](I18N.md): Nuxt i18n and Crowdin workflow.
-- [`PRODUCTION-APPROVAL-CHECKLIST.md`](PRODUCTION-APPROVAL-CHECKLIST.md):
-  production launch approval checklist.
-
-Some docs still describe upstream Reqcore concepts. Treat Factory-specific
-docs, environment files, current package scripts, and CI workflows as the source
-of truth for this fork.
+- [`docs/reference/TESTING-SECURITY.md`](docs/reference/TESTING-SECURITY.md):
+  Security test evidence map.
+- [`docs/reference/THEME.md`](docs/reference/THEME.md): Theme and visual system
+  contract.
+- [`docs/reference/I18N.md`](docs/reference/I18N.md): Nuxt i18n notes.
+- [`docs/operations/PRODUCTION-APPROVAL-CHECKLIST.md`](docs/operations/PRODUCTION-APPROVAL-CHECKLIST.md):
+  Production launch approval checklist.
 
 ## GitHub Workflow Notes
 
