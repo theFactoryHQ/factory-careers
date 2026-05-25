@@ -6,7 +6,7 @@
  * dedicated pages (`./new` and `./[id]`) for a calmer, less dense experience.
  */
 import {
-  Brain, Plus, Loader2, AlertTriangle, Sparkles, BarChart3, Star,
+  Brain, Plus, Loader2, AlertTriangle, Sparkles, DollarSign, Star,
   Pencil, Trash2, Zap, Check, Server,
 } from 'lucide-vue-next'
 
@@ -239,6 +239,10 @@ function formatPrice(p: number | null): string {
   if (p == null) return '—'
   return `$${p.toFixed(2)}`
 }
+
+function pricingTitle(c: AiConfigRow): string {
+  return `Pricing per 1M tokens: ${formatPrice(c.inputPricePer1m)} input / ${formatPrice(c.outputPricePer1m)} output`
+}
 </script>
 
 <template>
@@ -416,9 +420,13 @@ function formatPrice(p: number | null): string {
                 <Server class="size-3" />
                 <span class="font-mono truncate max-w-[260px]" :title="c.baseUrl">{{ c.baseUrl }}</span>
               </span>
-              <span class="inline-flex items-center gap-1" title="Pricing per 1M tokens">
-                <BarChart3 class="size-3" />
-                {{ formatPrice(c.inputPricePer1m) }} in / {{ formatPrice(c.outputPricePer1m) }} out
+              <span
+                v-if="c.inputPricePer1m != null || c.outputPricePer1m != null"
+                class="inline-flex size-4 items-center justify-center rounded border border-surface-200 bg-surface-50 text-surface-500 dark:border-surface-800 dark:bg-surface-900 dark:text-surface-400"
+                :title="pricingTitle(c)"
+                :aria-label="pricingTitle(c)"
+              >
+                <DollarSign class="size-3" />
               </span>
             </div>
 
