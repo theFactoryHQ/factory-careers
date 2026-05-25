@@ -243,6 +243,10 @@ function formatPrice(p: number | null): string {
 function pricingTitle(c: AiConfigRow): string {
   return `Pricing per 1M tokens: ${formatPrice(c.inputPricePer1m)} input / ${formatPrice(c.outputPricePer1m)} output`
 }
+
+function modelTitle(c: AiConfigRow): string {
+  return `${c.name}: ${c.model}`
+}
 </script>
 
 <template>
@@ -377,7 +381,12 @@ function pricingTitle(c: AiConfigRow): string {
           <!-- Identity -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
-              <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 truncate">{{ c.name }}</h3>
+              <h3
+                class="text-base font-semibold text-surface-900 dark:text-surface-100 truncate"
+                :title="modelTitle(c)"
+              >
+                {{ c.name }}
+              </h3>
               <span
                 class="inline-flex size-6 items-center justify-center rounded border border-surface-200 bg-surface-50 text-surface-700 dark:border-surface-800 dark:bg-surface-900 dark:text-surface-300"
                 :title="providerLabel(c.provider)"
@@ -415,7 +424,6 @@ function pricingTitle(c: AiConfigRow): string {
               </span>
             </div>
             <div class="mt-1 flex items-center gap-2 flex-wrap text-xs text-surface-500">
-              <span class="font-mono">{{ c.model }}</span>
               <span v-if="c.baseUrl" class="inline-flex items-center gap-1">
                 <Server class="size-3" />
                 <span class="font-mono truncate max-w-[260px]" :title="c.baseUrl">{{ c.baseUrl }}</span>
