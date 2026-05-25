@@ -18,6 +18,7 @@ useSeoMeta({
 const { allowed: canManageSso, role: currentOrgRole } = usePermission({ organization: ['update'] })
 const { track } = useTrack()
 const { signupAllowedDomains, updateSettings } = useOrgSettings()
+const toast = useToast()
 const canManageSignupDomains = computed(() => currentOrgRole.value === 'owner')
 const config = useRuntimeConfig()
 const requestUrl = useRequestURL()
@@ -46,7 +47,6 @@ const hasProvider = computed(() => (providers.value?.length ?? 0) > 0)
 // ─────────────────────────────────────────────
 const showForm = ref(false)
 const isRegistering = ref(false)
-const formError = ref('')
 const formSuccess = ref('')
 
 const form = reactive({
@@ -64,7 +64,6 @@ const localSignupAllowedDomains = ref<string[]>([])
 const newSignupDomain = ref('')
 const isSavingDomains = ref(false)
 const domainSaveSuccess = ref(false)
-const domainSaveError = ref('')
 const signupDomainPolicyTooltip = 'Domains must match a configured SSO provider or an organization-level calendar integration. Only owners can save changes.'
 
 watch(signupAllowedDomains, (domains) => {
@@ -101,7 +100,6 @@ const canAddSignupDomain = computed(() =>
 )
 
 function handleAddSignupDomain() {
-  domainSaveError.value = ''
   domainSaveSuccess.value = false
 
   if (!canAddSignupDomain.value || !normalizedNewSignupDomain.value) return
@@ -111,7 +109,6 @@ function handleAddSignupDomain() {
 }
 
 function handleRemoveSignupDomain(domain: string) {
-  domainSaveError.value = ''
   domainSaveSuccess.value = false
   localSignupAllowedDomains.value = parsedSignupAllowedDomains.value.filter(item => item !== domain)
 }
@@ -119,16 +116,15 @@ function handleRemoveSignupDomain(domain: string) {
 async function handleSaveSignupDomains() {
   if (!canManageSignupDomains.value) return
 
-  domainSaveError.value = ''
   domainSaveSuccess.value = false
 
   if (invalidSignupDomains.value.length > 0) {
-    domainSaveError.value = `Invalid domain: ${invalidSignupDomains.value[0]}`
+    toast.error('Invalid domain', { message: invalidSignupDomains.value[0] })
     return
   }
 
   if (hasTooManySignupDomains.value) {
-    domainSaveError.value = `Add ${SIGNUP_ALLOWED_DOMAINS_MAX} or fewer domains.`
+    toast.error('Too many domains', { message: `Add ${SIGNUP_ALLOWED_DOMAINS_MAX} or fewer domains.` })
     return
   }
 
@@ -144,7 +140,7 @@ async function handleSaveSignupDomains() {
   }
   catch (err: unknown) {
     const fetchErr = err as { data?: { statusMessage?: string }; message?: string }
-    domainSaveError.value = fetchErr.data?.statusMessage ?? fetchErr.message ?? 'Failed to save signup domain allowlist'
+    toast.error('Failed to save signup domain allowlist', { message: fetchErr.data?.statusMessage ?? fetchErr.message })
   }
   finally {
     isSavingDomains.value = false
@@ -172,7 +168,6 @@ function resetForm() {
   form.domain = ''
   form.clientId = ''
   form.clientSecret = ''
-  formError.value = ''
 }
 
 /**
@@ -189,7 +184,6 @@ watch(() => form.domain, (domain) => {
 async function handleRegister() {
   if (!canManageSso.value) return
 
-  formError.value = ''
   formSuccess.value = ''
   isRegistering.value = true
 
@@ -212,7 +206,7 @@ async function handleRegister() {
     await refreshProviders()
   } catch (err: unknown) {
     const fetchErr = err as { data?: { statusMessage?: string }; message?: string }
-    formError.value = fetchErr.data?.statusMessage ?? fetchErr.message ?? 'Failed to register SSO provider'
+    toast.error('Failed to register SSO provider', { message: fetchErr.data?.statusMessage ?? fetchErr.message })
   } finally {
     isRegistering.value = false
   }
@@ -236,7 +230,7 @@ async function handleDelete(id: string) {
     await refreshProviders()
   } catch (err: unknown) {
     const fetchErr = err as { data?: { statusMessage?: string }; message?: string }
-    formError.value = fetchErr.data?.statusMessage ?? fetchErr.message ?? 'Failed to remove SSO provider'
+    toast.error('Failed to remove SSO provider', { message: fetchErr.data?.statusMessage ?? fetchErr.message })
   } finally {
     deletingId.value = null
   }
@@ -284,21 +278,6 @@ async function copyCallbackUrl(providerId: string) {
           {{ formSuccess }}
         </p>
         <button class="text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-200" @click="formSuccess = ''">
-          <X class="size-4" />
-        </button>
-      </div>
-    </Transition>
-
-    <Transition name="fade">
-      <div
-        v-if="formError"
-        class="ui-alert ui-alert-danger mb-4 flex items-center gap-3"
-      >
-        <AlertTriangle class="size-4 shrink-0" />
-        <p class="flex-1">
-          {{ formError }}
-        </p>
-        <button class="text-danger-400 hover:text-danger-600 dark:hover:text-danger-200" @click="formError = ''">
           <X class="size-4" />
         </button>
       </div>
@@ -419,9 +398,6 @@ async function copyCallbackUrl(providerId: string) {
                 Domains saved
               </span>
             </Transition>
-          </div>
-          <div v-if="domainSaveError" class="ui-alert ui-alert-danger">
-            {{ domainSaveError }}
           </div>
           <div v-if="!canManageSignupDomains" class="ui-alert ui-alert-info">
             Only organization owners can manage signup domain allowlists.

@@ -20,14 +20,13 @@ const { data: jobData, status: jobFetchStatus } = useFetch('/api/jobs', {
 
 const jobs = computed(() => jobData.value?.data ?? [])
 const { handlePreviewReadOnlyError } = usePreviewReadOnly()
+const toast = useToast()
 
 // Apply to job
 const isApplying = ref(false)
-const applyError = ref('')
 
 async function applyToJob(jobId: string) {
   isApplying.value = true
-  applyError.value = ''
   try {
     await $fetch('/api/applications', {
       method: 'POST',
@@ -36,7 +35,7 @@ async function applyToJob(jobId: string) {
     emit('created')
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
-    applyError.value = err.data?.statusMessage ?? 'Failed to apply to job'
+    toast.error('Failed to apply to job', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
   } finally {
     isApplying.value = false
   }
@@ -68,11 +67,6 @@ async function applyToJob(jobId: string) {
           >
             <X class="size-4" />
           </button>
-        </div>
-
-        <!-- Error -->
-        <div v-if="applyError" class="ui-alert ui-alert-danger mx-5 mt-5">
-          {{ applyError }}
         </div>
 
         <!-- Job list -->

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 import { getFetchArgsForBaseRef, getPrPreflightSteps } from '../../scripts/run-pr-validation-preflight.mjs'
 import { validateConventionalTitle } from '../../scripts/validate-conventional-title.mjs'
@@ -43,15 +44,23 @@ describe('git hook preflight checks', () => {
   it('fetches the configured base ref instead of hard-coding main', () => {
     expect(getFetchArgsForBaseRef('origin/release/1.4')).toEqual([
       '--no-tags',
-      '--depth=1',
       'origin',
       '+refs/heads/release/1.4:refs/remotes/origin/release/1.4',
     ])
     expect(getFetchArgsForBaseRef('upstream/main')).toEqual([
       '--no-tags',
-      '--depth=1',
       'upstream',
       '+refs/heads/main:refs/remotes/upstream/main',
     ])
+  })
+
+  it('fails clearly when the preflight step flag is missing a value', () => {
+    const result = spawnSync('node', ['scripts/run-pr-validation-preflight.mjs', '--step'], {
+      encoding: 'utf8',
+      timeout: 2_000,
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Missing value for --step')
   })
 })

@@ -263,7 +263,6 @@ const isSubmitting = ref(false)
 const errors = ref<Record<string, string>>({})
 const showAddForm = ref(false)
 const editingQuestion = ref<DraftQuestion | null>(null)
-const questionActionError = ref<string | null>(null)
 const nextQuestionId = ref(1)
 
 // Check if at least one AI provider is configured with a valid API key.
@@ -562,7 +561,6 @@ function handleAddQuestion(data: {
     options: data.options ?? null,
   })
   showAddForm.value = false
-  questionActionError.value = null
 }
 
 function handleUpdateQuestion(data: {
@@ -589,7 +587,6 @@ function handleUpdateQuestion(data: {
     options: data.options ?? null,
   }
   editingQuestion.value = null
-  questionActionError.value = null
 }
 
 function handleDeleteQuestion(questionId: string) {
@@ -599,7 +596,6 @@ function handleDeleteQuestion(questionId: string) {
   if (editingQuestion.value?.id === questionId) {
     editingQuestion.value = null
   }
-  questionActionError.value = null
 }
 
 function moveQuestion(index: number, direction: 'up' | 'down') {
@@ -1049,14 +1045,6 @@ const questionTypeLabels: Record<QuestionType, string> = {
                   <span v-if="applicationForm.questions.length > 0" class="text-xs font-medium text-surface-400 dark:text-surface-500 tabular-nums">
                     {{ applicationForm.questions.length }} {{ applicationForm.questions.length === 1 ? 'question' : 'questions' }} added
                   </span>
-                </div>
-
-                <div
-                  v-if="questionActionError"
-                  class="rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-3 text-sm text-danger-700 dark:text-danger-400 mt-4"
-                >
-                  {{ questionActionError }}
-                  <button class="ml-2 underline" @click="questionActionError = null">Dismiss</button>
                 </div>
 
                 <div v-if="applicationForm.questions.length > 0" class="divide-y divide-surface-100 dark:divide-surface-800">

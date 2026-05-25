@@ -17,6 +17,7 @@ useSeoMeta({
 const localePath = useLocalePath()
 const { createCandidate } = useCandidates()
 const { track } = useTrack()
+const toast = useToast()
 
 // Form state
 const form = ref({
@@ -31,7 +32,6 @@ const form = ref({
 
 const isSubmitting = ref(false)
 const errors = ref<Record<string, string>>({})
-const submitError = ref<string | null>(null)
 
 function validate(): boolean {
   const result = candidateFormSchema.safeParse(normalizeEmptyCandidateFormFields(form.value))
@@ -48,7 +48,6 @@ function validate(): boolean {
 }
 
 async function handleSubmit() {
-  submitError.value = null
   if (!validate()) return
 
   isSubmitting.value = true
@@ -70,7 +69,7 @@ async function handleSubmit() {
     if (err.statusCode === 409 || err.data?.statusCode === 409) {
       errors.value.email = message
     } else {
-      submitError.value = message
+      toast.error('Failed to add candidate', { message, statusCode: err.data?.statusCode ?? err.statusCode })
     }
   } finally {
     isSubmitting.value = false
@@ -89,14 +88,6 @@ async function handleSubmit() {
     </AppBackLink>
 
     <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-100 mb-6">Add Candidate</h1>
-
-    <!-- Server error -->
-    <div
-      v-if="submitError"
-      class="rounded-lg border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-3 text-sm text-danger-700 dark:text-danger-400 mb-4"
-    >
-      {{ submitError }}
-    </div>
 
     <form class="space-y-5" @submit.prevent="handleSubmit">
       <!-- First Name -->

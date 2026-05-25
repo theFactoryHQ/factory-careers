@@ -20,6 +20,7 @@ const emit = defineEmits<{
 }>()
 
 const { track } = useTrack()
+const toast = useToast()
 const isAnalyzing = ref(false)
 const analyzeError = ref<string | null>(null)
 const parseFailedDocId = ref<string | null>(null)
@@ -106,8 +107,10 @@ async function runAnalysis() {
     const data = err?.data?.data
     if (data?.code === 'PARSE_FAILED' && data?.documentId) {
       parseFailedDocId.value = data.documentId
+      analyzeError.value = err?.data?.statusMessage ?? 'Analysis failed because the resume could not be parsed.'
+    } else {
+      toast.error('Analysis failed', { message: err?.data?.statusMessage ?? 'Make sure AI is configured in settings.', statusCode: err?.data?.statusCode })
     }
-    analyzeError.value = err?.data?.statusMessage ?? 'Analysis failed. Make sure AI is configured in settings.'
   } finally {
     isAnalyzing.value = false
   }
@@ -126,7 +129,7 @@ async function retryParse() {
     // Automatically re-run analysis after successful parse
     await runAnalysis()
   } catch (err: any) {
-    analyzeError.value = err?.data?.statusMessage ?? 'Failed to re-parse the resume. The file may be corrupted or image-based.'
+    toast.error('Failed to re-parse resume', { message: err?.data?.statusMessage ?? 'The file may be corrupted or image-based.', statusCode: err?.data?.statusCode })
     parseFailedDocId.value = null
   } finally {
     isRetryingParse.value = false
