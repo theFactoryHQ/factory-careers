@@ -23,9 +23,18 @@ describe('interview response token security', () => {
     expect(verifyInterviewToken(`${payload}.not-a-hex-signature`, secret)).toBeNull()
   })
 
+  it('rejects oversized signature segments before timing-safe comparison', () => {
+    const token = generateInterviewToken('interview-123', 'accepted', secret)
+    const [payload] = token.split('.')
+
+    expect(verifyInterviewToken(`${payload}.${'a'.repeat(257)}`, secret)).toBeNull()
+  })
+
   it('uses the shared timing-safe string comparison helper', () => {
     const source = readFileSync(join(process.cwd(), 'server/utils/interview-token.ts'), 'utf8')
 
+    expect(source).toContain('const MAX_TOKEN_LENGTH = 4096')
+    expect(source).toContain('const MAX_SIGNATURE_LENGTH = 256')
     expect(source).toContain("import { timingSafeStringEqual } from './secureCompare'")
     expect(source).toContain('timingSafeStringEqual(providedSig, expectedSig)')
     expect(source).not.toContain('timingSafeEqual(')
