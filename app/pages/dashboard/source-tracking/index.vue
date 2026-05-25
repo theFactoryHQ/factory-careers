@@ -941,13 +941,11 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
     <!-- ═══════════════════════════════════════ -->
     <!-- Modal: Create tracking link             -->
     <!-- ═══════════════════════════════════════ -->
-    <Teleport to="body">
-      <div
-        v-if="showCreateModal"
-        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-        @click.self="showCreateModal = false"
-      >
-        <div class="ui-modal-panel relative w-full max-w-xl max-h-[calc(100vh-2rem)] overflow-y-auto">
+    <AppModalShell
+      v-if="showCreateModal"
+      @close="showCreateModal = false"
+    >
+      <AppModalPanel class="max-w-xl max-h-[calc(100vh-2rem)] overflow-y-auto">
           <!-- Header -->
           <div class="ui-panel-header flex items-center justify-between px-6 py-5">
             <h2 class="text-xl font-semibold text-white">Create Tracking Link</h2>
@@ -1044,20 +1042,17 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
               </button>
             </div>
           </form>
-        </div>
-      </div>
-    </Teleport>
+      </AppModalPanel>
+    </AppModalShell>
 
     <!-- ═══════════════════════════════════════ -->
     <!-- Modal: Delete confirmation               -->
     <!-- ═══════════════════════════════════════ -->
-    <Teleport to="body">
-      <div
-        v-if="showDeleteConfirm"
-        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-        @click.self="showDeleteConfirm = false"
-      >
-        <div class="ui-modal-panel relative w-full max-w-sm p-6 text-center">
+    <AppModalShell
+      v-if="showDeleteConfirm"
+      @close="showDeleteConfirm = false"
+    >
+      <AppModalPanel class="max-w-sm p-6 text-center">
           <div class="ui-icon-state ui-icon-state-danger mx-auto mb-4 size-12">
             <Trash2 class="size-5" />
           </div>
@@ -1079,8 +1074,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
               Delete
             </button>
           </div>
-        </div>
-      </div>
-    </Teleport>
+      </AppModalPanel>
+    </AppModalShell>
   </div>
 </template>

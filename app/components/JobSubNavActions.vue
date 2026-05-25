@@ -342,13 +342,11 @@ function openPropertyEditor(scope: 'org' | 'job') {
   />
 
   <!-- Delete Job Confirm -->
-  <Teleport to="body">
-    <div
-      v-if="showDeleteConfirm"
-      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-      @click.self="showDeleteConfirm = false"
-    >
-      <div class="ui-modal-panel relative w-full max-w-sm p-6">
+  <AppModalShell
+    v-if="showDeleteConfirm"
+    @close="showDeleteConfirm = false"
+  >
+    <AppModalPanel class="max-w-sm p-6">
         <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Job</h3>
         <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
           Are you sure you want to delete <strong>{{ job?.title }}</strong>? This will also delete all associated applications. This action cannot be undone.
@@ -369,9 +367,8 @@ function openPropertyEditor(scope: 'org' | 'job') {
             {{ isDeleting ? 'Deleting…' : 'Delete' }}
           </button>
         </div>
-      </div>
-    </div>
-  </Teleport>
+    </AppModalPanel>
+  </AppModalShell>
 
   <!-- Apply Candidate Modal -->
   <ApplyCandidateModal

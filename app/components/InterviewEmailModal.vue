@@ -150,13 +150,9 @@ const canSend = computed(() => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-      @click.self="emit('close')"
-    >
-      <!-- Modal -->
-      <div class="ui-modal-panel ui-email-modal-panel">
+  <AppModalShell @close="emit('close')">
+    <!-- Modal -->
+    <AppModalPanel class="ui-email-modal-panel">
         <!-- Header -->
         <div class="ui-panel-header ui-email-modal-header">
           <div class="flex items-center justify-between">
@@ -462,7 +458,6 @@ const canSend = computed(() => {
             </div>
           </div>
         </template>
-      </div>
-    </div>
-  </Teleport>
+    </AppModalPanel>
+  </AppModalShell>
 </template>

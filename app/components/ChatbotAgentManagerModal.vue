@@ -106,13 +106,11 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-      @click.self="emit('close')"
-    >
-      <div class="ui-modal-panel flex h-[80vh] w-full max-w-4xl flex-col overflow-hidden">
+  <AppModalShell
+    v-if="open"
+    @close="emit('close')"
+  >
+    <AppModalPanel class="flex h-[80vh] max-w-4xl flex-col overflow-hidden">
         <!-- Header -->
         <div class="ui-panel-header flex items-center justify-between px-5 py-3.5">
           <div class="flex items-center gap-2">
@@ -285,7 +283,6 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
             </button>
           </div>
         </div>
-      </div>
-    </div>
-  </Teleport>
+    </AppModalPanel>
+  </AppModalShell>
 </template>

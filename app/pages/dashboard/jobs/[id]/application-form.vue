@@ -918,13 +918,11 @@ async function copyTrackingUrl(code: string) {
     <!-- ═══════════════════════════════════════ -->
     <!-- Modal: Application preview              -->
     <!-- ═══════════════════════════════════════ -->
-    <Teleport to="body">
-      <div
-        v-if="showApplicationPreview && job"
-        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-        @click.self="showApplicationPreview = false"
-      >
-        <div class="ui-modal-panel relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden">
+    <AppModalShell
+      v-if="showApplicationPreview && job"
+      @close="showApplicationPreview = false"
+    >
+      <AppModalPanel class="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden">
           <div class="ui-panel-header flex items-center justify-between px-6 py-4">
             <div>
               <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-600 dark:text-brand-400">Applicant view</p>
@@ -1105,20 +1103,17 @@ async function copyTrackingUrl(code: string) {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </Teleport>
+      </AppModalPanel>
+    </AppModalShell>
 
     <!-- ═══════════════════════════════════════ -->
     <!-- Modal: Create tracking link             -->
     <!-- ═══════════════════════════════════════ -->
-    <Teleport to="body">
-      <div
-        v-if="showCreateLinkModal"
-        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-        @click.self="showCreateLinkModal = false"
-      >
-        <div class="ui-modal-panel relative w-full max-w-lg">
+    <AppModalShell
+      v-if="showCreateLinkModal"
+      @close="showCreateLinkModal = false"
+    >
+      <AppModalPanel class="max-w-lg">
           <div class="ui-panel-header flex items-center justify-between px-6 py-4">
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Create Tracking Link</h2>
             <button
@@ -1187,20 +1182,17 @@ async function copyTrackingUrl(code: string) {
               </button>
             </div>
           </form>
-        </div>
-      </div>
-    </Teleport>
+      </AppModalPanel>
+    </AppModalShell>
 
     <!-- ═══════════════════════════════════════ -->
     <!-- Modal: Delete tracking link confirmation -->
     <!-- ═══════════════════════════════════════ -->
-    <Teleport to="body">
-      <div
-        v-if="showDeleteLinkConfirm"
-        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50 grid place-items-center p-4"
-        @click.self="showDeleteLinkConfirm = false"
-      >
-        <div class="ui-modal-panel relative w-full max-w-sm p-6 text-center">
+    <AppModalShell
+      v-if="showDeleteLinkConfirm"
+      @close="showDeleteLinkConfirm = false"
+    >
+      <AppModalPanel class="max-w-sm p-6 text-center">
           <div class="ui-icon-state ui-icon-state-danger mx-auto mb-4 size-12">
             <Trash2 class="size-5" />
           </div>
@@ -1222,9 +1214,8 @@ async function copyTrackingUrl(code: string) {
               Delete
             </button>
           </div>
-        </div>
-      </div>
-    </Teleport>
+      </AppModalPanel>
+    </AppModalShell>
 
     <!-- Error -->
     <div

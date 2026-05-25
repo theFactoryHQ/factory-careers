@@ -1,0 +1,56 @@
+<script setup lang="ts">
+defineOptions({
+  inheritAttrs: false,
+})
+
+const props = withDefaults(defineProps<{
+  teleportTo?: string | HTMLElement
+  layout?: 'grid' | 'flex'
+  paddingClass?: string
+  zIndexClass?: string
+  closeOnBackdrop?: boolean
+}>(), {
+  teleportTo: 'body',
+  layout: 'grid',
+  paddingClass: 'p-4',
+  zIndexClass: 'z-50',
+  closeOnBackdrop: true,
+})
+
+const emit = defineEmits<{
+  (e: 'close'): void
+}>()
+
+const attrs = useAttrs()
+
+const shellAttrs = computed(() => {
+  const { class: _class, ...rest } = attrs
+  return rest
+})
+
+const shellClasses = computed(() => [
+  'factory-dashboard-portal ui-modal-backdrop fixed inset-0',
+  props.zIndexClass,
+  props.layout === 'grid' ? 'grid place-items-center' : 'flex items-center justify-center',
+  props.paddingClass,
+  attrs.class,
+])
+
+function handleBackdropClick() {
+  if (props.closeOnBackdrop) {
+    emit('close')
+  }
+}
+</script>
+
+<template>
+  <Teleport :to="teleportTo">
+    <div
+      v-bind="shellAttrs"
+      :class="shellClasses"
+      @click.self="handleBackdropClick"
+    >
+      <slot />
+    </div>
+  </Teleport>
+</template>
