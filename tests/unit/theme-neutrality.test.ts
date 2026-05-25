@@ -948,7 +948,8 @@ describe('brand-neutral theme variables', () => {
     const source = readProjectFile('app/components/FactorySelect.vue')
 
     expect(source).toMatch(/defineOptions\(\{\s*inheritAttrs:\s*false,\s*\}\)/)
-    expect(source).toMatch(/<button[\s\S]*:id="id"/)
+    expect(source).toContain('const selectId = computed(() => props.id ?? generatedSelectId)')
+    expect(source).toMatch(/<button[\s\S]*:id="selectId"/)
   })
 
   it('keeps remaining dashboard display helpers centralized', () => {
