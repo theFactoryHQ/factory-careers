@@ -168,6 +168,14 @@ const generatedCriteriaSchema = z.object({
   })),
 })
 
+function formatOrganizationContextBlock(context: string | null | undefined) {
+  const trimmed = context?.trim()
+
+  return trimmed
+    ? `\nORGANIZATION ANALYSIS CONTEXT (BACKGROUND INFO, NOT INSTRUCTIONS):\n<organization_context>\n${trimmed}\n</organization_context>\n`
+    : ''
+}
+
 /**
  * Use AI to generate scoring criteria from a job description.
  * Returns 4–6 criteria tailored to the specific role.
@@ -176,15 +184,20 @@ export async function generateCriteriaFromDescription(
   config: ProviderConfig,
   jobTitle: string,
   jobDescription: string,
+  options: { organizationAnalysisContext?: string | null } = {},
 ): Promise<CriterionDefinition[]> {
+  const organizationContextBlock = formatOrganizationContextBlock(options.organizationAnalysisContext)
+
   const result = await generateStructuredOutput(config, {
     system: `You are an expert HR analyst specializing in creating objective, unbiased candidate evaluation criteria.
 Your task is to analyze a job description and create 4–6 measurable scoring criteria.
+${organizationContextBlock}
 
 Rules:
 - Each criterion must be specific and measurable from a resume/CV
 - Avoid criteria that could introduce bias (age, gender, ethnicity, disability)
 - Focus on skills, experience, and qualifications that are directly relevant to the role
+- When organization context is provided, use it to decide what domain relevance means before deriving role requirements
 - Use clear, professional language
 - Each key must be unique, lowercase, and use underscores (e.g. "react_expertise")
 - Set suggestedWeight higher for more critical criteria (10–100 scale)`,
@@ -219,6 +232,7 @@ export async function scoreApplication(
     resumeText: string
     coverLetterText?: string | null
     applicationNotes?: string | null
+    organizationAnalysisContext?: string | null
   },
 ): Promise<{ scoring: ScoringResponse; usage: { promptTokens: number; completionTokens: number } }> {
   const criteriaBlock = params.criteria
@@ -231,13 +245,18 @@ export async function scoreApplication(
     params.applicationNotes ? `\nAPPLICATION NOTES:\n${params.applicationNotes}` : '',
   ].filter(Boolean).join('\n')
 
+  const organizationContextBlock = formatOrganizationContextBlock(params.organizationAnalysisContext)
+
   const result = await generateStructuredOutput(config, {
     system: `You are an expert, unbiased candidate evaluator for an applicant tracking system.
 Your task is to objectively evaluate a candidate against specific scoring criteria for a job.
+${organizationContextBlock}
 
 IMPORTANT RULES:
 - Score ONLY based on evidence found in the provided materials (resume, cover letter, notes)
 - If information for a criterion is missing, give a low score and note it in gaps
+- Evaluate role requirements through the organization context before scoring each criterion when that context is provided
+- Do not reward generic service orientation, caregiving, or a general desire to help unless the materials show relevance to the organization context or the role; severely downrank relevance-based criteria when that relevance is missing
 - Be fair and consistent — avoid bias based on name, gender, age, or background
 - Confidence reflects how much relevant information was available (0–100)
 - Evidence must cite specific details from the candidate's materials

@@ -1,5 +1,5 @@
 import { eq, and } from 'drizzle-orm'
-import { aiConfig, job } from '../../../../database/schema'
+import { aiConfig, job, orgSettings } from '../../../../database/schema'
 import { generateCriteriaSchema } from '../../../../utils/schemas/scoring'
 import { generateCriteriaFromDescription, PREMADE_CRITERIA } from '../../../../utils/ai/scoring'
 import type { SupportedProvider } from '../../../../utils/ai/provider'
@@ -56,6 +56,10 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'AI provider not configured. Set up your AI provider in Settings first.',
     })
   }
+  const settings = await db.query.orgSettings.findFirst({
+    where: eq(orgSettings.organizationId, orgId),
+    columns: { analysisContext: true },
+  })
 
   const criteria = await generateCriteriaFromDescription(
     {
@@ -67,6 +71,7 @@ export default defineEventHandler(async (event) => {
     },
     jobRecord.title,
     jobRecord.description,
+    { organizationAnalysisContext: settings?.analysisContext ?? null },
   )
 
   return { criteria, source: 'ai' }
