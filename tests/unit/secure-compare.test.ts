@@ -21,4 +21,8 @@ describe('timingSafeStringEqual', () => {
   it('rejects values with equal text but different byte representation', () => {
     expect(timingSafeStringEqual('cafe\u0301', 'café')).toBe(false)
   })
+
+  it('rejects different-length values without throwing', () => {
+    expect(timingSafeStringEqual('short', 'a much longer secret value')).toBe(false)
+  })
 })
