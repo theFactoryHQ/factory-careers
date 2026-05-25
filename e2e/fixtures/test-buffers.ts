@@ -37,9 +37,9 @@ export const MINIMAL_PDF = Buffer.from(
 /**
  * Minimal OLE2 Compound Binary File (.doc).
  * Starts with the 8-byte OLE2 magic `D0 CF 11 E0 A1 B1 1A E1`.
- * The `file-type` library does NOT detect OLE2 natively, so the server has a
- * manual magic-byte fallback that matches these first 8 bytes and maps them to
- * `application/msword`.
+ * The server only accepts OLE2 documents as Word files when it also sees
+ * Word-specific stream names, because Excel and PowerPoint use the same
+ * container magic bytes.
  *
  * We pad to 512 bytes (one sector) to look a bit more realistic.
  */
@@ -61,6 +61,7 @@ export const MINIMAL_DOC = (() => {
   buf.writeUInt16LE(0xFFFE, 28)
   // Sector size power: 9 → 512 bytes
   buf.writeUInt16LE(9, 30)
+  Buffer.from('WordDocument', 'utf16le').copy(buf, 64)
   return buf
 })()
 

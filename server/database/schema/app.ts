@@ -57,6 +57,14 @@ export const complianceDisabilityStatusEnum = pgEnum('compliance_disability_stat
   'no',
   'prefer_not_to_answer',
 ])
+export const privacyRequestStatusEnum = pgEnum('privacy_request_status', [
+  'submitted',
+  'verified',
+  'in_review',
+  'completed',
+  'denied',
+  'cancelled',
+])
 
 // ─────────────────────────────────────────────
 // ATS Domain Tables — ALL scoped by organizationId
@@ -813,6 +821,43 @@ export const jobRelations = relations(job, ({ one, many }) => ({
   trackingLinks: many(trackingLink),
 }))
 
+// ─────────────────────────────────────────────
+// Privacy Requests
+// ─────────────────────────────────────────────
+
+/**
+ * CCPA-style privacy deletion requests submitted by applicants.
+ * Requester-facing verification is token based; staff fulfillment remains
+ * authenticated and audit-tracked.
+ */
+export const privacyRequest = pgTable('privacy_request', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').references(() => organization.id, { onDelete: 'set null' }),
+  status: privacyRequestStatusEnum('status').notNull().default('submitted'),
+  requesterName: text('requester_name').notNull(),
+  requesterEmail: text('requester_email').notNull(),
+  stateOfResidence: text('state_of_residence').notNull(),
+  jobSlug: text('job_slug'),
+  applicationId: text('application_id'),
+  details: text('details'),
+  verificationTokenHash: text('verification_token_hash').notNull(),
+  verificationSentAt: timestamp('verification_sent_at').notNull().defaultNow(),
+  verifiedAt: timestamp('verified_at'),
+  reviewedById: text('reviewed_by_id').references(() => user.id, { onDelete: 'set null' }),
+  reviewedAt: timestamp('reviewed_at'),
+  completedById: text('completed_by_id').references(() => user.id, { onDelete: 'set null' }),
+  completedAt: timestamp('completed_at'),
+  resolutionNotes: text('resolution_notes'),
+  denialReason: text('denial_reason'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  index('privacy_request_organization_id_idx').on(t.organizationId),
+  index('privacy_request_requester_email_idx').on(t.requesterEmail),
+  index('privacy_request_status_idx').on(t.status),
+  uniqueIndex('privacy_request_verification_token_hash_idx').on(t.verificationTokenHash),
+]))
+
 export const candidateRelations = relations(candidate, ({ one, many }) => ({
   organization: one(organization, { fields: [candidate.organizationId], references: [organization.id] }),
   applications: many(application),
@@ -946,6 +991,12 @@ export const applicationSourceRelations = relations(applicationSource, ({ one })
 
 export const orgSettingsRelations = relations(orgSettings, ({ one }) => ({
   organization: one(organization, { fields: [orgSettings.organizationId], references: [organization.id] }),
+}))
+
+export const privacyRequestRelations = relations(privacyRequest, ({ one }) => ({
+  organization: one(organization, { fields: [privacyRequest.organizationId], references: [organization.id] }),
+  reviewedBy: one(user, { fields: [privacyRequest.reviewedById], references: [user.id] }),
+  completedBy: one(user, { fields: [privacyRequest.completedById], references: [user.id] }),
 }))
 
 // ─────────────────────────────────────────────

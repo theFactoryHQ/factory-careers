@@ -389,7 +389,7 @@ async function insertSsoProvider(organizationId: string, userId: string, provide
 }
 
 test.describe('Security — tenant isolation and document access', () => {
-  test('denies cross-organization direct resource and document access', async ({ browser }) => {
+  test('denies cross-organization direct resource and document access @security-core', async ({ browser }) => {
     const orgA = await signUpWithOrg(browser, 'org-a')
     const orgB = await signUpWithOrg(browser, 'org-b')
     let orgMember: SignedInOrg | undefined
@@ -703,7 +703,7 @@ test.describe('Security — tenant isolation and document access', () => {
     }
   })
 
-  test('protects secondary admin surfaces and per-user chatbot resources', async ({ browser }) => {
+  test('protects secondary admin surfaces and per-user chatbot resources @security-extended', async ({ browser }) => {
     const owner = await signUpWithOrg(browser, 'secondary-owner')
     const orgB = await signUpWithOrg(browser, 'secondary-org-b')
     const member = await signUpWithOrg(browser, 'secondary-member')
@@ -723,7 +723,7 @@ test.describe('Security — tenant isolation and document access', () => {
           provider: 'openai_compatible',
           model: 'test-model',
           apiKey: 'sk-owner-config-secret',
-          baseUrl: 'https://ai.example.com/v1',
+          baseUrl: 'https://example.com/v1',
           maxTokens: 4096,
           isDefaultChatbot: true,
           isDefaultAnalysis: true,
@@ -746,7 +746,7 @@ test.describe('Security — tenant isolation and document access', () => {
           provider: 'openai_compatible',
           model: 'test-model',
           apiKey: 'sk-member-config-secret',
-          baseUrl: 'https://ai.example.com/v1',
+          baseUrl: 'https://example.com/v1',
         },
       }), [403])
       await expectStatus(await memberApi.patch(`/api/ai-config/${aiConfig.id}`, {
@@ -957,7 +957,7 @@ test.describe('Security — tenant isolation and document access', () => {
     }
   })
 
-  test('enforces invite-link authentication, max-use, revocation, and expiration', async ({ browser }) => {
+  test('enforces invite-link authentication, max-use, revocation, and expiration @security-extended', async ({ browser }) => {
     const owner = await signUpWithOrg(browser, 'invite-owner')
     const inviteeOne = await signUpWithOrg(browser, 'invitee-one')
     const inviteeTwo = await signUpWithOrg(browser, 'invitee-two')

@@ -12,7 +12,7 @@ describe('organization analysis context settings', () => {
     const orgSettingsSchema = readProjectFile('server/utils/schemas/orgSettings.ts')
     const getEndpoint = readProjectFile('server/api/org-settings/index.get.ts')
     const patchEndpoint = readProjectFile('server/api/org-settings/index.patch.ts')
-    const migration = readProjectFile('server/database/migrations/0041_org_analysis_context.sql')
+    const migration = readProjectFile('server/database/migrations/0042_org_analysis_context.sql')
     const journal = readProjectFile('server/database/migrations/meta/_journal.json')
 
     expect(aiSettingsPage).toContain('Analysis context')
@@ -23,7 +23,7 @@ describe('organization analysis context settings', () => {
     expect(getEndpoint).toContain("analysisContext: settings?.analysisContext ?? ''")
     expect(patchEndpoint).toContain('analysisContext: body.analysisContext ?? \'\'')
     expect(migration).toContain('ADD COLUMN IF NOT EXISTS "analysis_context"')
-    expect(journal).toContain('"tag": "0041_org_analysis_context"')
+    expect(journal).toContain('"tag": "0042_org_analysis_context"')
   })
 
   it('keeps Factory-specific business text out of the scorer implementation', () => {

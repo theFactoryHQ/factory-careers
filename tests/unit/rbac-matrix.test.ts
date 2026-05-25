@@ -26,6 +26,8 @@ describe('production RBAC matrix', () => {
     expect(can(member, 'document', 'update')).toBe(false)
     expect(can(member, 'document', 'delete')).toBe(false)
     expect(can(member, 'organization', 'update')).toBe(false)
+    expect(can(member, 'privacyRequest', 'read')).toBe(false)
+    expect(can(member, 'privacyRequest', 'update')).toBe(false)
   })
 
   it('prevents members from editing or deleting comments', () => {
@@ -77,6 +79,10 @@ describe('production RBAC matrix', () => {
       }
     }
 
+    expect(can(admin, 'privacyRequest', 'read')).toBe(true)
+    expect(can(admin, 'privacyRequest', 'update')).toBe(true)
+    expect(can(admin, 'privacyRequest', 'create')).toBe(false)
+    expect(can(admin, 'privacyRequest', 'delete')).toBe(false)
     expect(can(admin, 'organization', 'read')).toBe(true)
     expect(can(admin, 'organization', 'update')).toBe(true)
   })

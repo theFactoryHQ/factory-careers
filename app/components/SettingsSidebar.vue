@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 import {
-  Building2, Users, UserCircle, Settings, Plug, Brain, ShieldCheck, Globe,
+  Building2, Users, UserCircle, Settings, Plug, Brain, ShieldCheck, Globe, FileCheck2,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -57,6 +57,13 @@ const settingsNav: Array<{
     description: 'Enterprise SSO',
     to: '/dashboard/settings/sso',
     icon: ShieldCheck,
+    exact: true,
+  },
+  {
+    label: 'Privacy Requests',
+    description: 'Deletion reviews',
+    to: '/dashboard/settings/privacy-requests',
+    icon: FileCheck2,
     exact: true,
   },
   {

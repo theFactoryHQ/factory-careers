@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  Building2, Users, UserCircle, Plug, Brain, ShieldCheck, Globe,
+  Building2, Users, UserCircle, Plug, Brain, ShieldCheck, Globe, FileCheck2,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -43,6 +43,12 @@ const settingsNav = [
     label: 'SSO',
     to: '/dashboard/settings/sso',
     icon: ShieldCheck,
+    exact: true,
+  },
+  {
+    label: 'Privacy',
+    to: '/dashboard/settings/privacy-requests',
+    icon: FileCheck2,
     exact: true,
   },
   {

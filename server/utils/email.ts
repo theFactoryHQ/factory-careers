@@ -16,9 +16,13 @@ import {
   InterviewInvitationEmail,
   OrgInvitationEmail,
   PasswordResetEmail,
+  PrivacyRequestConfirmationEmail,
+  PrivacyRequestInternalAlertEmail,
+  PrivacyRequestVerificationEmail,
   VerificationEmail,
   careersEmailConfig,
 } from "../lib/email/templates";
+import { env } from "./env";
 import { logError } from "./logger";
 
 // Re-export the client for any route that needs the canonical from address (e.g. ICS)
@@ -157,6 +161,82 @@ export async function sendApplicationTeamAlertEmail(data: {
     });
   } catch (err) {
     logError("email.application_team_alert_send_failed", {
+      provider: "resend",
+      error_message: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+export async function sendPrivacyRequestVerificationEmail(data: {
+  requesterName: string;
+  requesterEmail: string;
+  verifyUrl: string;
+}): Promise<void> {
+  try {
+    await emailClient.send({
+      from: emailClient.defaultFrom,
+      to: data.requesterEmail,
+      subject: "Verify your deletion request — Factory Careers",
+      react: PrivacyRequestVerificationEmail({
+        requesterName: data.requesterName,
+        verifyUrl: data.verifyUrl,
+        config: careersEmailConfig,
+      }) as React.ReactElement,
+    });
+  } catch (err) {
+    logError("email.privacy_request_verification_send_failed", {
+      provider: "resend",
+      error_message: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+export async function sendPrivacyRequestConfirmationEmail(data: {
+  requesterName: string;
+  requesterEmail: string;
+}): Promise<void> {
+  try {
+    await emailClient.send({
+      from: emailClient.defaultFrom,
+      to: data.requesterEmail,
+      subject: "Deletion request verified — Factory Careers",
+      react: PrivacyRequestConfirmationEmail({
+        requesterName: data.requesterName,
+        config: careersEmailConfig,
+      }) as React.ReactElement,
+    });
+  } catch (err) {
+    logError("email.privacy_request_confirmation_send_failed", {
+      provider: "resend",
+      error_message: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+export async function sendPrivacyRequestInternalAlertEmail(data: {
+  requesterName: string;
+  requesterEmail: string;
+  stateOfResidence: string;
+  dashboardUrl: string;
+  to?: string;
+}): Promise<void> {
+  const to = data.to || env.FACTORY_CAREERS_PRIVACY_INBOX || "legal@thefactoryhq.com";
+
+  try {
+    await emailClient.send({
+      from: emailClient.defaultFrom,
+      to,
+      subject: `Privacy deletion request: ${data.requesterEmail}`,
+      react: PrivacyRequestInternalAlertEmail({
+        requesterName: data.requesterName,
+        requesterEmail: data.requesterEmail,
+        stateOfResidence: data.stateOfResidence,
+        dashboardUrl: data.dashboardUrl,
+        config: careersEmailConfig,
+      }) as React.ReactElement,
+    });
+  } catch (err) {
+    logError("email.privacy_request_internal_alert_send_failed", {
       provider: "resend",
       error_message: err instanceof Error ? err.message : String(err),
     });
