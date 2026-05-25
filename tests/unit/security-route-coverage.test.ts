@@ -142,9 +142,9 @@ describe('P0 tenant-isolation route coverage', () => {
     'server/api/join-requests/[id]/approve.post.ts': ['eq(joinRequest.id, requestId)', 'eq(joinRequest.organizationId, orgId)'],
     'server/api/join-requests/[id]/reject.post.ts': ['eq(joinRequest.id, requestId)', 'eq(joinRequest.organizationId, orgId)'],
     'server/api/sso/providers/[id].delete.ts': ['eq(ssoProvider.id, id)', 'eq(ssoProvider.organizationId, orgId)'],
-    'server/api/privacy-requests/[id].get.ts': ['eq(privacyRequest.organizationId, orgId)'],
-    'server/api/privacy-requests/[id].patch.ts': ['eq(privacyRequest.organizationId, orgId)'],
-    'server/api/privacy-requests/[id]/fulfill.post.ts': ['eq(privacyRequest.organizationId, orgId)'],
+    'server/api/privacy-requests/[id].get.ts': ['canAccessPrivacyRequestForOrg({'],
+    'server/api/privacy-requests/[id].patch.ts': ['canAccessPrivacyRequestForOrg({'],
+    'server/api/privacy-requests/[id]/fulfill.post.ts': ['canAccessPrivacyRequestForOrg({'],
   }
 
   it('keeps direct resource lookups scoped by active organization', () => {
@@ -154,6 +154,12 @@ describe('P0 tenant-isolation route coverage', () => {
         expect(source, `${path} missing ${snippet}`).toContain(snippet)
       }
     }
+
+    const privacyHelperSource = read('server/utils/privacyRequests.ts')
+    expect(privacyHelperSource).toContain('eq(privacyRequest.id, params.requestId)')
+    expect(privacyHelperSource).toContain('eq(privacyRequest.organizationId, params.organizationId)')
+    expect(privacyHelperSource).toContain('eq(candidate.organizationId, params.organizationId)')
+    expect(privacyHelperSource).toContain('eq(candidate.email, privacyRequest.requesterEmail)')
   })
 
   it('keeps shared document stream lookups scoped by active organization', () => {

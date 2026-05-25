@@ -7,6 +7,7 @@ import {
   buildPrivacyRequestPublicResponse,
   generatePrivacyRequestToken,
   hashPrivacyRequestToken,
+  resolveFactoryCareersPublicOrigin,
   resolvePrivacyRequestOrganizationId,
 } from '../../utils/privacyRequests'
 
@@ -91,9 +92,9 @@ export default defineEventHandler(async (event) => {
     stateOfResidence: privacyRequest.stateOfResidence,
   })
 
-  const url = getRequestURL(event)
-  const verifyUrl = `${url.origin}/api/privacy-requests/verify?token=${encodeURIComponent(verificationToken)}`
-  const dashboardUrl = `${url.origin}/dashboard/settings/privacy-requests`
+  const publicOrigin = resolveFactoryCareersPublicOrigin()
+  const verifyUrl = `${publicOrigin}/api/privacy-requests/verify?token=${encodeURIComponent(verificationToken)}`
+  const dashboardUrl = `${publicOrigin}/dashboard/settings/privacy-requests`
 
   void sendPrivacyRequestVerificationEmail({
     requesterName: created!.requesterName,

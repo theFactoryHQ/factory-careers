@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { candidate, privacyRequest } from '../../../database/schema'
 import {
   canAccessPrivacyRequestForOrg,
@@ -11,11 +11,6 @@ export default defineEventHandler(async (event) => {
   const orgId = session.session.activeOrganizationId
   const { id } = await getValidatedRouterParams(event, privacyRequestIdParamSchema.parse)
   const body = await readValidatedBody(event, fulfillPrivacyRequestSchema.parse)
-
-  await db.query.privacyRequest.findFirst({
-    where: eq(privacyRequest.organizationId, orgId),
-    columns: { id: true },
-  })
 
   const request = await canAccessPrivacyRequestForOrg({
     requestId: id,
@@ -58,7 +53,6 @@ export default defineEventHandler(async (event) => {
   const now = new Date()
   const [updated] = await db.update(privacyRequest)
     .set({
-      organizationId: request.organizationId ?? orgId,
       status: 'completed',
       reviewedById: request.reviewedById ?? session.user.id,
       reviewedAt: request.reviewedAt ?? now,
@@ -67,7 +61,12 @@ export default defineEventHandler(async (event) => {
       resolutionNotes: body.resolutionNotes ?? request.resolutionNotes,
       updatedAt: now,
     })
-    .where(eq(privacyRequest.id, request.id))
+    .where(and(
+      eq(privacyRequest.id, request.id),
+      request.organizationId === null
+        ? isNull(privacyRequest.organizationId)
+        : eq(privacyRequest.organizationId, orgId),
+    ))
     .returning()
 
   return { request: updated, result }

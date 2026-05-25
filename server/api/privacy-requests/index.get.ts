@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, desc, eq, exists, isNull, or } from 'drizzle-orm'
 import { candidate, privacyRequest } from '../../database/schema'
 import { privacyRequestListQuerySchema } from '../../utils/schemas/privacyRequest'
 
@@ -8,31 +8,33 @@ export default defineEventHandler(async (event) => {
   const query = await getValidatedQuery(event, privacyRequestListQuerySchema.parse)
   const offset = (query.page - 1) * query.limit
 
-  const scopedConditions = [eq(privacyRequest.organizationId, orgId)]
-  if (query.status) scopedConditions.push(eq(privacyRequest.status, query.status))
-
-  const scopedRows = await db.select().from(privacyRequest)
-    .where(and(...scopedConditions))
-    .orderBy(desc(privacyRequest.createdAt))
-
-  const candidateEmails = await db
-    .selectDistinct({ email: candidate.email })
-    .from(candidate)
-    .where(eq(candidate.organizationId, orgId))
-
-  const matchedUnscoped = candidateEmails.length > 0
-    ? await db.select().from(privacyRequest)
-      .where(and(
+  const where = and(
+    or(
+      eq(privacyRequest.organizationId, orgId),
+      and(
         isNull(privacyRequest.organizationId),
-        inArray(privacyRequest.requesterEmail, candidateEmails.map((row) => row.email)),
-        ...(query.status ? [eq(privacyRequest.status, query.status)] : []),
-      ))
+        exists(
+          db
+            .select({ id: candidate.id })
+            .from(candidate)
+            .where(and(
+              eq(candidate.organizationId, orgId),
+              eq(candidate.email, privacyRequest.requesterEmail),
+            )),
+        ),
+      ),
+    ),
+    ...(query.status ? [eq(privacyRequest.status, query.status)] : []),
+  )
+
+  const [data, total] = await Promise.all([
+    db.select().from(privacyRequest)
+      .where(where)
       .orderBy(desc(privacyRequest.createdAt))
-    : []
+      .limit(query.limit)
+      .offset(offset),
+    db.$count(privacyRequest, where),
+  ])
 
-  const rows = [...scopedRows, ...matchedUnscoped]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  const data = rows.slice(offset, offset + query.limit)
-
-  return { data, total: rows.length, page: query.page, limit: query.limit }
+  return { data, total, page: query.page, limit: query.limit }
 })

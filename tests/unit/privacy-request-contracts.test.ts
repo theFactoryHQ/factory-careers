@@ -71,9 +71,18 @@ describe('privacy request source contracts', () => {
     ]) {
       const source = read(path)
       expect(source).toMatch(/requirePermission\(event, \{ privacyRequest: \['read'(?:, 'update')?\] \}\)/)
-      expect(source).toContain('eq(privacyRequest.organizationId, orgId)')
     }
 
+    expect(read('server/api/privacy-requests/index.get.ts')).toContain('eq(privacyRequest.organizationId, orgId)')
+    for (const path of [
+      'server/api/privacy-requests/[id].get.ts',
+      'server/api/privacy-requests/[id].patch.ts',
+      'server/api/privacy-requests/[id]/fulfill.post.ts',
+    ]) {
+      expect(read(path)).toContain('canAccessPrivacyRequestForOrg({')
+    }
+    expect(read('server/utils/privacyRequests.ts')).toContain('eq(privacyRequest.id, params.requestId)')
+    expect(read('server/utils/privacyRequests.ts')).toContain('eq(privacyRequest.organizationId, params.organizationId)')
     expect(read('server/api/privacy-requests/[id]/fulfill.post.ts')).toContain('deleteCandidatePersonalDataForPrivacyRequest')
   })
 

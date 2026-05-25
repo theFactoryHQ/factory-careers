@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, eq, exists, inArray, isNull, or } from 'drizzle-orm'
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import {
   application,
@@ -12,6 +12,7 @@ import {
 import { logWarn } from './logger'
 import { recordActivity } from './recordActivity'
 import { deleteFromS3 } from './s3'
+import { env } from './env'
 
 export function buildPrivacyRequestPublicResponse() {
   return {
@@ -32,6 +33,18 @@ export function verifyPrivacyRequestToken(token: string, hash: string): boolean 
   const tokenHash = Buffer.from(hashPrivacyRequestToken(token), 'hex')
   const storedHash = Buffer.from(hash, 'hex')
   return tokenHash.length === storedHash.length && timingSafeEqual(tokenHash, storedHash)
+}
+
+export function resolveFactoryCareersPublicOrigin(): string {
+  const explicitUrl = env.BETTER_AUTH_URL?.trim()
+  if (explicitUrl) return explicitUrl.replace(/\/+$/, '')
+
+  const platformDomain = env.RAILWAY_PUBLIC_DOMAIN?.trim()
+  if (platformDomain) {
+    return `https://${platformDomain.replace(/^https?:\/\//, '').replace(/\/+$/, '')}`
+  }
+
+  return 'https://careers.thefactoryhq.com'
 }
 
 export async function resolvePrivacyRequestOrganizationId(params: {
@@ -61,33 +74,30 @@ export async function canAccessPrivacyRequestForOrg(params: {
   requestId: string
   organizationId: string
 }) {
-  const direct = await db.query.privacyRequest.findFirst({
-    where: and(
+  const [request] = await db
+    .select()
+    .from(privacyRequest)
+    .where(and(
       eq(privacyRequest.id, params.requestId),
-      eq(privacyRequest.organizationId, params.organizationId),
-    ),
-  })
+      or(
+        eq(privacyRequest.organizationId, params.organizationId),
+        and(
+          isNull(privacyRequest.organizationId),
+          exists(
+            db
+              .select({ id: candidate.id })
+              .from(candidate)
+              .where(and(
+                eq(candidate.organizationId, params.organizationId),
+                eq(candidate.email, privacyRequest.requesterEmail),
+              )),
+          ),
+        ),
+      ),
+    ))
+    .limit(1)
 
-  if (direct) return direct
-
-  const unscoped = await db.query.privacyRequest.findFirst({
-    where: and(
-      eq(privacyRequest.id, params.requestId),
-      isNull(privacyRequest.organizationId),
-    ),
-  })
-
-  if (!unscoped) return null
-
-  const match = await db.query.candidate.findFirst({
-    where: and(
-      eq(candidate.organizationId, params.organizationId),
-      eq(candidate.email, unscoped.requesterEmail),
-    ),
-    columns: { id: true },
-  })
-
-  return match ? unscoped : null
+  return request ?? null
 }
 
 export async function findPrivacyRequestCandidateMatches(params: {
