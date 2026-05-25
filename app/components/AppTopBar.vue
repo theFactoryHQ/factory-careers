@@ -6,7 +6,7 @@ import {
   ChevronDown, Menu, X, Users, ChevronLeft,
   LayoutDashboard, Calendar, ArrowUpCircle,
   Cloud, Server, Sparkles, Radio, History,
-  MessageCircle, MoreHorizontal,
+  MessageCircle, MoreHorizontal, Mail,
 } from 'lucide-vue-next'
 import { getJobStatusBadgeClass, getJobStatusLabel } from '~/utils/status-display'
 
@@ -145,6 +145,7 @@ const mainNav: Array<{ label: string; to: string; icon: typeof Briefcase; exact:
   { label: 'Candidates', to: '/dashboard/candidates', icon: Users, exact: false },
   { label: 'Applications', to: '/dashboard/applications', icon: FileText, exact: false },
   { label: 'Interviews', to: '/dashboard/interviews', icon: Calendar, exact: false },
+  { label: 'Emails', to: '/dashboard/emails', icon: Mail, exact: false },
   { label: 'Timeline', to: '/dashboard/timeline', icon: History, exact: true },
   { label: 'Tracking', to: '/dashboard/source-tracking', icon: Radio, exact: true },
   { label: 'AI', to: '/dashboard/ai-analysis', icon: Sparkles, exact: true },
@@ -179,7 +180,7 @@ function isActiveRoute(to: string, exact: boolean) {
   return route.path === localizedTo || route.path.startsWith(`${localizedTo}/`)
 }
 
-const primaryNavLabels = ['Dashboard', 'Jobs', 'Candidates', 'Applications', 'Interviews']
+const primaryNavLabels = ['Dashboard', 'Jobs', 'Candidates', 'Applications', 'Interviews', 'Emails']
 const primaryNavItems = computed(() => navItems.value.filter(i => primaryNavLabels.includes(i.label)))
 const moreNavItems = computed(() => navItems.value.filter(i => !primaryNavLabels.includes(i.label)))
 

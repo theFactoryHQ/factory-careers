@@ -149,7 +149,9 @@ Some routes intentionally remain outside the deterministic CLI surface:
 
 Server API coverage is tracked in `packages/careers-cli/src/routeCoverage.ts`. The unit test `tests/unit/cli-route-coverage-manifest.test.ts` walks `server/api` and fails if a route is missing from the manifest, if a supported route lacks a CLI command, or if an excluded/internal route lacks a reason. When adding or changing a portal/API workflow, update the CLI command surface or record the explicit exclusion in that manifest.
 
-`org update-settings --stdin --yes` accepts the same JSON payload as `/api/org-settings`, including `signupAllowedDomains` for owner-managed signup domain allowlists. The server still enforces owner-only updates and requires each domain to match a configured SSO provider or organization-level calendar integration.
+`email-templates create --stdin --yes` and `email-templates update --stdin --yes` accept the same workflow template payloads as `/api/email-templates`, including `purpose` values such as `application_acknowledgement`, `application_rejection`, and `interview_invitation`.
+
+`org update-settings --stdin --yes` accepts the same JSON payload as `/api/org-settings`, including `signupAllowedDomains` for owner-managed signup domain allowlists and workflow email settings such as `sendApplicationAcknowledgement`, `applicationAcknowledgementTemplateId`, `sendApplicationRejection`, `applicationRejectionTemplateId`, and `interviewInvitationTemplateId`. The server still enforces owner-only updates and requires each signup domain to match a configured SSO provider or organization-level calendar integration.
 
 ## Examples
 

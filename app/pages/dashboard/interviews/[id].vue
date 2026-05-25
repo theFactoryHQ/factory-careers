@@ -527,7 +527,7 @@ const localePath = useLocalePath()
               <div class="flex items-center justify-between mb-3">
                 <p class="text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">Choose a Template</p>
                 <NuxtLink
-                  :to="localePath('/dashboard/interviews/templates')"
+                  :to="localePath('/dashboard/emails/templates')"
                   class="inline-flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors no-underline"
                 >
                   Manage Templates

@@ -112,6 +112,69 @@ describe('CLI org commands', () => {
     })
   })
 
+  it('passes workflow email settings through unchanged', async () => {
+    const dir = tempDir()
+    const configPath = join(dir, 'config.json')
+    writeAuthedConfig(configPath)
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      expect(url).toBe('https://careers.example.com/api/org-settings')
+      expect(init?.method).toBe('PATCH')
+      expect(JSON.parse(String(init.body))).toEqual({
+        sendApplicationAcknowledgement: true,
+        applicationAcknowledgementTemplateId: 'tmpl_ack',
+        applicationAcknowledgementDelayMinutes: 15,
+        applicationAcknowledgementBusinessHoursOnly: true,
+        sendApplicationRejection: true,
+        applicationRejectionTemplateId: 'tmpl_rej',
+        applicationRejectionDelayMinutes: 60,
+        applicationRejectionBusinessHoursOnly: true,
+        interviewInvitationTemplateId: 'tmpl_invite',
+        emailBusinessHoursTimezone: 'America/Los_Angeles',
+        emailBusinessHoursStartHour: 8,
+        emailBusinessHoursEndHour: 18,
+      })
+      return Response.json({
+        sendApplicationAcknowledgement: true,
+        applicationAcknowledgementTemplateId: 'tmpl_ack',
+        applicationAcknowledgementDelayMinutes: 15,
+        applicationAcknowledgementBusinessHoursOnly: true,
+        sendApplicationRejection: true,
+        applicationRejectionTemplateId: 'tmpl_rej',
+        applicationRejectionDelayMinutes: 60,
+        applicationRejectionBusinessHoursOnly: true,
+        interviewInvitationTemplateId: 'tmpl_invite',
+        emailBusinessHoursTimezone: 'America/Los_Angeles',
+        emailBusinessHoursStartHour: 8,
+        emailBusinessHoursEndHour: 18,
+      })
+    })
+
+    const exitCode = await runCli(
+      ['org', 'update-settings', '--stdin', '--yes', '--config', configPath, '--json'],
+      {
+        stdout: () => {},
+        stderr: () => {},
+        fetch: fetchMock as typeof fetch,
+        stdin: async () => JSON.stringify({
+          sendApplicationAcknowledgement: true,
+          applicationAcknowledgementTemplateId: 'tmpl_ack',
+          applicationAcknowledgementDelayMinutes: 15,
+          applicationAcknowledgementBusinessHoursOnly: true,
+          sendApplicationRejection: true,
+          applicationRejectionTemplateId: 'tmpl_rej',
+          applicationRejectionDelayMinutes: 60,
+          applicationRejectionBusinessHoursOnly: true,
+          interviewInvitationTemplateId: 'tmpl_invite',
+          emailBusinessHoursTimezone: 'America/Los_Angeles',
+          emailBusinessHoursStartHour: 8,
+          emailBusinessHoursEndHour: 18,
+        }),
+      },
+    )
+
+    expect(exitCode).toBe(0)
+  })
+
   it('lists, creates, and revokes invite links', async () => {
     const dir = tempDir()
     const configPath = join(dir, 'config.json')

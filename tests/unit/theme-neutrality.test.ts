@@ -747,7 +747,7 @@ describe('brand-neutral theme variables', () => {
 
     const recipeUsage = [
       {
-        path: 'app/pages/dashboard/interviews/templates/index.vue',
+        path: 'app/pages/dashboard/emails/templates/index.vue',
         recipes: [
           'ui-button-danger',
           'ui-button-ghost',
@@ -767,7 +767,7 @@ describe('brand-neutral theme variables', () => {
         ],
       },
       {
-        path: 'app/pages/dashboard/interviews/templates/new.vue',
+        path: 'app/pages/dashboard/emails/templates/new.vue',
         recipes: [
           'ui-button-ghost',
           'ui-button-primary',
@@ -784,7 +784,7 @@ describe('brand-neutral theme variables', () => {
         ],
       },
       {
-        path: 'app/pages/dashboard/interviews/templates/[id].vue',
+        path: 'app/pages/dashboard/emails/templates/[id].vue',
         recipes: [
           'ui-button-danger',
           'ui-button-ghost',
@@ -840,7 +840,7 @@ describe('brand-neutral theme variables', () => {
         ],
       },
       {
-        path: 'app/pages/dashboard/interviews/templates/index.vue',
+        path: 'app/pages/dashboard/emails/templates/index.vue',
         patterns: [
           /inline-flex items-center gap-1 rounded-full border border-surface-200/,
           /flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500/,
@@ -855,7 +855,7 @@ describe('brand-neutral theme variables', () => {
         ],
       },
       {
-        path: 'app/pages/dashboard/interviews/templates/new.vue',
+        path: 'app/pages/dashboard/emails/templates/new.vue',
         patterns: [
           /inline-flex items-center gap-1 rounded-full border border-surface-200/,
           /flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500/,
@@ -869,7 +869,7 @@ describe('brand-neutral theme variables', () => {
         ],
       },
       {
-        path: 'app/pages/dashboard/interviews/templates/[id].vue',
+        path: 'app/pages/dashboard/emails/templates/[id].vue',
         patterns: [
           /inline-flex items-center gap-1 rounded-full border border-surface-200/,
           /inline-flex items-center gap-1\.5 rounded-lg bg-brand-600/,

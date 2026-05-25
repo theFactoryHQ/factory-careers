@@ -1,10 +1,11 @@
 import { and, eq } from 'drizzle-orm'
-import { interview, application, candidate, job, emailTemplate, organization } from '../../../database/schema'
+import { interview, application, candidate, job, emailTemplate, organization, orgSettings } from '../../../database/schema'
 import { interviewIdParamSchema } from '../../../utils/schemas/interview'
 import { sendInterviewInvitationSchema, SYSTEM_TEMPLATES } from '../../../utils/schemas/emailTemplate'
 import { sendInterviewInvitationEmail, renderTemplate, getFromEmail, type InterviewEmailData } from '../../../utils/email'
 import { generateInterviewICS } from '../../../utils/ical'
 import { buildResponseUrls } from '../../../utils/interview-token'
+import { hasPostgresErrorCode } from '../../../utils/signupDomainAllowlist'
 
 const interviewTypeLabels: Record<string, string> = {
   video: 'Video Call',
@@ -71,12 +72,19 @@ export default defineEventHandler(async (event) => {
   }
 
   // Resolve template subject and body
-  let emailSubject: string
-  let emailBody: string
+  let emailSubject = ''
+  let emailBody = ''
 
-  if (body.templateId) {
+  const defaultTemplateId = !body.templateId && !body.customSubject && !body.customBody
+    ? await resolveDefaultInterviewInvitationTemplateId(orgId)
+    : null
+  const selectedTemplateId = body.customSubject && body.customBody
+    ? null
+    : body.templateId ?? defaultTemplateId ?? 'system-standard'
+
+  if (selectedTemplateId) {
     // Check system templates first
-    const systemTemplate = SYSTEM_TEMPLATES.find(t => t.id === body.templateId)
+    const systemTemplate = SYSTEM_TEMPLATES.find(t => t.id === selectedTemplateId && t.purpose === 'interview_invitation')
     if (systemTemplate) {
       emailSubject = systemTemplate.subject
       emailBody = systemTemplate.body
@@ -84,8 +92,9 @@ export default defineEventHandler(async (event) => {
       // Look up custom template in database
       const customTemplate = await db.query.emailTemplate.findFirst({
         where: and(
-          eq(emailTemplate.id, body.templateId),
+          eq(emailTemplate.id, selectedTemplateId),
           eq(emailTemplate.organizationId, orgId),
+          eq(emailTemplate.purpose, 'interview_invitation'),
         ),
       })
 
@@ -209,7 +218,7 @@ export default defineEventHandler(async (event) => {
     metadata: {
       action: 'invitation_sent',
       candidateEmail: app.candidate.email,
-      templateId: body.templateId ?? 'custom',
+      templateId: selectedTemplateId ?? 'custom',
     },
   })
 
@@ -219,3 +228,16 @@ export default defineEventHandler(async (event) => {
     candidateEmail: app.candidate.email,
   }
 })
+
+async function resolveDefaultInterviewInvitationTemplateId(organizationId: string): Promise<string | null> {
+  try {
+    return (await db.query.orgSettings.findFirst({
+      where: eq(orgSettings.organizationId, organizationId),
+      columns: { interviewInvitationTemplateId: true },
+    }))?.interviewInvitationTemplateId ?? null
+  }
+  catch (error) {
+    if (hasPostgresErrorCode(error, '42703')) return null
+    throw error
+  }
+}

@@ -1,6 +1,8 @@
 import { eq, and } from 'drizzle-orm'
-import { application } from '../../database/schema'
+import { application, candidate, job, organization } from '../../database/schema'
 import { applicationIdParamSchema, updateApplicationSchema, APPLICATION_STATUS_TRANSITIONS } from '../../utils/schemas/application'
+import { sendConfiguredApplicationRejectionEmail } from '../../utils/email'
+import { resolveFactoryCareersBaseUrl } from '../../utils/baseUrl'
 
 /**
  * PATCH /api/applications/:id
@@ -80,5 +82,54 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  if (body.status === 'rejected' && current.status !== 'rejected') {
+    void sendApplicationRejectionNotification(id, orgId).catch((err) => {
+      logError('application.rejection_email_failed', {
+        application_id: id,
+        job_id: updated.jobId,
+        error_message: err instanceof Error ? err.message : String(err),
+      })
+    })
+  }
+
   return updated
 })
+
+async function sendApplicationRejectionNotification(applicationId: string, organizationId: string) {
+  const [details] = await db
+    .select({
+      candidateFirstName: candidate.firstName,
+      candidateLastName: candidate.lastName,
+      candidateEmail: candidate.email,
+      jobTitle: job.title,
+      organizationName: organization.name,
+      applicationCreatedAt: application.createdAt,
+      applicationStatus: application.status,
+    })
+    .from(application)
+    .innerJoin(candidate, eq(candidate.id, application.candidateId))
+    .innerJoin(job, eq(job.id, application.jobId))
+    .innerJoin(organization, eq(organization.id, application.organizationId))
+    .where(and(
+      eq(application.id, applicationId),
+      eq(application.organizationId, organizationId),
+    ))
+    .limit(1)
+
+  if (!details) return
+
+  const candidateName = `${details.candidateFirstName} ${details.candidateLastName}`.trim()
+
+  await sendConfiguredApplicationRejectionEmail({
+    organizationId,
+    candidateEmail: details.candidateEmail,
+    candidateName,
+    candidateFirstName: details.candidateFirstName,
+    candidateLastName: details.candidateLastName,
+    jobTitle: details.jobTitle,
+    organizationName: details.organizationName,
+    applicationDate: details.applicationCreatedAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+    applicationStatus: details.applicationStatus,
+    dashboardApplicationUrl: `${resolveFactoryCareersBaseUrl()}/dashboard/applications/${applicationId}`,
+  })
+}

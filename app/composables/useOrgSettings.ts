@@ -16,6 +16,18 @@ export function useOrgSettings() {
   const analysisContext = computed(() => data.value?.analysisContext ?? '')
   const scoringBands = computed<ScoringBand[]>(() => data.value?.scoringBands ?? [])
   const signupAllowedDomains = computed(() => data.value?.signupAllowedDomains ?? [])
+  const sendApplicationAcknowledgement = computed(() => data.value?.sendApplicationAcknowledgement ?? true)
+  const applicationAcknowledgementTemplateId = computed(() => data.value?.applicationAcknowledgementTemplateId ?? null)
+  const applicationAcknowledgementDelayMinutes = computed(() => data.value?.applicationAcknowledgementDelayMinutes ?? 0)
+  const applicationAcknowledgementBusinessHoursOnly = computed(() => data.value?.applicationAcknowledgementBusinessHoursOnly ?? false)
+  const sendApplicationRejection = computed(() => data.value?.sendApplicationRejection ?? false)
+  const applicationRejectionTemplateId = computed(() => data.value?.applicationRejectionTemplateId ?? null)
+  const applicationRejectionDelayMinutes = computed(() => data.value?.applicationRejectionDelayMinutes ?? 0)
+  const applicationRejectionBusinessHoursOnly = computed(() => data.value?.applicationRejectionBusinessHoursOnly ?? false)
+  const interviewInvitationTemplateId = computed(() => data.value?.interviewInvitationTemplateId ?? null)
+  const emailBusinessHoursTimezone = computed(() => data.value?.emailBusinessHoursTimezone ?? 'America/New_York')
+  const emailBusinessHoursStartHour = computed(() => data.value?.emailBusinessHoursStartHour ?? 9)
+  const emailBusinessHoursEndHour = computed(() => data.value?.emailBusinessHoursEndHour ?? 17)
 
   /**
    * Format a candidate's full name according to the org's display preference.
@@ -85,6 +97,18 @@ export function useOrgSettings() {
     analysisContext?: string
     scoringBands?: ScoringBand[]
     signupAllowedDomains?: string[]
+    sendApplicationAcknowledgement?: boolean
+    applicationAcknowledgementTemplateId?: string | null
+    applicationAcknowledgementDelayMinutes?: number
+    applicationAcknowledgementBusinessHoursOnly?: boolean
+    sendApplicationRejection?: boolean
+    applicationRejectionTemplateId?: string | null
+    applicationRejectionDelayMinutes?: number
+    applicationRejectionBusinessHoursOnly?: boolean
+    interviewInvitationTemplateId?: string | null
+    emailBusinessHoursTimezone?: string
+    emailBusinessHoursStartHour?: number
+    emailBusinessHoursEndHour?: number
   }) {
     await $fetch('/api/org-settings', {
       method: 'PATCH',
@@ -100,6 +124,18 @@ export function useOrgSettings() {
     analysisContext,
     scoringBands,
     signupAllowedDomains,
+    sendApplicationAcknowledgement,
+    applicationAcknowledgementTemplateId,
+    applicationAcknowledgementDelayMinutes,
+    applicationAcknowledgementBusinessHoursOnly,
+    sendApplicationRejection,
+    applicationRejectionTemplateId,
+    applicationRejectionDelayMinutes,
+    applicationRejectionBusinessHoursOnly,
+    interviewInvitationTemplateId,
+    emailBusinessHoursTimezone,
+    emailBusinessHoursStartHour,
+    emailBusinessHoursEndHour,
     status,
     formatCandidateName,
     formatPersonName,

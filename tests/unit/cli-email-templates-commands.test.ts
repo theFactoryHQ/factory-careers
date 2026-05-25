@@ -101,6 +101,55 @@ describe('CLI email template commands', () => {
     expect(JSON.parse(updateOut[0])).toEqual({ id: 'tmpl_1', subject: 'Updated subject' })
   })
 
+  it('passes workflow template purpose payloads through unchanged', async () => {
+    const dir = tempDir()
+    const configPath = join(dir, 'config.json')
+    writeAuthedConfig(configPath)
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === 'https://careers.example.com/api/email-templates' && init?.method === 'POST') {
+        expect(JSON.parse(String(init.body))).toEqual({
+          name: 'Application acknowledgement',
+          subject: 'Thanks for applying',
+          body: 'Hello {{candidateName}}',
+          purpose: 'application_acknowledgement',
+        })
+        return Response.json({ id: 'tmpl_ack', purpose: 'application_acknowledgement' }, { status: 201 })
+      }
+      if (url === 'https://careers.example.com/api/email-templates/tmpl_ack' && init?.method === 'PATCH') {
+        expect(JSON.parse(String(init.body))).toEqual({ purpose: 'application_rejection' })
+        return Response.json({ id: 'tmpl_ack', purpose: 'application_rejection' })
+      }
+      throw new Error(`Unexpected URL ${url}`)
+    })
+
+    const createExit = await runCli(
+      ['email-templates', 'create', '--stdin', '--yes', '--config', configPath, '--json'],
+      {
+        stdout: () => {},
+        stderr: () => {},
+        fetch: fetchMock as typeof fetch,
+        stdin: async () => JSON.stringify({
+          name: 'Application acknowledgement',
+          subject: 'Thanks for applying',
+          body: 'Hello {{candidateName}}',
+          purpose: 'application_acknowledgement',
+        }),
+      },
+    )
+    const updateExit = await runCli(
+      ['email-templates', 'update', 'tmpl_ack', '--stdin', '--yes', '--config', configPath, '--json'],
+      {
+        stdout: () => {},
+        stderr: () => {},
+        fetch: fetchMock as typeof fetch,
+        stdin: async () => JSON.stringify({ purpose: 'application_rejection' }),
+      },
+    )
+
+    expect(createExit).toBe(0)
+    expect(updateExit).toBe(0)
+  })
+
   it('deletes an email template with confirmation', async () => {
     const dir = tempDir()
     const configPath = join(dir, 'config.json')

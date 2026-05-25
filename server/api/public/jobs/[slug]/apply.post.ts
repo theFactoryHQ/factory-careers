@@ -3,13 +3,14 @@ import { job, candidate, application, jobQuestion, questionResponse, document, o
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
 import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
 import { autoScoreApplication } from '../../../../utils/ai/autoScore'
-import { sendApplicationReceiptEmail, sendApplicationTeamAlertEmail } from '../../../../utils/email'
+import { sendApplicationTeamAlertEmail, sendConfiguredApplicationAcknowledgementEmail } from '../../../../utils/email'
 import { parseDocument } from '../../../../utils/resume-parser'
 import { assertUploadContentLength } from '../../../../utils/uploadLimits'
 import { readPositiveIntegerEnv } from '../../../../utils/rateLimitConfig'
 import { detectAllowedDocumentMimeType } from '../../../../utils/documentMime'
 import { isBuiltInLocationQuestion } from '~~/shared/built-in-application-fields'
 import { isRequiredCustomQuestionAnswered } from '~~/shared/custom-question-validation'
+import { resolveFactoryCareersBaseUrl } from '../../../../utils/baseUrl'
 import {
   MAX_FILE_SIZE,
   MAX_DOCUMENTS_PER_CANDIDATE,
@@ -700,11 +701,16 @@ export default defineEventHandler(async (event) => {
     const candidateName = `${firstName} ${lastName}`.trim()
     const applicationUrl = `${resolveFactoryCareersBaseUrl()}/dashboard/applications/${newApplication.id}`
 
-    const receiptEmail = sendApplicationReceiptEmail({
+    const receiptEmail = sendConfiguredApplicationAcknowledgementEmail({
+      organizationId: orgId,
       candidateEmail: email.toLowerCase(),
       candidateName,
+      candidateFirstName: firstName,
+      candidateLastName: lastName,
       jobTitle: existingJob.title,
       organizationName: env.FACTORY_ORG_NAME,
+      applicationDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+      applicationStatus: 'new',
     }).catch((err) => {
       logError('application.receipt_email_failed', {
         application_id: newApplication.id,
@@ -926,16 +932,4 @@ function mapReferrerToChannel(domain: string | null): string | null {
     if (d.endsWith(`.${key}`) || d === key) return channel
   }
   return null
-}
-
-function resolveFactoryCareersBaseUrl(): string {
-  const explicitUrl = env.BETTER_AUTH_URL?.trim()
-  if (explicitUrl) return explicitUrl.replace(/\/+$/, '')
-
-  const platformDomain = env.RAILWAY_PUBLIC_DOMAIN?.trim()
-  if (platformDomain) {
-    return `https://${platformDomain.replace(/^https?:\/\//, '').replace(/\/+$/, '')}`
-  }
-
-  return 'https://careers.thefactoryhq.com'
 }
