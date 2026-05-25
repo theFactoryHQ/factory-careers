@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ArrowLeft, Pencil, Trash2, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Upload, Download, Eye, AlertTriangle } from 'lucide-vue-next'
-import { z } from 'zod'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
+import {
+  candidateEditFormSchema,
+  normalizeEmptyCandidateFormFields,
+} from '~~/shared/schemas/candidate'
 
 definePageMeta({
   layout: 'dashboard',
@@ -64,33 +67,11 @@ function cancelEdit() {
   editErrors.value = {}
 }
 
-const editSchema = z.object({
-  firstName: z.string().min(1, 'First name is required').max(100),
-  lastName: z.string().min(1, 'Last name is required').max(100),
-  displayName: z.string().max(200).optional(),
-  email: z.string().min(1, 'Email is required').email('Invalid email address').max(255),
-  phone: z.string().max(50).optional(),
-  gender: z.enum(['male', 'female', 'other', 'prefer_not_to_say']).optional(),
-  dateOfBirth: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD')
-    .refine((v) => {
-      const d = new Date(v)
-      return !isNaN(d.getTime()) && d.getFullYear() >= 1900 && d <= new Date()
-    }, 'Must be a valid past date')
-    .optional(),
-})
-
 const isSaving = ref(false)
 const editErrors = ref<Record<string, string>>({})
 
 async function handleSave() {
-  const result = editSchema.safeParse({
-    ...editForm.value,
-    gender: editForm.value.gender || undefined,
-    dateOfBirth: editForm.value.dateOfBirth || undefined,
-    displayName: editForm.value.displayName || undefined,
-  })
+  const result = candidateEditFormSchema.safeParse(normalizeEmptyCandidateFormFields(editForm.value))
   if (!result.success) {
     editErrors.value = {}
     for (const issue of result.error.issues) {
