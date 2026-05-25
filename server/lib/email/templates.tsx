@@ -244,6 +244,92 @@ export function ApplicationTeamAlertEmail({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Privacy Requests
+// ─────────────────────────────────────────────────────────────────────────────
+
+type PrivacyRequestVerificationEmailProps = {
+  requesterName: string;
+  verifyUrl: string;
+  config?: EmailThemeConfig;
+};
+
+export function PrivacyRequestVerificationEmail({
+  requesterName,
+  verifyUrl,
+  config,
+}: PrivacyRequestVerificationEmailProps) {
+  const greeting = requesterName ? `Hi ${requesterName}, ` : "";
+  return (
+    <CareersEmailShell
+      preview="Verify your Factory Careers privacy request"
+      heading="Verify your deletion request"
+      body={`${greeting}we received your request to delete personal information from Factory Careers. Please verify your email address so the privacy team can review it.`}
+      subtext="This link is used only to verify the request. It does not automatically delete records."
+      cta={{ href: verifyUrl, text: "Verify Request" }}
+      config={config}
+    />
+  );
+}
+
+type PrivacyRequestConfirmationEmailProps = {
+  requesterName: string;
+  config?: EmailThemeConfig;
+};
+
+export function PrivacyRequestConfirmationEmail({
+  requesterName,
+  config,
+}: PrivacyRequestConfirmationEmailProps) {
+  const greeting = requesterName ? `Hi ${requesterName}, ` : "";
+  return (
+    <CareersEmailShell
+      preview="Your Factory Careers privacy request was verified"
+      heading="Request verified"
+      body={`${greeting}your deletion request has been verified and will be reviewed by the privacy team.`}
+      subtext="Some information may be retained when legal, security, or operational exceptions apply."
+      config={config}
+    />
+  );
+}
+
+type PrivacyRequestInternalAlertEmailProps = {
+  requesterName: string;
+  requesterEmail: string;
+  stateOfResidence: string;
+  dashboardUrl: string;
+  config?: EmailThemeConfig;
+};
+
+export function PrivacyRequestInternalAlertEmail({
+  requesterName,
+  requesterEmail,
+  stateOfResidence,
+  dashboardUrl,
+  config,
+}: PrivacyRequestInternalAlertEmailProps) {
+  return (
+    <CareersEmailShell
+      preview={`Privacy deletion request from ${requesterEmail}`}
+      heading="Privacy request received"
+      body="A deletion request was submitted through Factory Careers and is awaiting review."
+      config={config}
+    >
+      <Section style={styles.detailPanel}>
+        <Text style={styles.detailSectionLabel}>REQUESTER</Text>
+        <Text style={styles.detailItem}>{requesterName}</Text>
+        <Text style={styles.detailItem}>{requesterEmail}</Text>
+        <Text style={styles.detailItem}>State: {stateOfResidence}</Text>
+      </Section>
+      <Section style={{ marginTop: 16 }}>
+        <Button href={dashboardUrl} style={styles.cta}>
+          Review Privacy Requests
+        </Button>
+      </Section>
+    </CareersEmailShell>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Interview Invitation (with optional custom body + .ics + response links)
 // ─────────────────────────────────────────────────────────────────────────────
 

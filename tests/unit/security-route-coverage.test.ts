@@ -34,6 +34,8 @@ describe('API route security coverage', () => {
     'server/api/public/jobs/[slug]/apply.post.ts',
     'server/api/public/jobs/index.get.ts',
     'server/api/public/track/[code].get.ts',
+    'server/api/privacy-requests/index.post.ts',
+    'server/api/privacy-requests/verify.get.ts',
     'server/routes/ingest/[...path].ts',
   ])
 
@@ -140,6 +142,9 @@ describe('P0 tenant-isolation route coverage', () => {
     'server/api/join-requests/[id]/approve.post.ts': ['eq(joinRequest.id, requestId)', 'eq(joinRequest.organizationId, orgId)'],
     'server/api/join-requests/[id]/reject.post.ts': ['eq(joinRequest.id, requestId)', 'eq(joinRequest.organizationId, orgId)'],
     'server/api/sso/providers/[id].delete.ts': ['eq(ssoProvider.id, id)', 'eq(ssoProvider.organizationId, orgId)'],
+    'server/api/privacy-requests/[id].get.ts': ['eq(privacyRequest.organizationId, orgId)'],
+    'server/api/privacy-requests/[id].patch.ts': ['eq(privacyRequest.organizationId, orgId)'],
+    'server/api/privacy-requests/[id]/fulfill.post.ts': ['eq(privacyRequest.organizationId, orgId)'],
   }
 
   it('keeps direct resource lookups scoped by active organization', () => {
@@ -182,6 +187,7 @@ describe('P0 tenant-isolation route coverage', () => {
       'server/api/invite-links/index.get.ts': 'eq(inviteLink.organizationId, orgId)',
       'server/api/join-requests/index.get.ts': 'eq(joinRequest.organizationId, orgId)',
       'server/api/sso/providers.get.ts': 'where(eq(ssoProvider.organizationId, orgId))',
+      'server/api/privacy-requests/index.get.ts': 'eq(privacyRequest.organizationId, orgId)',
     }
 
     for (const [path, snippet] of Object.entries(scopedListRoutes)) {
