@@ -29,6 +29,7 @@ export const updateOrgSettingsSchema = z.object({
   dateFormat: z.enum(['mdy', 'dmy', 'ymd']).optional(),
   calendarSyncInterviewers: z.boolean().optional(),
   defaultSalaryUnit: z.enum(SALARY_UNIT_VALUES).optional(),
+  analysisContext: z.string().trim().max(4000).optional(),
   signupAllowedDomains: signupAllowedDomainsSchema.optional(),
   applicationComplianceEnabled: z.boolean().optional(),
   includeEeo: z.boolean().optional(),

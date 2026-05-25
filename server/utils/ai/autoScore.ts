@@ -6,7 +6,7 @@
 import { eq, and } from 'drizzle-orm'
 import {
   application, scoringCriterion, criterionScore,
-  analysisRun, document,
+  analysisRun, document, orgSettings,
 } from '../../database/schema'
 import { scoreApplication, computeCompositeScore } from './scoring'
 import type { CriterionDefinition } from './scoring'
@@ -64,6 +64,10 @@ export async function autoScoreApplication(applicationId: string, orgId: string)
     baseUrl: config.baseUrl,
     maxTokens: config.maxTokens,
   }
+  const settings = await db.query.orgSettings.findFirst({
+    where: eq(orgSettings.organizationId, orgId),
+    columns: { analysisContext: true },
+  })
 
   let result
   try {
@@ -74,6 +78,7 @@ export async function autoScoreApplication(applicationId: string, orgId: string)
       resumeText,
       coverLetterText: app.coverLetterText,
       applicationNotes: app.notes,
+      organizationAnalysisContext: settings?.analysisContext ?? null,
     })
   } catch (err: any) {
     await db.insert(analysisRun).values({

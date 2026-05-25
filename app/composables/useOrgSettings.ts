@@ -11,6 +11,7 @@ export function useOrgSettings() {
   const nameDisplayFormat = computed(() => data.value?.nameDisplayFormat ?? 'first_last')
   const dateFormat = computed(() => data.value?.dateFormat ?? 'mdy')
   const defaultSalaryUnit = computed(() => data.value?.defaultSalaryUnit ?? 'YEAR')
+  const analysisContext = computed(() => data.value?.analysisContext ?? '')
   const signupAllowedDomains = computed(() => data.value?.signupAllowedDomains ?? [])
 
   /**
@@ -78,6 +79,7 @@ export function useOrgSettings() {
     nameDisplayFormat?: 'first_last' | 'last_first'
     dateFormat?: 'mdy' | 'dmy' | 'ymd'
     defaultSalaryUnit?: 'YEAR' | 'MONTH' | 'HOUR'
+    analysisContext?: string
     signupAllowedDomains?: string[]
   }) {
     await $fetch('/api/org-settings', {
@@ -91,6 +93,7 @@ export function useOrgSettings() {
     nameDisplayFormat,
     dateFormat,
     defaultSalaryUnit,
+    analysisContext,
     signupAllowedDomains,
     status,
     formatCandidateName,
