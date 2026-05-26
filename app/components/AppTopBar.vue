@@ -197,8 +197,11 @@ watch(() => route.path, () => {
 // ─────────────────────────────────────────────
 
 const newJobResetSignal = useState('new-job-reset-signal', () => 0)
+const { allowed: canCreateJob } = usePermission({ job: ['create'] })
 
 function handleNewJobClick() {
+  if (!canCreateJob.value) return
+
   const newJobPath = localePath('/dashboard/jobs/new')
   if (route.path === newJobPath) {
     // Already on the page: signal the wizard to reset instead of navigating
@@ -392,6 +395,7 @@ function handleNewJobClick() {
 
           <!-- New Job button (desktop) -->
           <button
+            v-if="canCreateJob"
             class="factory-button-cta factory-button-premium mx-1 hidden h-9 items-center gap-1.5 px-3.5 text-[13px] sm:inline-flex"
             @click="handleNewJobClick"
           >
@@ -674,6 +678,7 @@ function handleNewJobClick() {
           </NuxtLink>
 
           <button
+            v-if="canCreateJob"
             class="factory-button-cta factory-button-premium flex w-full items-center gap-3 px-3 py-2.5 text-sm sm:hidden mt-1"
             @click="handleNewJobClick(); showMobileMenu = false"
           >

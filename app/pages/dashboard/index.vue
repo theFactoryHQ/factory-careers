@@ -20,6 +20,7 @@ const { activeOrg } = useCurrentOrg()
 const localePath = useLocalePath()
 const { track } = useTrack()
 const { formatPersonName } = useOrgSettings()
+const { allowed: canCreateJob } = usePermission({ job: ['create'] })
 
 let dashboardNowTimer: ReturnType<typeof setInterval> | undefined
 
@@ -215,6 +216,7 @@ const isEmpty = computed(() =>
           Your recruiting command center. Create your first job posting to start building your hiring pipeline.
         </p>
         <NuxtLink
+          v-if="canCreateJob"
           :to="localePath('/dashboard/jobs/new')"
           class="factory-button-cta factory-button-premium inline-flex items-center gap-2.5 rounded-xl px-7 py-3.5 text-sm font-semibold transition-all no-underline"
         >
@@ -339,6 +341,7 @@ const isEmpty = computed(() =>
               <p class="text-sm font-medium text-surface-500 dark:text-surface-400 mb-1">No open jobs</p>
               <p class="text-xs text-surface-400 dark:text-surface-500 mb-4">Create your first job to see the pipeline</p>
               <NuxtLink
+                v-if="canCreateJob"
                 :to="localePath('/dashboard/jobs/new')"
                 class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 no-underline hover:text-brand-700 dark:hover:text-brand-300"
               >
@@ -534,6 +537,7 @@ const isEmpty = computed(() =>
 
             <div class="p-2.5 space-y-0.5">
               <NuxtLink
+                v-if="canCreateJob"
                 :to="localePath('/dashboard/jobs/new')"
                 class="factory-dashboard-quick-action flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium transition-all no-underline"
               >
