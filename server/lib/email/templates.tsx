@@ -16,6 +16,8 @@ import {
 import type { ReactNode } from "react";
 import { careersEmailConfig, careersEmailStyles as styles } from "./theme";
 
+const h = React.createElement;
+
 type EmailCta = {
   href: string;
   text: string;
