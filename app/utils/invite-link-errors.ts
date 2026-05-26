@@ -3,8 +3,10 @@ export const INVALID_INVITE_LINK_MESSAGE =
 
 const genericInviteLinkErrorMessages = new Set([
   'bad request',
+  'forbidden',
   'invalid invite token',
   'invalid, expired, or revoked invite link',
+  'unauthorized',
   'validation error',
 ])
 
