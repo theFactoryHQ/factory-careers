@@ -100,18 +100,22 @@ async function grantOrganizationRole(userId: string, organizationId: string, rol
 
   try {
     await sql.begin(async (tx) => {
-      await tx`
+      const [membership] = await tx<{ id: string }[]>`
         insert into "member" ("id", "user_id", "organization_id", "role")
         values (${randomUUID()}, ${userId}, ${organizationId}, ${role})
         on conflict ("user_id", "organization_id")
         do update set "role" = ${role}
+        returning "id"
       `
+      expect(membership?.id, `expected ${role} membership to exist after grant`).toBeTruthy()
 
-      await tx`
+      const updatedSessions = await tx<{ id: string }[]>`
         update "session"
         set "active_organization_id" = ${organizationId}, "updated_at" = now()
         where "user_id" = ${userId}
+        returning "id"
       `
+      expect(updatedSessions.length, 'expected role grant to update an active session').toBeGreaterThan(0)
     })
   }
   finally {
@@ -202,7 +206,13 @@ test.describe('RBAC role permissions', () => {
 
       const memberApplicationsResponse = await memberApi.get('/api/applications')
       expect(memberApplicationsResponse.status()).toBe(200)
-      expect(JSON.stringify(await memberApplicationsResponse.json())).toContain(application.id)
+      const memberApplications = await memberApplicationsResponse.json() as {
+        data?: Array<{ id?: string }>
+      }
+      expect(
+        memberApplications.data?.some((item) => item.id === application.id),
+        `expected member application list to include ${application.id}`,
+      ).toBe(true)
 
       await member.page.goto('/dashboard/applications')
       await expect(member.page.getByRole('heading', { name: 'Applications' })).toBeVisible()
