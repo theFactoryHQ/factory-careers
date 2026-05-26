@@ -1,0 +1,79 @@
+version = 1
+name = "factory-careers"
+
+[setup]
+script = '''
+set -euo pipefail
+
+source_tree="${CODEX_SOURCE_TREE_PATH:-}"
+worktree="${CODEX_WORKTREE_PATH:-$PWD}"
+
+if [ -z "$source_tree" ]; then
+  source_tree="$(git -C "$worktree" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$worktree")"
+fi
+
+cd "$worktree"
+
+for env_file in .env .env.local; do
+  if [ -f "$source_tree/$env_file" ] && [ ! -f "$worktree/$env_file" ]; then
+    cp "$source_tree/$env_file" "$worktree/$env_file"
+  fi
+done
+
+if [ ! -f "$worktree/.env" ] && [ -x "$worktree/setup.sh" ]; then
+  "$worktree/setup.sh"
+fi
+
+if [ -f "$worktree/.env" ]; then
+  set -a
+  . "$worktree/.env"
+  set +a
+fi
+
+if [ -f "$worktree/.env.local" ]; then
+  set -a
+  . "$worktree/.env.local"
+  set +a
+fi
+
+. "$worktree/.codex/environments/factory-careers-env.sh"
+
+if ! command -v gh >/dev/null 2>&1; then
+  echo "GitHub CLI (gh) is required for Factory Careers Codex environment workflows." >&2
+  echo "Install it with: brew install gh" >&2
+  echo "Or install it from https://cli.github.com/ and make sure it is on PATH." >&2
+  exit 1
+fi
+
+if ! gh auth status --hostname github.com >/dev/null 2>&1; then
+  echo "GitHub CLI is installed, but github.com auth is not available." >&2
+  echo "Run: gh auth login --hostname github.com" >&2
+fi
+
+if ! command -v npm >/dev/null 2>&1; then
+  echo "npm is required to install Factory Careers dependencies." >&2
+  exit 1
+fi
+
+npm ci
+'''
+
+[[actions]]
+name = "Dev server"
+icon = "run"
+command = ". ./.codex/environments/factory-careers-env.sh; npm run dev"
+
+[[actions]]
+name = "Typecheck"
+icon = "test"
+command = ". ./.codex/environments/factory-careers-env.sh; npm run typecheck"
+
+[[actions]]
+name = "Unit tests"
+icon = "test"
+command = ". ./.codex/environments/factory-careers-env.sh; npm run test:unit"
+
+[[actions]]
+name = "Database migrate"
+icon = "database"
+command = ". ./.codex/environments/factory-careers-env.sh; if [ -z \"${DATABASE_MIGRATION_URL:-}\" ]; then echo \"DATABASE_MIGRATION_URL is required for migrations. Add the owner/admin Postgres URL to .env.local.\" >&2; exit 1; fi; if printf '%s' \"$DATABASE_MIGRATION_URL\" | grep -q 'factory_careers_app'; then echo \"DATABASE_MIGRATION_URL is still the app runtime role. Use a Supabase owner/admin Postgres URL for migrations.\" >&2; exit 1; fi; DATABASE_URL=\"$DATABASE_MIGRATION_URL\" npm run db:migrate"
