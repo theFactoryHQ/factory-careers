@@ -10,8 +10,12 @@ useSeoMeta({
     robots: "noindex, nofollow",
 });
 
+const FACTORY_SSO_PROVIDER_ID = "thefactoryhq-sso";
+
 const ssoRedirecting = ref(false);
+const workEmail = ref("");
 const route = useRoute();
+const localePath = useLocalePath();
 const { track } = useTrack();
 const toast = useToast();
 
@@ -24,18 +28,6 @@ function getSafeRedirectPath(value: unknown): string | null {
     if (!value.startsWith("/") || value.startsWith("//")) return null;
     return value;
 }
-
-const factorySsoUrl = computed(() => {
-    const params = new URLSearchParams();
-    const pendingInvitation = route.query.invitation as string | undefined;
-    const safeRedirect = getSafeRedirectPath(route.query.redirect);
-
-    if (pendingInvitation) params.set("invitation", pendingInvitation);
-    if (safeRedirect) params.set("redirect", safeRedirect);
-
-    const query = params.toString();
-    return query ? `/api/auth/factory-sso?${query}` : "/api/auth/factory-sso";
-});
 
 onMounted(() => {
     track("signin_page_viewed");
@@ -54,14 +46,76 @@ onMounted(() => {
     );
 });
 
-function handleFactorySso() {
+async function handleFactorySso() {
     ssoRedirecting.value = true;
     track("signin_sso_started");
+    const normalizedWorkEmail = workEmail.value.trim().toLowerCase();
+
+    const pendingInvitation = route.query.invitation as string | undefined;
+    const safeRedirect = getSafeRedirectPath(route.query.redirect);
+    const callbackURL = pendingInvitation
+        ? localePath(`/auth/accept-invitation/${pendingInvitation}`)
+        : safeRedirect
+            ? localePath(safeRedirect)
+        : localePath("/dashboard");
+    const errorCallbackURL = pendingInvitation
+        ? localePath(`/auth/sign-in?invitation=${encodeURIComponent(pendingInvitation)}`)
+        : safeRedirect
+            ? localePath(`/auth/sign-in?redirect=${encodeURIComponent(safeRedirect)}`)
+        : localePath("/auth/sign-in");
+
+    try {
+        const result = await authClient.signIn.sso({
+            ...(normalizedWorkEmail
+                ? { email: normalizedWorkEmail, loginHint: normalizedWorkEmail }
+                : { providerId: FACTORY_SSO_PROVIDER_ID }),
+            callbackURL,
+            errorCallbackURL,
+            providerType: "oidc",
+        });
+
+        if (result.error) {
+            showSignInError(
+                result.error.message ??
+                "Microsoft SSO is not available yet. Ask an owner to check the SSO configuration.",
+                result.error.code,
+            );
+            ssoRedirecting.value = false;
+            return;
+        }
+
+        const redirectUrl = result.data?.url;
+        if (redirectUrl) {
+            await navigateTo(redirectUrl, { external: true });
+            return;
+        }
+
+        track("signin_sso_started");
+    } catch (e: unknown) {
+        showSignInError(
+            e instanceof Error
+                ? e.message
+                : "Microsoft SSO sign-in failed. Please try again.",
+        );
+        ssoRedirecting.value = false;
+    }
 }
 </script>
 
 <template>
-    <form class="flex flex-col gap-5" method="get" :action="factorySsoUrl" @submit="handleFactorySso">
+    <form class="flex flex-col gap-5" @submit.prevent="handleFactorySso">
+        <label class="flex flex-col gap-1.5 text-sm font-medium text-white/72">
+            <span>Work email</span>
+            <input
+                v-model="workEmail"
+                type="email"
+                autocomplete="email"
+                inputmode="email"
+                placeholder="you@company.com"
+                class="min-h-12 border border-white/14 bg-white/[0.06] px-3 py-2 text-sm text-white outline-none transition-colors placeholder:text-white/32 focus:border-white/34 focus:ring-2 focus:ring-white/10"
+            />
+        </label>
+
         <button
             type="submit"
             :disabled="ssoRedirecting"
@@ -77,7 +131,7 @@ function handleFactorySso() {
                 <rect x="1" y="12" width="10" height="10" fill="#00A4EF" />
                 <rect x="12" y="12" width="10" height="10" fill="#FFB900" />
             </svg>
-            <span>{{ ssoRedirecting ? "Redirecting..." : "Sign in with Microsoft" }}</span>
+            {{ ssoRedirecting ? "Redirecting..." : "Continue with SSO" }}
         </button>
 
         <p class="text-center text-xs leading-5 text-white/42">

@@ -4,11 +4,15 @@ function shellEnv(name: string, value: string | undefined) {
   return value ? `${name}=${JSON.stringify(value)}` : ''
 }
 
+const ssoMockPort = process.env.E2E_SSO_MOCK_PORT ?? '3999'
+
 const webServerEnv = [
   'BETTER_AUTH_URL=http://127.0.0.1:3333',
+  `BETTER_AUTH_TRUSTED_ORIGINS=http://127.0.0.1:3333,http://127.0.0.1:${ssoMockPort}`,
   'NUXT_PUBLIC_SITE_URL=http://127.0.0.1:3333',
   'FACTORY_DISABLE_PUBLIC_SIGNUP=false',
   'FACTORY_DISABLE_PUBLIC_ORG_CREATION=false',
+  `E2E_SSO_MOCK_PORT=${ssoMockPort}`,
   'FEATURE_FLAG_CHATBOT_EXPERIENCE=true',
   shellEnv('FACTORY_EMAIL_TEST_MODE', process.env.FACTORY_EMAIL_TEST_MODE),
   shellEnv('FACTORY_EMAIL_CAPTURE_PATH', process.env.FACTORY_EMAIL_CAPTURE_PATH),

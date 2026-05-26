@@ -134,7 +134,7 @@ test.describe('Tracking analytics', () => {
     await expect(updatedLinkRow.locator('td').nth(4)).toHaveText('1')
     await expect(updatedLinkRow.locator('td').nth(5)).toHaveText('100%')
 
-    await page.getByRole('button', { name: 'Attribution Log' }).click()
+    await page.goto('/dashboard/source-tracking?tab=table')
     const attributionRow = page.getByRole('row').filter({ hasText: applicantName })
     await expect(attributionRow).toBeVisible({ timeout: 15_000 })
     await expect(attributionRow).toContainText(jobTitle)
