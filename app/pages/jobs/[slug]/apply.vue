@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { MapPin, Briefcase, Building2 } from 'lucide-vue-next'
 import { COUNTRY_OPTIONS, US_STATE_OPTIONS } from '~~/shared/location-options'
+import { isRequiredCustomQuestionAnswered } from '~~/shared/custom-question-validation'
 
 definePageMeta({
   layout: 'public',
@@ -264,19 +265,14 @@ function validateResumeAndQuestionsFields(): boolean {
   if (job.value?.questions) {
     for (const q of job.value.questions) {
       if (q.required) {
-        if (q.type === 'file_upload') {
-          // For file uploads, check if a File was selected
-          if (!fileUploads.value[q.id]) {
-            errors.value[`q-${q.id}`] = 'This field is required'
-          }
-        } else {
-          const val = responses.value[q.id]
-          const isEmpty = val === undefined || val === null || val === '' ||
-            (Array.isArray(val) && val.length === 0)
+        const answered = isRequiredCustomQuestionAnswered(
+          q.type,
+          responses.value[q.id],
+          !!fileUploads.value[q.id],
+        )
 
-          if (isEmpty) {
-            errors.value[`q-${q.id}`] = 'This field is required'
-          }
+        if (!answered) {
+          errors.value[`q-${q.id}`] = 'This field is required'
         }
       }
     }

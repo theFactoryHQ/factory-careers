@@ -101,4 +101,52 @@ describe('CLI public commands', () => {
     expect(exitCode).toBe(0)
     expect(JSON.parse(stdout[0])).toEqual({ success: true, applicationId: 'app_1' })
   })
+
+  it('preserves custom question response values for server-side required validation', async () => {
+    const dir = tempDir()
+    const configPath = join(dir, 'config.json')
+    writeConfig(configPath)
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      expect(JSON.parse(String(init?.body))).toEqual({
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: 'ada@example.com',
+        country: 'United States',
+        state: 'CA',
+        responses: [
+          { questionId: 'q-required-checkbox', value: false },
+        ],
+      })
+      return Response.json({
+        statusCode: 422,
+        statusMessage: 'Missing required answers: Agree to background check',
+      }, { status: 422 })
+    })
+    const stdout: string[] = []
+
+    const exitCode = await runCli(
+      ['public', 'jobs', 'apply', 'senior-engineer', '--stdin', '--yes', '--config', configPath, '--json'],
+      {
+        stdout: (value) => stdout.push(value),
+        stderr: () => {},
+        fetch: fetchMock as typeof fetch,
+        stdin: async () => JSON.stringify({
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          email: 'ada@example.com',
+          country: 'United States',
+          state: 'CA',
+          responses: [
+            { questionId: 'q-required-checkbox', value: false },
+          ],
+        }),
+      },
+    )
+
+    expect(exitCode).toBe(1)
+    expect(JSON.parse(stdout[0])).toMatchObject({
+      status: 422,
+      message: 'Missing required answers: Agree to background check',
+    })
+  })
 })

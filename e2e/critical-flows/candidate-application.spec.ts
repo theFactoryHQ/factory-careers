@@ -249,6 +249,30 @@ test.describe('Candidate Application Flow — All Custom Question Field Types', 
     await selectFactorySelectOption(candidatePage, /Country/, 'United States')
     await selectFactorySelectOption(candidatePage, /State/, 'California')
     await candidatePage.getByRole('button', { name: 'Continue' }).click()
+    await expect(candidatePage.getByText('Additional questions')).toBeVisible({ timeout: 10_000 })
+
+    // Required custom questions must block the candidate before any submission
+    // request can be sent. This catches schema/UI drift where recruiter-authored
+    // required fields render but are not enforced on the public form.
+    const customQuestionContainer = (label: string) => candidatePage
+      .locator('label')
+      .filter({ hasText: label })
+      .first()
+      .locator('xpath=..')
+
+    await candidatePage.getByRole('button', { name: 'Continue' }).click()
+    await expect(
+      customQuestionContainer('Years of experience').getByText('This field is required'),
+    ).toBeVisible()
+    await expect(
+      customQuestionContainer('Preferred work style').getByText('This field is required'),
+    ).toBeVisible()
+    await expect(
+      customQuestionContainer('Agree to background check').getByText('This field is required'),
+    ).toBeVisible()
+    await expect(candidatePage.getByText('Voluntary self-identification')).toBeHidden()
+    await expect(candidatePage.getByRole('button', { name: 'Submit Application' })).toBeHidden()
+    expect(candidatePage.url()).not.toContain('/confirmation')
 
     // ── Fill each custom question field type ──────────────────────────────────
 
