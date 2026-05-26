@@ -264,6 +264,15 @@ const initialTab = (['overview', 'links', 'table'] as const).includes(route.quer
   ? (route.query.tab as 'overview' | 'links' | 'table')
   : 'overview'
 const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
+
+function selectTab(tab: 'overview' | 'links' | 'table') {
+  showTab.value = tab
+  if (tab !== 'table') {
+    selectedChannel.value = undefined
+    return
+  }
+  refreshStats()
+}
 </script>
 
 <template>
@@ -363,7 +372,7 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
           :key="tab.key"
           class="ui-tab flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium -mb-px transition-colors"
           :class="showTab === tab.key ? 'ui-tab-active' : 'ui-tab-inactive'"
-          @click="showTab = tab.key; if (tab.key !== 'table') selectedChannel = undefined"
+          @click="selectTab(tab.key)"
         >
           <component :is="tab.icon" class="size-4" />
           {{ tab.label }}
