@@ -16,6 +16,11 @@ import {
 import type { ReactNode } from "react";
 import { careersEmailConfig, careersEmailStyles as styles } from "./theme";
 
+// Nuxt's server transform emits these TSX templates against an in-scope `h`
+// factory in dev/test, so keep the binding explicit for React Email rendering.
+const h = React.createElement;
+void h;
+
 type EmailCta = {
   href: string;
   text: string;

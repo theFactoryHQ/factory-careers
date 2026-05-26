@@ -716,6 +716,9 @@ export default defineEventHandler(async (event) => {
         job_id: jobId,
         error_message: err instanceof Error ? err.message : String(err),
       })
+      if (env.FACTORY_EMAIL_TEST_MODE === 'capture') {
+        throw err
+      }
     })
 
     const teamAlertEmail = sendApplicationTeamAlertEmail({
@@ -730,6 +733,9 @@ export default defineEventHandler(async (event) => {
         job_id: jobId,
         error_message: err instanceof Error ? err.message : String(err),
       })
+      if (env.FACTORY_EMAIL_TEST_MODE === 'capture') {
+        throw err
+      }
     })
 
     if (env.FACTORY_EMAIL_TEST_MODE === 'capture') {
