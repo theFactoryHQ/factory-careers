@@ -175,7 +175,7 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:interviews']).toBe(
-      'playwright test e2e/critical-flows/interview-lifecycle.spec.ts e2e/critical-flows/interview-invitation-response.spec.ts --workers=1',
+      'playwright test e2e/critical-flows/interview-lifecycle.spec.ts e2e/critical-flows/interview-invitation-response.spec.ts e2e/critical-flows/interview-template-flows.spec.ts --workers=1',
     )
     expect(interviewsJob).toContain('name: Playwright interviews')
     expect(interviewsJob).toContain('npm run test:e2e:interviews')
@@ -183,6 +183,7 @@ describe('Playwright E2E harness contract', () => {
     expect(interviewsJob).toContain('FACTORY_EMAIL_TEST_MODE: capture')
     expect(interviewsJob).toContain('FACTORY_EMAIL_CAPTURE_PATH: /tmp/factory-careers-e2e-interview-email.jsonl')
     expect(read('e2e/critical-flows/interview-invitation-response.spec.ts')).toContain('FACTORY_EMAIL_TEST_MODE')
+    expect(read('e2e/critical-flows/interview-template-flows.spec.ts')).toContain('Duplicate as Custom')
     expect(workflow).toContain('needs.interviews.result')
     expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review]')
   })

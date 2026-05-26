@@ -41,7 +41,7 @@
     "test:e2e:job-lifecycle": "playwright test e2e/critical-flows/job-lifecycle.spec.ts",
     "test:e2e:email": "playwright test e2e/critical-flows/fake-mail.spec.ts e2e/critical-flows/privacy-request-fake-mail.spec.ts e2e/critical-flows/auth-recovery-fake-mail.spec.ts --workers=1",
     "test:e2e:tracking-analytics": "playwright test e2e/critical-flows/tracking-analytics.spec.ts",
-    "test:e2e:interviews": "playwright test e2e/critical-flows/interview-lifecycle.spec.ts e2e/critical-flows/interview-invitation-response.spec.ts --workers=1",
+    "test:e2e:interviews": "playwright test e2e/critical-flows/interview-lifecycle.spec.ts e2e/critical-flows/interview-invitation-response.spec.ts e2e/critical-flows/interview-template-flows.spec.ts --workers=1",
     "test:e2e:calendar": "FACTORY_CALENDAR_TEST_MODE=mock playwright test e2e/critical-flows/calendar-integration.spec.ts",
     "test:e2e:auth-org": "playwright test e2e/critical-flows/auth-org-edge-flows.spec.ts",
     "test:e2e:rbac": "playwright test e2e/critical-flows/rbac-role-permissions.spec.ts",
