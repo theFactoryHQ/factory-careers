@@ -37,7 +37,10 @@ async function lookupPrivacyRequest(sql: Sql, requesterEmail: string) {
 
 function extractVerifyUrl(email: CapturedEmail) {
   const content = `${email.text}\n${email.html}`
-  return content.match(/http:\/\/127\.0\.0\.1:3333\/api\/privacy-requests\/verify\?token=[^\s"'<>]+/)?.[0] ?? ''
+  const path = content.match(/\/api\/privacy-requests\/verify\?token=[^\s"'<>]+/)?.[0]
+  if (!path) return ''
+
+  return new URL(path, process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3333').toString()
 }
 
 test.describe('Privacy request fake mail', () => {

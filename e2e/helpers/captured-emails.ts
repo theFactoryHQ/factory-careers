@@ -12,10 +12,21 @@ export type CapturedEmail = {
 export async function readCapturedEmails(capturePath: string): Promise<CapturedEmail[]> {
   try {
     const contents = await readFile(capturePath, "utf8");
-    return contents
+    const lines = contents
       .split("\n")
-      .filter(Boolean)
-      .map((line) => JSON.parse(line) as CapturedEmail);
+      .filter(Boolean);
+
+    return lines.flatMap((line, index) => {
+      try {
+        return [JSON.parse(line) as CapturedEmail];
+      } catch {
+        if (index === lines.length - 1) {
+          return [];
+        }
+
+        throw error;
+      }
+    });
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return [];
