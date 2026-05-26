@@ -1,11 +1,44 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { updateJobSchema } from '../../server/utils/schemas/job'
+import { updateOrgSettingsSchema } from '../../server/utils/schemas/orgSettings'
 
 const readProjectFile = (path: string) =>
   readFileSync(join(process.cwd(), path), 'utf8')
 
 describe('scoring band settings integration', () => {
+  const validBands = [
+    { label: 'Low', minScore: 0, maxScore: 49, color: 'danger' },
+    { label: 'High', minScore: 50, maxScore: 100, color: 'success' },
+  ] as const
+
+  it('accepts complete global and job scoring band fixtures', () => {
+    expect(updateOrgSettingsSchema.parse({ scoringBands: validBands }).scoringBands).toEqual(validBands)
+    expect(updateJobSchema.parse({ scoringBands: validBands }).scoringBands).toEqual(validBands)
+    expect(updateJobSchema.parse({ scoringBands: null }).scoringBands).toBeNull()
+  })
+
+  it('rejects scoring band fixtures with gaps, overlaps, or missing 0-100 coverage', () => {
+    const invalidFixtures = [
+      [{ label: 'Starts late', minScore: 1, maxScore: 100, color: 'warning' }],
+      [
+        { label: 'Low', minScore: 0, maxScore: 49, color: 'danger' },
+        { label: 'Gap', minScore: 51, maxScore: 100, color: 'success' },
+      ],
+      [
+        { label: 'Low', minScore: 0, maxScore: 60, color: 'danger' },
+        { label: 'Overlap', minScore: 60, maxScore: 100, color: 'success' },
+      ],
+      [{ label: 'Stops early', minScore: 0, maxScore: 99, color: 'neutral' }],
+    ]
+
+    for (const scoringBands of invalidFixtures) {
+      expect(updateOrgSettingsSchema.safeParse({ scoringBands }).success).toBe(false)
+      expect(updateJobSchema.safeParse({ scoringBands }).success).toBe(false)
+    }
+  })
+
   it('persists global defaults and job-specific overrides', () => {
     const appSchema = readProjectFile('server/database/schema/app.ts')
     const orgSettingsSchema = readProjectFile('server/utils/schemas/orgSettings.ts')

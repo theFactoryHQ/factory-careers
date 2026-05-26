@@ -28,6 +28,40 @@ describe('scoring bands', () => {
     expect(normalizeScoringBands([{ label: '', minScore: 25, maxScore: 10 }])).toEqual(DEFAULT_SCORING_BANDS)
   })
 
+  it('requires bands to cover the full score range without gaps or overlaps', () => {
+    expect(normalizeScoringBands([
+      { label: 'Low', minScore: 0, maxScore: 49, color: 'danger' },
+      { label: 'High', minScore: 50, maxScore: 100, color: 'success' },
+    ])).toEqual([
+      { label: 'Low', minScore: 0, maxScore: 49, color: 'danger' },
+      { label: 'High', minScore: 50, maxScore: 100, color: 'success' },
+    ])
+
+    expect(normalizeScoringBands([
+      { label: 'Starts late', minScore: 1, maxScore: 100, color: 'warning' },
+    ])).toEqual(DEFAULT_SCORING_BANDS)
+
+    expect(normalizeScoringBands([
+      { label: 'Low', minScore: 0, maxScore: 49, color: 'danger' },
+      { label: 'Gap', minScore: 51, maxScore: 100, color: 'success' },
+    ])).toEqual(DEFAULT_SCORING_BANDS)
+
+    expect(normalizeScoringBands([
+      { label: 'Low', minScore: 0, maxScore: 60, color: 'danger' },
+      { label: 'Overlap', minScore: 60, maxScore: 100, color: 'success' },
+    ])).toEqual(DEFAULT_SCORING_BANDS)
+  })
+
+  it('trims labels and descriptions while preserving valid display metadata', () => {
+    expect(normalizeScoringBands([
+      { label: ' Low ', minScore: 0, maxScore: 49, color: 'danger', description: ' Needs review ' },
+      { label: ' High ', minScore: 50, maxScore: 100, color: 'success', description: ' ' },
+    ])).toEqual([
+      { label: 'Low', minScore: 0, maxScore: 49, color: 'danger', description: 'Needs review' },
+      { label: 'High', minScore: 50, maxScore: 100, color: 'success' },
+    ])
+  })
+
   it('resolves job-specific bands ahead of global defaults', () => {
     const globalBands = [
       { label: 'Global Low', minScore: 0, maxScore: 49, color: 'danger' },
@@ -40,5 +74,9 @@ describe('scoring bands', () => {
 
     expect(resolveScoringBands({ globalBands, jobBands })).toEqual(jobBands)
     expect(resolveScoringBands({ globalBands, jobBands: null })).toEqual(globalBands)
+    expect(resolveScoringBands({
+      globalBands,
+      jobBands: [{ label: 'Broken', minScore: 10, maxScore: 100, color: 'neutral' }],
+    })).toEqual(DEFAULT_SCORING_BANDS)
   })
 })

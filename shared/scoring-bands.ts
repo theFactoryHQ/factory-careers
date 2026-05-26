@@ -17,24 +17,38 @@ export const DEFAULT_SCORING_BANDS: ScoringBand[] = [
 function isScoringBand(value: unknown): value is ScoringBand {
   if (!value || typeof value !== 'object') return false
   const band = value as Partial<ScoringBand>
+  const { label, minScore, maxScore, color } = band
 
-  return typeof band.label === 'string'
-    && band.label.trim().length > 0
-    && typeof band.minScore === 'number'
-    && typeof band.maxScore === 'number'
-    && Number.isInteger(band.minScore)
-    && Number.isInteger(band.maxScore)
-    && band.minScore >= 0
-    && band.maxScore <= 100
-    && band.minScore <= band.maxScore
-    && ['danger', 'warning', 'success', 'neutral'].includes(String(band.color))
+  return typeof label === 'string'
+    && label.trim().length > 0
+    && typeof minScore === 'number'
+    && typeof maxScore === 'number'
+    && Number.isInteger(minScore)
+    && Number.isInteger(maxScore)
+    && minScore >= 0
+    && maxScore <= 100
+    && minScore <= maxScore
+    && ['danger', 'warning', 'success', 'neutral'].includes(String(color))
+}
+
+export function hasCompleteScoreCoverage(bands: ScoringBand[]): boolean {
+  if (bands.length === 0) return false
+
+  const sorted = [...bands].sort((a, b) => a.minScore - b.minScore)
+  if (sorted[0]!.minScore !== 0) return false
+  if (sorted.at(-1)!.maxScore !== 100) return false
+
+  return sorted.every((band, index) =>
+    index === 0 || band.minScore === sorted[index - 1]!.maxScore + 1
+  )
 }
 
 export function normalizeScoringBands(value: unknown): ScoringBand[] {
   if (!Array.isArray(value)) return [...DEFAULT_SCORING_BANDS]
 
+  if (!value.every(isScoringBand)) return [...DEFAULT_SCORING_BANDS]
+
   const bands = value
-    .filter(isScoringBand)
     .map((band) => ({
       label: band.label.trim(),
       minScore: band.minScore,
@@ -44,7 +58,7 @@ export function normalizeScoringBands(value: unknown): ScoringBand[] {
     }))
     .sort((a, b) => a.minScore - b.minScore)
 
-  return bands.length > 0 ? bands : [...DEFAULT_SCORING_BANDS]
+  return hasCompleteScoreCoverage(bands) ? bands : [...DEFAULT_SCORING_BANDS]
 }
 
 export function resolveScoringBands(options: {

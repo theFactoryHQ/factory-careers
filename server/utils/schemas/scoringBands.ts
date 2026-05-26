@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { hasCompleteScoreCoverage } from '~~/shared/scoring-bands'
 
 const scoringBandColorValues = ['danger', 'warning', 'success', 'neutral'] as const
 
@@ -13,4 +14,11 @@ export const scoringBandSchema = z.object({
   { message: 'Band minimum must be less than or equal to maximum.' },
 )
 
-export const scoringBandsSchema = z.array(scoringBandSchema).min(1).max(6)
+export const scoringBandsSchema = z.array(scoringBandSchema).min(1).max(6).superRefine((bands, context) => {
+  if (!hasCompleteScoreCoverage(bands)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Scoring bands must cover 0 through 100 without gaps or overlaps.',
+    })
+  }
+})
