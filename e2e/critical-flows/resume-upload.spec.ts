@@ -1,5 +1,6 @@
-import { type Browser, type Page } from '@playwright/test'
+import { type Browser } from '@playwright/test'
 import { test, expect, selectFactorySelectOption } from '../fixtures'
+import { advanceToSubmitButton } from '../helpers/application-form'
 import {
   VALID_FILE_CONFIGS,
   INVALID_FILE_CONFIGS,
@@ -34,24 +35,6 @@ function applicant(index: number) {
     email: `upload-tester-${index}-${Date.now()}@example.com`,
     phone: '+1 555 000 0000',
   }
-}
-
-async function advanceToSubmitButton(page: Page) {
-  const submitButton = page.getByRole('button', { name: /submit/i })
-
-  for (let step = 0; step < 3; step += 1) {
-    if (await submitButton.isVisible()) {
-      return submitButton
-    }
-
-    const continueButton = page.getByRole('button', { name: 'Continue' }).first()
-    await expect(continueButton).toBeVisible({ timeout: 10_000 })
-    await expect(continueButton).toBeEnabled()
-    await continueButton.click()
-  }
-
-  await expect(submitButton).toBeVisible({ timeout: 10_000 })
-  return submitButton
 }
 
 test.describe('Resume Upload — Browser Smoke', () => {

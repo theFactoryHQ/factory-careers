@@ -92,10 +92,13 @@ describe('Playwright E2E harness contract', () => {
 
   it('runs core tenant/document/RBAC security checks in CI', () => {
     const workflow = read('.github/workflows/e2e-tests.yml')
+    const minioAction = read('.github/actions/start-minio/action.yml')
 
     expect(workflow).toContain('name: Playwright security core')
     expect(workflow).toContain('npm run test:e2e:security:core')
-    expect(workflow).toContain('minio/minio')
+    expect(workflow).toContain('uses: ./.github/actions/start-minio')
+    expect(minioAction).toContain('minio/minio:RELEASE.')
+    expect(minioAction).not.toContain('default: minio/minio:latest')
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "false"')
   })
 
