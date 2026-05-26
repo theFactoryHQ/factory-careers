@@ -268,6 +268,21 @@ test.describe('Candidate Application Flow — All Custom Question Field Types', 
     await selectFactorySelectOption(candidatePage, /State/, 'California')
     await candidatePage.getByRole('button', { name: 'Continue' }).click()
 
+    // Required custom questions must block the candidate before any submission
+    // request can be sent. This catches schema/UI drift where recruiter-authored
+    // required fields render but are not enforced on the public form.
+    await candidatePage.getByRole('button', { name: 'Continue' }).click()
+    await expect(
+      candidatePage.locator('div').filter({ hasText: 'Years of experience' }).filter({ hasText: 'This field is required' }).first(),
+    ).toBeVisible()
+    await expect(
+      candidatePage.locator('div').filter({ hasText: 'Preferred work style' }).filter({ hasText: 'This field is required' }).first(),
+    ).toBeVisible()
+    await expect(
+      candidatePage.locator('div').filter({ hasText: 'Agree to background check' }).filter({ hasText: 'This field is required' }).first(),
+    ).toBeVisible()
+    expect(candidatePage.url()).not.toContain('/confirmation')
+
     // ── Fill each custom question field type ──────────────────────────────────
 
     // 1. short_text — plain text input (required)
