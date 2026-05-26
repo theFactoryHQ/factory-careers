@@ -1,5 +1,5 @@
-import type { Page } from '@playwright/test'
 import { test, expect, selectFactorySelectOption } from '../fixtures'
+import { advanceToSubmitButton } from '../helpers/application-form'
 
 /**
  * Critical flow: Source tracking query parameters (?ref=, utm_*) propagate
@@ -22,24 +22,6 @@ import { test, expect, selectFactorySelectOption } from '../fixtures'
  */
 
 const JOB_TITLE = 'Source Tracking Test Job'
-
-async function advanceToSubmitButton(page: Page) {
-  const submitButton = page.getByRole('button', { name: /submit/i })
-
-  for (let step = 0; step < 3; step += 1) {
-    if (await submitButton.isVisible()) {
-      return submitButton
-    }
-
-    const continueButton = page.getByRole('button', { name: 'Continue' }).first()
-    await expect(continueButton).toBeVisible({ timeout: 10_000 })
-    await expect(continueButton).toBeEnabled()
-    await continueButton.click()
-  }
-
-  await expect(submitButton).toBeVisible({ timeout: 10_000 })
-  return submitButton
-}
 
 test.describe('Source Tracking — Query Parameter Propagation', () => {
   test('ref and utm params propagate from job listing → detail → apply → submission', async ({ authenticatedPage, browser }, testInfo) => {

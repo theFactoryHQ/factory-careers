@@ -1,0 +1,46 @@
+name: Start MinIO
+description: Start a pinned local MinIO container and wait for the health check.
+
+inputs:
+  container-name:
+    description: Docker container name to use for the MinIO instance.
+    required: true
+  image:
+    description: MinIO image tag to run.
+    required: false
+    default: minio/minio:RELEASE.2025-09-07T16-13-09Z
+  access-key:
+    description: MinIO root access key.
+    required: true
+  secret-key:
+    description: MinIO root secret key.
+    required: true
+  address:
+    description: Host and port exposed by the local MinIO server.
+    required: false
+    default: 127.0.0.1:9000
+
+runs:
+  using: composite
+  steps:
+    - name: Start MinIO
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        docker run -d --rm \
+          --name "${{ inputs.container-name }}" \
+          -e MINIO_ROOT_USER="${{ inputs.access-key }}" \
+          -e MINIO_ROOT_PASSWORD="${{ inputs.secret-key }}" \
+          -p "${{ inputs.address }}:9000" \
+          "${{ inputs.image }}" server /data
+
+        for _ in $(seq 1 30); do
+          if curl -fsS "http://${{ inputs.address }}/minio/health/live" >/dev/null; then
+            exit 0
+          fi
+          sleep 1
+        done
+
+        docker logs "${{ inputs.container-name }}"
+        exit 1

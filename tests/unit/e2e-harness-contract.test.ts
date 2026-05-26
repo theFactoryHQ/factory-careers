@@ -65,12 +65,40 @@ describe('Playwright E2E harness contract', () => {
     )
   })
 
+  it('runs invitation management browser coverage in a dedicated UI CI lane', () => {
+    const workflow = read('.github/workflows/e2e-tests.yml')
+
+    expect(workflow).toContain('name: Playwright UI')
+    expect(workflow).toContain('npm run test:e2e:ui')
+    expect(workflow).toContain('needs: [smoke, security-core, uploads, ui]')
+    expect(workflow).toContain('needs.ui.result')
+  })
+
+  it('runs resume upload browser coverage in a dedicated local-storage CI lane', () => {
+    const workflow = read('.github/workflows/e2e-tests.yml')
+    const packageJson = JSON.parse(read('package.json')) as {
+      scripts?: Record<string, string>
+    }
+
+    expect(packageJson.scripts?.['test:e2e:uploads']).toBe(
+      'playwright test e2e/critical-flows/resume-upload.spec.ts',
+    )
+    expect(workflow).toContain('name: Playwright uploads')
+    expect(workflow).toContain('npm run test:e2e:uploads')
+    expect(workflow).toContain('factory-careers-uploads-minio')
+    expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "false"')
+    expect(workflow).toContain('needs: [smoke, security-core, uploads, ui]')
+  })
+
   it('runs core tenant/document/RBAC security checks in CI', () => {
     const workflow = read('.github/workflows/e2e-tests.yml')
+    const minioAction = read('.github/actions/start-minio/action.yml')
 
     expect(workflow).toContain('name: Playwright security core')
     expect(workflow).toContain('npm run test:e2e:security:core')
-    expect(workflow).toContain('minio/minio')
+    expect(workflow).toContain('uses: ./.github/actions/start-minio')
+    expect(minioAction).toContain('minio/minio:RELEASE.')
+    expect(minioAction).not.toContain('default: minio/minio:latest')
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "false"')
   })
 
@@ -78,9 +106,11 @@ describe('Playwright E2E harness contract', () => {
     const workflow = read('.github/workflows/e2e-tests.yml')
 
     expect(workflow).toContain('name: Playwright E2E')
-    expect(workflow).toContain('needs: [smoke, security-core]')
+    expect(workflow).toContain('needs: [smoke, security-core, uploads, ui]')
     expect(workflow).toContain('needs.smoke.result')
     expect(workflow).toContain('needs.security-core.result')
+    expect(workflow).toContain('needs.uploads.result')
+    expect(workflow).toContain('needs.ui.result')
   })
 
   it('keeps Playwright parallel-ready for independent smoke specs', () => {
