@@ -152,11 +152,15 @@ test.describe('SSO domain provisioning', () => {
       expect(redirectUrl.searchParams.get('redirect_uri')).toBe(`http://127.0.0.1:3333/api/auth/sso/callback/${providerId}`)
       expect(ssoPayload.url).not.toContain('thefactoryhq.com')
 
-      const signInContext = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+      const appOrigin = new URL(authenticatedPage.url()).origin
+      const signInContext = await browser.newContext({
+        baseURL: appOrigin,
+        storageState: { cookies: [], origins: [] },
+      })
       const signInPage = await signInContext.newPage()
       await signInPage.goto('/auth/sign-in')
-      await signInPage.waitForLoadState('networkidle')
       await expect(signInPage).toHaveURL(/\/auth\/sign-in/)
+      await expect(signInPage.getByRole('button', { name: 'Continue with SSO' })).toBeVisible()
       await signInPage.getByLabel('Work email').fill(configuredEmail)
 
       const ssoResponsePromise = signInPage.waitForResponse(
