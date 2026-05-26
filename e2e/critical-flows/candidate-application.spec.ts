@@ -1,5 +1,5 @@
-import { type Page } from '@playwright/test'
 import { test, expect, selectFactorySelectOption } from '../fixtures'
+import { advanceToSubmitButton } from '../helpers/application-form'
 
 /**
  * Critical flow: Candidate applies to a published job that contains every
@@ -93,24 +93,6 @@ const FIELD_TYPE_LABELS: Record<string, string> = {
   url: 'URL',
   checkbox: 'Checkbox (Yes/No)',
   file_upload: 'File Upload',
-}
-
-async function advanceToSubmitButton(page: Page) {
-  const submitButton = page.getByRole('button', { name: /submit/i })
-
-  for (let step = 0; step < 3; step += 1) {
-    if (await submitButton.isVisible()) {
-      return submitButton
-    }
-
-    const continueButton = page.getByRole('button', { name: 'Continue' }).first()
-    await expect(continueButton).toBeVisible({ timeout: 10_000 })
-    await expect(continueButton).toBeEnabled()
-    await continueButton.click()
-  }
-
-  await expect(submitButton).toBeVisible({ timeout: 10_000 })
-  return submitButton
 }
 
 /**
