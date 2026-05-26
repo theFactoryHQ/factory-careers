@@ -174,6 +174,11 @@ function modelTitle(c: AiConfigRow): string {
       v-if="!isPermissionLoading && canManageAi"
     />
 
+    <ScoringBandsEditor
+      v-if="!isPermissionLoading && canManageAi"
+      mode="global"
+    />
+
     <!-- Permission guard -->
     <div v-if="isPermissionLoading" class="flex items-center justify-center py-12">
       <Loader2 class="size-6 animate-spin text-surface-400" />

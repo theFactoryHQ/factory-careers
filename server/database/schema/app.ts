@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { relations, sql } from 'drizzle-orm'
 import { organization, user } from './auth'
+import type { ScoringBand } from '~~/shared/scoring-bands'
 
 // ─────────────────────────────────────────────
 // Enums
@@ -102,6 +103,8 @@ export const job = pgTable('job', {
   includeDisability: boolean('include_disability').notNull().default(true),
   // ── AI scoring settings ──
   autoScoreOnApply: boolean('auto_score_on_apply').notNull().default(true),
+  /** Job-specific scoring band override. Null means use organization defaults. */
+  scoringBands: jsonb('scoring_bands').$type<ScoringBand[] | null>(),
   // ── Timestamps ──
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -332,6 +335,12 @@ export const orgSettings = pgTable('org_settings', {
   defaultSalaryUnit: text('default_salary_unit').notNull().default('YEAR'),
   /** Organization-specific context included in AI candidate analysis prompts */
   analysisContext: text('analysis_context').notNull().default(''),
+  /** Organization-default score interpretation bands used for candidate analysis displays */
+  scoringBands: jsonb('scoring_bands').$type<ScoringBand[]>().notNull().default(sql`'[
+    {"label":"Unlikely Fit","minScore":0,"maxScore":39,"color":"danger"},
+    {"label":"Potential Fit","minScore":40,"maxScore":69,"color":"warning"},
+    {"label":"Strong Fit","minScore":70,"maxScore":100,"color":"success"}
+  ]'::jsonb`),
   /** Email domains allowed to create accounts when public signup is otherwise restricted */
   signupAllowedDomains: jsonb('signup_allowed_domains').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
   /** Default compliance question visibility for public job applications */

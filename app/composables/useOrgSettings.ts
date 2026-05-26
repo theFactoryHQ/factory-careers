@@ -1,3 +1,5 @@
+import type { ScoringBand } from '~~/shared/scoring-bands'
+
 /**
  * Composable for fetching and updating organization localization settings.
  * Provides reactive settings and a utility for formatting candidate names/dates.
@@ -12,6 +14,7 @@ export function useOrgSettings() {
   const dateFormat = computed(() => data.value?.dateFormat ?? 'mdy')
   const defaultSalaryUnit = computed(() => data.value?.defaultSalaryUnit ?? 'YEAR')
   const analysisContext = computed(() => data.value?.analysisContext ?? '')
+  const scoringBands = computed<ScoringBand[]>(() => data.value?.scoringBands ?? [])
   const signupAllowedDomains = computed(() => data.value?.signupAllowedDomains ?? [])
 
   /**
@@ -80,6 +83,7 @@ export function useOrgSettings() {
     dateFormat?: 'mdy' | 'dmy' | 'ymd'
     defaultSalaryUnit?: 'YEAR' | 'MONTH' | 'HOUR'
     analysisContext?: string
+    scoringBands?: ScoringBand[]
     signupAllowedDomains?: string[]
   }) {
     await $fetch('/api/org-settings', {
@@ -94,6 +98,7 @@ export function useOrgSettings() {
     dateFormat,
     defaultSalaryUnit,
     analysisContext,
+    scoringBands,
     signupAllowedDomains,
     status,
     formatCandidateName,
