@@ -1,5 +1,5 @@
-import { type Browser } from '@playwright/test'
-import { test, expect } from '../fixtures'
+import { type Browser, type Page } from '@playwright/test'
+import { test, expect, selectFactorySelectOption } from '../fixtures'
 import {
   VALID_FILE_CONFIGS,
   INVALID_FILE_CONFIGS,
@@ -36,7 +36,27 @@ function applicant(index: number) {
   }
 }
 
+async function advanceToSubmitButton(page: Page) {
+  const submitButton = page.getByRole('button', { name: /submit/i })
+
+  for (let step = 0; step < 3; step += 1) {
+    if (await submitButton.isVisible()) {
+      return submitButton
+    }
+
+    const continueButton = page.getByRole('button', { name: 'Continue' }).first()
+    await expect(continueButton).toBeVisible({ timeout: 10_000 })
+    await expect(continueButton).toBeEnabled()
+    await continueButton.click()
+  }
+
+  await expect(submitButton).toBeVisible({ timeout: 10_000 })
+  return submitButton
+}
+
 test.describe('Resume Upload — Browser Smoke', () => {
+  test.describe.configure({ mode: 'serial' })
+
   // ─────────────────────────────────────────────────────────────────────────
   // One-time setup: create & publish the job
   // ─────────────────────────────────────────────────────────────────────────
@@ -179,19 +199,20 @@ async function assertUploadResult(
   await page.goto(applicationLink)
   await page.waitForLoadState('networkidle')
   await expect(page.getByRole('heading', { name: JOB_TITLE })).toBeVisible({ timeout: 15_000 })
-  await page.getByRole('button', { name: /submit/i }).waitFor({ state: 'visible', timeout: 15_000 })
 
   // ── Fill basic applicant info ──────────────────────────────────────────
-  await page.getByLabel('First name').fill(candidate.firstName)
-  await page.getByLabel('Last name').fill(candidate.lastName)
-  await page.getByLabel('Email').fill(candidate.email)
-  await page.getByLabel('Phone').fill(candidate.phone)
-  await page.getByLabel(/Country/).selectOption({ label: 'United States' })
-  await page.getByLabel(/State/).selectOption({ label: 'California' })
+  await page.getByLabel(/First Name/i).fill(candidate.firstName)
+  await page.getByLabel(/Last Name/i).fill(candidate.lastName)
+  await page.getByLabel(/Email/i).fill(candidate.email)
+  await page.getByLabel(/Phone/i).fill(candidate.phone)
+  await selectFactorySelectOption(page, /Country/, 'United States')
+  await selectFactorySelectOption(page, /State/, 'California')
+  await page.getByRole('button', { name: 'Continue' }).click()
 
   // ── Upload resume (built-in required field) ────────────────────────────
   // Built-in resume: <input id="resume" type="file" ...>
   const resumeInput = page.locator('input#resume[type="file"]')
+  await resumeInput.waitFor({ state: 'attached', timeout: 10_000 })
 
   // Upload the test file directly to the built-in resume input.
   await resumeInput.setInputFiles({
@@ -200,6 +221,7 @@ async function assertUploadResult(
     buffer: fileConfig.buffer,
   })
   await expect(page.getByText(fileConfig.filename)).toBeVisible({ timeout: 5_000 })
+  const submitButton = await advanceToSubmitButton(page)
 
   // ── Submit ─────────────────────────────────────────────────────────────
   const [response] = await Promise.all([
@@ -209,7 +231,7 @@ async function assertUploadResult(
         && resp.request().method() === 'POST',
       { timeout: 30_000 },
     ),
-    page.getByRole('button', { name: /submit/i }).click(),
+    submitButton.click(),
   ])
 
   const status = response.status()
