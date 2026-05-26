@@ -177,6 +177,7 @@ export function useTrackingLinks(options?: {
       method: 'POST',
       body: payload,
     })
+    clearNuxtData(fetchKey.value)
     await refresh()
     toast.success('Tracking link created')
     return created
@@ -196,12 +197,14 @@ export function useTrackingLinks(options?: {
       method: 'PATCH',
       body: payload,
     })
+    clearNuxtData(fetchKey.value)
     await refresh()
     return updated
   }
 
   async function deleteLink(id: string) {
     await $fetch(`/api/tracking-links/${id}`, { method: 'DELETE' })
+    clearNuxtData(fetchKey.value)
     await refresh()
     toast.success('Tracking link deleted')
   }

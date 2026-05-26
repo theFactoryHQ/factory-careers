@@ -70,7 +70,7 @@ describe('Playwright E2E harness contract', () => {
 
     expect(workflow).toContain('name: Playwright UI')
     expect(workflow).toContain('npm run test:e2e:ui')
-    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email]')
+    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics]')
     expect(workflow).toContain('needs.ui.result')
   })
 
@@ -137,6 +137,22 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('needs.email.result')
   })
 
+  it('runs tracking-link creation and analytics browser coverage in a dedicated CI lane', () => {
+    const workflow = read('.github/workflows/e2e-tests.yml')
+    const packageJson = JSON.parse(read('package.json')) as {
+      scripts?: Record<string, string>
+    }
+
+    expect(packageJson.scripts?.['test:e2e:tracking-analytics']).toBe(
+      'playwright test e2e/critical-flows/tracking-analytics.spec.ts',
+    )
+    expect(workflow).toContain('name: Playwright tracking analytics')
+    expect(workflow).toContain('npm run test:e2e:tracking-analytics')
+    expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "true"')
+    expect(workflow).toContain('needs.tracking_analytics.result')
+    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics]')
+  })
+
   it('runs resume upload browser coverage in a dedicated local-storage CI lane', () => {
     const workflow = read('.github/workflows/e2e-tests.yml')
     const packageJson = JSON.parse(read('package.json')) as {
@@ -150,7 +166,7 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('npm run test:e2e:uploads')
     expect(workflow).toContain('factory-careers-uploads-minio')
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "false"')
-    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email]')
+    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics]')
   })
 
   it('runs core tenant/document/RBAC security checks in CI', () => {
@@ -176,7 +192,7 @@ describe('Playwright E2E harness contract', () => {
     const workflow = read('.github/workflows/e2e-tests.yml')
 
     expect(workflow).toContain('name: Playwright E2E')
-    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email]')
+    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics]')
     expect(workflow).toContain('needs.smoke.result')
     expect(workflow).toContain('needs.security-core.result')
     expect(workflow).toContain('needs.security-extended.result')
