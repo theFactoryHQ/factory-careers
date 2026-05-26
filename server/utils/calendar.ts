@@ -233,6 +233,7 @@ export async function cancelConnectedCalendarEventRecords(
 export async function removeConnectedCalendarIntegration(userId: string, organizationId?: string | null): Promise<void> {
   if (organizationId) {
     await removeMicrosoftCalendarIntegration(userId, organizationId)
+    await removeGoogleCalendarIntegration(userId)
     return
   }
 

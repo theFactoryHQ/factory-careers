@@ -172,6 +172,13 @@ export const envSchema = z
     /** JSONL path used by FACTORY_AI_TEST_MODE=mock to inspect prompt context. */
     FACTORY_AI_CAPTURE_PATH: emptyToUndefined.pipe(z.string().min(1)).optional(),
     /**
+     * Test-only calendar provider mode for E2E. When set to "mock", Google
+     * calendar OAuth and event creation use deterministic local responses.
+     */
+    FACTORY_CALENDAR_TEST_MODE: z
+      .preprocess((val) => (typeof val === "string" && val.trim() === "" ? undefined : val), z.enum(["mock"]))
+      .optional(),
+    /**
      * Secret used to sign unsubscribe links in marketing emails (via @caffeinebounce/email).
      * Required in production for the email system.
      */
