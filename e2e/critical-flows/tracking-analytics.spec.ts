@@ -127,6 +127,30 @@ test.describe('Tracking analytics', () => {
       timeout: 10_000,
     }).toEqual(expect.objectContaining({ clickCount: 1, applicationCount: 1 }))
 
+    await expect.poll(async () => {
+      const response = await page.request.get('/api/source-tracking/stats')
+      expect(response.status(), `Source stats API returned ${response.status()}`).toBe(200)
+      const stats = await response.json() as {
+        recentAttributed: {
+          candidateFirstName: string
+          candidateLastName: string
+          candidateEmail: string
+          jobTitle: string
+          trackingLinkName: string | null
+        }[]
+      }
+      return stats.recentAttributed.some(row =>
+        row.candidateFirstName === applicant.firstName
+        && row.candidateLastName === applicant.lastName
+        && row.candidateEmail === applicant.email
+        && row.jobTitle === jobTitle
+        && row.trackingLinkName === linkName
+      )
+    }, {
+      message: 'source tracking stats should expose the attributed application before the UI assertion',
+      timeout: 15_000,
+    }).toBe(true)
+
     await page.goto('/dashboard/source-tracking?tab=links')
     const updatedLinkRow = page.getByRole('row').filter({ hasText: linkName })
     await expect(updatedLinkRow).toBeVisible({ timeout: 15_000 })
