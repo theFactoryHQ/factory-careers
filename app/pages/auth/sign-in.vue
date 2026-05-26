@@ -13,6 +13,7 @@ useSeoMeta({
 const FACTORY_SSO_PROVIDER_ID = "thefactoryhq-sso";
 
 const ssoRedirecting = ref(false);
+const workEmail = ref("");
 const route = useRoute();
 const localePath = useLocalePath();
 const { track } = useTrack();
@@ -47,6 +48,7 @@ onMounted(() => {
 
 async function handleFactorySso() {
     ssoRedirecting.value = true;
+    const normalizedWorkEmail = workEmail.value.trim().toLowerCase();
 
     const pendingInvitation = route.query.invitation as string | undefined;
     const safeRedirect = getSafeRedirectPath(route.query.redirect);
@@ -63,7 +65,9 @@ async function handleFactorySso() {
 
     try {
         const result = await authClient.signIn.sso({
-            providerId: FACTORY_SSO_PROVIDER_ID,
+            ...(normalizedWorkEmail
+                ? { email: normalizedWorkEmail, loginHint: normalizedWorkEmail }
+                : { providerId: FACTORY_SSO_PROVIDER_ID }),
             callbackURL,
             errorCallbackURL,
             providerType: "oidc",
@@ -99,6 +103,18 @@ async function handleFactorySso() {
 
 <template>
     <form class="flex flex-col gap-5" @submit.prevent="handleFactorySso">
+        <label class="flex flex-col gap-1.5 text-sm font-medium text-white/72">
+            <span>Work email</span>
+            <input
+                v-model="workEmail"
+                type="email"
+                autocomplete="email"
+                inputmode="email"
+                placeholder="you@company.com"
+                class="min-h-12 border border-white/14 bg-white/[0.06] px-3 py-2 text-sm text-white outline-none transition-colors placeholder:text-white/32 focus:border-white/34 focus:ring-2 focus:ring-white/10"
+            />
+        </label>
+
         <button
             type="submit"
             :disabled="ssoRedirecting"
@@ -110,7 +126,7 @@ async function handleFactorySso() {
                 <rect x="1" y="12" width="10" height="10" fill="#00A4EF" />
                 <rect x="12" y="12" width="10" height="10" fill="#FFB900" />
             </svg>
-            {{ ssoRedirecting ? "Redirecting..." : "Continue with Microsoft" }}
+            {{ ssoRedirecting ? "Redirecting..." : "Continue with SSO" }}
         </button>
 
         <p class="text-center text-xs leading-5 text-white/42">

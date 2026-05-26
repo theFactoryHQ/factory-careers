@@ -6,6 +6,7 @@ function shellEnv(name: string, value: string | undefined) {
 
 const webServerEnv = [
   'BETTER_AUTH_URL=http://127.0.0.1:3333',
+  'BETTER_AUTH_TRUSTED_ORIGINS=http://127.0.0.1:3333,http://127.0.0.1:3999',
   'NUXT_PUBLIC_SITE_URL=http://127.0.0.1:3333',
   'FACTORY_DISABLE_PUBLIC_SIGNUP=false',
   'FACTORY_DISABLE_PUBLIC_ORG_CREATION=false',
