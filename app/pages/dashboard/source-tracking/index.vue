@@ -35,10 +35,11 @@ const route = useRoute()
 const selectedJobId = ref<string | undefined>(route.query.jobId as string | undefined)
 const selectedChannel = ref<string | undefined>()
 const dateRange = ref<'7d' | '30d' | '90d' | 'all'>('30d')
+const dateRangeAnchorIso = useState('source-tracking-date-range-anchor', () => new Date().toISOString())
 
 const dateFrom = computed(() => {
   if (dateRange.value === 'all') return undefined
-  const d = new Date()
+  const d = new Date(dateRangeAnchorIso.value)
   const days = { '7d': 7, '30d': 30, '90d': 90 }[dateRange.value]
   d.setDate(d.getDate() - days)
   return d.toISOString()
