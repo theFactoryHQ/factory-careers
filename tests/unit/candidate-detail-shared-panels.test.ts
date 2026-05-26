@@ -33,12 +33,22 @@ describe('candidate detail shared panels', () => {
     const documentsPanel = readProjectFile('app/components/CandidateDocumentsPanel.vue')
     const applicationsPanel = readProjectFile('app/components/CandidateApplicationsPanel.vue')
     const detailsCard = readProjectFile('app/components/CandidateDetailsCard.vue')
+    const panelClass = readProjectFile('app/composables/useCandidatePanelClass.ts')
 
     expect(documentsPanel).toContain('documentTypeLabels')
     expect(documentsPanel).toContain('Back to documents')
     expect(applicationsPanel).toContain('<ApplicationStatusBadge :status="app.status" />')
     expect(applicationsPanel).toContain('ApplicationTimestampStack')
     expect(detailsCard).toContain('<PropertyBlock')
+
+    for (const source of [documentsPanel, applicationsPanel, detailsCard]) {
+      expect(source).toContain('useCandidatePanelClass(() => props.surface)')
+      expect(source).not.toContain("props.surface === 'drawer'\n    ? 'border border-white/12 bg-white/[0.025]'\n    : 'ui-panel ui-dashboard-panel'")
+    }
+
+    expect(panelClass).toContain("export const CANDIDATE_PANEL_PAGE_CLASS = 'ui-panel ui-dashboard-panel'")
+    expect(panelClass).toContain("export const CANDIDATE_PANEL_DRAWER_CLASS = 'border border-white/12 bg-white/[0.025]'")
+    expect(panelClass).toContain('export function getCandidatePanelClass')
   })
 
   it('keeps drawer headings and document row previews accessible', () => {

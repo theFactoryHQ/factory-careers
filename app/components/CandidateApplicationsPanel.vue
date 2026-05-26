@@ -26,11 +26,7 @@ const emit = defineEmits<{
 
 const localePath = useLocalePath()
 
-const panelClass = computed(() =>
-  props.surface === 'drawer'
-    ? 'border border-white/12 bg-white/[0.025]'
-    : 'ui-panel ui-dashboard-panel',
-)
+const panelClass = useCandidatePanelClass(() => props.surface)
 
 function getApplicationTransitions(status: string) {
   return APPLICATION_STATUS_TRANSITIONS[status] ?? []

@@ -16,11 +16,7 @@ const emit = defineEmits<{
 
 const { formatCandidateName, formatDate } = useOrgSettings()
 
-const panelClass = computed(() =>
-  props.surface === 'drawer'
-    ? 'border border-white/12 bg-white/[0.025]'
-    : 'ui-panel ui-dashboard-panel',
-)
+const panelClass = useCandidatePanelClass(() => props.surface)
 const headingTag = computed(() => props.surface === 'drawer' ? 'h2' : 'h1')
 
 const genderLabels: Record<string, string> = {
