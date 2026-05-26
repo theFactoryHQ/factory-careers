@@ -70,7 +70,7 @@ describe('Playwright E2E harness contract', () => {
 
     expect(workflow).toContain('name: Playwright UI')
     expect(workflow).toContain('npm run test:e2e:ui')
-    expect(workflow).toContain('needs: [smoke, security-core, uploads, ui, candidate]')
+    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate]')
     expect(workflow).toContain('needs.ui.result')
   })
 
@@ -102,7 +102,7 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('npm run test:e2e:uploads')
     expect(workflow).toContain('factory-careers-uploads-minio')
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "false"')
-    expect(workflow).toContain('needs: [smoke, security-core, uploads, ui, candidate]')
+    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate]')
   })
 
   it('runs core tenant/document/RBAC security checks in CI', () => {
@@ -114,13 +114,24 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "false"')
   })
 
+  it('runs extended security checks in a separate CI lane', () => {
+    const workflow = read('.github/workflows/e2e-tests.yml')
+
+    expect(workflow).toContain('name: Playwright security extended')
+    expect(workflow).toContain('FEATURE_FLAG_CHATBOT_EXPERIENCE: "true"')
+    expect(workflow).toContain('npm run test:e2e:security:extended')
+    expect(workflow).toContain('factory-careers-security-extended-minio')
+    expect(workflow).toContain('needs.security-extended.result')
+  })
+
   it('keeps the branch-protection E2E status as an aggregate of the split jobs', () => {
     const workflow = read('.github/workflows/e2e-tests.yml')
 
     expect(workflow).toContain('name: Playwright E2E')
-    expect(workflow).toContain('needs: [smoke, security-core, uploads, ui, candidate]')
+    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate]')
     expect(workflow).toContain('needs.smoke.result')
     expect(workflow).toContain('needs.security-core.result')
+    expect(workflow).toContain('needs.security-extended.result')
     expect(workflow).toContain('needs.uploads.result')
     expect(workflow).toContain('needs.ui.result')
     expect(workflow).toContain('needs.candidate.result')
