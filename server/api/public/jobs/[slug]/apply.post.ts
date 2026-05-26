@@ -705,7 +705,7 @@ export default defineEventHandler(async (event) => {
     const candidateName = `${firstName} ${lastName}`.trim()
     const applicationUrl = `${resolveFactoryCareersBaseUrl()}/dashboard/applications/${newApplication.id}`
 
-    void sendApplicationReceiptEmail({
+    const receiptEmail = sendApplicationReceiptEmail({
       candidateEmail: email.toLowerCase(),
       candidateName,
       jobTitle: existingJob.title,
@@ -716,9 +716,12 @@ export default defineEventHandler(async (event) => {
         job_id: jobId,
         error_message: err instanceof Error ? err.message : String(err),
       })
+      if (env.FACTORY_EMAIL_TEST_MODE === 'capture') {
+        throw err
+      }
     })
 
-    void sendApplicationTeamAlertEmail({
+    const teamAlertEmail = sendApplicationTeamAlertEmail({
       candidateEmail: email.toLowerCase(),
       candidateName,
       jobTitle: existingJob.title,
@@ -730,7 +733,14 @@ export default defineEventHandler(async (event) => {
         job_id: jobId,
         error_message: err instanceof Error ? err.message : String(err),
       })
+      if (env.FACTORY_EMAIL_TEST_MODE === 'capture') {
+        throw err
+      }
     })
+
+    if (env.FACTORY_EMAIL_TEST_MODE === 'capture') {
+      await Promise.all([receiptEmail, teamAlertEmail])
+    }
   }
 
   // ─────────────────────────────────────────────

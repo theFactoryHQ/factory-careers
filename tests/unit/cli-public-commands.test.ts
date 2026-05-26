@@ -78,6 +78,7 @@ describe('CLI public commands', () => {
         email: 'ada@example.com',
         responses: [],
       })
+      expect(JSON.parse(String(init?.body))).not.toHaveProperty('emailTestMode')
       return Response.json({ success: true, applicationId: 'app_1' }, { status: 201 })
     })
     const stdout: string[] = []

@@ -154,6 +154,15 @@ export const envSchema = z
      */
     EMAIL_FROM: emptyToUndefined.pipe(z.string().min(1)).optional(),
     /**
+     * Test-only email capture mode for E2E. When set to "capture", messages are
+     * written to FACTORY_EMAIL_CAPTURE_PATH instead of contacting Resend.
+     */
+    FACTORY_EMAIL_TEST_MODE: z
+      .preprocess((val) => (typeof val === "string" && val.trim() === "" ? undefined : val), z.enum(["capture"]))
+      .optional(),
+    /** JSONL path used by FACTORY_EMAIL_TEST_MODE=capture. */
+    FACTORY_EMAIL_CAPTURE_PATH: emptyToUndefined.pipe(z.string().min(1)).optional(),
+    /**
      * Secret used to sign unsubscribe links in marketing emails (via @caffeinebounce/email).
      * Required in production for the email system.
      */
@@ -309,6 +318,24 @@ export const envSchema = z
       })
     }
 
+    if (data.FACTORY_EMAIL_TEST_MODE === "capture") {
+      if (process.env.NODE_ENV === "production") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["FACTORY_EMAIL_TEST_MODE"],
+          message: "FACTORY_EMAIL_TEST_MODE=capture is not allowed in production.",
+        });
+      }
+
+      if (!data.FACTORY_EMAIL_CAPTURE_PATH) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["FACTORY_EMAIL_CAPTURE_PATH"],
+          message: "FACTORY_EMAIL_CAPTURE_PATH is required when FACTORY_EMAIL_TEST_MODE=capture.",
+        });
+      }
+    }
+
     // OIDC SSO requires all three vars or none — partial config is a misconfiguration.
     const oidcVars = [
       ["OIDC_CLIENT_ID", data.OIDC_CLIENT_ID],
@@ -411,7 +438,7 @@ export const env = new Proxy({} as z.infer<typeof envSchema>, {
             `Ensure these variables are set in the Render web service environment.\n` +
             `Required: DATABASE_URL, BETTER_AUTH_SECRET, S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET\n` +
             `Required on Render: BETTER_AUTH_URL=https://careers.thefactoryhq.com\n` +
-            `Optional: BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), S3_SKIP_BUCKET_POLICY, S3_SKIP_BUCKET_INIT, SKIP_RUNTIME_MIGRATIONS, TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CALENDAR_AUTH_MODE, MICROSOFT_CALENDAR_CLIENT_ID, MICROSOFT_CALENDAR_CLIENT_SECRET, MICROSOFT_CALENDAR_TENANT_ID, FACTORY_CAREERS_CALENDAR_SYNC_SHARED, FACTORY_CAREERS_CALENDAR_USER_EMAILS, FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_DISCOVERY_URL, OIDC_PROVIDER_NAME, AUTH_GOOGLE_CLIENT_ID, AUTH_GOOGLE_CLIENT_SECRET, AUTH_GITHUB_CLIENT_ID, AUTH_GITHUB_CLIENT_SECRET, AUTH_MICROSOFT_CLIENT_ID, AUTH_MICROSOFT_CLIENT_SECRET, AUTH_MICROSOFT_TENANT_ID, FACTORY_CAREERS_HIRING_INBOX, FACTORY_CAREERS_PRIVACY_INBOX, FACTORY_CAREERS_CLI_CLIENT_ID, FACTORY_ALLOWED_EMAIL_DOMAINS, FACTORY_INITIAL_OWNER_EMAILS\n`,
+            `Optional: BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), S3_SKIP_BUCKET_POLICY, S3_SKIP_BUCKET_INIT, SKIP_RUNTIME_MIGRATIONS, TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL, EMAIL_FROM, FACTORY_EMAIL_TEST_MODE, FACTORY_EMAIL_CAPTURE_PATH, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CALENDAR_AUTH_MODE, MICROSOFT_CALENDAR_CLIENT_ID, MICROSOFT_CALENDAR_CLIENT_SECRET, MICROSOFT_CALENDAR_TENANT_ID, FACTORY_CAREERS_CALENDAR_SYNC_SHARED, FACTORY_CAREERS_CALENDAR_USER_EMAILS, FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_DISCOVERY_URL, OIDC_PROVIDER_NAME, AUTH_GOOGLE_CLIENT_ID, AUTH_GOOGLE_CLIENT_SECRET, AUTH_GITHUB_CLIENT_ID, AUTH_GITHUB_CLIENT_SECRET, AUTH_MICROSOFT_CLIENT_ID, AUTH_MICROSOFT_CLIENT_SECRET, AUTH_MICROSOFT_TENANT_ID, FACTORY_CAREERS_HIRING_INBOX, FACTORY_CAREERS_PRIVACY_INBOX, FACTORY_CAREERS_CLI_CLIENT_ID, FACTORY_ALLOWED_EMAIL_DOMAINS, FACTORY_INITIAL_OWNER_EMAILS\n`,
         );
         throw result.error;
       }
