@@ -310,10 +310,102 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  candidate:
+    name: Playwright candidate
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: factory_e2e
+          POSTGRES_PASSWORD: factory_e2e
+          POSTGRES_DB: factory_careers_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U factory_e2e -d factory_careers_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://factory_e2e:factory_e2e@127.0.0.1:5432/factory_careers_e2e
+      BETTER_AUTH_SECRET: ci-e2e-auth-secret-with-at-least-32-chars
+      BETTER_AUTH_URL: http://127.0.0.1:3333
+      BETTER_AUTH_TRUSTED_ORIGINS: http://127.0.0.1:3333
+      NUXT_PUBLIC_SITE_URL: http://127.0.0.1:3333
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3333
+      FACTORY_DISABLE_PUBLIC_SIGNUP: "false"
+      FACTORY_DISABLE_PUBLIC_ORG_CREATION: "false"
+      S3_ENDPOINT: http://127.0.0.1:9000
+      S3_ACCESS_KEY: e2e-access-key
+      S3_SECRET_KEY: e2e-secret-key
+      S3_BUCKET: factory-careers-e2e
+      S3_REGION: us-east-1
+      S3_FORCE_PATH_STYLE: "true"
+      S3_SKIP_BUCKET_INIT: "false"
+      S3_SKIP_BUCKET_POLICY: "true"
+      SMTP_FROM: e2e@example.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          registry-url: 'https://npm.pkg.github.com'
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Start MinIO
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --rm \
+            --name factory-careers-candidate-minio \
+            -e MINIO_ROOT_USER=e2e-access-key \
+            -e MINIO_ROOT_PASSWORD=e2e-secret-key \
+            -p 127.0.0.1:9000:9000 \
+            minio/minio server /data
+
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+
+          docker logs factory-careers-candidate-minio
+          exit 1
+
+      - name: Run candidate application browser checks
+        run: npm run test:e2e:candidate
+
+      - name: Upload Playwright candidate report
+        if: ${{ always() && !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-candidate-report
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
   e2e-required:
     name: Playwright E2E
     runs-on: ubuntu-latest
-    needs: [smoke, security-core, uploads, ui]
+    needs: [smoke, security-core, uploads, ui, candidate]
     if: ${{ always() && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
     steps:
       - name: Verify layered E2E jobs
@@ -334,6 +426,10 @@ jobs:
           fi
           if [ "${{ needs.ui.result }}" != "success" ]; then
             echo "Playwright UI finished with result: ${{ needs.ui.result }}"
+            exit 1
+          fi
+          if [ "${{ needs.candidate.result }}" != "success" ]; then
+            echo "Playwright candidate finished with result: ${{ needs.candidate.result }}"
             exit 1
           fi
           echo "Layered Playwright E2E checks passed."
