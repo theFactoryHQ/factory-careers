@@ -137,6 +137,7 @@ export function useInterviews(options?: {
         method: 'POST',
         body: payload,
       })
+      clearNuxtData(fetchKey.value)
       await refresh()
       return created
     } catch (error) {
@@ -160,6 +161,7 @@ export function useInterviews(options?: {
         method: 'PATCH',
         body: payload,
       })
+      clearNuxtData(fetchKey.value)
       await refresh()
       return updated
     } catch (error) {
@@ -171,6 +173,7 @@ export function useInterviews(options?: {
   async function deleteInterviewById(id: string) {
     try {
       await $fetch(`/api/interviews/${id}`, { method: 'DELETE' })
+      clearNuxtData(fetchKey.value)
       await refresh()
     } catch (error) {
       handlePreviewReadOnlyError(error)
