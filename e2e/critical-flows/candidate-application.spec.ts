@@ -1,4 +1,5 @@
-import { test, expect } from '../fixtures'
+import { test, expect, selectFactorySelectOption } from '../fixtures'
+import { advanceToSubmitButton } from '../helpers/application-form'
 
 /**
  * Critical flow: Candidate applies to a published job that contains every
@@ -239,17 +240,15 @@ test.describe('Candidate Application Flow — All Custom Question Field Types', 
     await candidatePage.waitForLoadState('networkidle')
     await expect(candidatePage.getByRole('heading', { name: JOB_TITLE })).toBeVisible({ timeout: 15_000 })
 
-    // Wait for the form to be fully hydrated
-    await candidatePage.getByRole('button', { name: /submit/i }).waitFor({ state: 'visible', timeout: 15_000 })
-
     // ── Fill basic applicant info ─────────────────────────────────────────────
 
     await candidatePage.getByLabel('First name').fill(APPLICANT.firstName)
     await candidatePage.getByLabel('Last name').fill(APPLICANT.lastName)
     await candidatePage.getByLabel('Email').fill(APPLICANT.email)
     await candidatePage.getByLabel('Phone').fill(APPLICANT.phone)
-    await candidatePage.getByLabel(/Country/).selectOption({ label: 'United States' })
-    await candidatePage.getByLabel(/State/).selectOption({ label: 'California' })
+    await selectFactorySelectOption(candidatePage, /Country/, 'United States')
+    await selectFactorySelectOption(candidatePage, /State/, 'California')
+    await candidatePage.getByRole('button', { name: 'Continue' }).click()
 
     // ── Fill each custom question field type ──────────────────────────────────
 
@@ -310,6 +309,7 @@ test.describe('Candidate Application Flow — All Custom Question Field Types', 
 
     // ── Submit the application ────────────────────────────────────────────────
 
+    const submitButton = await advanceToSubmitButton(candidatePage)
     const [applyResponse] = await Promise.all([
       candidatePage.waitForResponse(
         resp =>
@@ -317,7 +317,7 @@ test.describe('Candidate Application Flow — All Custom Question Field Types', 
           resp.request().method() === 'POST',
         { timeout: 30_000 },
       ),
-      candidatePage.getByRole('button', { name: /submit/i }).click(),
+      submitButton.click(),
     ])
 
     // Verify the API responded with a 2xx status
@@ -513,7 +513,13 @@ test.describe('Candidate Application — Required Cover Letter Validation', () =
       .waitFor({ state: 'attached', timeout: 10_000 })
     await page.locator('form').getByRole('button', { name: 'Save & continue' }).first().click()
 
-    // Step 2: Enable "Cover letter" requirement via radio group
+    // Step 2: Isolate this validation to cover letters; resume upload is
+    // covered by the dedicated upload lane.
+    const resumeRadioGroup = page.getByRole('radiogroup', { name: /Resume requirement/i })
+    await resumeRadioGroup.waitFor({ state: 'visible', timeout: 10_000 })
+    await resumeRadioGroup.getByRole('radio', { name: 'Off' }).click()
+
+    // Enable "Cover letter" requirement via radio group.
     const coverLetterRadioGroup = page.getByRole('radiogroup', { name: /Cover letter requirement/i })
     await coverLetterRadioGroup.waitFor({ state: 'visible', timeout: 10_000 })
     await coverLetterRadioGroup.getByRole('radio', { name: 'Required' }).click()
@@ -554,18 +560,20 @@ test.describe('Candidate Application — Required Cover Letter Validation', () =
 
     await candidatePage.goto(applicationLink)
     await candidatePage.waitForLoadState('networkidle')
-    await candidatePage.getByRole('button', { name: /submit/i }).waitFor({ state: 'visible', timeout: 15_000 })
-
-    // The cover letter textarea must be visible (requireCoverLetter=true)
-    await expect(candidatePage.locator('#coverLetterText')).toBeVisible({ timeout: 10_000 })
 
     // Fill required basic fields but leave cover letter EMPTY
     await candidatePage.getByLabel('First name').fill('Test')
     await candidatePage.getByLabel('Last name').fill('Applicant')
     await candidatePage.getByLabel('Email').fill(`test.applicant.${Date.now()}.r${testInfo.retry}@example.com`)
+    await selectFactorySelectOption(candidatePage, /Country/, 'United States')
+    await selectFactorySelectOption(candidatePage, /State/, 'California')
+    await candidatePage.getByRole('button', { name: 'Continue' }).click()
 
-    // Submit without cover letter — client validation must block it
-    await candidatePage.getByRole('button', { name: /submit/i }).click()
+    // The cover letter textarea must be visible (requireCoverLetter=true)
+    await expect(candidatePage.locator('#coverLetterText')).toBeVisible({ timeout: 10_000 })
+
+    // Continue without cover letter — step validation must block progress.
+    await candidatePage.getByRole('button', { name: 'Continue' }).click()
 
     // Error message should appear; the page should NOT navigate
     await expect(
