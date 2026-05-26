@@ -12,6 +12,8 @@ import {
   getInterviewStatusLabel,
   getInterviewTransitionButtonClass,
   getInterviewTransitionLabel,
+  getCandidateResponseIconClass,
+  getCandidateResponseLabel,
 } from '~/utils/status-display'
 import { formatPhoneNumber } from '~/utils/phone-format'
 
@@ -404,6 +406,23 @@ const localePath = useLocalePath()
         >
           <CheckCheck class="size-3.5" />
           Invitation sent <TimelineDateLink :date="interview.invitationSentAt" class="text-success-600 dark:text-success-400">{{ formatDate(interview.invitationSentAt) }}</TimelineDateLink>
+        </div>
+        <!-- Candidate response status -->
+        <div
+          v-if="interview.candidateResponse !== 'pending'"
+          class="mt-2 flex flex-wrap items-center gap-1.5 text-xs"
+          :class="getCandidateResponseIconClass(interview.candidateResponse)"
+        >
+          <Check class="size-3.5" />
+          <span>Candidate response</span>
+          <span class="font-semibold">{{ getCandidateResponseLabel(interview.candidateResponse) }}</span>
+          <TimelineDateLink
+            v-if="interview.candidateRespondedAt"
+            :date="interview.candidateRespondedAt"
+            class="opacity-80"
+          >
+            {{ formatDate(interview.candidateRespondedAt) }}
+          </TimelineDateLink>
         </div>
         <!-- Calendar sync status -->
         <div
