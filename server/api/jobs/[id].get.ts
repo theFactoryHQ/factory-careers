@@ -33,6 +33,7 @@ export default defineEventHandler(async (event) => {
       includeVeteran: true,
       includeDisability: true,
       autoScoreOnApply: true,
+      scoringBands: true,
       experienceLevel: true,
       createdAt: true,
       updatedAt: true,

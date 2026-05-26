@@ -1,6 +1,7 @@
 import { eq, and, desc } from 'drizzle-orm'
-import { application, criterionScore, analysisRun, scoringCriterion } from '../../../database/schema'
+import { application, criterionScore, analysisRun, scoringCriterion, job, orgSettings } from '../../../database/schema'
 import { z } from 'zod'
+import { DEFAULT_SCORING_BANDS, findScoringBand, resolveScoringBands } from '~~/shared/scoring-bands'
 
 const paramsSchema = z.object({ id: z.string().min(1) })
 
@@ -75,8 +76,28 @@ export default defineEventHandler(async (event) => {
     .orderBy(desc(analysisRun.createdAt))
     .limit(1)
 
+  const [bandSettings] = await db.select({
+    jobBands: job.scoringBands,
+    globalBands: orgSettings.scoringBands,
+  })
+    .from(job)
+    .leftJoin(orgSettings, eq(orgSettings.organizationId, orgId))
+    .where(and(
+      eq(job.id, app.jobId),
+      eq(job.organizationId, orgId),
+    ))
+    .limit(1)
+
+  const scoringBands = resolveScoringBands({
+    globalBands: bandSettings?.globalBands ?? DEFAULT_SCORING_BANDS,
+    jobBands: bandSettings?.jobBands ?? null,
+  })
+  const scoreBand = findScoringBand(app.score, scoringBands)
+
   return {
     compositeScore: app.score,
+    scoringBands,
+    scoreBand,
     scores: rawScores,
     latestRun: latestRun
       ? {

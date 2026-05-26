@@ -1,7 +1,7 @@
 import { eq, and } from 'drizzle-orm'
 import {
   application, scoringCriterion, criterionScore,
-  analysisRun, document, candidate, orgSettings,
+  analysisRun, analysisRunCriterionScore, document, candidate, orgSettings,
 } from '../../../database/schema'
 import { scoreApplication, computeCompositeScore } from '../../../utils/ai/scoring'
 import type { CriterionDefinition } from '../../../utils/ai/scoring'
@@ -174,24 +174,7 @@ export default defineEventHandler(async (event) => {
   }))
 
   const [run] = await db.transaction(async (tx) => {
-    // Delete previous scores for this application (replace strategy)
-    await tx.delete(criterionScore)
-      .where(and(
-        eq(criterionScore.applicationId, applicationId),
-        eq(criterionScore.organizationId, orgId),
-      ))
-
-    if (scoreValues.length > 0) {
-      await tx.insert(criterionScore).values(scoreValues)
-    }
-
-    // Update application composite score
-    await tx.update(application)
-      .set({ score: compositeScore, updatedAt: new Date() })
-      .where(eq(application.id, applicationId))
-
-    // Record analysis run
-    return tx.insert(analysisRun).values({
+    const [createdRun] = await tx.insert(analysisRun).values({
       organizationId: orgId,
       applicationId,
       status: 'completed',
@@ -204,6 +187,30 @@ export default defineEventHandler(async (event) => {
       completionTokens: result.usage.completionTokens,
       scoredById: session.user.id,
     }).returning()
+
+    const runScoreValues = scoreValues.map(score => ({
+      ...score,
+      analysisRunId: createdRun!.id,
+    }))
+
+    // Delete previous scores for this application (replace strategy)
+    await tx.delete(criterionScore)
+      .where(and(
+        eq(criterionScore.applicationId, applicationId),
+        eq(criterionScore.organizationId, orgId),
+      ))
+
+    if (scoreValues.length > 0) {
+      await tx.insert(criterionScore).values(scoreValues)
+      await tx.insert(analysisRunCriterionScore).values(runScoreValues)
+    }
+
+    // Update application composite score
+    await tx.update(application)
+      .set({ score: compositeScore, updatedAt: new Date() })
+      .where(eq(application.id, applicationId))
+
+    return [createdRun]
   })
 
   recordActivity({

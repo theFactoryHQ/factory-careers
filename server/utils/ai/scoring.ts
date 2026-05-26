@@ -256,13 +256,14 @@ IMPORTANT RULES:
 - Score ONLY based on evidence found in the provided materials (resume, cover letter, notes)
 - If information for a criterion is missing, give a low score and note it in gaps
 - Evaluate role requirements through the organization context before scoring each criterion when that context is provided
-- Do not reward generic service orientation, caregiving, or a general desire to help unless the materials show relevance to the organization context or the role; severely downrank relevance-based criteria when that relevance is missing
+- Do not reward generic service orientation, caregiving, or a general desire to help unless the materials show relevance to the organization context or the role; score relevance-based criteria low when that relevance is missing
 - Be fair and consistent — avoid bias based on name, gender, age, or background
 - Confidence reflects how much relevant information was available (0–100)
 - Evidence must cite specific details from the candidate's materials
 - Each strength and gap must be a single, specific statement
 - applicantScore must not exceed maxScore for each criterion
-- Provide a brief summary of the overall evaluation`,
+- Use HR-safe, job-related language throughout. Avoid absolute or pejorative phrasing such as "no alignment", "complete lack", "irrelevant", "obviously", or "not qualified"; instead describe the limited evidence of role-related experience or domain exposure.
+- The summary must be brief, neutral, and suitable for an internal hiring record. Focus on observable fit against the role and organization context, not judgments about the person or their background.`,
     prompt: `JOB TITLE: ${params.jobTitle}
 
 JOB DESCRIPTION:

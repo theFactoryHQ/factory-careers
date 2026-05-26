@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { CURRENCY_VALUES } from '~~/shared/currency-options'
 import { SALARY_UNIT_VALUES } from '~~/shared/salary-options'
+import { scoringBandsSchema } from './scoringBands'
 
 export { JOB_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 
@@ -40,6 +41,8 @@ export const createJobSchema = z.object({
   includeDisability: z.boolean().optional().default(true),
   /** Whether to automatically run AI scoring when a candidate applies */
   autoScoreOnApply: z.boolean().optional().default(true),
+  /** Job-specific score interpretation bands. Null means use org defaults. */
+  scoringBands: scoringBandsSchema.nullable().optional(),
   /** Experience level required for this role */
   experienceLevel: z.enum(['junior', 'mid', 'senior', 'lead']).optional(),
 })
@@ -69,6 +72,8 @@ export const updateJobSchema = z.object({
   includeDisability: z.boolean().optional(),
   /** Whether to automatically run AI scoring when a candidate applies */
   autoScoreOnApply: z.boolean().optional(),
+  /** Job-specific score interpretation bands. Null means use org defaults. */
+  scoringBands: scoringBandsSchema.nullable().optional(),
   /** Experience level required for this role */
   experienceLevel: z.enum(['junior', 'mid', 'senior', 'lead']).nullable().optional(),
   status: z.enum(['draft', 'open', 'closed', 'archived']).optional(),

@@ -83,10 +83,17 @@ const states = [
   'Wisconsin',
   'Wyoming',
 ] as const
+const stateOptions = states.map(state => ({ value: state, label: state }))
 
 async function submitRequest() {
   isSubmitting.value = true
   errorMessage.value = ''
+
+  if (!form.stateOfResidence) {
+    errorMessage.value = 'Select your state of residence.'
+    isSubmitting.value = false
+    return
+  }
 
   try {
     await $fetch('/api/privacy-requests', {
@@ -103,7 +110,7 @@ async function submitRequest() {
 </script>
 
 <template>
-  <main class="w-full pb-16 pt-10">
+  <main class="factory-public-form w-full pb-16 pt-10">
     <section class="grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,520px)] lg:items-start">
       <div class="pt-4">
         <p class="mb-4 text-xs font-semibold uppercase tracking-[0.22em] text-brand-500">
@@ -171,12 +178,13 @@ async function submitRequest() {
 
             <div>
               <label for="state-of-residence" :class="labelClass">State of residence</label>
-              <select id="state-of-residence" v-model="form.stateOfResidence" required :class="[fieldClass, 'appearance-none bg-[linear-gradient(45deg,transparent_50%,rgba(255,255,255,0.58)_50%),linear-gradient(135deg,rgba(255,255,255,0.58)_50%,transparent_50%)] bg-[length:5px_5px,5px_5px] bg-[position:calc(100%-20px)_21px,calc(100%-15px)_21px] bg-no-repeat pr-10']" autocomplete="address-level1">
-                <option value="" disabled>Select state</option>
-                <option v-for="state in states" :key="state" :value="state">
-                  {{ state }}
-                </option>
-              </select>
+              <FactorySelect
+                id="state-of-residence"
+                v-model="form.stateOfResidence"
+                class="factory-privacy-select"
+                :options="stateOptions"
+                placeholder="Select state"
+              />
             </div>
           </fieldset>
 
@@ -232,5 +240,37 @@ async function submitRequest() {
 .factory-submit-button:hover .factory-submit-label,
 .factory-submit-button:focus-visible .factory-submit-label {
   color: #050505;
+}
+
+:deep(.factory-privacy-select .factory-filter-dropdown-trigger) {
+  min-height: 3rem;
+  border-color: rgb(255 255 255 / 0.16) !important;
+  background-color: rgb(255 255 255 / 0.04) !important;
+  padding-inline: 1rem;
+  color: #ffffff !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+  text-transform: none !important;
+}
+
+:deep(.factory-privacy-select .factory-filter-dropdown-trigger:hover),
+:deep(.factory-privacy-select .factory-filter-dropdown-trigger[aria-expanded="true"]) {
+  border-color: rgb(255 255 255 / 0.28) !important;
+  background-color: rgb(255 255 255 / 0.06) !important;
+}
+
+:deep(.factory-privacy-select .factory-filter-dropdown-trigger:focus-visible) {
+  border-color: var(--color-brand-500) !important;
+  box-shadow: 0 0 0 2px rgb(255 59 36 / 0.25) !important;
+}
+
+:deep(.factory-privacy-select .factory-filter-dropdown-menu) {
+  max-height: min(18rem, calc(100vh - 12rem));
+  overflow-y: auto;
+}
+
+:deep(.factory-privacy-select .factory-filter-dropdown-option) {
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
 }
 </style>

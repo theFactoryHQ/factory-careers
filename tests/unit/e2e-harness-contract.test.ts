@@ -35,7 +35,7 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:smoke']).toBe(
-      'playwright test e2e/critical-flows/job-creation.spec.ts e2e/critical-flows/source-tracking.spec.ts',
+      'playwright test e2e/critical-flows/dropdown-styling.spec.ts e2e/critical-flows/job-creation.spec.ts e2e/critical-flows/source-tracking.spec.ts',
     )
     expect(packageJson.scripts?.['test:e2e:smoke']).not.toContain('resume-upload')
     expect(packageJson.scripts?.['test:e2e:smoke']).not.toContain('tenant-isolation')

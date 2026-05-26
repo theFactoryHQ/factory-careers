@@ -6,6 +6,7 @@ import {
 } from '~/utils/status-display'
 import { formatPhoneNumber } from '~/utils/phone-format'
 import { formatResponseValue } from '~/utils/application-response-format'
+import type { ScoringBand } from '~~/shared/scoring-bands'
 
 const props = defineProps<{
   applicationId: string
@@ -22,7 +23,9 @@ const { isScoringApplication, scoreApplicationCandidate } = useApplicationScorin
 const { formatCandidateName } = useOrgSettings()
 
 type ApplicationScoresResponse = {
+  scoreBand: ScoringBand | null
   latestRun: {
+    id: string
     summary: string | null
   } | null
 }
@@ -47,6 +50,7 @@ const scoringSummaryFallback = computed(() => {
   }
   return 'Run analysis to generate an AI scoring summary.'
 })
+const scoreBand = computed(() => scoringData.value?.scoreBand ?? null)
 
 const showInterviewSidebar = ref(false)
 
@@ -63,11 +67,14 @@ const { isEditingNotes, notesInput, isSavingNotes, notesSaveStatus, notesTextare
 
 async function scoreCurrentApplication() {
   if (!application.value) return
-  await scoreApplicationCandidate(props.applicationId, {
-    refresh,
+  const result = await scoreApplicationCandidate(props.applicationId, {
+    refreshApplication: false,
     jobId: application.value.job.id,
     source: 'application_detail_drawer',
   })
+  if (result && application.value) {
+    application.value.score = result.compositeScore
+  }
   await refreshScoring()
 }
 
@@ -274,26 +281,35 @@ onUnmounted(() => {
                   <Brain class="size-4 text-surface-500 dark:text-surface-400" />
                   <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Scoring</h3>
                 </div>
-                <button
-                  type="button"
-                  :disabled="isScoringApplication"
-                  class="factory-button-cta factory-button-premium inline-flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1.5 px-2.5 py-0 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                  @click="scoreCurrentApplication"
-                >
-                  <Loader2 v-if="isScoringApplication" class="size-3 animate-spin" />
-                  <Brain v-else class="size-3" />
-                  {{ isScoringApplication ? 'Scoring...' : (application.score != null ? 'Re-score' : 'Run Analysis') }}
-                </button>
+                <div class="flex items-center gap-2">
+                  <ScoringFeedbackControl
+                    :application-id="applicationId"
+                    :analysis-run-id="scoringData?.latestRun?.id ?? null"
+                  />
+                  <button
+                    type="button"
+                    :disabled="isScoringApplication"
+                    class="factory-button-cta factory-button-premium inline-flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1.5 px-2.5 py-0 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                    @click="scoreCurrentApplication"
+                  >
+                    <Loader2 v-if="isScoringApplication" class="size-3 animate-spin" />
+                    <Brain v-else class="size-3" />
+                    {{ isScoringApplication ? 'Scoring...' : (application.score != null ? 'Re-score' : 'Run Analysis') }}
+                  </button>
+                </div>
               </div>
 
               <dl class="grid gap-5 text-sm md:grid-cols-[8rem_minmax(0,1fr)]">
                 <div>
                   <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-400">Score</dt>
-                  <dd class="mt-1 text-2xl font-semibold text-surface-900 dark:text-white">
-                    {{ application.score != null ? application.score : '—' }}
-                    <span v-if="application.score != null" class="ml-1 text-sm font-medium text-surface-400">
-                      pts
+                  <dd class="mt-1 flex flex-wrap items-center gap-2">
+                    <span class="text-2xl font-semibold text-surface-900 dark:text-white">
+                      {{ application.score != null ? application.score : '—' }}
+                      <span v-if="application.score != null" class="ml-1 text-sm font-medium text-surface-400">
+                        pts
+                      </span>
                     </span>
+                    <ScoringBandBadge :band="scoreBand" />
                   </dd>
                 </div>
                 <div>
