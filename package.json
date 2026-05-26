@@ -34,7 +34,7 @@
     "preflight:cli-parity": "node scripts/run-pr-validation-preflight.mjs --step cli-parity",
     "typecheck": "nuxi typecheck",
     "test:e2e": "npx playwright test",
-    "test:e2e:smoke": "playwright test e2e/critical-flows/job-creation.spec.ts e2e/critical-flows/source-tracking.spec.ts",
+    "test:e2e:smoke": "playwright test e2e/critical-flows/dropdown-styling.spec.ts e2e/critical-flows/job-creation.spec.ts e2e/critical-flows/source-tracking.spec.ts",
     "test:e2e:uploads": "playwright test e2e/critical-flows/resume-upload.spec.ts",
     "test:e2e:security:core": "playwright test e2e/security/tenant-isolation.spec.ts --grep @security-core",
     "test:e2e:security:extended": "FEATURE_FLAG_CHATBOT_EXPERIENCE=true playwright test e2e/security/tenant-isolation.spec.ts --grep @security-extended",
