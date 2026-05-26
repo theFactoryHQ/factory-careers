@@ -1,5 +1,20 @@
 import { defineConfig, devices } from '@playwright/test'
 
+function shellEnv(name: string, value: string | undefined) {
+  return value ? `${name}=${JSON.stringify(value)}` : ''
+}
+
+const webServerEnv = [
+  'BETTER_AUTH_URL=http://127.0.0.1:3333',
+  'NUXT_PUBLIC_SITE_URL=http://127.0.0.1:3333',
+  'FACTORY_DISABLE_PUBLIC_SIGNUP=false',
+  'FACTORY_DISABLE_PUBLIC_ORG_CREATION=false',
+  'FEATURE_FLAG_CHATBOT_EXPERIENCE=true',
+  shellEnv('FACTORY_EMAIL_TEST_MODE', process.env.FACTORY_EMAIL_TEST_MODE),
+  shellEnv('FACTORY_EMAIL_CAPTURE_PATH', process.env.FACTORY_EMAIL_CAPTURE_PATH),
+  shellEnv('FACTORY_CAREERS_HIRING_INBOX', process.env.FACTORY_CAREERS_HIRING_INBOX),
+].filter(Boolean).join(' ')
+
 /**
  * Playwright E2E configuration for Reqcore.
  *
@@ -46,7 +61,7 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: 'BETTER_AUTH_URL=http://127.0.0.1:3333 NUXT_PUBLIC_SITE_URL=http://127.0.0.1:3333 FACTORY_DISABLE_PUBLIC_SIGNUP=false FACTORY_DISABLE_PUBLIC_ORG_CREATION=false FEATURE_FLAG_CHATBOT_EXPERIENCE=true npm run db:migrate && BETTER_AUTH_URL=http://127.0.0.1:3333 NUXT_PUBLIC_SITE_URL=http://127.0.0.1:3333 FACTORY_DISABLE_PUBLIC_SIGNUP=false FACTORY_DISABLE_PUBLIC_ORG_CREATION=false FEATURE_FLAG_CHATBOT_EXPERIENCE=true npx nuxt dev --port 3333 --host 127.0.0.1',
+          command: `${webServerEnv} npm run db:migrate && ${webServerEnv} npx nuxt dev --port 3333 --host 127.0.0.1`,
           url: 'http://127.0.0.1:3333',
           reuseExistingServer: true,
           timeout: process.env.CI ? 120_000 : 60_000,
