@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! cmp -s AGENTS.md CLAUDE.md; then
+  cat >&2 <<'EOF'
+AGENTS.md and CLAUDE.md must stay in sync.
+
+Update both files with identical content before committing.
+EOF
+  exit 1
+fi
