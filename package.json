@@ -39,7 +39,7 @@
     "test:e2e:candidate": "playwright test e2e/critical-flows/candidate-application.spec.ts",
     "test:e2e:recruiter": "playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts",
     "test:e2e:job-lifecycle": "playwright test e2e/critical-flows/job-lifecycle.spec.ts",
-    "test:e2e:email": "playwright test e2e/critical-flows/fake-mail.spec.ts",
+    "test:e2e:email": "playwright test e2e/critical-flows/fake-mail.spec.ts e2e/critical-flows/privacy-request-fake-mail.spec.ts --workers=1",
     "test:e2e:tracking-analytics": "playwright test e2e/critical-flows/tracking-analytics.spec.ts",
     "test:e2e:interviews": "playwright test e2e/critical-flows/interview-lifecycle.spec.ts",
     "test:e2e:auth-org": "playwright test e2e/critical-flows/auth-org-edge-flows.spec.ts",

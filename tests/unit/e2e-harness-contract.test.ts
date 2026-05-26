@@ -126,14 +126,16 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:email']).toBe(
-      'playwright test e2e/critical-flows/fake-mail.spec.ts',
+      'playwright test e2e/critical-flows/fake-mail.spec.ts e2e/critical-flows/privacy-request-fake-mail.spec.ts --workers=1',
     )
     expect(workflow).toContain('name: Playwright email')
     expect(workflow).toContain('npm run test:e2e:email')
     expect(workflow).toContain('FACTORY_EMAIL_TEST_MODE: capture')
     expect(workflow).toContain('FACTORY_EMAIL_CAPTURE_PATH: /tmp/factory-careers-e2e-email.jsonl')
     expect(workflow).toContain('FACTORY_CAREERS_HIRING_INBOX: hiring-e2e@example.com')
+    expect(workflow).toContain('FACTORY_CAREERS_PRIVACY_INBOX: privacy-e2e@example.com')
     expect(workflow).not.toContain('RESEND_API_KEY: ${{ secrets')
+    expect(read('e2e/critical-flows/privacy-request-fake-mail.spec.ts')).toContain('FACTORY_EMAIL_TEST_MODE')
     expect(workflow).toContain('needs.email.result')
   })
 
