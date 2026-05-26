@@ -137,7 +137,7 @@ Core commands:
 
 Some routes intentionally remain outside the deterministic CLI surface:
 
-- Auth provider callbacks, session callback endpoints, and provider callbacks are browser-auth internals handled by Better Auth or external identity providers. Use `auth login`, `auth status`, `auth whoami`, and `auth logout`.
+- Auth provider callbacks, the browser-only Microsoft SSO launcher, session callback endpoints, and provider callbacks are browser-auth internals handled by Better Auth or external identity providers. Use `auth login`, `auth status`, `auth whoami`, and `auth logout`.
 - Calendar OAuth callbacks and webhook receivers are provider callbacks, not user commands. Use `calendar connect`, `calendar status`, `calendar disconnect`, and `calendar renew-webhooks`.
 - The health and readiness probes are platform checks for hosting and monitoring, not authenticated ATS workflows.
 - The public tracking redirects exist to preserve attribution and redirect candidates; use `source-tracking link-stats` and `source-tracking stats` for agent-readable reporting.

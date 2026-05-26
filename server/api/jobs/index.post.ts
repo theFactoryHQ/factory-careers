@@ -34,6 +34,7 @@ export default defineEventHandler(async (event) => {
     includeVeteran: body.includeVeteran,
     includeDisability: body.includeDisability,
     autoScoreOnApply: body.autoScoreOnApply,
+    scoringBands: body.scoringBands,
     experienceLevel: body.experienceLevel,
   }).returning({
     id: job.id,
@@ -58,6 +59,7 @@ export default defineEventHandler(async (event) => {
     includeVeteran: job.includeVeteran,
     includeDisability: job.includeDisability,
     autoScoreOnApply: job.autoScoreOnApply,
+    scoringBands: job.scoringBands,
     experienceLevel: job.experienceLevel,
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,

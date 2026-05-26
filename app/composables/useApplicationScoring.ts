@@ -2,6 +2,12 @@ type ScoreApplicationOptions = {
   refresh?: () => Promise<unknown> | unknown
   jobId?: string
   source?: string
+  refreshApplication?: boolean
+}
+
+type ScoreApplicationResult = {
+  compositeScore: number
+  summary: string
 }
 
 export function useApplicationScoring() {
@@ -13,12 +19,14 @@ export function useApplicationScoring() {
   async function scoreApplicationCandidate(applicationId: string, options: ScoreApplicationOptions = {}) {
     isScoringApplication.value = true
     try {
-      await $fetch(`/api/applications/${applicationId}/analyze`, {
+      const result = await $fetch<ScoreApplicationResult>(`/api/applications/${applicationId}/analyze`, {
         method: 'POST',
         headers: useRequestHeaders(['cookie']),
       })
 
-      await options.refresh?.()
+      if (options.refreshApplication !== false) {
+        await options.refresh?.()
+      }
       await refreshNuxtData('applications')
       if (options.jobId) {
         await refreshNuxtData(`pipeline-apps-${options.jobId}`)
@@ -29,6 +37,7 @@ export function useApplicationScoring() {
         source: options.source ?? 'application_detail',
       })
       toast.success('Candidate scored', 'AI analysis complete.')
+      return result
     } catch (err: any) {
       if (handlePreviewReadOnlyError(err)) return
 
@@ -51,6 +60,7 @@ export function useApplicationScoring() {
           statusCode: err?.data?.statusCode,
         })
       }
+      return null
     } finally {
       isScoringApplication.value = false
     }

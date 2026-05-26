@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { orgSettings } from '../../database/schema'
 import { updateOrgSettingsSchema } from '../../utils/schemas/orgSettings'
 import { assertSignupDomainAllowlistUpdateAllowed } from '../../utils/signupDomainAllowlist'
+import { DEFAULT_SCORING_BANDS } from '~~/shared/scoring-bands'
 
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { organization: ['update'] })
@@ -27,6 +28,7 @@ export default defineEventHandler(async (event) => {
       calendarSyncInterviewers: body.calendarSyncInterviewers ?? false,
       defaultSalaryUnit: body.defaultSalaryUnit ?? 'YEAR',
       analysisContext: body.analysisContext ?? '',
+      scoringBands: body.scoringBands ?? DEFAULT_SCORING_BANDS,
       signupAllowedDomains: body.signupAllowedDomains ?? [],
       applicationComplianceEnabled: body.applicationComplianceEnabled ?? true,
       includeEeo: body.includeEeo ?? true,
@@ -41,6 +43,7 @@ export default defineEventHandler(async (event) => {
         ...(body.calendarSyncInterviewers !== undefined && { calendarSyncInterviewers: body.calendarSyncInterviewers }),
         ...(body.defaultSalaryUnit !== undefined && { defaultSalaryUnit: body.defaultSalaryUnit }),
         ...(body.analysisContext !== undefined && { analysisContext: body.analysisContext }),
+        ...(body.scoringBands !== undefined && { scoringBands: body.scoringBands }),
         ...(body.signupAllowedDomains !== undefined && { signupAllowedDomains: body.signupAllowedDomains }),
         ...(body.applicationComplianceEnabled !== undefined && { applicationComplianceEnabled: body.applicationComplianceEnabled }),
         ...(body.includeEeo !== undefined && { includeEeo: body.includeEeo }),
@@ -55,6 +58,7 @@ export default defineEventHandler(async (event) => {
       calendarSyncInterviewers: orgSettings.calendarSyncInterviewers,
       defaultSalaryUnit: orgSettings.defaultSalaryUnit,
       analysisContext: orgSettings.analysisContext,
+      scoringBands: orgSettings.scoringBands,
       signupAllowedDomains: orgSettings.signupAllowedDomains,
       applicationComplianceEnabled: orgSettings.applicationComplianceEnabled,
       includeEeo: orgSettings.includeEeo,

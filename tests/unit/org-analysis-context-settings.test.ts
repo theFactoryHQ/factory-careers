@@ -8,6 +8,7 @@ const readProjectFile = (path: string) =>
 describe('organization analysis context settings', () => {
   it('exposes editable organization analysis context through settings', () => {
     const aiSettingsPage = readProjectFile('app/pages/dashboard/settings/ai/index.vue')
+    const orgContextEditor = readProjectFile('app/components/OrgContextEditor.vue')
     const orgSettingsComposable = readProjectFile('app/composables/useOrgSettings.ts')
     const orgSettingsSchema = readProjectFile('server/utils/schemas/orgSettings.ts')
     const getEndpoint = readProjectFile('server/api/org-settings/index.get.ts')
@@ -15,9 +16,13 @@ describe('organization analysis context settings', () => {
     const migration = readProjectFile('server/database/migrations/0042_org_analysis_context.sql')
     const journal = readProjectFile('server/database/migrations/meta/_journal.json')
 
-    expect(aiSettingsPage).toContain('Analysis context')
-    expect(aiSettingsPage).toContain('localAnalysisContext')
-    expect(aiSettingsPage).toContain('analysisContext: localAnalysisContext.value')
+    expect(aiSettingsPage).toContain('OrgContextEditor')
+    expect(aiSettingsPage).toContain('Models')
+    expect(orgContextEditor).toContain('Org Context')
+    expect(orgContextEditor).toContain('localContext')
+    expect(orgContextEditor).toContain('isEditing')
+    expect(orgContextEditor).toContain('analysisContext: contextToSave')
+    expect(orgContextEditor).toContain('characterCount')
     expect(orgSettingsComposable).toContain('analysisContext')
     expect(orgSettingsSchema).toContain('analysisContext: z.string().trim().max(4000).optional()')
     expect(getEndpoint).toContain("analysisContext: settings?.analysisContext ?? ''")
@@ -32,5 +37,23 @@ describe('organization analysis context settings', () => {
     expect(scorer).not.toContain('Factory is a multifamily office')
     expect(scorer).not.toContain('athletes, entertainers, and founders')
     expect(scorer).toContain('organizationAnalysisContext')
+  })
+
+  it('seeds Factory analysis context as editable organization data', () => {
+    const seedScript = readProjectFile('server/scripts/seed-factory.ts')
+    const migration = readProjectFile('server/database/migrations/0043_factory_analysis_context.sql')
+    const journal = readProjectFile('server/database/migrations/meta/_journal.json')
+
+    expect(seedScript).toContain('FACTORY_ANALYSIS_CONTEXT')
+    expect(seedScript).toContain('schema.orgSettings')
+    expect(seedScript).toContain('target: schema.orgSettings.organizationId')
+    expect(seedScript).toContain('btrim(COALESCE(${schema.orgSettings.analysisContext}, \'\')) = \'\'')
+    expect(seedScript).toContain('Factory is a multifamily office for athletes, entertainers, and founders')
+    expect(migration).toContain('ON CONFLICT ("organization_id") DO UPDATE')
+    expect(migration).toContain('btrim(COALESCE("org_settings"."analysis_context", \'\')) = \'\'')
+    expect(migration).toContain('"id" = \'factory-org\'')
+    expect(migration).toContain('"slug" = \'factory\'')
+    expect(migration).toContain('Factory is a multifamily office for athletes, entertainers, and founders')
+    expect(journal).toContain('"tag": "0043_factory_analysis_context"')
   })
 })

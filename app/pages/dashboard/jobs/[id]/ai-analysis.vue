@@ -316,6 +316,12 @@ function resetCriteria() {
           Configure how AI evaluates and scores candidates for <strong>{{ job.title }}</strong>.
         </p>
       </div>
+
+      <ScoringBandsEditor
+        mode="job"
+        :job-id="jobId"
+      />
+
       <!-- Empty state: mode selection -->
       <div v-if="scoringCriteria.length === 0" class="space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">

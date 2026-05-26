@@ -243,16 +243,22 @@ async function scoreCurrentApplication() {
               <Brain class="size-4 text-surface-500 dark:text-surface-400" />
               <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Scoring</h2>
             </div>
-            <button
-              type="button"
-              :disabled="isScoringApplication"
-              class="factory-button-cta factory-button-premium inline-flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1.5 px-2.5 py-0 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-              @click="scoreCurrentApplication"
-            >
-              <Loader2 v-if="isScoringApplication" class="size-3 animate-spin" />
-              <Brain v-else class="size-3" />
-              {{ isScoringApplication ? 'Scoring...' : (application.score != null ? 'Re-score' : 'Run Analysis') }}
-            </button>
+            <div class="flex items-center gap-2">
+              <ScoringFeedbackControl
+                :application-id="applicationId"
+                :analysis-run-id="scoringData?.latestRun?.id ?? null"
+              />
+              <button
+                type="button"
+                :disabled="isScoringApplication"
+                class="factory-button-cta factory-button-premium inline-flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1.5 px-2.5 py-0 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                @click="scoreCurrentApplication"
+              >
+                <Loader2 v-if="isScoringApplication" class="size-3 animate-spin" />
+                <Brain v-else class="size-3" />
+                {{ isScoringApplication ? 'Scoring...' : (application.score != null ? 'Re-score' : 'Run Analysis') }}
+              </button>
+            </div>
           </div>
 
           <dl class="grid gap-5 text-sm md:grid-cols-[10rem_minmax(0,1fr)]">

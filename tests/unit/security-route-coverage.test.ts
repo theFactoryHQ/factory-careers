@@ -23,6 +23,7 @@ function normalize(path: string): string {
 describe('API route security coverage', () => {
   const intentionallyPublicRoutes = new Set([
     'server/api/auth/[...all].ts',
+    'server/api/auth/factory-sso.get.ts',
     'server/api/auth/providers.get.ts',
     'server/api/calendar/webhook.post.ts',
     'server/api/healthz.get.ts',
