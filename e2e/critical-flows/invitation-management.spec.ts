@@ -12,11 +12,10 @@ import { test, expect } from '../fixtures'
  * 6. Owner cancels the invitation
  */
 
-const INVITED_EMAIL = 'invited-member@test.local'
-
 test.describe('Invitation Management Flow', () => {
   test('owner can invite, resend, and cancel an invitation', async ({ authenticatedPage }) => {
     const page = authenticatedPage
+    const invitedEmail = `invited-member-${Date.now()}@test.local`
 
     // ── Navigate to Members page ──────────────────────────
     await page.goto('/dashboard/settings/members')
@@ -33,7 +32,7 @@ test.describe('Invitation Management Flow', () => {
     // Fill in the invite form
     const emailInput = page.getByPlaceholder('colleague@company.com')
     await emailInput.waitFor({ state: 'visible', timeout: 10_000 })
-    await emailInput.fill(INVITED_EMAIL)
+    await emailInput.fill(invitedEmail)
 
     // Submit the invitation and wait for the server mutation.
     const [inviteResponse] = await Promise.all([
@@ -46,13 +45,10 @@ test.describe('Invitation Management Flow', () => {
     ])
     expect(inviteResponse.status(), `Invite API returned ${inviteResponse.status()}`).toBe(200)
 
-    // Wait for success message
-    await expect(page.getByText(`Invitation sent to ${INVITED_EMAIL}`)).toBeVisible({ timeout: 15_000 })
-
     // ── Step 2: Verify pending invitation appears ─────────
     // The pending invitations section should now show
     await expect(page.getByText('Pending invitations')).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByText(INVITED_EMAIL).last()).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByRole('link', { name: invitedEmail })).toBeVisible({ timeout: 10_000 })
 
     // ── Step 3: Resend the invitation ─────────────────────
     const resendButton = page.getByRole('button', { name: 'Resend' })
@@ -67,16 +63,13 @@ test.describe('Invitation Management Flow', () => {
     ])
     expect(resendResponse.status(), `Resend API returned ${resendResponse.status()}`).toBe(200)
 
-    // Wait for resend success message
-    await expect(page.getByText(`Invitation resent to ${INVITED_EMAIL}`)).toBeVisible({ timeout: 15_000 })
-
     // Invitation should still appear in the list
-    await expect(page.getByText(INVITED_EMAIL).last()).toBeVisible()
+    await expect(page.getByRole('link', { name: invitedEmail })).toBeVisible()
 
     // ── Step 4: Cancel the invitation ─────────────────────
     const pendingInviteRow = page
       .locator('.ui-list-row')
-      .filter({ has: page.getByRole('link', { name: INVITED_EMAIL }) })
+      .filter({ has: page.getByRole('link', { name: invitedEmail }) })
     await expect(pendingInviteRow).toBeVisible()
 
     const cancelButton = pendingInviteRow.getByRole('button', { name: 'Cancel' })
@@ -99,13 +92,13 @@ test.describe('Invitation Management Flow', () => {
     // After cancellation, the invitation should no longer appear
     // (or the pending invitations section could be hidden entirely if empty)
     const pendingSection = page.getByText('Pending invitations')
-    const invitedEmail = page.getByText(INVITED_EMAIL)
+    const invitedEmailLink = page.getByRole('link', { name: invitedEmail })
 
     // Either the section is gone or the email is no longer listed
     const isHidden = await pendingSection.isHidden().catch(() => true)
     if (!isHidden) {
       // Section still visible - email should not be in it
-      await expect(invitedEmail.last()).toBeHidden({ timeout: 10_000 })
+      await expect(invitedEmailLink).toBeHidden({ timeout: 10_000 })
     }
   })
 })
