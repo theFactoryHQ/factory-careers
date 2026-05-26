@@ -2,6 +2,10 @@ import { eq, and, isNull, gt } from 'drizzle-orm'
 import { z } from 'zod'
 import { inviteLink, organization, user } from '../../../database/schema'
 
+const inviteLinkInfoParamsSchema = z.object({
+  token: z.string().regex(/^[0-9a-f]{64}$/),
+})
+
 /**
  * GET /api/invite-links/info/:token
  * Get public info about an invite link (for the accept page).
@@ -12,10 +16,16 @@ import { inviteLink, organization, user } from '../../../database/schema'
  * Token is validated but not returned.
  */
 export default defineEventHandler(async (event) => {
-  const { token } = await getValidatedRouterParams(
-    event,
-    z.object({ token: z.string().regex(/^[0-9a-f]{64}$/, 'Invalid invite token') }).parse,
-  )
+  const parsedParams = inviteLinkInfoParamsSchema.safeParse(getRouterParams(event))
+
+  if (!parsedParams.success) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: 'Invalid, expired, or revoked invite link',
+    })
+  }
+
+  const { token } = parsedParams.data
 
   const [link] = await db
     .select({

@@ -91,6 +91,19 @@ describe('CLI runtime foundation', () => {
     })
   })
 
+  it('uses h3 status messages for API errors without a message field', async () => {
+    const error = normalizeCliError({
+      statusCode: 404,
+      statusMessage: 'Invalid, expired, or revoked invite link',
+    })
+
+    expect(error).toEqual({
+      status: 404,
+      code: 'CLI_ERROR',
+      message: 'Invalid, expired, or revoked invite link',
+    })
+  })
+
   it('prints auth status as JSON without leaking tokens', async () => {
     const dir = tempDir()
     const configPath = join(dir, 'config.json')

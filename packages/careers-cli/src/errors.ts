@@ -13,6 +13,7 @@ export function normalizeCliError(error: unknown): NormalizedCliError {
       code?: unknown
       error?: unknown
       message?: unknown
+      statusMessage?: unknown
       error_description?: unknown
       details?: unknown
     }
@@ -30,6 +31,8 @@ export function normalizeCliError(error: unknown): NormalizedCliError {
           : 'CLI_ERROR',
       message: typeof candidate.message === 'string'
         ? candidate.message
+        : typeof candidate.statusMessage === 'string'
+          ? candidate.statusMessage
         : typeof candidate.error_description === 'string'
           ? candidate.error_description
           : 'Factory Careers CLI failed.',

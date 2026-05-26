@@ -46,9 +46,8 @@ async function fetchLinkInfo() {
     const data = await fetchInviteLinkInfo(token.value)
     linkInfo.value = data
   }
-  catch (err: any) {
-    const msg = err?.data?.statusMessage || err?.statusMessage || 'This invite link is invalid or has expired.'
-    error.value = msg
+  catch (err: unknown) {
+    error.value = formatInviteLinkError(err)
   }
   finally {
     isLoading.value = false
@@ -80,9 +79,11 @@ async function handleAccept() {
       window.location.href = localePath('/dashboard')
     }, 1500)
   }
-  catch (err: any) {
-    const msg = err?.data?.statusMessage || err?.statusMessage || 'Failed to join organization'
-    error.value = msg
+  catch (err: unknown) {
+    error.value = formatInviteLinkError(
+      err,
+      'We could not join this organization. Ask an administrator for a new invitation.',
+    )
   }
   finally {
     isAccepting.value = false
@@ -111,13 +112,15 @@ function getRoleIcon(role: string) {
     <div class="ui-icon-state ui-icon-state-danger">
       <AlertTriangle class="size-6" />
     </div>
-    <div class="text-center">
+    <div class="factory-auth-state-copy text-center">
       <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-1">Invalid invite link</h2>
       <p class="text-sm text-surface-500 dark:text-surface-400">{{ error }}</p>
     </div>
     <NuxtLink
       :to="localePath('/auth/sign-in')"
-      class="text-sm text-brand-600 dark:text-brand-400 hover:underline no-underline"
+      data-slot="button"
+      data-hover-effect="slide"
+      class="factory-auth-slide-action inline-flex h-12 min-h-12 w-full items-center justify-center px-5 py-0 text-sm sm:w-auto"
     >
       Go to sign in
     </NuxtLink>
@@ -128,7 +131,7 @@ function getRoleIcon(role: string) {
     <div class="ui-icon-state ui-icon-state-success">
       <Check class="size-6" />
     </div>
-    <div class="text-center">
+    <div class="factory-auth-state-copy text-center">
       <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-1">You're in!</h2>
       <p class="text-sm text-surface-500 dark:text-surface-400">
         You've joined <strong>{{ linkInfo?.organizationName }}</strong>. Redirecting to dashboard…
@@ -138,31 +141,31 @@ function getRoleIcon(role: string) {
 
   <!-- Link info + accept form -->
   <div v-else-if="linkInfo" class="flex flex-col gap-5">
-    <div class="text-center">
+    <div class="space-y-2">
       <h2 class="text-xl font-semibold text-surface-900 dark:text-surface-100 mb-1">Join organization</h2>
       <p class="text-sm text-surface-500 dark:text-surface-400">You've been invited to join a team on Factory Careers.</p>
     </div>
 
-    <!-- Org info card -->
-    <div class="ui-panel-muted p-5">
-      <div class="flex items-center gap-3 mb-3">
-        <div class="ui-icon-state ui-icon-state-brand size-10 rounded-lg">
+    <!-- Org info summary -->
+    <div class="ui-panel-muted factory-auth-invite-summary">
+      <div class="factory-auth-invite-summary-main">
+        <div class="ui-icon-state ui-icon-state-brand factory-auth-invite-summary-icon">
           <Building2 class="size-5" />
         </div>
         <div>
-          <div class="font-semibold text-surface-900 dark:text-surface-100">{{ linkInfo.organizationName }}</div>
-          <div class="text-xs text-surface-400">{{ linkInfo.organizationSlug }}</div>
+          <div class="factory-auth-invite-summary-name">{{ linkInfo.organizationName }}</div>
+          <div class="factory-auth-invite-summary-slug">{{ linkInfo.organizationSlug }}</div>
         </div>
       </div>
 
-      <div class="flex items-center gap-4 text-xs text-surface-500 dark:text-surface-400">
-        <div class="flex items-center gap-1.5">
+      <div class="factory-auth-invite-summary-meta">
+        <div class="factory-auth-invite-summary-meta-item">
           <component :is="getRoleIcon(linkInfo.role)" class="size-3.5" />
-          <span>Join as <strong class="text-surface-700 dark:text-surface-300">{{ getRoleLabel(linkInfo.role) }}</strong></span>
+          <span>Join as <strong>{{ getRoleLabel(linkInfo.role) }}</strong></span>
         </div>
-        <div v-if="linkInfo.invitedByName" class="flex items-center gap-1.5">
+        <div v-if="linkInfo.invitedByName" class="factory-auth-invite-summary-meta-item">
           <UserPlus class="size-3.5" />
-          <span>Invited by <strong class="text-surface-700 dark:text-surface-300">{{ linkInfo.invitedByName }}</strong></span>
+          <span>Invited by <strong>{{ linkInfo.invitedByName }}</strong></span>
         </div>
       </div>
     </div>
@@ -174,19 +177,22 @@ function getRoleIcon(role: string) {
 
     <!-- Not authenticated — prompt sign in/up -->
     <div v-if="!isAuthenticated" class="flex flex-col gap-3">
-      <p class="text-sm text-surface-600 dark:text-surface-400 text-center">
+      <p class="text-sm leading-6 text-white/56">
         Sign in or create an account to accept this invitation.
       </p>
-      <div class="flex gap-3">
+      <div class="factory-auth-access-actions grid gap-3 sm:grid-cols-2">
         <NuxtLink
           :to="localePath('/auth/sign-in')"
-          class="ui-button ui-button-primary flex-1"
+          data-slot="button"
+          data-hover-effect="slide"
+          class="factory-auth-slide-action inline-flex h-12 min-h-12 items-center justify-center px-5 py-0 text-sm"
         >
           Sign in
         </NuxtLink>
         <NuxtLink
           :to="localePath('/auth/sign-up')"
-          class="ui-button ui-button-secondary flex-1"
+          data-slot="button"
+          class="ui-button-secondary factory-auth-secondary-action inline-flex h-12 min-h-12 items-center justify-center px-5 py-0 text-sm"
         >
           Create account
         </NuxtLink>
@@ -197,7 +203,9 @@ function getRoleIcon(role: string) {
     <button
       v-else
       :disabled="isAccepting"
-      class="ui-button ui-button-primary w-full"
+      data-slot="button"
+      data-hover-effect="slide"
+      class="factory-auth-slide-action inline-flex h-12 min-h-12 w-full items-center justify-center gap-2 px-5 py-0 text-sm"
       @click="handleAccept"
     >
       <Loader2 v-if="isAccepting" class="size-4 animate-spin" />
