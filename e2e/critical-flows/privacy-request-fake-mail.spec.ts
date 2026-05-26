@@ -1,5 +1,5 @@
 import { rm } from 'node:fs/promises'
-import { test, expect } from '../fixtures'
+import { test, expect, selectFactorySelectOption } from '../fixtures'
 import postgres from 'postgres'
 import type { Sql } from 'postgres'
 import { type CapturedEmail, readCapturedEmails } from '../helpers/captured-emails'
@@ -66,7 +66,7 @@ test.describe('Privacy request fake mail', () => {
       await expect(page.getByRole('heading', { name: 'Request deletion of applicant information' })).toBeVisible()
       await page.getByLabel('Name').fill(requester.name)
       await page.getByLabel('Email').fill(requester.email)
-      await page.getByLabel('State of residence').selectOption(requester.state)
+      await selectFactorySelectOption(page, /State of residence/, requester.state)
       await page.getByLabel('Role or application context').fill(requester.context)
       await page.getByLabel('Details').fill(requester.details)
 
