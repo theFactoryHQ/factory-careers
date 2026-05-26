@@ -32,8 +32,8 @@ const createdInterview = ref<{ id: string; googleCalendarEventLink?: string | nu
 const { calendarStatus, isConnected: calendarConnected } = useCalendarIntegration()
 const calendarProviderLabel = computed(() => calendarStatus.value.providerLabel || 'Microsoft Calendar')
 
-const { data: sessionData } = await authClient.useSession(useFetch)
-const currentUserEmail = computed(() => sessionData.value?.user?.email ?? '')
+const sessionState = authClient.useSession()
+const currentUserEmail = computed(() => sessionState.value.data?.user?.email ?? '')
 
 const isAppManagedCalendar = computed(() => 
   calendarStatus.value.authMode === 'application' || calendarStatus.value.managedByAdmin === true
@@ -104,12 +104,16 @@ onMounted(() => {
   tomorrow.setDate(tomorrow.getDate() + 1)
   form.date = toDateString(tomorrow)
 
-  // Default both notifications on
+  // Default email on, but only enable calendar sync when a provider is configured.
   notifyViaEmail.value = true
-  notifyViaCalendar.value = true
+  notifyViaCalendar.value = canUseCalendar.value
 
   // Center default time (e.g. 10:00) vertically in the time slider list
   nextTick(() => centerTimeInSlider())
+})
+
+watch(canUseCalendar, (enabled) => {
+  if (!enabled) notifyViaCalendar.value = false
 })
 
 // Default the first interviewer to the current user once we have their email
