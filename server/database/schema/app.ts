@@ -589,6 +589,10 @@ export const analysisRunStatusEnum = pgEnum('analysis_run_status', [
   'completed', 'failed', 'partial',
 ])
 
+export const scoringFeedbackSentimentEnum = pgEnum('scoring_feedback_sentiment', [
+  'up', 'down',
+])
+
 /**
  * Immutable audit trail for all significant actions within an organization.
  * Append-only — no UPDATE or DELETE allowed via the API.
@@ -780,6 +784,29 @@ export const criterionScore = pgTable('criterion_score', {
 ]))
 
 /**
+ * Immutable per-run criterion scores. Unlike criterion_score, these rows are
+ * never replaced when an application is rescored.
+ */
+export const analysisRunCriterionScore = pgTable('analysis_run_criterion_score', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  analysisRunId: text('analysis_run_id').notNull().references(() => analysisRun.id, { onDelete: 'cascade' }),
+  applicationId: text('application_id').notNull().references(() => application.id, { onDelete: 'cascade' }),
+  criterionKey: text('criterion_key').notNull(),
+  maxScore: integer('max_score').notNull(),
+  applicantScore: integer('applicant_score').notNull(),
+  confidence: integer('confidence').notNull(),
+  evidence: text('evidence').notNull(),
+  strengths: jsonb('strengths').$type<string[]>(),
+  gaps: jsonb('gaps').$type<string[]>(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => ([
+  index('analysis_run_criterion_score_org_idx').on(t.organizationId),
+  index('analysis_run_criterion_score_run_idx').on(t.analysisRunId),
+  index('analysis_run_criterion_score_application_idx').on(t.applicationId),
+]))
+
+/**
  * Audit trail for each AI scoring run. Captures the rubric snapshot,
  * model used, token usage, and the raw LLM response for debugging.
  */
@@ -807,6 +834,26 @@ export const analysisRun = pgTable('analysis_run', {
   index('analysis_run_organization_id_idx').on(t.organizationId),
   index('analysis_run_application_id_idx').on(t.applicationId),
   index('analysis_run_created_at_idx').on(t.createdAt),
+]))
+
+/**
+ * Admin feedback on AI scoring quality. Multiple feedback entries are allowed
+ * so reviewers can leave independent signals over time.
+ */
+export const analysisRunFeedback = pgTable('analysis_run_feedback', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  analysisRunId: text('analysis_run_id').notNull().references(() => analysisRun.id, { onDelete: 'cascade' }),
+  applicationId: text('application_id').notNull().references(() => application.id, { onDelete: 'cascade' }),
+  sentiment: scoringFeedbackSentimentEnum('sentiment').notNull(),
+  comment: text('comment'),
+  createdById: text('created_by_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => ([
+  index('analysis_run_feedback_org_idx').on(t.organizationId),
+  index('analysis_run_feedback_run_idx').on(t.analysisRunId),
+  index('analysis_run_feedback_application_idx').on(t.applicationId),
+  index('analysis_run_feedback_created_by_idx').on(t.createdById),
 ]))
 
 // ─────────────────────────────────────────────
@@ -873,6 +920,8 @@ export const applicationRelations = relations(application, ({ one, many }) => ({
   interviews: many(interview),
   criterionScores: many(criterionScore),
   analysisRuns: many(analysisRun),
+  analysisRunCriterionScores: many(analysisRunCriterionScore),
+  analysisRunFeedback: many(analysisRunFeedback),
   source: one(applicationSource),
 }))
 
@@ -968,10 +1017,25 @@ export const criterionScoreRelations = relations(criterionScore, ({ one }) => ({
   application: one(application, { fields: [criterionScore.applicationId], references: [application.id] }),
 }))
 
-export const analysisRunRelations = relations(analysisRun, ({ one }) => ({
+export const analysisRunCriterionScoreRelations = relations(analysisRunCriterionScore, ({ one }) => ({
+  organization: one(organization, { fields: [analysisRunCriterionScore.organizationId], references: [organization.id] }),
+  analysisRun: one(analysisRun, { fields: [analysisRunCriterionScore.analysisRunId], references: [analysisRun.id] }),
+  application: one(application, { fields: [analysisRunCriterionScore.applicationId], references: [application.id] }),
+}))
+
+export const analysisRunRelations = relations(analysisRun, ({ one, many }) => ({
   organization: one(organization, { fields: [analysisRun.organizationId], references: [organization.id] }),
   application: one(application, { fields: [analysisRun.applicationId], references: [application.id] }),
   scoredBy: one(user, { fields: [analysisRun.scoredById], references: [user.id] }),
+  criterionScores: many(analysisRunCriterionScore),
+  feedback: many(analysisRunFeedback),
+}))
+
+export const analysisRunFeedbackRelations = relations(analysisRunFeedback, ({ one }) => ({
+  organization: one(organization, { fields: [analysisRunFeedback.organizationId], references: [organization.id] }),
+  analysisRun: one(analysisRun, { fields: [analysisRunFeedback.analysisRunId], references: [analysisRun.id] }),
+  application: one(application, { fields: [analysisRunFeedback.applicationId], references: [application.id] }),
+  createdBy: one(user, { fields: [analysisRunFeedback.createdById], references: [user.id] }),
 }))
 
 // ─── Source Tracking Relations ─────────────────────────────────────

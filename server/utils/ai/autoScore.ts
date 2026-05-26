@@ -6,7 +6,7 @@
 import { eq, and } from 'drizzle-orm'
 import {
   application, scoringCriterion, criterionScore,
-  analysisRun, document, orgSettings,
+  analysisRun, analysisRunCriterionScore, document, orgSettings,
 } from '../../database/schema'
 import { scoreApplication, computeCompositeScore } from './scoring'
 import type { CriterionDefinition } from './scoring'
@@ -108,21 +108,7 @@ export async function autoScoreApplication(applicationId: string, orgId: string)
   }))
 
   await db.transaction(async (tx) => {
-    await tx.delete(criterionScore)
-      .where(and(
-        eq(criterionScore.applicationId, applicationId),
-        eq(criterionScore.organizationId, orgId),
-      ))
-
-    if (scoreValues.length > 0) {
-      await tx.insert(criterionScore).values(scoreValues)
-    }
-
-    await tx.update(application)
-      .set({ score: compositeScore, updatedAt: new Date() })
-      .where(eq(application.id, applicationId))
-
-    await tx.insert(analysisRun).values({
+    const [createdRun] = await tx.insert(analysisRun).values({
       organizationId: orgId,
       applicationId,
       status: 'completed',
@@ -132,6 +118,26 @@ export async function autoScoreApplication(applicationId: string, orgId: string)
       compositeScore,
       promptTokens: result.usage.promptTokens,
       completionTokens: result.usage.completionTokens,
-    })
+    }).returning()
+
+    const runScoreValues = scoreValues.map(score => ({
+      ...score,
+      analysisRunId: createdRun!.id,
+    }))
+
+    await tx.delete(criterionScore)
+      .where(and(
+        eq(criterionScore.applicationId, applicationId),
+        eq(criterionScore.organizationId, orgId),
+      ))
+
+    if (scoreValues.length > 0) {
+      await tx.insert(criterionScore).values(scoreValues)
+      await tx.insert(analysisRunCriterionScore).values(runScoreValues)
+    }
+
+    await tx.update(application)
+      .set({ score: compositeScore, updatedAt: new Date() })
+      .where(eq(application.id, applicationId))
   })
 }
