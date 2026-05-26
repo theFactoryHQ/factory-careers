@@ -637,6 +637,7 @@ jobs:
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:3333
       FACTORY_DISABLE_PUBLIC_SIGNUP: "false"
       FACTORY_DISABLE_PUBLIC_ORG_CREATION: "false"
+      FACTORY_ADMIN_SSO_ONLY: "false"
       FACTORY_EMAIL_TEST_MODE: capture
       FACTORY_EMAIL_CAPTURE_PATH: /tmp/factory-careers-e2e-email.jsonl
       FACTORY_CAREERS_HIRING_INBOX: hiring-e2e@example.com
