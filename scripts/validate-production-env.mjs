@@ -465,6 +465,16 @@ function checkRateLimitOverrides(env, errors, warnings) {
   }
 }
 
+function checkTestModes(env, errors) {
+  if (trimValue(env.FACTORY_EMAIL_TEST_MODE) === 'capture') {
+    errors.push(issue('FACTORY_EMAIL_TEST_MODE', 'capture mode is not allowed in production'))
+  }
+
+  if (trimValue(env.FACTORY_AI_TEST_MODE) === 'mock') {
+    errors.push(issue('FACTORY_AI_TEST_MODE', 'mock mode is not allowed in production'))
+  }
+}
+
 export function validateProductionEnv(input) {
   const env = Object.fromEntries(
     Object.entries(input ?? {}).map(([key, value]) => [key, trimValue(value)]),
@@ -481,6 +491,7 @@ export function validateProductionEnv(input) {
   checkEmail(env, errors, warnings)
   checkTelemetry(env, errors, warnings)
   checkRateLimitOverrides(env, errors, warnings)
+  checkTestModes(env, errors)
 
   return {
     ok: errors.length === 0,
