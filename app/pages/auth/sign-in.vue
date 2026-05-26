@@ -121,7 +121,7 @@ async function handleFactorySso() {
             :disabled="ssoRedirecting"
             data-slot="button"
             data-hover-effect="slide"
-            aria-label="Continue with SSO"
+            aria-label="Sign in with Microsoft"
             :aria-busy="ssoRedirecting"
             class="factory-microsoft-signin-button inline-flex min-h-12 cursor-pointer items-center justify-center gap-3 border border-transparent bg-white px-4 py-3 text-[15px] font-semibold tracking-normal text-[#1f1f1f] shadow-sm focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
         >

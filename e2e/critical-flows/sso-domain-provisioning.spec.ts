@@ -160,7 +160,7 @@ test.describe('SSO domain provisioning', () => {
       const signInPage = await signInContext.newPage()
       await signInPage.goto('/auth/sign-in')
       await expect(signInPage).toHaveURL(/\/auth\/sign-in/)
-      await expect(signInPage.getByRole('button', { name: 'Continue with SSO' })).toBeVisible()
+      await expect(signInPage.getByRole('button', { name: 'Sign in with Microsoft' })).toBeVisible()
       await signInPage.getByLabel('Work email').fill(configuredEmail)
 
       const ssoResponsePromise = signInPage.waitForResponse(
@@ -168,7 +168,7 @@ test.describe('SSO domain provisioning', () => {
         { timeout: 30_000 },
       )
 
-      await signInPage.getByRole('button', { name: 'Continue with SSO' }).click()
+      await signInPage.getByRole('button', { name: 'Sign in with Microsoft' }).click()
       const ssoResponse = await ssoResponsePromise
       expect(ssoResponse.status()).toBe(200)
 
