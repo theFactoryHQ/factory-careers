@@ -1,33 +1,9 @@
-import { readFile, rm } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import type { Page } from "@playwright/test";
 import { test, expect, selectFactorySelectOption } from "../fixtures";
+import { readCapturedEmails } from "../helpers/captured-emails";
 
 const JOB_TITLE = "Email Capture Test Job";
-
-type CapturedEmail = {
-  from: string;
-  to: string[];
-  subject: string;
-  html: string;
-  text: string;
-  renderError?: string;
-};
-
-async function readCapturedEmails(capturePath: string): Promise<CapturedEmail[]> {
-  try {
-    const contents = await readFile(capturePath, "utf8");
-    return contents
-      .split("\n")
-      .filter(Boolean)
-      .map((line) => JSON.parse(line) as CapturedEmail);
-  } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-      return [];
-    }
-
-    throw error;
-  }
-}
 
 async function advanceToSubmitButton(page: Page) {
   const submitButton = page.getByRole("button", { name: /submit/i });
