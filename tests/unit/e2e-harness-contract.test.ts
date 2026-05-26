@@ -9,6 +9,16 @@ function read(path: string): string {
   return readFileSync(join(root, path), 'utf8')
 }
 
+function workflowJobBlock(workflow: string, jobId: string): string {
+  const start = workflow.indexOf(`\n  ${jobId}:\n`)
+  expect(start, `${jobId} job should be present`).toBeGreaterThanOrEqual(0)
+
+  const nextJob = workflow.slice(start + 1).search(/\n  [a-zA-Z0-9_-]+:\n/)
+  return nextJob === -1
+    ? workflow.slice(start)
+    : workflow.slice(start, start + 1 + nextJob)
+}
+
 function walk(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const fullPath = join(dir, entry.name)
@@ -159,6 +169,7 @@ describe('Playwright E2E harness contract', () => {
 
   it('runs interview scheduling lifecycle browser coverage in a dedicated CI lane', () => {
     const workflow = read('.github/workflows/e2e-tests.yml')
+    const interviewsJob = workflowJobBlock(workflow, 'interviews')
     const packageJson = JSON.parse(read('package.json')) as {
       scripts?: Record<string, string>
     }
@@ -166,11 +177,11 @@ describe('Playwright E2E harness contract', () => {
     expect(packageJson.scripts?.['test:e2e:interviews']).toBe(
       'playwright test e2e/critical-flows/interview-lifecycle.spec.ts e2e/critical-flows/interview-invitation-response.spec.ts --workers=1',
     )
-    expect(workflow).toContain('name: Playwright interviews')
-    expect(workflow).toContain('npm run test:e2e:interviews')
-    expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "true"')
-    expect(workflow).toContain('FACTORY_EMAIL_TEST_MODE: capture')
-    expect(workflow).toContain('FACTORY_EMAIL_CAPTURE_PATH: /tmp/factory-careers-e2e-interview-email.jsonl')
+    expect(interviewsJob).toContain('name: Playwright interviews')
+    expect(interviewsJob).toContain('npm run test:e2e:interviews')
+    expect(interviewsJob).toContain('S3_SKIP_BUCKET_INIT: "true"')
+    expect(interviewsJob).toContain('FACTORY_EMAIL_TEST_MODE: capture')
+    expect(interviewsJob).toContain('FACTORY_EMAIL_CAPTURE_PATH: /tmp/factory-careers-e2e-interview-email.jsonl')
     expect(read('e2e/critical-flows/interview-invitation-response.spec.ts')).toContain('FACTORY_EMAIL_TEST_MODE')
     expect(workflow).toContain('needs.interviews.result')
     expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, auth_org, rbac, sso, ai_review]')
