@@ -159,6 +159,7 @@ test.describe('SSO domain provisioning', () => {
       })
       const signInPage = await signInContext.newPage()
       await signInPage.goto('/auth/sign-in')
+      await signInPage.waitForLoadState('networkidle')
       await expect(signInPage).toHaveURL(/\/auth\/sign-in/)
       await expect(signInPage.getByRole('button', { name: 'Sign in with Microsoft' })).toBeVisible()
       await signInPage.getByLabel('Work email').fill(configuredEmail)
