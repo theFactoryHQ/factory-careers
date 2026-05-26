@@ -109,6 +109,21 @@ describe('production environment preflight', () => {
     ]))
   })
 
+  it('rejects test-only capture modes in production env files', () => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      FACTORY_EMAIL_TEST_MODE: 'capture',
+      FACTORY_AI_TEST_MODE: 'mock',
+      FACTORY_AI_CAPTURE_PATH: '/tmp/factory-careers-e2e-ai.jsonl',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(messages(result)).toEqual(expect.arrayContaining([
+      expect.stringContaining('FACTORY_EMAIL_TEST_MODE: capture mode is not allowed in production'),
+      expect.stringContaining('FACTORY_AI_TEST_MODE: mock mode is not allowed in production'),
+    ]))
+  })
+
   it('validates explicit production rate-limit overrides', () => {
     const result = validateProductionEnv({
       ...validProductionEnv,
