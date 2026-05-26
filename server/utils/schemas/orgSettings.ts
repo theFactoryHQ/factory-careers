@@ -5,6 +5,7 @@ import {
   SIGNUP_ALLOWED_DOMAINS_MAX,
   SIGNUP_DOMAIN_PATTERN,
 } from '~~/shared/signup-domains'
+import { scoringBandsSchema } from './scoringBands'
 
 // ─────────────────────────────────────────────
 // Org settings validation schemas
@@ -30,6 +31,7 @@ export const updateOrgSettingsSchema = z.object({
   calendarSyncInterviewers: z.boolean().optional(),
   defaultSalaryUnit: z.enum(SALARY_UNIT_VALUES).optional(),
   analysisContext: z.string().trim().max(4000).optional(),
+  scoringBands: scoringBandsSchema.optional(),
   signupAllowedDomains: signupAllowedDomainsSchema.optional(),
   applicationComplianceEnabled: z.boolean().optional(),
   includeEeo: z.boolean().optional(),

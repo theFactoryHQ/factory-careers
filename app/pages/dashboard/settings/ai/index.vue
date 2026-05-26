@@ -6,8 +6,8 @@
  * dedicated pages (`./new` and `./[id]`) for a calmer, less dense experience.
  */
 import {
-  Brain, Plus, Loader2, AlertTriangle, Sparkles, BarChart3, Star,
-  Pencil, Trash2, Zap, Check, Server, RefreshCw, Save,
+  Brain, Plus, Loader2, AlertTriangle, Sparkles, DollarSign, Star,
+  Pencil, Trash2, Zap, Check, Server,
 } from 'lucide-vue-next'
 
 definePageMeta({})
@@ -60,9 +60,7 @@ interface ProviderInfo {
 }
 
 const { allowed: canManageAi, isLoading: isPermissionLoading } = usePermission({ aiConfig: ['create'] })
-const { allowed: canUpdateOrg } = usePermission({ organization: ['update'] })
 const toast = useToast()
-const { analysisContext, updateSettings } = useOrgSettings()
 
 const { data: configsData, refresh: refreshConfigs, status: configsStatus } = useFetch<AiConfigRow[]>('/api/ai-config', {
   key: 'ai-configs',
@@ -77,29 +75,6 @@ const { data: providers } = useFetch<Record<string, ProviderInfo>>('/api/ai-conf
 
 const configs = computed(() => configsData.value ?? [])
 const isLoading = computed(() => configsStatus.value === 'pending' && configs.value.length === 0)
-
-const localAnalysisContext = ref('')
-const isSavingAnalysisContext = ref(false)
-
-watch(analysisContext, (context) => {
-  localAnalysisContext.value = context
-}, { immediate: true })
-
-async function saveAnalysisContext() {
-  if (!canUpdateOrg.value) return
-  isSavingAnalysisContext.value = true
-  try {
-    await updateSettings({ analysisContext: localAnalysisContext.value })
-    toast.success('Analysis context saved')
-  }
-  catch (err: any) {
-    const message = err?.data?.statusMessage ?? err?.message ?? 'Failed to save analysis context.'
-    toast.error('Save failed', { message })
-  }
-  finally {
-    isSavingAnalysisContext.value = false
-  }
-}
 
 // ── Per-row actions ──
 const togglingDefaultId = ref<string | null>(null)
@@ -164,43 +139,6 @@ async function deleteConfig(c: AiConfigRow) {
   }
 }
 
-const isRefreshingModels = ref(false)
-async function refreshModelCatalog() {
-  isRefreshingModels.value = true
-  try {
-    const result = await $fetch<{
-      providers: Record<string, ProviderInfo>
-      refreshedProviders: Array<{ provider: string, modelCount: number }>
-      errors: Array<{ provider: string, message: string }>
-    }>('/api/ai-config/providers/refresh', {
-      method: 'POST',
-      body: { force: true },
-      headers: useRequestHeaders(['cookie']),
-    })
-    providers.value = result.providers
-
-    if (result.refreshedProviders.length > 0) {
-      toast.success(
-        'Model catalog refreshed',
-        `${result.refreshedProviders.length} provider${result.refreshedProviders.length === 1 ? '' : 's'} updated.`,
-      )
-    }
-    else if (result.errors.length > 0) {
-      toast.error('Refresh did not complete', { message: result.errors[0]?.message ?? 'No provider models were refreshed.' })
-    }
-    else {
-      toast.info('No providers refreshed', 'Add a provider API key before refreshing the model catalog.')
-    }
-  }
-  catch (err: any) {
-    const message = err?.data?.statusMessage ?? err?.message ?? 'Failed to refresh model catalog.'
-    toast.error('Refresh failed', { message })
-  }
-  finally {
-    isRefreshingModels.value = false
-  }
-}
-
 function providerLabel(key: string): string {
   return providers.value?.[key]?.name ?? key
 }
@@ -213,82 +151,33 @@ function formatPrice(p: number | null): string {
   if (p == null) return '—'
   return `$${p.toFixed(2)}`
 }
+
+function pricingTitle(c: AiConfigRow): string {
+  return `Pricing per 1M tokens: ${formatPrice(c.inputPricePer1m)} input / ${formatPrice(c.outputPricePer1m)} output`
+}
+
+function modelTitle(c: AiConfigRow): string {
+  return `${c.name}: ${c.model}`
+}
 </script>
 
 <template>
   <div class="w-full">
     <!-- Page header -->
-    <div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
+    <div class="mb-6">
       <div>
         <h1 class="text-lg font-semibold text-surface-900 dark:text-surface-50">AI Configuration</h1>
-        <p class="text-sm text-surface-500 dark:text-surface-400 mt-0.5">
-          Add as many providers and models as you like. Pick which one powers the chatbot and which one scores candidates.
-        </p>
-      </div>
-      <div v-if="canManageAi" class="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          :disabled="isRefreshingModels"
-          class="ui-button ui-button-secondary h-9 px-3.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-          @click="refreshModelCatalog"
-        >
-          <Loader2 v-if="isRefreshingModels" class="size-3.5 animate-spin" />
-          <RefreshCw v-else class="size-3.5" />
-          Refresh models
-        </button>
-        <NuxtLink
-          to="/dashboard/settings/ai/new"
-          class="ui-button ui-button-primary h-9 px-3.5 text-xs no-underline"
-        >
-          <Plus class="size-4" />
-          Add a model
-        </NuxtLink>
       </div>
     </div>
 
-    <section
+    <OrgContextEditor
       v-if="!isPermissionLoading && canManageAi"
-      class="ui-panel ui-dashboard-panel mb-5 overflow-hidden"
-    >
-      <div class="px-5 py-4 border-b border-surface-100 dark:border-surface-800">
-        <div class="flex items-start gap-3">
-          <div class="ui-icon-state ui-icon-state-brand flex size-9 items-center justify-center rounded-lg">
-            <Sparkles class="size-4" />
-          </div>
-          <div>
-            <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Analysis context</h2>
-            <p class="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
-              Organization background the AI uses before generating criteria or scoring candidates.
-            </p>
-          </div>
-        </div>
-      </div>
-      <div class="px-5 py-4 space-y-3">
-        <textarea
-          v-model="localAnalysisContext"
-          :disabled="!canUpdateOrg || isSavingAnalysisContext"
-          rows="5"
-          maxlength="4000"
-          class="ui-field min-h-32 resize-y disabled:opacity-60 disabled:cursor-not-allowed"
-          placeholder="Describe the organization, customers, services, and domain signals candidates should be evaluated against."
-        />
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <p class="text-[11px] text-surface-500 dark:text-surface-400">
-            {{ localAnalysisContext.length.toLocaleString() }} / 4,000 characters
-          </p>
-          <button
-            type="button"
-            :disabled="!canUpdateOrg || isSavingAnalysisContext"
-            class="ui-button ui-button-primary h-8 px-3 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="saveAnalysisContext"
-          >
-            <Loader2 v-if="isSavingAnalysisContext" class="size-3.5 animate-spin" />
-            <Save v-else class="size-3.5" />
-            {{ isSavingAnalysisContext ? 'Saving…' : 'Save context' }}
-          </button>
-        </div>
-      </div>
-    </section>
+    />
+
+    <ScoringBandsEditor
+      v-if="!isPermissionLoading && canManageAi"
+      mode="global"
+    />
 
     <!-- Permission guard -->
     <div v-if="isPermissionLoading" class="flex items-center justify-center py-12">
@@ -306,86 +195,121 @@ function formatPrice(p: number | null): string {
       </div>
     </div>
 
+    <section v-else class="space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Models</h2>
+        </div>
+        <div v-if="canManageAi" class="flex flex-wrap items-center gap-2">
+          <NuxtLink
+            to="/dashboard/settings/ai/new"
+            class="ui-button ui-button-primary h-9 px-3.5 text-xs no-underline"
+          >
+            <Plus class="size-4" />
+            Add
+          </NuxtLink>
+        </div>
+      </div>
+
     <!-- Loading -->
-    <div v-else-if="isLoading" class="ui-panel ui-dashboard-panel p-8 text-center text-sm text-surface-500">
-      <Loader2 class="size-5 animate-spin mx-auto mb-2 text-surface-400" />
-      Loading configurations…
-    </div>
+      <div v-if="isLoading" class="ui-panel ui-dashboard-panel p-8 text-center text-sm text-surface-500">
+        <Loader2 class="size-5 animate-spin mx-auto mb-2 text-surface-400" />
+        Loading configurations…
+      </div>
 
     <!-- Empty state -->
-    <div
-      v-else-if="configs.length === 0"
-      class="ui-empty-panel ui-empty-panel-dashed ui-settings-empty-panel"
-    >
-      <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile mx-auto size-12 mb-3">
-        <Brain class="size-6" />
-      </div>
-      <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">No AI models configured yet</h2>
-      <p class="mt-1 mb-4 text-sm text-surface-500 dark:text-surface-400">
-        Add your first model to enable the chatbot and candidate analysis. Pick from popular providers or bring your own OpenAI-compatible endpoint.
-      </p>
-      <NuxtLink
-        to="/dashboard/settings/ai/new"
-        class="ui-button ui-button-primary"
+      <div
+        v-else-if="configs.length === 0"
+        class="ui-empty-panel ui-empty-panel-dashed ui-settings-empty-panel"
       >
-        <Plus class="size-4" />
-        Add your first model
-      </NuxtLink>
-    </div>
+        <div class="ui-icon-state ui-dashboard-soft-icon ui-icon-state-brand ui-icon-tile mx-auto size-12 mb-3">
+          <Brain class="size-6" />
+        </div>
+        <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">No AI models configured yet</h2>
+        <p class="mt-1 mb-4 text-sm text-surface-500 dark:text-surface-400">
+          Add your first model to enable the chatbot and candidate analysis. Pick from popular providers or bring your own OpenAI-compatible endpoint.
+        </p>
+        <NuxtLink
+          to="/dashboard/settings/ai/new"
+          class="ui-button ui-button-primary"
+        >
+          <Plus class="size-4" />
+          Add your first model
+        </NuxtLink>
+      </div>
 
     <!-- Config cards -->
-    <ul v-else class="space-y-3">
-      <li
-        v-for="c in configs"
-        :key="c.id"
-        class="ui-panel ui-dashboard-panel overflow-hidden"
-      >
-        <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-4">
+      <ul v-else class="space-y-3">
+        <li
+          v-for="c in configs"
+          :key="c.id"
+          class="ui-panel ui-dashboard-panel overflow-visible"
+        >
+          <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4">
           <!-- Identity -->
           <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 flex-wrap">
-              <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 truncate">{{ c.name }}</h3>
-              <span class="inline-flex items-center gap-1 rounded-full bg-surface-50 dark:bg-surface-800 px-2 py-0.5 text-[11px] font-medium text-surface-700 dark:text-surface-300">
-                {{ providerLabel(c.provider) }}
+            <div class="flex min-w-0 items-center gap-2 overflow-visible">
+              <h3
+                class="min-w-0 truncate text-base font-semibold text-surface-900 dark:text-surface-100"
+                :title="modelTitle(c)"
+              >
+                {{ c.name }}
+              </h3>
+              <span
+                class="inline-flex size-6 shrink-0 items-center justify-center rounded border border-surface-200 bg-surface-50 text-surface-700 dark:border-surface-800 dark:bg-surface-900 dark:text-surface-300"
+                :title="providerLabel(c.provider)"
+                :aria-label="providerLabel(c.provider)"
+              >
+                <AiProviderLogo :provider="c.provider" class="max-h-3.5 max-w-4" />
+              </span>
+              <span
+                v-if="c.baseUrl"
+                class="inline-flex min-w-0 items-center gap-1 text-xs text-surface-500"
+              >
+                <Server class="size-3 shrink-0" />
+                <span class="font-mono truncate max-w-[260px]" :title="c.baseUrl">{{ c.baseUrl }}</span>
+              </span>
+              <span
+                v-if="c.inputPricePer1m != null || c.outputPricePer1m != null"
+                class="group/pricing relative inline-flex size-5 shrink-0 items-center justify-center rounded border border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                tabindex="0"
+                :aria-label="pricingTitle(c)"
+              >
+                <DollarSign class="size-3" />
+                <span
+                  role="tooltip"
+                  class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 translate-y-1 whitespace-nowrap border border-white/12 bg-black px-2 py-1 text-[10px] font-medium text-white opacity-0 shadow-xl shadow-black/40 transition-all duration-150 group-hover/pricing:translate-y-0 group-hover/pricing:opacity-100 group-focus/pricing:translate-y-0 group-focus/pricing:opacity-100"
+                >
+                  {{ pricingTitle(c) }}
+                </span>
               </span>
               <span
                 v-if="c.isDefaultChatbot"
-                class="inline-flex items-center gap-1 rounded-full bg-brand-50 dark:bg-brand-950/50 px-2 py-0.5 text-[11px] font-medium text-brand-700 dark:text-brand-300"
+                class="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-50 dark:bg-brand-950/50 px-2 py-0.5 text-[11px] font-medium text-brand-700 dark:text-brand-300"
                 title="Default for the chatbot"
               >
                 <Sparkles class="size-3" /> Chatbot default
               </span>
               <span
                 v-if="c.isDefaultAnalysis"
-                class="inline-flex items-center gap-1 rounded-full bg-warning-50 dark:bg-warning-950/50 px-2 py-0.5 text-[11px] font-medium text-warning-700 dark:text-warning-300"
+                class="inline-flex shrink-0 items-center gap-1 rounded-full bg-warning-50 dark:bg-warning-950/50 px-2 py-0.5 text-[11px] font-medium text-warning-700 dark:text-warning-300"
                 title="Default for candidate analysis"
               >
                 <Star class="size-3" /> Analysis default
               </span>
               <span
                 v-if="!c.hasApiKey"
-                class="inline-flex items-center gap-1 rounded-full bg-danger-50 dark:bg-danger-950/50 px-2 py-0.5 text-[11px] font-medium text-danger-700 dark:text-danger-300"
+                class="inline-flex shrink-0 items-center gap-1 rounded-full bg-danger-50 dark:bg-danger-950/50 px-2 py-0.5 text-[11px] font-medium text-danger-700 dark:text-danger-300"
               >
                 <AlertTriangle class="size-3" /> Missing API key
               </span>
               <span
                 v-if="modelMeta(c)?.stale"
-                class="inline-flex items-center gap-1 bg-brand-500/10 px-2 py-0.5 text-[11px] font-medium text-brand-300"
+                class="inline-flex shrink-0 items-center gap-1 bg-brand-500/10 px-2 py-0.5 text-[11px] font-medium text-brand-300"
                 title="The provider model-list API did not return this configured model on the latest refresh."
               >
                 <AlertTriangle class="size-3" />
                 {{ modelMeta(c)?.replacementId ? `Try ${modelMeta(c)?.replacementId}` : 'Not returned by provider' }}
-              </span>
-            </div>
-            <div class="mt-1 flex items-center gap-2 flex-wrap text-xs text-surface-500">
-              <span class="font-mono">{{ c.model }}</span>
-              <span v-if="c.baseUrl" class="inline-flex items-center gap-1">
-                <Server class="size-3" />
-                <span class="font-mono truncate max-w-[260px]" :title="c.baseUrl">{{ c.baseUrl }}</span>
-              </span>
-              <span class="inline-flex items-center gap-1" title="Pricing per 1M tokens">
-                <BarChart3 class="size-3" />
-                {{ formatPrice(c.inputPricePer1m) }} in / {{ formatPrice(c.outputPricePer1m) }} out
               </span>
             </div>
 
@@ -458,9 +382,10 @@ function formatPrice(p: number | null): string {
               <Trash2 v-else class="size-3.5" />
             </button>
           </div>
-        </div>
-      </li>
-    </ul>
+          </div>
+        </li>
+      </ul>
+    </section>
 
   </div>
 </template>

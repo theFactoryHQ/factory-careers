@@ -77,6 +77,22 @@ export const updateWeightsSchema = z.object({
   })).min(1).max(20),
 })
 
+// ─── Scoring Feedback Schema ─────────────────────────────────────
+
+export const createScoringFeedbackSchema = z.object({
+  sentiment: z.enum(['up', 'down']),
+  analysisRunId: z.string().min(1).max(200).nullable().optional(),
+  comment: z.string().trim().max(2000).optional(),
+}).superRefine((value, context) => {
+  if (value.sentiment === 'down' && !value.comment?.trim()) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['comment'],
+      message: 'Comment is required for negative scoring feedback',
+    })
+  }
+})
+
 // ─── Generate Criteria Schema ─────────────────────────────────────
 
 export const generateCriteriaSchema = z.object({
