@@ -68,14 +68,20 @@ export function useSourceTracking(options?: {
   const from = computed(() => toValue(options?.from))
   const to = computed(() => toValue(options?.to))
 
-  // ─── Source stats ─────────────────────────
-  const statsUrl = computed(() => {
-    const params = new URLSearchParams()
-    if (jobId.value) params.set('jobId', jobId.value)
-    if (from.value) params.set('from', from.value)
-    if (to.value) params.set('to', to.value)
-    const qs = params.toString()
-    return `/api/source-tracking/stats${qs ? `?${qs}` : ''}`
+  const statsQuery = computed(() => {
+    const query: Record<string, string> = {}
+    if (jobId.value) query.jobId = jobId.value
+    if (from.value) query.from = from.value
+    if (to.value) query.to = to.value
+    return query
+  })
+
+  const statsKey = computed(() => {
+    const parts = ['source-tracking-stats']
+    for (const [key, value] of Object.entries(statsQuery.value)) {
+      parts.push(`${key}:${value}`)
+    }
+    return parts.join('-')
   })
 
   const {
@@ -83,8 +89,10 @@ export function useSourceTracking(options?: {
     status: statsStatus,
     error: statsError,
     refresh: refreshStats,
-  } = useFetch<SourceStats>(statsUrl, {
+  } = useFetch<SourceStats>('/api/source-tracking/stats', {
+    key: statsKey,
     headers: useRequestHeaders(['cookie']),
+    query: statsQuery,
   })
 
   const channelBreakdown = computed(() => stats.value?.channelBreakdown ?? [])
@@ -128,12 +136,11 @@ export function useTrackingLinks(options?: {
     return parts.join(':')
   })
 
-  const linksUrl = computed(() => {
-    const params = new URLSearchParams()
-    if (jobId.value) params.set('jobId', jobId.value)
-    if (channel.value) params.set('channel', channel.value)
-    const qs = params.toString()
-    return `/api/tracking-links${qs ? `?${qs}` : ''}`
+  const linksQuery = computed(() => {
+    const query: Record<string, string> = {}
+    if (jobId.value) query.jobId = jobId.value
+    if (channel.value) query.channel = channel.value
+    return query
   })
 
   const {
@@ -141,9 +148,10 @@ export function useTrackingLinks(options?: {
     status: fetchStatus,
     error,
     refresh,
-  } = useFetch<{ data: TrackingLink[]; total: number }>(linksUrl, {
-    key: fetchKey.value,
+  } = useFetch<{ data: TrackingLink[]; total: number }>('/api/tracking-links', {
+    key: fetchKey,
     headers: useRequestHeaders(['cookie']),
+    query: linksQuery,
     // 45s SWR for source-tracking links (heavy dashboard page)
     getCachedData(key, nuxtApp) {
       const cached = nuxtApp.payload.data[key]

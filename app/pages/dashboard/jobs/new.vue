@@ -33,6 +33,7 @@ import {
   Megaphone,
   Building2,
   Search,
+  AlertTriangle,
 } from 'lucide-vue-next'
 import { z } from 'zod'
 import { todayDateInputValue } from '~~/shared/date-input'
@@ -51,6 +52,7 @@ const localePath = useLocalePath()
 const { createJob } = useJobs()
 const { track } = useTrack()
 const toast = useToast()
+const { allowed: canCreateJob, isLoading: isPermissionLoading } = usePermission({ job: ['create'] })
 
 type QuestionType =
   | 'short_text'
@@ -723,7 +725,22 @@ const questionTypeLabels: Record<QuestionType, string> = {
 </script>
 
 <template>
-  <div class="mx-auto max-w-6xl px-4 py-8">
+  <div v-if="isPermissionLoading" class="flex items-center justify-center py-12">
+    <Loader2 class="size-6 animate-spin text-surface-400" />
+  </div>
+
+  <div
+    v-else-if="!canCreateJob"
+    class="ui-alert ui-alert-warning mx-auto mt-8 max-w-3xl p-5 flex items-start gap-3"
+  >
+    <AlertTriangle class="size-5 shrink-0 mt-0.5" />
+    <div>
+      <p class="font-semibold mb-1">Insufficient permissions</p>
+      <p>You don't have permission to create jobs. Contact an organization owner or admin.</p>
+    </div>
+  </div>
+
+  <div v-else class="mx-auto max-w-6xl px-4 py-8">
     <!-- Header with top actions -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
       <div>
