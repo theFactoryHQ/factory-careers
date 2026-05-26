@@ -32,6 +32,7 @@ export const cliRouteCoverage: CliRouteCoverageEntry[] = [
   { route: 'server/api/applications/[id]/analyze.post.ts', status: 'supported', command: 'applications analyze' },
   { route: 'server/api/applications/[id]/properties/[propId].put.ts', status: 'supported', command: 'applications set-property' },
   { route: 'server/api/applications/[id]/scores.get.ts', status: 'supported', command: 'applications scores' },
+  { route: 'server/api/applications/[id]/scoring-feedback.post.ts', status: 'excluded', reason: 'Dashboard-only qualitative feedback on an AI analysis run; CLI parity will wait until scoring review workflows are productized.' },
   { route: 'server/api/applications/index.get.ts', status: 'supported', command: 'applications list' },
   { route: 'server/api/applications/index.post.ts', status: 'supported', command: 'applications create' },
   { route: 'server/api/auth/[...all].ts', status: 'internal', reason: 'Better Auth catch-all endpoint; CLI uses supported auth commands and bearer/device auth through this boundary.' },
