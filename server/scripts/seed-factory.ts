@@ -6,7 +6,7 @@
  */
 
 import { drizzle } from 'drizzle-orm/postgres-js'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import postgres from 'postgres'
 import * as schema from '../database/schema'
 
@@ -70,30 +70,25 @@ async function main() {
 
   const factoryOrgId = factoryOrg?.id ?? FACTORY_ORG_ID
 
-  const [factorySettings] = await db
-    .select({
-      id: schema.orgSettings.id,
-      analysisContext: schema.orgSettings.analysisContext,
-    })
-    .from(schema.orgSettings)
-    .where(eq(schema.orgSettings.organizationId, factoryOrgId))
-    .limit(1)
-
-  if (!factorySettings) {
-    await db.insert(schema.orgSettings).values({
+  await db
+    .insert(schema.orgSettings)
+    .values({
       organizationId: factoryOrgId,
       analysisContext: FACTORY_ANALYSIS_CONTEXT,
     })
-  }
-  else if (!factorySettings.analysisContext.trim()) {
-    await db
-      .update(schema.orgSettings)
-      .set({
-        analysisContext: FACTORY_ANALYSIS_CONTEXT,
-        updatedAt: new Date(),
-      })
-      .where(eq(schema.orgSettings.id, factorySettings.id))
-  }
+    .onConflictDoUpdate({
+      target: schema.orgSettings.organizationId,
+      set: {
+        analysisContext: sql`CASE
+          WHEN btrim(COALESCE(${schema.orgSettings.analysisContext}, '')) = '' THEN ${FACTORY_ANALYSIS_CONTEXT}
+          ELSE ${schema.orgSettings.analysisContext}
+        END`,
+        updatedAt: sql`CASE
+          WHEN btrim(COALESCE(${schema.orgSettings.analysisContext}, '')) = '' THEN now()
+          ELSE ${schema.orgSettings.updatedAt}
+        END`,
+      },
+    })
 
   await db
     .insert(schema.job)

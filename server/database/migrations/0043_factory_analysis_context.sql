@@ -1,7 +1,8 @@
 WITH factory_org AS (
   SELECT "id"
   FROM "organization"
-  WHERE "slug" = 'factory'
+  WHERE "id" = 'factory-org'
+     OR "slug" = 'factory'
   LIMIT 1
 )
 INSERT INTO "org_settings" (
