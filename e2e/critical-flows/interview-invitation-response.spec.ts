@@ -1,34 +1,18 @@
-import { readFile, rm } from 'node:fs/promises'
+import { rm } from 'node:fs/promises'
 import { test, expect } from '../fixtures'
+import { type CapturedEmail, readCapturedEmails } from '../helpers/captured-emails'
 
 const JOB_TITLE = 'Interview Invitation Response Test Job'
 const INTERVIEW_TITLE = 'Candidate response screen'
 
-type CapturedEmail = {
-  to: string[]
-  subject: string
-  html: string
-  text: string
-  renderError?: string
-}
-
-async function readCapturedEmails(capturePath: string): Promise<CapturedEmail[]> {
-  try {
-    const contents = await readFile(capturePath, 'utf8')
-    return contents
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => JSON.parse(line) as CapturedEmail)
-  }
-  catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return []
-    throw error
-  }
-}
-
 function extractAcceptUrl(email: CapturedEmail) {
-  const content = `${email.text}\n${email.html}`
-  return content.match(/http:\/\/127\.0\.0\.1:3333\/interview\/respond\?token=[A-Za-z0-9._%-]+/)?.[0] ?? ''
+  const acceptHref = email.html.match(/href="([^"]+)"[\s\S]{0,1000}(?:✓|&#x2713;|&#10003;)\s*Accept/i)?.[1]
+  if (!acceptHref) return ''
+
+  return new URL(
+    acceptHref.replaceAll('&amp;', '&'),
+    process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3333',
+  ).toString()
 }
 
 test.describe('Interview invitation response', () => {
