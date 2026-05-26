@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Building2, UserPlus, Loader2, AlertTriangle, Check } from 'lucide-vue-next'
+import { AlertTriangle, Check } from 'lucide-vue-next'
 
 definePageMeta({
   layout: 'auth',
@@ -100,24 +100,27 @@ onMounted(() => {
   </div>
 
   <!-- Error state -->
-  <div v-else-if="error" class="flex flex-col items-center gap-4 py-6">
-    <div class="flex items-center justify-center size-12 rounded-full bg-danger-100 dark:bg-danger-950 text-danger-600 dark:text-danger-400">
-      <AlertTriangle class="size-6" />
+  <div v-else-if="error" class="space-y-5 py-2">
+    <div class="space-y-2">
+      <div class="flex size-10 items-center justify-center border border-danger-400/40 bg-danger-950/35 text-danger-300">
+        <AlertTriangle class="size-5" />
+      </div>
+      <h2 class="text-xl font-light leading-tight text-white">Invitation error</h2>
+      <p class="text-sm leading-6 text-white/56">{{ error }}</p>
     </div>
-    <div class="text-center">
-      <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-1">Invitation error</h2>
-      <p class="text-sm text-surface-500 dark:text-surface-400">{{ error }}</p>
-    </div>
-    <div class="flex gap-3">
+    <div class="factory-auth-access-actions grid gap-3 sm:grid-cols-2">
       <button
-        class="text-sm text-brand-600 dark:text-brand-400 hover:underline"
+        data-slot="button"
+        data-hover-effect="slide"
+        class="factory-auth-slide-action inline-flex h-12 min-h-12 items-center justify-center px-5 py-0 text-sm"
         @click="handleAccept"
       >
         Try again
       </button>
       <NuxtLink
         :to="localePath('/auth/sign-in')"
-        class="text-sm text-surface-500 dark:text-surface-400 hover:underline no-underline"
+        data-slot="button"
+        class="factory-auth-secondary-action inline-flex h-12 min-h-12 items-center justify-center px-5 py-0 text-sm"
       >
         Go to sign in
       </NuxtLink>
@@ -125,31 +128,31 @@ onMounted(() => {
   </div>
 
   <!-- Not authenticated — prompt sign in/up -->
-  <div v-else class="flex flex-col gap-5">
-    <div class="text-center">
-      <div class="flex items-center justify-center size-12 rounded-full bg-brand-100 dark:bg-brand-950 text-brand-600 dark:text-brand-400 mx-auto mb-4">
-        <Building2 class="size-6" />
-      </div>
-      <h2 class="text-xl font-semibold text-surface-900 dark:text-surface-100 mb-1">Accept invitation</h2>
-      <p class="text-sm text-surface-500 dark:text-surface-400">
+  <div v-else class="space-y-5">
+    <div class="space-y-2">
+      <h2 class="text-xl font-light leading-tight text-white">Accept invitation</h2>
+      <p class="text-sm leading-6 text-white/56">
         You've been invited to join an organization on Factory Careers.
       </p>
     </div>
 
-    <p class="text-sm text-surface-600 dark:text-surface-400 text-center">
+    <p class="text-sm leading-6 text-white/56">
       Sign in or create an account to accept this invitation.
     </p>
 
-    <div class="flex gap-3">
+    <div class="factory-auth-access-actions grid gap-3 sm:grid-cols-2">
       <NuxtLink
         :to="localePath({ path: '/auth/sign-in', query: { invitation: invitationId } })"
-        class="flex-1 text-center px-4 py-2.5 bg-brand-600 text-white rounded-md text-sm font-medium hover:bg-brand-700 transition-colors no-underline"
+        data-slot="button"
+        data-hover-effect="slide"
+        class="factory-auth-slide-action inline-flex h-12 min-h-12 items-center justify-center px-5 py-0 text-sm"
       >
         Sign in
       </NuxtLink>
       <NuxtLink
         :to="localePath({ path: '/auth/sign-up', query: { invitation: invitationId } })"
-        class="flex-1 text-center px-4 py-2.5 border border-surface-300 dark:border-surface-700 text-surface-700 dark:text-surface-300 rounded-md text-sm font-medium hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors no-underline"
+        data-slot="button"
+        class="factory-auth-secondary-action inline-flex h-12 min-h-12 items-center justify-center px-5 py-0 text-sm"
       >
         Create account
       </NuxtLink>

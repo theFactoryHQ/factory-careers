@@ -102,7 +102,11 @@ async function handleFactorySso() {
         <button
             type="submit"
             :disabled="ssoRedirecting"
-            class="factory-microsoft-signin-button inline-flex min-h-12 cursor-pointer items-center justify-center gap-3 border border-[#8c8c8c] bg-white px-4 py-3 text-[15px] font-semibold tracking-normal text-[#1f1f1f] shadow-sm transition-colors hover:bg-[#f7f7f7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:cursor-not-allowed disabled:opacity-60"
+            data-slot="button"
+            data-hover-effect="slide"
+            aria-label="Sign in with Microsoft"
+            :aria-busy="ssoRedirecting"
+            class="factory-microsoft-signin-button inline-flex min-h-12 cursor-pointer items-center justify-center gap-3 border border-transparent bg-white px-4 py-3 text-[15px] font-semibold tracking-normal text-[#1f1f1f] shadow-sm focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
         >
             <svg class="size-5 shrink-0" viewBox="0 0 23 23" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
                 <rect x="1" y="1" width="10" height="10" fill="#F25022" />
@@ -110,7 +114,7 @@ async function handleFactorySso() {
                 <rect x="1" y="12" width="10" height="10" fill="#00A4EF" />
                 <rect x="12" y="12" width="10" height="10" fill="#FFB900" />
             </svg>
-            {{ ssoRedirecting ? "Redirecting..." : "Continue with Microsoft" }}
+            <span>{{ ssoRedirecting ? "Redirecting..." : "Sign in with Microsoft" }}</span>
         </button>
 
         <p class="text-center text-xs leading-5 text-white/42">

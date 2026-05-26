@@ -175,32 +175,33 @@ async function handleSocialSignUp(providerId: string) {
 </script>
 
 <template>
-    <div v-if="!publicSignupEnabled" class="flex flex-col gap-4 text-center">
-        <h2 class="text-xl font-semibold text-surface-900 dark:text-surface-100">
-            Access is invitation-only
-        </h2>
-        <p class="text-sm leading-6 text-surface-500 dark:text-surface-400">
-            Factory Careers is limited to Factory staff and invited hiring collaborators. Sign in with Microsoft, or use the invitation link from your Factory administrator.
-        </p>
-        <NuxtLink
-            :to="
-                pendingInvitation
-                    ? $localePath({
-                          path: '/auth/sign-in',
-                          query: { invitation: pendingInvitation },
-                      })
-                    : $localePath('/auth/sign-in')
-            "
-            class="mt-2 rounded-md bg-brand-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-700"
-        >
-            Go to sign in
-        </NuxtLink>
-        <a
-            :href="useRuntimeConfig().public.marketingUrl"
-            class="text-sm text-brand-600 dark:text-brand-400 hover:underline"
-        >
-            Return to Factory
-        </a>
+    <div v-if="!publicSignupEnabled" class="space-y-5">
+        <div class="space-y-2">
+            <h2 class="text-xl font-light leading-tight text-white">
+                Access is invitation&#8209;only
+            </h2>
+            <p class="text-sm leading-6 text-white/56">
+                Factory Careers is limited to Factory staff and invited hiring collaborators. Use your Factory Microsoft account, or the invitation link from your administrator.
+            </p>
+        </div>
+
+        <div class="factory-auth-access-actions">
+            <NuxtLink
+                :to="
+                    pendingInvitation
+                        ? $localePath({
+                              path: '/auth/sign-in',
+                              query: { invitation: pendingInvitation },
+                          })
+                        : $localePath('/auth/sign-in')
+                "
+                data-slot="button"
+                data-hover-effect="slide"
+                class="factory-auth-slide-action inline-flex h-12 min-h-12 w-full items-center justify-center px-5 py-0 text-sm"
+            >
+                Go to sign in
+            </NuxtLink>
+        </div>
     </div>
 
     <form v-else class="flex flex-col gap-4" @submit.prevent="handleSignUp">

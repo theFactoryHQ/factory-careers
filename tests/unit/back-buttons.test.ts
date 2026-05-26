@@ -42,11 +42,13 @@ describe('back button hover treatment', () => {
     expect(allJobsLink).not.toContain('hover:text-white')
   })
 
-  it('uses white-fill hover for the auth header open positions back link', () => {
+  it('uses white-fill hover for the auth header open positions link without a back arrow', () => {
     const source = readSource('app/layouts/auth.vue')
     const openPositionsLink = elementContaining(source, 'NuxtLink', 'Open Positions')
 
     expect(openPositionsLink).toContain(expectedHover)
+    expect(source).not.toContain("import { ArrowLeft }")
+    expect(openPositionsLink).not.toContain('<ArrowLeft')
     expect(openPositionsLink).not.toContain('hover:text-brand-500')
   })
 
