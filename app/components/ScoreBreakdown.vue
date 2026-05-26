@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Brain, Sparkles, AlertTriangle, ChevronDown, ChevronUp, Loader2, BarChart3, RefreshCw } from 'lucide-vue-next'
 import { getScoreBarClass, getScoreTextClass } from '~/utils/status-display'
+import type { ScoringBand } from '~~/shared/scoring-bands'
 
 interface AiConfigOption {
   id: string
@@ -68,6 +69,7 @@ const scoringSummary = computed(() => {
   const summary = resolvedScoreData.value?.latestRun?.summary
   return typeof summary === 'string' ? summary.trim() : ''
 })
+const scoreBand = computed<ScoringBand | null>(() => resolvedScoreData.value?.scoreBand ?? null)
 const scoringSummaryFallback = 'No AI summary was stored for this score. Re-score to generate one.'
 
 function formatScoreRunDate(value: string | Date): string {
@@ -209,14 +211,17 @@ async function retryParse() {
           </div>
         </div>
 
-        <div class="flex items-baseline gap-2">
-          <span
-            class="text-3xl font-bold tabular-nums"
-            :class="getScoreTextClass(resolvedScoreData!.latestRun?.compositeScore ?? 0)"
-          >
-            {{ resolvedScoreData!.latestRun?.compositeScore ?? '—' }}
-          </span>
-          <span class="text-sm text-surface-400">/ 100</span>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-baseline gap-2">
+            <span
+              class="text-3xl font-bold tabular-nums"
+              :class="getScoreTextClass(resolvedScoreData!.latestRun?.compositeScore ?? 0)"
+            >
+              {{ resolvedScoreData!.latestRun?.compositeScore ?? '—' }}
+            </span>
+            <span class="text-sm text-surface-400">/ 100</span>
+          </div>
+          <ScoringBandBadge :band="scoreBand" />
         </div>
 
         <div class="mt-4">

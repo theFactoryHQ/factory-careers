@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { orgSettings } from '../../database/schema'
 import { hasPostgresErrorCode } from '../../utils/signupDomainAllowlist'
+import { DEFAULT_SCORING_BANDS, type ScoringBand } from '~~/shared/scoring-bands'
 
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { organization: ['read'] })
@@ -11,6 +12,7 @@ export default defineEventHandler(async (event) => {
     dateFormat: 'mdy' | 'dmy' | 'ymd'
     defaultSalaryUnit: string
     analysisContext?: string
+    scoringBands?: ScoringBand[]
     signupAllowedDomains?: string[]
     applicationComplianceEnabled?: boolean
     includeEeo?: boolean
@@ -26,6 +28,7 @@ export default defineEventHandler(async (event) => {
         dateFormat: true,
         defaultSalaryUnit: true,
         analysisContext: true,
+        scoringBands: true,
         signupAllowedDomains: true,
         applicationComplianceEnabled: true,
         includeEeo: true,
@@ -56,6 +59,7 @@ export default defineEventHandler(async (event) => {
     dateFormat: settings?.dateFormat ?? 'mdy',
     defaultSalaryUnit: settings?.defaultSalaryUnit ?? 'YEAR',
     analysisContext: settings?.analysisContext ?? '',
+    scoringBands: settings?.scoringBands ?? DEFAULT_SCORING_BANDS,
     signupAllowedDomains: settings?.signupAllowedDomains ?? [],
     applicationComplianceEnabled: settings?.applicationComplianceEnabled ?? true,
     includeEeo: settings?.includeEeo ?? true,

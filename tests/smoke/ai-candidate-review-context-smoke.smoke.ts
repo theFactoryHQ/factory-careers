@@ -109,7 +109,7 @@ describe('AI candidate review organization context smoke', () => {
           strengths: ['Shows care orientation.'],
           gaps: ['No evidence of relevance to Factory clients or services.'],
         }],
-        summary: 'The candidate is not aligned with the domain relevance needed for Factory client service work.',
+        summary: 'The materials provide limited evidence of experience with Factory client services, family office operations, private investment, media, entertainment, or founder support.',
       },
       usage: { promptTokens: 12, completionTokens: 8 },
     })
@@ -139,14 +139,18 @@ describe('AI candidate review organization context smoke', () => {
     expect(request.system).toContain('<organization_context>')
     expect(request.system).toContain('Factory is a multifamily office for athletes, entertainers, and founders')
     expect(request.system).toContain('</organization_context>')
-    expect(request.system).toContain('severely downrank')
+    expect(request.system).toContain('score relevance-based criteria low')
+    expect(request.system).toContain('Use HR-safe, job-related language throughout')
+    expect(request.system).toContain('Avoid absolute or pejorative phrasing')
+    expect(request.system).not.toContain('severely downrank')
     expect(request.prompt).toContain('Registered nurse seeking to help people')
 
     expect(result).toMatchObject({
       compositeScore: 10,
       analysisRunId: 'run_1',
-      summary: 'The candidate is not aligned with the domain relevance needed for Factory client service work.',
+      summary: 'The materials provide limited evidence of experience with Factory client services, family office operations, private investment, media, entertainment, or founder support.',
       usage: { promptTokens: 12, completionTokens: 8 },
     })
+    expect(String((result as { summary: string }).summary)).not.toMatch(/not aligned|complete lack|irrelevant|not qualified|obviously/i)
   })
 })

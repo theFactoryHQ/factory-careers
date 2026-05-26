@@ -9,7 +9,7 @@
  */
 import {
   Sparkles, Eye, EyeOff, ExternalLink, Loader2, Check,
-  Save, Zap, Star, AlertTriangle, ChevronDown,
+  Save, Zap, Star, AlertTriangle, ChevronDown, RefreshCw,
 } from 'lucide-vue-next'
 
 interface ModelInfo {
@@ -67,6 +67,12 @@ const emit = defineEmits<{
 const toast = useToast()
 
 const isEdit = computed(() => props.config !== null)
+const localProviders = ref<Record<string, ProviderInfo> | null>(props.providers)
+const availableProviders = computed(() => localProviders.value ?? props.providers)
+
+watch(() => props.providers, (providers) => {
+  localProviders.value = providers
+})
 
 const DEFAULT_MAX_TOKENS = 16384
 
@@ -84,9 +90,9 @@ const form = ref({
 })
 
 // When creating, pre-pick the first model of the default provider.
-if (!isEdit.value && props.providers) {
-  const provKey = props.providers.openai ? 'openai' : Object.keys(props.providers)[0] ?? 'openai'
-  const provInfo = props.providers[provKey]
+if (!isEdit.value && availableProviders.value) {
+  const provKey = availableProviders.value.openai ? 'openai' : Object.keys(availableProviders.value)[0] ?? 'openai'
+  const provInfo = availableProviders.value[provKey]
   const firstModel = provInfo?.models[0]
   form.value.provider = provKey
   if (firstModel) {
@@ -101,10 +107,11 @@ const showApiKey = ref(false)
 const showAdvanced = ref(false)
 const isSaving = ref(false)
 const isTesting = ref(false)
+const isRefreshingModels = ref(false)
 const testResult = ref<{ success: boolean, message?: string } | null>(null)
 
 const selectedProvider = computed<ProviderInfo | null>(() =>
-  props.providers?.[form.value.provider] ?? null,
+  availableProviders.value?.[form.value.provider] ?? null,
 )
 
 const selectedModel = computed<ModelInfo | null>(() =>
@@ -138,7 +145,7 @@ function onModelSelect(modelId: string) {
 
 function pickProvider(key: string) {
   form.value.provider = key
-  const first = props.providers?.[key]?.models[0]
+  const first = availableProviders.value?.[key]?.models[0]
   if (first) {
     pickModel(first)
   }
@@ -146,6 +153,42 @@ function pickProvider(key: string) {
     form.value.model = ''
     form.value.inputPricePer1m = null
     form.value.outputPricePer1m = null
+  }
+}
+
+async function refreshModelCatalog() {
+  isRefreshingModels.value = true
+  try {
+    const result = await $fetch<{
+      providers: Record<string, ProviderInfo>
+      refreshedProviders: Array<{ provider: string, modelCount: number }>
+      errors: Array<{ provider: string, message: string }>
+    }>('/api/ai-config/providers/refresh', {
+      method: 'POST',
+      body: { force: true },
+      headers: useRequestHeaders(['cookie']),
+    })
+    localProviders.value = result.providers
+
+    if (result.refreshedProviders.length > 0) {
+      toast.success(
+        'Model catalog refreshed',
+        `${result.refreshedProviders.length} provider${result.refreshedProviders.length === 1 ? '' : 's'} updated.`,
+      )
+    }
+    else if (result.errors.length > 0) {
+      toast.error('Refresh did not complete', { message: result.errors[0]?.message ?? 'No provider models were refreshed.' })
+    }
+    else {
+      toast.info('No providers refreshed', 'Add a provider API key before refreshing the model catalog.')
+    }
+  }
+  catch (err: any) {
+    const message = err?.data?.statusMessage ?? err?.message ?? 'Failed to refresh model catalog.'
+    toast.error('Refresh failed', { message })
+  }
+  finally {
+    isRefreshingModels.value = false
   }
 }
 
@@ -299,7 +342,7 @@ function providerShortName(key: string, name: string) {
         </header>
         <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <button
-            v-for="(info, key) in providers ?? {}"
+            v-for="(info, key) in availableProviders ?? {}"
             :key="key"
             type="button"
             class="ui-selectable-panel flex h-20 flex-col items-center justify-center gap-2 px-2 text-center"
@@ -324,15 +367,28 @@ function providerShortName(key: string, name: string) {
           <div>
             <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">Model</h2>
           </div>
-          <a
-            v-if="selectedProvider.modelsUrl"
-            :href="selectedProvider.modelsUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline shrink-0"
-          >
-            Browse all <ExternalLink class="size-3" />
-          </a>
+          <div class="flex flex-wrap items-center justify-end gap-2">
+            <button
+              v-if="!isEdit"
+              type="button"
+              :disabled="isRefreshingModels"
+              class="ui-button ui-button-secondary h-8 px-3 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="refreshModelCatalog"
+            >
+              <Loader2 v-if="isRefreshingModels" class="size-3.5 animate-spin" />
+              <RefreshCw v-else class="size-3.5" />
+              Refresh models
+            </button>
+            <a
+              v-if="selectedProvider.modelsUrl"
+              :href="selectedProvider.modelsUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline shrink-0"
+            >
+              Browse all <ExternalLink class="size-3" />
+            </a>
+          </div>
         </header>
 
         <div v-if="selectedProvider.models.length" class="space-y-2">
