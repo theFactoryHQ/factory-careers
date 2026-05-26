@@ -5,6 +5,7 @@
  * Credentials are decrypted per-request from the organization's AI config.
  * Never logs or stores raw API keys — only encrypted values in the database.
  */
+import { appendFile } from 'node:fs/promises'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
@@ -221,6 +222,45 @@ export async function generateStructuredOutput<T>(
     schemaDescription?: string
   },
 ): Promise<{ object: T; usage: { promptTokens: number; completionTokens: number } }> {
+  if (env.FACTORY_AI_TEST_MODE === 'mock') {
+    if (env.FACTORY_AI_CAPTURE_PATH) {
+      await appendFile(
+        env.FACTORY_AI_CAPTURE_PATH,
+        `${JSON.stringify({
+          provider: config.provider,
+          model: config.model,
+          schemaName: options.schemaName,
+          system: options.system,
+          prompt: options.prompt,
+        })}\n`,
+        'utf8',
+      )
+    }
+
+    if (options.schemaName === 'CandidateScoring') {
+      return {
+        object: {
+          evaluations: [{
+            criterionKey: 'domain_relevance',
+            maxScore: 10,
+            applicantScore: 9,
+            confidence: 96,
+            evidence: 'The resume cites work with athletes, entertainers, founders, media, and investments.',
+            strengths: ['Direct Factory-domain client experience is present.'],
+            gaps: ['No material gaps were identified in the provided E2E fixture.'],
+          }],
+          summary: 'Deterministic E2E review: strong Factory-domain alignment for this candidate.',
+        } as T,
+        usage: { promptTokens: 101, completionTokens: 29 },
+      }
+    }
+
+    throw createError({
+      statusCode: 422,
+      statusMessage: `No deterministic AI mock response configured for schema: ${options.schemaName}`,
+    })
+  }
+
   if (config.baseUrl) {
     await assertSafeServerSideUrl(config.baseUrl)
   }
