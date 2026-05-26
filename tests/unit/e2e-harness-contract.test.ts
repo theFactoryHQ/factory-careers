@@ -213,6 +213,7 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('name: Playwright SSO')
     expect(workflow).toContain('npm run test:e2e:sso')
     expect(workflow).toContain('BETTER_AUTH_TRUSTED_ORIGINS: http://127.0.0.1:3333,http://127.0.0.1:3999')
+    expect(workflow).toContain('E2E_SSO_MOCK_PORT: "3999"')
     expect(workflow).not.toContain('OIDC_CLIENT_SECRET: ${{ secrets')
     expect(workflow).toContain('needs.sso.result')
     expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, auth_org, rbac, sso]')
@@ -284,7 +285,9 @@ describe('Playwright E2E harness contract', () => {
     expect(config).toContain('workers: process.env.CI ? 2 : undefined')
     expect(config).toContain('trace: process.env.CI ?')
     expect(config).toContain('FEATURE_FLAG_CHATBOT_EXPERIENCE=true')
-    expect(config).toContain('BETTER_AUTH_TRUSTED_ORIGINS=http://127.0.0.1:3333,http://127.0.0.1:3999')
+    expect(config).toContain("const ssoMockPort = process.env.E2E_SSO_MOCK_PORT ?? '3999'")
+    expect(config).toContain('BETTER_AUTH_TRUSTED_ORIGINS=http://127.0.0.1:3333,http://127.0.0.1:${ssoMockPort}')
+    expect(config).toContain('E2E_SSO_MOCK_PORT=${ssoMockPort}')
     expect(config).not.toContain('tests share state')
   })
 

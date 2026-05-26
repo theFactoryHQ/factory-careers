@@ -986,6 +986,7 @@ jobs:
       BETTER_AUTH_SECRET: ci-e2e-auth-secret-with-at-least-32-chars
       BETTER_AUTH_URL: http://127.0.0.1:3333
       BETTER_AUTH_TRUSTED_ORIGINS: http://127.0.0.1:3333,http://127.0.0.1:3999
+      E2E_SSO_MOCK_PORT: "3999"
       NUXT_PUBLIC_SITE_URL: http://127.0.0.1:3333
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:3333
       FACTORY_DISABLE_PUBLIC_SIGNUP: "false"

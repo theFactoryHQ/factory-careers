@@ -7,9 +7,20 @@ type MockOidcIssuer = {
   close: () => Promise<void>
 }
 
+function getMockOidcIssuerPort(): number {
+  const rawPort = process.env.E2E_SSO_MOCK_PORT ?? '3999'
+  const port = Number(rawPort)
+
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`E2E_SSO_MOCK_PORT must be an integer from 1 to 65535; received ${JSON.stringify(rawPort)}`)
+  }
+
+  return port
+}
+
 async function startMockOidcIssuer(): Promise<MockOidcIssuer> {
   let server: Server
-  const port = 3999
+  const port = getMockOidcIssuerPort()
 
   server = createServer((req, res) => {
     const address = server.address() as AddressInfo
@@ -47,9 +58,16 @@ async function startMockOidcIssuer(): Promise<MockOidcIssuer> {
   })
 
   await new Promise<void>((resolve, reject) => {
-    server.once('error', reject)
+    server.once('error', (error: NodeJS.ErrnoException) => {
+      if (error.code === 'EADDRINUSE') {
+        reject(new Error(`Mock OIDC issuer could not bind to 127.0.0.1:${port}. Set E2E_SSO_MOCK_PORT to an available port and include it in BETTER_AUTH_TRUSTED_ORIGINS.`))
+        return
+      }
+
+      reject(error)
+    })
     server.listen(port, '127.0.0.1', () => {
-      server.off('error', reject)
+      server.removeAllListeners('error')
       resolve()
     })
   })
