@@ -1,0 +1,223 @@
+import { randomUUID } from 'node:crypto'
+import { type Browser, type Page } from '@playwright/test'
+import postgres from 'postgres'
+import { test, expect } from '../fixtures'
+
+interface SignedInOrg {
+  page: Page
+  userId: string
+  organizationId: string
+  close: () => Promise<void>
+}
+
+async function lookupMembership(email: string, organizationName: string) {
+  expect(process.env.DATABASE_URL, 'DATABASE_URL is required for RBAC e2e membership lookup').toBeTruthy()
+  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
+
+  try {
+    const [membership] = await sql<{ userId: string, organizationId: string }[]>`
+      select u.id as "userId", o.id as "organizationId"
+      from "user" u
+      inner join "member" m on m."user_id" = u.id
+      inner join "organization" o on o.id = m."organization_id"
+      where u.email = ${email} and o.name = ${organizationName}
+      limit 1
+    `
+
+    expect(membership, `expected ${email} to belong to ${organizationName}`).toBeTruthy()
+    return membership
+  }
+  finally {
+    await sql.end()
+  }
+}
+
+async function signUpWithOrg(browser: Browser, label: string): Promise<SignedInOrg> {
+  const context = await browser.newContext()
+  const page = await context.newPage()
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const account = {
+    name: `RBAC ${label} ${id}`,
+    email: `rbac-${label}-${id}@test.local`,
+    password: 'TestPassword123!',
+    orgName: `RBAC ${label} Org ${id}`,
+  }
+
+  await page.goto('/auth/sign-up')
+  await page.waitForLoadState('networkidle')
+  await page.getByLabel('Name').fill(account.name)
+  await page.getByLabel('Email').fill(account.email)
+  await page.getByLabel('Password', { exact: true }).fill(account.password)
+  await page.getByLabel('Confirm password').fill(account.password)
+
+  await Promise.all([
+    page.waitForResponse(
+      resp => resp.url().includes('/api/auth/sign-up') && resp.status() === 200,
+      { timeout: 30_000 },
+    ),
+    page.getByRole('button', { name: 'Sign up' }).click(),
+  ])
+
+  await page.waitForURL(
+    url => url.pathname.includes('/onboarding/') || url.pathname.includes('/auth/sign-in'),
+    { waitUntil: 'commit', timeout: 30_000 },
+  )
+
+  if (page.url().includes('/auth/sign-in')) {
+    await page.waitForLoadState('networkidle')
+    await page.getByLabel('Email').fill(account.email)
+    await page.getByLabel('Password').fill(account.password)
+
+    await Promise.all([
+      page.waitForResponse(
+        resp => resp.url().includes('/api/auth/sign-in') && resp.status() === 200,
+        { timeout: 30_000 },
+      ),
+      page.getByRole('button', { name: 'Sign in' }).click(),
+    ])
+
+    await page.waitForURL('**/onboarding/**', { waitUntil: 'commit', timeout: 30_000 })
+  }
+
+  await page.getByLabel('Organization name').waitFor({ state: 'visible', timeout: 30_000 })
+  await page.getByLabel('Organization name').fill(account.orgName)
+  await page.getByRole('button', { name: 'Create organization' }).click()
+  await page.waitForURL('**/dashboard**', { waitUntil: 'commit' })
+
+  const membership = await lookupMembership(account.email, account.orgName)
+
+  return {
+    page,
+    userId: membership.userId,
+    organizationId: membership.organizationId,
+    close: () => context.close(),
+  }
+}
+
+async function grantOrganizationRole(userId: string, organizationId: string, role: 'admin' | 'member') {
+  expect(process.env.DATABASE_URL, 'DATABASE_URL is required for RBAC role grant').toBeTruthy()
+  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
+
+  try {
+    await sql.begin(async (tx) => {
+      await tx`
+        insert into "member" ("id", "user_id", "organization_id", "role")
+        values (${randomUUID()}, ${userId}, ${organizationId}, ${role})
+        on conflict ("user_id", "organization_id")
+        do update set "role" = ${role}
+      `
+
+      await tx`
+        update "session"
+        set "active_organization_id" = ${organizationId}, "updated_at" = now()
+        where "user_id" = ${userId}
+      `
+    })
+  }
+  finally {
+    await sql.end()
+  }
+}
+
+test.describe('RBAC role permissions', () => {
+  test('member UI restrictions agree with direct API authorization while owner actions still work', async ({ authenticatedPage, testAccount, browser }, testInfo) => {
+    const ownerPage = authenticatedPage
+    const ownerMembership = await lookupMembership(testAccount.email, testAccount.orgName)
+    const member = await signUpWithOrg(browser, `member-${testInfo.workerIndex}`)
+
+    try {
+      await grantOrganizationRole(member.userId, ownerMembership.organizationId, 'member')
+
+      const memberApi = member.page.context().request
+      const ownerApi = ownerPage.context().request
+      const origin = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:13000'
+
+      const activeOrgResponse = await memberApi.post('/api/auth/organization/set-active', {
+        headers: { origin },
+        data: { organizationId: ownerMembership.organizationId },
+      })
+      expect(activeOrgResponse.status()).toBe(200)
+
+      await ownerPage.goto('/dashboard/settings/members')
+      await expect(ownerPage.getByRole('heading', { name: 'Members', exact: true })).toBeVisible()
+      await expect(ownerPage.getByRole('button', { name: 'Invite team member' })).toBeVisible()
+      await expect(ownerPage.getByRole('button', { name: 'New Job' }).first()).toBeVisible()
+
+      const jobResponse = await ownerApi.post('/api/jobs', {
+        data: {
+          title: `RBAC Browser Role ${Date.now()}`,
+          description: 'Owner-created job for RBAC browser coverage',
+          location: 'Remote',
+          type: 'full_time',
+          requireResume: false,
+        },
+      })
+      expect(jobResponse.status()).toBe(201)
+      const job = await jobResponse.json()
+
+      const candidateResponse = await ownerApi.post('/api/candidates', {
+        data: {
+          firstName: 'Robin',
+          lastName: 'Rolecheck',
+          email: `robin-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`,
+          phone: '+1 555 0177',
+        },
+      })
+      expect(candidateResponse.status()).toBe(201)
+      const candidate = await candidateResponse.json()
+
+      const applicationResponse = await ownerApi.post('/api/applications', {
+        data: {
+          candidateId: candidate.id,
+          jobId: job.id,
+          notes: 'RBAC browser fixture',
+        },
+      })
+      expect(applicationResponse.status()).toBe(201)
+      const application = await applicationResponse.json()
+
+      await member.page.goto('/dashboard/settings/members')
+      await expect(member.page.getByRole('heading', { name: 'Members', exact: true })).toBeVisible()
+      await expect(member.page.getByRole('button', { name: 'Invite team member' })).toHaveCount(0)
+      await expect(member.page.getByRole('button', { name: 'New Job' })).toHaveCount(0)
+
+      await member.page.goto('/dashboard/jobs/new')
+      await expect(member.page.getByText("You don't have permission to create jobs.")).toBeVisible()
+      await expect(member.page.getByRole('button', { name: 'Save Draft' })).toHaveCount(0)
+
+      const forbiddenJobResponse = await memberApi.post('/api/jobs', {
+        data: {
+          title: 'Member should not create jobs',
+          description: 'RBAC denial fixture',
+          location: 'Remote',
+          type: 'full_time',
+        },
+      })
+      expect(forbiddenJobResponse.status()).toBe(403)
+
+      const forbiddenInviteResponse = await memberApi.post('/api/invite-links', {
+        data: { role: 'member', expiresInHours: 24, maxUses: 1 },
+      })
+      expect(forbiddenInviteResponse.status()).toBe(403)
+
+      const memberApplicationsResponse = await memberApi.get('/api/applications')
+      expect(memberApplicationsResponse.status()).toBe(200)
+      expect(JSON.stringify(await memberApplicationsResponse.json())).toContain(application.id)
+
+      await member.page.goto('/dashboard/applications')
+      await expect(member.page.getByRole('heading', { name: 'Applications' })).toBeVisible()
+      await expect(member.page.getByText('Robin Rolecheck')).toBeVisible()
+
+      const crossOrgResponse = await memberApi.post('/api/auth/organization/set-active', {
+        headers: { origin },
+        data: { organizationId: member.organizationId },
+      })
+      expect(crossOrgResponse.status()).toBe(200)
+      const hiddenApplicationResponse = await memberApi.get(`/api/applications/${application.id}`)
+      expect(hiddenApplicationResponse.status()).toBe(404)
+    }
+    finally {
+      await member.close()
+    }
+  })
+})

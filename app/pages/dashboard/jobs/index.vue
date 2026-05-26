@@ -19,6 +19,7 @@ useSeoMeta({
 
 const { activeOrg } = useCurrentOrg()
 const localePath = useLocalePath()
+const { allowed: canCreateJob } = usePermission({ job: ['create'] })
 
 // ─────────────────────────────────────────────
 // Stage config for clickable pipeline counts
@@ -413,6 +414,7 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           Create your first job posting to start receiving and managing candidates.
         </p>
         <NuxtLink
+          v-if="canCreateJob"
           :to="$localePath('/dashboard/jobs/new')"
           class="factory-button-cta factory-button-premium inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-colors no-underline"
         >
