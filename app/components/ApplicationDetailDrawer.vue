@@ -63,11 +63,14 @@ const { isEditingNotes, notesInput, isSavingNotes, notesSaveStatus, notesTextare
 
 async function scoreCurrentApplication() {
   if (!application.value) return
-  await scoreApplicationCandidate(props.applicationId, {
-    refresh,
+  const result = await scoreApplicationCandidate(props.applicationId, {
+    refreshApplication: false,
     jobId: application.value.job.id,
     source: 'application_detail_drawer',
   })
+  if (result && application.value) {
+    application.value.score = result.compositeScore
+  }
   await refreshScoring()
 }
 
