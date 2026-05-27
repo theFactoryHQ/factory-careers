@@ -92,11 +92,13 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:candidate']).toBe(
-      'playwright test e2e/critical-flows/candidate-application.spec.ts',
+      'FEATURE_FLAG_LANGUAGE_SUPPORT=true FACTORY_EMAIL_TEST_MODE=capture FACTORY_EMAIL_CAPTURE_PATH=/tmp/factory-careers-e2e-candidate-email.jsonl FACTORY_CAREERS_HIRING_INBOX=hiring-e2e@example.com playwright test e2e/critical-flows/candidate-application.spec.ts e2e/critical-flows/public-localization.spec.ts',
     )
     expect(workflow).toContain('name: Playwright candidate')
     expect(workflow).toContain('npm run test:e2e:candidate')
     expect(workflow).toContain('factory-careers-candidate-minio')
+    expect(read('e2e/critical-flows/public-localization.spec.ts')).toContain('FEATURE_FLAG_LANGUAGE_SUPPORT')
+    expect(read('e2e/critical-flows/public-localization.spec.ts')).toContain('FACTORY_EMAIL_TEST_MODE')
     expect(workflow).toContain('needs.candidate.result')
   })
 

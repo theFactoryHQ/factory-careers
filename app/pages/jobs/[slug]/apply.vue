@@ -9,6 +9,7 @@ definePageMeta({
 
 const route = useRoute()
 const jobSlug = route.params.slug as string
+const localePath = useLocalePath()
 const { track } = useTrack()
 
 // Capture source tracking params from the URL
@@ -426,7 +427,7 @@ async function handleSubmit() {
     }
 
     track('application_submitted', { slug: jobSlug })
-    await navigateTo(`/jobs/${jobSlug}/confirmation`)
+    await navigateTo(localePath(`/jobs/${jobSlug}/confirmation`))
   } catch (err: any) {
     const message = err.data?.statusMessage ?? 'Something went wrong. Please try again.'
     submitError.value = message
