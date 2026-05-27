@@ -9,6 +9,7 @@ import { assertUploadContentLength } from '../../../../utils/uploadLimits'
 import { readPositiveIntegerEnv } from '../../../../utils/rateLimitConfig'
 import { detectAllowedDocumentMimeType } from '../../../../utils/documentMime'
 import { isBuiltInLocationQuestion } from '~~/shared/built-in-application-fields'
+import { isRequiredCustomQuestionAnswered } from '~~/shared/custom-question-validation'
 import {
   MAX_FILE_SIZE,
   MAX_DOCUMENTS_PER_CANDIDATE,
@@ -294,23 +295,16 @@ export default defineEventHandler(async (event) => {
   })
   const questions = rawQuestions.filter((q) => !isBuiltInLocationQuestion(q))
 
-  const requiredQuestionIds = questions
+  const responseValuesByQuestionId = new Map(responseArray.map((r) => [r.questionId, r.value]))
+
+  const unanswered = questions
     .filter((q) => q.required)
+    .filter((q) => !isRequiredCustomQuestionAnswered(
+      q.type,
+      responseValuesByQuestionId.get(q.id),
+      uploadedFiles.has(q.id),
+    ))
     .map((q) => q.id)
-
-  // Check required non-file questions are answered
-  const answeredIds = new Set(responseArray.map((r) => r.questionId))
-
-  // For file_upload questions, check if files were provided
-  const fileQuestions = questions.filter((q) => q.type === 'file_upload')
-  const fileQuestionIds = new Set(fileQuestions.map((q) => q.id))
-
-  const unanswered = requiredQuestionIds.filter((id) => {
-    if (fileQuestionIds.has(id)) {
-      return !uploadedFiles.has(id)
-    }
-    return !answeredIds.has(id)
-  })
 
   if (unanswered.length > 0) {
     const unansweredLabels = questions
@@ -325,6 +319,7 @@ export default defineEventHandler(async (event) => {
 
   // Filter out responses for questions that don't belong to this job
   const validQuestionIds = new Set(questions.map((q) => q.id))
+  const fileQuestionIds = new Set(questions.filter((q) => q.type === 'file_upload').map((q) => q.id))
   const validResponses = responseArray.filter((r) => validQuestionIds.has(r.questionId))
 
   // ─────────────────────────────────────────────
