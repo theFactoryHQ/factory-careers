@@ -34,24 +34,27 @@ describe('mutating Playwright E2E safety', () => {
     })
   })
 
-  it('blocks known production app hostnames even when no database is configured', () => {
+  it.each([
+    'https://thefactoryhq.com',
+    'https://www.thefactoryhq.com',
+    'https://careers.thefactoryhq.com',
+  ])('blocks known production app hostname %s even when no database is configured', (url) => {
     expect(() => assertMutatingE2ESafety({
-      env: { PLAYWRIGHT_BASE_URL: 'https://careers.thefactoryhq.com' },
+      env: { PLAYWRIGHT_BASE_URL: url },
       includeProcessEnv: false,
       readDotenv: false,
     })).toThrow(/PLAYWRIGHT_BASE_URL.*production/i)
   })
 
-  it('does not classify lookalike database hostnames as Supabase hosts', () => {
+  it('blocks remote database hostnames even when they are not Supabase', () => {
     expect(() => assertMutatingE2ESafety({
       env: {
         PLAYWRIGHT_BASE_URL: 'http://127.0.0.1:3333',
         DATABASE_URL: 'postgresql://factory:factory@not-supabase.com:5432/factory_careers_e2e',
-        E2E_ALLOW_REMOTE_DATABASE: 'true',
       },
       includeProcessEnv: false,
       readDotenv: false,
-    })).not.toThrow()
+    })).toThrow(/DATABASE_URL must be local\/disposable/i)
   })
 
   it('allows local app and local database targets', () => {
