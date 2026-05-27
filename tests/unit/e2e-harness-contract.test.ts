@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 const root = process.cwd()
 const emptyCatchPattern = /\.catch\s*\(\s*(?:\([^)]*\)|[$A-Z_a-z][$\w]*)\s*=>\s*\{\s*\}\s*\)/m
+const e2eRequiredNeeds = 'needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review, production_session]'
 
 function read(path: string): string {
   return readFileSync(join(root, path), 'utf8')
@@ -80,7 +81,7 @@ describe('Playwright E2E harness contract', () => {
 
     expect(workflow).toContain('name: Playwright UI')
     expect(workflow).toContain('npm run test:e2e:ui')
-    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review]')
+    expect(workflow).toContain(e2eRequiredNeeds)
     expect(workflow).toContain('needs.ui.result')
   })
 
@@ -164,7 +165,7 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('npm run test:e2e:tracking-analytics')
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "true"')
     expect(workflow).toContain('needs.tracking_analytics.result')
-    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review]')
+    expect(workflow).toContain(e2eRequiredNeeds)
   })
 
   it('runs interview scheduling lifecycle browser coverage in a dedicated CI lane', () => {
@@ -185,7 +186,7 @@ describe('Playwright E2E harness contract', () => {
     expect(read('e2e/critical-flows/interview-invitation-response.spec.ts')).toContain('FACTORY_EMAIL_TEST_MODE')
     expect(read('e2e/critical-flows/interview-template-management.spec.ts')).toContain('FACTORY_EMAIL_TEST_MODE')
     expect(workflow).toContain('needs.interviews.result')
-    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review]')
+    expect(workflow).toContain(e2eRequiredNeeds)
   })
 
   it('runs calendar integration browser coverage against a deterministic mock provider', () => {
@@ -205,7 +206,7 @@ describe('Playwright E2E harness contract', () => {
     expect(calendarJob).not.toContain('MICROSOFT_CALENDAR_CLIENT_SECRET')
     expect(read('e2e/critical-flows/calendar-integration.spec.ts')).toContain('FACTORY_CALENDAR_TEST_MODE')
     expect(workflow).toContain('needs.calendar.result')
-    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review]')
+    expect(workflow).toContain(e2eRequiredNeeds)
   })
 
   it('runs auth and organization edge-flow browser coverage in a dedicated CI lane', () => {
@@ -221,7 +222,7 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('npm run test:e2e:auth-org')
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "true"')
     expect(workflow).toContain('needs.auth_org.result')
-    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review]')
+    expect(workflow).toContain(e2eRequiredNeeds)
   })
 
   it('runs role-permission browser coverage in a dedicated CI lane', () => {
@@ -237,7 +238,7 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('npm run test:e2e:rbac')
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "true"')
     expect(workflow).toContain('needs.rbac.result')
-    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review]')
+    expect(workflow).toContain(e2eRequiredNeeds)
   })
 
   it('runs SSO domain provisioning browser coverage against local-only IdP origins', () => {
@@ -255,7 +256,7 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('E2E_SSO_MOCK_PORT: "3999"')
     expect(workflow).not.toContain('OIDC_CLIENT_SECRET: ${{ secrets')
     expect(workflow).toContain('needs.sso.result')
-    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review]')
+    expect(workflow).toContain(e2eRequiredNeeds)
   })
 
   it('runs AI candidate-review browser coverage against a deterministic mock provider', () => {
@@ -275,7 +276,7 @@ describe('Playwright E2E harness contract', () => {
     expect(read('e2e/critical-flows/ai-candidate-review.spec.ts')).toContain('FACTORY_AI_TEST_MODE')
     expect(read('e2e/critical-flows/ai-config-lifecycle.spec.ts')).toContain('FACTORY_AI_TEST_MODE')
     expect(workflow).toContain('needs.ai_review.result')
-    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review]')
+    expect(workflow).toContain(e2eRequiredNeeds)
   })
 
   it('runs resume upload browser coverage in a dedicated local-storage CI lane', () => {
@@ -291,7 +292,7 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('npm run test:e2e:uploads')
     expect(workflow).toContain('factory-careers-uploads-minio')
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "false"')
-    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review]')
+    expect(workflow).toContain(e2eRequiredNeeds)
   })
 
   it('runs core tenant/document/RBAC security checks in CI', () => {
@@ -316,11 +317,30 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('needs.security-extended.result')
   })
 
+  it('runs production-build session cache coverage in a dedicated CI lane', () => {
+    const workflow = read('.github/workflows/e2e-tests.yml')
+    const packageJson = JSON.parse(read('package.json')) as {
+      scripts?: Record<string, string>
+    }
+
+    expect(packageJson.scripts?.['test:e2e:production-session']).toBe(
+      'playwright test --config playwright.production.config.ts e2e/critical-flows/production-session-cache.spec.ts --workers=1',
+    )
+    expect(workflow).toContain('name: Playwright production session')
+    expect(workflow).toContain('npm run test:e2e:production-session')
+    expect(workflow).toContain('PLAYWRIGHT_BASE_URL: http://127.0.0.1:3334')
+    expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "true"')
+    expect(read('playwright.production.config.ts')).toContain('node .output/server/index.mjs')
+    expect(read('e2e/critical-flows/production-session-cache.spec.ts')).toContain('/api/dashboard/stats')
+    expect(workflow).toContain('needs.production_session.result')
+    expect(workflow).toContain(e2eRequiredNeeds)
+  })
+
   it('keeps the branch-protection E2E status as an aggregate of the split jobs', () => {
     const workflow = read('.github/workflows/e2e-tests.yml')
 
     expect(workflow).toContain('name: Playwright E2E')
-    expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review]')
+    expect(workflow).toContain(e2eRequiredNeeds)
     expect(workflow).toContain('needs.smoke.result')
     expect(workflow).toContain('needs.security-core.result')
     expect(workflow).toContain('needs.security-extended.result')
@@ -335,6 +355,7 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('needs.auth_org.result')
     expect(workflow).toContain('needs.rbac.result')
     expect(workflow).toContain('needs.sso.result')
+    expect(workflow).toContain('needs.production_session.result')
   })
 
   it('keeps Playwright parallel-ready for independent smoke specs', () => {
