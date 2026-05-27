@@ -1,4 +1,5 @@
 import { test, expect, selectFactorySelectOption } from '../fixtures'
+import { advanceToSubmitButton } from '../helpers/application-form'
 
 type JobResponse = {
   id: string
@@ -63,42 +64,49 @@ test.describe('Public localization flow', () => {
     const candidateContext = await browser.newContext()
     const candidatePage = await candidateContext.newPage()
 
-    await candidatePage.goto('/jobs?i18nTest=1')
-    await expect(candidatePage.getByTestId('i18n-probe')).toHaveText('Language')
-    await expect(candidatePage.getByRole('link', { name: jobTitle })).toBeVisible({ timeout: 15_000 })
+    try {
+      await candidatePage.goto('/jobs?i18nTest=1')
+      await expect(candidatePage.getByTestId('i18n-probe')).toHaveText('Language')
+      await expect(candidatePage.getByRole('link', { name: jobTitle })).toBeVisible({ timeout: 15_000 })
 
-    await candidatePage.goto(`/es/jobs/${publishedJob.slug}?i18nTest=1`)
-    await expect(candidatePage.getByTestId('i18n-probe')).toHaveText('Idioma')
-    await expect(candidatePage.getByRole('heading', { name: jobTitle })).toBeVisible()
-    await expect(candidatePage.getByText(new Intl.NumberFormat('es', {
-      style: 'currency',
-      currency: 'EUR',
-      maximumFractionDigits: 0,
-    }).format(45_000), { exact: false })).toBeVisible()
+      await candidatePage.goto(`/es/jobs/${publishedJob.slug}?i18nTest=1`)
+      await expect(candidatePage.getByTestId('i18n-probe')).toHaveText('Idioma')
+      await expect(candidatePage.getByRole('heading', { name: jobTitle })).toBeVisible()
+      await expect(candidatePage.getByText(new Intl.NumberFormat('es', {
+        style: 'currency',
+        currency: 'EUR',
+        maximumFractionDigits: 0,
+      }).format(45_000), { exact: false })).toBeVisible()
 
-    await candidatePage.getByRole('link', { name: 'Apply Now' }).first().click()
-    await candidatePage.waitForURL(`**/es/jobs/${publishedJob.slug}/apply**`, { waitUntil: 'commit', timeout: 15_000 })
-    await expect(candidatePage.getByRole('heading', { name: jobTitle })).toBeVisible()
+      await candidatePage.getByRole('link', { name: 'Apply Now' }).first().click()
+      await candidatePage.waitForURL(`**/es/jobs/${publishedJob.slug}/apply**`, { waitUntil: 'commit', timeout: 15_000 })
+      await candidatePage.waitForLoadState('networkidle')
+      await expect(candidatePage.getByRole('heading', { name: jobTitle })).toBeVisible()
 
-    const applyResponse = await candidatePage.request.post(`/api/public/jobs/${publishedJob.slug}/apply`, {
-      data: {
-        firstName: applicant.firstName,
-        lastName: applicant.lastName,
-        email: applicant.email,
-        country: 'United States',
-        state: 'CA',
-      },
-    })
-    expect(applyResponse.status(), `Apply API returned ${applyResponse.status()}`).toBe(201)
+      await candidatePage.getByLabel('First name').fill(applicant.firstName)
+      await candidatePage.getByLabel('Last name').fill(applicant.lastName)
+      await candidatePage.getByLabel('Email').fill(applicant.email)
+      await selectFactorySelectOption(candidatePage, /Country/, 'United States')
+      await selectFactorySelectOption(candidatePage, /State/, 'California')
 
-    await candidatePage.goto(`/es/jobs/${publishedJob.slug}/confirmation`)
-    await candidatePage.waitForURL(`**/es/jobs/${publishedJob.slug}/confirmation`, {
-      waitUntil: 'commit',
-      timeout: 15_000,
-    })
-    await expect(candidatePage.getByRole('heading', { name: 'Application submitted' })).toBeVisible()
-    await expect(candidatePage.getByRole('link', { name: 'Browse more positions' })).toHaveAttribute('href', '/es/jobs')
+      const submitButton = await advanceToSubmitButton(candidatePage)
+      const [applyResponse] = await Promise.all([
+        candidatePage.waitForResponse(
+          resp => resp.url().includes(`/api/public/jobs/${publishedJob.slug}/apply`) && resp.request().method() === 'POST',
+          { timeout: 30_000 },
+        ),
+        submitButton.click(),
+      ])
+      expect(applyResponse.status(), `Apply API returned ${applyResponse.status()}`).toBe(201)
 
-    await candidateContext.close()
+      await candidatePage.waitForURL(`**/es/jobs/${publishedJob.slug}/confirmation`, {
+        waitUntil: 'commit',
+        timeout: 15_000,
+      })
+      await expect(candidatePage.getByRole('heading', { name: 'Application submitted' })).toBeVisible()
+      await expect(candidatePage.getByRole('link', { name: 'Browse more positions' })).toHaveAttribute('href', '/es/jobs')
+    } finally {
+      await candidateContext.close()
+    }
   })
 })
