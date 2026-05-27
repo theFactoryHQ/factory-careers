@@ -106,7 +106,7 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:recruiter']).toBe(
-      'playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts e2e/critical-flows/application-saved-views.spec.ts e2e/critical-flows/application-custom-properties.spec.ts',
+      'playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts e2e/critical-flows/application-saved-views.spec.ts e2e/critical-flows/application-custom-properties.spec.ts e2e/critical-flows/candidate-custom-properties.spec.ts',
     )
     expect(workflow).toContain('name: Playwright recruiter')
     expect(workflow).toContain('npm run test:e2e:recruiter')
