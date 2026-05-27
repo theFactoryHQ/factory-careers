@@ -43,7 +43,7 @@
     "test:e2e:tracking-analytics": "playwright test e2e/critical-flows/tracking-analytics.spec.ts",
     "test:e2e:interviews": "playwright test e2e/critical-flows/interview-lifecycle.spec.ts e2e/critical-flows/interview-invitation-response.spec.ts e2e/critical-flows/interview-template-management.spec.ts --workers=1",
     "test:e2e:calendar": "FACTORY_CALENDAR_TEST_MODE=mock playwright test e2e/critical-flows/calendar-integration.spec.ts",
-    "test:e2e:auth-org": "FACTORY_EMAIL_TEST_MODE=capture FACTORY_EMAIL_CAPTURE_PATH=/tmp/factory-careers-e2e-auth-org-email.jsonl playwright test e2e/critical-flows/auth-org-edge-flows.spec.ts e2e/critical-flows/organization-settings.spec.ts e2e/critical-flows/org-admin-membership.spec.ts",
+    "test:e2e:auth-org": "FACTORY_EMAIL_TEST_MODE=capture FACTORY_EMAIL_CAPTURE_PATH=/tmp/factory-careers-e2e-auth-org-email.jsonl playwright test e2e/critical-flows/auth-org-edge-flows.spec.ts e2e/critical-flows/organization-settings.spec.ts e2e/critical-flows/org-admin-membership.spec.ts e2e/critical-flows/device-authorization.spec.ts",
     "test:e2e:rbac": "playwright test e2e/critical-flows/rbac-role-permissions.spec.ts",
     "test:e2e:sso": "playwright test e2e/critical-flows/sso-domain-provisioning.spec.ts",
     "test:e2e:ai-review": "playwright test e2e/critical-flows/ai-candidate-review.spec.ts e2e/critical-flows/ai-config-lifecycle.spec.ts e2e/critical-flows/chatbot-conversations.spec.ts --workers=1",
