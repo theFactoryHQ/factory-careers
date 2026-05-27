@@ -1,4 +1,4 @@
-import { expect, test } from '../fixtures'
+import { expect, expectFloatingMenuNotClipped, test } from '../fixtures'
 
 const publicDropdownRoutes = [
   '/privacy/delete-request',
@@ -53,6 +53,7 @@ test.describe('global dropdown styling', () => {
 
     const stateListbox = page.getByRole('listbox')
     await expect(stateListbox).toBeVisible()
+    await expectFloatingMenuNotClipped(stateListbox)
     await expect(page.getByRole('option', { name: 'California' })).toBeVisible()
 
     const listboxStyles = await stateListbox.evaluate((element) => {
@@ -65,5 +66,18 @@ test.describe('global dropdown styling', () => {
 
     expect(listboxStyles.backgroundColor).not.toBe('rgb(255, 255, 255)')
     expect(listboxStyles.borderColor).not.toBe('rgb(118, 118, 118)')
+  })
+
+  test('keeps dashboard card Factory selects outside clipping containers', async ({ authenticatedPage }) => {
+    const page = authenticatedPage
+    await page.goto('/dashboard/settings')
+    await page.waitForLoadState('networkidle')
+
+    await page.getByLabel('Default pay period').click()
+
+    const sortListbox = page.getByRole('listbox')
+    await expect(sortListbox).toBeVisible()
+    await expect(page.getByRole('option', { name: 'Per month' })).toBeVisible()
+    await expectFloatingMenuNotClipped(sortListbox)
   })
 })

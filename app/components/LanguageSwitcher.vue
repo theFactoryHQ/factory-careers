@@ -16,6 +16,8 @@ const { locale, locales, t } = useI18n()
 
 const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
+const triggerRef = ref<HTMLElement | null>(null)
+const listboxRef = ref<HTMLElement | null>(null)
 const languageFeatureEnabled = computed(
   () => runtimeConfig.public.languageFeatureEnabled === true,
 )
@@ -25,9 +27,9 @@ function closeDropdown() {
 }
 
 function handleClickOutside(event: MouseEvent) {
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
-    closeDropdown()
-  }
+  const target = event.target as Node
+  if (dropdownRef.value?.contains(target) || listboxRef.value?.contains(target)) return
+  closeDropdown()
 }
 
 onMounted(() => document.addEventListener('mousedown', handleClickOutside))
@@ -167,8 +169,16 @@ const triggerClasses = computed(() => isFactoryTone.value
   : 'flex h-8 items-center gap-1 rounded-md border border-surface-300/45 dark:border-surface-700/55 bg-transparent px-2 text-xs font-medium lowercase text-surface-500 dark:text-surface-400 outline-none transition-colors hover:border-surface-400/60 hover:text-surface-700 dark:hover:border-surface-600 dark:hover:text-surface-200 focus:border-brand-500/70 focus:text-surface-800 dark:focus:text-surface-100')
 
 const dropdownClasses = computed(() => isFactoryTone.value
-  ? 'absolute z-50 min-w-40 border border-white/14 bg-black py-1 text-xs shadow-2xl shadow-black/50'
-  : 'absolute z-50 min-w-40 rounded-md border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg py-1 text-xs')
+  ? 'min-w-40 border border-white/14 bg-black py-1 text-xs shadow-2xl shadow-black/50'
+  : 'min-w-40 rounded-md border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg py-1 text-xs')
+const { floatingStyle: dropdownStyle } = useFloatingMenu({
+  open: isOpen,
+  triggerRef,
+  placement: computed(() => props.dropUp ? 'top-start' : 'bottom-end'),
+  width: 160,
+  estimatedHeight: 180,
+  zIndex: 90,
+})
 
 function optionClasses(code: string) {
   if (isFactoryTone.value) {
@@ -211,6 +221,7 @@ async function handleLocaleChange(nextLocale: string) {
     <div ref="dropdownRef" class="relative">
       <!-- Trigger button -->
       <button
+        ref="triggerRef"
         type="button"
         :aria-label="t('common.selectLanguage')"
         :aria-expanded="isOpen"
@@ -223,42 +234,46 @@ async function handleLocaleChange(nextLocale: string) {
       </button>
 
       <!-- Dropdown list -->
-      <ul
-        v-if="isOpen"
-        role="listbox"
-        :aria-label="t('common.selectLanguage')"
-        :class="[dropdownClasses, props.dropUp ? 'left-0 bottom-full mb-1' : 'right-0 mt-1']"
-      >
-        <li
-          role="presentation"
-          :class="isFactoryTone
-            ? 'border-b border-white/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-white/38'
-            : 'border-b border-surface-200 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-surface-400 dark:border-surface-700 dark:text-surface-500'"
+      <Teleport to="body">
+        <ul
+          v-if="isOpen"
+          ref="listboxRef"
+          role="listbox"
+          :aria-label="t('common.selectLanguage')"
+          :class="dropdownClasses"
+          :style="dropdownStyle"
         >
-          Language
-        </li>
-        <li
-          v-for="option in localeOptions"
-          :key="option.code"
-          role="option"
-          :aria-selected="option.code === selectedLocaleCode"
-          class="flex cursor-pointer items-center justify-between gap-2 px-3 py-1.5 transition-colors"
-          :class="optionClasses(option.code)"
-          @click="handleLocaleChange(option.code)"
-        >
-          <span class="flex items-center gap-1.5">
-            <span>{{ option.flag }}</span>
-            <span class="font-medium">{{ option.code }}</span>
-          </span>
-          <span
-            v-if="option.partial"
-            :class="partialBadgeClasses"
-            title="Translation incomplete"
+          <li
+            role="presentation"
+            :class="isFactoryTone
+              ? 'border-b border-white/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-white/38'
+              : 'border-b border-surface-200 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-surface-400 dark:border-surface-700 dark:text-surface-500'"
           >
-            partial
-          </span>
-        </li>
-      </ul>
+            Language
+          </li>
+          <li
+            v-for="option in localeOptions"
+            :key="option.code"
+            role="option"
+            :aria-selected="option.code === selectedLocaleCode"
+            class="flex cursor-pointer items-center justify-between gap-2 px-3 py-1.5 transition-colors"
+            :class="optionClasses(option.code)"
+            @click="handleLocaleChange(option.code)"
+          >
+            <span class="flex items-center gap-1.5">
+              <span>{{ option.flag }}</span>
+              <span class="font-medium">{{ option.code }}</span>
+            </span>
+            <span
+              v-if="option.partial"
+              :class="partialBadgeClasses"
+              title="Translation incomplete"
+            >
+              partial
+            </span>
+          </li>
+        </ul>
+      </Teleport>
     </div>
   </div>
 </template>

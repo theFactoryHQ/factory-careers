@@ -13,7 +13,7 @@
     "build": "nuxt build",
     "start": "node .output/server/index.mjs",
     "start:railway": "npm run db:migrate && npm run db:seed && node .output/server/index.mjs",
-    "dev": "nuxt dev",
+    "dev": "nuxt dev --port 3001",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "prepare": "node scripts/install-git-hooks.mjs",

@@ -1,4 +1,4 @@
-import { test as base, type Page } from '@playwright/test'
+import { expect as baseExpect, test as base, type Locator, type Page } from '@playwright/test'
 
 /**
  * Shared test fixtures for Reqcore E2E tests.
@@ -34,6 +34,63 @@ type Fixtures = {
 export async function selectFactorySelectOption(page: Page, label: string | RegExp, optionName: string) {
   await page.getByLabel(label).click()
   await page.getByRole('option', { name: optionName, exact: true }).click()
+}
+
+export async function expectFloatingMenuNotClipped(menu: Locator) {
+  const clippingReport = await menu.evaluate((element) => {
+    const menuRect = element.getBoundingClientRect()
+    const clippingAncestors: Array<{
+      tagName: string
+      className: string
+      overflow: string
+      overflowX: string
+      overflowY: string
+      rect: { top: number, right: number, bottom: number, left: number }
+    }> = []
+
+    for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
+      const style = window.getComputedStyle(ancestor)
+      const clips = [style.overflow, style.overflowX, style.overflowY].some(value =>
+        ['hidden', 'clip', 'auto', 'scroll'].includes(value),
+      )
+      if (!clips) continue
+
+      const ancestorRect = ancestor.getBoundingClientRect()
+      const protrudes =
+        menuRect.top < ancestorRect.top - 1 ||
+        menuRect.right > ancestorRect.right + 1 ||
+        menuRect.bottom > ancestorRect.bottom + 1 ||
+        menuRect.left < ancestorRect.left - 1
+
+      if (protrudes) {
+        clippingAncestors.push({
+          tagName: ancestor.tagName.toLowerCase(),
+          className: ancestor.className,
+          overflow: style.overflow,
+          overflowX: style.overflowX,
+          overflowY: style.overflowY,
+          rect: {
+            top: ancestorRect.top,
+            right: ancestorRect.right,
+            bottom: ancestorRect.bottom,
+            left: ancestorRect.left,
+          },
+        })
+      }
+    }
+
+    return {
+      menuRect: {
+        top: menuRect.top,
+        right: menuRect.right,
+        bottom: menuRect.bottom,
+        left: menuRect.left,
+      },
+      clippingAncestors,
+    }
+  })
+
+  baseExpect(clippingReport.clippingAncestors, JSON.stringify(clippingReport, null, 2)).toEqual([])
 }
 
 export const test = base.extend<Fixtures>({

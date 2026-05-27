@@ -19,6 +19,15 @@ const emit = defineEmits<{
 
 const open = ref(false)
 const rootRef = ref<HTMLElement | null>(null)
+const triggerRef = ref<HTMLElement | null>(null)
+const panelRef = ref<HTMLElement | null>(null)
+const { floatingStyle } = useFloatingMenu({
+  open,
+  triggerRef,
+  width: 288,
+  estimatedHeight: 360,
+  zIndex: 90,
+})
 
 const showSaveForm = ref(false)
 const newName = ref('')
@@ -43,7 +52,9 @@ function close() {
 }
 
 function handleOutside(e: MouseEvent) {
-  if (rootRef.value && !rootRef.value.contains(e.target as Node)) close()
+  const target = e.target as Node
+  if (rootRef.value?.contains(target) || panelRef.value?.contains(target)) return
+  close()
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -99,6 +110,7 @@ function onDelete(id: string, e: Event) {
 <template>
   <div ref="rootRef" class="factory-saved-views-menu relative inline-block">
     <button
+      ref="triggerRef"
       type="button"
       class="factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
       :class="{ 'is-active': activeViewId }"
@@ -117,9 +129,12 @@ function onDelete(id: string, e: Event) {
     </button>
 
     <!-- Dropdown -->
+    <Teleport to="body">
     <div
       v-if="open"
-      class="factory-saved-views-panel absolute left-0 top-full mt-1.5 z-30 w-72 rounded-xl border overflow-hidden"
+      ref="panelRef"
+      class="factory-saved-views-panel factory-dashboard-portal rounded-xl border overflow-hidden"
+      :style="floatingStyle"
       role="menu"
     >
       <!-- "All / no view" -->
@@ -217,5 +232,6 @@ function onDelete(id: string, e: Event) {
         </button>
       </div>
     </div>
+    </Teleport>
   </div>
 </template>

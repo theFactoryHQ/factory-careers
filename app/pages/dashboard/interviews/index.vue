@@ -266,15 +266,34 @@ async function quickStatusChange(interviewItem: typeof interviews.value[number],
 // ─── More menu (per-row) ─────────────────────────────────────────
 const openMenuId = ref<string | null>(null)
 const menuRef = ref<HTMLElement | null>(null)
+const menuPanelRef = ref<HTMLElement | null>(null)
+const activeMenuTrigger = ref<HTMLElement | null>(null)
+const isActionMenuOpen = computed(() => openMenuId.value !== null)
+const { floatingStyle: actionMenuStyle, updateFloatingPosition: updateActionMenuPosition } = useFloatingMenu({
+  open: isActionMenuOpen,
+  triggerRef: activeMenuTrigger,
+  placement: 'bottom-end',
+  width: 192,
+  estimatedHeight: 180,
+  zIndex: 90,
+})
 
-function toggleMenu(id: string) {
-  openMenuId.value = openMenuId.value === id ? null : id
+function toggleMenu(id: string, event: MouseEvent) {
+  if (openMenuId.value === id) {
+    openMenuId.value = null
+    activeMenuTrigger.value = null
+    return
+  }
+  activeMenuTrigger.value = event.currentTarget as HTMLElement
+  openMenuId.value = id
+  nextTick(updateActionMenuPosition)
 }
 
 function handleClickOutsideMenu(e: MouseEvent) {
-  if (menuRef.value && !menuRef.value.contains(e.target as Node)) {
-    openMenuId.value = null
-  }
+  const target = e.target as Node
+  if (menuRef.value?.contains(target) || menuPanelRef.value?.contains(target)) return
+  openMenuId.value = null
+  activeMenuTrigger.value = null
 }
 
 onMounted(() => document.addEventListener('click', handleClickOutsideMenu))
@@ -517,49 +536,53 @@ const statusCounts = computed(() => {
               <div ref="menuRef" class="relative">
                 <button
                   class="ui-button ui-button-ghost flex items-center justify-center p-1.5 cursor-pointer"
-                  @click.stop="toggleMenu(interviewItem.id)"
+                  @click.stop="toggleMenu(interviewItem.id, $event)"
                 >
                   <MoreHorizontal class="size-4" />
                 </button>
 
-                <Transition
-                  enter-active-class="transition duration-150 ease-out"
-                  enter-from-class="opacity-0 scale-95 -translate-y-1"
-                  enter-to-class="opacity-100 scale-100 translate-y-0"
-                  leave-active-class="transition duration-100 ease-in"
-                  leave-from-class="opacity-100 scale-100 translate-y-0"
-                  leave-to-class="opacity-0 scale-95 -translate-y-1"
-                >
-                  <div
-                    v-if="openMenuId === interviewItem.id"
-                    class="ui-floating-menu absolute right-0 top-full mt-1.5 z-50 w-48 py-1.5 origin-top-right"
+                <Teleport to="body">
+                  <Transition
+                    enter-active-class="transition duration-150 ease-out"
+                    enter-from-class="opacity-0 scale-95 -translate-y-1"
+                    enter-to-class="opacity-100 scale-100 translate-y-0"
+                    leave-active-class="transition duration-100 ease-in"
+                    leave-from-class="opacity-100 scale-100 translate-y-0"
+                    leave-to-class="opacity-0 scale-95 -translate-y-1"
                   >
-                    <button
-                      class="ui-menu-action flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm transition-colors"
-                      @click="openEdit(interviewItem); openMenuId = null"
+                    <div
+                      v-if="openMenuId === interviewItem.id"
+                      ref="menuPanelRef"
+                      class="ui-floating-menu factory-dashboard-portal py-1.5 origin-top-right"
+                      :style="actionMenuStyle"
                     >
-                      <Pencil class="size-3.5 text-surface-400" />
-                      Edit
-                    </button>
-                    <template v-for="nextStatus in getAllowedTransitions(interviewItem.status)" :key="nextStatus">
                       <button
                         class="ui-menu-action flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm transition-colors"
-                        @click="quickStatusChange(interviewItem, nextStatus); openMenuId = null"
+                        @click="openEdit(interviewItem); openMenuId = null"
                       >
-                        <component :is="interviewStatusIcons[nextStatus] || Calendar" class="size-3.5 text-surface-400" />
-                        {{ getInterviewTransitionLabel(nextStatus) }}
+                        <Pencil class="size-3.5 text-surface-400" />
+                        Edit
                       </button>
-                    </template>
-                    <div class="ui-menu-divider my-1.5 mx-2" />
-                    <button
-                      class="ui-menu-action ui-menu-action-danger flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm transition-colors"
-                      @click="confirmDelete(interviewItem); openMenuId = null"
-                    >
-                      <Trash2 class="size-3.5" />
-                      Delete
-                    </button>
-                  </div>
-                </Transition>
+                      <template v-for="nextStatus in getAllowedTransitions(interviewItem.status)" :key="nextStatus">
+                        <button
+                          class="ui-menu-action flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm transition-colors"
+                          @click="quickStatusChange(interviewItem, nextStatus); openMenuId = null"
+                        >
+                          <component :is="interviewStatusIcons[nextStatus] || Calendar" class="size-3.5 text-surface-400" />
+                          {{ getInterviewTransitionLabel(nextStatus) }}
+                        </button>
+                      </template>
+                      <div class="ui-menu-divider my-1.5 mx-2" />
+                      <button
+                        class="ui-menu-action ui-menu-action-danger flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm transition-colors"
+                        @click="confirmDelete(interviewItem); openMenuId = null"
+                      >
+                        <Trash2 class="size-3.5" />
+                        Delete
+                      </button>
+                    </div>
+                  </Transition>
+                </Teleport>
               </div>
             </div>
           </div>

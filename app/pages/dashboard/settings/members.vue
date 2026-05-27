@@ -409,14 +409,35 @@ async function handleRejectRequest(requestId: string) {
 // Role management
 // ─────────────────────────────────────────────
 const activeDropdown = ref<string | null>(null)
+const activeDropdownTrigger = ref<HTMLElement | null>(null)
 const isUpdatingRole = ref<string | null>(null)
+const isRoleMenuOpen = computed(() => activeDropdown.value !== null)
+const {
+  floatingStyle: roleMenuStyle,
+  updateFloatingPosition: updateRoleMenuPosition,
+} = useFloatingMenu({
+  open: isRoleMenuOpen,
+  triggerRef: activeDropdownTrigger,
+  placement: 'bottom-end',
+  width: 192,
+  estimatedHeight: 160,
+  zIndex: 90,
+})
 
-function toggleDropdown(memberId: string) {
-  activeDropdown.value = activeDropdown.value === memberId ? null : memberId
+function toggleDropdown(memberId: string, event: MouseEvent) {
+  if (activeDropdown.value === memberId) {
+    closeDropdown()
+    return
+  }
+
+  activeDropdownTrigger.value = event.currentTarget as HTMLElement
+  activeDropdown.value = memberId
+  nextTick(updateRoleMenuPosition)
 }
 
 function closeDropdown() {
   activeDropdown.value = null
+  activeDropdownTrigger.value = null
 }
 
 async function handleUpdateRole(memberId: string, newRole: 'admin' | 'member') {
@@ -504,7 +525,7 @@ function getInitials(name: string | undefined): string {
 // Close dropdown on click outside — store reference for cleanup
 function handleClickOutside(e: MouseEvent) {
   const target = e.target as HTMLElement
-  if (!target.closest('[data-member-actions]')) {
+  if (!target.closest('[data-member-actions]') && !target.closest('[data-member-role-menu]')) {
     closeDropdown()
   }
 }
@@ -1057,58 +1078,62 @@ onUnmounted(() => {
           <div v-if="canManageMembers && !isCurrentUser(m.userId) && m.role !== 'owner'" class="relative" data-member-actions>
             <button
               class="ui-button ui-button-ghost p-1.5"
-              @click.stop="toggleDropdown(m.id)"
+              @click.stop="toggleDropdown(m.id, $event)"
             >
               <MoreHorizontal class="size-4" />
             </button>
 
-            <Transition
-              enter-active-class="transition-all duration-150"
-              leave-active-class="transition-all duration-100"
-              enter-from-class="opacity-0 scale-95"
-              leave-to-class="opacity-0 scale-95"
-            >
-              <div
-                v-if="activeDropdown === m.id"
-                class="ui-panel absolute right-0 top-full mt-1 w-48 shadow-lg z-50 overflow-hidden"
+            <Teleport to="body">
+              <Transition
+                enter-active-class="transition-all duration-150"
+                leave-active-class="transition-all duration-100"
+                enter-from-class="opacity-0 scale-95"
+                leave-to-class="opacity-0 scale-95"
               >
-                <!-- Role options -->
-                <div class="py-1 border-b border-surface-100 dark:border-surface-800">
-                  <div class="px-3 py-1.5 text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-wider">
-                    Change role
+                <div
+                  v-if="activeDropdown === m.id"
+                  data-member-role-menu
+                  class="ui-panel factory-dashboard-portal shadow-lg overflow-hidden"
+                  :style="roleMenuStyle"
+                >
+                  <!-- Role options -->
+                  <div class="py-1 border-b border-surface-100 dark:border-surface-800">
+                    <div class="px-3 py-1.5 text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-wider">
+                      Change role
+                    </div>
+                    <button
+                      v-if="m.role !== 'admin'"
+                      :disabled="isUpdatingRole === m.id"
+                      class="ui-menu-action px-3 py-2 text-sm"
+                      @click="handleUpdateRole(m.id, 'admin')"
+                    >
+                      <ShieldCheck class="ui-icon-brand size-3.5" />
+                      Make admin
+                    </button>
+                    <button
+                      v-if="m.role !== 'member'"
+                      :disabled="isUpdatingRole === m.id"
+                      class="ui-menu-action px-3 py-2 text-sm"
+                      @click="handleUpdateRole(m.id, 'member')"
+                    >
+                      <Shield class="size-3.5" />
+                      Make member
+                    </button>
                   </div>
-                  <button
-                    v-if="m.role !== 'admin'"
-                    :disabled="isUpdatingRole === m.id"
-                    class="ui-menu-action px-3 py-2 text-sm"
-                    @click="handleUpdateRole(m.id, 'admin')"
-                  >
-                    <ShieldCheck class="ui-icon-brand size-3.5" />
-                    Make admin
-                  </button>
-                  <button
-                    v-if="m.role !== 'member'"
-                    :disabled="isUpdatingRole === m.id"
-                    class="ui-menu-action px-3 py-2 text-sm"
-                    @click="handleUpdateRole(m.id, 'member')"
-                  >
-                    <Shield class="size-3.5" />
-                    Make member
-                  </button>
-                </div>
 
-                <!-- Remove -->
-                <div class="py-1">
-                  <button
-                    class="ui-menu-action ui-menu-action-danger px-3 py-2 text-sm"
-                    @click="memberToRemove = { id: m.id, name: m.user.name }; closeDropdown()"
-                  >
-                    <Trash2 class="size-3.5" />
-                    Remove member
-                  </button>
+                  <!-- Remove -->
+                  <div class="py-1">
+                    <button
+                      class="ui-menu-action ui-menu-action-danger px-3 py-2 text-sm"
+                      @click="memberToRemove = { id: m.id, name: m.user.name }; closeDropdown()"
+                    >
+                      <Trash2 class="size-3.5" />
+                      Remove member
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </Transition>
+              </Transition>
+            </Teleport>
           </div>
 
           <!-- Loading indicator for role update -->

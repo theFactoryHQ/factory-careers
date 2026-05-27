@@ -86,6 +86,15 @@ const interviewFilter = ref<InterviewFilter>('all')
 const propertyFilters = ref<PropertyFilter[]>([])
 const showSortPanel = ref(false)
 const showFilterPanel = ref(false)
+const sortTriggerRef = ref<HTMLElement | null>(null)
+const sortPanelRef = ref<HTMLElement | null>(null)
+const { floatingStyle: sortPanelStyle } = useFloatingMenu({
+  open: showSortPanel,
+  triggerRef: sortTriggerRef,
+  width: 'trigger',
+  estimatedHeight: 260,
+  zIndex: 80,
+})
 
 const hasActiveFilters = computed(() => scoreFilter.value !== 'all' || interviewFilter.value !== 'all' || propertyFilters.value.length > 0)
 const activeFilterCount = computed(() => {
@@ -1108,6 +1117,7 @@ function closeDocPreview() {
               <!-- Sort dropdown -->
               <div class="relative flex-1 min-w-0">
                 <button
+                  ref="sortTriggerRef"
                   class="flex h-8 min-h-8 w-full cursor-pointer items-center gap-1.5 rounded-md border px-2 py-0 text-left transition-all duration-150"
                   :class="showSortPanel
                     ? 'border-brand-300 bg-brand-50/50 text-brand-700 dark:border-brand-600 dark:bg-brand-950/30 dark:text-brand-300'
@@ -1120,33 +1130,37 @@ function closeDocPreview() {
                 </button>
 
                 <!-- Sort dropdown panel -->
-                <Transition
-                  enter-active-class="transition duration-150 ease-out"
-                  enter-from-class="opacity-0 scale-95 -translate-y-1"
-                  enter-to-class="opacity-100 scale-100 translate-y-0"
-                  leave-active-class="transition duration-100 ease-in"
-                  leave-from-class="opacity-100 scale-100 translate-y-0"
-                  leave-to-class="opacity-0 scale-95 -translate-y-1"
-                >
-                  <div
-                    v-if="showSortPanel"
-                    class="absolute left-0 top-full z-50 mt-1 w-full rounded-lg border border-surface-200 bg-white py-1 shadow-lg shadow-surface-900/5 dark:border-surface-700 dark:bg-surface-900 dark:shadow-black/20 origin-top"
+                <Teleport to="body">
+                  <Transition
+                    enter-active-class="transition duration-150 ease-out"
+                    enter-from-class="opacity-0 scale-95 -translate-y-1"
+                    enter-to-class="opacity-100 scale-100 translate-y-0"
+                    leave-active-class="transition duration-100 ease-in"
+                    leave-from-class="opacity-100 scale-100 translate-y-0"
+                    leave-to-class="opacity-0 scale-95 -translate-y-1"
                   >
-                    <button
-                      v-for="option in sortOptions"
-                      :key="option.value"
-                      class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-[11px] font-medium transition-colors"
-                      :class="sortBy === option.value
-                        ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
-                        : 'text-surface-600 hover:bg-surface-50 dark:text-surface-300 dark:hover:bg-surface-800'"
-                      @click="selectSort(option.value)"
+                    <div
+                      v-if="showSortPanel"
+                      ref="sortPanelRef"
+                      class="ui-floating-menu factory-dashboard-portal rounded-lg border border-surface-200 bg-white py-1 shadow-lg shadow-surface-900/5 dark:border-surface-700 dark:bg-surface-900 dark:shadow-black/20 origin-top"
+                      :style="sortPanelStyle"
                     >
-                      <Check v-if="sortBy === option.value" class="size-3 shrink-0" />
-                      <span v-else class="size-3 shrink-0" />
-                      {{ option.label }}
-                    </button>
-                  </div>
-                </Transition>
+                      <button
+                        v-for="option in sortOptions"
+                        :key="option.value"
+                        class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-[11px] font-medium transition-colors"
+                        :class="sortBy === option.value
+                          ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
+                          : 'text-surface-600 hover:bg-surface-50 dark:text-surface-300 dark:hover:bg-surface-800'"
+                        @click="selectSort(option.value)"
+                      >
+                        <Check v-if="sortBy === option.value" class="size-3 shrink-0" />
+                        <span v-else class="size-3 shrink-0" />
+                        {{ option.label }}
+                      </button>
+                    </div>
+                  </Transition>
+                </Teleport>
               </div>
 
               <!-- Filter button -->

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 function readProjectFile(path: string) {
@@ -9,6 +9,16 @@ function readProjectFile(path: string) {
 function expectFile(path: string) {
   expect(existsSync(join(process.cwd(), path)), `${path} should exist`).toBe(true)
   return readProjectFile(path)
+}
+
+function listVueFiles(dir: string): string[] {
+  const absoluteDir = join(process.cwd(), dir)
+  return readdirSync(absoluteDir).flatMap((entry) => {
+    const path = join(dir, entry)
+    const absolutePath = join(process.cwd(), path)
+    if (statSync(absolutePath).isDirectory()) return listVueFiles(path)
+    return path.endsWith('.vue') ? [path] : []
+  })
 }
 
 describe('shared keyboard and popover primitives', () => {
@@ -47,5 +57,52 @@ describe('shared keyboard and popover primitives', () => {
     expect(topbar).toContain('moreActionsMenu')
     expect(topbar).not.toContain('const showFactoryMoreActions = false')
     expect(topbar).not.toMatch(/v-if="showFactoryMoreActions"[\s\S]*title="More options"/)
+  })
+
+  it('keeps Factory dropdown menus on the floating portal path', () => {
+    const files = listVueFiles('app')
+      .filter(file => readProjectFile(file).includes('factory-filter-dropdown-menu'))
+
+    const localAbsoluteMenus = files.flatMap((file) => {
+      const source = readProjectFile(file)
+      return [...source.matchAll(/class="[^"]*factory-filter-dropdown-menu[^"]*absolute[^"]*"/g)]
+        .map(match => `${file}: ${match[0]}`)
+    })
+
+    expect(localAbsoluteMenus).toEqual([])
+  })
+
+  it('keeps bespoke dropdown and menu panels on an explicit floating path', () => {
+    const panelPattern = /role="menu"|role="listbox"|Dropdown|dropdown|openMenuId|show.*Menu|show.*Dropdown|panelOpen/
+    const files = listVueFiles('app')
+      .filter(file => panelPattern.test(readProjectFile(file)))
+
+    const ignoredSnippets = [
+      'tooltip',
+      'pointer-events-none',
+      'ui-modal',
+      'factory-job-more-menu',
+    ]
+    const floatingPatterns = [
+      '<Teleport',
+      'factory-dashboard-portal',
+      'factory-public-form-portal',
+      'data-member-role-menu',
+    ]
+
+    const localAbsolutePanels = files.flatMap((file) => {
+      const source = readProjectFile(file)
+      return [...source.matchAll(/class="[^"]*(?:absolute|bottom-full|top-full|top-\[calc\(100%)[^"]*"/g)]
+        .filter((match) => {
+          const snippet = match[0]
+          if (!/(menu|dropdown|panel|popover)/i.test(snippet)) return false
+          if (ignoredSnippets.some(pattern => snippet.includes(pattern))) return false
+          const context = source.slice(Math.max(0, match.index - 450), Math.min(source.length, match.index + 450))
+          return !floatingPatterns.some(pattern => context.includes(pattern) || snippet.includes(pattern))
+        })
+        .map(match => `${file}: ${match[0]}`)
+    })
+
+    expect(localAbsolutePanels).toEqual([])
   })
 })

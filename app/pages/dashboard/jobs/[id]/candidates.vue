@@ -95,9 +95,19 @@ function toggleStatus(s: Status) {
 
 const panelOpen = ref(false)
 const panelRef = ref<HTMLElement | null>(null)
+const panelTriggerRef = ref<HTMLElement | null>(null)
+const panelMenuRef = ref<HTMLElement | null>(null)
+const { floatingStyle: panelStyle } = useFloatingMenu({
+  open: panelOpen,
+  triggerRef: panelTriggerRef,
+  width: 288,
+  estimatedHeight: 420,
+  zIndex: 80,
+})
 
 function handleOutsideClick(e: MouseEvent) {
-  if (panelRef.value && !panelRef.value.contains(e.target as Node)) {
+  const target = e.target as Node
+  if (!panelRef.value?.contains(target) && !panelMenuRef.value?.contains(target)) {
     panelOpen.value = false
   }
 }
@@ -227,6 +237,7 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
         <!-- Column / filter picker -->
         <div ref="panelRef" class="relative">
           <button
+            ref="panelTriggerRef"
             class="inline-flex items-center gap-2 rounded-lg border border-surface-200 dark:border-surface-700/80 bg-white dark:bg-surface-900 px-3 py-2 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 hover:border-surface-300 dark:hover:bg-surface-800 dark:hover:border-surface-600 transition-all duration-150 shadow-sm"
             @click="panelOpen = !panelOpen"
           >
@@ -241,39 +252,42 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
           </button>
 
           <!-- Dropdown panel -->
-          <div
-            v-if="panelOpen"
-            class="absolute left-0 top-full mt-2 z-20 w-72 rounded-xl border border-surface-200/80 dark:border-surface-700/80 bg-white dark:bg-surface-900 shadow-xl shadow-surface-900/5 dark:shadow-black/20 p-4 space-y-5"
-          >
-            <!-- Columns -->
-            <div>
-              <p class="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wide mb-2">Columns</p>
-              <div class="space-y-1.5">
-                <label
-                  v-for="col in ([
-                    { key: 'email', label: 'Email' },
-                    { key: 'score', label: 'Score' },
-                    { key: 'status', label: 'Status' },
-                    { key: 'createdAt', label: 'Applied' },
-                  ] as const)"
-                  :key="col.key"
-                  class="flex items-center gap-2.5 cursor-pointer select-none group"
-                >
-                  <input type="checkbox" class="sr-only" :checked="visibleCols[col.key]" @change="visibleCols[col.key] = !visibleCols[col.key]" />
-                  <span
-                    class="size-4 shrink-0 rounded border flex items-center justify-center transition-colors"
-                    :class="visibleCols[col.key]
-                      ? 'bg-brand-500 border-brand-500'
-                      : 'bg-white dark:bg-surface-800 border-surface-300 dark:border-surface-600'"
+          <Teleport to="body">
+            <div
+              v-if="panelOpen"
+              ref="panelMenuRef"
+              class="ui-floating-menu factory-dashboard-portal rounded-xl border border-surface-200/80 dark:border-surface-700/80 bg-white dark:bg-surface-900 shadow-xl shadow-surface-900/5 dark:shadow-black/20 p-4 space-y-5"
+              :style="panelStyle"
+            >
+              <!-- Columns -->
+              <div>
+                <p class="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wide mb-2">Columns</p>
+                <div class="space-y-1.5">
+                  <label
+                    v-for="col in ([
+                      { key: 'email', label: 'Email' },
+                      { key: 'score', label: 'Score' },
+                      { key: 'status', label: 'Status' },
+                      { key: 'createdAt', label: 'Applied' },
+                    ] as const)"
+                    :key="col.key"
+                    class="flex items-center gap-2.5 cursor-pointer select-none group"
+                  >
+                    <input type="checkbox" class="sr-only" :checked="visibleCols[col.key]" @change="visibleCols[col.key] = !visibleCols[col.key]" />
+                    <span
+                      class="size-4 shrink-0 rounded border flex items-center justify-center transition-colors"
+                      :class="visibleCols[col.key]
+                        ? 'bg-brand-500 border-brand-500'
+                        : 'bg-white dark:bg-surface-800 border-surface-300 dark:border-surface-600'"
                   >
                     <Check v-if="visibleCols[col.key]" class="size-3 text-white" :stroke-width="3" />
                   </span>
-                  <span class="text-sm text-surface-700 dark:text-surface-300 group-hover:text-surface-900 dark:group-hover:text-surface-100 transition-colors">
-                    {{ col.label }}
-                  </span>
-                </label>
+                    <span class="text-sm text-surface-700 dark:text-surface-300 group-hover:text-surface-900 dark:group-hover:text-surface-100 transition-colors">
+                      {{ col.label }}
+                    </span>
+                  </label>
+                </div>
               </div>
-            </div>
 
             <div class="border-t border-surface-100 dark:border-surface-800" />
 
@@ -335,7 +349,8 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
               <X class="size-3" />
               Clear filters
             </button>
-          </div>
+            </div>
+          </Teleport>
         </div>
 
         <!-- Active filter pills -->

@@ -12,13 +12,24 @@ const emit = defineEmits<{
 
 const open = ref(false)
 const menuRef = ref<HTMLElement | null>(null)
+const triggerRef = ref<HTMLElement | null>(null)
+const panelRef = ref<HTMLElement | null>(null)
+const { floatingStyle } = useFloatingMenu({
+  open,
+  triggerRef,
+  placement: 'bottom-end',
+  width: 192,
+  estimatedHeight: 260,
+  zIndex: 80,
+})
 
 function toggle(key: string) {
   emit('update:modelValue', { ...props.modelValue, [key]: !props.modelValue[key] })
 }
 
 function handleClickOutside(e: MouseEvent) {
-  if (menuRef.value && !menuRef.value.contains(e.target as Node)) {
+  const target = e.target as Node
+  if (!menuRef.value?.contains(target) && !panelRef.value?.contains(target)) {
     open.value = false
   }
 }
@@ -40,6 +51,7 @@ const hiddenCount = computed(() =>
 <template>
   <div ref="menuRef" class="relative">
     <button
+      ref="triggerRef"
       type="button"
       class="factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium whitespace-nowrap"
       :class="{ 'is-active': hiddenCount > 0 }"
@@ -53,34 +65,38 @@ const hiddenCount = computed(() =>
       >{{ hiddenCount }}</span>
     </button>
 
-    <div
-      v-if="open"
-      class="absolute right-0 z-50 mt-1 w-48 rounded-xl border border-white/10 bg-black py-1 shadow-2xl text-white"
-    >
-      <div class="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/50 border-b border-white/10 mb-1">
-        Toggle columns
-      </div>
-      <button
-        v-for="col in columns"
-        :key="col.key"
-        type="button"
-        class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-white/5 transition-colors"
-        :class="col.required
-          ? 'text-white/40 cursor-not-allowed'
-          : ''"
-        :disabled="col.required"
-        @click="!col.required && toggle(col.key)"
+    <Teleport to="body">
+      <div
+        v-if="open"
+        ref="panelRef"
+        class="ui-floating-menu factory-dashboard-portal rounded-xl border border-white/10 bg-black py-1 shadow-2xl text-white"
+        :style="floatingStyle"
       >
-        <span
-          class="inline-flex size-4 shrink-0 items-center justify-center rounded border border-white/30"
-          :class="(col.required || modelValue[col.key])
-            ? 'bg-brand-500 border-brand-500'
+        <div class="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/50 border-b border-white/10 mb-1">
+          Toggle columns
+        </div>
+        <button
+          v-for="col in columns"
+          :key="col.key"
+          type="button"
+          class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-white/5 transition-colors"
+          :class="col.required
+            ? 'text-white/40 cursor-not-allowed'
             : ''"
+          :disabled="col.required"
+          @click="!col.required && toggle(col.key)"
         >
-          <Check v-if="col.required || modelValue[col.key]" class="size-3 text-white" />
-        </span>
-        {{ col.label }}
-      </button>
-    </div>
+          <span
+            class="inline-flex size-4 shrink-0 items-center justify-center rounded border border-white/30"
+            :class="(col.required || modelValue[col.key])
+              ? 'bg-brand-500 border-brand-500'
+              : ''"
+          >
+            <Check v-if="col.required || modelValue[col.key]" class="size-3 text-white" />
+          </span>
+          {{ col.label }}
+        </button>
+      </div>
+    </Teleport>
   </div>
 </template>

@@ -99,8 +99,19 @@ const selectedJob = computed(() =>
 
 const showScopePicker = ref(false)
 const scopeMenuRef = useTemplateRef<HTMLElement>('scopeMenuRoot')
+const scopeTriggerRef = ref<HTMLElement | null>(null)
+const scopePanelRef = ref<HTMLElement | null>(null)
+const { floatingStyle: scopePanelStyle } = useFloatingMenu({
+  open: showScopePicker,
+  triggerRef: scopeTriggerRef,
+  placement: 'bottom-end',
+  width: 288,
+  estimatedHeight: 360,
+  zIndex: 80,
+})
 function onClickOutside(e: MouseEvent) {
-  if (scopeMenuRef.value && !scopeMenuRef.value.contains(e.target as Node)) {
+  const target = e.target as Node
+  if (!scopeMenuRef.value?.contains(target) && !scopePanelRef.value?.contains(target)) {
     showScopePicker.value = false
   }
 }
@@ -249,6 +260,7 @@ async function startNew() {
           <!-- Scope picker -->
           <div ref="scopeMenuRoot" class="relative">
             <button
+              ref="scopeTriggerRef"
               class="inline-flex items-center gap-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-2.5 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors cursor-pointer"
               @click="showScopePicker = !showScopePicker"
             >
@@ -259,18 +271,21 @@ async function startNew() {
               <ChevronDown class="size-3 text-surface-400" :class="showScopePicker ? 'rotate-180' : ''" />
             </button>
 
-            <Transition
-              enter-active-class="transition duration-150 ease-out"
-              enter-from-class="opacity-0 scale-95 -translate-y-1"
-              enter-to-class="opacity-100 scale-100 translate-y-0"
-              leave-active-class="transition duration-100 ease-in"
-              leave-from-class="opacity-100 scale-100 translate-y-0"
-              leave-to-class="opacity-0 scale-95 -translate-y-1"
-            >
-              <div
-                v-if="showScopePicker"
-                class="absolute right-0 top-[calc(100%+6px)] z-30 w-72 overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-xl"
+            <Teleport to="body">
+              <Transition
+                enter-active-class="transition duration-150 ease-out"
+                enter-from-class="opacity-0 scale-95 -translate-y-1"
+                enter-to-class="opacity-100 scale-100 translate-y-0"
+                leave-active-class="transition duration-100 ease-in"
+                leave-from-class="opacity-100 scale-100 translate-y-0"
+                leave-to-class="opacity-0 scale-95 -translate-y-1"
               >
+                <div
+                  v-if="showScopePicker"
+                  ref="scopePanelRef"
+                  class="ui-floating-menu factory-dashboard-portal overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-xl"
+                  :style="scopePanelStyle"
+                >
                 <div class="border-b border-surface-100 dark:border-surface-800 px-4 py-2.5">
                   <p class="text-[11px] font-semibold uppercase tracking-wider text-surface-500">
                     Context scope
@@ -305,8 +320,9 @@ async function startNew() {
                     <Check v-if="scope.kind === 'job' && scope.jobId === j.id" class="size-4 text-brand-500" />
                   </button>
                 </div>
-              </div>
-            </Transition>
+                </div>
+              </Transition>
+            </Teleport>
           </div>
 
           <!-- Thinking toggle -->

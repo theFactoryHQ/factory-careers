@@ -3,7 +3,6 @@ import {
   Briefcase, Bell, Plus, Kanban,
   MapPin, Search, SlidersHorizontal, X,
   LayoutGrid, List, Table2, ArrowUp, ArrowDown, ArrowUpDown,
-  Check, ChevronDown,
 } from 'lucide-vue-next'
 import { getJobStatusBadgeClass } from '~/utils/status-display'
 
@@ -149,10 +148,6 @@ type SortDir = 'asc' | 'desc'
 
 const sortKey = ref<SortKey>('created')
 const sortDir = ref<SortDir>('desc')
-const sortKeyMenuOpen = ref(false)
-const sortDirMenuOpen = ref(false)
-const sortKeyMenuRef = ref<HTMLElement | null>(null)
-const sortDirMenuRef = ref<HTMLElement | null>(null)
 
 const sortKeyOptions: { value: SortKey, label: string }[] = [
   { value: 'created', label: 'Date created' },
@@ -168,52 +163,6 @@ const sortDirOptions: { value: SortDir, label: string }[] = [
   { value: 'asc', label: 'Ascending' },
   { value: 'desc', label: 'Descending' },
 ]
-
-const selectedSortKeyLabel = computed(() =>
-  sortKeyOptions.find(option => option.value === sortKey.value)?.label ?? 'Date created',
-)
-const selectedSortDirLabel = computed(() =>
-  sortDirOptions.find(option => option.value === sortDir.value)?.label ?? 'Descending',
-)
-
-function closeSortMenus() {
-  sortKeyMenuOpen.value = false
-  sortDirMenuOpen.value = false
-}
-
-function toggleSortKeyMenu() {
-  sortKeyMenuOpen.value = !sortKeyMenuOpen.value
-  sortDirMenuOpen.value = false
-}
-
-function toggleSortDirMenu() {
-  sortDirMenuOpen.value = !sortDirMenuOpen.value
-  sortKeyMenuOpen.value = false
-}
-
-function selectSortKey(value: SortKey) {
-  sortKey.value = value
-  sortKeyMenuOpen.value = false
-}
-
-function selectSortDir(value: SortDir) {
-  sortDir.value = value
-  sortDirMenuOpen.value = false
-}
-
-function handleSortMenuOutside(e: MouseEvent) {
-  const target = e.target as Node
-  if (sortKeyMenuRef.value?.contains(target) || sortDirMenuRef.value?.contains(target)) return
-  closeSortMenus()
-}
-
-function handleSortMenuKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') closeSortMenus()
-}
-
-watch(drawerOpen, (open) => {
-  if (!open) closeSortMenus()
-})
 
 function toggleSort(key: SortKey) {
   if (sortKey.value === key) {
@@ -344,16 +293,6 @@ const {
   onSaveView,
   onUpdateView,
 } = useSavedViewState<JobsViewSettings>('jobs', defaultSettings, currentSettings, applySettings)
-
-onMounted(() => {
-  document.addEventListener('mousedown', handleSortMenuOutside)
-  document.addEventListener('keydown', handleSortMenuKeydown)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('mousedown', handleSortMenuOutside)
-  document.removeEventListener('keydown', handleSortMenuKeydown)
-})
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -589,77 +528,19 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
           <div class="factory-filter-section">
             <label class="factory-filter-label block mb-2">Sort by</label>
             <div class="flex gap-2">
-              <div ref="sortKeyMenuRef" class="factory-filter-dropdown relative flex-1">
-                <button
-                  type="button"
-                  class="factory-filter-select factory-filter-dropdown-trigger flex w-full items-center justify-between gap-2 border px-3 py-2 text-sm text-left focus:outline-none transition-colors"
-                  :aria-expanded="sortKeyMenuOpen"
-                  aria-haspopup="listbox"
-                  aria-label="Sort field"
-                  @click="toggleSortKeyMenu"
-                >
-                  <span class="truncate">{{ selectedSortKeyLabel }}</span>
-                  <ChevronDown
-                    class="size-3.5 shrink-0 transition-transform"
-                    :class="sortKeyMenuOpen ? 'rotate-180' : ''"
-                  />
-                </button>
-                <div
-                  v-if="sortKeyMenuOpen"
-                  class="factory-filter-dropdown-menu absolute left-0 right-0 top-full z-[70] mt-1 border py-1"
-                  role="listbox"
-                >
-                  <button
-                    v-for="opt in sortKeyOptions"
-                    :key="opt.value"
-                    type="button"
-                    class="factory-filter-dropdown-option flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors"
-                    :class="{ 'is-active': sortKey === opt.value }"
-                    role="option"
-                    :aria-selected="sortKey === opt.value"
-                    @click="selectSortKey(opt.value)"
-                  >
-                    <Check class="size-3.5 shrink-0" :class="sortKey === opt.value ? '' : 'opacity-0'" />
-                    <span class="truncate">{{ opt.label }}</span>
-                  </button>
-                </div>
-              </div>
+              <FactorySelect
+                v-model="sortKey"
+                aria-label="Sort field"
+                class="flex-1"
+                :options="sortKeyOptions"
+              />
 
-              <div ref="sortDirMenuRef" class="factory-filter-dropdown relative w-36">
-                <button
-                  type="button"
-                  class="factory-filter-select factory-filter-dropdown-trigger flex w-full items-center justify-between gap-2 border px-3 py-2 text-sm text-left focus:outline-none transition-colors"
-                  :aria-expanded="sortDirMenuOpen"
-                  aria-haspopup="listbox"
-                  aria-label="Sort direction"
-                  @click="toggleSortDirMenu"
-                >
-                  <span class="truncate">{{ selectedSortDirLabel }}</span>
-                  <ChevronDown
-                    class="size-3.5 shrink-0 transition-transform"
-                    :class="sortDirMenuOpen ? 'rotate-180' : ''"
-                  />
-                </button>
-                <div
-                  v-if="sortDirMenuOpen"
-                  class="factory-filter-dropdown-menu absolute left-0 right-0 top-full z-[70] mt-1 border py-1"
-                  role="listbox"
-                >
-                  <button
-                    v-for="opt in sortDirOptions"
-                    :key="opt.value"
-                    type="button"
-                    class="factory-filter-dropdown-option flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors"
-                    :class="{ 'is-active': sortDir === opt.value }"
-                    role="option"
-                    :aria-selected="sortDir === opt.value"
-                    @click="selectSortDir(opt.value)"
-                  >
-                    <Check class="size-3.5 shrink-0" :class="sortDir === opt.value ? '' : 'opacity-0'" />
-                    <span class="truncate">{{ opt.label }}</span>
-                  </button>
-                </div>
-              </div>
+              <FactorySelect
+                v-model="sortDir"
+                aria-label="Sort direction"
+                class="w-36"
+                :options="sortDirOptions"
+              />
             </div>
           </div>
         </div>

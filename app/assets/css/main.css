@@ -1485,6 +1485,7 @@
     letter-spacing: 0 !important;
   }
 
+  :where(.factory-dashboard-portal).ui-panel,
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-panel {
     border-color: var(--ui-border-strong) !important;
     border-radius: 0 !important;
@@ -2529,6 +2530,7 @@
     min-height: 40px;
   }
 
+  :where(.factory-dashboard-portal, .factory-public-form).factory-filter-dropdown-menu,
   :where(.factory-dashboard-shell, .factory-dashboard-portal, .factory-public-form) .factory-filter-dropdown-menu {
     max-height: min(18rem, calc(100vh - 8rem));
     overflow-y: auto;
@@ -3268,7 +3270,8 @@
     color: #ffffff !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-saved-views-panel {
+:where(.factory-dashboard-portal).factory-saved-views-panel,
+:where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-saved-views-panel {
     border-color: var(--ui-border-strong) !important;
     background-color: #050505 !important;
     color: #ffffff !important;
