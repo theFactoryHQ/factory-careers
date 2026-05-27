@@ -107,12 +107,14 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:recruiter']).toBe(
-      'playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts e2e/critical-flows/application-saved-views.spec.ts e2e/critical-flows/application-custom-properties.spec.ts e2e/critical-flows/candidate-custom-properties.spec.ts',
+      'playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts e2e/critical-flows/application-saved-views.spec.ts e2e/critical-flows/application-custom-properties.spec.ts e2e/critical-flows/candidate-custom-properties.spec.ts e2e/critical-flows/application-board.spec.ts',
     )
     expect(workflow).toContain('name: Playwright recruiter')
     expect(workflow).toContain('npm run test:e2e:recruiter')
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "true"')
     expect(workflow).toContain('needs.recruiter.result')
+    expect(read('e2e/critical-flows/application-board.spec.ts')).toContain('/api/comments')
+    expect(read('e2e/critical-flows/application-board.spec.ts')).toContain('/dashboard/timeline')
   })
 
   it('runs post-publish job lifecycle browser coverage in a dedicated CI lane', () => {
