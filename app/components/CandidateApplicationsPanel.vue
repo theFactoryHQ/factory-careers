@@ -59,18 +59,20 @@ function getApplicationTransitions(status: string) {
         :key="app.id"
         :class="[panelClass, 'group flex flex-col gap-2 px-4 py-3 transition-all hover:border-brand-500/70 hover:bg-brand-500/10 sm:flex-row sm:items-center sm:justify-between']"
       >
-        <NuxtLink
-          :to="localePath(`/dashboard/applications/${app.id}`)"
-          class="block min-w-0 flex-1"
-        >
-          <h4 class="truncate text-sm font-semibold text-white transition-colors group-hover:text-brand-400">
-            {{ app.job.title }}
-          </h4>
+        <div class="min-w-0 flex-1">
+          <NuxtLink
+            :to="localePath(`/dashboard/applications/${app.id}`)"
+            class="block min-w-0"
+          >
+            <h4 class="truncate text-sm font-semibold text-white transition-colors group-hover:text-brand-400">
+              {{ app.job.title }}
+            </h4>
+          </NuxtLink>
           <ApplicationTimestampStack
             :applied-at="app.createdAt"
             class="mt-1 items-start sm:items-start"
           />
-        </NuxtLink>
+        </div>
         <div class="flex shrink-0 items-center gap-1.5 sm:ml-3">
           <button
             v-for="nextStatus in showStatusTransitions ? getApplicationTransitions(app.status) : []"
