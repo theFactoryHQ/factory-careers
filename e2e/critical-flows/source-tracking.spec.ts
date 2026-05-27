@@ -2,153 +2,183 @@ import { test, expect, selectFactorySelectOption } from '../fixtures'
 import { advanceToSubmitButton } from '../helpers/application-form'
 
 /**
- * Critical flow: Source tracking query parameters (?ref=, utm_*) propagate
- * through the public job browsing and application flow.
+ * Critical flow: public job board visibility and source attribution.
  *
- * When a candidate arrives via a tracking link, the redirect lands on
- * /jobs?ref=CODE (org-wide) or /jobs/:slug/apply?ref=CODE (job-scoped).
- * This test verifies that source params survive navigation from the job
- * listing → job detail → apply page, and are included in the POST body.
+ * When a candidate arrives through an org-wide tracking link, the public job
+ * index should only expose active published jobs. The tracking ref must survive
+ * index → detail → apply navigation and persist into recruiter attribution.
  *
  * Recruiter setup:
- * 1. Create a minimal job (no resume required, no custom questions)
- * 2. Publish and capture the slug
+ * 1. Create multiple jobs in published, draft, closed, and future-active states
+ * 2. Create an org-wide tracking link
  *
  * Candidate flow:
- * 3. Open /jobs?ref=TRACK123&utm_source=linkedin (simulates org-wide tracking link)
- * 4. Click on the job → verify ref/utm params are forwarded to the detail page
- * 5. Click "Apply Now" → verify ref/utm params are forwarded to the apply page
- * 6. Submit the application → verify the POST body includes ref + utm_source
+ * 3. Open the public tracking URL
+ * 4. Verify only the active published job is discoverable from /jobs
+ * 5. Open the job from the index and submit the application
+ * 6. Verify the tracking link counters and source stats include the application
  */
 
 const JOB_TITLE = 'Source Tracking Test Job'
 
-test.describe('Source Tracking — Query Parameter Propagation', () => {
-  test('ref and utm params propagate from job listing → detail → apply → submission', async ({ authenticatedPage, browser }, testInfo) => {
+type JobResponse = {
+  id: string
+  slug: string
+  status: string
+}
+
+test.describe('Public job board source attribution', () => {
+  test('shows only active published jobs and persists tracking attribution from public discovery', async ({ authenticatedPage, browser }, testInfo) => {
     const page = authenticatedPage
-    const jobTitle = `${JOB_TITLE} ${Date.now()} r${testInfo.retry}`
+    const unique = `${Date.now()}-r${testInfo.retry}`
+    const visibleTitle = `${JOB_TITLE} Visible ${unique}`
+    const draftTitle = `${JOB_TITLE} Draft ${unique}`
+    const closedTitle = `${JOB_TITLE} Closed ${unique}`
+    const futureTitle = `${JOB_TITLE} Future ${unique}`
+    const linkName = `Public board LinkedIn ${unique}`
+    const applicant = {
+      firstName: 'Public',
+      lastName: 'Board',
+      email: `public.board.${unique}@example.com`,
+    }
 
-    // ── Step 1: Create and publish a minimal job ───────────────────────────────
+    async function createMinimalJob(title: string): Promise<JobResponse> {
+      const response = await page.request.post('/api/jobs', {
+        data: {
+          title,
+          description: `E2E public board fixture for ${title}.`,
+          location: 'Remote',
+          requireResume: false,
+          requireCoverLetter: false,
+          applicationComplianceEnabled: false,
+          autoScoreOnApply: false,
+        },
+      })
+      expect(response.status(), `Create job API returned ${response.status()} for ${title}`).toBe(201)
+      const created = await response.json() as JobResponse
+      expect(created.id, `${title} id must be present`).toBeTruthy()
+      expect(created.slug, `${title} slug must be present`).toBeTruthy()
+      return created
+    }
 
-    await page.goto('/dashboard/jobs/new')
-    await page.waitForLoadState('networkidle')
-    await page.getByLabel('Job title').waitFor({ state: 'visible', timeout: 15_000 })
-    await page.getByLabel('Job title').fill(jobTitle)
+    async function updateJob(id: string, data: Record<string, unknown>): Promise<JobResponse> {
+      const response = await page.request.patch(`/api/jobs/${id}`, { data })
+      expect(response.status(), `Update job API returned ${response.status()}`).toBe(200)
+      return await response.json() as JobResponse
+    }
 
-    // Step 1 → Step 2
-    await page.locator('form').getByRole('button', { name: 'Save & continue' }).first().waitFor({ state: 'attached', timeout: 10_000 })
-    await expect(page.locator('form').getByRole('button', { name: 'Save & continue' }).first()).toBeEnabled({ timeout: 10_000 })
-    await page.locator('form').getByRole('button', { name: 'Save & continue' }).first().click()
+    const visibleJob = await updateJob((await createMinimalJob(visibleTitle)).id, { status: 'open' })
+    await createMinimalJob(draftTitle)
+    const closedJob = await updateJob((await createMinimalJob(closedTitle)).id, { status: 'open' })
+    await updateJob(closedJob.id, { status: 'closed' })
+    await updateJob((await createMinimalJob(futureTitle)).id, {
+      status: 'open',
+      activeFrom: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    })
 
-    // Step 2: disable resume requirement
-    const resumeRadioGroup = page.getByRole('radiogroup', { name: /Resume requirement/i })
-    await resumeRadioGroup.waitFor({ state: 'visible', timeout: 10_000 })
-    await resumeRadioGroup.getByRole('radio', { name: 'Off' }).click()
-
-    // Step 2 → Step 3
-    await page.locator('form').getByRole('button', { name: 'Save & continue' }).first().click()
-
-    // Step 3 → Step 4
-    await page.locator('form').getByRole('button', { name: 'Save & continue' }).first().waitFor({ state: 'visible', timeout: 10_000 })
-    await page.locator('form').getByRole('button', { name: 'Save & continue' }).first().click()
-
-    // Step 4: Publish
-    await expect(page.getByRole('heading', { name: /Ready to go\?/i })).toBeVisible({ timeout: 10_000 })
-    const publishButton = page.locator('form').getByRole('button', { name: /Publish & copy link/i })
-    await publishButton.waitFor({ state: 'visible', timeout: 10_000 })
-    const [publishResponse] = await Promise.all([
-      page.waitForResponse(
-        resp => resp.url().includes('/api/jobs') && ['POST', 'PATCH'].includes(resp.request().method()),
-        { timeout: 30_000 },
-      ),
-      publishButton.click(),
-    ])
-    expect([200, 201], `Publish API returned ${publishResponse.status()}`).toContain(publishResponse.status())
-    await expect(page.getByRole('heading', { name: 'Your job is live!' })).toBeVisible({ timeout: 30_000 })
-
-    // Capture the slug from the application link
-    const applicationLink = await page.getByRole('link', { name: 'Preview' }).getAttribute('href') ?? ''
-    expect(applicationLink, 'Preview link must include the public application URL').not.toBe('')
-    const slugMatch = applicationLink.match(/\/jobs\/([^/]+)\/apply/)
-    const jobSlug = slugMatch?.[1] ?? ''
-    expect(jobSlug.length, 'Job slug must not be empty').toBeGreaterThan(0)
-
-    // ── Step 2: Candidate navigates from job listing with tracking params ──────
+    const createLinkResponse = await page.request.post('/api/tracking-links', {
+      data: {
+        name: linkName,
+        channel: 'linkedin',
+        utmSource: 'linkedin',
+        utmMedium: 'social',
+        utmCampaign: 'public-board-e2e',
+      },
+    })
+    expect(createLinkResponse.status(), `Create tracking link API returned ${createLinkResponse.status()}`).toBe(201)
+    const trackingLink = await createLinkResponse.json() as { id: string; code: string }
+    expect(trackingLink.id, 'tracking link id must be present').toBeTruthy()
+    expect(trackingLink.code, 'tracking link code must be present').toBeTruthy()
 
     const candidateContext = await browser.newContext()
     const candidatePage = await candidateContext.newPage()
 
-    const REF_CODE = 'TRACK_E2E_123'
-    const UTM_SOURCE = 'linkedin'
-
-    // Simulate arriving via an org-wide tracking link → /jobs?ref=...&utm_source=...
-    await candidatePage.goto(`/jobs?ref=${REF_CODE}&utm_source=${UTM_SOURCE}`)
+    await candidatePage.goto(`/api/public/track/${trackingLink.code}`)
+    await candidatePage.waitForURL('**/jobs?ref=*', { waitUntil: 'commit', timeout: 15_000 })
     await candidatePage.waitForLoadState('networkidle')
+    expect(new URL(candidatePage.url()).searchParams.get('ref')).toBe(trackingLink.code)
 
-    // Find the job listing and click on it
-    const jobLink = candidatePage.getByRole('link', { name: jobTitle }).first()
+    await expect(candidatePage.getByText(draftTitle)).toHaveCount(0)
+    await expect(candidatePage.getByText(closedTitle)).toHaveCount(0)
+    await expect(candidatePage.getByText(futureTitle)).toHaveCount(0)
+
+    const jobLink = candidatePage.getByRole('link', { name: visibleTitle }).first()
     await expect(jobLink).toBeVisible({ timeout: 15_000 })
     await jobLink.click()
 
-    // ── Verify: job detail page URL contains ref + utm_source ──────────────────
-
-    await candidatePage.waitForURL(`**/jobs/${jobSlug}**`, { waitUntil: 'commit', timeout: 10_000 })
+    await candidatePage.waitForURL(`**/jobs/${visibleJob.slug}**`, { waitUntil: 'commit', timeout: 10_000 })
     const detailUrl = new URL(candidatePage.url())
-    expect(detailUrl.searchParams.get('ref'), 'ref param must survive navigation to job detail').toBe(REF_CODE)
-    expect(detailUrl.searchParams.get('utm_source'), 'utm_source must survive navigation to job detail').toBe(UTM_SOURCE)
+    expect(detailUrl.searchParams.get('ref'), 'ref param must survive navigation to job detail').toBe(trackingLink.code)
 
-    // Click "Apply Now"
     await candidatePage.getByRole('link', { name: 'Apply Now' }).first().click()
 
-    // ── Verify: apply page URL contains ref + utm_source ───────────────────────
-
-    await candidatePage.waitForURL(`**/jobs/${jobSlug}/apply**`, { waitUntil: 'commit', timeout: 10_000 })
+    await candidatePage.waitForURL(`**/jobs/${visibleJob.slug}/apply**`, { waitUntil: 'commit', timeout: 10_000 })
     const applyUrl = new URL(candidatePage.url())
-    expect(applyUrl.searchParams.get('ref'), 'ref param must survive navigation to apply page').toBe(REF_CODE)
-    expect(applyUrl.searchParams.get('utm_source'), 'utm_source must survive navigation to apply page').toBe(UTM_SOURCE)
+    expect(applyUrl.searchParams.get('ref'), 'ref param must survive navigation to apply page').toBe(trackingLink.code)
 
-    // ── Step 3: Fill and submit the application ────────────────────────────────
-
-    const APPLICANT = {
-      firstName: 'Tracking',
-      lastName: 'Test',
-      email: `tracking.test.${Date.now()}.r${testInfo.retry}@example.com`,
-    }
-
-    await candidatePage.getByLabel('First name').fill(APPLICANT.firstName)
-    await candidatePage.getByLabel('Last name').fill(APPLICANT.lastName)
-    await candidatePage.getByLabel('Email').fill(APPLICANT.email)
+    await candidatePage.getByLabel('First name').fill(applicant.firstName)
+    await candidatePage.getByLabel('Last name').fill(applicant.lastName)
+    await candidatePage.getByLabel('Email').fill(applicant.email)
     await selectFactorySelectOption(candidatePage, /Country/, 'United States')
     await selectFactorySelectOption(candidatePage, /State/, 'California')
     const submitButton = await advanceToSubmitButton(candidatePage)
 
-    // Intercept the POST to verify the body includes source tracking params
     const [applyResponse] = await Promise.all([
       candidatePage.waitForResponse(
         resp =>
-          resp.url().includes(`/api/public/jobs/${jobSlug}/apply`) &&
+          resp.url().includes(`/api/public/jobs/${visibleJob.slug}/apply`) &&
           resp.request().method() === 'POST',
         { timeout: 30_000 },
       ),
       submitButton.click(),
     ])
 
-    // Verify 2xx response
     const status = applyResponse.status()
     expect(status, `Apply API returned ${status}`).toBeGreaterThanOrEqual(200)
     expect(status, `Apply API returned ${status}`).toBeLessThan(300)
 
-    // Verify the POST body included the tracking params
     const requestBody = applyResponse.request().postDataJSON()
-    expect(requestBody.ref, 'POST body must include ref code').toBe(REF_CODE)
-    expect(requestBody.utmSource, 'POST body must include utmSource').toBe(UTM_SOURCE)
+    expect(requestBody.ref, 'POST body must include ref code').toBe(trackingLink.code)
 
-    // Verify confirmation page
-    await candidatePage.waitForURL(`**/jobs/${jobSlug}/confirmation`, {
+    await candidatePage.waitForURL(`**/jobs/${visibleJob.slug}/confirmation`, {
       waitUntil: 'commit',
       timeout: 15_000,
     })
     await expect(candidatePage.getByRole('heading', { name: 'Application submitted' })).toBeVisible()
+
+    await expect.poll(async () => {
+      const response = await page.request.get(`/api/tracking-links/${trackingLink.id}`)
+      expect(response.status(), `Tracking link API returned ${response.status()}`).toBe(200)
+      return await response.json() as { clickCount: number; applicationCount: number }
+    }, {
+      message: 'tracking link counters should include public click and application',
+      timeout: 10_000,
+    }).toEqual(expect.objectContaining({ clickCount: 1, applicationCount: 1 }))
+
+    await expect.poll(async () => {
+      const response = await page.request.get(`/api/source-tracking/stats?jobId=${visibleJob.id}`)
+      expect(response.status(), `Source stats API returned ${response.status()}`).toBe(200)
+      const stats = await response.json() as {
+        recentAttributed: Array<{
+          candidateEmail: string
+          candidateFirstName: string
+          candidateLastName: string
+          jobTitle: string
+          channel: string
+          trackingLinkName: string | null
+        }>
+      }
+      return stats.recentAttributed.find(row => row.candidateEmail === applicant.email)
+    }, {
+      message: 'source attribution should persist for the public application',
+      timeout: 10_000,
+    }).toEqual(expect.objectContaining({
+      candidateFirstName: applicant.firstName,
+      candidateLastName: applicant.lastName,
+      jobTitle: visibleTitle,
+      channel: 'linkedin',
+      trackingLinkName: linkName,
+    }))
 
     await candidatePage.close()
     await candidateContext.close()
