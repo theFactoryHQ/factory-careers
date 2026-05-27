@@ -15,9 +15,10 @@ const toastTargets = [
   'app/pages/dashboard/settings/integrations.vue',
   'app/pages/dashboard/interviews/[id].vue',
   'app/components/InterviewEmailModal.vue',
-  'app/pages/dashboard/interviews/templates/[id].vue',
-  'app/pages/dashboard/interviews/templates/new.vue',
-  'app/pages/dashboard/interviews/templates/index.vue',
+  'app/pages/dashboard/emails/templates/[id].vue',
+  'app/pages/dashboard/emails/templates/new.vue',
+  'app/components/EmailWorkflowSettings.vue',
+  'app/pages/dashboard/emails/templates/index.vue',
   'app/pages/dashboard/interviews/index.vue',
   'app/components/InterviewScheduleSidebar.vue',
   'app/pages/dashboard/jobs/[id]/application-form.vue',
@@ -98,15 +99,15 @@ const disallowedInlineActionErrors: Record<string, string[]> = {
     'v-if="sendError"',
     'v-if="templateSaveError"',
   ],
-  'app/pages/dashboard/interviews/templates/[id].vue': [
+  'app/pages/dashboard/emails/templates/[id].vue': [
     'saveError.value = err?.data?.statusMessage',
     'v-if="saveError"',
   ],
-  'app/pages/dashboard/interviews/templates/new.vue': [
+  'app/pages/dashboard/emails/templates/new.vue': [
     'saveError.value = err?.data?.statusMessage',
     'v-if="saveError"',
   ],
-  'app/pages/dashboard/interviews/templates/index.vue': [
+  'app/components/EmailWorkflowSettings.vue': [
     'handlePreviewReadOnlyError(err)\n  } finally',
   ],
   'app/pages/dashboard/interviews/index.vue': [
@@ -179,7 +180,7 @@ describe('action error toast handling', () => {
 
   it('keeps client-side form validation anchored in the form', () => {
     const onboardingSource = readProjectFile('app/pages/onboarding/create-org.vue')
-    const newTemplateSource = readProjectFile('app/pages/dashboard/interviews/templates/new.vue')
+    const newTemplateSource = readProjectFile('app/pages/dashboard/emails/templates/new.vue')
 
     expect(onboardingSource).toContain('createOrgValidationError')
     expect(onboardingSource).toContain('v-if="createOrgValidationError"')

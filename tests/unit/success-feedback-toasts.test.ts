@@ -37,7 +37,7 @@ describe('success feedback toasts', () => {
         disallowed: ['postingSaved', 'requirementsSaved', 'complianceSaved'],
       },
       {
-        path: 'app/pages/dashboard/interviews/templates/[id].vue',
+        path: 'app/pages/dashboard/emails/templates/[id].vue',
         disallowed: ['saveSuccess'],
       },
       {

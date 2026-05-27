@@ -1,5 +1,6 @@
 export interface EmailTemplate {
   id: string
+  purpose: 'interview_invitation' | 'application_acknowledgement' | 'application_rejection'
   name: string
   subject: string
   body: string
@@ -22,6 +23,7 @@ export function useEmailTemplates() {
   })
 
   async function createTemplate(payload: {
+    purpose?: EmailTemplate['purpose']
     name: string
     subject: string
     body: string
@@ -40,6 +42,7 @@ export function useEmailTemplates() {
   }
 
   async function updateTemplate(id: string, payload: Partial<{
+    purpose: EmailTemplate['purpose']
     name: string
     subject: string
     body: string

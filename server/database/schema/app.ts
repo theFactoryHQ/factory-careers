@@ -37,6 +37,11 @@ export const genderEnum = pgEnum('gender', ['male', 'female', 'other', 'prefer_n
 export const experienceLevelEnum = pgEnum('experience_level', ['junior', 'mid', 'senior', 'lead'])
 export const nameDisplayFormatEnum = pgEnum('name_display_format', ['first_last', 'last_first'])
 export const dateFormatEnum = pgEnum('date_format', ['mdy', 'dmy', 'ymd'])
+export const emailTemplatePurposeEnum = pgEnum('email_template_purpose', [
+  'interview_invitation',
+  'application_acknowledgement',
+  'application_rejection',
+])
 export const complianceSexEnum = pgEnum('compliance_sex', ['male', 'female', 'prefer_not_to_answer'])
 export const complianceRaceEthnicityEnum = pgEnum('compliance_race_ethnicity', [
   'hispanic_or_latino',
@@ -348,6 +353,30 @@ export const orgSettings = pgTable('org_settings', {
   includeEeo: boolean('include_eeo').notNull().default(true),
   includeVeteran: boolean('include_veteran').notNull().default(true),
   includeDisability: boolean('include_disability').notNull().default(true),
+  /** Sends a candidate-facing acknowledgement when a public application is received */
+  sendApplicationAcknowledgement: boolean('send_application_acknowledgement').notNull().default(true),
+  /** Default template used for application acknowledgement workflow sends */
+  applicationAcknowledgementTemplateId: text('application_acknowledgement_template_id'),
+  /** Delay before sending application acknowledgement workflow emails, in minutes */
+  applicationAcknowledgementDelayMinutes: integer('application_acknowledgement_delay_minutes').notNull().default(0),
+  /** When true, application acknowledgement workflow emails wait until weekday business hours */
+  applicationAcknowledgementBusinessHoursOnly: boolean('application_acknowledgement_business_hours_only').notNull().default(false),
+  /** Sends a candidate-facing notification when an application is rejected */
+  sendApplicationRejection: boolean('send_application_rejection').notNull().default(false),
+  /** Default template used for application rejection workflow sends */
+  applicationRejectionTemplateId: text('application_rejection_template_id'),
+  /** Delay before sending application rejection workflow emails, in minutes */
+  applicationRejectionDelayMinutes: integer('application_rejection_delay_minutes').notNull().default(0),
+  /** When true, application rejection workflow emails wait until weekday business hours */
+  applicationRejectionBusinessHoursOnly: boolean('application_rejection_business_hours_only').notNull().default(false),
+  /** Default template used for interview invitation workflow sends */
+  interviewInvitationTemplateId: text('interview_invitation_template_id'),
+  /** Timezone used when applying email workflow business-hour windows */
+  emailBusinessHoursTimezone: text('email_business_hours_timezone').notNull().default('America/New_York'),
+  /** Start hour, local to emailBusinessHoursTimezone, when business-hour workflow sends may begin */
+  emailBusinessHoursStartHour: integer('email_business_hours_start_hour').notNull().default(9),
+  /** End hour, local to emailBusinessHoursTimezone, when business-hour workflow sends stop */
+  emailBusinessHoursEndHour: integer('email_business_hours_end_hour').notNull().default(17),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => ([
@@ -544,6 +573,7 @@ export const interview = pgTable('interview', {
 export const emailTemplate = pgTable('email_template', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  purpose: emailTemplatePurposeEnum('purpose').notNull().default('interview_invitation'),
   name: text('name').notNull(),
   subject: text('subject').notNull(),
   body: text('body').notNull(),
@@ -552,6 +582,7 @@ export const emailTemplate = pgTable('email_template', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => ([
   index('email_template_organization_id_idx').on(t.organizationId),
+  index('email_template_purpose_idx').on(t.organizationId, t.purpose),
   index('email_template_created_by_id_idx').on(t.createdById),
 ]))
 

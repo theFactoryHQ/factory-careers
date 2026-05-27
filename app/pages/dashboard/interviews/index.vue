@@ -301,7 +301,7 @@ const statusCounts = computed(() => {
         </p>
       </div>
       <NuxtLink
-        :to="$localePath('/dashboard/interviews/templates')"
+        :to="$localePath('/dashboard/emails/templates')"
       class="ui-button ui-button-primary inline-flex items-center gap-2 px-4 py-2 text-sm no-underline"
       >
         <Mail class="size-4" />

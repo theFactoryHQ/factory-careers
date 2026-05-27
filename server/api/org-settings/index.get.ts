@@ -18,6 +18,18 @@ export default defineEventHandler(async (event) => {
     includeEeo?: boolean
     includeVeteran?: boolean
     includeDisability?: boolean
+    sendApplicationAcknowledgement?: boolean
+    applicationAcknowledgementTemplateId?: string | null
+    applicationAcknowledgementDelayMinutes?: number
+    applicationAcknowledgementBusinessHoursOnly?: boolean
+    sendApplicationRejection?: boolean
+    applicationRejectionTemplateId?: string | null
+    applicationRejectionDelayMinutes?: number
+    applicationRejectionBusinessHoursOnly?: boolean
+    interviewInvitationTemplateId?: string | null
+    emailBusinessHoursTimezone?: string
+    emailBusinessHoursStartHour?: number
+    emailBusinessHoursEndHour?: number
   } | undefined
 
   try {
@@ -34,6 +46,18 @@ export default defineEventHandler(async (event) => {
         includeEeo: true,
         includeVeteran: true,
         includeDisability: true,
+        sendApplicationAcknowledgement: true,
+        applicationAcknowledgementTemplateId: true,
+        applicationAcknowledgementDelayMinutes: true,
+        applicationAcknowledgementBusinessHoursOnly: true,
+        sendApplicationRejection: true,
+        applicationRejectionTemplateId: true,
+        applicationRejectionDelayMinutes: true,
+        applicationRejectionBusinessHoursOnly: true,
+        interviewInvitationTemplateId: true,
+        emailBusinessHoursTimezone: true,
+        emailBusinessHoursStartHour: true,
+        emailBusinessHoursEndHour: true,
       },
     })
   }
@@ -65,5 +89,17 @@ export default defineEventHandler(async (event) => {
     includeEeo: settings?.includeEeo ?? true,
     includeVeteran: settings?.includeVeteran ?? true,
     includeDisability: settings?.includeDisability ?? true,
+    sendApplicationAcknowledgement: settings?.sendApplicationAcknowledgement ?? true,
+    applicationAcknowledgementTemplateId: settings?.applicationAcknowledgementTemplateId ?? null,
+    applicationAcknowledgementDelayMinutes: settings?.applicationAcknowledgementDelayMinutes ?? 0,
+    applicationAcknowledgementBusinessHoursOnly: settings?.applicationAcknowledgementBusinessHoursOnly ?? false,
+    sendApplicationRejection: settings?.sendApplicationRejection ?? false,
+    applicationRejectionTemplateId: settings?.applicationRejectionTemplateId ?? null,
+    applicationRejectionDelayMinutes: settings?.applicationRejectionDelayMinutes ?? 0,
+    applicationRejectionBusinessHoursOnly: settings?.applicationRejectionBusinessHoursOnly ?? false,
+    interviewInvitationTemplateId: settings?.interviewInvitationTemplateId ?? null,
+    emailBusinessHoursTimezone: settings?.emailBusinessHoursTimezone ?? 'America/New_York',
+    emailBusinessHoursStartHour: settings?.emailBusinessHoursStartHour ?? 9,
+    emailBusinessHoursEndHour: settings?.emailBusinessHoursEndHour ?? 17,
   }
 })

@@ -1,5 +1,6 @@
 export interface SystemTemplate {
   id: string
+  purpose: 'interview_invitation' | 'application_acknowledgement' | 'application_rejection'
   name: string
   description: string
   subject: string
@@ -9,6 +10,7 @@ export interface SystemTemplate {
 export const SYSTEM_TEMPLATES: SystemTemplate[] = [
   {
     id: 'system-standard',
+    purpose: 'interview_invitation',
     name: 'Standard Interview Invitation',
     description: 'A professional and formal invitation suitable for most interview types.',
     subject: 'Interview Invitation: {{jobTitle}} at {{organizationName}}',
@@ -34,6 +36,7 @@ Best regards,
   },
   {
     id: 'system-friendly',
+    purpose: 'interview_invitation',
     name: 'Friendly & Casual',
     description: 'A warm, conversational tone that puts candidates at ease.',
     subject: "Let's chat! Interview for {{jobTitle}}",
@@ -56,6 +59,7 @@ The {{organizationName}} Team`,
   },
   {
     id: 'system-technical',
+    purpose: 'interview_invitation',
     name: 'Technical Interview',
     description: 'Tailored for technical interviews with preparation tips for candidates.',
     subject: 'Technical Interview: {{jobTitle}} — {{organizationName}}',
@@ -79,6 +83,36 @@ To help you prepare:
 - Feel free to ask questions about our tech stack and development practices
 
 Please confirm your attendance by replying to this email.
+
+Best regards,
+{{organizationName}}`,
+  },
+  {
+    id: 'system-application-acknowledgement',
+    purpose: 'application_acknowledgement',
+    name: 'Application Acknowledgement',
+    description: 'Thanks candidates automatically after they submit an application.',
+    subject: 'Application received: {{jobTitle}} at {{organizationName}}',
+    body: `Hi {{candidateFirstName}},
+
+Thank you for applying to the {{jobTitle}} role at {{organizationName}}. We received your application on {{applicationDate}}.
+
+Our hiring team will review your materials and follow up if there is a match for the role.
+
+Best regards,
+{{organizationName}}`,
+  },
+  {
+    id: 'system-application-rejection',
+    purpose: 'application_rejection',
+    name: 'Application Rejection',
+    description: 'Notifies candidates when the team is not moving forward.',
+    subject: 'Update on your {{jobTitle}} application',
+    body: `Hi {{candidateFirstName}},
+
+Thank you for your interest in the {{jobTitle}} role at {{organizationName}}.
+
+After reviewing your application, we will not be moving forward at this time. We appreciate the time you took to apply and wish you the best in your search.
 
 Best regards,
 {{organizationName}}`,

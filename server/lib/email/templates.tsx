@@ -207,6 +207,61 @@ export function ApplicationReceiptEmail({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Candidate Workflow Email (template-driven application updates)
+// ─────────────────────────────────────────────────────────────────────────────
+
+type CandidateWorkflowEmailProps = {
+  preview: string;
+  heading: string;
+  body: string;
+  cta?: EmailCta;
+  config?: EmailThemeConfig;
+};
+
+export function CandidateWorkflowEmail({
+  preview,
+  heading,
+  body,
+  cta,
+  config,
+}: CandidateWorkflowEmailProps) {
+  return (
+    <CareersEmailShell
+      preview={preview}
+      heading={heading}
+      body={body}
+      cta={cta}
+      config={config}
+    />
+  );
+}
+
+type ApplicationRejectionEmailProps = {
+  candidateName: string;
+  jobTitle: string;
+  organizationName: string;
+  config?: EmailThemeConfig;
+};
+
+export function ApplicationRejectionEmail({
+  candidateName,
+  jobTitle,
+  organizationName,
+  config,
+}: ApplicationRejectionEmailProps) {
+  const greeting = candidateName ? `Hi ${candidateName}, Thank` : "Thank";
+  return (
+    <CareersEmailShell
+      preview={`Update on your ${jobTitle} application`}
+      heading="Application update"
+      body={`${greeting} you for your interest in the ${jobTitle} role at ${organizationName}. After reviewing your application, we will not be moving forward at this time.`}
+      subtext="We appreciate the time you took to apply and wish you the best in your search."
+      config={config}
+    />
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Application Team Alert (hiring team)
 // ─────────────────────────────────────────────────────────────────────────────
 

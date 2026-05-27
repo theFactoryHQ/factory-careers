@@ -8,11 +8,15 @@
 
 // @ts-nocheck - React casts for email templates (type resolution for server React Email is handled at runtime)
 import React from "react";
+import { and, eq } from "drizzle-orm";
 
+import { emailTemplate, orgSettings } from "../database/schema";
 import { emailClient } from "../lib/email/client";
 import {
+  ApplicationRejectionEmail,
   ApplicationReceiptEmail,
   ApplicationTeamAlertEmail,
+  CandidateWorkflowEmail,
   InterviewInvitationEmail,
   OrgInvitationEmail,
   PasswordResetEmail,
@@ -24,6 +28,7 @@ import {
 } from "../lib/email/templates";
 import { env } from "./env";
 import { logError } from "./logger";
+import { SYSTEM_TEMPLATES, type SystemTemplate } from "~~/shared/system-templates";
 
 // Re-export the client for any route that needs the canonical from address (e.g. ICS)
 export { emailClient } from "../lib/email/client";
@@ -131,6 +136,321 @@ export async function sendApplicationReceiptEmail(data: {
       error_message: err instanceof Error ? err.message : String(err),
     });
   }
+}
+
+export async function sendApplicationRejectionEmail(data: {
+  candidateName: string;
+  candidateEmail: string;
+  jobTitle: string;
+  organizationName: string;
+}): Promise<void> {
+  try {
+    await emailClient.send({
+      from: emailClient.defaultFrom,
+      to: data.candidateEmail,
+      subject: `Update on your ${data.jobTitle} application`,
+      react: ApplicationRejectionEmail({
+        candidateName: data.candidateName,
+        jobTitle: data.jobTitle,
+        organizationName: data.organizationName,
+        config: careersEmailConfig,
+      }) as React.ReactElement,
+    });
+  } catch (err) {
+    logError("email.application_rejection_send_failed", {
+      provider: "resend",
+      error_message: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+type CandidateWorkflowPurpose = "application_acknowledgement" | "application_rejection";
+
+export interface CandidateWorkflowEmailData {
+  organizationId: string;
+  candidateName: string;
+  candidateFirstName: string;
+  candidateLastName: string;
+  candidateEmail: string;
+  jobTitle: string;
+  organizationName: string;
+  applicationDate: string;
+  applicationStatus?: string;
+  dashboardApplicationUrl?: string;
+}
+
+export function renderCandidateWorkflowTemplate(template: string, data: CandidateWorkflowEmailData): string {
+  const variables: Record<string, string> = {
+    candidateName: data.candidateName,
+    candidateFirstName: data.candidateFirstName,
+    candidateLastName: data.candidateLastName,
+    candidateEmail: data.candidateEmail,
+    jobTitle: data.jobTitle,
+    organizationName: data.organizationName,
+    applicationDate: data.applicationDate,
+    applicationStatus: data.applicationStatus ?? "",
+    dashboardApplicationUrl: data.dashboardApplicationUrl ?? "",
+  };
+
+  return template.replace(/\{\{(\w+)\}\}/g, (match, key: string) => {
+    return key in variables ? variables[key]! : match;
+  });
+}
+
+async function getEmailWorkflowSettings(organizationId: string) {
+  return await db.query.orgSettings.findFirst({
+    where: eq(orgSettings.organizationId, organizationId),
+    columns: {
+      sendApplicationAcknowledgement: true,
+      applicationAcknowledgementTemplateId: true,
+      applicationAcknowledgementDelayMinutes: true,
+      applicationAcknowledgementBusinessHoursOnly: true,
+      sendApplicationRejection: true,
+      applicationRejectionTemplateId: true,
+      applicationRejectionDelayMinutes: true,
+      applicationRejectionBusinessHoursOnly: true,
+      emailBusinessHoursTimezone: true,
+      emailBusinessHoursStartHour: true,
+      emailBusinessHoursEndHour: true,
+    },
+  });
+}
+
+async function resolveWorkflowTemplate(params: {
+  organizationId: string;
+  purpose: CandidateWorkflowPurpose;
+  templateId?: string | null;
+}): Promise<SystemTemplate | { id: string; purpose: CandidateWorkflowPurpose; name: string; subject: string; body: string } | null> {
+  const fallbackId = params.purpose === "application_acknowledgement"
+    ? "system-application-acknowledgement"
+    : "system-application-rejection";
+  const selectedId = params.templateId || fallbackId;
+
+  const systemTemplate = SYSTEM_TEMPLATES.find(t => t.id === selectedId && t.purpose === params.purpose);
+  if (systemTemplate) return systemTemplate;
+
+  const customTemplate = await db.query.emailTemplate.findFirst({
+    where: and(
+      eq(emailTemplate.id, selectedId),
+      eq(emailTemplate.organizationId, params.organizationId),
+      eq(emailTemplate.purpose, params.purpose),
+    ),
+    columns: {
+      id: true,
+      purpose: true,
+      name: true,
+      subject: true,
+      body: true,
+    },
+  });
+
+  if (customTemplate) return customTemplate;
+  return SYSTEM_TEMPLATES.find(t => t.id === fallbackId) ?? null;
+}
+
+async function sendCandidateWorkflowEmail(params: {
+  purpose: CandidateWorkflowPurpose;
+  templateId?: string | null;
+  data: CandidateWorkflowEmailData;
+}) {
+  const template = await resolveWorkflowTemplate({
+    organizationId: params.data.organizationId,
+    purpose: params.purpose,
+    templateId: params.templateId,
+  });
+  if (!template) return;
+
+  const subject = renderCandidateWorkflowTemplate(template.subject, params.data);
+  const body = renderCandidateWorkflowTemplate(template.body, params.data);
+  const heading = params.purpose === "application_acknowledgement"
+    ? "Application received"
+    : "Application update";
+
+  await emailClient.send({
+    from: emailClient.defaultFrom,
+    to: params.data.candidateEmail,
+    subject,
+    react: CandidateWorkflowEmail({
+      preview: subject,
+      heading,
+      body,
+      cta: params.data.dashboardApplicationUrl && params.purpose === "application_acknowledgement"
+        ? { href: params.data.dashboardApplicationUrl, text: "View Job Posting" }
+        : undefined,
+      config: careersEmailConfig,
+    }) as React.ReactElement,
+  });
+}
+
+type CandidateWorkflowTiming = {
+  delayMinutes?: number | null;
+  businessHoursOnly?: boolean | null;
+  businessHoursTimezone?: string | null;
+  businessHoursStartHour?: number | null;
+  businessHoursEndHour?: number | null;
+};
+
+type BusinessHoursWindow = {
+  timeZone: string;
+  startHour: number;
+  endHour: number;
+};
+
+function normalizeBusinessHoursWindow(timing: CandidateWorkflowTiming): BusinessHoursWindow {
+  const timeZone = timing.businessHoursTimezone || "America/New_York";
+  const startHour = Math.min(23, Math.max(0, Number(timing.businessHoursStartHour ?? 9)));
+  const endHour = Math.min(24, Math.max(startHour + 1, Number(timing.businessHoursEndHour ?? 17)));
+  return { timeZone, startHour, endHour };
+}
+
+function getZonedDateParts(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+    weekday: values.weekday,
+    hour: Number(values.hour === "24" ? "0" : values.hour),
+    minute: Number(values.minute),
+    second: Number(values.second),
+  };
+}
+
+function getTimeZoneOffsetMs(date: Date, timeZone: string): number {
+  const parts = getZonedDateParts(date, timeZone);
+  const zonedAsUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+  return zonedAsUtc - date.getTime();
+}
+
+function dateFromZonedParts(parts: { year: number; month: number; day: number; hour: number; minute?: number; second?: number }, timeZone: string): Date {
+  const utcGuess = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute ?? 0, parts.second ?? 0, 0);
+  const firstPass = new Date(utcGuess - getTimeZoneOffsetMs(new Date(utcGuess), timeZone));
+  return new Date(utcGuess - getTimeZoneOffsetMs(firstPass, timeZone));
+}
+
+function weekdayIndex(weekday: string): number {
+  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
+}
+
+function nextBusinessDateAtStart(parts: ReturnType<typeof getZonedDateParts>, window: BusinessHoursWindow, addDays = 0): Date {
+  let cursor = dateFromZonedParts({
+    year: parts.year,
+    month: parts.month,
+    day: parts.day + addDays,
+    hour: window.startHour,
+  }, window.timeZone);
+
+  while (true) {
+    const cursorParts = getZonedDateParts(cursor, window.timeZone);
+    const day = weekdayIndex(cursorParts.weekday);
+    if (day >= 1 && day <= 5) return cursor;
+    cursor = dateFromZonedParts({
+      year: cursorParts.year,
+      month: cursorParts.month,
+      day: cursorParts.day + 1,
+      hour: window.startHour,
+    }, window.timeZone);
+  }
+}
+
+function nextBusinessSendTime(target: Date, timing: CandidateWorkflowTiming = {}): Date {
+  const window = normalizeBusinessHoursWindow(timing);
+  const parts = getZonedDateParts(target, window.timeZone);
+  const day = weekdayIndex(parts.weekday);
+
+  if (day === 0 || day === 6) {
+    return nextBusinessDateAtStart(parts, window, 1);
+  }
+
+  if (parts.hour < window.startHour) {
+    return nextBusinessDateAtStart(parts, window);
+  }
+
+  if (parts.hour >= window.endHour) {
+    return nextBusinessDateAtStart(parts, window, 1);
+  }
+
+  return target;
+}
+
+function workflowSendDelayMs(timing: CandidateWorkflowTiming): number {
+  const delayMinutes = Math.max(0, Number(timing.delayMinutes ?? 0));
+  const requestedSendTime = new Date(Date.now() + delayMinutes * 60_000);
+  const scheduledSendTime = timing.businessHoursOnly ? nextBusinessSendTime(requestedSendTime, timing) : requestedSendTime;
+  return Math.max(0, scheduledSendTime.getTime() - Date.now());
+}
+
+async function sendCandidateWorkflowEmailWithTiming(params: {
+  purpose: CandidateWorkflowPurpose;
+  templateId?: string | null;
+  timing: CandidateWorkflowTiming;
+  data: CandidateWorkflowEmailData;
+}) {
+  const delayMs = workflowSendDelayMs(params.timing);
+
+  if (delayMs <= 0) {
+    await sendCandidateWorkflowEmail(params);
+    return;
+  }
+
+  setTimeout(() => {
+    void sendCandidateWorkflowEmail(params).catch((err) => {
+      logError("email.workflow_delayed_send_failed", {
+        provider: "resend",
+        purpose: params.purpose,
+        organization_id: params.data.organizationId,
+        error_message: err instanceof Error ? err.message : String(err),
+      });
+    });
+  }, delayMs);
+}
+
+export async function sendConfiguredApplicationAcknowledgementEmail(data: CandidateWorkflowEmailData): Promise<void> {
+  const settings = await getEmailWorkflowSettings(data.organizationId);
+  if (settings?.sendApplicationAcknowledgement === false) return;
+
+  await sendCandidateWorkflowEmailWithTiming({
+    purpose: "application_acknowledgement",
+    templateId: settings?.applicationAcknowledgementTemplateId,
+    timing: {
+      delayMinutes: settings?.applicationAcknowledgementDelayMinutes,
+      businessHoursOnly: settings?.applicationAcknowledgementBusinessHoursOnly,
+      businessHoursTimezone: settings?.emailBusinessHoursTimezone,
+      businessHoursStartHour: settings?.emailBusinessHoursStartHour,
+      businessHoursEndHour: settings?.emailBusinessHoursEndHour,
+    },
+    data,
+  });
+}
+
+export async function sendConfiguredApplicationRejectionEmail(data: CandidateWorkflowEmailData): Promise<void> {
+  const settings = await getEmailWorkflowSettings(data.organizationId);
+  if (settings?.sendApplicationRejection !== true) return;
+
+  await sendCandidateWorkflowEmailWithTiming({
+    purpose: "application_rejection",
+    templateId: settings.applicationRejectionTemplateId,
+    timing: {
+      delayMinutes: settings.applicationRejectionDelayMinutes,
+      businessHoursOnly: settings.applicationRejectionBusinessHoursOnly,
+      businessHoursTimezone: settings.emailBusinessHoursTimezone,
+      businessHoursStartHour: settings.emailBusinessHoursStartHour,
+      businessHoursEndHour: settings.emailBusinessHoursEndHour,
+    },
+    data,
+  });
 }
 
 export async function sendApplicationTeamAlertEmail(data: {

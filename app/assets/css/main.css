@@ -2556,6 +2556,37 @@
     color: #ffffff !important;
   }
 
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .email-workflow-select .factory-filter-select {
+    min-height: 44px;
+    text-transform: none !important;
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .email-workflow-select .factory-filter-dropdown-option {
+    text-transform: none !important;
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .email-workflow-delay-select .factory-filter-select {
+    min-height: 40px;
+    font-size: 0.75rem !important;
+    line-height: 1rem !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .email-workflow-toggle-track {
+    border-color: rgb(255 255 255 / 0.34) !important;
+    background-color: rgb(255 255 255 / 0.14) !important;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .peer:checked + .email-workflow-toggle-track {
+    border-color: var(--color-brand-400) !important;
+    background-color: var(--color-brand-500) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-500) 18%, transparent) !important;
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal, .factory-public-form) .factory-filter-dropdown.is-error .factory-filter-select {
     border-color: color-mix(in srgb, var(--color-danger-500) 72%, transparent) !important;
   }

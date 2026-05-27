@@ -15,6 +15,9 @@ export const AVAILABLE_VARIABLES = [
   { key: '{{interviewLocation}}', desc: 'Location/link' },
   { key: '{{interviewers}}', desc: 'Interviewer names' },
   { key: '{{organizationName}}', desc: 'Your org name' },
+  { key: '{{applicationDate}}', desc: 'Application date' },
+  { key: '{{applicationStatus}}', desc: 'Application status' },
+  { key: '{{dashboardApplicationUrl}}', desc: 'Application dashboard URL' },
 ] as const
 
 export function renderTemplatePreview(template: string, variables: Record<string, string>): string {
