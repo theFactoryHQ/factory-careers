@@ -40,6 +40,7 @@ describe('application timestamp stack', () => {
     }
     expect(candidateDrawer).toContain('<CandidateApplicationsPanel')
     expect(candidatePage).toContain('<CandidateApplicationsPanel')
+    expect(candidateApplicationsPanel).not.toMatch(/<NuxtLink[\s\S]*<ApplicationTimestampStack[\s\S]*<\/NuxtLink>/)
     expect(drawer).not.toContain('uppercase text-white/36">Applied')
     expect(fullPage).not.toContain('uppercase text-white/36">Applied')
     expect(jobPage).not.toContain('Applied {{ new Date(currentSummary.createdAt).toLocaleDateString() }}')

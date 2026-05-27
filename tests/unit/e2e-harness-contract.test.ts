@@ -117,7 +117,7 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:recruiter']).toBe(
-      'playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts e2e/critical-flows/application-saved-views.spec.ts e2e/critical-flows/application-custom-properties.spec.ts e2e/critical-flows/candidate-custom-properties.spec.ts e2e/critical-flows/application-board.spec.ts',
+      'playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts e2e/critical-flows/application-saved-views.spec.ts e2e/critical-flows/application-custom-properties.spec.ts e2e/critical-flows/candidate-custom-properties.spec.ts e2e/critical-flows/application-board.spec.ts e2e/critical-flows/activity-timeline.spec.ts',
     )
     expect(workflow).toContain('name: Playwright recruiter')
     expect(workflow).toContain('npm run test:e2e:recruiter')
@@ -125,6 +125,13 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('needs.recruiter.result')
     expect(read('e2e/critical-flows/application-board.spec.ts')).toContain('/api/comments')
     expect(read('e2e/critical-flows/application-board.spec.ts')).toContain('/dashboard/timeline')
+    expect(read('e2e/critical-flows/activity-timeline.spec.ts')).toContain('assertMutatingE2ESafety')
+    expect(read('e2e/critical-flows/activity-timeline.spec.ts')).toContain('/api/activity-log?resourceType=')
+    expect(read('e2e/critical-flows/activity-timeline.spec.ts')).toContain('/api/activity-log/timeline?limit=50')
+    expect(read('e2e/critical-flows/activity-timeline.spec.ts')).toContain('/api/activity-log/candidate-timeline?candidateId=')
+    expect(read('e2e/critical-flows/activity-timeline.spec.ts')).toContain('expectSortedNewestFirst')
+    expect(read('e2e/critical-flows/activity-timeline.spec.ts')).toContain('another org must not see')
+    expect(read('e2e/critical-flows/activity-timeline.spec.ts')).toContain('calendarSync: false')
   })
 
   it('runs post-publish job lifecycle browser coverage in a dedicated CI lane', () => {
@@ -228,7 +235,7 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:auth-org']).toBe(
-      'FACTORY_EMAIL_TEST_MODE=capture FACTORY_EMAIL_CAPTURE_PATH=/tmp/factory-careers-e2e-auth-org-email.jsonl playwright test e2e/critical-flows/auth-org-edge-flows.spec.ts e2e/critical-flows/organization-settings.spec.ts e2e/critical-flows/org-admin-membership.spec.ts',
+      'FACTORY_EMAIL_TEST_MODE=capture FACTORY_EMAIL_CAPTURE_PATH=/tmp/factory-careers-e2e-auth-org-email.jsonl playwright test e2e/critical-flows/auth-org-edge-flows.spec.ts e2e/critical-flows/organization-settings.spec.ts e2e/critical-flows/org-admin-membership.spec.ts e2e/critical-flows/device-authorization.spec.ts',
     )
     expect(workflow).toContain('name: Playwright auth and org')
     expect(workflow).toContain('npm run test:e2e:auth-org')
@@ -240,6 +247,12 @@ describe('Playwright E2E harness contract', () => {
     expect(read('e2e/critical-flows/org-admin-membership.spec.ts')).toContain('assertMutatingE2ESafety')
     expect(read('e2e/critical-flows/org-admin-membership.spec.ts')).toContain('FACTORY_EMAIL_TEST_MODE')
     expect(read('e2e/critical-flows/org-admin-membership.spec.ts')).toContain('/api/join-requests')
+    expect(read('e2e/critical-flows/device-authorization.spec.ts')).toContain('assertMutatingE2ESafety')
+    expect(read('e2e/critical-flows/device-authorization.spec.ts')).toContain('/api/auth/device/code')
+    expect(read('e2e/critical-flows/device-authorization.spec.ts')).toContain('/api/auth/device/token')
+    expect(read('e2e/critical-flows/device-authorization.spec.ts')).toContain('/api/cli/capabilities')
+    expect(read('e2e/critical-flows/device-authorization.spec.ts')).toContain('/api/dashboard/stats')
+    expect(read('e2e/critical-flows/device-authorization.spec.ts')).toContain('access_denied')
     expect(workflow).toContain('needs.auth_org.result')
     expect(workflow).toContain(e2eRequiredNeeds)
   })
@@ -317,6 +330,7 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('npm run test:e2e:uploads')
     expect(workflow).toContain('factory-careers-uploads-minio')
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "false"')
+    expect(read('e2e/critical-flows/candidate-documents.spec.ts')).toContain('assertMutatingE2ESafety')
     expect(read('e2e/critical-flows/candidate-documents.spec.ts')).toContain('/api/documents/${uploaded!.id}/preview')
     expect(read('e2e/critical-flows/candidate-documents.spec.ts')).toContain('/api/documents/${uploaded!.id}/download')
     expect(read('e2e/critical-flows/candidate-documents.spec.ts')).toContain('/api/documents/${uploaded!.id}/parse')
