@@ -107,7 +107,7 @@ test.describe("Fake mail capture", () => {
     expect(receipt, "candidate receipt email should be captured").toBeTruthy();
     expect(receipt?.renderError, "candidate receipt email should render successfully").toBeUndefined();
     expect(receipt?.to).toContain(applicant.email);
-    expect(receipt?.text).toContain(applicantName);
+    expect(receipt?.text).toContain(`Hi ${applicant.firstName}`);
     expect(receipt?.text).toContain(jobTitle);
     expect(receipt?.text).toContain(organizationName);
 
