@@ -35,7 +35,7 @@
     "typecheck": "nuxi typecheck",
     "test:e2e": "npx playwright test",
     "test:e2e:smoke": "playwright test e2e/critical-flows/dropdown-styling.spec.ts e2e/critical-flows/job-creation.spec.ts e2e/critical-flows/source-tracking.spec.ts",
-    "test:e2e:uploads": "playwright test e2e/critical-flows/resume-upload.spec.ts",
+    "test:e2e:uploads": "playwright test e2e/critical-flows/resume-upload.spec.ts e2e/critical-flows/candidate-documents.spec.ts",
     "test:e2e:candidate": "playwright test e2e/critical-flows/candidate-application.spec.ts",
     "test:e2e:recruiter": "playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts e2e/critical-flows/application-saved-views.spec.ts e2e/critical-flows/application-custom-properties.spec.ts e2e/critical-flows/candidate-custom-properties.spec.ts e2e/critical-flows/application-board.spec.ts",
     "test:e2e:job-lifecycle": "playwright test e2e/critical-flows/job-lifecycle.spec.ts e2e/critical-flows/application-form-builder.spec.ts",

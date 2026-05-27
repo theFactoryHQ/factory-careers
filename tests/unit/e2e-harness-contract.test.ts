@@ -281,19 +281,22 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain(e2eRequiredNeeds)
   })
 
-  it('runs resume upload browser coverage in a dedicated local-storage CI lane', () => {
+  it('runs upload and dashboard document browser coverage in a dedicated local-storage CI lane', () => {
     const workflow = read('.github/workflows/e2e-tests.yml')
     const packageJson = JSON.parse(read('package.json')) as {
       scripts?: Record<string, string>
     }
 
     expect(packageJson.scripts?.['test:e2e:uploads']).toBe(
-      'playwright test e2e/critical-flows/resume-upload.spec.ts',
+      'playwright test e2e/critical-flows/resume-upload.spec.ts e2e/critical-flows/candidate-documents.spec.ts',
     )
     expect(workflow).toContain('name: Playwright uploads')
     expect(workflow).toContain('npm run test:e2e:uploads')
     expect(workflow).toContain('factory-careers-uploads-minio')
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "false"')
+    expect(read('e2e/critical-flows/candidate-documents.spec.ts')).toContain('/api/documents/${uploaded!.id}/preview')
+    expect(read('e2e/critical-flows/candidate-documents.spec.ts')).toContain('/api/documents/${uploaded!.id}/download')
+    expect(read('e2e/critical-flows/candidate-documents.spec.ts')).toContain('/api/documents/${uploaded!.id}/parse')
     expect(workflow).toContain(e2eRequiredNeeds)
   })
 
