@@ -333,6 +333,7 @@ function modelTitle(c: AiConfigRow): string {
           <div class="flex flex-wrap items-center gap-1.5 shrink-0">
             <button
               v-if="!c.isDefaultChatbot"
+              type="button"
               :disabled="!c.hasApiKey || (togglingDefaultId === c.id && togglingPurpose === 'chatbot')"
               class="ui-button ui-button-secondary px-2.5 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               :title="c.hasApiKey ? 'Use this model for the chatbot' : 'Add an API key first'"
@@ -345,6 +346,7 @@ function modelTitle(c: AiConfigRow): string {
 
             <button
               v-if="!c.isDefaultAnalysis"
+              type="button"
               :disabled="!c.hasApiKey || (togglingDefaultId === c.id && togglingPurpose === 'analysis')"
               class="ui-button ui-button-secondary px-2.5 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               :title="c.hasApiKey ? 'Use this model for candidate analysis' : 'Add an API key first'"
@@ -356,6 +358,7 @@ function modelTitle(c: AiConfigRow): string {
             </button>
 
             <button
+              type="button"
               :disabled="testingId === c.id || !c.hasApiKey"
               class="ui-button ui-button-secondary px-2.5 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               @click="testConnection(c)"
@@ -374,6 +377,7 @@ function modelTitle(c: AiConfigRow): string {
             </NuxtLink>
 
             <button
+              type="button"
               :disabled="deletingId === c.id"
               class="ui-button ui-button-danger-outline px-2.5 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               @click="deleteConfig(c)"

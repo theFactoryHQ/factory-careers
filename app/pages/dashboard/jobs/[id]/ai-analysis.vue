@@ -13,7 +13,7 @@ const jobId = route.params.id as string
 const toast = useToast()
 const { track } = useTrack()
 
-const { job, status: jobFetchStatus, error: jobError, updateJob } = useJob(jobId)
+const { job, status: jobFetchStatus, error: jobError, updateJob, refresh: refreshJob } = useJob(jobId)
 
 useSeoMeta({
   title: computed(() =>
@@ -169,6 +169,10 @@ function loadTemplate(template: 'standard' | 'technical' | 'non_technical') {
 const isGeneratingCriteria = ref(false)
 
 async function generateAiCriteria() {
+  if (isGeneratingCriteria.value) return
+  if (!job.value?.description) {
+    await refreshJob()
+  }
   if (!job.value?.description) {
     toast.warning('Job description required', 'Add a job description first so AI can generate relevant criteria.')
     return

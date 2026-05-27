@@ -148,6 +148,7 @@ describe('CLI AI config commands', () => {
     expect(JSON.parse(defaultOut[0])).toEqual({ success: true })
     expect(JSON.parse(testOut[0])).toEqual({ success: true })
     expect(JSON.parse(deleteOut[0])).toEqual({ success: true })
+    expect(fetchMock).toHaveBeenCalledTimes(5)
   })
 
   it('lists providers, refreshes providers, and generates criteria', async () => {

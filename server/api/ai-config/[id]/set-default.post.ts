@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { aiConfig } from '../../../database/schema'
 import { setAiConfigDefaultSchema } from '../../../utils/schemas/scoring'
@@ -9,11 +9,9 @@ const paramsSchema = z.object({ id: z.string().min(1) })
  * POST /api/ai-config/:id/set-default
  *
  * Atomically claims one or more "default" slots (chatbot, analysis) for this
- * configuration. Uses a single UPDATE per purpose that sets the flag to true
- * for the chosen row and false for every other row in the same organization,
- * so the "exactly one default per purpose" invariant is preserved even under
- * concurrent requests. The partial unique indexes on `is_default_chatbot` and
- * `is_default_analysis` provide a DB-level backstop.
+ * configuration. Each purpose is cleared before setting the selected row so
+ * Postgres never sees two default rows while enforcing the partial unique
+ * indexes on `is_default_chatbot` and `is_default_analysis`.
  */
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { aiConfig: ['update'] })
@@ -31,18 +29,30 @@ export default defineEventHandler(async (event) => {
     if (body.purposes.includes('chatbot')) {
       await tx.update(aiConfig)
         .set({
-          isDefaultChatbot: sql`${aiConfig.id} = ${id}`,
+          isDefaultChatbot: false,
           updatedAt: new Date(),
         })
         .where(eq(aiConfig.organizationId, orgId))
+      await tx.update(aiConfig)
+        .set({
+          isDefaultChatbot: true,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(aiConfig.id, id), eq(aiConfig.organizationId, orgId)))
     }
     if (body.purposes.includes('analysis')) {
       await tx.update(aiConfig)
         .set({
-          isDefaultAnalysis: sql`${aiConfig.id} = ${id}`,
+          isDefaultAnalysis: false,
           updatedAt: new Date(),
         })
         .where(eq(aiConfig.organizationId, orgId))
+      await tx.update(aiConfig)
+        .set({
+          isDefaultAnalysis: true,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(aiConfig.id, id), eq(aiConfig.organizationId, orgId)))
     }
   })
 
