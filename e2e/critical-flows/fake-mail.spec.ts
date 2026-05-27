@@ -103,7 +103,7 @@ test.describe("Fake mail capture", () => {
     }).toBeGreaterThanOrEqual(2);
 
     const capturedEmails = await readCapturedEmails(capturePath!);
-    const receipt = capturedEmails.find((email) => email.subject === `Application received — ${jobTitle} at ${organizationName}`);
+    const receipt = capturedEmails.find((email) => email.subject === `Application received: ${jobTitle} at ${organizationName}`);
     expect(receipt, "candidate receipt email should be captured").toBeTruthy();
     expect(receipt?.renderError, "candidate receipt email should render successfully").toBeUndefined();
     expect(receipt?.to).toContain(applicant.email);
