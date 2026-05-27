@@ -71,7 +71,7 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:ui']).toBe(
-      'playwright test e2e/critical-flows/invitation-management.spec.ts',
+      'playwright test e2e/critical-flows/invitation-management.spec.ts e2e/critical-flows/mobile-keyboard-smoke.spec.ts',
     )
   })
 

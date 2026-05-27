@@ -550,6 +550,10 @@ function handleNewJobClick() {
           <!-- Mobile hamburger -->
           <button
             class="flex md:hidden items-center justify-center size-8 border border-transparent bg-transparent text-white/58 transition-all duration-200 cursor-pointer hover:bg-white/[0.04] hover:text-white"
+            type="button"
+            :aria-label="showMobileMenu ? 'Close navigation menu' : 'Open navigation menu'"
+            :aria-expanded="showMobileMenu"
+            aria-controls="dashboard-mobile-navigation"
             @click="showMobileMenu = !showMobileMenu"
           >
             <X v-if="showMobileMenu" class="size-4" />
@@ -655,6 +659,7 @@ function handleNewJobClick() {
       leave-to-class="opacity-0 -translate-y-2"
     >
       <div
+        id="dashboard-mobile-navigation"
         v-if="showMobileMenu"
         class="relative z-10 md:hidden border-b border-white/10 bg-black/95 backdrop-blur-xl"
       >
