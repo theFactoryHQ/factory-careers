@@ -12,7 +12,7 @@ export interface E2ESafetyOptions {
 
 const DEFAULT_BASE_URL = 'http://localhost:3333'
 const LOCAL_DATABASE_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0', 'postgres', 'db', 'database'])
-const PRODUCTION_APP_HOSTS = new Set(['careers.thefactoryhq.com'])
+const PRODUCTION_APP_HOSTS = new Set(['thefactoryhq.com', 'www.thefactoryhq.com', 'careers.thefactoryhq.com'])
 
 function parseDotenv(contents: string): EnvMap {
   const values: EnvMap = {}
@@ -59,6 +59,30 @@ export function loadE2EEnvironment(options: E2ESafetyOptions = {}): EnvMap {
   }
 }
 
+function loadE2EEnvironmentSources(options: E2ESafetyOptions = {}) {
+  const cwd = options.cwd ?? process.cwd()
+  const sources: Array<{ name: string, env: EnvMap }> = []
+
+  if (options.readDotenv ?? true) {
+    for (const file of ['.env', '.env.local']) {
+      const path = join(cwd, file)
+      if (existsSync(path)) {
+        sources.push({ name: file, env: parseDotenv(readFileSync(path, 'utf8')) })
+      }
+    }
+  }
+
+  if (options.includeProcessEnv !== false) {
+    sources.push({ name: 'process environment', env: process.env })
+  }
+
+  if (options.env) {
+    sources.push({ name: 'explicit environment', env: options.env })
+  }
+
+  return sources
+}
+
 function parseUrl(value: string, label: string): URL {
   try {
     return new URL(value)
@@ -84,29 +108,57 @@ function isSupabaseHost(hostname: string): boolean {
 }
 
 export function assertMutatingE2ESafety(options: E2ESafetyOptions = {}) {
-  const env = loadE2EEnvironment(options)
   const errors: string[] = []
+  const sources = loadE2EEnvironmentSources(options)
 
-  const baseUrl = env.PLAYWRIGHT_BASE_URL || DEFAULT_BASE_URL
-  const parsedBaseUrl = parseUrl(baseUrl, 'PLAYWRIGHT_BASE_URL')
-  const baseHost = parsedBaseUrl.hostname.toLowerCase()
+  for (const { name, env } of sources) {
+    const baseUrl = env.PLAYWRIGHT_BASE_URL
+    if (baseUrl) {
+      const parsedBaseUrl = parseUrl(baseUrl, `${name} PLAYWRIGHT_BASE_URL`)
+      const baseHost = parsedBaseUrl.hostname.toLowerCase()
 
-  if (PRODUCTION_APP_HOSTS.has(baseHost)) {
-    errors.push(`PLAYWRIGHT_BASE_URL points at the production app host (${baseHost}).`)
-  }
-  else if (!isLocalHttpHost(baseHost) && env.E2E_ALLOW_REMOTE_BASE_URL !== 'true') {
-    errors.push(`PLAYWRIGHT_BASE_URL must be local for this mutating suite unless E2E_ALLOW_REMOTE_BASE_URL=true is set (${baseHost}).`)
-  }
-
-  if (env.DATABASE_URL) {
-    const databaseUrl = parseUrl(env.DATABASE_URL, 'DATABASE_URL')
-    const databaseHost = databaseUrl.hostname.toLowerCase()
-
-    if (isSupabaseHost(databaseHost)) {
-      errors.push(`DATABASE_URL points at Supabase (${databaseHost}); use a local or disposable E2E database.`)
+      if (PRODUCTION_APP_HOSTS.has(baseHost)) {
+        errors.push(`${name} PLAYWRIGHT_BASE_URL points at a production app host (${baseHost}).`)
+      }
+      else if (!isLocalHttpHost(baseHost)) {
+        errors.push(`${name} PLAYWRIGHT_BASE_URL must be local for this mutating suite (${baseHost}).`)
+      }
     }
-    else if (!isLocalDatabaseHost(databaseHost) && env.E2E_ALLOW_REMOTE_DATABASE !== 'true') {
-      errors.push(`DATABASE_URL must be local/disposable for this mutating suite unless E2E_ALLOW_REMOTE_DATABASE=true is set (${databaseHost}).`)
+
+    if (env.BETTER_AUTH_URL) {
+      const parsedAuthUrl = parseUrl(env.BETTER_AUTH_URL, `${name} BETTER_AUTH_URL`)
+      const authHost = parsedAuthUrl.hostname.toLowerCase()
+      if (PRODUCTION_APP_HOSTS.has(authHost)) {
+        errors.push(`${name} BETTER_AUTH_URL points at a production app host (${authHost}).`)
+      }
+    }
+
+    if (env.NUXT_PUBLIC_SITE_URL) {
+      const parsedSiteUrl = parseUrl(env.NUXT_PUBLIC_SITE_URL, `${name} NUXT_PUBLIC_SITE_URL`)
+      const siteHost = parsedSiteUrl.hostname.toLowerCase()
+      if (PRODUCTION_APP_HOSTS.has(siteHost)) {
+        errors.push(`${name} NUXT_PUBLIC_SITE_URL points at a production app host (${siteHost}).`)
+      }
+    }
+
+    if (env.DATABASE_URL) {
+      const databaseUrl = parseUrl(env.DATABASE_URL, `${name} DATABASE_URL`)
+      const databaseHost = databaseUrl.hostname.toLowerCase()
+
+      if (isSupabaseHost(databaseHost)) {
+        errors.push(`${name} DATABASE_URL points at Supabase (${databaseHost}); use a local or disposable E2E database.`)
+      }
+      else if (!isLocalDatabaseHost(databaseHost)) {
+        errors.push(`${name} DATABASE_URL must be local/disposable for this mutating suite (${databaseHost}).`)
+      }
+    }
+  }
+
+  const effectiveEnv = loadE2EEnvironment(options)
+  if (!effectiveEnv.PLAYWRIGHT_BASE_URL) {
+    const parsedDefaultBaseUrl = parseUrl(DEFAULT_BASE_URL, 'default PLAYWRIGHT_BASE_URL')
+    if (!isLocalHttpHost(parsedDefaultBaseUrl.hostname)) {
+      errors.push(`default PLAYWRIGHT_BASE_URL must be local for this mutating suite (${parsedDefaultBaseUrl.hostname}).`)
     }
   }
 
