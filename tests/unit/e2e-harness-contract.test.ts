@@ -220,7 +220,7 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:auth-org']).toBe(
-      'playwright test e2e/critical-flows/auth-org-edge-flows.spec.ts e2e/critical-flows/organization-settings.spec.ts',
+      'FACTORY_EMAIL_TEST_MODE=capture FACTORY_EMAIL_CAPTURE_PATH=/tmp/factory-careers-e2e-auth-org-email.jsonl playwright test e2e/critical-flows/auth-org-edge-flows.spec.ts e2e/critical-flows/organization-settings.spec.ts e2e/critical-flows/org-admin-membership.spec.ts',
     )
     expect(workflow).toContain('name: Playwright auth and org')
     expect(workflow).toContain('npm run test:e2e:auth-org')
@@ -229,6 +229,9 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).not.toContain('MICROSOFT_CALENDAR_CLIENT_SECRET')
     expect(read('e2e/critical-flows/organization-settings.spec.ts')).toContain('/api/calendar/status')
     expect(read('e2e/critical-flows/organization-settings.spec.ts')).toContain('Connect shared calendar')
+    expect(read('e2e/critical-flows/org-admin-membership.spec.ts')).toContain('assertMutatingE2ESafety')
+    expect(read('e2e/critical-flows/org-admin-membership.spec.ts')).toContain('FACTORY_EMAIL_TEST_MODE')
+    expect(read('e2e/critical-flows/org-admin-membership.spec.ts')).toContain('/api/join-requests')
     expect(workflow).toContain('needs.auth_org.result')
     expect(workflow).toContain(e2eRequiredNeeds)
   })

@@ -82,7 +82,7 @@ async function handleSaveOrg() {
     await authClient.organization.update({
       data: {
         name: trimmedName,
-        slug: trimmedSlug,
+        ...(isFactorySlugLocked.value ? {} : { slug: trimmedSlug }),
       },
     })
     await updateSettings({
