@@ -117,7 +117,7 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:recruiter']).toBe(
-      'playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts e2e/critical-flows/application-saved-views.spec.ts e2e/critical-flows/application-custom-properties.spec.ts e2e/critical-flows/candidate-custom-properties.spec.ts e2e/critical-flows/application-board.spec.ts',
+      'playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts e2e/critical-flows/application-saved-views.spec.ts e2e/critical-flows/application-custom-properties.spec.ts e2e/critical-flows/candidate-custom-properties.spec.ts e2e/critical-flows/application-board.spec.ts e2e/critical-flows/activity-timeline.spec.ts',
     )
     expect(workflow).toContain('name: Playwright recruiter')
     expect(workflow).toContain('npm run test:e2e:recruiter')
@@ -125,6 +125,13 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('needs.recruiter.result')
     expect(read('e2e/critical-flows/application-board.spec.ts')).toContain('/api/comments')
     expect(read('e2e/critical-flows/application-board.spec.ts')).toContain('/dashboard/timeline')
+    expect(read('e2e/critical-flows/activity-timeline.spec.ts')).toContain('assertMutatingE2ESafety')
+    expect(read('e2e/critical-flows/activity-timeline.spec.ts')).toContain('/api/activity-log?resourceType=')
+    expect(read('e2e/critical-flows/activity-timeline.spec.ts')).toContain('/api/activity-log/timeline?limit=50')
+    expect(read('e2e/critical-flows/activity-timeline.spec.ts')).toContain('/api/activity-log/candidate-timeline?candidateId=')
+    expect(read('e2e/critical-flows/activity-timeline.spec.ts')).toContain('expectSortedNewestFirst')
+    expect(read('e2e/critical-flows/activity-timeline.spec.ts')).toContain('another org must not see')
+    expect(read('e2e/critical-flows/activity-timeline.spec.ts')).toContain('calendarSync: false')
   })
 
   it('runs post-publish job lifecycle browser coverage in a dedicated CI lane', () => {
