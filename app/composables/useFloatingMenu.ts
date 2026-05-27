@@ -1,4 +1,4 @@
-import { toValue } from 'vue'
+import { nextTick, ref, toValue, watch, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 type FloatingMenuPlacement = 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
@@ -26,14 +26,16 @@ export function useFloatingMenu(options: FloatingMenuOptions) {
     const gap = options.gap ?? 4
     const viewportPadding = options.viewportPadding ?? 8
     const estimatedHeight = options.estimatedHeight ?? 280
-    const width = options.width === 'trigger' || options.width == null
+    const requestedWidth = options.width === 'trigger' || options.width == null
       ? rect.width
       : options.width
+    const width = Math.min(requestedWidth, Math.max(0, viewportWidth - viewportPadding * 2))
     const placement = toValue(options.placement) ?? 'bottom-start'
     const preferredLeft = placement === 'bottom-end' ? rect.right - width : rect.left
+    const maxLeft = Math.max(viewportPadding, viewportWidth - width - viewportPadding)
     const left = Math.min(
       Math.max(viewportPadding, preferredLeft),
-      viewportWidth - width - viewportPadding,
+      maxLeft,
     )
     const prefersTop = placement.startsWith('top')
     const renderAbove = prefersTop || (
