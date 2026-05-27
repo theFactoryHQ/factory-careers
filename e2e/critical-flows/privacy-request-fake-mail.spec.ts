@@ -104,6 +104,10 @@ function extractVerifyUrl(email: CapturedEmail) {
   return new URL(path, process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3333').toString()
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 async function signUpAndCreateOrganization(page: Page, id: string) {
   const account = {
     name: `Privacy Other ${id}`,
@@ -119,19 +123,19 @@ async function signUpAndCreateOrganization(page: Page, id: string) {
   await page.getByLabel('Password', { exact: true }).fill(account.password)
   await page.getByLabel('Confirm password').fill(account.password)
   await Promise.all([
-    page.waitForResponse(resp => resp.url().includes('/api/auth/sign-up') && resp.status() === 200),
+    page.waitForResponse(resp => resp.url().includes('/api/auth/sign-up') && resp.status() === 200, { timeout: 30_000 }),
     page.getByRole('button', { name: 'Sign up' }).click(),
   ])
-  await page.waitForURL(url => url.pathname.includes('/onboarding/') || url.pathname.includes('/auth/sign-in'), { timeout: 30_000 })
+  await page.waitForURL(url => url.pathname.includes('/onboarding/') || url.pathname.includes('/auth/sign-in'), { waitUntil: 'commit', timeout: 30_000 })
 
   if (page.url().includes('/auth/sign-in')) {
     await page.getByLabel('Email').fill(account.email)
     await page.getByLabel('Password').fill(account.password)
     await Promise.all([
-      page.waitForResponse(resp => resp.url().includes('/api/auth/sign-in') && resp.status() === 200),
+      page.waitForResponse(resp => resp.url().includes('/api/auth/sign-in') && resp.status() === 200, { timeout: 30_000 }),
       page.getByRole('button', { name: 'Sign in' }).click(),
     ])
-    await page.waitForURL('**/onboarding/**', { timeout: 30_000 })
+    await page.waitForURL('**/onboarding/**', { waitUntil: 'commit', timeout: 30_000 })
   }
 
   await page.getByLabel('Organization name').waitFor({ state: 'visible', timeout: 30_000 })
@@ -363,13 +367,14 @@ test.describe('Privacy request fake mail', () => {
       await page.goto('/dashboard/settings/privacy-requests')
       await page.waitForLoadState('networkidle')
       await expect(page.getByRole('heading', { name: 'Privacy Requests' })).toBeVisible({ timeout: 15_000 })
-      await expect(page.getByRole('button', { name: new RegExp(requester.email) })).toBeVisible()
+      const requesterEmailPattern = new RegExp(escapeRegExp(requester.email))
+      await expect(page.getByRole('button', { name: requesterEmailPattern })).toBeVisible()
       await expect(page.getByText(requester.email).first()).toBeVisible()
       await expect(page.getByText('verified').first()).toBeVisible()
       await expect(page.getByText(requester.name).first()).toBeVisible()
       await expect(page.getByText(requester.email).nth(1)).toBeVisible()
 
-      await page.getByRole('checkbox', { name: new RegExp(requester.email) }).check()
+      await page.getByRole('checkbox', { name: requesterEmailPattern }).check()
       await page.getByLabel('Resolution notes').fill(`Completed deletion for ${requester.email}`)
       await Promise.all([
         page.waitForResponse(resp => resp.url().includes(`/api/privacy-requests/${verifiedRequest!.id}/fulfill`) && resp.request().method() === 'POST' && resp.status() === 200),
