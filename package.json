@@ -37,7 +37,7 @@
     "test:e2e:smoke": "playwright test e2e/critical-flows/dropdown-styling.spec.ts e2e/critical-flows/job-creation.spec.ts e2e/critical-flows/source-tracking.spec.ts",
     "test:e2e:uploads": "playwright test e2e/critical-flows/resume-upload.spec.ts",
     "test:e2e:candidate": "playwright test e2e/critical-flows/candidate-application.spec.ts",
-    "test:e2e:recruiter": "playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts e2e/critical-flows/application-saved-views.spec.ts",
+    "test:e2e:recruiter": "playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts e2e/critical-flows/application-saved-views.spec.ts e2e/critical-flows/application-custom-properties.spec.ts",
     "test:e2e:job-lifecycle": "playwright test e2e/critical-flows/job-lifecycle.spec.ts",
     "test:e2e:email": "playwright test e2e/critical-flows/fake-mail.spec.ts e2e/critical-flows/privacy-request-fake-mail.spec.ts e2e/critical-flows/auth-recovery-fake-mail.spec.ts --workers=1",
     "test:e2e:tracking-analytics": "playwright test e2e/critical-flows/tracking-analytics.spec.ts",
