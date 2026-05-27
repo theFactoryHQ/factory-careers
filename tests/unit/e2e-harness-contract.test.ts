@@ -72,15 +72,23 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:ui']).toBe(
-      'playwright test e2e/critical-flows/invitation-management.spec.ts e2e/critical-flows/mobile-keyboard-smoke.spec.ts',
+      'NUXT_DEVTOOLS=false playwright test e2e/critical-flows/invitation-management.spec.ts e2e/critical-flows/mobile-keyboard-smoke.spec.ts e2e/critical-flows/accessibility-keyboard.spec.ts',
     )
+    expect(read('package.json')).toContain('@axe-core/playwright')
+    expect(read('playwright.config.ts')).toContain('NUXT_DEVTOOLS=false')
+    expect(read('nuxt.config.ts')).toContain('process.env.NUXT_DEVTOOLS !== "false"')
+    expect(read('e2e/critical-flows/accessibility-keyboard.spec.ts')).toContain('expectNoA11yViolations')
+    expect(read('e2e/critical-flows/accessibility-keyboard.spec.ts')).toContain('expectVisibleKeyboardFocus')
+    expect(read('e2e/critical-flows/accessibility-keyboard.spec.ts')).toContain('Close navigation menu')
   })
 
   it('runs invitation management browser coverage in a dedicated UI CI lane', () => {
     const workflow = read('.github/workflows/e2e-tests.yml')
+    const uiJob = workflowJobBlock(workflow, 'ui')
 
-    expect(workflow).toContain('name: Playwright UI')
-    expect(workflow).toContain('npm run test:e2e:ui')
+    expect(uiJob).toContain('name: Playwright UI')
+    expect(uiJob).toContain('npm run test:e2e:ui')
+    expect(uiJob).toContain('NUXT_DEVTOOLS: "false"')
     expect(workflow).toContain(e2eRequiredNeeds)
     expect(workflow).toContain('needs.ui.result')
   })

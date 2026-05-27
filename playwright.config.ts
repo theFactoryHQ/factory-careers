@@ -10,6 +10,7 @@ function shellEnv(name: string, value: string | undefined) {
 const ssoMockPort = process.env.E2E_SSO_MOCK_PORT ?? '3999'
 
 const webServerEnv = [
+  'NUXT_DEVTOOLS=false',
   'BETTER_AUTH_URL=http://127.0.0.1:3333',
   `BETTER_AUTH_TRUSTED_ORIGINS=http://127.0.0.1:3333,http://127.0.0.1:${ssoMockPort}`,
   'NUXT_PUBLIC_SITE_URL=http://127.0.0.1:3333',
