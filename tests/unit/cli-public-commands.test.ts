@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { runCli } from '../../packages/careers-cli/src/program'
@@ -148,5 +148,15 @@ describe('CLI public commands', () => {
       status: 422,
       message: 'Missing required answers: Agree to background check',
     })
+  })
+
+  it('inherits server-side Factory org scoping through the public jobs API routes', () => {
+    const program = readFileSync(join(process.cwd(), 'packages/careers-cli/src/program.ts'), 'utf8')
+    const publicScope = readFileSync(join(process.cwd(), 'server/utils/publicJobScope.ts'), 'utf8')
+
+    expect(publicScope).toContain('FACTORY_DISABLE_PUBLIC_ORG_CREATION')
+    expect(program).toContain('`${profile.baseUrl}/api/public/jobs`')
+    expect(program).toContain('`${profile.baseUrl}/api/public/jobs/${encodeURIComponent(slug)}`')
+    expect(program).toContain('`${profile.baseUrl}/api/public/jobs/${encodeURIComponent(slug)}/apply`')
   })
 })

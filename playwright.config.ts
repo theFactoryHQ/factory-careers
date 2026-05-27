@@ -1,4 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
+import { assertMutatingE2ESafety } from './e2e/safety'
+
+assertMutatingE2ESafety()
 
 function shellEnv(name: string, value: string | undefined) {
   return value ? `${name}=${JSON.stringify(value)}` : ''

@@ -8,6 +8,7 @@ import { parseDocument } from '../../../../utils/resume-parser'
 import { assertUploadContentLength } from '../../../../utils/uploadLimits'
 import { readPositiveIntegerEnv } from '../../../../utils/rateLimitConfig'
 import { detectAllowedDocumentMimeType } from '../../../../utils/documentMime'
+import { getPublicJobScopeCondition } from '../../../../utils/publicJobScope'
 import { isBuiltInLocationQuestion } from '~~/shared/built-in-application-fields'
 import { isRequiredCustomQuestionAnswered } from '~~/shared/custom-question-validation'
 import { resolveFactoryCareersBaseUrl } from '../../../../utils/baseUrl'
@@ -224,8 +225,12 @@ export default defineEventHandler(async (event) => {
   // 2. Fetch the job by slug and verify it's open
   // ─────────────────────────────────────────────
 
+  const organizationScope = await getPublicJobScopeCondition()
+  const jobConditions = [eq(job.slug, slug), eq(job.status, 'open'), lte(job.activeFrom, new Date())]
+  if (organizationScope) jobConditions.push(organizationScope)
+
   const existingJob = await db.query.job.findFirst({
-    where: and(eq(job.slug, slug), eq(job.status, 'open'), lte(job.activeFrom, new Date())),
+    where: and(...jobConditions),
     columns: {
       id: true,
       title: true,

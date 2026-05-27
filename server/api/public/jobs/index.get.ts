@@ -1,6 +1,8 @@
+import type { SQL } from 'drizzle-orm'
 import { eq, and, desc, ilike, lte, or } from 'drizzle-orm'
 import { job } from '../../../database/schema'
 import { publicJobsQuerySchema } from '../../../utils/schemas/publicApplication'
+import { getPublicJobScopeCondition } from '../../../utils/publicJobScope'
 
 type PublicJobsQuery = Awaited<ReturnType<typeof publicJobsQuerySchema.parseAsync>>
 
@@ -31,9 +33,11 @@ function isMissingActiveFromColumn(error: unknown) {
     && message.includes('active_from')
 }
 
-function buildPublicJobsWhere(query: PublicJobsQuery, includeActiveFrom: boolean) {
+function buildPublicJobsWhere(query: PublicJobsQuery, includeActiveFrom: boolean, organizationScope?: SQL) {
   // Always filter to open jobs only. Older local databases may not have active_from yet.
   const conditions = [eq(job.status, 'open')]
+
+  if (organizationScope) conditions.push(organizationScope)
 
   if (includeActiveFrom) conditions.push(lte(job.activeFrom, new Date()))
 
@@ -65,8 +69,8 @@ function buildPublicJobsWhere(query: PublicJobsQuery, includeActiveFrom: boolean
   return and(...conditions)
 }
 
-async function listPublicJobs(query: PublicJobsQuery, offset: number, includeActiveFrom: boolean) {
-  const where = buildPublicJobsWhere(query, includeActiveFrom)
+async function listPublicJobs(query: PublicJobsQuery, offset: number, includeActiveFrom: boolean, organizationScope?: SQL) {
+  const where = buildPublicJobsWhere(query, includeActiveFrom, organizationScope)
 
   const columns = includeActiveFrom
     ? {
@@ -134,17 +138,18 @@ async function listPublicJobs(query: PublicJobsQuery, offset: number, includeAct
  */
 export default defineEventHandler(async (event) => {
   const query = await getValidatedQuery(event, publicJobsQuerySchema.parse)
+  const organizationScope = await getPublicJobScopeCondition()
 
   const offset = (query.page - 1) * query.limit
 
   try {
-    const result = await listPublicJobs(query, offset, true)
+    const result = await listPublicJobs(query, offset, true, organizationScope)
     return { ...result, page: query.page, limit: query.limit }
   }
   catch (error) {
     if (!isMissingActiveFromColumn(error)) throw error
 
-    const result = await listPublicJobs(query, offset, false)
+    const result = await listPublicJobs(query, offset, false, organizationScope)
     return { ...result, page: query.page, limit: query.limit }
   }
 })
