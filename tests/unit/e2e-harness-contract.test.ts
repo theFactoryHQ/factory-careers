@@ -289,6 +289,8 @@ describe('Playwright E2E harness contract', () => {
     expect(read('e2e/critical-flows/ai-config-lifecycle.spec.ts')).toContain('FACTORY_AI_TEST_MODE')
     expect(read('e2e/critical-flows/chatbot-conversations.spec.ts')).toContain('FACTORY_AI_TEST_MODE')
     expect(read('e2e/critical-flows/chatbot-conversations.spec.ts')).toContain('/api/chatbot/chat')
+    expect(read('e2e/critical-flows/chatbot-conversations.spec.ts')).toContain('/api/chatbot/upload')
+    expect(read('e2e/critical-flows/chatbot-conversations.spec.ts')).toContain('Factory Knowledge Marker')
     expect(read('e2e/critical-flows/chatbot-conversations.spec.ts')).toContain('assertMutatingE2ESafety')
     expect(workflow).toContain('needs.ai_review.result')
     expect(workflow).toContain(e2eRequiredNeeds)

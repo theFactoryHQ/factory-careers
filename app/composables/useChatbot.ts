@@ -383,7 +383,8 @@ export function useChatbot() {
 
   async function send(content: string) {
     const trimmed = content.trim()
-    if (!trimmed && pendingAttachments.value.length === 0) return
+    const attachmentsForMessage = [...pendingAttachments.value]
+    if (!trimmed && attachmentsForMessage.length === 0) return
     if (isStreaming.value) return
 
     // Lazy-create a conversation if there's no active one.
@@ -400,7 +401,7 @@ export function useChatbot() {
       id: newId(),
       role: 'user',
       content: trimmed,
-      attachments: pendingAttachments.value.length ? [...pendingAttachments.value] : undefined,
+      attachments: attachmentsForMessage.length ? attachmentsForMessage : undefined,
       createdAt: Date.now(),
     }
     messages.value = [...messages.value, userMessage]
@@ -416,7 +417,7 @@ export function useChatbot() {
     }
     messages.value = [...messages.value, assistantMessage]
 
-    const attachmentIds = userMessage.attachments?.map((a) => a.id) ?? []
+    const attachmentIds = attachmentsForMessage.map((a) => a.id)
     pendingAttachments.value = []
 
     // Use a per-call controller and only mutate the shared `abortController`

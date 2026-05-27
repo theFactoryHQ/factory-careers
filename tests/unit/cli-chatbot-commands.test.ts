@@ -96,7 +96,7 @@ describe('CLI chatbot commands', () => {
         expect(JSON.parse(String(init.body))).toEqual({
           conversationId: 'conv_1',
           scope: { kind: 'organization' },
-          messages: [{ role: 'user', content: 'Summarize open roles.' }],
+          messages: [{ role: 'user', content: 'Summarize open roles.', attachmentIds: ['att_1'] }],
         })
         return new Response('data: {"type":"conversation-meta","conversationId":"conv_1","title":"Summarize open roles."}\n\ndata: {"type":"text-delta","text":"Done"}\n\ndata: {"type":"finish","usage":{"promptTokens":1,"completionTokens":1}}\n\n', {
           headers: { 'content-type': 'text/event-stream' },
@@ -149,7 +149,7 @@ describe('CLI chatbot commands', () => {
         stdin: async () => JSON.stringify({
           conversationId: 'conv_1',
           scope: { kind: 'organization' },
-          messages: [{ role: 'user', content: 'Summarize open roles.' }],
+          messages: [{ role: 'user', content: 'Summarize open roles.', attachmentIds: ['att_1'] }],
         }),
       },
     )
