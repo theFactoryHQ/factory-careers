@@ -216,6 +216,11 @@ export async function saveCalendarIntegration(userId: string, params: {
  * Stops the webhook channel and deletes stored credentials.
  */
 export async function removeCalendarIntegration(userId: string): Promise<void> {
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') {
+    await db.delete(calendarIntegration).where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
+    return
+  }
+
   const integration = await db.query.calendarIntegration.findFirst({
     where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
   })
@@ -372,6 +377,10 @@ export async function updateCalendarEvent(
   eventId: string,
   data: Partial<InterviewEventData>,
 ): Promise<string | null> {
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') {
+    return `https://calendar.test.local/events/${encodeURIComponent(eventId)}`
+  }
+
   const calendar = await getCalendarClient(userId)
   if (!calendar) return null
 
@@ -449,6 +458,8 @@ export async function cancelCalendarEvent(
   userId: string,
   eventId: string,
 ): Promise<boolean> {
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') return true
+
   const calendar = await getCalendarClient(userId)
   if (!calendar) return false
 
@@ -486,6 +497,8 @@ export async function cancelCalendarEvent(
  * when events change (e.g., candidate accepts/declines via Google Calendar).
  */
 export async function setupCalendarWebhook(userId: string): Promise<boolean> {
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') return false
+
   const calendar = await getCalendarClient(userId)
   if (!calendar) return false
 
@@ -563,6 +576,8 @@ export async function setupCalendarWebhook(userId: string): Promise<boolean> {
  * Updates interview candidateResponse based on attendee RSVP status.
  */
 export async function performIncrementalSync(userId: string): Promise<void> {
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') return
+
   const calendar = await getCalendarClient(userId)
   if (!calendar) return
 

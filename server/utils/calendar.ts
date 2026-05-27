@@ -235,7 +235,7 @@ export async function removeConnectedCalendarIntegration(userId: string, organiz
   if (!integration) return
 
   if (integration.provider === 'microsoft') {
-    await removeMicrosoftCalendarIntegration(integration.userId ?? userId, integration.organizationId ?? organizationId)
+    await removeMicrosoftCalendarIntegration(integration.userId ?? userId, integration.organizationId ?? undefined)
     return
   }
 

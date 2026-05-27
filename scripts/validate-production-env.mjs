@@ -473,6 +473,10 @@ function checkTestModes(env, errors) {
   if (trimValue(env.FACTORY_AI_TEST_MODE) === 'mock') {
     errors.push(issue('FACTORY_AI_TEST_MODE', 'mock mode is not allowed in production'))
   }
+
+  if (trimValue(env.FACTORY_CALENDAR_TEST_MODE) === 'mock') {
+    errors.push(issue('FACTORY_CALENDAR_TEST_MODE', 'mock mode is not allowed in production'))
+  }
 }
 
 export function validateProductionEnv(input) {

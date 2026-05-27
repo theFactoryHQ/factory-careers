@@ -73,6 +73,30 @@ describe('calendar disconnect', () => {
     expect(calendarProviderMocks.removeGoogleCalendarIntegration).not.toHaveBeenCalled()
   })
 
+  it('removes a user Microsoft integration when no org integration is connected', async () => {
+    const findFirst = vi.fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        provider: 'microsoft',
+        userId: 'user-1',
+        organizationId: null,
+      })
+
+    vi.stubGlobal('db', {
+      query: {
+        calendarIntegration: { findFirst },
+      },
+    })
+
+    const { removeConnectedCalendarIntegration } = await import('../../server/utils/calendar')
+
+    await removeConnectedCalendarIntegration('user-1', 'org-1')
+
+    expect(calendarProviderMocks.removeMicrosoftCalendarIntegration).toHaveBeenCalledWith('user-1', undefined)
+    expect(calendarProviderMocks.removeGoogleCalendarIntegration).not.toHaveBeenCalled()
+  })
+
   it('removes a user Google integration when no org integration is connected', async () => {
     const findFirst = vi.fn()
       .mockResolvedValueOnce(null)
