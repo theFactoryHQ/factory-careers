@@ -1,3 +1,4 @@
+import { appendFile } from 'node:fs/promises'
 import { and, eq } from 'drizzle-orm'
 import { stepCountIs, streamText, type ModelMessage } from 'ai'
 import { z } from 'zod'
@@ -236,13 +237,6 @@ export default defineEventHandler(async (event) => {
     await assertSafeServerSideUrl(config.baseUrl)
   }
 
-  const model = createLanguageModel({
-    provider: config.provider as SupportedProvider,
-    model: config.model,
-    apiKeyEncrypted: config.apiKeyEncrypted,
-    baseUrl: config.baseUrl,
-    maxTokens: Math.max(config.maxTokens, 2048),
-  })
   const tools = buildChatbotTools({
     orgId,
     scope: body.scope,
@@ -253,6 +247,7 @@ export default defineEventHandler(async (event) => {
     role: m.role,
     content: m.content,
   }))
+  const systemPrompt = buildSystemPrompt(scopeLabel, agentPrompt)
 
   // ── Set SSE headers ──
   setResponseHeaders(event, {
@@ -262,9 +257,97 @@ export default defineEventHandler(async (event) => {
     'X-Accel-Buffering': 'no',
   })
 
+  const encoder = new TextEncoder()
+  const writeEvent = (controller: ReadableStreamDefaultController, e: ChatbotStreamEvent) => {
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify(e)}\n\n`))
+  }
+
+  if (env.FACTORY_AI_TEST_MODE === 'mock') {
+    const assistantContent = [
+      `Deterministic E2E chatbot response for ${scopeLabel}.`,
+      `I can see ${modelMessages.length} message(s), ${attachmentRecords.length} attachment(s), and the selected agent instructions are active.`,
+    ].join(' ')
+
+    await appendFile(env.FACTORY_AI_CAPTURE_PATH!, `${JSON.stringify({
+      schemaName: 'ChatbotChat',
+      provider: config.provider,
+      model: config.model,
+      system: systemPrompt,
+      messages: modelMessages,
+      scope: body.scope,
+      scopeLabel,
+      conversationId: conversation.id,
+      agentId: effectiveAgentId,
+      attachmentCount: attachmentRecords.length,
+      toolNames: Object.keys(tools),
+    })}\n`)
+
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        try {
+          if (updatedTitle) {
+            writeEvent(controller, {
+              type: 'conversation-meta',
+              conversationId: conversation.id,
+              title: updatedTitle,
+            })
+          }
+
+          writeEvent(controller, { type: 'text-delta', text: assistantContent })
+          writeEvent(controller, {
+            type: 'finish',
+            usage: {
+              promptTokens: systemPrompt.length + modelMessages.reduce((sum, message) => sum + String(message.content).length, 0),
+              completionTokens: assistantContent.length,
+            },
+          })
+
+          const [persistedAssistant] = await db.insert(chatbotMessage).values({
+            conversationId: conversation.id,
+            organizationId: orgId,
+            userId: session.user.id,
+            role: 'assistant',
+            content: assistantContent,
+            reasoning: null,
+            toolCalls: null,
+            sources: null,
+          }).returning({ createdAt: chatbotMessage.createdAt })
+
+          await db.update(chatbotConversation)
+            .set({
+              lastMessagePreview: previewFromContent(assistantContent),
+              lastMessageAt: persistedAssistant?.createdAt ?? new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(chatbotConversation.id, conversation.id))
+        } finally {
+          controller.close()
+        }
+      },
+    })
+
+    trackEvent(event, session, 'chatbot_message_sent', {
+      scope: body.scope.kind,
+      has_attachments: attachmentRecords.length > 0,
+      message_count: body.messages.length,
+      thinking: body.thinking === true,
+      has_agent: !!effectiveAgentId,
+      conversation_id: conversation.id,
+    })
+
+    return sendStream(event, stream)
+  }
+
+  const model = createLanguageModel({
+    provider: config.provider as SupportedProvider,
+    model: config.model,
+    apiKeyEncrypted: config.apiKeyEncrypted,
+    baseUrl: config.baseUrl,
+    maxTokens: Math.max(config.maxTokens, 2048),
+  })
   const result = streamText({
     model,
-    system: buildSystemPrompt(scopeLabel, agentPrompt),
+    system: systemPrompt,
     messages: modelMessages,
     tools,
     stopWhen: stepCountIs(8),
@@ -273,11 +356,6 @@ export default defineEventHandler(async (event) => {
       ? { providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens: 4000 } } } }
       : {}),
   })
-
-  const encoder = new TextEncoder()
-  const writeEvent = (controller: ReadableStreamDefaultController, e: ChatbotStreamEvent) => {
-    controller.enqueue(encoder.encode(`data: ${JSON.stringify(e)}\n\n`))
-  }
 
   // ── Accumulators for persistence ──
   let assistantContent = ''
