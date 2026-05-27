@@ -263,9 +263,12 @@ export default defineEventHandler(async (event) => {
   }
 
   if (env.FACTORY_AI_TEST_MODE === 'mock') {
+    const uploadedFileSummary = attachmentRecords.length
+      ? ` Uploaded file context: ${attachmentRecords.map((attachment) => attachment.filename).join(', ')}.`
+      : ''
     const assistantContent = [
       `Deterministic E2E chatbot response for ${scopeLabel}.`,
-      `I can see ${modelMessages.length} message(s), ${attachmentRecords.length} attachment(s), and the selected agent instructions are active.`,
+      `I can see ${modelMessages.length} message(s), ${attachmentRecords.length} attachment(s), and the selected agent instructions are active.${uploadedFileSummary}`,
     ].join(' ')
 
     await appendFile(env.FACTORY_AI_CAPTURE_PATH!, `${JSON.stringify({
@@ -279,6 +282,14 @@ export default defineEventHandler(async (event) => {
       conversationId: conversation.id,
       agentId: effectiveAgentId,
       attachmentCount: attachmentRecords.length,
+      attachments: attachmentRecords.map((attachment) => ({
+        id: attachment.id,
+        filename: attachment.filename,
+        mimeType: attachment.mimeType,
+        sizeBytes: attachment.sizeBytes,
+        textLength: attachment.textLength,
+        textPreview: attachment.text.slice(0, 1000),
+      })),
       toolNames: Object.keys(tools),
     })}\n`)
 
