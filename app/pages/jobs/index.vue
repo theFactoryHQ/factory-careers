@@ -168,6 +168,8 @@ function formatPostedDate(activeFrom?: string | null, createdAt?: string | null)
           :aria-expanded="typeDropdownOpen"
           aria-haspopup="listbox"
           @click="typeDropdownOpen = !typeDropdownOpen"
+          @keydown.enter.prevent="typeDropdownOpen = !typeDropdownOpen"
+          @keydown.space.prevent="typeDropdownOpen = !typeDropdownOpen"
           @keydown.escape="typeDropdownOpen = false"
         >
           <span>{{ selectedTypeLabel }}</span>
