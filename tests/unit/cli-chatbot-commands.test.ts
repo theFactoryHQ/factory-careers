@@ -98,7 +98,7 @@ describe('CLI chatbot commands', () => {
           scope: { kind: 'organization' },
           messages: [{ role: 'user', content: 'Summarize open roles.' }],
         })
-        return new Response('data: {"type":"text-delta","text":"Done"}\n\ndata: {"type":"finish","usage":{"promptTokens":1,"completionTokens":1}}\n\n', {
+        return new Response('data: {"type":"conversation-meta","conversationId":"conv_1","title":"Summarize open roles."}\n\ndata: {"type":"text-delta","text":"Done"}\n\ndata: {"type":"finish","usage":{"promptTokens":1,"completionTokens":1}}\n\n', {
           headers: { 'content-type': 'text/event-stream' },
         })
       }
@@ -170,6 +170,7 @@ describe('CLI chatbot commands', () => {
     expect(JSON.parse(updateOut[0])).toEqual({ conversation: { id: 'conv_1', pinned: true } })
     expect(JSON.parse(chatOut[0])).toEqual({
       events: [
+        { type: 'conversation-meta', conversationId: 'conv_1', title: 'Summarize open roles.' },
         { type: 'text-delta', text: 'Done' },
         { type: 'finish', usage: { promptTokens: 1, completionTokens: 1 } },
       ],

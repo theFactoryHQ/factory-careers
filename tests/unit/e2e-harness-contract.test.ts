@@ -277,15 +277,19 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:ai-review']).toBe(
-      'playwright test e2e/critical-flows/ai-candidate-review.spec.ts e2e/critical-flows/ai-config-lifecycle.spec.ts --workers=1',
+      'playwright test e2e/critical-flows/ai-candidate-review.spec.ts e2e/critical-flows/ai-config-lifecycle.spec.ts e2e/critical-flows/chatbot-conversations.spec.ts --workers=1',
     )
     expect(workflow).toContain('name: Playwright AI review')
     expect(workflow).toContain('npm run test:e2e:ai-review')
+    expect(workflow).toContain('FEATURE_FLAG_CHATBOT_EXPERIENCE: "true"')
     expect(workflow).toContain('FACTORY_AI_TEST_MODE: mock')
     expect(workflow).toContain('FACTORY_AI_CAPTURE_PATH: /tmp/factory-careers-e2e-ai.jsonl')
     expect(workflow).not.toContain('OPENAI_API_KEY: ${{ secrets')
     expect(read('e2e/critical-flows/ai-candidate-review.spec.ts')).toContain('FACTORY_AI_TEST_MODE')
     expect(read('e2e/critical-flows/ai-config-lifecycle.spec.ts')).toContain('FACTORY_AI_TEST_MODE')
+    expect(read('e2e/critical-flows/chatbot-conversations.spec.ts')).toContain('FACTORY_AI_TEST_MODE')
+    expect(read('e2e/critical-flows/chatbot-conversations.spec.ts')).toContain('/api/chatbot/chat')
+    expect(read('e2e/critical-flows/chatbot-conversations.spec.ts')).toContain('assertMutatingE2ESafety')
     expect(workflow).toContain('needs.ai_review.result')
     expect(workflow).toContain(e2eRequiredNeeds)
   })

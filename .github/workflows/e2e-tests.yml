@@ -1136,6 +1136,7 @@ jobs:
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:3333
       FACTORY_DISABLE_PUBLIC_SIGNUP: "false"
       FACTORY_DISABLE_PUBLIC_ORG_CREATION: "false"
+      FEATURE_FLAG_CHATBOT_EXPERIENCE: "true"
       FACTORY_AI_TEST_MODE: mock
       FACTORY_AI_CAPTURE_PATH: /tmp/factory-careers-e2e-ai.jsonl
       S3_ENDPOINT: http://127.0.0.1:9000
