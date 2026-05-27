@@ -16,6 +16,8 @@ describe('job auto-score default', () => {
     expect(jobSchema).toContain("autoScoreOnApply: boolean('auto_score_on_apply').notNull().default(true)")
     expect(newJobPage).toContain('const autoScoreOnApply = ref(true)')
     expect(newJobPage).toContain('autoScoreOnApply.value = true')
+    expect(aiPage).toContain('const autoScoreOnApply = ref(true)')
+    expect(aiPage).toContain('autoScoreOnApply.value = (j as any).autoScoreOnApply ?? true')
     expect(aiPage).toContain('(j as any).autoScoreOnApply ?? true')
     expect(aiPage).toContain('body: { autoScoreOnApply: autoScoreOnApply.value }')
   })
