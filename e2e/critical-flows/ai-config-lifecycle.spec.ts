@@ -142,32 +142,20 @@ test.describe('AI configuration lifecycle', () => {
 
     await page.goto(`/dashboard/jobs/${job.id}/ai-analysis`)
     await expect(page.getByRole('heading', { name: 'AI' })).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByRole('button', { name: /Generate from job description/ })).toBeVisible()
+    await page.waitForLoadState('networkidle')
+    const generateButton = page.getByRole('button', { name: /Generate from job description/ })
+    await expect(generateButton).toBeVisible()
+    await Promise.all([
+      page.waitForResponse(resp => resp.url().includes('/api/ai-config/generate-criteria') && resp.request().method() === 'POST' && resp.status() === 200),
+      generateButton.click(),
+    ])
+    await expect(page.getByText('Factory Domain Relevance')).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText('Client Operations Judgment')).toBeVisible()
 
-    const generatedCriteriaResponse = await page.request.post('/api/ai-config/generate-criteria', {
-      data: {
-        title: jobTitle,
-        description: 'Lead client operations for athletes, entertainers, and founders across investments, media ventures, brand services, confidentiality, and high-touch business management.',
-      },
-    })
-    expect(generatedCriteriaResponse.status(), `Generate criteria API returned ${generatedCriteriaResponse.status()}`).toBe(200)
-    const generatedCriteria = await generatedCriteriaResponse.json() as {
-      criteria: Array<{ key: string, name: string, description?: string, category: string, maxScore: number, weight: number }>
-    }
-    expect(generatedCriteria.criteria).toContainEqual(expect.objectContaining({
-      key: 'domain_relevance',
-      name: 'Factory Domain Relevance',
-    }))
-
-    const saveCriteriaResponse = await page.request.post(`/api/jobs/${job.id}/criteria`, {
-      data: {
-        criteria: generatedCriteria.criteria.map((criterion, index) => ({
-          ...criterion,
-          displayOrder: index,
-        })),
-      },
-    })
-    expect(saveCriteriaResponse.status(), `Save criteria API returned ${saveCriteriaResponse.status()}`).toBe(201)
+    await Promise.all([
+      page.waitForResponse(resp => resp.url().includes(`/api/jobs/${job.id}/criteria`) && resp.request().method() === 'POST' && resp.status() === 201),
+      page.getByRole('button', { name: 'Save criteria' }).click(),
+    ])
 
     await page.reload()
     await expect(page.getByText('Factory Domain Relevance')).toBeVisible({ timeout: 15_000 })
