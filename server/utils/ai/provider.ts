@@ -257,6 +257,47 @@ export async function generateStructuredOutput<T>(
       }
     }
 
+    if (options.schemaName === 'TestConnection') {
+      if (config.model.includes('connection-failure')) {
+        throw createError({
+          statusCode: 422,
+          statusMessage: 'Deterministic E2E connection failure.',
+        })
+      }
+
+      const object = options.schema.parse({ ok: true })
+
+      return {
+        object,
+        usage: { promptTokens: 4, completionTokens: 2 },
+      }
+    }
+
+    if (options.schemaName === 'GeneratedCriteria') {
+      const object = options.schema.parse({
+        criteria: [{
+          key: 'domain_relevance',
+          name: 'Factory Domain Relevance',
+          description: 'Measures direct experience with athletes, entertainers, founders, investments, media, and business-management workflows.',
+          category: 'experience',
+          maxScore: 10,
+          suggestedWeight: 85,
+        }, {
+          key: 'client_operations',
+          name: 'Client Operations Judgment',
+          description: 'Assesses ability to handle high-touch client operations, confidentiality, prioritization, and detail-heavy follow-through.',
+          category: 'soft_skills',
+          maxScore: 10,
+          suggestedWeight: 70,
+        }],
+      })
+
+      return {
+        object,
+        usage: { promptTokens: 74, completionTokens: 38 },
+      }
+    }
+
     throw createError({
       statusCode: 422,
       statusMessage: `No deterministic AI mock response configured for schema: ${options.schemaName}`,

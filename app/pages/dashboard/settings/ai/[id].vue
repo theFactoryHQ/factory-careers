@@ -64,6 +64,7 @@ const isReady = computed(() =>
 const notFound = computed(() => isReady.value && !config.value)
 
 async function onSaved() {
+  await refreshNuxtData('ai-configs')
   await navigateTo('/dashboard/settings/ai')
 }
 function onCancel() {

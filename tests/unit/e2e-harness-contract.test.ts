@@ -265,7 +265,7 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:ai-review']).toBe(
-      'playwright test e2e/critical-flows/ai-candidate-review.spec.ts',
+      'playwright test e2e/critical-flows/ai-candidate-review.spec.ts e2e/critical-flows/ai-config-lifecycle.spec.ts --workers=1',
     )
     expect(workflow).toContain('name: Playwright AI review')
     expect(workflow).toContain('npm run test:e2e:ai-review')
@@ -273,6 +273,7 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('FACTORY_AI_CAPTURE_PATH: /tmp/factory-careers-e2e-ai.jsonl')
     expect(workflow).not.toContain('OPENAI_API_KEY: ${{ secrets')
     expect(read('e2e/critical-flows/ai-candidate-review.spec.ts')).toContain('FACTORY_AI_TEST_MODE')
+    expect(read('e2e/critical-flows/ai-config-lifecycle.spec.ts')).toContain('FACTORY_AI_TEST_MODE')
     expect(workflow).toContain('needs.ai_review.result')
     expect(workflow).toContain('needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review]')
   })

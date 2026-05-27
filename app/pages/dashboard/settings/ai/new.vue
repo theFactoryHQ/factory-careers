@@ -58,6 +58,7 @@ const isReady = computed(() =>
 const isFirst = computed(() => (configsData.value ?? []).length === 0)
 
 async function onSaved() {
+  await refreshNuxtData('ai-configs')
   await navigateTo('/dashboard/settings/ai')
 }
 function onCancel() {
