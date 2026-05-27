@@ -17,6 +17,7 @@ import { calendarIntegration, interview } from '../database/schema'
  * Check if Google Calendar integration is configured.
  */
 export function isGoogleCalendarConfigured(): boolean {
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') return true
   return !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET)
 }
 
@@ -49,6 +50,13 @@ function getRedirectUri(): string {
  * Includes a CSRF state parameter to prevent forgery.
  */
 export function getGoogleAuthUrl(stateToken: string): string {
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') {
+    const callbackUrl = new URL(getRedirectUri())
+    callbackUrl.searchParams.set('code', 'mock-calendar-code')
+    callbackUrl.searchParams.set('state', stateToken)
+    return callbackUrl.toString()
+  }
+
   const oauth2Client = createOAuth2Client(getRedirectUri())
 
   return oauth2Client.generateAuthUrl({
@@ -70,6 +78,18 @@ export async function exchangeCodeForTokens(code: string): Promise<{
   refreshToken: string
   email: string | null
 }> {
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') {
+    if (code !== 'mock-calendar-code') {
+      throw new Error('Invalid mock calendar authorization code')
+    }
+
+    return {
+      accessToken: 'mock-calendar-access-token',
+      refreshToken: 'mock-calendar-refresh-token',
+      email: 'calendar.e2e@example.com',
+    }
+  }
+
   const oauth2Client = createOAuth2Client(getRedirectUri())
   const { tokens } = await oauth2Client.getToken(code)
 
@@ -196,6 +216,11 @@ export async function saveCalendarIntegration(userId: string, params: {
  * Stops the webhook channel and deletes stored credentials.
  */
 export async function removeCalendarIntegration(userId: string): Promise<void> {
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') {
+    await db.delete(calendarIntegration).where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
+    return
+  }
+
   const integration = await db.query.calendarIntegration.findFirst({
     where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
   })
@@ -259,6 +284,14 @@ export async function createCalendarEvent(
   userId: string,
   data: InterviewEventData,
 ): Promise<{ id: string; htmlLink: string } | null> {
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') {
+    const eventId = `mock-google-event-${data.startTime.getTime()}`
+    return {
+      id: eventId,
+      htmlLink: `https://calendar.test.local/events/${eventId}`,
+    }
+  }
+
   const calendar = await getCalendarClient(userId)
   if (!calendar) return null
 
@@ -344,6 +377,10 @@ export async function updateCalendarEvent(
   eventId: string,
   data: Partial<InterviewEventData>,
 ): Promise<string | null> {
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') {
+    return `https://calendar.test.local/events/${encodeURIComponent(eventId)}`
+  }
+
   const calendar = await getCalendarClient(userId)
   if (!calendar) return null
 
@@ -421,6 +458,8 @@ export async function cancelCalendarEvent(
   userId: string,
   eventId: string,
 ): Promise<boolean> {
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') return true
+
   const calendar = await getCalendarClient(userId)
   if (!calendar) return false
 
@@ -458,6 +497,8 @@ export async function cancelCalendarEvent(
  * when events change (e.g., candidate accepts/declines via Google Calendar).
  */
 export async function setupCalendarWebhook(userId: string): Promise<boolean> {
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') return false
+
   const calendar = await getCalendarClient(userId)
   if (!calendar) return false
 
@@ -535,6 +576,8 @@ export async function setupCalendarWebhook(userId: string): Promise<boolean> {
  * Updates interview candidateResponse based on attendee RSVP status.
  */
 export async function performIncrementalSync(userId: string): Promise<void> {
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') return
+
   const calendar = await getCalendarClient(userId)
   if (!calendar) return
 

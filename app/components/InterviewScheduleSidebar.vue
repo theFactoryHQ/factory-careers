@@ -61,6 +61,7 @@ const timeScroller = ref<HTMLElement | null>(null)
 // ─── Notification method ──────────────────────────────────────────
 const notifyViaEmail = ref(false)
 const notifyViaCalendar = ref(false)
+const calendarSyncDefaultApplied = ref(false)
 
 // ─── Calendar event customization ─────────────────────────────────
 const calendarCustomization = reactive({
@@ -107,13 +108,23 @@ onMounted(() => {
   // Default email on, but only enable calendar sync when a provider is configured.
   notifyViaEmail.value = true
   notifyViaCalendar.value = canUseCalendar.value
+  calendarSyncDefaultApplied.value = canUseCalendar.value
 
   // Center default time (e.g. 10:00) vertically in the time slider list
   nextTick(() => centerTimeInSlider())
 })
 
 watch(canUseCalendar, (enabled) => {
-  if (!enabled) notifyViaCalendar.value = false
+  if (!enabled) {
+    notifyViaCalendar.value = false
+    calendarSyncDefaultApplied.value = false
+    return
+  }
+
+  if (!calendarSyncDefaultApplied.value) {
+    notifyViaCalendar.value = true
+    calendarSyncDefaultApplied.value = true
+  }
 })
 
 // Default the first interviewer to the current user once we have their email

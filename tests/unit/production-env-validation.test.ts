@@ -115,12 +115,14 @@ describe('production environment preflight', () => {
       FACTORY_EMAIL_TEST_MODE: 'capture',
       FACTORY_AI_TEST_MODE: 'mock',
       FACTORY_AI_CAPTURE_PATH: '/tmp/factory-careers-e2e-ai.jsonl',
+      FACTORY_CALENDAR_TEST_MODE: 'mock',
     })
 
     expect(result.ok).toBe(false)
     expect(messages(result)).toEqual(expect.arrayContaining([
       expect.stringContaining('FACTORY_EMAIL_TEST_MODE: capture mode is not allowed in production'),
       expect.stringContaining('FACTORY_AI_TEST_MODE: mock mode is not allowed in production'),
+      expect.stringContaining('FACTORY_CALENDAR_TEST_MODE: mock mode is not allowed in production'),
     ]))
   })
 

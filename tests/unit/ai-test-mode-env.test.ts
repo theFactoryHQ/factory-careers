@@ -11,7 +11,7 @@ const baseEnv = {
   S3_BUCKET: 'test-bucket',
 }
 
-describe('AI E2E test-mode environment safety', () => {
+describe('E2E test-mode environment safety', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
   })
@@ -57,6 +57,33 @@ describe('AI E2E test-mode environment safety', () => {
     if (!result.success) {
       expect(result.error.issues.map(issue => issue.message)).toContain(
         'FACTORY_AI_TEST_MODE=mock is not allowed in production.',
+      )
+    }
+  })
+
+  it('accepts calendar mock mode outside production', () => {
+    vi.stubEnv('NODE_ENV', 'test')
+
+    const result = envSchema.safeParse({
+      ...baseEnv,
+      FACTORY_CALENDAR_TEST_MODE: 'mock',
+    })
+
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects calendar mock mode in production', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+
+    const result = envSchema.safeParse({
+      ...baseEnv,
+      FACTORY_CALENDAR_TEST_MODE: 'mock',
+    })
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues.map(issue => issue.message)).toContain(
+        'FACTORY_CALENDAR_TEST_MODE=mock is not allowed in production.',
       )
     }
   })

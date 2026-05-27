@@ -231,13 +231,15 @@ export async function cancelConnectedCalendarEventRecords(
 }
 
 export async function removeConnectedCalendarIntegration(userId: string, organizationId?: string | null): Promise<void> {
-  if (organizationId) {
-    await removeMicrosoftCalendarIntegration(userId, organizationId)
+  const integration = await getConnectedCalendarIntegration(userId, organizationId)
+  if (!integration) return
+
+  if (integration.provider === 'microsoft') {
+    await removeMicrosoftCalendarIntegration(integration.userId ?? userId, integration.organizationId ?? undefined)
     return
   }
 
-  await removeGoogleCalendarIntegration(userId)
-  await removeMicrosoftCalendarIntegration(userId)
+  await removeGoogleCalendarIntegration(integration.userId ?? userId)
 }
 
 export async function setupConnectedCalendarWebhook(userId: string, organizationId?: string | null, provider?: CalendarProvider | null): Promise<boolean> {
