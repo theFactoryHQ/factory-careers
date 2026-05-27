@@ -21,6 +21,7 @@ const emit = defineEmits<{
 const open = ref(false)
 const menuRef = ref<HTMLElement | null>(null)
 const triggerRef = ref<HTMLElement | null>(null)
+const listboxRef = ref<HTMLElement | null>(null)
 
 const selectedLabel = computed(() => {
   const opts = props.options ?? []
@@ -63,12 +64,21 @@ const listboxNavigation = useListboxNavigation({
 })
 const activeDescendantId = listboxNavigation.activeDescendantId
 const activeOptionIndex = listboxNavigation.activeIndex
+const { floatingStyle } = useFloatingMenu({
+  open,
+  triggerRef,
+  width: 'trigger',
+  estimatedHeight: 288,
+  zIndex: 80,
+})
 
 useOutsidePointer({
   root: menuRef,
   active: open,
   eventName: 'click',
-  onOutside: () => {
+  onOutside: (event) => {
+    const target = event.target as Node | null
+    if (target && listboxRef.value?.contains(target)) return
     open.value = false
   },
 })
@@ -96,28 +106,32 @@ useOutsidePointer({
       />
     </button>
 
-    <div
-      v-if="open"
-      :id="`${selectId}-listbox`"
-      class="factory-filter-dropdown-menu absolute left-0 right-0 top-full z-[70] mt-1 border py-1"
-      role="listbox"
-      @keydown="listboxNavigation.onKeydown"
-    >
-      <button
-        v-for="(opt, idx) in (options ?? [])"
-        :key="String(opt.value)"
-        :id="listboxNavigation.optionId(idx)"
-        type="button"
-        class="factory-filter-dropdown-option flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors"
-        :class="{ 'is-active': modelValue === opt.value || activeOptionIndex === idx }"
-        role="option"
-        :aria-selected="modelValue === opt.value"
-        @mouseenter="listboxNavigation.activate(idx)"
-        @click="select(opt.value)"
+    <Teleport to="body">
+      <div
+        v-if="open"
+        :id="`${selectId}-listbox`"
+        ref="listboxRef"
+        class="factory-filter-dropdown-menu factory-dashboard-portal border py-1"
+        :style="floatingStyle"
+        role="listbox"
+        @keydown="listboxNavigation.onKeydown"
       >
-        <Check class="size-3.5 shrink-0" :class="modelValue === opt.value ? '' : 'opacity-0'" />
-        <span class="truncate">{{ opt.label }}</span>
-      </button>
-    </div>
+        <button
+          v-for="(opt, idx) in (options ?? [])"
+          :key="String(opt.value)"
+          :id="listboxNavigation.optionId(idx)"
+          type="button"
+          class="factory-filter-dropdown-option flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors"
+          :class="{ 'is-active': modelValue === opt.value || activeOptionIndex === idx }"
+          role="option"
+          :aria-selected="modelValue === opt.value"
+          @mouseenter="listboxNavigation.activate(idx)"
+          @click="select(opt.value)"
+        >
+          <Check class="size-3.5 shrink-0" :class="modelValue === opt.value ? '' : 'opacity-0'" />
+          <span class="truncate">{{ opt.label }}</span>
+        </button>
+      </div>
+    </Teleport>
   </div>
 </template>

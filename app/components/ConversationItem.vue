@@ -37,6 +37,16 @@ const emit = defineEmits<{
 }>()
 
 const renameInput = useTemplateRef<HTMLInputElement>('renameInput')
+const menuTriggerRef = ref<HTMLElement | null>(null)
+const menuOpenRef = computed(() => props.menuOpen)
+const { floatingStyle: menuStyle } = useFloatingMenu({
+  open: menuOpenRef,
+  triggerRef: menuTriggerRef,
+  placement: 'bottom-end',
+  width: 192,
+  estimatedHeight: 280,
+  zIndex: 80,
+})
 
 watch(() => props.isEditing, (v) => {
   if (v) nextTick(() => renameInput.value?.focus())
@@ -82,6 +92,7 @@ watch(() => props.isEditing, (v) => {
         {{ relativeTime }}
       </span>
       <button
+        ref="menuTriggerRef"
         class="absolute right-0 size-6 flex items-center justify-center rounded text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-700 invisible group-hover:visible cursor-pointer border-0 bg-transparent"
         title="Actions"
         @click.stop="(e) => emit('toggleMenu', e)"
@@ -91,56 +102,59 @@ watch(() => props.isEditing, (v) => {
     </div>
 
     <!-- Action menu -->
-    <div
-      v-if="menuOpen"
-      class="absolute right-1 top-9 z-20 w-48 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg py-1"
-      @click.stop
-    >
-      <button
-        class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
-        @click="emit('togglePin', conversation)"
+    <Teleport to="body">
+      <div
+        v-if="menuOpen"
+        class="ui-floating-menu factory-dashboard-portal rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg py-1"
+        :style="menuStyle"
+        @click.stop
       >
-        <component :is="conversation.pinned ? PinOff : Pin" class="size-3.5" />
-        {{ conversation.pinned ? 'Unpin' : 'Pin' }}
-      </button>
-      <button
-        class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
-        @click="emit('startRename', conversation)"
-      >
-        <Pencil class="size-3.5" />
-        Rename
-      </button>
+        <button
+          class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
+          @click="emit('togglePin', conversation)"
+        >
+          <component :is="conversation.pinned ? PinOff : Pin" class="size-3.5" />
+          {{ conversation.pinned ? 'Unpin' : 'Pin' }}
+        </button>
+        <button
+          class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
+          @click="emit('startRename', conversation)"
+        >
+          <Pencil class="size-3.5" />
+          Rename
+        </button>
 
-      <div class="my-1 border-t border-surface-200 dark:border-surface-800" />
-      <div class="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-surface-400">
-        Move to
+        <div class="my-1 border-t border-surface-200 dark:border-surface-800" />
+        <div class="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-surface-400">
+          Move to
+        </div>
+        <button
+          v-if="conversation.folderId !== null"
+          class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
+          @click="emit('move', conversation, null)"
+        >
+          <Inbox class="size-3.5" />
+          Uncategorised
+        </button>
+        <button
+          v-for="f in folders.filter((x) => x.id !== conversation.folderId)"
+          :key="f.id"
+          class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
+          @click="emit('move', conversation, f.id)"
+        >
+          <FolderInput class="size-3.5" />
+          <span class="truncate">{{ f.name }}</span>
+        </button>
+
+        <div class="my-1 border-t border-surface-200 dark:border-surface-800" />
+        <button
+          class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/30 cursor-pointer border-0 bg-transparent"
+          @click="emit('delete', conversation)"
+        >
+          <Trash2 class="size-3.5" />
+          Delete
+        </button>
       </div>
-      <button
-        v-if="conversation.folderId !== null"
-        class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
-        @click="emit('move', conversation, null)"
-      >
-        <Inbox class="size-3.5" />
-        Uncategorised
-      </button>
-      <button
-        v-for="f in folders.filter((x) => x.id !== conversation.folderId)"
-        :key="f.id"
-        class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
-        @click="emit('move', conversation, f.id)"
-      >
-        <FolderInput class="size-3.5" />
-        <span class="truncate">{{ f.name }}</span>
-      </button>
-
-      <div class="my-1 border-t border-surface-200 dark:border-surface-800" />
-      <button
-        class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/30 cursor-pointer border-0 bg-transparent"
-        @click="emit('delete', conversation)"
-      >
-        <Trash2 class="size-3.5" />
-        Delete
-      </button>
-    </div>
+    </Teleport>
   </div>
 </template>

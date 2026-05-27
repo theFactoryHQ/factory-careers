@@ -46,6 +46,15 @@ const searchQuery = ref('')
 const typeFilter = ref<string | undefined>(undefined)
 const typeDropdownOpen = ref(false)
 const typeDropdownRef = ref<HTMLElement | null>(null)
+const typeDropdownTriggerRef = ref<HTMLElement | null>(null)
+const typeDropdownListboxRef = ref<HTMLElement | null>(null)
+const { floatingStyle: typeDropdownStyle } = useFloatingMenu({
+  open: typeDropdownOpen,
+  triggerRef: typeDropdownTriggerRef,
+  width: 'trigger',
+  estimatedHeight: 180,
+  zIndex: 70,
+})
 
 // Debounce search input
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -107,7 +116,11 @@ function setTypeFilter(value: string | undefined) {
 }
 
 function handleTypeDropdownClickOutside(event: MouseEvent) {
-  if (typeDropdownRef.value && !typeDropdownRef.value.contains(event.target as Node)) {
+  const target = event.target as Node
+  if (
+    !typeDropdownRef.value?.contains(target) &&
+    !typeDropdownListboxRef.value?.contains(target)
+  ) {
     typeDropdownOpen.value = false
   }
 }
@@ -163,6 +176,7 @@ function formatPostedDate(activeFrom?: string | null, createdAt?: string | null)
       <!-- Type filter -->
       <div ref="typeDropdownRef" class="relative sm:w-40">
         <button
+          ref="typeDropdownTriggerRef"
           type="button"
           class="flex h-10 min-h-10 w-full items-center justify-between border border-white/14 bg-black/35 px-3 py-0 text-left text-sm text-white outline-none transition-colors hover:border-brand-500/60 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25"
           :aria-expanded="typeDropdownOpen"
@@ -179,23 +193,27 @@ function formatPostedDate(activeFrom?: string | null, createdAt?: string | null)
           />
         </button>
 
-        <ul
-          v-if="typeDropdownOpen"
-          role="listbox"
-          class="absolute right-0 z-30 mt-2 w-full border border-white/14 bg-black py-1 text-sm shadow-2xl shadow-black/50"
-        >
-          <li v-for="opt in typeOptions" :key="String(opt.value)" role="option" :aria-selected="opt.value === typeFilter">
-            <button
-              type="button"
-              class="flex w-full items-center justify-between px-3 py-2 text-left text-white/68 transition-colors hover:bg-brand-500/12 hover:text-white"
-              :class="opt.value === typeFilter ? 'text-white' : ''"
-              @click="setTypeFilter(opt.value)"
-            >
-              <span>{{ opt.label }}</span>
-              <Check v-if="opt.value === typeFilter" class="size-3.5 text-brand-500" />
-            </button>
-          </li>
-        </ul>
+        <Teleport to="body">
+          <ul
+            v-if="typeDropdownOpen"
+            ref="typeDropdownListboxRef"
+            role="listbox"
+            class="factory-public-form-portal border border-white/14 bg-black py-1 text-sm shadow-2xl shadow-black/50"
+            :style="typeDropdownStyle"
+          >
+            <li v-for="opt in typeOptions" :key="String(opt.value)" role="option" :aria-selected="opt.value === typeFilter">
+              <button
+                type="button"
+                class="flex w-full items-center justify-between px-3 py-2 text-left text-white/68 transition-colors hover:bg-brand-500/12 hover:text-white"
+                :class="opt.value === typeFilter ? 'text-white' : ''"
+                @click="setTypeFilter(opt.value)"
+              >
+                <span>{{ opt.label }}</span>
+                <Check v-if="opt.value === typeFilter" class="size-3.5 text-brand-500" />
+              </button>
+            </li>
+          </ul>
+        </Teleport>
       </div>
     </div>
 

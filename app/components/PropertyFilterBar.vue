@@ -40,10 +40,21 @@ const definitionMap = computed(() => {
 
 const pickerOpen = ref(false)
 const pickerEl = ref<HTMLElement | null>(null)
+const pickerTriggerEl = ref<HTMLElement | null>(null)
+const pickerMenuEl = ref<HTMLElement | null>(null)
+const { floatingStyle: pickerStyle, updateFloatingPosition: updatePickerPosition } = useFloatingMenu({
+  open: pickerOpen,
+  triggerRef: pickerTriggerEl,
+  width: 256,
+  estimatedHeight: 288,
+  zIndex: 90,
+})
 
 function closePickerOnOutside(e: PointerEvent) {
   if (!pickerOpen.value || !pickerEl.value) return
-  if (!pickerEl.value.contains(e.target as Node)) pickerOpen.value = false
+  const target = e.target as Node
+  if (pickerEl.value.contains(target) || pickerMenuEl.value?.contains(target)) return
+  pickerOpen.value = false
 }
 watchEffect((onCleanup) => {
   if (pickerOpen.value && import.meta.client) {
@@ -127,12 +138,38 @@ function clearAll() {
 
 const editingIdx = ref<number | null>(null)
 const editEl = ref<HTMLElement | null>(null)
+const editTriggerEl = ref<HTMLElement | null>(null)
+const isEditingFilter = computed(() => editingIdx.value !== null)
+const { floatingStyle: editStyle, updateFloatingPosition: updateEditPosition } = useFloatingMenu({
+  open: isEditingFilter,
+  triggerRef: editTriggerEl,
+  width: 320,
+  estimatedHeight: 300,
+  zIndex: 90,
+})
+
 function setEditElRef(el: Element | ComponentPublicInstance | null, filterIdx: number) {
   if (editingIdx.value === filterIdx) editEl.value = el as HTMLElement | null
 }
+
+function toggleEditFilter(filterIdx: number, event: MouseEvent) {
+  if (editingIdx.value === filterIdx) {
+    editingIdx.value = null
+    editTriggerEl.value = null
+    return
+  }
+
+  editTriggerEl.value = event.currentTarget as HTMLElement
+  editingIdx.value = filterIdx
+  nextTick(updateEditPosition)
+}
+
 function closeEditOnOutside(e: PointerEvent) {
-  if (editingIdx.value === null || !editEl.value) return
-  if (!editEl.value.contains(e.target as Node)) editingIdx.value = null
+  if (editingIdx.value === null) return
+  const target = e.target as Node
+  if (editTriggerEl.value?.contains(target) || editEl.value?.contains(target)) return
+  editingIdx.value = null
+  editTriggerEl.value = null
 }
 watchEffect((onCleanup) => {
   if (editingIdx.value !== null && import.meta.client) {
@@ -175,12 +212,12 @@ const showableDefs = computed(() => definitions.value)
       <div
         class="ui-filter-chip ui-filter-chip-active text-xs"
       >
-        <button
-          type="button"
-          class="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 cursor-pointer"
-          :aria-label="`Edit filter: ${summarizeFilter(f)}`"
-          @click="editingIdx = editingIdx === idx ? null : idx"
-        >
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 cursor-pointer"
+        :aria-label="`Edit filter: ${summarizeFilter(f)}`"
+          @click="toggleEditFilter(idx, $event)"
+      >
           <span class="max-w-[20rem] truncate">{{ summarizeFilter(f) }}</span>
         </button>
         <button
@@ -194,21 +231,23 @@ const showableDefs = computed(() => definitions.value)
       </div>
 
       <!-- Edit popover -->
-      <div
-        v-if="editingIdx === idx"
-        :ref="(el) => setEditElRef(el, idx)"
-        class="ui-floating-menu factory-filter-dropdown-menu absolute left-0 top-full z-50 mt-1 w-80 max-w-[calc(100vw-2rem)] p-3"
-      >
-        <template v-if="definitionMap.get(f.propertyDefinitionId) as PropertyDefinition">
-          <div class="space-y-2">
-            <div class="ui-menu-divider pb-2 text-xs font-semibold text-surface-700 dark:text-surface-200">
-              {{ definitionMap.get(f.propertyDefinitionId)!.name }}
-            </div>
-            <FactorySelect
-              :model-value="f.op"
-              :options="operatorsFor(definitionMap.get(f.propertyDefinitionId)!).map(op => ({ value: op, label: OPERATOR_LABELS[op] }))"
-              @update:model-value="(value) => patchFilter(idx, { op: value as PropertyOperator })"
-            />
+      <Teleport to="body">
+        <div
+          v-if="editingIdx === idx"
+          :ref="(el) => setEditElRef(el, idx)"
+          class="ui-floating-menu factory-filter-dropdown-menu factory-dashboard-portal max-w-[calc(100vw-2rem)] p-3"
+          :style="editStyle"
+        >
+          <template v-if="definitionMap.get(f.propertyDefinitionId) as PropertyDefinition">
+            <div class="space-y-2">
+              <div class="ui-menu-divider pb-2 text-xs font-semibold text-surface-700 dark:text-surface-200">
+                {{ definitionMap.get(f.propertyDefinitionId)!.name }}
+              </div>
+              <FactorySelect
+                :model-value="f.op"
+                :options="operatorsFor(definitionMap.get(f.propertyDefinitionId)!).map(op => ({ value: op, label: OPERATOR_LABELS[op] }))"
+                @update:model-value="(value) => patchFilter(idx, { op: value as PropertyOperator })"
+              />
 
             <!-- Value input by op + type -->
             <template v-if="!['isEmpty', 'isNotEmpty'].includes(f.op)">
@@ -278,41 +317,47 @@ const showableDefs = computed(() => definitions.value)
                 @input="(e) => patchFilter(idx, { value: (e.target as HTMLInputElement).value })"
               />
             </template>
-          </div>
-        </template>
-      </div>
+            </div>
+          </template>
+        </div>
+      </Teleport>
     </div>
 
     <!-- Add filter -->
     <div class="relative" ref="pickerEl">
       <button
+        ref="pickerTriggerEl"
         type="button"
         class="ui-button ui-button-secondary factory-filter-dropdown-trigger px-2.5 py-1 text-xs"
-        @click="pickerOpen = !pickerOpen"
+        @click="pickerOpen = !pickerOpen; nextTick(updatePickerPosition)"
       >
         <component :is="modelValue.length === 0 ? Filter : Plus" class="size-3.5" />
         {{ modelValue.length === 0 ? 'Filter' : 'Add filter' }}
       </button>
-      <div
-        v-if="pickerOpen"
-        class="ui-floating-menu factory-filter-dropdown-menu absolute left-0 top-full z-50 mt-1 w-64 max-w-[calc(100vw-2rem)]"
-      >
-        <div class="max-h-72 overflow-y-auto py-1">
-          <button
-            v-for="def in showableDefs"
-            :key="def.id"
-            type="button"
-            class="ui-menu-action factory-filter-dropdown-option justify-between px-3 py-1.5 text-sm"
-            @click="addFilter(def)"
-          >
-            <span class="truncate text-surface-800 dark:text-surface-100">{{ def.name }}</span>
-            <span class="text-[10px] uppercase tracking-wide text-surface-400">{{ def.type }}</span>
-          </button>
-          <div v-if="showableDefs.length === 0" class="px-3 py-2 text-xs text-surface-400">
-            No properties to filter by yet.
+      <Teleport to="body">
+        <div
+          v-if="pickerOpen"
+          ref="pickerMenuEl"
+          class="ui-floating-menu factory-filter-dropdown-menu factory-dashboard-portal max-w-[calc(100vw-2rem)]"
+          :style="pickerStyle"
+        >
+          <div class="max-h-72 overflow-y-auto py-1">
+            <button
+              v-for="def in showableDefs"
+              :key="def.id"
+              type="button"
+              class="ui-menu-action factory-filter-dropdown-option justify-between px-3 py-1.5 text-sm"
+              @click="addFilter(def)"
+            >
+              <span class="truncate text-surface-800 dark:text-surface-100">{{ def.name }}</span>
+              <span class="text-[10px] uppercase tracking-wide text-surface-400">{{ def.type }}</span>
+            </button>
+            <div v-if="showableDefs.length === 0" class="px-3 py-2 text-xs text-surface-400">
+              No properties to filter by yet.
+            </div>
           </div>
         </div>
-      </div>
+      </Teleport>
     </div>
 
     <button

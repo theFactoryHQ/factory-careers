@@ -1,7 +1,7 @@
 import type { Browser, Page } from '@playwright/test'
 import postgres from 'postgres'
 import { assertMutatingE2ESafety } from '../safety'
-import { expect, selectFactorySelectOption, test } from '../fixtures'
+import { expect, expectFloatingMenuNotClipped, selectFactorySelectOption, test } from '../fixtures'
 
 interface SignedInApplicant {
   email: string
@@ -243,6 +243,9 @@ test.describe('Organization administration and join requests', () => {
       const approvedMemberRow = page.locator('.ui-list-row').filter({ hasText: approvedApplicant.email }).first()
       await expect(approvedMemberRow.getByText('Member', { exact: true })).toBeVisible()
       await approvedMemberRow.locator('[data-member-actions] button').click()
+      const roleActionsMenu = page.locator('[data-member-role-menu]').filter({ has: page.getByRole('button', { name: 'Make admin' }) })
+      await expect(roleActionsMenu).toBeVisible()
+      await expectFloatingMenuNotClipped(roleActionsMenu)
       const [roleResponse] = await Promise.all([
         page.waitForResponse(
           resp => resp.url().includes('/api/auth/organization/update-member-role') && resp.request().method() === 'POST',

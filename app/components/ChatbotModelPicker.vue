@@ -14,6 +14,16 @@ const emit = defineEmits<{ manage: [] }>()
 
 const open = ref(false)
 const root = useTemplateRef<HTMLDivElement>('root')
+const triggerRef = ref<HTMLElement | null>(null)
+const panelRef = ref<HTMLElement | null>(null)
+const { floatingStyle } = useFloatingMenu({
+  open,
+  triggerRef,
+  placement: 'top-start',
+  width: 288,
+  estimatedHeight: 360,
+  zIndex: 80,
+})
 
 const selectedConfig = computed(() =>
   aiConfigs.value.find((c) => c.id === selectedAiConfigId.value) ?? null,
@@ -37,8 +47,8 @@ async function pick(id: string | null) {
 }
 
 function onWindowClick(e: MouseEvent) {
-  if (!root.value) return
-  if (!root.value.contains(e.target as Node)) open.value = false
+  const target = e.target as Node
+  if (!root.value?.contains(target) && !panelRef.value?.contains(target)) open.value = false
 }
 
 onMounted(() => window.addEventListener('click', onWindowClick))
@@ -48,6 +58,7 @@ onUnmounted(() => window.removeEventListener('click', onWindowClick))
 <template>
   <div ref="root" class="relative">
     <button
+      ref="triggerRef"
       type="button"
       class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-2.5 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-200 hover:border-brand-300 dark:hover:border-brand-700 cursor-pointer transition-colors"
       :title="selectedConfig?.model ?? defaultChatbotConfig?.model ?? 'No model configured'"
@@ -58,10 +69,13 @@ onUnmounted(() => window.removeEventListener('click', onWindowClick))
       <ChevronUp class="size-3 transition-transform" :class="open ? '' : 'rotate-180'" />
     </button>
 
-    <div
-      v-if="open"
-      class="absolute bottom-full left-0 z-30 mb-2 w-72 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg py-1 max-h-[60vh] overflow-y-auto"
-    >
+    <Teleport to="body">
+      <div
+        v-if="open"
+        ref="panelRef"
+        class="ui-floating-menu factory-dashboard-portal rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg py-1 max-h-[60vh] overflow-y-auto"
+        :style="floatingStyle"
+      >
       <!-- Default entry -->
       <button
         type="button"
@@ -123,6 +137,7 @@ onUnmounted(() => window.removeEventListener('click', onWindowClick))
         <Settings class="size-3.5" />
         Manage models…
       </button>
-    </div>
+      </div>
+    </Teleport>
   </div>
 </template>

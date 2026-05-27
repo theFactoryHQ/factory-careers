@@ -11,6 +11,16 @@ const isFeedbackOpen = ref(false)
 const isSubmitting = ref(false)
 const comment = ref('')
 const savedSentiment = ref<'up' | 'down' | null>(null)
+const triggerRef = ref<HTMLElement | null>(null)
+const feedbackPanelRef = ref<HTMLElement | null>(null)
+const { floatingStyle: feedbackPanelStyle } = useFloatingMenu({
+  open: isFeedbackOpen,
+  triggerRef,
+  placement: 'bottom-end',
+  width: 288,
+  estimatedHeight: 220,
+  zIndex: 90,
+})
 
 const canSubmitFeedback = computed(() => Boolean(props.analysisRunId) && !isSubmitting.value)
 
@@ -49,6 +59,7 @@ async function submitFeedback(sentiment: 'up' | 'down') {
 <template>
   <div class="group/scoring-feedback relative inline-flex items-center">
     <button
+      ref="triggerRef"
       type="button"
       class="factory-toolbar-button inline-flex h-8 w-8 cursor-pointer items-center justify-center border text-white/58 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
       :disabled="!analysisRunId"
@@ -84,45 +95,49 @@ async function submitFeedback(sentiment: 'up' | 'down') {
       </button>
     </div>
 
-    <div
-      v-if="isFeedbackOpen"
-      class="absolute right-0 top-full z-40 mt-12 w-72 border border-white/12 bg-black p-3 shadow-xl"
-    >
-      <div class="mb-2 flex items-center justify-between gap-2">
-        <p class="text-xs font-semibold uppercase text-white/68">Scoring feedback</p>
-        <button
-          type="button"
-          class="inline-flex h-6 w-6 cursor-pointer items-center justify-center text-white/58 hover:text-white"
-          aria-label="Close scoring feedback"
-          @click="isFeedbackOpen = false"
-        >
-          <X class="size-3.5" />
-        </button>
+    <Teleport to="body">
+      <div
+        v-if="isFeedbackOpen"
+        ref="feedbackPanelRef"
+        class="ui-floating-menu factory-dashboard-portal border border-white/12 bg-black p-3 shadow-xl"
+        :style="feedbackPanelStyle"
+      >
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <p class="text-xs font-semibold uppercase text-white/68">Scoring feedback</p>
+          <button
+            type="button"
+            class="inline-flex h-6 w-6 cursor-pointer items-center justify-center text-white/58 hover:text-white"
+            aria-label="Close scoring feedback"
+            @click="isFeedbackOpen = false"
+          >
+            <X class="size-3.5" />
+          </button>
+        </div>
+        <textarea
+          v-model="comment"
+          rows="3"
+          class="ui-field min-h-20 w-full resize-none text-sm"
+          placeholder="What should the AI improve about this score?"
+        />
+        <div class="mt-2 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            class="factory-toolbar-button cursor-pointer border px-3 py-1.5 text-xs font-medium text-white/78 hover:text-white"
+            @click="isFeedbackOpen = false"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="factory-button-cta factory-button-premium inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 px-3 py-0 text-[11px] disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="!canSubmitFeedback || !comment.trim()"
+            @click="submitFeedback('down')"
+          >
+            <Loader2 v-if="isSubmitting" class="size-3 animate-spin" />
+            Save
+          </button>
+        </div>
       </div>
-      <textarea
-        v-model="comment"
-        rows="3"
-        class="ui-field min-h-20 w-full resize-none text-sm"
-        placeholder="What should the AI improve about this score?"
-      />
-      <div class="mt-2 flex items-center justify-end gap-2">
-        <button
-          type="button"
-          class="factory-toolbar-button cursor-pointer border px-3 py-1.5 text-xs font-medium text-white/78 hover:text-white"
-          @click="isFeedbackOpen = false"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="factory-button-cta factory-button-premium inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 px-3 py-0 text-[11px] disabled:cursor-not-allowed disabled:opacity-50"
-          :disabled="!canSubmitFeedback || !comment.trim()"
-          @click="submitFeedback('down')"
-        >
-          <Loader2 v-if="isSubmitting" class="size-3 animate-spin" />
-          Save
-        </button>
-      </div>
-    </div>
+    </Teleport>
   </div>
 </template>

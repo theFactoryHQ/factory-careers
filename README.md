@@ -82,7 +82,7 @@ npm ci
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3001](http://localhost:3001).
 
 `./setup.sh` generates `.env` and exits if one already exists. If you need to
 regenerate local secrets, remove `.env` first.

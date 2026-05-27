@@ -13,6 +13,7 @@ describe('property filter picker', () => {
     expect(source).toContain('factory-filter-dropdown-trigger')
     expect(source).toContain('factory-filter-dropdown-menu')
     expect(source).toContain('factory-filter-dropdown-option')
-    expect(source).toContain('z-50')
+    expect(source).toContain('useFloatingMenu')
+    expect(source).toContain('factory-dashboard-portal')
   })
 })
