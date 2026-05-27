@@ -330,6 +330,7 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('npm run test:e2e:uploads')
     expect(workflow).toContain('factory-careers-uploads-minio')
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "false"')
+    expect(read('e2e/critical-flows/candidate-documents.spec.ts')).toContain('assertMutatingE2ESafety')
     expect(read('e2e/critical-flows/candidate-documents.spec.ts')).toContain('/api/documents/${uploaded!.id}/preview')
     expect(read('e2e/critical-flows/candidate-documents.spec.ts')).toContain('/api/documents/${uploaded!.id}/download')
     expect(read('e2e/critical-flows/candidate-documents.spec.ts')).toContain('/api/documents/${uploaded!.id}/parse')
