@@ -38,12 +38,15 @@ describe('shared keyboard and popover primitives', () => {
     expect(listboxNavigation).toContain('useListboxNavigation')
     expect(listboxNavigation).toContain('activeDescendantId')
     expect(listboxNavigation).toContain('selectActive')
+    expect(listboxNavigation).toContain("event.key === 'Tab'")
   })
 
   it('uses the shared primitives in representative dashboard controls', () => {
     const filterDrawer = readProjectFile('app/components/FilterDrawer.vue')
     const factorySelect = readProjectFile('app/components/FactorySelect.vue')
     const topbar = readProjectFile('app/components/AppTopBar.vue')
+    const publicJobs = readProjectFile('app/pages/jobs/index.vue')
+    const languageSwitcher = readProjectFile('app/components/LanguageSwitcher.vue')
 
     expect(filterDrawer).toContain('useFocusTrap')
     expect(filterDrawer).not.toContain("document.addEventListener('keydown', onKeydown)")
@@ -57,6 +60,12 @@ describe('shared keyboard and popover primitives', () => {
     expect(topbar).toContain('moreActionsMenu')
     expect(topbar).not.toContain('const showFactoryMoreActions = false')
     expect(topbar).not.toMatch(/v-if="showFactoryMoreActions"[\s\S]*title="More options"/)
+
+    expect(publicJobs).toContain('useListboxNavigation')
+    expect(publicJobs).toContain('aria-activedescendant')
+    expect(languageSwitcher).toContain('useListboxNavigation')
+    expect(languageSwitcher).toContain('aria-activedescendant')
+    expect(languageSwitcher).toContain('optionClasses(option.code, languageListboxNavigation.activeIndex.value === index)')
   })
 
   it('keeps Factory dropdown menus on the floating portal path', () => {

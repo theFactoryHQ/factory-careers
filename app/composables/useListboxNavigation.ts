@@ -7,7 +7,7 @@ type UseListboxNavigationOptions = {
   optionCount: MaybeRefOrGetter<number>
   selectedIndex?: MaybeRefOrGetter<number>
   openListbox?: () => void
-  closeListbox?: () => void
+  closeListbox?: (restoreFocus?: boolean) => void
   selectIndex: (index: number) => void
 }
 
@@ -72,7 +72,9 @@ export function useListboxNavigation(options: UseListboxNavigationOptions) {
       selectActive()
     } else if (event.key === 'Escape') {
       event.preventDefault()
-      options.closeListbox?.()
+      options.closeListbox?.(true)
+    } else if (event.key === 'Tab') {
+      options.closeListbox?.(false)
     }
   }
 

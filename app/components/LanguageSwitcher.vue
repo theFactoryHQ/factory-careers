@@ -16,14 +16,18 @@ const { locale, locales, t } = useI18n()
 
 const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
-const triggerRef = ref<HTMLElement | null>(null)
+const triggerRef = ref<HTMLButtonElement | null>(null)
 const listboxRef = ref<HTMLElement | null>(null)
+const languageSelectId = useId()
 const languageFeatureEnabled = computed(
   () => runtimeConfig.public.languageFeatureEnabled === true,
 )
 
-function closeDropdown() {
+function closeDropdown(restoreFocus = false) {
   isOpen.value = false
+  if (restoreFocus) {
+    nextTick(() => triggerRef.value?.focus())
+  }
 }
 
 function handleClickOutside(event: MouseEvent) {
@@ -153,6 +157,9 @@ const selectedLocaleCode = computed({
     void handleLocaleChange(nextLocale)
   },
 })
+const selectedLocaleIndex = computed(() =>
+  localeOptions.value.findIndex(option => option.code === selectedLocaleCode.value),
+)
 
 const showI18nProbe = computed(() => {
   const i18nTestQuery = route.query.i18nTest
@@ -180,14 +187,14 @@ const { floatingStyle: dropdownStyle } = useFloatingMenu({
   zIndex: 90,
 })
 
-function optionClasses(code: string) {
+function optionClasses(code: string, active = false) {
   if (isFactoryTone.value) {
-    return code === selectedLocaleCode.value
+    return active || code === selectedLocaleCode.value
       ? 'bg-brand-500/12 text-white'
       : 'text-white/68 hover:bg-brand-500/12 hover:text-white'
   }
 
-  return code === selectedLocaleCode.value
+  return active || code === selectedLocaleCode.value
     ? 'bg-surface-100 dark:bg-surface-800 text-surface-900 dark:text-surface-100'
     : 'text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800'
 }
@@ -196,9 +203,24 @@ const partialBadgeClasses = computed(() => isFactoryTone.value
   ? 'border border-warning-500/40 bg-warning-500/10 px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning-300'
   : 'rounded bg-amber-100 dark:bg-amber-900/40 px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400')
 
-async function handleLocaleChange(nextLocale: string) {
+const languageListboxNavigation = useListboxNavigation({
+  idBase: languageSelectId,
+  open: isOpen,
+  optionCount: computed(() => localeOptions.value.length),
+  selectedIndex: selectedLocaleIndex,
+  openListbox: () => {
+    isOpen.value = true
+  },
+  closeListbox: () => closeDropdown(true),
+  selectIndex: (index) => {
+    const option = localeOptions.value[index]
+    if (option) void handleLocaleChange(option.code, true)
+  },
+})
+
+async function handleLocaleChange(nextLocale: string, restoreFocus = false) {
   if (!nextLocale || nextLocale === selectedLocaleCode.value) {
-    closeDropdown()
+    closeDropdown(restoreFocus)
     return
   }
   if (!isSwitchLocale(nextLocale)) return
@@ -222,12 +244,16 @@ async function handleLocaleChange(nextLocale: string) {
       <!-- Trigger button -->
       <button
         ref="triggerRef"
+        :id="languageSelectId"
         type="button"
         :aria-label="t('common.selectLanguage')"
         :aria-expanded="isOpen"
+        :aria-controls="`${languageSelectId}-listbox`"
+        :aria-activedescendant="languageListboxNavigation.activeDescendantId.value"
         aria-haspopup="listbox"
         :class="triggerClasses"
         @click="isOpen = !isOpen"
+        @keydown="languageListboxNavigation.onKeydown"
       >
         <span>{{ localeOptions.find(o => o.code === selectedLocaleCode)?.flag ?? '🌐' }} {{ selectedLocaleCode }}</span>
         <ChevronDown class="size-3 opacity-60 transition-transform duration-150" :class="{ 'rotate-180': isOpen }" />
@@ -238,10 +264,12 @@ async function handleLocaleChange(nextLocale: string) {
         <ul
           v-if="isOpen"
           ref="listboxRef"
+          :id="`${languageSelectId}-listbox`"
           role="listbox"
           :aria-label="t('common.selectLanguage')"
           :class="dropdownClasses"
           :style="dropdownStyle"
+          @keydown="languageListboxNavigation.onKeydown"
         >
           <li
             role="presentation"
@@ -252,12 +280,14 @@ async function handleLocaleChange(nextLocale: string) {
             Language
           </li>
           <li
-            v-for="option in localeOptions"
+            v-for="(option, index) in localeOptions"
+            :id="languageListboxNavigation.optionId(index)"
             :key="option.code"
             role="option"
             :aria-selected="option.code === selectedLocaleCode"
             class="flex cursor-pointer items-center justify-between gap-2 px-3 py-1.5 transition-colors"
-            :class="optionClasses(option.code)"
+            :class="optionClasses(option.code, languageListboxNavigation.activeIndex.value === index)"
+            @mouseenter="languageListboxNavigation.activate(index)"
             @click="handleLocaleChange(option.code)"
           >
             <span class="flex items-center gap-1.5">
