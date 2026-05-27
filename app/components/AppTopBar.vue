@@ -19,6 +19,7 @@ const isSigningOut = ref(false)
 const showFeedbackModal = ref(false)
 const showMobileMenu = ref(false)
 const showMoreNav = ref(false)
+const mobileNavTriggerRef = ref<HTMLButtonElement | null>(null)
 
 const config = useRuntimeConfig()
 const { activeOrg } = useCurrentOrg()
@@ -191,6 +192,33 @@ watch(() => route.path, () => {
   showGetStartedMenu.value = false
   showMoreNav.value = false
   showMoreActions.value = false
+})
+
+function closeMobileMenu({ restoreFocus = false } = {}) {
+  if (!showMobileMenu.value) return
+  showMobileMenu.value = false
+  if (restoreFocus) {
+    nextTick(() => mobileNavTriggerRef.value?.focus())
+  }
+}
+
+function toggleMobileMenu() {
+  showMobileMenu.value = !showMobileMenu.value
+}
+
+function handleDocumentKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && showMobileMenu.value) {
+    event.preventDefault()
+    closeMobileMenu({ restoreFocus: true })
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', handleDocumentKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleDocumentKeydown)
 })
 
 // ─────────────────────────────────────────────
@@ -487,7 +515,7 @@ function handleNewJobClick() {
                 :alt="userName"
                 class="size-9 object-cover"
               />
-              <div v-else class="flex size-9 items-center justify-center bg-brand-500 text-[11px] font-bold text-white">
+              <div v-else class="flex size-9 items-center justify-center bg-brand-500 text-[11px] font-bold text-black">
                 {{ userInitials }}
               </div>
               <ChevronDown
@@ -549,12 +577,13 @@ function handleNewJobClick() {
 
           <!-- Mobile hamburger -->
           <button
+            ref="mobileNavTriggerRef"
             class="flex md:hidden items-center justify-center size-8 border border-transparent bg-transparent text-white/58 transition-all duration-200 cursor-pointer hover:bg-white/[0.04] hover:text-white"
             type="button"
             :aria-label="showMobileMenu ? 'Close navigation menu' : 'Open navigation menu'"
             :aria-expanded="showMobileMenu"
             aria-controls="dashboard-mobile-navigation"
-            @click="showMobileMenu = !showMobileMenu"
+            @click="toggleMobileMenu"
           >
             <X v-if="showMobileMenu" class="size-4" />
             <Menu v-else class="size-4" />

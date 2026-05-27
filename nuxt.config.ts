@@ -63,7 +63,7 @@ const isRailwayPreview =
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
-  devtools: { enabled: true },
+  devtools: { enabled: process.env.NUXT_DEVTOOLS !== "false" },
 
   modules: [
     "@nuxtjs/i18n",

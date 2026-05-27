@@ -291,7 +291,7 @@ function formatPostedDate(activeFrom?: string | null, createdAt?: string | null)
       class="border border-white/10 bg-white/[0.03] p-12 text-center"
     >
       <Briefcase class="mx-auto mb-3 size-10 text-brand-500" />
-      <h3 class="mb-1 text-base font-semibold text-white">No open positions</h3>
+      <h2 class="mb-1 text-base font-semibold text-white">No open positions</h2>
       <p class="text-sm text-white/50">
         <template v-if="searchQuery || typeFilter">
           No jobs match your current filters. Try adjusting your search.
