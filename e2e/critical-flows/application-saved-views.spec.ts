@@ -137,7 +137,7 @@ test.describe('Application table saved views', () => {
     const drawer = await openFilters(page)
     await drawer.getByRole('button', { name: 'Screening' }).click()
     await drawer.getByRole('button', { name: 'All jobs' }).click()
-    await drawer.getByRole('option', { name: primaryJob.title, exact: true }).click()
+    await page.getByRole('option', { name: primaryJob.title, exact: true }).click()
     await drawer.getByRole('button', { name: 'Done' }).click()
 
     await expect(page.getByRole('row').filter({ hasText: matchingCandidate.email })).toBeVisible()
