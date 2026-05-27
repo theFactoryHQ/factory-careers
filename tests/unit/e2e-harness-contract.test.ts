@@ -218,11 +218,15 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:auth-org']).toBe(
-      'playwright test e2e/critical-flows/auth-org-edge-flows.spec.ts',
+      'playwright test e2e/critical-flows/auth-org-edge-flows.spec.ts e2e/critical-flows/organization-settings.spec.ts',
     )
     expect(workflow).toContain('name: Playwright auth and org')
     expect(workflow).toContain('npm run test:e2e:auth-org')
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "true"')
+    expect(workflow).not.toContain('GOOGLE_CLIENT_SECRET')
+    expect(workflow).not.toContain('MICROSOFT_CALENDAR_CLIENT_SECRET')
+    expect(read('e2e/critical-flows/organization-settings.spec.ts')).toContain('/api/calendar/status')
+    expect(read('e2e/critical-flows/organization-settings.spec.ts')).toContain('Connect shared calendar')
     expect(workflow).toContain('needs.auth_org.result')
     expect(workflow).toContain(e2eRequiredNeeds)
   })
