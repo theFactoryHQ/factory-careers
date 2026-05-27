@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { resolveActiveOrganizationId } from './activeOrganization'
 import { assertFactoryStaffAccess } from './factoryAccess'
 
 type AuthSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>
@@ -24,7 +25,7 @@ export async function requireAuth(event: H3Event) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const activeOrganizationId = (session.session as { activeOrganizationId?: string }).activeOrganizationId
+  const activeOrganizationId = await resolveActiveOrganizationId(session)
 
   if (!activeOrganizationId) {
     throw createError({ statusCode: 403, statusMessage: 'No active organization' })

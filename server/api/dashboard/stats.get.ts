@@ -147,7 +147,7 @@ export default defineCachedEventHandler(async (event) => {
   maxAge: 30,
   swr: true,
   // Nitro cached handlers strip request headers unless they are listed here.
-  // The auth/permission check needs cookies, and the cached response must stay
-  // scoped to the caller's session.
-  varies: ['cookie'],
+  // The auth/permission check needs cookie and bearer sessions, and the cached
+  // response must stay scoped to the caller's session.
+  varies: ['cookie', 'authorization'],
 })

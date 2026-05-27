@@ -235,7 +235,7 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:auth-org']).toBe(
-      'FACTORY_EMAIL_TEST_MODE=capture FACTORY_EMAIL_CAPTURE_PATH=/tmp/factory-careers-e2e-auth-org-email.jsonl playwright test e2e/critical-flows/auth-org-edge-flows.spec.ts e2e/critical-flows/organization-settings.spec.ts e2e/critical-flows/org-admin-membership.spec.ts',
+      'FACTORY_EMAIL_TEST_MODE=capture FACTORY_EMAIL_CAPTURE_PATH=/tmp/factory-careers-e2e-auth-org-email.jsonl playwright test e2e/critical-flows/auth-org-edge-flows.spec.ts e2e/critical-flows/organization-settings.spec.ts e2e/critical-flows/org-admin-membership.spec.ts e2e/critical-flows/device-authorization.spec.ts',
     )
     expect(workflow).toContain('name: Playwright auth and org')
     expect(workflow).toContain('npm run test:e2e:auth-org')
@@ -247,6 +247,12 @@ describe('Playwright E2E harness contract', () => {
     expect(read('e2e/critical-flows/org-admin-membership.spec.ts')).toContain('assertMutatingE2ESafety')
     expect(read('e2e/critical-flows/org-admin-membership.spec.ts')).toContain('FACTORY_EMAIL_TEST_MODE')
     expect(read('e2e/critical-flows/org-admin-membership.spec.ts')).toContain('/api/join-requests')
+    expect(read('e2e/critical-flows/device-authorization.spec.ts')).toContain('assertMutatingE2ESafety')
+    expect(read('e2e/critical-flows/device-authorization.spec.ts')).toContain('/api/auth/device/code')
+    expect(read('e2e/critical-flows/device-authorization.spec.ts')).toContain('/api/auth/device/token')
+    expect(read('e2e/critical-flows/device-authorization.spec.ts')).toContain('/api/cli/capabilities')
+    expect(read('e2e/critical-flows/device-authorization.spec.ts')).toContain('/api/dashboard/stats')
+    expect(read('e2e/critical-flows/device-authorization.spec.ts')).toContain('access_denied')
     expect(workflow).toContain('needs.auth_org.result')
     expect(workflow).toContain(e2eRequiredNeeds)
   })

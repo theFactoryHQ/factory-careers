@@ -1,5 +1,6 @@
 import type { H3Event } from 'h3'
 import type { statements } from '~~/shared/permissions'
+import { resolveActiveOrganizationId } from './activeOrganization'
 import { assertFactoryStaffAccess } from './factoryAccess'
 
 /**
@@ -56,7 +57,7 @@ export async function requirePermission(
   }
 
   // ── Step 2: Active organization ──
-  const activeOrganizationId = (session.session as { activeOrganizationId?: string }).activeOrganizationId
+  const activeOrganizationId = await resolveActiveOrganizationId(session)
 
   if (!activeOrganizationId) {
     throw createError({ statusCode: 403, statusMessage: 'No active organization' })

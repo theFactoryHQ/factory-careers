@@ -29,7 +29,7 @@ afterEach(() => {
 })
 
 describe('CLI dashboard commands', () => {
-  it('fetches dashboard summary stats', async () => {
+  it('fetches dashboard summary stats with the bearer token used by the cached API route', async () => {
     const dir = tempDir()
     const configPath = join(dir, 'config.json')
     writeAuthedConfig(configPath)
