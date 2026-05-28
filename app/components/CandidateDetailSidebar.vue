@@ -42,6 +42,7 @@ const hasSubNav = computed(() => {
 // ─────────────────────────────────────────────
 
 const activeTab = ref<'overview' | 'documents' | 'responses' | 'ai_analysis' | 'timeline'>('overview')
+const sidebarRef = ref<HTMLElement | null>(null)
 
 // ─────────────────────────────────────────────
 // Fetch application detail
@@ -246,20 +247,21 @@ async function handleDeleteDoc(docId: string) {
 // Escape key to close (layered: preview → delete → sidebar)
 // ─────────────────────────────────────────────
 
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') {
-    if (showPreview.value) {
-      closePreview()
-    } else if (showDocDeleteConfirm.value) {
-      showDocDeleteConfirm.value = null
-    } else {
-      emit('close')
-    }
+function closeTopLayer() {
+  if (showPreview.value) {
+    closePreview()
+  } else if (showDocDeleteConfirm.value) {
+    showDocDeleteConfirm.value = null
+  } else {
+    emit('close')
   }
 }
 
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
+useFocusTrap({
+  root: sidebarRef,
+  active: computed(() => props.open),
+  onEscape: closeTopLayer,
+})
 
 // ─────────────────────────────────────────────
 // Timeline data for the candidate
@@ -395,9 +397,13 @@ function formatInterviewDate(dateStr: string) {
 <template>
   <Transition name="slide">
     <aside
+      ref="sidebarRef"
       v-if="open"
       class="ui-drawer-panel fixed right-0 z-40 w-full sm:w-[640px] sm:max-w-[calc(100vw-4rem)] flex flex-col"
       :class="hasSubNav ? 'top-24 h-[calc(100vh-6rem)]' : 'top-14 h-[calc(100vh-3.5rem)]'"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Candidate detail"
     >
       <!-- Header -->
       <div class="ui-drawer-header flex items-center justify-between px-4 sm:px-6 py-4 shrink-0">

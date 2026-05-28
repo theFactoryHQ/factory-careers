@@ -171,6 +171,7 @@ const canSend = computed(() => {
             </div>
             <button
               class="ui-button ui-button-ghost p-1.5"
+              aria-label="Close interview invitation modal"
               @click="emit('close')"
             >
               <X class="size-5" />

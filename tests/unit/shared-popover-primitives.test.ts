@@ -32,6 +32,10 @@ describe('shared keyboard and popover primitives', () => {
     expect(focusTrap).toContain('useFocusTrap')
     expect(focusTrap).toContain('restoreFocus')
     expect(focusTrap).toContain('focusFirst')
+    expect(focusTrap).toContain('activeTrapStack')
+    expect(focusTrap).toContain('isTopTrap')
+    expect(focusTrap).toContain('event.stopPropagation()')
+    expect(focusTrap).toContain('event.stopImmediatePropagation()')
     expect(menuButton).toContain('useMenuButton')
     expect(menuButton).toContain('aria-expanded')
     expect(menuButton).toContain('focusTrigger')
@@ -46,6 +50,10 @@ describe('shared keyboard and popover primitives', () => {
 
   it('uses the shared primitives in representative dashboard controls', () => {
     const filterDrawer = readProjectFile('app/components/FilterDrawer.vue')
+    const applicationDetailDrawer = readProjectFile('app/components/ApplicationDetailDrawer.vue')
+    const candidateDetailDrawer = readProjectFile('app/components/CandidateDetailDrawer.vue')
+    const candidateDetailSidebar = readProjectFile('app/components/CandidateDetailSidebar.vue')
+    const interviewScheduleSidebar = readProjectFile('app/components/InterviewScheduleSidebar.vue')
     const factorySelect = readProjectFile('app/components/FactorySelect.vue')
     const topbar = readProjectFile('app/components/AppTopBar.vue')
     const publicJobs = readProjectFile('app/pages/jobs/index.vue')
@@ -53,6 +61,13 @@ describe('shared keyboard and popover primitives', () => {
 
     expect(filterDrawer).toContain('useFocusTrap')
     expect(filterDrawer).not.toContain("document.addEventListener('keydown', onKeydown)")
+    for (const source of [applicationDetailDrawer, candidateDetailDrawer, candidateDetailSidebar, interviewScheduleSidebar]) {
+      expect(source).toContain('useFocusTrap')
+      expect(source).toContain('role="dialog"')
+      expect(source).toContain('aria-modal="true"')
+      expect(source).not.toContain("document.addEventListener('keydown', onKeydown)")
+      expect(source).not.toContain("window.addEventListener('keydown', onKeydown)")
+    }
 
     expect(factorySelect).toContain('useOutsidePointer')
     expect(factorySelect).toContain('useListboxNavigation')

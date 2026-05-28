@@ -34,6 +34,7 @@ function handleApplied() {
 const showInterviewSidebar = ref(false)
 const interviewTargetApp = ref<{ id: string; jobTitle: string } | null>(null)
 const transitioningApplicationIds = ref<Set<string>>(new Set())
+const drawerRef = ref<HTMLElement | null>(null)
 
 function openScheduleInterview(app: { id: string; job: { title: string } }) {
   interviewTargetApp.value = { id: app.id, jobTitle: app.job.title }
@@ -80,20 +81,20 @@ const documentPreviewState = computed(() => ({
   isPdfPreview: documentPreview.isPdfPreview.value,
 }))
 
-// ─── Body scroll lock + keyboard handling ─────────────────────────────────────
-
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') emit('close')
-}
+// ─── Body scroll lock + focus handling ────────────────────────────────────────
 
 onMounted(() => {
-  document.addEventListener('keydown', onKeydown)
   document.body.style.overflow = 'hidden'
 })
 
 onUnmounted(() => {
-  document.removeEventListener('keydown', onKeydown)
   document.body.style.overflow = ''
+})
+
+useFocusTrap({
+  root: drawerRef,
+  active: true,
+  onEscape: () => emit('close'),
 })
 </script>
 
@@ -120,6 +121,7 @@ onUnmounted(() => {
       leave-to-class="translate-x-full"
     >
       <aside
+        ref="drawerRef"
         class="factory-dashboard-portal fixed inset-y-0 right-0 z-[60] w-full max-w-2xl flex flex-col border-l border-white/12 bg-black text-white shadow-none"
         role="dialog"
         aria-modal="true"

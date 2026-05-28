@@ -124,6 +124,7 @@ const atCap = computed(() => agents.value.length >= CHATBOT_AGENT_MAX_PER_USER)
           </div>
           <button
             class="ui-button ui-button-ghost size-8 p-0"
+            aria-label="Close agent manager modal"
             @click="emit('close')"
           >
             <X class="size-4" />

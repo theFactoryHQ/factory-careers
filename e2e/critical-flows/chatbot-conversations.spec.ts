@@ -83,7 +83,7 @@ test.describe('Chatbot agents and conversations', () => {
       page.getByRole('button', { name: 'Create agent' }).click(),
     ])
     await expect(page.getByText(agentName)).toBeVisible()
-    await page.getByRole('button', { name: 'Close' }).click()
+    await page.getByRole('button', { name: 'Close', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Manage agents' })).toBeHidden()
 
     await page.getByRole('button', { name: /Default assistant/ }).click()

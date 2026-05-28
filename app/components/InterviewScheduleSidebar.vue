@@ -57,6 +57,7 @@ const isSubmitting = ref(false)
 const isMoving = ref(false)
 const newInterviewerEmail = ref('')
 const timeScroller = ref<HTMLElement | null>(null)
+const sidebarRef = ref<HTMLElement | null>(null)
 
 // ─── Notification method ──────────────────────────────────────────
 const notifyViaEmail = ref(false)
@@ -150,6 +151,12 @@ function handleDropdownOutsideClick(event: MouseEvent) {
 
 onMounted(() => document.addEventListener('mousedown', handleDropdownOutsideClick))
 onUnmounted(() => document.removeEventListener('mousedown', handleDropdownOutsideClick))
+
+useFocusTrap({
+  root: sidebarRef,
+  active: true,
+  onEscape: () => emit('close'),
+})
 
 watch(canUseCalendar, (enabled) => {
   if (!enabled) {
@@ -490,7 +497,13 @@ async function handleMoveToInterview() {
         leave-from-class="translate-x-0"
         leave-to-class="translate-x-full"
       >
-        <div class="relative w-full max-w-2xl bg-white dark:bg-surface-900 shadow-2xl overflow-hidden flex flex-col border-l border-surface-200/40 dark:border-surface-800/60">
+        <div
+          ref="sidebarRef"
+          class="relative w-full max-w-2xl bg-white dark:bg-surface-900 shadow-2xl overflow-hidden flex flex-col border-l border-surface-200/40 dark:border-surface-800/60"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Schedule interview"
+        >
           <!-- Header -->
           <div class="shrink-0 px-6 pt-5 pb-4">
             <div class="flex items-start justify-between">
