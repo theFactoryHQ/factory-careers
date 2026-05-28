@@ -46,8 +46,9 @@ const searchQuery = ref('')
 const typeFilter = ref<string | undefined>(undefined)
 const typeDropdownOpen = ref(false)
 const typeDropdownRef = ref<HTMLElement | null>(null)
-const typeDropdownTriggerRef = ref<HTMLElement | null>(null)
+const typeDropdownTriggerRef = ref<HTMLButtonElement | null>(null)
 const typeDropdownListboxRef = ref<HTMLElement | null>(null)
+const typeDropdownId = useId()
 const { floatingStyle: typeDropdownStyle } = useFloatingMenu({
   open: typeDropdownOpen,
   triggerRef: typeDropdownTriggerRef,
@@ -109,11 +110,34 @@ const typeOptions = [
 ] as const
 
 const selectedTypeLabel = computed(() => typeOptions.find(option => option.value === typeFilter.value)?.label ?? 'All types')
+const selectedTypeIndex = computed(() => typeOptions.findIndex(option => option.value === typeFilter.value))
 
-function setTypeFilter(value: string | undefined) {
-  typeFilter.value = value
+function closeTypeDropdown(restoreFocus = false) {
   typeDropdownOpen.value = false
+  if (restoreFocus) {
+    nextTick(() => typeDropdownTriggerRef.value?.focus())
+  }
 }
+
+function setTypeFilter(value: string | undefined, restoreFocus = false) {
+  typeFilter.value = value
+  closeTypeDropdown(restoreFocus)
+}
+
+const typeListboxNavigation = useListboxNavigation({
+  idBase: typeDropdownId,
+  open: typeDropdownOpen,
+  optionCount: computed(() => typeOptions.length),
+  selectedIndex: selectedTypeIndex,
+  openListbox: () => {
+    typeDropdownOpen.value = true
+  },
+  closeListbox: () => closeTypeDropdown(true),
+  selectIndex: (index) => {
+    const option = typeOptions[index]
+    if (option) setTypeFilter(option.value, true)
+  },
+})
 
 function handleTypeDropdownClickOutside(event: MouseEvent) {
   const target = event.target as Node
@@ -177,14 +201,15 @@ function formatPostedDate(activeFrom?: string | null, createdAt?: string | null)
       <div ref="typeDropdownRef" class="relative sm:w-40">
         <button
           ref="typeDropdownTriggerRef"
+          :id="typeDropdownId"
           type="button"
           class="flex h-10 min-h-10 w-full items-center justify-between border border-white/14 bg-black/35 px-3 py-0 text-left text-sm text-white outline-none transition-colors hover:border-brand-500/60 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25"
           :aria-expanded="typeDropdownOpen"
+          :aria-controls="`${typeDropdownId}-listbox`"
+          :aria-activedescendant="typeListboxNavigation.activeDescendantId.value"
           aria-haspopup="listbox"
           @click="typeDropdownOpen = !typeDropdownOpen"
-          @keydown.enter.prevent="typeDropdownOpen = !typeDropdownOpen"
-          @keydown.space.prevent="typeDropdownOpen = !typeDropdownOpen"
-          @keydown.escape="typeDropdownOpen = false"
+          @keydown="typeListboxNavigation.onKeydown"
         >
           <span>{{ selectedTypeLabel }}</span>
           <ChevronDown
@@ -197,20 +222,25 @@ function formatPostedDate(activeFrom?: string | null, createdAt?: string | null)
           <ul
             v-if="typeDropdownOpen"
             ref="typeDropdownListboxRef"
+            :id="`${typeDropdownId}-listbox`"
             role="listbox"
             class="factory-public-form-portal border border-white/14 bg-black py-1 text-sm shadow-2xl shadow-black/50"
             :style="typeDropdownStyle"
+            @keydown="typeListboxNavigation.onKeydown"
           >
-            <li v-for="opt in typeOptions" :key="String(opt.value)" role="option" :aria-selected="opt.value === typeFilter">
-              <button
-                type="button"
-                class="flex w-full items-center justify-between px-3 py-2 text-left text-white/68 transition-colors hover:bg-brand-500/12 hover:text-white"
-                :class="opt.value === typeFilter ? 'text-white' : ''"
-                @click="setTypeFilter(opt.value)"
-              >
-                <span>{{ opt.label }}</span>
-                <Check v-if="opt.value === typeFilter" class="size-3.5 text-brand-500" />
-              </button>
+            <li
+              v-for="(opt, index) in typeOptions"
+              :id="typeListboxNavigation.optionId(index)"
+              :key="String(opt.value)"
+              role="option"
+              :aria-selected="opt.value === typeFilter"
+              class="flex cursor-pointer items-center justify-between px-3 py-2 text-left text-white/68 transition-colors hover:bg-brand-500/12 hover:text-white"
+              :class="opt.value === typeFilter || typeListboxNavigation.activeIndex.value === index ? 'bg-brand-500/12 text-white' : ''"
+              @mouseenter="typeListboxNavigation.activate(index)"
+              @click="setTypeFilter(opt.value)"
+            >
+              <span>{{ opt.label }}</span>
+              <Check v-if="opt.value === typeFilter" class="size-3.5 text-brand-500" />
             </li>
           </ul>
         </Teleport>
@@ -238,7 +268,7 @@ function formatPostedDate(activeFrom?: string | null, createdAt?: string | null)
             </h2>
 
             <!-- Meta -->
-            <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/42">
+            <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
               <span class="inline-flex items-center gap-1">
                 <Briefcase class="size-3.5" />
                 {{ formatType(j.type) }}
@@ -247,7 +277,7 @@ function formatPostedDate(activeFrom?: string | null, createdAt?: string | null)
                 <MapPin class="size-3.5" />
                 {{ j.location }}
               </span>
-              <span class="text-white/34">
+              <span class="text-white/60">
                 Posted {{ formatPostedDate(j.activeFrom, j.createdAt) }}
               </span>
             </div>
@@ -289,7 +319,7 @@ function formatPostedDate(activeFrom?: string | null, createdAt?: string | null)
       </div>
 
       <!-- Total count -->
-      <p class="pt-1 text-xs text-white/34">
+      <p class="pt-1 text-xs text-white/60">
         {{ total }} open position{{ total === 1 ? '' : 's' }}
       </p>
     </div>

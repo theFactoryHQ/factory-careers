@@ -20,7 +20,7 @@ test.describe('Accessibility and keyboard harness', () => {
     await tabUntilFocused(page, page.getByRole('button', { name: 'Sign in with Microsoft' }))
   })
 
-  test('closes public listboxes with Escape and restores focus', async ({ page }) => {
+  test('operates public listboxes and language picker from the keyboard', async ({ page }) => {
     await page.goto('/jobs')
     await page.waitForLoadState('networkidle')
 
@@ -28,11 +28,39 @@ test.describe('Accessibility and keyboard harness', () => {
     await typeFilter.focus()
     await expectVisibleKeyboardFocus(typeFilter)
     await page.keyboard.press('Enter')
+    const typeListboxId = await typeFilter.getAttribute('aria-controls')
+    expect(typeListboxId).toBeTruthy()
+    await expect(page.locator(`#${typeListboxId}`)).toBeVisible()
+    await expect(typeFilter).toHaveAttribute('aria-activedescendant', /-option-0$/)
+
+    await page.keyboard.press('ArrowDown')
+    await expect(typeFilter).toHaveAttribute('aria-activedescendant', /-option-1$/)
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('button', { name: 'Full-time' })).toBeVisible()
+    await expect(page.getByRole('listbox')).toHaveCount(0)
+
+    const selectedTypeFilter = page.getByRole('button', { name: 'Full-time' })
+    await selectedTypeFilter.focus()
+    await page.keyboard.press('Enter')
     await expect(page.getByRole('listbox')).toBeVisible()
 
     await page.keyboard.press('Escape')
     await expect(page.getByRole('listbox')).toHaveCount(0)
-    await expect(typeFilter).toBeFocused()
+    await expect(selectedTypeFilter).toBeFocused()
+
+    const languagePicker = page.getByRole('button', { name: /select language/i }).first()
+    await languagePicker.focus()
+    await expectVisibleKeyboardFocus(languagePicker)
+    await page.keyboard.press('Enter')
+    const languageListboxId = await languagePicker.getAttribute('aria-controls')
+    expect(languageListboxId).toBeTruthy()
+    await expect(page.locator(`#${languageListboxId}`)).toBeVisible()
+    await expect(languagePicker).toHaveAttribute('aria-activedescendant', /-option-0$/)
+
+    await page.keyboard.press('ArrowDown')
+    await expect(languagePicker).toHaveAttribute('aria-activedescendant', /-option-1$/)
+    await page.keyboard.press('Enter')
+    await expect(page).toHaveURL(/\/es\/jobs/)
   })
 
   test('keeps dashboard shell navigation keyboard-operable on mobile', async ({ authenticatedPage }) => {

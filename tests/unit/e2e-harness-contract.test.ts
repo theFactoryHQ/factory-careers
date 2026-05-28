@@ -72,7 +72,7 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:ui']).toBe(
-      'NUXT_DEVTOOLS=false playwright test e2e/critical-flows/invitation-management.spec.ts e2e/critical-flows/mobile-keyboard-smoke.spec.ts e2e/critical-flows/accessibility-keyboard.spec.ts',
+      'NUXT_DEVTOOLS=false FEATURE_FLAG_LANGUAGE_SUPPORT=true playwright test e2e/critical-flows/invitation-management.spec.ts e2e/critical-flows/mobile-keyboard-smoke.spec.ts e2e/critical-flows/accessibility-keyboard.spec.ts',
     )
     expect(read('package.json')).toContain('@axe-core/playwright')
     expect(read('playwright.config.ts')).toContain('NUXT_DEVTOOLS=false')
