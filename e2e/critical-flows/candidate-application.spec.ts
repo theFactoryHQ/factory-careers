@@ -396,11 +396,11 @@ test.describe('Candidate Application Flow — All Custom Question Field Types', 
     // The status for a fresh application must be "new"
     await expect(page.getByText('new').first()).toBeVisible()
 
-    // ── Open the CandidateDetailSidebar by clicking Janet's row ──────────────
-    // The row is identified by the candidate name cell
+    // ── Open the CandidateDetailSidebar from the row's keyboard-native control ─
     await page
       .getByRole('row', { name: new RegExp(`${APPLICANT.firstName}\\s+${APPLICANT.lastName}`, 'i') })
       .first()
+      .getByRole('button', { name: new RegExp(`Open application for ${APPLICANT.firstName}\\s+${APPLICANT.lastName}`, 'i') })
       .click()
 
     // Wait for the sidebar to mount: the Overview tab button becomes visible
