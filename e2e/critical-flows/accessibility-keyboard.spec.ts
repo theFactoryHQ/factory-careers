@@ -1,6 +1,48 @@
 import { test, expect } from '../fixtures'
 import { expectNoA11yViolations, expectVisibleKeyboardFocus, tabUntilFocused } from '../accessibility'
 
+async function createKeyboardCandidate(page: import('@playwright/test').Page, label: string) {
+  const unique = `${Date.now()}-${label}`
+  const response = await page.request.post('/api/candidates', {
+    data: {
+      firstName: 'Table',
+      lastName: `Keyboard ${label}`,
+      email: `table-keyboard-${unique}@example.com`,
+      phone: '+15555550123',
+    },
+  })
+  expect(response.status(), `Create keyboard candidate returned ${response.status()}: ${await response.text()}`).toBe(201)
+  return await response.json() as { id: string, email: string, firstName: string, lastName: string }
+}
+
+async function createKeyboardJobApplication(page: import('@playwright/test').Page, label: string) {
+  const candidate = await createKeyboardCandidate(page, `job-${label}`)
+  const jobResponse = await page.request.post('/api/jobs', {
+    data: {
+      title: `Keyboard Table Job ${Date.now()}-${label}`,
+      description: 'Seeded by dashboard table keyboard E2E coverage.',
+      location: 'Remote',
+      type: 'full_time',
+      requireResume: false,
+      requireCoverLetter: false,
+      applicationComplianceEnabled: false,
+      autoScoreOnApply: false,
+    },
+  })
+  expect(jobResponse.status(), `Create keyboard job returned ${jobResponse.status()}: ${await jobResponse.text()}`).toBe(201)
+  const job = await jobResponse.json() as { id: string, title: string }
+
+  const applicationResponse = await page.request.post('/api/applications', {
+    data: {
+      candidateId: candidate.id,
+      jobId: job.id,
+      notes: 'Keyboard table coverage application.',
+    },
+  })
+  expect(applicationResponse.status(), `Create keyboard application returned ${applicationResponse.status()}: ${await applicationResponse.text()}`).toBe(201)
+  return { candidate, job }
+}
+
 test.describe('Accessibility and keyboard harness', () => {
   test('keeps public and auth entry points axe-clean with keyboard-visible focus', async ({ page }) => {
     await page.goto('/jobs')
@@ -140,5 +182,66 @@ test.describe('Accessibility and keyboard harness', () => {
     await page.keyboard.press('Escape')
     await expect(drawer).toHaveCount(0)
     await expect(filtersButton).toBeFocused()
+  })
+
+  test('opens candidate table rows and sort headers from the keyboard', async ({ authenticatedPage }, testInfo) => {
+    const page = authenticatedPage
+    const candidate = await createKeyboardCandidate(page, `pool-${testInfo.retry}`)
+
+    await page.goto('/dashboard/candidates')
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByRole('heading', { name: 'Candidates' })).toBeVisible()
+
+    await page.getByLabel('Search candidates').fill(candidate.email)
+    const row = page.getByRole('row').filter({ hasText: candidate.email })
+    await expect(row).toBeVisible()
+
+    const nameHeader = page.getByRole('columnheader').filter({ hasText: 'Name' })
+    await expect(nameHeader).toHaveAttribute('aria-sort', 'none')
+    const nameSort = page.getByRole('button', { name: 'Sort by name' })
+    await nameSort.focus()
+    await expectVisibleKeyboardFocus(nameSort)
+    await page.keyboard.press('Enter')
+    await expect(nameHeader).toHaveAttribute('aria-sort', 'ascending')
+
+    const openCandidate = row.getByRole('button', { name: /Open candidate Table Keyboard/ })
+    await openCandidate.focus()
+    await expectVisibleKeyboardFocus(openCandidate)
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('dialog', { name: 'Candidate detail' })).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog', { name: 'Candidate detail' })).toHaveCount(0)
+
+    const addNotes = row.getByRole('button', { name: 'Add Notes' })
+    await addNotes.focus()
+    await expectVisibleKeyboardFocus(addNotes)
+    await page.keyboard.press('Enter')
+    await expect(row.getByRole('textbox')).toBeFocused()
+  })
+
+  test('opens job candidate table rows from keyboard controls', async ({ authenticatedPage }, testInfo) => {
+    const page = authenticatedPage
+    const { candidate, job } = await createKeyboardJobApplication(page, `${testInfo.retry}`)
+
+    await page.goto(`/dashboard/jobs/${job.id}/candidates`)
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByText(job.title).first()).toBeVisible()
+
+    const row = page.getByRole('row').filter({ hasText: candidate.email })
+    await expect(row).toBeVisible()
+
+    const scoreHeader = page.getByRole('columnheader').filter({ hasText: 'Score' })
+    await expect(scoreHeader).toHaveAttribute('aria-sort', 'descending')
+    const scoreSort = page.getByRole('button', { name: 'Sort by score ascending' })
+    await scoreSort.focus()
+    await expectVisibleKeyboardFocus(scoreSort)
+    await page.keyboard.press('Enter')
+    await expect(scoreHeader).toHaveAttribute('aria-sort', 'ascending')
+
+    const openApplication = row.getByRole('button', { name: /Open application for Table Keyboard/ })
+    await openApplication.focus()
+    await expectVisibleKeyboardFocus(openApplication)
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('dialog', { name: 'Candidate detail' })).toBeVisible()
   })
 })
