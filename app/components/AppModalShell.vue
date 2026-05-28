@@ -22,10 +22,15 @@ const emit = defineEmits<{
 }>()
 
 const attrs = useAttrs()
+const shellRef = ref<HTMLElement | null>(null)
 
 const shellAttrs = computed(() => {
   const { class: _class, ...rest } = attrs
-  return rest
+  return {
+    role: 'dialog',
+    'aria-modal': true,
+    ...rest,
+  }
 })
 
 const shellClasses = computed(() => [
@@ -41,13 +46,21 @@ function handleBackdropClick() {
     emit('close')
   }
 }
+
+useFocusTrap({
+  root: shellRef,
+  active: true,
+  onEscape: () => emit('close'),
+})
 </script>
 
 <template>
   <Teleport :to="teleportTo">
     <div
+      ref="shellRef"
       v-bind="shellAttrs"
       :class="shellClasses"
+      tabindex="-1"
       @click.self="handleBackdropClick"
     >
       <slot />

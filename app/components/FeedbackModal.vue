@@ -234,6 +234,7 @@ function resetAndClose() {
           </div>
           <button
             class="ui-button ui-button-ghost p-1"
+            aria-label="Close feedback modal"
             @click="resetAndClose"
           >
             <X class="size-5" />

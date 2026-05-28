@@ -120,4 +120,25 @@ test.describe('Accessibility and keyboard harness', () => {
     await expect(page.locator('#topbar-user-menu')).toHaveCount(0)
     await expect(accountMenu).toBeFocused()
   })
+
+  test('traps and restores focus in dashboard filter drawers', async ({ authenticatedPage }) => {
+    const page = authenticatedPage
+    await page.goto('/dashboard/applications')
+    await page.waitForLoadState('networkidle')
+
+    const filtersButton = page.getByRole('button', { name: /^Filters/ })
+    await filtersButton.focus()
+    await page.keyboard.press('Enter')
+
+    const drawer = page.getByRole('dialog', { name: 'Filter applications' })
+    await expect(drawer).toBeVisible()
+    await expect(drawer.getByRole('button', { name: 'Close' })).toBeFocused()
+
+    await page.keyboard.press('Shift+Tab')
+    await expect(drawer.getByRole('button', { name: 'Done' })).toBeFocused()
+
+    await page.keyboard.press('Escape')
+    await expect(drawer).toHaveCount(0)
+    await expect(filtersButton).toBeFocused()
+  })
 })

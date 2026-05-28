@@ -15,6 +15,9 @@ describe('dashboard modal primitives', () => {
       'flex items-center justify-center',
       'p-4',
       'z-50',
+      'useFocusTrap',
+      "role: 'dialog'",
+      "'aria-modal': true",
     ]) {
       expect(shell).toContain(className)
     }
@@ -47,6 +50,19 @@ describe('dashboard modal primitives', () => {
       expect(source, file).toContain('<AppModalShell')
       expect(source, file).toContain('<AppModalPanel')
       expect(source, file).not.toContain('factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50')
+    }
+  })
+
+  it('keeps shared modal close controls accessible by name', () => {
+    const labeledCloseButtons = [
+      ['app/components/FeedbackModal.vue', 'aria-label="Close feedback modal"'],
+      ['app/components/InterviewEmailModal.vue', 'aria-label="Close interview invitation modal"'],
+      ['app/components/ChatbotAgentManagerModal.vue', 'aria-label="Close agent manager modal"'],
+      ['app/components/PreviewUpsellModal.vue', 'aria-label="Close preview upsell modal"'],
+    ]
+
+    for (const [file, label] of labeledCloseButtons) {
+      expect(readProjectFile(file), file).toContain(label)
     }
   })
 })

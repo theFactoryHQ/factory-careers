@@ -53,6 +53,7 @@ const scoringSummaryFallback = computed(() => {
 const scoreBand = computed(() => scoringData.value?.scoreBand ?? null)
 
 const showInterviewSidebar = ref(false)
+const drawerRef = ref<HTMLElement | null>(null)
 
 const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicationStatusActions({
   application,
@@ -78,20 +79,20 @@ async function scoreCurrentApplication() {
   await refreshScoring()
 }
 
-// ─── Body scroll lock + keyboard handling ─────────────────────────────────────
-
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') emit('close')
-}
+// ─── Body scroll lock + focus handling ────────────────────────────────────────
 
 onMounted(() => {
-  document.addEventListener('keydown', onKeydown)
   document.body.style.overflow = 'hidden'
 })
 
 onUnmounted(() => {
-  document.removeEventListener('keydown', onKeydown)
   document.body.style.overflow = ''
+})
+
+useFocusTrap({
+  root: drawerRef,
+  active: true,
+  onEscape: () => emit('close'),
 })
 </script>
 
@@ -118,6 +119,7 @@ onUnmounted(() => {
       leave-to-class="translate-x-full"
     >
       <aside
+        ref="drawerRef"
         class="factory-dashboard-portal fixed inset-y-0 right-0 z-[60] w-full max-w-2xl flex flex-col border-l border-white/12 bg-black text-white shadow-none"
         role="dialog"
         aria-modal="true"

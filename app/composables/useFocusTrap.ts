@@ -18,6 +18,17 @@ const focusableSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',')
 
+const activeTrapStack: symbol[] = []
+
+function removeTrap(trapId: symbol) {
+  const index = activeTrapStack.lastIndexOf(trapId)
+  if (index !== -1) activeTrapStack.splice(index, 1)
+}
+
+function isTopTrap(trapId: symbol) {
+  return activeTrapStack[activeTrapStack.length - 1] === trapId
+}
+
 function getFocusable(root: HTMLElement) {
   return Array.from(root.querySelectorAll<HTMLElement>(focusableSelector))
     .filter(el => !el.hasAttribute('disabled') && el.getAttribute('aria-hidden') !== 'true')
@@ -25,6 +36,7 @@ function getFocusable(root: HTMLElement) {
 
 export function useFocusTrap(options: FocusTrapOptions) {
   let previousFocus: HTMLElement | null = null
+  const trapId = Symbol('focus-trap')
   const shouldFocusFirst = options.focusFirst ?? true
   const shouldRestoreFocus = options.restoreFocus ?? true
 
@@ -43,8 +55,11 @@ export function useFocusTrap(options: FocusTrapOptions) {
 
   function onKeydown(event: KeyboardEvent) {
     if (!toValue(options.active)) return
+    if (!isTopTrap(trapId)) return
 
     if (event.key === 'Escape') {
+      event.preventDefault()
+      event.stopPropagation()
       options.onEscape?.()
       return
     }
@@ -79,6 +94,8 @@ export function useFocusTrap(options: FocusTrapOptions) {
       if (typeof document === 'undefined') return
       if (active) {
         previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+        removeTrap(trapId)
+        activeTrapStack.push(trapId)
         document.addEventListener('keydown', onKeydown)
         if (shouldFocusFirst) {
           await nextTick()
@@ -86,6 +103,7 @@ export function useFocusTrap(options: FocusTrapOptions) {
         }
       } else {
         document.removeEventListener('keydown', onKeydown)
+        removeTrap(trapId)
         restoreFocus()
       }
     },
@@ -94,6 +112,7 @@ export function useFocusTrap(options: FocusTrapOptions) {
 
   onBeforeUnmount(() => {
     if (typeof document !== 'undefined') document.removeEventListener('keydown', onKeydown)
+    removeTrap(trapId)
     restoreFocus()
   })
 

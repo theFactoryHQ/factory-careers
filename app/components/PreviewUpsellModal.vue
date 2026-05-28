@@ -23,6 +23,7 @@ function closeModal() {
 
           <button
             class="ui-button ui-button-ghost p-1.5"
+            aria-label="Close preview upsell modal"
             @click="closeModal"
           >
             <X class="size-5" />
