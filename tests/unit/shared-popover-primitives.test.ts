@@ -35,6 +35,7 @@ describe('shared keyboard and popover primitives', () => {
     expect(focusTrap).toContain('activeTrapStack')
     expect(focusTrap).toContain('isTopTrap')
     expect(focusTrap).toContain('event.stopPropagation()')
+    expect(focusTrap).toContain('event.stopImmediatePropagation()')
     expect(menuButton).toContain('useMenuButton')
     expect(menuButton).toContain('aria-expanded')
     expect(menuButton).toContain('focusTrigger')

@@ -60,6 +60,7 @@ export function useFocusTrap(options: FocusTrapOptions) {
     if (event.key === 'Escape') {
       event.preventDefault()
       event.stopPropagation()
+      event.stopImmediatePropagation()
       options.onEscape?.()
       return
     }

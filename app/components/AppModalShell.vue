@@ -9,12 +9,14 @@ const props = withDefaults(defineProps<{
   paddingClass?: string
   zIndexClass?: string
   closeOnBackdrop?: boolean
+  ariaLabel?: string
 }>(), {
   teleportTo: 'body',
   layout: 'grid',
   paddingClass: 'p-4',
   zIndexClass: 'z-50',
   closeOnBackdrop: true,
+  ariaLabel: 'Dialog',
 })
 
 const emit = defineEmits<{
@@ -26,9 +28,11 @@ const shellRef = ref<HTMLElement | null>(null)
 
 const shellAttrs = computed(() => {
   const { class: _class, ...rest } = attrs
+  const hasAccessibleName = rest['aria-label'] || rest['aria-labelledby']
   return {
     role: 'dialog',
     'aria-modal': true,
+    ...(hasAccessibleName ? {} : { 'aria-label': props.ariaLabel }),
     ...rest,
   }
 })

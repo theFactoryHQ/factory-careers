@@ -18,6 +18,8 @@ describe('dashboard modal primitives', () => {
       'useFocusTrap',
       "role: 'dialog'",
       "'aria-modal': true",
+      "ariaLabel: 'Dialog'",
+      "rest['aria-label'] || rest['aria-labelledby']",
     ]) {
       expect(shell).toContain(className)
     }
