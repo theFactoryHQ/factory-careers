@@ -18,7 +18,6 @@ const isSigningOut = ref(false)
 
 const showFeedbackModal = ref(false)
 const showMobileMenu = ref(false)
-const showMoreNav = ref(false)
 const mobileNavTriggerRef = ref<HTMLButtonElement | null>(null)
 
 const config = useRuntimeConfig()
@@ -184,6 +183,14 @@ function isActiveRoute(to: string, exact: boolean) {
 const primaryNavLabels = ['Dashboard', 'Jobs', 'Candidates', 'Applications', 'Interviews', 'Emails']
 const primaryNavItems = computed(() => navItems.value.filter(i => primaryNavLabels.includes(i.label)))
 const moreNavItems = computed(() => navItems.value.filter(i => !primaryNavLabels.includes(i.label)))
+const moreNavTriggerRef = ref<HTMLElement | null>(null)
+const moreNavPanelRef = ref<HTMLElement | null>(null)
+const moreNavMenu = useMenuButton({
+  id: 'topbar-more-nav-menu',
+  triggerRef: moreNavTriggerRef,
+  menuRef: moreNavPanelRef,
+})
+const showMoreNav = moreNavMenu.isOpen
 
 // Close menus on route change
 watch(() => route.path, () => {
@@ -297,15 +304,21 @@ function handleNewJobClick() {
             <div
               v-if="moreNavItems.length"
               class="relative lg:hidden"
-              @mouseenter="showMoreNav = true"
-              @mouseleave="showMoreNav = false"
+              @mouseenter="moreNavMenu.openMenu({ focus: false })"
+              @mouseleave="moreNavMenu.closeMenu()"
             >
               <button
+                ref="moreNavTriggerRef"
                 class="group relative flex h-9 items-center gap-1.5 border px-3 text-[13px] font-normal uppercase tracking-[0.25px] transition-all duration-200 cursor-pointer bg-transparent"
-                aria-label="More"
+                aria-label="More navigation"
+                aria-haspopup="menu"
+                :aria-expanded="showMoreNav"
+                aria-controls="topbar-more-nav-menu"
                 :class="moreNavItems.some(i => isActiveRoute(i.to, i.exact))
                   ? 'border-brand-500/50 bg-brand-500/12 text-white'
                   : 'border-transparent text-white/58 hover:text-white'"
+                @click="moreNavMenu.toggleMenu"
+                @keydown="moreNavMenu.onTriggerKeydown"
               >
                   <MoreHorizontal class="size-4 xl:hidden" />
                   <span class="hidden xl:inline">More</span>
@@ -326,15 +339,23 @@ function handleNewJobClick() {
                   v-if="showMoreNav"
                   class="absolute left-0 top-full z-50 pt-1.5"
                 >
-                  <div class="w-52 border border-white/12 bg-black shadow-2xl shadow-black/50 overflow-hidden py-1">
+                  <div
+                    id="topbar-more-nav-menu"
+                    ref="moreNavPanelRef"
+                    class="w-52 border border-white/12 bg-black shadow-2xl shadow-black/50 overflow-hidden py-1"
+                    role="menu"
+                    @keydown="moreNavMenu.onMenuKeydown"
+                  >
                     <NuxtLink
                       v-for="item in moreNavItems"
                       :key="item.to"
                       :to="$localePath(item.to)"
                       class="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors no-underline"
+                      role="menuitem"
                       :class="isActiveRoute(item.to, item.exact)
                         ? 'bg-brand-500/12 text-white'
                         : 'text-white/62 hover:text-white'"
+                      @click="moreNavMenu.closeMenu()"
                     >
                       <component :is="item.icon" class="size-4" />
                       {{ item.label }}
@@ -440,6 +461,7 @@ function handleNewJobClick() {
               ref="moreActionsTriggerRef"
               class="inline-flex items-center justify-center size-8 bg-transparent text-white/55 transition-all duration-200 cursor-pointer hover:bg-white/[0.04] hover:text-white"
               title="More options"
+              aria-label="More actions"
               aria-haspopup="menu"
               :aria-expanded="showMoreActions"
               aria-controls="topbar-more-actions-menu"
@@ -503,6 +525,7 @@ function handleNewJobClick() {
             <button
               ref="userTriggerRef"
               class="flex h-9 items-center gap-1.5 border-0 bg-transparent px-0 transition-colors duration-200 cursor-pointer hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500/60"
+              aria-label="Account menu"
               aria-haspopup="menu"
               :aria-expanded="showUserMenu"
               aria-controls="topbar-user-menu"

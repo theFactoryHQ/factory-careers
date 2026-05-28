@@ -9,6 +9,10 @@ type UseMenuButtonOptions = {
   focusOnOpen?: boolean
 }
 
+type OpenMenuOptions = {
+  focus?: boolean
+}
+
 export function useMenuButton(options: UseMenuButtonOptions) {
   const isOpen = ref(false)
   const triggerRef = options.triggerRef ?? ref<HTMLElement | null>(null)
@@ -20,13 +24,24 @@ export function useMenuButton(options: UseMenuButtonOptions) {
   }
 
   function focusFirstMenuItem() {
-    const first = menuRef.value?.querySelector<HTMLElement>('[role="menuitem"], a[href], button:not([disabled])')
-    first?.focus()
+    focusMenuItem(0)
   }
 
-  async function openMenu() {
+  function getMenuItems() {
+    return Array.from(menuRef.value?.querySelectorAll<HTMLElement>('[role="menuitem"], a[href], button:not([disabled])') ?? [])
+  }
+
+  function focusMenuItem(index: number) {
+    const items = getMenuItems()
+    if (!items.length) return
+    const nextIndex = (index + items.length) % items.length
+    items[nextIndex]?.focus()
+  }
+
+  async function openMenu(openOptions: OpenMenuOptions = {}) {
     isOpen.value = true
-    if (focusOnOpen) {
+    const shouldFocus = openOptions.focus ?? focusOnOpen
+    if (shouldFocus) {
       await nextTick()
       focusFirstMenuItem()
     }
@@ -46,15 +61,31 @@ export function useMenuButton(options: UseMenuButtonOptions) {
   function onTriggerKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
       event.preventDefault()
-      openMenu()
+      openMenu({ focus: true })
     } else if (event.key === 'Escape') {
       closeMenu({ restoreFocus: true })
     }
   }
 
   function onMenuKeydown(event: KeyboardEvent) {
+    const items = getMenuItems()
+    const activeIndex = items.findIndex(item => item === document.activeElement)
     if (event.key === 'Escape') {
       event.preventDefault()
+      closeMenu({ restoreFocus: true })
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      focusMenuItem(activeIndex + 1)
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      focusMenuItem(activeIndex - 1)
+    } else if (event.key === 'Home') {
+      event.preventDefault()
+      focusMenuItem(0)
+    } else if (event.key === 'End') {
+      event.preventDefault()
+      focusMenuItem(items.length - 1)
+    } else if (event.key === 'Tab') {
       closeMenu({ restoreFocus: true })
     }
   }

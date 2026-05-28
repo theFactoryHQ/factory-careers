@@ -21,9 +21,17 @@ describe('dashboard top bar responsiveness', () => {
   it('shows the desktop more actions menu as a keyboard-operable Factory menu', () => {
     expect(source).not.toContain('const showFactoryMoreActions = false')
     expect(source).toContain('title="More options"')
+    expect(source).toContain('aria-label="More actions"')
     expect(source).toContain('aria-controls="topbar-more-actions-menu"')
     expect(source).toContain('role="menu"')
     expect(source).toContain('useMenuButton')
+  })
+
+  it('keeps the collapsed desktop more navigation menu keyboard-operable', () => {
+    expect(source).toContain('aria-label="More navigation"')
+    expect(source).toContain('aria-controls="topbar-more-nav-menu"')
+    expect(source).toContain('moreNavMenu.onTriggerKeydown')
+    expect(source).toContain('moreNavMenu.onMenuKeydown')
   })
 
   it('uses bordered Factory controls for job context sub-navigation tabs', () => {
