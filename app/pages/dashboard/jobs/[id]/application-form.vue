@@ -951,17 +951,17 @@ async function copyTrackingUrl(code: string) {
                 <section>
                   <h4 class="mb-4 text-sm font-semibold text-surface-900 dark:text-surface-100">Contact information</h4>
                   <div class="grid gap-3 sm:grid-cols-2">
-                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                    <label class="ui-preview-label">
                       Name <span class="text-brand-600 dark:text-brand-400">*</span>
-                      <input disabled placeholder="First and last name" class="ui-field mt-1 px-3 py-2 text-sm opacity-80" />
+                      <input disabled placeholder="First and last name" class="ui-field ui-preview-field" />
                     </label>
-                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                    <label class="ui-preview-label">
                       Email <span class="text-brand-600 dark:text-brand-400">*</span>
-                      <input disabled placeholder="you@example.com" class="ui-field mt-1 px-3 py-2 text-sm opacity-80" />
+                      <input disabled placeholder="you@example.com" class="ui-field ui-preview-field" />
                     </label>
-                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                    <label class="ui-preview-label">
                       Phone
-                      <input disabled placeholder="Optional" class="ui-field mt-1 px-3 py-2 text-sm opacity-80" />
+                      <input disabled placeholder="Optional" class="ui-field ui-preview-field" />
                     </label>
                   </div>
                 </section>
@@ -969,15 +969,15 @@ async function copyTrackingUrl(code: string) {
                 <section class="border-t border-surface-200 pt-5 dark:border-surface-800">
                   <h4 class="mb-4 text-sm font-semibold text-surface-900 dark:text-surface-100">Location</h4>
                   <div class="grid gap-3 sm:grid-cols-2">
-                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                    <label class="ui-preview-label">
                       Country <span class="text-brand-600 dark:text-brand-400">*</span>
-                      <select disabled class="ui-field mt-1 px-3 py-2 text-sm opacity-80">
+                      <select disabled class="ui-field ui-preview-field">
                         <option>United States</option>
                       </select>
                     </label>
-                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                    <label class="ui-preview-label">
                       State <span class="text-brand-600 dark:text-brand-400">*</span>
-                      <select disabled class="ui-field mt-1 px-3 py-2 text-sm opacity-80">
+                      <select disabled class="ui-field ui-preview-field">
                         <option>Select state</option>
                       </select>
                     </label>
@@ -989,19 +989,19 @@ async function copyTrackingUrl(code: string) {
                   class="space-y-4 border-t border-surface-200 pt-5 dark:border-surface-800"
                 >
                   <div v-if="requireResume">
-                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                    <p class="ui-preview-label mb-2">
                       Resume / CV <span class="text-brand-600 dark:text-brand-400">*</span>
                     </p>
-                    <div class="border border-dashed border-surface-300 px-4 py-5 text-center text-sm text-surface-500 dark:border-surface-700 dark:text-surface-400">
+                    <div class="ui-preview-upload-placeholder py-5 text-center">
                       Upload PDF, DOC, or DOCX
                     </div>
                   </div>
                   <label
                     v-if="requireCoverLetter"
-                    class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400"
+                    class="ui-preview-label"
                   >
                     Cover Letter
-                    <textarea disabled rows="5" placeholder="Tell us why this role interests you." class="ui-field mt-1 px-3 py-2 text-sm opacity-80"></textarea>
+                    <textarea disabled rows="5" placeholder="Tell us why this role interests you." class="ui-field ui-preview-field"></textarea>
                   </label>
                 </section>
 
@@ -1025,7 +1025,7 @@ async function copyTrackingUrl(code: string) {
                     <select
                       v-if="q.type === 'single_select' || q.type === 'multi_select'"
                       disabled
-                      class="ui-field px-3 py-2 text-sm opacity-80"
+                      class="ui-field ui-preview-field"
                     >
                       <option>{{ q.options?.[0] ?? 'Select an option' }}</option>
                     </select>
@@ -1034,11 +1034,11 @@ async function copyTrackingUrl(code: string) {
                       disabled
                       rows="4"
                       :placeholder="previewQuestionTypeLabels[q.type]"
-                      class="ui-field px-3 py-2 text-sm opacity-80"
+                      class="ui-field ui-preview-field"
                     ></textarea>
                     <div
                       v-else-if="q.type === 'file_upload'"
-                      class="border border-dashed border-surface-300 px-4 py-4 text-sm text-surface-500 dark:border-surface-700 dark:text-surface-400"
+                      class="ui-preview-upload-placeholder"
                     >
                       Upload file
                     </div>
@@ -1046,7 +1046,7 @@ async function copyTrackingUrl(code: string) {
                       v-else
                       disabled
                       :placeholder="previewQuestionTypeLabels[q.type] ?? 'Answer'"
-                      class="ui-field px-3 py-2 text-sm opacity-80"
+                      class="ui-field ui-preview-field"
                     />
                   </div>
                 </section>
@@ -1062,34 +1062,34 @@ async function copyTrackingUrl(code: string) {
                     </p>
                   </div>
                   <div v-if="includeEeo" class="grid gap-3 sm:grid-cols-2">
-                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                    <label class="ui-preview-label">
                       Sex
-                      <select disabled class="ui-field mt-1 px-3 py-2 text-sm opacity-80">
+                      <select disabled class="ui-field ui-preview-field">
                         <option>Prefer not to answer</option>
                       </select>
                     </label>
-                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                    <label class="ui-preview-label">
                       Race / ethnicity
-                      <select disabled class="ui-field mt-1 px-3 py-2 text-sm opacity-80">
+                      <select disabled class="ui-field ui-preview-field">
                         <option>Prefer not to answer</option>
                       </select>
                     </label>
                   </div>
                   <label
                     v-if="includeVeteran"
-                    class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400"
+                    class="ui-preview-label"
                   >
                     Veteran status
-                    <select disabled class="ui-field mt-1 px-3 py-2 text-sm opacity-80">
+                    <select disabled class="ui-field ui-preview-field">
                       <option>Prefer not to answer</option>
                     </select>
                   </label>
                   <label
                     v-if="includeDisability"
-                    class="block text-xs font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400"
+                    class="ui-preview-label"
                   >
                     Disability status
-                    <select disabled class="ui-field mt-1 px-3 py-2 text-sm opacity-80">
+                    <select disabled class="ui-field ui-preview-field">
                       <option>Prefer not to answer</option>
                     </select>
                   </label>
