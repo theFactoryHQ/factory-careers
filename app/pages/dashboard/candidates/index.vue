@@ -105,6 +105,17 @@ function toggleSort(key: SortKey) {
   }
 }
 
+function getSortAria(key: SortKey) {
+  if (sortKey.value !== key) return 'none'
+  return sortDir.value === 'asc' ? 'ascending' : 'descending'
+}
+
+function getSortButtonLabel(key: SortKey, label: string) {
+  if (sortKey.value !== key) return `Sort by ${label}`
+  const nextDirection = sortDir.value === 'asc' ? 'descending' : 'ascending'
+  return `Sort by ${label} ${nextDirection}`
+}
+
 const sortedCandidates = computed(() => {
   const list = [...candidates.value]
   const dir = sortDir.value === 'asc' ? 1 : -1
@@ -443,40 +454,40 @@ const selectedCandidateId = ref<string | null>(null)
         <table class="w-full text-sm">
           <thead>
             <tr class="ui-table-header">
-              <th class="text-left px-4 py-3 font-medium text-white/60">
-                <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('name')">
+              <th class="text-left px-4 py-3 font-medium text-white/60" :aria-sort="getSortAria('name')">
+                <button type="button" class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" :aria-label="getSortButtonLabel('name', 'name')" @click="toggleSort('name')">
                   Name
                   <ArrowUp v-if="sortKey === 'name' && sortDir === 'asc'" class="size-3.5" />
                   <ArrowDown v-else-if="sortKey === 'name' && sortDir === 'desc'" class="size-3.5" />
                   <ArrowUpDown v-else class="size-3.5 opacity-40" />
                 </button>
               </th>
-              <th v-if="visibleColumns.email" class="text-left px-4 py-3 font-medium text-white/60">
-                <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('email')">
+              <th v-if="visibleColumns.email" class="text-left px-4 py-3 font-medium text-white/60" :aria-sort="getSortAria('email')">
+                <button type="button" class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" :aria-label="getSortButtonLabel('email', 'email')" @click="toggleSort('email')">
                   Email
                   <ArrowUp v-if="sortKey === 'email' && sortDir === 'asc'" class="size-3.5" />
                   <ArrowDown v-else-if="sortKey === 'email' && sortDir === 'desc'" class="size-3.5" />
                   <ArrowUpDown v-else class="size-3.5 opacity-40" />
                 </button>
               </th>
-              <th v-if="visibleColumns.phone" class="text-left px-4 py-3 font-medium text-white/60 hidden md:table-cell">
-                <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('phone')">
+              <th v-if="visibleColumns.phone" class="text-left px-4 py-3 font-medium text-white/60 hidden md:table-cell" :aria-sort="getSortAria('phone')">
+                <button type="button" class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" :aria-label="getSortButtonLabel('phone', 'phone')" @click="toggleSort('phone')">
                   Phone
                   <ArrowUp v-if="sortKey === 'phone' && sortDir === 'asc'" class="size-3.5" />
                   <ArrowDown v-else-if="sortKey === 'phone' && sortDir === 'desc'" class="size-3.5" />
                   <ArrowUpDown v-else class="size-3.5 opacity-40" />
                 </button>
               </th>
-              <th v-if="visibleColumns.applications" class="text-center px-4 py-3 font-medium text-white/60 hidden sm:table-cell">
-                <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('applications')">
+              <th v-if="visibleColumns.applications" class="text-center px-4 py-3 font-medium text-white/60 hidden sm:table-cell" :aria-sort="getSortAria('applications')">
+                <button type="button" class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" :aria-label="getSortButtonLabel('applications', 'applications')" @click="toggleSort('applications')">
                   Applications
                   <ArrowUp v-if="sortKey === 'applications' && sortDir === 'asc'" class="size-3.5" />
                   <ArrowDown v-else-if="sortKey === 'applications' && sortDir === 'desc'" class="size-3.5" />
                   <ArrowUpDown v-else class="size-3.5 opacity-40" />
                 </button>
               </th>
-              <th v-if="visibleColumns.added" class="text-left px-4 py-3 font-medium text-white/60">
-                <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('created')">
+              <th v-if="visibleColumns.added" class="text-left px-4 py-3 font-medium text-white/60" :aria-sort="getSortAria('created')">
+                <button type="button" class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" :aria-label="getSortButtonLabel('created', 'added date')" @click="toggleSort('created')">
                   Added
                   <ArrowUp v-if="sortKey === 'created' && sortDir === 'asc'" class="size-3.5" />
                   <ArrowDown v-else-if="sortKey === 'created' && sortDir === 'desc'" class="size-3.5" />
@@ -497,14 +508,14 @@ const selectedCandidateId = ref<string | null>(null)
             <tr
               v-for="c in sortedCandidates"
               :key="c.id"
-              class="ui-table-row group cursor-pointer [&>td]:align-middle"
-              @click="selectedCandidateId = c.id"
+              class="ui-table-row group [&>td]:align-middle"
             >
               <td class="px-4 py-3">
                 <button
                   type="button"
                   class="font-semibold text-surface-900 dark:text-surface-100 group-hover:text-brand-600 transition-colors whitespace-nowrap text-left"
-                  @click.stop="selectedCandidateId = c.id"
+                  :aria-label="`Open candidate ${formatCandidateName(c)}`"
+                  @click="selectedCandidateId = c.id"
                 >
                   {{ formatCandidateName(c) }}
                 </button>

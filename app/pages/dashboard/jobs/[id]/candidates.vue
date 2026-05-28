@@ -147,6 +147,17 @@ function toggleSort(key: SortKey) {
   }
 }
 
+function getSortAria(key: SortKey) {
+  if (sortKey.value !== key) return 'none'
+  return sortDir.value === 'asc' ? 'ascending' : 'descending'
+}
+
+function getSortButtonLabel(key: SortKey, label: string) {
+  if (sortKey.value !== key) return `Sort by ${label}`
+  const nextDirection = sortDir.value === 'asc' ? 'descending' : 'ascending'
+  return `Sort by ${label} ${nextDirection}`
+}
+
 // ─────────────────────────────────────────────
 // Filtered + sorted list
 // ─────────────────────────────────────────────
@@ -402,9 +413,11 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
             <thead>
               <tr class="ui-table-header">
                 <!-- Name always visible -->
-                <th class="px-4 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide select-none">
+                <th class="px-4 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide select-none" :aria-sort="getSortAria('name')">
                   <button
+                    type="button"
                     class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors"
+                    :aria-label="getSortButtonLabel('name', 'name')"
                     @click="toggleSort('name')"
                   >
                     Name
@@ -413,32 +426,32 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
                     <ChevronsUpDown v-else class="size-3 opacity-40" />
                   </button>
                 </th>
-                <th v-if="visibleCols.email" class="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide select-none">
-                  <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('email')">
+                <th v-if="visibleCols.email" class="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide select-none" :aria-sort="getSortAria('email')">
+                  <button type="button" class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" :aria-label="getSortButtonLabel('email', 'email')" @click="toggleSort('email')">
                     Email
                     <ChevronUp v-if="sortKey === 'email' && sortDir === 'asc'" class="size-3" />
                     <ChevronDown v-else-if="sortKey === 'email' && sortDir === 'desc'" class="size-3" />
                     <ChevronsUpDown v-else class="size-3 opacity-40" />
                   </button>
                 </th>
-                <th v-if="visibleCols.score" class="px-4 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide select-none">
-                  <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('score')">
+                <th v-if="visibleCols.score" class="px-4 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide select-none" :aria-sort="getSortAria('score')">
+                  <button type="button" class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" :aria-label="getSortButtonLabel('score', 'score')" @click="toggleSort('score')">
                     Score
                     <ChevronUp v-if="sortKey === 'score' && sortDir === 'asc'" class="size-3" />
                     <ChevronDown v-else-if="sortKey === 'score' && sortDir === 'desc'" class="size-3" />
                     <ChevronsUpDown v-else class="size-3 opacity-40" />
                   </button>
                 </th>
-                <th v-if="visibleCols.status" class="px-4 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide select-none">
-                  <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('status')">
+                <th v-if="visibleCols.status" class="px-4 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide select-none" :aria-sort="getSortAria('status')">
+                  <button type="button" class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" :aria-label="getSortButtonLabel('status', 'status')" @click="toggleSort('status')">
                     Status
                     <ChevronUp v-if="sortKey === 'status' && sortDir === 'asc'" class="size-3" />
                     <ChevronDown v-else-if="sortKey === 'status' && sortDir === 'desc'" class="size-3" />
                     <ChevronsUpDown v-else class="size-3 opacity-40" />
                   </button>
                 </th>
-                <th v-if="visibleCols.createdAt" class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide select-none">
-                  <button class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" @click="toggleSort('createdAt')">
+                <th v-if="visibleCols.createdAt" class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide select-none" :aria-sort="getSortAria('createdAt')">
+                  <button type="button" class="inline-flex items-center gap-1 hover:text-surface-900 dark:hover:text-surface-100 transition-colors" :aria-label="getSortButtonLabel('createdAt', 'applied date')" @click="toggleSort('createdAt')">
                     Applied
                     <ChevronUp v-if="sortKey === 'createdAt' && sortDir === 'asc'" class="size-3" />
                     <ChevronDown v-else-if="sortKey === 'createdAt' && sortDir === 'desc'" class="size-3" />
@@ -460,11 +473,10 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
               <tr
                 v-for="app in sorted"
                 :key="app.id"
-                class="ui-table-row cursor-pointer transition-all duration-150"
+                class="ui-table-row transition-all duration-150"
                 :class="selectedAppId === app.id
                   ? 'bg-brand-50/70 dark:bg-brand-950/20'
                   : 'hover:bg-surface-50/80 dark:hover:bg-surface-900/60'"
-                @click="selectRow(app.id)"
               >
                 <td class="px-4 py-3 whitespace-nowrap">
                   <div class="flex items-center gap-3">
@@ -476,9 +488,14 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
                     >
                       {{ getCandidateInitials(app.candidateFirstName, app.candidateLastName) }}
                     </div>
-                    <span class="font-medium text-surface-900 dark:text-surface-100">
+                    <button
+                      type="button"
+                      class="font-medium text-surface-900 dark:text-surface-100 text-left hover:text-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-surface-950"
+                      :aria-label="`Open application for ${formatPersonName(app.candidateFirstName, app.candidateLastName)}`"
+                      @click="selectRow(app.id)"
+                    >
                       {{ formatPersonName(app.candidateFirstName, app.candidateLastName) }}
-                    </span>
+                    </button>
                   </div>
                 </td>
                 <td v-if="visibleCols.email" class="hidden sm:table-cell px-4 py-3 text-surface-600 dark:text-surface-300 max-w-[220px] truncate">
