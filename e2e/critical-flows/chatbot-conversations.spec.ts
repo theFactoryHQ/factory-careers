@@ -86,9 +86,9 @@ test.describe('Chatbot agents and conversations', () => {
     await page.getByRole('button', { name: 'Close', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Manage agents' })).toBeHidden()
 
-    await page.getByRole('button', { name: /Default assistant/ }).click()
-    await page.getByRole('button', { name: agentName }).click()
-    await expect(page.getByRole('button', { name: new RegExp(agentName) })).toBeVisible()
+    await page.getByRole('button', { name: 'Chatbot agent' }).click()
+    await page.getByRole('menuitemradio', { name: agentName }).click()
+    await expect(page.getByRole('button', { name: 'Chatbot agent' })).toContainText(agentName)
 
     const [conversationResponse] = await Promise.all([
       page.waitForResponse(resp => resp.url().includes('/api/chatbot/conversations') && resp.request().method() === 'POST' && resp.status() === 200),

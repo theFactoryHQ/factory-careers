@@ -60,7 +60,7 @@ async function createCandidateTextPropertyFromDetail(page: Page, candidateId: st
   await page.waitForLoadState('networkidle')
   await page.getByRole('button', { name: 'Add org-wide property' }).click()
 
-  const editor = page.getByRole('complementary').filter({ hasText: 'Organization candidate properties' })
+  const editor = page.getByRole('dialog', { name: 'Organization candidate properties' })
   await expect(editor).toBeVisible({ timeout: 15_000 })
   await editor.getByRole('button', { name: 'Add property' }).click()
   await editor.getByRole('textbox').first().fill(name)
@@ -85,8 +85,8 @@ async function createCandidateTextPropertyFromDetail(page: Page, candidateId: st
 
 async function showPropertyColumn(page: Page, propertyName: string) {
   await page.getByRole('button', { name: /Columns/ }).click()
-  const menu = page.getByText('Toggle columns', { exact: true }).locator('..')
-  const toggle = menu.getByRole('button', { name: propertyName, exact: true })
+  const menu = page.getByRole('menu', { name: 'Toggle columns' })
+  const toggle = menu.getByRole('menuitemcheckbox', { name: propertyName, exact: true })
   await expect(toggle).toBeVisible()
   await toggle.click()
   await expect(page.getByRole('columnheader', { name: propertyName })).toBeVisible()
@@ -210,7 +210,7 @@ test.describe('Candidate custom properties', () => {
     await page.waitForLoadState('networkidle')
     await page.getByRole('button', { name: /Filters/ }).click()
     await page.getByRole('button', { name: 'Filter', exact: true }).click()
-    await page.getByRole('button', { name: new RegExp(property.name) }).click()
+    await page.getByRole('menuitem', { name: new RegExp(property.name) }).click()
     await page.getByRole('button', { name: new RegExp(`Edit filter: ${property.name} contains`) }).click()
     await page.getByPlaceholder('Value').fill('Portfolio')
     await page.getByRole('heading', { name: 'Filter candidates' }).click()

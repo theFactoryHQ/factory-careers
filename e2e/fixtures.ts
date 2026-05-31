@@ -1,4 +1,5 @@
-import { expect as baseExpect, test as base, type Locator, type Page } from '@playwright/test'
+import { AxeBuilder } from '@axe-core/playwright'
+import { expect, expect as baseExpect, test as base, type Locator, type Page } from '@playwright/test'
 
 /**
  * Shared test fixtures for Reqcore E2E tests.
@@ -91,6 +92,54 @@ export async function expectFloatingMenuNotClipped(menu: Locator) {
   })
 
   baseExpect(clippingReport.clippingAncestors, JSON.stringify(clippingReport, null, 2)).toEqual([])
+}
+
+export async function openWithKeyboard(page: Page, trigger: Locator) {
+  await page.waitForLoadState('networkidle')
+  await trigger.press('Enter')
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+}
+
+export async function expectFocusRestored(page: Page, trigger: Locator) {
+  await page.keyboard.press('Escape')
+  await expect(trigger).toBeFocused()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+}
+
+export async function expectVisibleFocus(page: Page) {
+  const focusStyle = await page.evaluate(() => {
+    const el = document.activeElement as HTMLElement | null
+    if (!el) return null
+    const styles = window.getComputedStyle(el)
+    return {
+      outlineStyle: styles.outlineStyle,
+      outlineWidth: styles.outlineWidth,
+      boxShadow: styles.boxShadow,
+    }
+  })
+
+  expect(focusStyle).not.toBeNull()
+  expect(
+    focusStyle!.outlineStyle !== 'none'
+      || focusStyle!.outlineWidth !== '0px'
+      || focusStyle!.boxShadow !== 'none',
+  ).toBeTruthy()
+}
+
+export async function runAxeScan(page: Page) {
+  const results = await new AxeBuilder({ page })
+    .disableRules([
+      'color-contrast',
+      'heading-order',
+      'landmark-main-is-top-level',
+      'landmark-no-duplicate-main',
+      'landmark-unique',
+      'page-has-heading-one',
+      'region',
+    ])
+    .analyze()
+
+  expect(results.violations).toEqual([])
 }
 
 export const test = base.extend<Fixtures>({

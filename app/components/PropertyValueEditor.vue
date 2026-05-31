@@ -40,6 +40,8 @@ const editing = ref(false)
 const draft = ref<unknown>(null)
 const inputEl = ref<HTMLElement | null>(null)
 const rootEl = ref<HTMLElement | null>(null)
+const triggerEl = ref<HTMLElement | null>(null)
+const popoverId = useId()
 
 // Popover positioning (Teleported to body to escape `overflow:hidden/auto`
 // ancestors such as the table wrapper).
@@ -98,7 +100,11 @@ function cloneDraft(v: unknown): unknown {
   return v ?? null
 }
 
-function commit(value?: unknown) {
+function focusTrigger() {
+  nextTick(() => triggerEl.value?.focus())
+}
+
+function commit(value?: unknown, options: { restoreFocus?: boolean } = {}) {
   if (!editing.value) return
   const next = arguments.length > 0 ? value : draft.value
   editing.value = false
@@ -109,10 +115,12 @@ function commit(value?: unknown) {
   if (JSON.stringify(cleaned ?? null) !== JSON.stringify(props.modelValue ?? null)) {
     emit('update', cleaned)
   }
+  if (options.restoreFocus) focusTrigger()
 }
 
-function cancel() {
+function cancel(options: { restoreFocus?: boolean } = {}) {
   editing.value = false
+  if (options.restoreFocus) focusTrigger()
 }
 
 // Outside click handling for popover-style editors
@@ -169,6 +177,38 @@ const isCheckboxType = computed(() => props.definition.type === 'checkbox')
 const isPopoverType = computed(
   () => props.definition.type === 'select' || props.definition.type === 'multi_select',
 )
+
+const propertyOptions = computed(() => config.value?.options ?? [])
+const selectedOptionIndex = computed(() => {
+  if (props.definition.type === 'select') {
+    return propertyOptions.value.findIndex(opt => opt.id === props.modelValue)
+  }
+  const draftValues = Array.isArray(draft.value) ? draft.value as string[] : []
+  return propertyOptions.value.findIndex(opt => draftValues.includes(opt.id))
+})
+
+const propertyOptionNavigation = useListboxNavigation({
+  idBase: popoverId,
+  open: computed(() => editing.value && isPopoverType.value),
+  optionCount: computed(() => propertyOptions.value.length),
+  selectedIndex: selectedOptionIndex,
+  openListbox: startEdit,
+  closeListbox: () => cancel({ restoreFocus: true }),
+  selectIndex: (index) => {
+    const option = propertyOptions.value[index]
+    if (!option) return
+    if (props.definition.type === 'select') commit(option.id, { restoreFocus: true })
+    else toggleMultiSelect(option.id)
+  },
+})
+
+function onPopoverTriggerKeydown(e: KeyboardEvent) {
+  if (isPopoverType.value) {
+    propertyOptionNavigation.onKeydown(e)
+    return
+  }
+  onKey(e)
+}
 </script>
 
 <template>
@@ -197,11 +237,17 @@ const isPopoverType = computed(
     <!-- Display mode (also stays visible while a teleported popover is open). -->
     <button
       v-if="!editing || isPopoverType"
+      ref="triggerEl"
       type="button"
       :disabled="readOnly"
       class="ui-inline-edit-trigger group block w-full min-w-0 px-2 py-1 text-left disabled:cursor-default disabled:hover:bg-transparent"
       :class="[{ 'opacity-60': saving }, editing && isPopoverType ? 'ui-inline-edit-trigger-active' : '']"
+      :aria-expanded="isPopoverType ? editing : undefined"
+      :aria-controls="isPopoverType ? popoverId : undefined"
+      :aria-activedescendant="isPopoverType ? propertyOptionNavigation.activeDescendantId.value : undefined"
+      :aria-haspopup="isPopoverType ? 'listbox' : undefined"
       @click="startEdit"
+      @keydown="onPopoverTriggerKeydown"
     >
       <PropertyValueDisplay :definition="definition" :value="modelValue" />
     </button>
@@ -262,17 +308,24 @@ const isPopoverType = computed(
       <Teleport v-else-if="definition.type === 'select'" to="body">
         <div
           data-property-popover="true"
+          :id="popoverId"
           :style="popoverStyle"
           class="ui-floating-menu"
+          role="listbox"
+          @keydown="propertyOptionNavigation.onKeydown"
         >
           <div class="max-h-64 overflow-y-auto py-1">
             <button
-              v-for="opt in (config?.options ?? [])"
+              v-for="(opt, idx) in propertyOptions"
               :key="opt.id"
+              :id="propertyOptionNavigation.optionId(idx)"
               type="button"
               class="ui-menu-action px-3 py-1.5 text-sm"
-              :class="opt.id === modelValue ? 'ui-menu-action-active' : ''"
-              @click="commit(opt.id)"
+              :class="opt.id === modelValue || propertyOptionNavigation.activeIndex.value === idx ? 'ui-menu-action-active' : ''"
+              role="option"
+              :aria-selected="opt.id === modelValue"
+              @mouseenter="propertyOptionNavigation.activate(idx)"
+              @click="commit(opt.id, { restoreFocus: true })"
             >
               <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="PROPERTY_COLOR_CLASSES[opt.color].chip">
                 {{ opt.label }}
@@ -283,7 +336,7 @@ const isPopoverType = computed(
               v-if="modelValue"
               type="button"
               class="ui-menu-action ui-menu-divider px-3 py-1.5 text-xs"
-              @click="commit(null)"
+              @click="commit(null, { restoreFocus: true })"
             >
               <X class="size-3.5" /> Clear
             </button>
@@ -298,16 +351,24 @@ const isPopoverType = computed(
       <Teleport v-else-if="definition.type === 'multi_select'" to="body">
         <div
           data-property-popover="true"
+          :id="popoverId"
           :style="popoverStyle"
           class="ui-floating-menu"
+          role="listbox"
+          aria-multiselectable="true"
+          @keydown="propertyOptionNavigation.onKeydown"
         >
           <div class="max-h-64 overflow-y-auto py-1">
             <button
-              v-for="opt in (config?.options ?? [])"
+              v-for="(opt, idx) in propertyOptions"
               :key="opt.id"
+              :id="propertyOptionNavigation.optionId(idx)"
               type="button"
               class="ui-menu-action px-3 py-1.5 text-sm"
-              :class="(draft as string[] | null)?.includes(opt.id) ? 'ui-menu-action-active' : ''"
+              :class="(draft as string[] | null)?.includes(opt.id) || propertyOptionNavigation.activeIndex.value === idx ? 'ui-menu-action-active' : ''"
+              role="option"
+              :aria-selected="(draft as string[] | null)?.includes(opt.id) ?? false"
+              @mouseenter="propertyOptionNavigation.activate(idx)"
               @click="toggleMultiSelect(opt.id)"
             >
               <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="PROPERTY_COLOR_CLASSES[opt.color].chip">
@@ -320,8 +381,8 @@ const isPopoverType = computed(
             </div>
           </div>
           <div class="ui-panel-footer flex items-center justify-end gap-2 px-2 py-1.5">
-            <button type="button" class="ui-button ui-button-ghost px-2 py-1 text-xs" @click="cancel">Cancel</button>
-            <button type="button" class="ui-button ui-button-primary px-2 py-1 text-xs" @click="commit()">Done</button>
+            <button type="button" class="ui-button ui-button-ghost px-2 py-1 text-xs" @click="cancel({ restoreFocus: true })">Cancel</button>
+            <button type="button" class="ui-button ui-button-primary px-2 py-1 text-xs" @click="commit(draft, { restoreFocus: true })">Done</button>
           </div>
         </div>
       </Teleport>
