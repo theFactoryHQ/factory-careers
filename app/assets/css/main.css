@@ -490,6 +490,54 @@
     color: var(--color-surface-500);
   }
 
+  .ui-form-label {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: var(--color-surface-700);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+  }
+
+  .dark .ui-form-label {
+    color: var(--color-surface-300);
+  }
+
+  .ui-preview-label {
+    display: block;
+    color: var(--color-surface-500);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .dark .ui-preview-label {
+    color: var(--color-surface-400);
+  }
+
+  .ui-preview-label > .ui-preview-field {
+    margin-top: 0.25rem;
+  }
+
+  .ui-preview-field {
+    opacity: 0.8;
+  }
+
+  .ui-preview-upload-placeholder {
+    border: 1px dashed var(--color-surface-300);
+    padding: 1rem;
+    color: var(--color-surface-500);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .dark .ui-preview-upload-placeholder {
+    border-color: var(--color-surface-700);
+    color: var(--color-surface-400);
+  }
+
   .ui-filter-chip {
     display: inline-flex;
     box-sizing: border-box;
@@ -1670,6 +1718,19 @@
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-field:focus-within {
     border-color: color-mix(in srgb, var(--color-brand-500) 75%, transparent) !important;
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-500) 20%, transparent) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-form-label {
+    color: var(--ui-muted) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-preview-label {
+    color: var(--ui-faint) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-preview-upload-placeholder {
+    border-color: var(--ui-border-strong) !important;
+    color: var(--ui-muted) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-filter-chip {

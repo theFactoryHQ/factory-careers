@@ -1383,17 +1383,17 @@ const questionTypeLabels: Record<QuestionType, string> = {
                 <h3 class="text-sm font-semibold text-surface-800 dark:text-surface-200">Add custom criterion</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-xs font-medium text-surface-700 dark:text-surface-300 mb-1">Name *</label>
+                    <label class="ui-form-label">Name *</label>
                     <input
                       v-model="customCriterionForm.name"
                       @input="customCriterionForm.key = autoGenerateKey(customCriterionForm.name)"
                       type="text"
                       placeholder="e.g. React Expertise"
-                      class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      class="ui-field"
                     />
                   </div>
                   <div>
-                    <label class="block text-xs font-medium text-surface-700 dark:text-surface-300 mb-1">Category</label>
+                    <label class="ui-form-label">Category</label>
                     <FactorySelect
                       v-model="customCriterionForm.category"
                       :options="Object.entries(categoryLabels).map(([key, label]) => ({ value: key, label }))"
@@ -1401,33 +1401,33 @@ const questionTypeLabels: Record<QuestionType, string> = {
                   </div>
                 </div>
                 <div>
-                  <label class="block text-xs font-medium text-surface-700 dark:text-surface-300 mb-1">Description</label>
+                  <label class="ui-form-label">Description</label>
                   <textarea
                     v-model="customCriterionForm.description"
                     rows="2"
                     placeholder="Describe what the AI should evaluate for this criterion..."
-                    class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    class="ui-field"
                   />
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-xs font-medium text-surface-700 dark:text-surface-300 mb-1">Max Score</label>
+                    <label class="ui-form-label">Max Score</label>
                     <input
                       v-model.number="customCriterionForm.maxScore"
                       type="number"
                       min="1"
                       max="100"
-                      class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      class="ui-field"
                     />
                   </div>
                   <div>
-                    <label class="block text-xs font-medium text-surface-700 dark:text-surface-300 mb-1">Initial Weight (0–100)</label>
+                    <label class="ui-form-label">Initial Weight (0–100)</label>
                     <input
                       v-model.number="customCriterionForm.weight"
                       type="number"
                       min="0"
                       max="100"
-                      class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      class="ui-field"
                     />
                   </div>
                 </div>
