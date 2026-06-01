@@ -30,27 +30,69 @@ const emit = defineEmits<{
   commitRename: [c: ChatbotConversationSummary]
   cancelRename: []
   'update:editTitle': [value: string]
-  toggleMenu: [e: MouseEvent]
+  toggleMenu: [e: Event]
   togglePin: [c: ChatbotConversationSummary]
   move: [c: ChatbotConversationSummary, folderId: string | null]
   delete: [c: ChatbotConversationSummary]
 }>()
 
 const renameInput = useTemplateRef<HTMLInputElement>('renameInput')
-const menuTriggerRef = ref<HTMLElement | null>(null)
-const menuOpenRef = computed(() => props.menuOpen)
-const { floatingStyle: menuStyle } = useFloatingMenu({
-  open: menuOpenRef,
-  triggerRef: menuTriggerRef,
-  placement: 'bottom-end',
-  width: 192,
-  estimatedHeight: 280,
-  zIndex: 80,
-})
+const actionButton = useTemplateRef<HTMLButtonElement>('actionButton')
+const actionMenu = useTemplateRef<HTMLElement>('actionMenu')
 
 watch(() => props.isEditing, (v) => {
   if (v) nextTick(() => renameInput.value?.focus())
 })
+
+watch(() => props.menuOpen, (isOpen) => {
+  if (isOpen) nextTick(() => focusFirstAction())
+})
+
+function actionItems() {
+  return Array.from(actionMenu.value?.querySelectorAll<HTMLElement>('[role="menuitem"], button:not([disabled])') ?? [])
+}
+
+function focusFirstAction() {
+  actionItems()[0]?.focus()
+}
+
+function focusAdjacentAction(direction: 1 | -1) {
+  const items = actionItems()
+  if (items.length === 0) return
+  const currentIndex = items.findIndex(item => item === document.activeElement)
+  const nextIndex = currentIndex < 0
+    ? direction === 1 ? 0 : items.length - 1
+    : (currentIndex + direction + items.length) % items.length
+  items[nextIndex]?.focus()
+}
+
+function closeActionMenu(e: Event) {
+  if (props.menuOpen) emit('toggleMenu', e)
+  nextTick(() => actionButton.value?.focus())
+}
+
+function onActionButtonKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+    e.preventDefault()
+    if (!props.menuOpen) emit('toggleMenu', e)
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    closeActionMenu(e)
+  }
+}
+
+function onActionMenuKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    closeActionMenu(e)
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    focusAdjacentAction(1)
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    focusAdjacentAction(-1)
+  }
+}
 </script>
 
 <template>
@@ -92,69 +134,80 @@ watch(() => props.isEditing, (v) => {
         {{ relativeTime }}
       </span>
       <button
-        ref="menuTriggerRef"
-        class="absolute right-0 size-6 flex items-center justify-center rounded text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-700 invisible group-hover:visible cursor-pointer border-0 bg-transparent"
+        ref="actionButton"
+        class="absolute right-0 size-6 flex items-center justify-center rounded text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-700 invisible group-hover:visible group-focus-within:visible focus:visible cursor-pointer border-0 bg-transparent"
+        aria-label="Conversation actions"
+        aria-haspopup="menu"
+        :aria-expanded="menuOpen"
+        :aria-controls="`conversation-actions-${conversation.id}`"
         title="Actions"
         @click.stop="(e) => emit('toggleMenu', e)"
+        @keydown="onActionButtonKeydown"
       >
         <MoreHorizontal class="size-4" />
       </button>
     </div>
 
     <!-- Action menu -->
-    <Teleport to="body">
-      <div
-        v-if="menuOpen"
-        class="ui-floating-menu factory-dashboard-portal rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg py-1"
-        :style="menuStyle"
-        @click.stop
+    <div
+      v-if="menuOpen"
+      :id="`conversation-actions-${conversation.id}`"
+      ref="actionMenu"
+      class="absolute right-1 top-9 z-20 w-48 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg py-1"
+      role="menu"
+      @click.stop
+      @keydown="onActionMenuKeydown"
+    >
+      <button
+        class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
+        role="menuitem"
+        @click="emit('togglePin', conversation)"
       >
-        <button
-          class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
-          @click="emit('togglePin', conversation)"
-        >
-          <component :is="conversation.pinned ? PinOff : Pin" class="size-3.5" />
-          {{ conversation.pinned ? 'Unpin' : 'Pin' }}
-        </button>
-        <button
-          class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
-          @click="emit('startRename', conversation)"
-        >
-          <Pencil class="size-3.5" />
-          Rename
-        </button>
+        <component :is="conversation.pinned ? PinOff : Pin" class="size-3.5" />
+        {{ conversation.pinned ? 'Unpin' : 'Pin' }}
+      </button>
+      <button
+        class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
+        role="menuitem"
+        @click="emit('startRename', conversation)"
+      >
+        <Pencil class="size-3.5" />
+        Rename
+      </button>
 
-        <div class="my-1 border-t border-surface-200 dark:border-surface-800" />
-        <div class="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-surface-400">
-          Move to
-        </div>
-        <button
-          v-if="conversation.folderId !== null"
-          class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
-          @click="emit('move', conversation, null)"
-        >
-          <Inbox class="size-3.5" />
-          Uncategorised
-        </button>
-        <button
-          v-for="f in folders.filter((x) => x.id !== conversation.folderId)"
-          :key="f.id"
-          class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
-          @click="emit('move', conversation, f.id)"
-        >
-          <FolderInput class="size-3.5" />
-          <span class="truncate">{{ f.name }}</span>
-        </button>
-
-        <div class="my-1 border-t border-surface-200 dark:border-surface-800" />
-        <button
-          class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/30 cursor-pointer border-0 bg-transparent"
-          @click="emit('delete', conversation)"
-        >
-          <Trash2 class="size-3.5" />
-          Delete
-        </button>
+      <div class="my-1 border-t border-surface-200 dark:border-surface-800" />
+      <div class="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-surface-400">
+        Move to
       </div>
-    </Teleport>
+      <button
+        v-if="conversation.folderId !== null"
+        class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
+        role="menuitem"
+        @click="emit('move', conversation, null)"
+      >
+        <Inbox class="size-3.5" />
+        Uncategorised
+      </button>
+      <button
+        v-for="f in folders.filter((x) => x.id !== conversation.folderId)"
+        :key="f.id"
+        class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
+        role="menuitem"
+        @click="emit('move', conversation, f.id)"
+      >
+        <FolderInput class="size-3.5" />
+        <span class="truncate">{{ f.name }}</span>
+      </button>
+
+      <div class="my-1 border-t border-surface-200 dark:border-surface-800" />
+      <button
+        class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/30 cursor-pointer border-0 bg-transparent"
+        role="menuitem"
+        @click="emit('delete', conversation)"
+      >
+        <Trash2 class="size-3.5" />
+        Delete
+      </button>
+    </div>
   </div>
 </template>

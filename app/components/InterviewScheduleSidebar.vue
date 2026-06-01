@@ -78,23 +78,13 @@ const calendarCustomization = reactive({
 const { templates: customTemplates } = useEmailTemplates()
 const selectedTemplateId = ref('system-standard')
 const showTemplateDropdown = ref(false)
-const showTimezoneDropdown = ref(false)
 const templateTriggerRef = ref<HTMLElement | null>(null)
 const templateDropdownRef = ref<HTMLElement | null>(null)
-const timezoneTriggerRef = ref<HTMLElement | null>(null)
-const timezoneDropdownRef = ref<HTMLElement | null>(null)
 const { floatingStyle: templateDropdownStyle } = useFloatingMenu({
   open: showTemplateDropdown,
   triggerRef: templateTriggerRef,
   width: 'trigger',
   estimatedHeight: 320,
-  zIndex: 90,
-})
-const { floatingStyle: timezoneDropdownStyle } = useFloatingMenu({
-  open: showTimezoneDropdown,
-  triggerRef: timezoneTriggerRef,
-  width: 'trigger',
-  estimatedHeight: 260,
   zIndex: 90,
 })
 
@@ -140,12 +130,6 @@ function handleDropdownOutsideClick(event: MouseEvent) {
     !templateDropdownRef.value?.contains(target)
   ) {
     showTemplateDropdown.value = false
-  }
-  if (
-    !timezoneTriggerRef.value?.contains(target) &&
-    !timezoneDropdownRef.value?.contains(target)
-  ) {
-    showTimezoneDropdown.value = false
   }
 }
 
@@ -347,6 +331,11 @@ const commonTimezones = [
   'Australia/Melbourne',
   'Pacific/Auckland',
 ]
+
+const timezoneOptions = computed(() => commonTimezones.map(tz => ({
+  value: tz,
+  label: tz,
+})))
 
 const timezoneLabel = computed(() => {
   const tz = form.timezone
@@ -978,50 +967,11 @@ async function handleMoveToInterview() {
                   <Globe class="size-3 text-surface-400" />
                   Timezone
                 </label>
-                <div class="relative">
-                  <button
-                    ref="timezoneTriggerRef"
-                    type="button"
-                    class="w-full flex items-center justify-between rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2.5 text-[13px] text-left transition-all hover:border-surface-300 dark:hover:border-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400 cursor-pointer"
-                    @click="showTimezoneDropdown = !showTimezoneDropdown"
-                  >
-                    <span class="truncate text-surface-800 dark:text-surface-200">{{ timezoneLabel }}</span>
-                    <ChevronDown class="size-4 shrink-0 text-surface-400 transition-transform" :class="showTimezoneDropdown ? 'rotate-180' : ''" />
-                  </button>
-
-                  <!-- Timezone dropdown menu -->
-                  <Teleport to="body">
-                    <Transition
-                      enter-active-class="transition duration-150 ease-out"
-                      enter-from-class="opacity-0 -translate-y-1"
-                      enter-to-class="opacity-100 translate-y-0"
-                      leave-active-class="transition duration-100 ease-in"
-                      leave-from-class="opacity-100 translate-y-0"
-                      leave-to-class="opacity-0 -translate-y-1"
-                    >
-                      <div
-                        v-if="showTimezoneDropdown"
-                        ref="timezoneDropdownRef"
-                        class="ui-floating-menu factory-dashboard-portal max-h-64 overflow-y-auto rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-lg shadow-surface-900/10 dark:shadow-black/20"
-                        :style="timezoneDropdownStyle"
-                      >
-                        <button
-                          v-for="tz in commonTimezones"
-                          :key="tz"
-                          type="button"
-                          class="w-full flex items-center justify-between px-3 py-2 text-left text-[13px] hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors cursor-pointer"
-                          :class="form.timezone === tz ? 'bg-brand-50/60 dark:bg-brand-950/20 text-brand-700 dark:text-brand-300' : 'text-surface-800 dark:text-surface-200'"
-                          @click="form.timezone = tz; showTimezoneDropdown = false"
-                        >
-                          <span class="truncate">{{ tz }}</span>
-                          <div v-if="form.timezone === tz" class="shrink-0 text-brand-600 dark:text-brand-400">
-                            <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                          </div>
-                        </button>
-                      </div>
-                    </Transition>
-                  </Teleport>
-                </div>
+                <FactorySelect
+                  v-model="form.timezone"
+                  :options="timezoneOptions"
+                  :placeholder="timezoneLabel"
+                />
               </div>
             </div>
 

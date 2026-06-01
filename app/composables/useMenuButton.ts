@@ -10,7 +10,7 @@ type UseMenuButtonOptions = {
 }
 
 type OpenMenuOptions = {
-  focus?: boolean
+  focus?: boolean | 'first' | 'last'
 }
 
 export function useMenuButton(options: UseMenuButtonOptions) {
@@ -23,12 +23,17 @@ export function useMenuButton(options: UseMenuButtonOptions) {
     triggerRef.value?.focus()
   }
 
-  function focusFirstMenuItem() {
-    focusMenuItem(0)
-  }
-
   function getMenuItems() {
-    return Array.from(menuRef.value?.querySelectorAll<HTMLElement>('[role="menuitem"], a[href], button:not([disabled])') ?? [])
+    const selector = [
+      '[role="menuitem"]',
+      '[role="menuitemcheckbox"]',
+      '[role="menuitemradio"]',
+      'a[href]',
+      'button:not([disabled])',
+    ].join(',')
+
+    return Array.from(menuRef.value?.querySelectorAll<HTMLElement>(selector) ?? [])
+      .filter(el => !el.hasAttribute('disabled') && el.getAttribute('aria-hidden') !== 'true')
   }
 
   function focusMenuItem(index: number) {
@@ -38,13 +43,24 @@ export function useMenuButton(options: UseMenuButtonOptions) {
     items[nextIndex]?.focus()
   }
 
+  function focusFirstMenuItem() {
+    focusMenuItem(0)
+  }
+
+  function focusLastMenuItem() {
+    const items = getMenuItems()
+    if (!items.length) return
+    focusMenuItem(items.length - 1)
+  }
+
   async function openMenu(openOptions: OpenMenuOptions = {}) {
     isOpen.value = true
-    const shouldFocus = openOptions.focus ?? focusOnOpen
-    if (shouldFocus) {
-      await nextTick()
-      focusFirstMenuItem()
-    }
+    const focus = openOptions.focus ?? focusOnOpen
+    if (!focus) return
+
+    await nextTick()
+    if (focus === 'last') focusLastMenuItem()
+    else focusFirstMenuItem()
   }
 
   function closeMenu(options: { restoreFocus?: boolean } = {}) {
@@ -58,33 +74,44 @@ export function useMenuButton(options: UseMenuButtonOptions) {
     else openMenu()
   }
 
+  function focusAdjacentMenuItem(direction: 1 | -1) {
+    const items = getMenuItems()
+    if (items.length === 0) return
+    const currentIndex = items.findIndex(item => item === document.activeElement)
+    const nextIndex = currentIndex < 0
+      ? direction === 1 ? 0 : items.length - 1
+      : (currentIndex + direction + items.length) % items.length
+    items[nextIndex]?.focus()
+  }
+
   function onTriggerKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
       event.preventDefault()
-      openMenu({ focus: true })
+      openMenu({ focus: 'first' })
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      openMenu({ focus: 'last' })
     } else if (event.key === 'Escape') {
       closeMenu({ restoreFocus: true })
     }
   }
 
   function onMenuKeydown(event: KeyboardEvent) {
-    const items = getMenuItems()
-    const activeIndex = items.findIndex(item => item === document.activeElement)
     if (event.key === 'Escape') {
       event.preventDefault()
       closeMenu({ restoreFocus: true })
     } else if (event.key === 'ArrowDown') {
       event.preventDefault()
-      focusMenuItem(activeIndex + 1)
+      focusAdjacentMenuItem(1)
     } else if (event.key === 'ArrowUp') {
       event.preventDefault()
-      focusMenuItem(activeIndex - 1)
+      focusAdjacentMenuItem(-1)
     } else if (event.key === 'Home') {
       event.preventDefault()
-      focusMenuItem(0)
+      focusFirstMenuItem()
     } else if (event.key === 'End') {
       event.preventDefault()
-      focusMenuItem(items.length - 1)
+      focusLastMenuItem()
     } else if (event.key === 'Tab') {
       closeMenu({ restoreFocus: true })
     }
@@ -99,7 +126,7 @@ export function useMenuButton(options: UseMenuButtonOptions) {
   }
 
   const triggerAttrs = computed(() => ({
-    'aria-haspopup': 'menu',
+    'aria-haspopup': 'menu' as const,
     'aria-expanded': isOpen.value,
     'aria-controls': options.id,
   }))
@@ -114,6 +141,7 @@ export function useMenuButton(options: UseMenuButtonOptions) {
     toggleMenu,
     focusTrigger,
     focusFirstMenuItem,
+    focusLastMenuItem,
     onTriggerKeydown,
     onMenuKeydown,
   }

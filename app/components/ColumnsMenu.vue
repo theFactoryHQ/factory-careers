@@ -10,12 +10,16 @@ const emit = defineEmits<{
   'update:modelValue': [value: Record<string, boolean>]
 }>()
 
-const open = ref(false)
-const menuRef = ref<HTMLElement | null>(null)
 const triggerRef = ref<HTMLElement | null>(null)
 const panelRef = ref<HTMLElement | null>(null)
+const columnsMenu = useMenuButton({
+  id: 'columns-menu',
+  triggerRef,
+  menuRef: panelRef,
+  closeOnOutside: false,
+})
 const { floatingStyle } = useFloatingMenu({
-  open,
+  open: columnsMenu.isOpen,
   triggerRef,
   placement: 'bottom-end',
   width: 192,
@@ -27,20 +31,10 @@ function toggle(key: string) {
   emit('update:modelValue', { ...props.modelValue, [key]: !props.modelValue[key] })
 }
 
-function handleClickOutside(e: MouseEvent) {
-  const target = e.target as Node
-  if (!menuRef.value?.contains(target) && !panelRef.value?.contains(target)) {
-    open.value = false
-  }
-}
-
-watch(open, (val) => {
-  if (val) document.addEventListener('click', handleClickOutside)
-  else document.removeEventListener('click', handleClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
+useOutsidePointer({
+  root: [triggerRef, panelRef],
+  active: columnsMenu.isOpen,
+  onOutside: () => columnsMenu.closeMenu(),
 })
 
 const hiddenCount = computed(() =>
@@ -49,13 +43,16 @@ const hiddenCount = computed(() =>
 </script>
 
 <template>
-  <div ref="menuRef" class="relative">
+  <div class="relative">
     <button
       ref="triggerRef"
       type="button"
       class="factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium whitespace-nowrap"
       :class="{ 'is-active': hiddenCount > 0 }"
-      @click.stop="open = !open"
+      aria-label="Columns"
+      v-bind="columnsMenu.triggerAttrs.value"
+      @click.stop="columnsMenu.toggleMenu()"
+      @keydown="columnsMenu.onTriggerKeydown($event)"
     >
       <Columns2 class="size-4" />
       <span>Columns</span>
@@ -67,10 +64,14 @@ const hiddenCount = computed(() =>
 
     <Teleport to="body">
       <div
-        v-if="open"
+        v-if="columnsMenu.isOpen.value"
+        id="columns-menu"
         ref="panelRef"
         class="ui-floating-menu factory-dashboard-portal rounded-xl border border-white/10 bg-black py-1 shadow-2xl text-white"
         :style="floatingStyle"
+        role="menu"
+        aria-label="Toggle columns"
+        @keydown="columnsMenu.onMenuKeydown"
       >
         <div class="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/50 border-b border-white/10 mb-1">
           Toggle columns
@@ -84,6 +85,8 @@ const hiddenCount = computed(() =>
             ? 'text-white/40 cursor-not-allowed'
             : ''"
           :disabled="col.required"
+          role="menuitemcheckbox"
+          :aria-checked="col.required || modelValue[col.key]"
           @click="!col.required && toggle(col.key)"
         >
           <span
