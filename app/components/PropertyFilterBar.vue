@@ -40,21 +40,40 @@ const definitionMap = computed(() => {
 
 const pickerOpen = ref(false)
 const pickerEl = ref<HTMLElement | null>(null)
-const pickerTriggerEl = ref<HTMLElement | null>(null)
+const pickerTriggerRef = ref<HTMLElement | null>(null)
 const pickerMenuEl = ref<HTMLElement | null>(null)
 const { floatingStyle: pickerStyle, updateFloatingPosition: updatePickerPosition } = useFloatingMenu({
   open: pickerOpen,
-  triggerRef: pickerTriggerEl,
+  triggerRef: pickerTriggerRef,
   width: 256,
   estimatedHeight: 288,
   zIndex: 90,
 })
 
+function focusFirstPickerOption() {
+  nextTick(() => {
+    pickerMenuEl.value?.querySelector<HTMLElement>('button:not([disabled])')?.focus()
+  })
+}
+
+function openPicker() {
+  pickerOpen.value = true
+  nextTick(() => {
+    updatePickerPosition()
+    focusFirstPickerOption()
+  })
+}
+
+function closePicker(options: { restoreFocus?: boolean } = {}) {
+  pickerOpen.value = false
+  if (options.restoreFocus) pickerTriggerRef.value?.focus()
+}
+
 function closePickerOnOutside(e: PointerEvent) {
   if (!pickerOpen.value || !pickerEl.value) return
   const target = e.target as Node
   if (pickerEl.value.contains(target) || pickerMenuEl.value?.contains(target)) return
-  pickerOpen.value = false
+  closePicker()
 }
 watchEffect((onCleanup) => {
   if (pickerOpen.value && import.meta.client) {
@@ -119,7 +138,7 @@ function addFilter(def: PropertyDefinition) {
     value: op === 'equals' && def.type === 'checkbox' ? true : op === 'in' ? [] : '',
   }
   emit('update:modelValue', [...props.modelValue, next])
-  pickerOpen.value = false
+  closePicker({ restoreFocus: true })
 }
 
 function removeFilter(idx: number) {
@@ -139,6 +158,7 @@ function clearAll() {
 const editingIdx = ref<number | null>(null)
 const editEl = ref<HTMLElement | null>(null)
 const editTriggerEl = ref<HTMLElement | null>(null)
+const editTriggerRefs = ref<Record<number, HTMLElement | null>>({})
 const isEditingFilter = computed(() => editingIdx.value !== null)
 const { floatingStyle: editStyle, updateFloatingPosition: updateEditPosition } = useFloatingMenu({
   open: isEditingFilter,
@@ -152,10 +172,13 @@ function setEditElRef(el: Element | ComponentPublicInstance | null, filterIdx: n
   if (editingIdx.value === filterIdx) editEl.value = el as HTMLElement | null
 }
 
-function toggleEditFilter(filterIdx: number, event: MouseEvent) {
+function setEditTriggerRef(el: Element | ComponentPublicInstance | null, filterIdx: number) {
+  editTriggerRefs.value[filterIdx] = el as HTMLElement | null
+}
+
+function toggleEditFilter(filterIdx: number, event: MouseEvent | KeyboardEvent) {
   if (editingIdx.value === filterIdx) {
-    editingIdx.value = null
-    editTriggerEl.value = null
+    closeEdit({ restoreFocus: true })
     return
   }
 
@@ -164,12 +187,18 @@ function toggleEditFilter(filterIdx: number, event: MouseEvent) {
   nextTick(updateEditPosition)
 }
 
+function closeEdit(options: { restoreFocus?: boolean } = {}) {
+  const previousIdx = editingIdx.value
+  editingIdx.value = null
+  editTriggerEl.value = null
+  if (options.restoreFocus && previousIdx !== null) editTriggerRefs.value[previousIdx]?.focus()
+}
+
 function closeEditOnOutside(e: PointerEvent) {
   if (editingIdx.value === null) return
   const target = e.target as Node
   if (editTriggerEl.value?.contains(target) || editEl.value?.contains(target)) return
-  editingIdx.value = null
-  editTriggerEl.value = null
+  closeEdit()
 }
 watchEffect((onCleanup) => {
   if (editingIdx.value !== null && import.meta.client) {
@@ -212,12 +241,15 @@ const showableDefs = computed(() => definitions.value)
       <div
         class="ui-filter-chip ui-filter-chip-active text-xs"
       >
-      <button
-        type="button"
-        class="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 cursor-pointer"
-        :aria-label="`Edit filter: ${summarizeFilter(f)}`"
+        <button
+          :ref="(el) => setEditTriggerRef(el, idx)"
+          type="button"
+          class="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 cursor-pointer"
+          :aria-label="`Edit filter: ${summarizeFilter(f)}`"
           @click="toggleEditFilter(idx, $event)"
-      >
+          @keydown.enter.prevent="toggleEditFilter(idx, $event)"
+          @keydown.space.prevent="toggleEditFilter(idx, $event)"
+        >
           <span class="max-w-[20rem] truncate">{{ summarizeFilter(f) }}</span>
         </button>
         <button
@@ -237,6 +269,7 @@ const showableDefs = computed(() => definitions.value)
           :ref="(el) => setEditElRef(el, idx)"
           class="ui-floating-menu factory-filter-dropdown-menu factory-dashboard-portal max-w-[calc(100vw-2rem)] p-3"
           :style="editStyle"
+          @keydown.escape.prevent="closeEdit({ restoreFocus: true })"
         >
           <template v-if="definitionMap.get(f.propertyDefinitionId) as PropertyDefinition">
             <div class="space-y-2">
@@ -326,10 +359,16 @@ const showableDefs = computed(() => definitions.value)
     <!-- Add filter -->
     <div class="relative" ref="pickerEl">
       <button
-        ref="pickerTriggerEl"
+        ref="pickerTriggerRef"
         type="button"
         class="ui-button ui-button-secondary factory-filter-dropdown-trigger px-2.5 py-1 text-xs"
-        @click="pickerOpen = !pickerOpen; nextTick(updatePickerPosition)"
+        :aria-expanded="pickerOpen"
+        aria-haspopup="menu"
+        @click="pickerOpen ? closePicker({ restoreFocus: true }) : openPicker()"
+        @keydown.enter.prevent="openPicker()"
+        @keydown.space.prevent="openPicker()"
+        @keydown.arrow-down.prevent="openPicker()"
+        @keydown.escape.prevent="closePicker({ restoreFocus: true })"
       >
         <component :is="modelValue.length === 0 ? Filter : Plus" class="size-3.5" />
         {{ modelValue.length === 0 ? 'Filter' : 'Add filter' }}
@@ -340,6 +379,8 @@ const showableDefs = computed(() => definitions.value)
           ref="pickerMenuEl"
           class="ui-floating-menu factory-filter-dropdown-menu factory-dashboard-portal max-w-[calc(100vw-2rem)]"
           :style="pickerStyle"
+          role="menu"
+          @keydown.escape.prevent="closePicker({ restoreFocus: true })"
         >
           <div class="max-h-72 overflow-y-auto py-1">
             <button
@@ -347,6 +388,7 @@ const showableDefs = computed(() => definitions.value)
               :key="def.id"
               type="button"
               class="ui-menu-action factory-filter-dropdown-option justify-between px-3 py-1.5 text-sm"
+              role="menuitem"
               @click="addFilter(def)"
             >
               <span class="truncate text-surface-800 dark:text-surface-100">{{ def.name }}</span>

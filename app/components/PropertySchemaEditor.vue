@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GripVertical, Pencil, Plus, Trash2, X } from 'lucide-vue-next'
+import { ArrowDown, ArrowUp, GripVertical, Pencil, Plus, Trash2, X } from 'lucide-vue-next'
 import {
   PROPERTY_COLOR_CLASSES,
   PROPERTY_OPTION_COLORS,
@@ -25,6 +25,7 @@ const props = defineProps<{
 const emit = defineEmits<{ (e: 'close'): void; (e: 'changed'): void }>()
 
 const toast = useToast()
+const panelRef = ref<HTMLElement | null>(null)
 
 const {
   definitions,
@@ -48,6 +49,12 @@ watch(() => props.open, (isOpen) => {
   editingId.value = null
   formError.value = null
   confirmDeleteId.value = null
+})
+
+useFocusTrap({
+  root: panelRef,
+  active: computed(() => props.open),
+  onEscape: () => emit('close'),
 })
 
 // ─── Form state for create / edit ───
@@ -195,6 +202,23 @@ async function onDrop(targetId: string) {
   }
 }
 
+async function moveDefinition(id: string, direction: -1 | 1) {
+  const ids = definitions.value.map((d) => d.id)
+  const fromIdx = ids.indexOf(id)
+  const toIdx = fromIdx + direction
+  if (fromIdx < 0 || toIdx < 0 || toIdx >= ids.length) return
+  const [moved] = ids.splice(fromIdx, 1)
+  if (!moved) return
+  ids.splice(toIdx, 0, moved)
+  try {
+    await reorderDefinitions(ids)
+    emit('changed')
+  } catch (err: unknown) {
+    const message = (err as { data?: { statusMessage?: string } })?.data?.statusMessage ?? 'Failed to reorder'
+    toast.error(message)
+  }
+}
+
 const overlayTitle = computed(() => {
   if (props.title) return props.title
   const scope = props.jobId ? 'Job-specific' : 'Organization'
@@ -211,7 +235,12 @@ const overlayTitle = computed(() => {
     <Transition name="slide-right">
       <aside
         v-if="open"
+        ref="panelRef"
         class="factory-dashboard-portal fixed right-0 top-0 z-[70] flex h-full w-full max-w-md flex-col border-l border-white/12 bg-black text-white shadow-2xl shadow-black/70"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="overlayTitle"
       >
         <header class="flex items-center justify-between border-b border-white/12 bg-black px-5 py-4">
           <div class="min-w-0">
@@ -242,6 +271,26 @@ const overlayTitle = computed(() => {
               @drop.prevent="onDrop(def.id)"
             >
               <GripVertical class="size-4 cursor-grab text-white/32 active:cursor-grabbing" />
+              <div class="flex shrink-0 flex-col">
+                <button
+                  type="button"
+                  class="inline-flex h-4 w-6 cursor-pointer items-center justify-center text-white/40 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-25"
+                  aria-label="Move property up"
+                  :disabled="definitions[0]?.id === def.id"
+                  @click="moveDefinition(def.id, -1)"
+                >
+                  <ArrowUp class="size-3" />
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-4 w-6 cursor-pointer items-center justify-center text-white/40 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-25"
+                  aria-label="Move property down"
+                  :disabled="definitions[definitions.length - 1]?.id === def.id"
+                  @click="moveDefinition(def.id, 1)"
+                >
+                  <ArrowDown class="size-3" />
+                </button>
+              </div>
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
                   <span class="truncate text-sm font-medium text-white">{{ def.name }}</span>

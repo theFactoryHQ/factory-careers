@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 const root = process.cwd()
 const emptyCatchPattern = /\.catch\s*\(\s*(?:\([^)]*\)|[$A-Z_a-z][$\w]*)\s*=>\s*\{\s*\}\s*\)/m
-const e2eRequiredNeeds = 'needs: [smoke, security-core, security-extended, uploads, ui, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review, production_session]'
+const e2eRequiredNeeds = 'needs: [smoke, security-core, security-extended, uploads, ui, a11y, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review, production_session]'
 
 function read(path: string): string {
   return readFileSync(join(root, path), 'utf8')
@@ -91,6 +91,26 @@ describe('Playwright E2E harness contract', () => {
     expect(uiJob).toContain('NUXT_DEVTOOLS: "false"')
     expect(workflow).toContain(e2eRequiredNeeds)
     expect(workflow).toContain('needs.ui.result')
+  })
+
+  it('runs keyboard and accessibility browser coverage in a dedicated CI lane', () => {
+    const workflow = read('.github/workflows/e2e-tests.yml')
+    const a11yJob = workflowJobBlock(workflow, 'a11y')
+    const packageJson = JSON.parse(read('package.json')) as {
+      scripts?: Record<string, string>
+      devDependencies?: Record<string, string>
+    }
+
+    expect(packageJson.devDependencies?.['@axe-core/playwright']).toBe('^4.11.3')
+    expect(packageJson.scripts?.['test:e2e:a11y']).toBe(
+      'NUXT_DEVTOOLS=false playwright test e2e/accessibility --workers=1',
+    )
+    expect(a11yJob).toContain('name: Playwright keyboard and a11y')
+    expect(a11yJob).toContain('npm run test:e2e:a11y')
+    expect(a11yJob).toContain('NUXT_DEVTOOLS: "false"')
+    expect(a11yJob).toContain('S3_SKIP_BUCKET_INIT: "true"')
+    expect(workflow).toContain(e2eRequiredNeeds)
+    expect(workflow).toContain('needs.a11y.result')
   })
 
   it('runs candidate application browser coverage in a dedicated CI lane', () => {
@@ -388,6 +408,7 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('needs.security-extended.result')
     expect(workflow).toContain('needs.uploads.result')
     expect(workflow).toContain('needs.ui.result')
+    expect(workflow).toContain('needs.a11y.result')
     expect(workflow).toContain('needs.candidate.result')
     expect(workflow).toContain('needs.recruiter.result')
     expect(workflow).toContain('needs.job_lifecycle.result')
