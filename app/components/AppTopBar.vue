@@ -377,8 +377,10 @@ function handleNewJobClick() {
               aria-haspopup="menu"
               :aria-expanded="showGetStartedMenu"
               aria-controls="topbar-get-started-menu"
-              @click="getStartedMenu.toggleMenu"
-              @keydown="getStartedMenu.onTriggerKeydown"
+              @click="getStartedMenu.toggleMenu()"
+              @keydown="getStartedMenu.onTriggerKeydown($event)"
+              @keydown.down.prevent="getStartedMenu.openMenu({ focus: 'first' })"
+              @keydown.up.prevent="getStartedMenu.openMenu({ focus: 'last' })"
             >
               <Sparkles class="size-3.5 transition-transform duration-300 group-hover:rotate-12" />
               Get Started
@@ -465,8 +467,10 @@ function handleNewJobClick() {
               aria-haspopup="menu"
               :aria-expanded="showMoreActions"
               aria-controls="topbar-more-actions-menu"
-              @click.stop="moreActionsMenu.toggleMenu"
-              @keydown="moreActionsMenu.onTriggerKeydown"
+              @click.stop="moreActionsMenu.toggleMenu()"
+              @keydown="moreActionsMenu.onTriggerKeydown($event)"
+              @keydown.down.prevent="moreActionsMenu.openMenu({ focus: 'first' })"
+              @keydown.up.prevent="moreActionsMenu.openMenu({ focus: 'last' })"
             >
               <MoreHorizontal class="size-4" />
             </button>
@@ -529,8 +533,10 @@ function handleNewJobClick() {
               aria-haspopup="menu"
               :aria-expanded="showUserMenu"
               aria-controls="topbar-user-menu"
-              @click="userMenu.toggleMenu"
-              @keydown="userMenu.onTriggerKeydown"
+              @click="userMenu.toggleMenu()"
+              @keydown="userMenu.onTriggerKeydown($event)"
+              @keydown.down.prevent="userMenu.openMenu({ focus: 'first' })"
+              @keydown.up.prevent="userMenu.openMenu({ focus: 'last' })"
             >
               <img
                 v-if="userImage"

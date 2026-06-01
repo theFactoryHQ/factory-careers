@@ -14,12 +14,16 @@ import { Sparkles, Star, Check, ChevronUp } from 'lucide-vue-next'
 const { agents, selectedAgentId } = useChatbot()
 const emit = defineEmits<{ manage: [] }>()
 
-const open = ref(false)
-const root = useTemplateRef<HTMLDivElement>('root')
 const triggerRef = ref<HTMLElement | null>(null)
 const panelRef = ref<HTMLElement | null>(null)
+const agentMenu = useMenuButton({
+  id: 'chatbot-agent-menu',
+  triggerRef,
+  menuRef: panelRef,
+  closeOnOutside: false,
+})
 const { floatingStyle } = useFloatingMenu({
-  open,
+  open: agentMenu.isOpen,
   triggerRef,
   placement: 'top-start',
   width: 256,
@@ -34,41 +38,52 @@ const label = computed(() => selectedAgent.value?.name ?? 'Default assistant')
 
 function pick(id: string | null) {
   selectedAgentId.value = id
-  open.value = false
+  agentMenu.closeMenu({ restoreFocus: true })
 }
 
-function onWindowClick(e: MouseEvent) {
-  const target = e.target as Node
-  if (!root.value?.contains(target) && !panelRef.value?.contains(target)) open.value = false
+function manageAgents() {
+  agentMenu.closeMenu({ restoreFocus: true })
+  emit('manage')
 }
 
-onMounted(() => window.addEventListener('click', onWindowClick))
-onUnmounted(() => window.removeEventListener('click', onWindowClick))
+useOutsidePointer({
+  root: [triggerRef, panelRef],
+  active: agentMenu.isOpen,
+  onOutside: () => agentMenu.closeMenu(),
+})
 </script>
 
 <template>
-  <div ref="root" class="relative">
+  <div class="relative">
     <button
       ref="triggerRef"
       type="button"
       class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-2.5 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-200 hover:border-brand-300 dark:hover:border-brand-700 cursor-pointer transition-colors"
-      @click="open = !open"
+      aria-label="Chatbot agent"
+      v-bind="agentMenu.triggerAttrs.value"
+      @click="agentMenu.toggleMenu()"
+      @keydown="agentMenu.onTriggerKeydown($event)"
     >
       <Sparkles class="size-3.5 text-brand-500" />
       <span class="max-w-[140px] truncate">{{ label }}</span>
-      <ChevronUp class="size-3 transition-transform" :class="open ? '' : 'rotate-180'" />
+      <ChevronUp class="size-3 transition-transform" :class="agentMenu.isOpen.value ? '' : 'rotate-180'" />
     </button>
 
     <Teleport to="body">
       <div
-        v-if="open"
+        v-if="agentMenu.isOpen.value"
+        id="chatbot-agent-menu"
         ref="panelRef"
         class="ui-floating-menu factory-dashboard-portal rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg py-1"
         :style="floatingStyle"
+        role="menu"
+        @keydown="agentMenu.onMenuKeydown"
       >
         <button
           type="button"
           class="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
+          role="menuitemradio"
+          :aria-checked="selectedAgentId === null"
           @click="pick(null)"
         >
           <Check
@@ -90,6 +105,8 @@ onUnmounted(() => window.removeEventListener('click', onWindowClick))
           :key="a.id"
           type="button"
           class="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-surface-100 dark:hover:bg-surface-800 cursor-pointer border-0 bg-transparent"
+          role="menuitemradio"
+          :aria-checked="selectedAgentId === a.id"
           @click="pick(a.id)"
         >
           <Check
@@ -109,7 +126,8 @@ onUnmounted(() => window.removeEventListener('click', onWindowClick))
         <button
           type="button"
           class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-brand-700 dark:text-brand-300 hover:bg-brand-50 dark:hover:bg-brand-950/30 cursor-pointer border-0 bg-transparent"
-          @click="open = false; emit('manage')"
+          role="menuitem"
+          @click="manageAgents"
         >
           <Sparkles class="size-3.5" />
           Manage agents…

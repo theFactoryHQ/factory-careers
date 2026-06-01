@@ -130,9 +130,9 @@ async function expectApplicationPropertyValue(
 
 async function showPropertyColumns(page: Page, propertyNames: string[]) {
   await page.getByRole('button', { name: /Columns/ }).click()
-  const menu = page.getByText('Toggle columns', { exact: true }).locator('..')
+  const menu = page.getByRole('menu', { name: 'Toggle columns' })
   for (const propertyName of propertyNames) {
-    const toggle = menu.getByRole('button', { name: propertyName, exact: true })
+    const toggle = menu.getByRole('menuitemcheckbox', { name: propertyName, exact: true })
     await expect(toggle).toBeVisible()
     await toggle.click()
     await expect(page.getByRole('columnheader', { name: propertyName })).toBeVisible()
