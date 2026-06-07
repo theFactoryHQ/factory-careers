@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { runCli } from '../../packages/careers-cli/src/program'
+import { createCliTestHarness } from '../helpers/cli-test-harness'
 
 const tempDirs: string[] = []
 
@@ -30,21 +31,15 @@ afterEach(() => {
 
 describe('CLI org commands', () => {
   it('searches organizations for join-request workflows', async () => {
-    const dir = tempDir()
-    const configPath = join(dir, 'config.json')
-    writeAuthedConfig(configPath)
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+    const { fetchMock, run, stdout } = createCliTestHarness('factory-careers-cli-org-')
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       expect(url).toBe('https://careers.example.com/api/org-search?q=factory')
       expect(init?.method).toBe('GET')
       expect(init?.headers).toMatchObject({ Authorization: 'Bearer secret-token' })
       return Response.json([{ id: 'org_1', name: 'Factory', slug: 'factory' }])
     })
-    const stdout: string[] = []
 
-    const exitCode = await runCli(
-      ['org', 'search', 'factory', '--config', configPath, '--json'],
-      { stdout: (value) => stdout.push(value), stderr: () => {}, fetch: fetchMock as typeof fetch },
-    )
+    const exitCode = await run(['org', 'search', 'factory', '--json'])
 
     expect(exitCode).toBe(0)
     expect(JSON.parse(stdout[0])).toEqual([{ id: 'org_1', name: 'Factory', slug: 'factory' }])

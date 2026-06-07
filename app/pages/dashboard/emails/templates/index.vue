@@ -211,41 +211,20 @@ async function handleDelete() {
       </div>
     </section>
 
-    <!-- Delete confirmation (inline, not modal, using a bottom sheet style) -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div class="absolute inset-0 ui-modal-backdrop" @click="showDeleteConfirm = false" />
-          <div class="ui-modal-panel relative w-full max-w-sm mx-4 mb-4 sm:mb-0 shadow-2xl ring-1 ring-surface-200/80 dark:ring-surface-700/60 p-6">
-            <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Template</h3>
-            <p class="text-sm text-surface-600 dark:text-surface-400 mb-5">
-              Are you sure you want to delete <strong>{{ templateToDelete?.name }}</strong>? This cannot be undone.
-            </p>
-            <div class="flex gap-3">
-              <button
-                class="ui-button ui-button-secondary flex-1 cursor-pointer rounded-xl px-4 py-2.5 text-sm font-medium transition-all"
-                @click="showDeleteConfirm = false"
-              >
-                Cancel
-              </button>
-              <button
-                :disabled="deletingId !== null"
-                class="ui-button ui-button-danger flex-1 cursor-pointer rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                @click="handleDelete"
-              >
-                {{ deletingId ? 'Deleting…' : 'Delete' }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <ConfirmDialog
+      v-if="showDeleteConfirm"
+      title="Delete Template"
+      confirm-label="Delete"
+      loading-label="Deleting…"
+      variant="danger"
+      :loading="deletingId !== null"
+      aria-label="Delete email template"
+      @close="showDeleteConfirm = false"
+      @confirm="handleDelete"
+    >
+      <p class="text-sm text-surface-600 dark:text-surface-400 mb-5">
+        Are you sure you want to delete <strong>{{ templateToDelete?.name }}</strong>? This cannot be undone.
+      </p>
+    </ConfirmDialog>
   </div>
 </template>

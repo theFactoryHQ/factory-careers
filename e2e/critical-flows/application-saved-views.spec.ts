@@ -1,100 +1,47 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures'
-
-type JobFixture = {
-  id: string
-  title: string
-}
-
-type CandidateFixture = {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-}
-
-type ApplicationFixture = {
-  id: string
-  status: string
-}
-
-async function createJob(page: Page, title: string): Promise<JobFixture> {
-  const response = await page.request.post('/api/jobs', {
-    data: {
-      title,
-      description: `E2E fixture for ${title}`,
-      location: 'Remote',
-      type: 'full_time',
-      requireResume: false,
-      requireCoverLetter: false,
-      applicationComplianceEnabled: false,
-      autoScoreOnApply: false,
-    },
-  })
-
-  expect(response.status(), `Create job API returned ${response.status()}`).toBe(201)
-  return await response.json() as JobFixture
-}
-
-async function createCandidate(
-  page: Page,
-  candidate: Omit<CandidateFixture, 'id'>,
-): Promise<CandidateFixture> {
-  const response = await page.request.post('/api/candidates', { data: candidate })
-
-  expect(response.status(), `Create candidate API returned ${response.status()}`).toBe(201)
-  return await response.json() as CandidateFixture
-}
-
-async function createApplication(
-  page: Page,
-  candidateId: string,
-  jobId: string,
-): Promise<ApplicationFixture> {
-  const response = await page.request.post('/api/applications', {
-    data: { candidateId, jobId },
-  })
-
-  expect(response.status(), `Create application API returned ${response.status()}`).toBe(201)
-  return await response.json() as ApplicationFixture
-}
-
-async function moveApplicationToScreening(page: Page, applicationId: string) {
-  const response = await page.request.patch(`/api/applications/${applicationId}`, {
-    data: { status: 'screening' },
-  })
-
-  expect(response.status(), `Application status API returned ${response.status()}`).toBe(200)
-  const updated = await response.json() as ApplicationFixture
-  expect(updated.status).toBe('screening')
-}
+import {
+  createApplication,
+  createCandidate,
+  createJob,
+  updateApplicationStatus,
+} from '../helpers/recruiting-fixtures'
 
 async function seedApplications(page: Page, runId: string) {
-  const primaryJob = await createJob(page, `Saved View Product ${runId}`)
-  const secondaryJob = await createJob(page, `Saved View Support ${runId}`)
+  const primaryJob = await createJob(page.request, `Saved View Product ${runId}`)
+  const secondaryJob = await createJob(page.request, `Saved View Support ${runId}`)
 
-  const matchingCandidate = await createCandidate(page, {
+  const matchingCandidate = await createCandidate(page.request, {
     firstName: 'Alice',
     lastName: `Match ${runId}`,
     email: `alice.match.${runId}@example.com`,
   })
-  const sameJobNewCandidate = await createCandidate(page, {
+  const sameJobNewCandidate = await createCandidate(page.request, {
     firstName: 'Brennan',
     lastName: `New ${runId}`,
     email: `brennan.new.${runId}@example.com`,
   })
-  const otherJobCandidate = await createCandidate(page, {
+  const otherJobCandidate = await createCandidate(page.request, {
     firstName: 'Casey',
     lastName: `Other ${runId}`,
     email: `casey.other.${runId}@example.com`,
   })
 
-  const matchingApplication = await createApplication(page, matchingCandidate.id, primaryJob.id)
-  await createApplication(page, sameJobNewCandidate.id, primaryJob.id)
-  const otherJobApplication = await createApplication(page, otherJobCandidate.id, secondaryJob.id)
+  const matchingApplication = await createApplication(page.request, {
+    candidateId: matchingCandidate.id,
+    jobId: primaryJob.id,
+  })
+  await createApplication(page.request, {
+    candidateId: sameJobNewCandidate.id,
+    jobId: primaryJob.id,
+  })
+  const otherJobApplication = await createApplication(page.request, {
+    candidateId: otherJobCandidate.id,
+    jobId: secondaryJob.id,
+  })
 
-  await moveApplicationToScreening(page, matchingApplication.id)
-  await moveApplicationToScreening(page, otherJobApplication.id)
+  await updateApplicationStatus(page.request, matchingApplication.id, 'screening')
+  await updateApplicationStatus(page.request, otherJobApplication.id, 'screening')
 
   return {
     primaryJob,

@@ -1032,34 +1032,18 @@ function formatInterviewDate(dateStr: string) {
 
 
 
-  <!-- Document delete confirmation dialog -->
-  <AppModalShell
+  <ConfirmDialog
     v-if="showDocDeleteConfirm"
+    title="Delete Document"
+    message="Are you sure you want to delete this document? This action cannot be undone."
+    confirm-label="Delete"
+    loading-label="Deleting…"
+    variant="danger"
+    :loading="isDeletingDoc"
+    aria-label="Delete document"
     @close="showDocDeleteConfirm = null"
-  >
-    <AppModalPanel class="p-6 max-w-sm">
-        <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-50 mb-2">Delete Document</h3>
-        <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
-          Are you sure you want to delete this document? This action cannot be undone.
-        </p>
-        <div class="flex justify-end gap-2">
-          <button
-            :disabled="isDeletingDoc"
-            class="ui-button ui-button-secondary px-3 py-1.5 text-sm"
-            @click="showDocDeleteConfirm = null"
-          >
-            Cancel
-          </button>
-          <button
-            :disabled="isDeletingDoc"
-            class="ui-button ui-button-danger px-3 py-1.5 text-sm disabled:opacity-50"
-            @click="handleDeleteDoc(showDocDeleteConfirm!)"
-          >
-            {{ isDeletingDoc ? 'Deleting…' : 'Delete' }}
-          </button>
-        </div>
-    </AppModalPanel>
-  </AppModalShell>
+    @confirm="handleDeleteDoc(showDocDeleteConfirm!)"
+  />
 </template>
 
 <style scoped>

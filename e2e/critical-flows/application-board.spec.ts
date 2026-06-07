@@ -1,83 +1,13 @@
-import type { APIRequestContext, Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures'
+import {
+  createApplication,
+  createCandidate,
+  createJob,
+  updateApplicationStatus,
+} from '../helpers/recruiting-fixtures'
 
 const JOB_TITLE = 'Application Board Test Job'
-
-type JobRecord = {
-  id: string
-  title: string
-}
-
-type CandidateRecord = {
-  id: string
-  email: string
-  firstName: string
-  lastName: string
-}
-
-type ApplicationRecord = {
-  id: string
-  status: string
-  candidateEmail?: string
-}
-
-async function expectApiStatus(response: Awaited<ReturnType<APIRequestContext['post']>>, expected: number, label: string) {
-  expect(response.status(), `${label} returned ${response.status()}: ${await response.text()}`).toBe(expected)
-}
-
-async function createJob(request: APIRequestContext, title: string): Promise<JobRecord> {
-  const response = await request.post('/api/jobs', {
-    data: {
-      title,
-      description: 'Seeded by the application board E2E test.',
-      location: 'Remote',
-      type: 'full_time',
-      requireResume: false,
-      requireCoverLetter: false,
-      applicationComplianceEnabled: false,
-      autoScoreOnApply: false,
-    },
-  })
-
-  await expectApiStatus(response, 201, 'Create job API')
-  return await response.json() as JobRecord
-}
-
-async function createCandidate(request: APIRequestContext, candidate: Omit<CandidateRecord, 'id'>): Promise<CandidateRecord> {
-  const response = await request.post('/api/candidates', {
-    data: {
-      firstName: candidate.firstName,
-      lastName: candidate.lastName,
-      email: candidate.email,
-    },
-  })
-
-  await expectApiStatus(response, 201, 'Create candidate API')
-  return await response.json() as CandidateRecord
-}
-
-async function createApplication(
-  request: APIRequestContext,
-  candidateId: string,
-  jobId: string,
-  notes: string,
-): Promise<ApplicationRecord> {
-  const response = await request.post('/api/applications', {
-    data: { candidateId, jobId, notes },
-  })
-
-  await expectApiStatus(response, 201, 'Create application API')
-  return await response.json() as ApplicationRecord
-}
-
-async function updateApplicationStatus(request: APIRequestContext, applicationId: string, status: string) {
-  const response = await request.patch(`/api/applications/${applicationId}`, {
-    data: { status },
-  })
-
-  expect(response.status(), `Update application API returned ${response.status()}: ${await response.text()}`).toBe(200)
-  return await response.json() as ApplicationRecord
-}
 
 async function seedApplicationBoard(page: Page, retry: number) {
   const unique = `${Date.now()}-${retry}`
@@ -93,18 +23,16 @@ async function seedApplicationBoard(page: Page, retry: number) {
     email: `board-filtered-${unique}@example.com`,
   })
 
-  const primaryApplication = await createApplication(
-    page.request,
-    primaryCandidate.id,
-    job.id,
-    'Initial board note for the primary candidate.',
-  )
-  const secondaryApplication = await createApplication(
-    page.request,
-    secondaryCandidate.id,
-    job.id,
-    'Screened candidate used by the status filter.',
-  )
+  const primaryApplication = await createApplication(page.request, {
+    candidateId: primaryCandidate.id,
+    jobId: job.id,
+    notes: 'Initial board note for the primary candidate.',
+  })
+  const secondaryApplication = await createApplication(page.request, {
+    candidateId: secondaryCandidate.id,
+    jobId: job.id,
+    notes: 'Screened candidate used by the status filter.',
+  })
   await updateApplicationStatus(page.request, secondaryApplication.id, 'screening')
 
   return { job, primaryCandidate, secondaryCandidate, primaryApplication, secondaryApplication }

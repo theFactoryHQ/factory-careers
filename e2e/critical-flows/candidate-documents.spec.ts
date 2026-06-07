@@ -2,22 +2,12 @@ import type { APIRequestContext, APIResponse, Page } from '@playwright/test'
 import { assertMutatingE2ESafety } from '../safety'
 import { test, expect } from '../fixtures'
 import { INVALID_PNG } from '../fixtures/test-buffers'
-
-type JobRecord = {
-  id: string
-  title: string
-}
-
-type CandidateRecord = {
-  id: string
-  email: string
-  firstName: string
-  lastName: string
-}
-
-type ApplicationRecord = {
-  id: string
-}
+import {
+  createApplication,
+  createCandidate,
+  createJob,
+  expectApiStatus,
+} from '../helpers/recruiting-fixtures'
 
 type CandidateDocument = {
   id: string
@@ -80,55 +70,6 @@ async function expectResponseStatus(response: APIResponse, expected: number, lab
   }
 
   expect(status, label).toBe(expected)
-}
-
-async function expectApiStatus(response: Awaited<ReturnType<APIRequestContext['post']>>, expected: number, label: string) {
-  await expectResponseStatus(response, expected, label)
-}
-
-async function createCandidate(request: APIRequestContext, candidate: Omit<CandidateRecord, 'id'>): Promise<CandidateRecord> {
-  const response = await request.post('/api/candidates', {
-    data: {
-      firstName: candidate.firstName,
-      lastName: candidate.lastName,
-      email: candidate.email,
-    },
-  })
-
-  await expectApiStatus(response, 201, 'Create candidate API')
-  return await response.json() as CandidateRecord
-}
-
-async function createJob(request: APIRequestContext, title: string): Promise<JobRecord> {
-  const response = await request.post('/api/jobs', {
-    data: {
-      title,
-      description: `E2E fixture for ${title}`,
-      location: 'Remote',
-      type: 'full_time',
-      requireResume: false,
-      requireCoverLetter: false,
-      applicationComplianceEnabled: false,
-      autoScoreOnApply: false,
-    },
-  })
-
-  await expectApiStatus(response, 201, 'Create job API')
-  return await response.json() as JobRecord
-}
-
-async function createApplication(
-  request: APIRequestContext,
-  candidateId: string,
-  jobId: string,
-  notes: string,
-): Promise<ApplicationRecord> {
-  const response = await request.post('/api/applications', {
-    data: { candidateId, jobId, notes },
-  })
-
-  await expectApiStatus(response, 201, 'Create application API')
-  return await response.json() as ApplicationRecord
 }
 
 async function loadCandidateDocuments(request: APIRequestContext, candidateId: string): Promise<CandidateDocument[]> {
@@ -262,12 +203,11 @@ test.describe('Candidate document management', () => {
       email: `document-tester-${unique}@example.com`,
     })
     const job = await createJob(page.request, `Candidate collaboration ${unique}`)
-    const application = await createApplication(
-      page.request,
-      candidate.id,
-      job.id,
-      `Initial collaboration note ${unique}`,
-    )
+    const application = await createApplication(page.request, {
+      candidateId: candidate.id,
+      jobId: job.id,
+      notes: `Initial collaboration note ${unique}`,
+    })
     expect(application.id, 'application fixture must be created for candidate timeline coverage').toBeTruthy()
 
     const updatedCandidate = {

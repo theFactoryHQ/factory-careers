@@ -1,17 +1,10 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures'
-
-type JobFixture = {
-  id: string
-  title: string
-}
-
-type CandidateFixture = {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-}
+import {
+  createApplication,
+  createCandidate,
+  createJob,
+} from '../helpers/recruiting-fixtures'
 
 type ApplicationFixture = {
   id: string
@@ -25,47 +18,6 @@ type PropertyFixture = {
 type PropertyEntry = {
   definition: { id: string, name: string }
   value: unknown
-}
-
-async function createJob(page: Page, title: string): Promise<JobFixture> {
-  const response = await page.request.post('/api/jobs', {
-    data: {
-      title,
-      description: `E2E fixture for ${title}`,
-      location: 'Remote',
-      type: 'full_time',
-      requireResume: false,
-      requireCoverLetter: false,
-      applicationComplianceEnabled: false,
-      autoScoreOnApply: false,
-    },
-  })
-
-  expect(response.status(), `Create job API returned ${response.status()}`).toBe(201)
-  return await response.json() as JobFixture
-}
-
-async function createCandidate(
-  page: Page,
-  candidate: Omit<CandidateFixture, 'id'>,
-): Promise<CandidateFixture> {
-  const response = await page.request.post('/api/candidates', { data: candidate })
-
-  expect(response.status(), `Create candidate API returned ${response.status()}`).toBe(201)
-  return await response.json() as CandidateFixture
-}
-
-async function createApplication(
-  page: Page,
-  candidateId: string,
-  jobId: string,
-): Promise<ApplicationFixture> {
-  const response = await page.request.post('/api/applications', {
-    data: { candidateId, jobId },
-  })
-
-  expect(response.status(), `Create application API returned ${response.status()}`).toBe(201)
-  return await response.json() as ApplicationFixture
 }
 
 async function createApplicationTextProperty(page: Page, name: string): Promise<PropertyFixture> {
@@ -144,13 +96,16 @@ test.describe('Application custom properties', () => {
   test('persists text and select values across API reads and dashboard reloads', async ({ authenticatedPage }, testInfo) => {
     const page = authenticatedPage
     const runId = `${Date.now()}-r${testInfo.retry}`
-    const candidate = await createCandidate(page, {
+    const candidate = await createCandidate(page.request, {
       firstName: 'Parker',
       lastName: `Property ${runId}`,
       email: `parker.property.${runId}@example.com`,
     })
-    const job = await createJob(page, `Property Persistence ${runId}`)
-    const application = await createApplication(page, candidate.id, job.id)
+    const job = await createJob(page.request, `Property Persistence ${runId}`)
+    const application = await createApplication(page.request, {
+      candidateId: candidate.id,
+      jobId: job.id,
+    })
     const textProperty = await createApplicationTextProperty(page, `Screening note ${runId}`)
     const selectProperty = await createApplicationSelectProperty(page, `Priority ${runId}`)
 

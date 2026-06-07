@@ -32,26 +32,81 @@ describe('dashboard modal primitives', () => {
   })
 
   it('prevents dashboard modals from reintroducing pasted shell classes', () => {
-    const migratedFiles = [
-      'app/components/CandidateDetailSidebar.vue',
+    const directModalFiles = [
       'app/components/ChatbotAgentManagerModal.vue',
       'app/components/FeedbackModal.vue',
       'app/components/InterviewEmailModal.vue',
-      'app/components/JobSubNavActions.vue',
       'app/components/PreviewUpsellModal.vue',
-      'app/pages/dashboard/interviews/[id].vue',
-      'app/pages/dashboard/interviews/index.vue',
       'app/pages/dashboard/jobs/[id]/application-form.vue',
       'app/pages/dashboard/source-tracking/[id].vue',
       'app/pages/dashboard/source-tracking/index.vue',
     ]
 
-    for (const file of migratedFiles) {
+    const confirmDialogFiles = [
+      'app/components/CandidateDetailSidebar.vue',
+      'app/components/JobSubNavActions.vue',
+      'app/pages/dashboard/candidates/[id].vue',
+      'app/pages/dashboard/emails/templates/index.vue',
+      'app/pages/dashboard/interviews/[id].vue',
+      'app/pages/dashboard/interviews/index.vue',
+    ]
+
+    for (const file of directModalFiles) {
       const source = readProjectFile(file)
 
       expect(source, file).toContain('<AppModalShell')
       expect(source, file).toContain('<AppModalPanel')
       expect(source, file).not.toContain('factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50')
+    }
+
+    for (const file of confirmDialogFiles) {
+      const source = readProjectFile(file)
+
+      expect(source, file).toContain('<ConfirmDialog')
+      expect(source, file).not.toContain('factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-50')
+    }
+  })
+
+  it('keeps ConfirmDialog built on the shared modal shell with danger actions', () => {
+    const confirm = readProjectFile('app/components/ConfirmDialog.vue')
+
+    for (const snippet of [
+      '<AppModalShell',
+      '<AppModalPanel',
+      'title: string',
+      'confirmLabel',
+      'cancelLabel',
+      "variant?: 'danger' | 'default'",
+      'ui-button-danger',
+      'ui-button-secondary',
+      "emit('close')",
+      "emit('confirm')",
+      'showDangerIcon',
+      'closeOnBackdrop',
+    ]) {
+      expect(confirm, snippet).toContain(snippet)
+    }
+  })
+
+  it('routes dashboard delete confirmations through ConfirmDialog', () => {
+    const migratedFiles = [
+      'app/pages/dashboard/source-tracking/index.vue',
+      'app/pages/dashboard/jobs/[id]/application-form.vue',
+      'app/pages/dashboard/candidates/[id].vue',
+      'app/pages/dashboard/emails/templates/index.vue',
+      'app/pages/dashboard/interviews/index.vue',
+      'app/pages/dashboard/interviews/[id].vue',
+      'app/components/CandidateDetailSidebar.vue',
+      'app/components/JobSubNavActions.vue',
+    ]
+
+    for (const file of migratedFiles) {
+      const source = readProjectFile(file)
+
+      expect(source, file).toContain('<ConfirmDialog')
+      expect(source, file).not.toContain('Delete Tracking Link?</h3>')
+      expect(source, file).not.toContain('Delete Document</h3>')
+      expect(source, file).not.toContain('Delete Template</h3>')
     }
   })
 

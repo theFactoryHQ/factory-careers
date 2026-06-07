@@ -1046,36 +1046,17 @@ const showTab = ref<'overview' | 'links' | 'table'>(initialTab)
       </AppModalPanel>
     </AppModalShell>
 
-    <!-- ═══════════════════════════════════════ -->
-    <!-- Modal: Delete confirmation               -->
-    <!-- ═══════════════════════════════════════ -->
-    <AppModalShell
+    <ConfirmDialog
       v-if="showDeleteConfirm"
+      title="Delete Tracking Link?"
+      message="Existing attribution data will be preserved, but new clicks won't be tracked."
+      confirm-label="Delete"
+      variant="danger"
+      centered
+      show-danger-icon
+      aria-label="Delete tracking link"
       @close="showDeleteConfirm = false"
-    >
-      <AppModalPanel class="max-w-sm p-6 text-center">
-          <div class="ui-icon-state ui-icon-state-danger mx-auto mb-4 size-12">
-            <Trash2 class="size-5" />
-          </div>
-          <h3 class="text-base font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Tracking Link?</h3>
-          <p class="text-sm text-surface-500 dark:text-surface-400 mb-6">
-            Existing attribution data will be preserved, but new clicks won't be tracked.
-          </p>
-          <div class="flex items-center justify-center gap-3">
-            <button
-              class="ui-button ui-button-secondary px-4 py-2.5 text-sm"
-              @click="showDeleteConfirm = false"
-            >
-              Cancel
-            </button>
-            <button
-              class="ui-button ui-button-danger px-5 py-2.5 text-sm font-semibold"
-              @click="handleDelete"
-            >
-              Delete
-            </button>
-          </div>
-      </AppModalPanel>
-    </AppModalShell>
+      @confirm="handleDelete"
+    />
   </div>
 </template>
