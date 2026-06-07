@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { Users, Plus, Phone, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, X, StickyNote, Maximize2, Minimize2, Check } from 'lucide-vue-next'
+import { Users, Plus, Phone, ArrowUp, ArrowDown, ArrowUpDown, StickyNote, Minimize2 } from 'lucide-vue-next'
 import { formatPhoneNumber } from '~/utils/phone-format'
+import type { SortDir } from '~/composables/useTableSort'
+import { getPropertyValue } from '~/utils/property-display'
 
 definePageMeta({
   layout: 'dashboard',
@@ -36,34 +38,23 @@ const candidateColumns = computed(() => [
   ...propertyDefs.value.map((d) => ({ key: `prop_${d.id}`, label: d.name })),
 ])
 
-const searchInput = ref('')
-const debouncedSearch = ref<string | undefined>(undefined)
-
-let debounceTimer: ReturnType<typeof setTimeout>
-watch(searchInput, (val) => {
-  clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => {
-    debouncedSearch.value = val.trim() || undefined
-  }, 300)
+const {
+  searchInput,
+  debouncedSearch,
+  drawerOpen,
+  isFullscreen,
+} = useDashboardListPage<string | undefined>({
+  debounceMs: 300,
+  normalizeSearch: (value) => value.trim() || undefined,
+  initialSearch: undefined,
 })
 
 // ── Filters ───────────────────────────────────────────────────────────────────
 
-const drawerOpen = ref(false)
-const isFullscreen = ref(false)
 const filterGender = ref<string | undefined>(undefined)
 const filterDobFrom = ref<string | undefined>(undefined)
 const filterDobTo = ref<string | undefined>(undefined)
 const propertyFilters = ref<import('~~/shared/properties').PropertyFilter[]>([])
-
-function handleFullscreenKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && isFullscreen.value) {
-    isFullscreen.value = false
-  }
-}
-
-onMounted(() => window.addEventListener('keydown', handleFullscreenKeydown))
-onUnmounted(() => window.removeEventListener('keydown', handleFullscreenKeydown))
 
 const activeFilterCount = computed(() =>
   [filterGender.value, filterDobFrom.value, filterDobTo.value].filter(Boolean).length
@@ -91,30 +82,18 @@ const { formatCandidateName, formatDateTime } = useOrgSettings()
 // ── Sorting ───────────────────────────────────────────────────────────────────
 
 type SortKey = 'name' | 'email' | 'phone' | 'applications' | 'created'
-type SortDir = 'asc' | 'desc'
 
-const sortKey = ref<SortKey>('created')
-const sortDir = ref<SortDir>('desc')
-
-function toggleSort(key: SortKey) {
-  if (sortKey.value === key) {
-    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortKey.value = key
-    sortDir.value = key === 'created' || key === 'applications' ? 'desc' : 'asc'
-  }
-}
-
-function getSortAria(key: SortKey) {
-  if (sortKey.value !== key) return 'none'
-  return sortDir.value === 'asc' ? 'ascending' : 'descending'
-}
-
-function getSortButtonLabel(key: SortKey, label: string) {
-  if (sortKey.value !== key) return `Sort by ${label}`
-  const nextDirection = sortDir.value === 'asc' ? 'descending' : 'ascending'
-  return `Sort by ${label} ${nextDirection}`
-}
+const {
+  sortKey,
+  sortDir,
+  toggleSort,
+  getSortAria,
+  getSortButtonLabel,
+} = useTableSort<SortKey>({
+  initialKey: 'created',
+  initialDir: 'desc',
+  defaultDirForKey: (key) => (key === 'created' || key === 'applications' ? 'desc' : 'asc'),
+})
 
 const sortedCandidates = computed(() => {
   const list = [...candidates.value]
@@ -167,12 +146,6 @@ async function saveNotes(candidateId: string) {
 
 function cancelEditNotes() {
   editingNotesId.value = null
-}
-
-// ── Property value lookup helper ──────────────────────────────────────────────
-// Avoids `as any` in the template and is null-safe.
-function getPropertyValue(entity: { properties?: import('~~/shared/properties').PropertyEntry[] | null }, definitionId: string): unknown {
-  return entity.properties?.find((p) => p.definition.id === definitionId)?.value ?? null
 }
 
 // ── Saved Views ──────────────────────────────────────────────────────────────────
@@ -251,60 +224,27 @@ const selectedCandidateId = ref<string | null>(null)
       </NuxtLink>
     </div>
 
-    <!-- Search + Views + Filters -->
-    <div class="flex items-center gap-2 mb-4">
-      <GooeySearchInput
-        v-model="searchInput"
-        aria-label="Search candidates"
-        class="min-w-0 flex-1 sm:max-w-sm"
-        placeholder="Search by name or email…"
-        reserve-expanded-space
-      />
-      <SavedViewsMenu
-        :views="views"
-        :active-view-id="activeViewId"
-        :is-dirty="isDirty"
-        @select="onSelectView"
-        @save="onSaveView"
-        @update="onUpdateView"
-        @delete="deleteView"
-        @set-default="setDefault"
-      />
-      <ColumnsMenu
-        v-model="visibleColumns"
-        :columns="candidateColumns"
-      />
-      <button
-        type="button"
-        class="factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
-        :class="{ 'is-active': activeFilterCount > 0 }"
-        @click="drawerOpen = true"
-      >
-        <SlidersHorizontal class="size-4" />
-        <span>Filters</span>
-        <span
-          v-if="activeFilterCount > 0"
-          class="inline-flex items-center justify-center min-w-[1rem] h-4 px-1 rounded-full bg-brand-500 text-white text-[10px] font-semibold"
-        >{{ activeFilterCount }}</span>
-      </button>
-      <button
-        v-if="activeFilterCount > 0"
-        class="inline-flex items-center gap-1 text-xs text-white/60 hover:text-danger-600 transition-colors"
-        @click="clearFilters"
-      >
-        <X class="size-3" />
-        Clear
-      </button>
-      <button
-        type="button"
-        class="factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-medium transition-colors"
-        :title="isFullscreen ? 'Exit fullscreen' : 'Fullscreen table'"
-        @click="isFullscreen = !isFullscreen"
-      >
-        <Maximize2 v-if="!isFullscreen" class="size-4" />
-        <Minimize2 v-else class="size-4" />
-      </button>
-    </div>
+    <DashboardListToolbar
+      v-model:search-input="searchInput"
+      v-model:visible-columns="visibleColumns"
+      search-aria-label="Search candidates"
+      search-placeholder="Search by name or email…"
+      :views="views"
+      :active-view-id="activeViewId"
+      :is-dirty="isDirty"
+      :columns="candidateColumns"
+      :filter-count="activeFilterCount"
+      :show-clear="activeFilterCount > 0"
+      :is-fullscreen="isFullscreen"
+      @open-filters="drawerOpen = true"
+      @clear-filters="clearFilters"
+      @toggle-fullscreen="isFullscreen = !isFullscreen"
+      @select-view="onSelectView"
+      @save-view="onSaveView"
+      @update-view="onUpdateView"
+      @delete-view="deleteView"
+      @set-default-view="setDefault"
+    />
 
     <!-- Filter drawer -->
     <FilterDrawer

@@ -86,8 +86,6 @@ describe('search bar call sites', () => {
     'app/pages/jobs/index.vue',
     'app/pages/dashboard/jobs/index.vue',
     'app/pages/dashboard/jobs/[id]/index.vue',
-    'app/pages/dashboard/candidates/index.vue',
-    'app/pages/dashboard/applications/index.vue',
     'app/pages/dashboard/interviews/index.vue',
     'app/pages/dashboard/timeline.vue',
     'app/pages/dashboard/settings/members.vue',
@@ -108,8 +106,6 @@ describe('search bar call sites', () => {
   it('keeps dashboard toolbar search inputs bounded so sibling controls stay visible', () => {
     const dashboardToolbarSearches = [
       'app/pages/dashboard/jobs/index.vue',
-      'app/pages/dashboard/candidates/index.vue',
-      'app/pages/dashboard/applications/index.vue',
       'app/pages/dashboard/interviews/index.vue',
       'app/pages/dashboard/timeline.vue',
     ]
@@ -117,6 +113,17 @@ describe('search bar call sites', () => {
     for (const relativePath of dashboardToolbarSearches) {
       const source = readFileSync(join(process.cwd(), relativePath), 'utf8')
       expect(source, relativePath).toMatch(/<GooeySearchInput[\s\S]*class="[^"]*min-w-0[^"]*flex-1[^"]*sm:max-w-sm/)
+    }
+
+    const sharedToolbar = readFileSync(join(process.cwd(), 'app/components/DashboardListToolbar.vue'), 'utf8')
+    expect(sharedToolbar).toMatch(/<GooeySearchInput[\s\S]*class="[^"]*min-w-0[^"]*flex-1[^"]*sm:max-w-sm/)
+
+    for (const relativePath of [
+      'app/pages/dashboard/candidates/index.vue',
+      'app/pages/dashboard/applications/index.vue',
+    ]) {
+      const source = readFileSync(join(process.cwd(), relativePath), 'utf8')
+      expect(source, relativePath).toContain('<DashboardListToolbar')
     }
   })
 
