@@ -1,7 +1,8 @@
 import type { H3Event } from 'h3'
 import type { statements } from '~~/shared/permissions'
-import { resolveActiveOrganizationId } from './activeOrganization'
-import { assertFactoryStaffAccess } from './factoryAccess'
+import { authenticateWithActiveOrg } from './authenticateSession'
+
+export type { AuthSessionWithActiveOrg } from './authenticateSession'
 
 /**
  * Permission descriptor — maps a resource to the actions being requested.
@@ -13,13 +14,6 @@ import { assertFactoryStaffAccess } from './factoryAccess'
  */
 type PermissionRequest = {
   [K in keyof typeof statements]?: ReadonlyArray<(typeof statements)[K][number]>
-}
-
-type AuthSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>
-type AuthSessionWithActiveOrg = Omit<AuthSession, 'session'> & {
-  session: AuthSession['session'] & {
-    activeOrganizationId: string
-  }
 }
 
 /**
@@ -46,28 +40,8 @@ type AuthSessionWithActiveOrg = Omit<AuthSession, 'session'> & {
 export async function requirePermission(
   event: H3Event,
   permissions: PermissionRequest,
-): Promise<AuthSessionWithActiveOrg> {
-  // ── Step 1: Authenticate ──
-  const session = await auth.api.getSession({
-    headers: event.headers,
-  })
-
-  if (!session) {
-    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
-  }
-
-  // ── Step 2: Active organization ──
-  const activeOrganizationId = await resolveActiveOrganizationId(session)
-
-  if (!activeOrganizationId) {
-    throw createError({ statusCode: 403, statusMessage: 'No active organization' })
-  }
-
-  await assertFactoryStaffAccess({
-    userId: session.user.id,
-    email: session.user.email,
-    activeOrganizationId,
-  })
+) {
+  const session = await authenticateWithActiveOrg(event)
 
   const requestedActions = Object.values(permissions).reduce(
     (count, actions) => count + (actions?.length ?? 0),
@@ -81,7 +55,7 @@ export async function requirePermission(
     })
   }
 
-  // ── Step 3: Permission check (Better Auth AC) ──
+  // ── Permission check (Better Auth AC) ──
   // Type assertion needed because the organization plugin dynamically
   // extends auth.api with hasPermission, which TypeScript can't infer
   // through the lazy proxy pattern.
@@ -99,11 +73,5 @@ export async function requirePermission(
     })
   }
 
-  return {
-    ...session,
-    session: {
-      ...session.session,
-      activeOrganizationId,
-    },
-  } as AuthSessionWithActiveOrg
+  return session
 }

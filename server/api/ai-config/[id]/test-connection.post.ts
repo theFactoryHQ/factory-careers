@@ -1,4 +1,5 @@
 import { and, eq } from 'drizzle-orm'
+import { resourceIdParamSchema } from '../../../utils/schemas/common'
 import { z } from 'zod'
 import { aiConfig } from '../../../database/schema'
 import { generateStructuredOutput, type SupportedProvider } from '../../../utils/ai/provider'
@@ -10,7 +11,6 @@ const limiter = createRateLimiter({
   message: 'Too many test connection requests. Please wait before retrying.',
 })
 
-const paramsSchema = z.object({ id: z.string().min(1) })
 const testSchema = z.object({ ok: z.boolean() })
 
 /**
@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   await limiter(event)
   const session = await requirePermission(event, { aiConfig: ['read'] })
   const orgId = session.session.activeOrganizationId
-  const { id } = await getValidatedRouterParams(event, paramsSchema.parse)
+  const { id } = await getValidatedRouterParams(event, resourceIdParamSchema.parse)
 
   const config = await db.query.aiConfig.findFirst({
     where: and(eq(aiConfig.id, id), eq(aiConfig.organizationId, orgId)),

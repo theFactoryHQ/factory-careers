@@ -1,5 +1,5 @@
 import { eq, and } from 'drizzle-orm'
-import { z } from 'zod'
+import { uuidParamSchema } from '../../../utils/schemas/common'
 import { joinRequest, member, user } from '../../../database/schema'
 
 /**
@@ -15,7 +15,7 @@ import { joinRequest, member, user } from '../../../database/schema'
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { invitation: ['create'] })
   const orgId = session.session.activeOrganizationId
-  const { id: requestId } = await getValidatedRouterParams(event, z.object({ id: z.string().uuid() }).parse)
+  const { id: requestId } = await getValidatedRouterParams(event, uuidParamSchema.parse)
 
   // ── Find the pending request ──
   const [request] = await db

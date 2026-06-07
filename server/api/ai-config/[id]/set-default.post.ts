@@ -1,9 +1,8 @@
 import { and, eq } from 'drizzle-orm'
-import { z } from 'zod'
+import { resourceIdParamSchema } from '../../../utils/schemas/common'
 import { aiConfig } from '../../../database/schema'
 import { setAiConfigDefaultSchema } from '../../../utils/schemas/scoring'
 
-const paramsSchema = z.object({ id: z.string().min(1) })
 
 /**
  * POST /api/ai-config/:id/set-default
@@ -16,7 +15,7 @@ const paramsSchema = z.object({ id: z.string().min(1) })
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { aiConfig: ['update'] })
   const orgId = session.session.activeOrganizationId
-  const { id } = await getValidatedRouterParams(event, paramsSchema.parse)
+  const { id } = await getValidatedRouterParams(event, resourceIdParamSchema.parse)
   const body = await readValidatedBody(event, setAiConfigDefaultSchema.parse)
 
   const existing = await db.query.aiConfig.findFirst({

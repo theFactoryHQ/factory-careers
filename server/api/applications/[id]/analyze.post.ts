@@ -1,4 +1,5 @@
 import { eq, and } from 'drizzle-orm'
+import { resourceIdParamSchema } from '../../../utils/schemas/common'
 import {
   application, scoringCriterion, criterionScore,
   analysisRun, analysisRunCriterionScore, document, candidate, orgSettings,
@@ -11,7 +12,6 @@ import { extractResumeText } from '../../../utils/resume-parser'
 import { createRateLimiter } from '../../../utils/rateLimit'
 import { z } from 'zod'
 
-const paramsSchema = z.object({ id: z.string().min(1) })
 const bodySchema = z.object({
   /** Optional override; falls back to the org's analysis default. */
   aiConfigId: z.string().min(1).nullable().optional(),
@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
   await limiter(event)
   const session = await requirePermission(event, { scoring: ['create'] })
   const orgId = session.session.activeOrganizationId
-  const { id: applicationId } = await getValidatedRouterParams(event, paramsSchema.parse)
+  const { id: applicationId } = await getValidatedRouterParams(event, resourceIdParamSchema.parse)
   // Body is optional — GET-style "just run with defaults" stays valid.
   const body = await readBody(event).catch(() => null)
   const parsedBody = body ? bodySchema.parse(body) : null

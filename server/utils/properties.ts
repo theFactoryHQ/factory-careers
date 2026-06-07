@@ -1,6 +1,10 @@
 import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm'
-import { propertyDefinition, propertyValue } from '../database/schema'
-import type { PropertyEntityType, PropertyType } from './schemas/property'
+import { application, candidate, propertyDefinition, propertyValue } from '../database/schema'
+import {
+  validateValueForType,
+  type PropertyEntityType,
+  type PropertyType,
+} from './schemas/property'
 
 // ─────────────────────────────────────────────
 // Property loading & attachment helpers
@@ -307,4 +311,86 @@ export async function entityIdsMatchingFilters(opts: {
   }
 
   return working
+}
+
+export async function setEntityPropertyValue(opts: {
+  organizationId: string
+  entityType: PropertyEntityType
+  entityId: string
+  propId: string
+  value: unknown
+}) {
+  const { organizationId, entityType, entityId, propId, value } = opts
+
+  let applicationJobId: string | undefined
+
+  if (entityType === 'candidate') {
+    const cand = await db.query.candidate.findFirst({
+      where: and(eq(candidate.id, entityId), eq(candidate.organizationId, organizationId)),
+      columns: { id: true },
+    })
+    if (!cand) throw createError({ statusCode: 404, statusMessage: 'Candidate not found' })
+  } else {
+    const app = await db.query.application.findFirst({
+      where: and(eq(application.id, entityId), eq(application.organizationId, organizationId)),
+      columns: { id: true, jobId: true },
+    })
+    if (!app) throw createError({ statusCode: 404, statusMessage: 'Application not found' })
+    applicationJobId = app.jobId
+  }
+
+  const def = await db.query.propertyDefinition.findFirst({
+    where: and(
+      eq(propertyDefinition.id, propId),
+      eq(propertyDefinition.organizationId, organizationId),
+    ),
+  })
+  if (!def) throw createError({ statusCode: 404, statusMessage: 'Property not found' })
+
+  if (entityType === 'application' && def.jobId && def.jobId !== applicationJobId) {
+    throw createError({
+      statusCode: 422,
+      statusMessage: 'Property is scoped to a different job',
+    })
+  }
+
+  if (def.entityType !== entityType) {
+    throw createError({
+      statusCode: 422,
+      statusMessage: `Property is not a ${entityType} property`,
+    })
+  }
+
+  const normalized = validateValueForType(def.type as PropertyType, value, def.config)
+
+  if (normalized === null) {
+    await db
+      .delete(propertyValue)
+      .where(
+        and(
+          eq(propertyValue.organizationId, organizationId),
+          eq(propertyValue.propertyDefinitionId, propId),
+          eq(propertyValue.entityId, entityId),
+          eq(propertyValue.entityType, entityType),
+        ),
+      )
+    return { value: null }
+  }
+
+  const [row] = await db
+    .insert(propertyValue)
+    .values({
+      organizationId,
+      propertyDefinitionId: propId,
+      entityType,
+      entityId,
+      value: normalized as never,
+    })
+    .onConflictDoUpdate({
+      target: [propertyValue.propertyDefinitionId, propertyValue.entityId],
+      set: { value: normalized as never, updatedAt: new Date() },
+    })
+    .returning({ value: propertyValue.value })
+
+  return { value: row?.value ?? normalized }
 }

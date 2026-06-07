@@ -1,26 +1,27 @@
 import { z } from 'zod'
+import {
+  PROPERTY_ENTITY_TYPES,
+  PROPERTY_OPTION_COLORS,
+  PROPERTY_TYPES,
+  type PropertyEntityType,
+  type PropertyType,
+} from '~~/shared/properties'
 
 // ─────────────────────────────────────────────
 // Custom Property — Zod schemas (shared)
 // ─────────────────────────────────────────────
 
-export const propertyEntityTypes = ['candidate', 'application'] as const
-export type PropertyEntityType = (typeof propertyEntityTypes)[number]
+export const propertyEntityTypes = PROPERTY_ENTITY_TYPES
+export type { PropertyEntityType }
 
-export const propertyTypes = [
-  'text', 'long_text', 'number', 'select', 'multi_select',
-  'date', 'checkbox', 'url', 'email', 'person', 'file',
-] as const
-export type PropertyType = (typeof propertyTypes)[number]
+export const propertyTypes = PROPERTY_TYPES
+export type { PropertyType }
 
 // ── Per-type config schemas (`propertyDefinition.config` jsonb) ──
 const selectOptionSchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1).max(80),
-  color: z.enum([
-    'gray', 'red', 'orange', 'amber', 'yellow', 'green', 'teal',
-    'blue', 'indigo', 'violet', 'pink',
-  ]).default('gray'),
+  color: z.enum(PROPERTY_OPTION_COLORS).default('gray'),
 })
 export type PropertySelectOption = z.infer<typeof selectOptionSchema>
 

@@ -1,8 +1,7 @@
 import { and, eq, ne } from 'drizzle-orm'
-import { z } from 'zod'
+import { resourceIdParamSchema } from '../../utils/schemas/common'
 import { aiConfig } from '../../database/schema'
 
-const paramsSchema = z.object({ id: z.string().min(1) })
 
 /**
  * DELETE /api/ai-config/:id
@@ -17,7 +16,7 @@ const paramsSchema = z.object({ id: z.string().min(1) })
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { aiConfig: ['delete'] })
   const orgId = session.session.activeOrganizationId
-  const { id } = await getValidatedRouterParams(event, paramsSchema.parse)
+  const { id } = await getValidatedRouterParams(event, resourceIdParamSchema.parse)
 
   const existing = await db.query.aiConfig.findFirst({
     where: and(eq(aiConfig.id, id), eq(aiConfig.organizationId, orgId)),
