@@ -86,6 +86,7 @@ const emit = defineEmits<{
       type="button"
       class="factory-toolbar-button inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-medium transition-colors"
       :title="isFullscreen ? 'Exit fullscreen' : 'Fullscreen table'"
+      :aria-label="isFullscreen ? 'Exit fullscreen' : 'Fullscreen table'"
       @click="emit('toggle-fullscreen')"
     >
       <Maximize2 v-if="!isFullscreen" class="size-4" />
