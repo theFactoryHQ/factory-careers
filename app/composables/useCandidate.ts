@@ -5,18 +5,8 @@ import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
  * Composable for a single candidate detail with update and delete mutations.
  * Wraps `useFetch('/api/candidates/:id')` with a reactive key.
  */
-async function invalidateCandidatesListCache() {
-  const nuxtApp = useNuxtApp()
-  const keys = Object.keys(nuxtApp.payload.data).filter(key => key.startsWith('candidates-'))
-
+function invalidateCandidatesListCache() {
   clearNuxtData(key => key.startsWith('candidates-'))
-
-  await Promise.all(keys.map(async (key) => {
-    const entry = nuxtApp._asyncData[key]
-    if (entry?.refresh) {
-      await entry.refresh()
-    }
-  }))
 }
 
 export function useCandidate(id: MaybeRefOrGetter<string>) {

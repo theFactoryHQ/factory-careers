@@ -83,8 +83,18 @@ describe('dashboard modal primitives', () => {
       "emit('confirm')",
       'showDangerIcon',
       'closeOnBackdrop',
+      'closeOnBackdrop: true',
     ]) {
       expect(confirm, snippet).toContain(snippet)
+    }
+  })
+
+  it('keeps interview delete confirms from closing on backdrop click', () => {
+    for (const file of [
+      'app/pages/dashboard/interviews/index.vue',
+      'app/pages/dashboard/interviews/[id].vue',
+    ]) {
+      expect(readProjectFile(file), file).toContain(':close-on-backdrop="false"')
     }
   })
 

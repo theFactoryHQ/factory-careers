@@ -21,7 +21,7 @@ const props = withDefaults(defineProps<{
   variant: 'default',
   loading: false,
   confirmDisabled: false,
-  closeOnBackdrop: false,
+  closeOnBackdrop: true,
   centered: false,
   showDangerIcon: false,
   panelClass: 'max-w-sm p-6',

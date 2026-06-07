@@ -1030,6 +1030,7 @@ const localePath = useLocalePath()
       confirm-label="Delete"
       loading-label="Deleting…"
       variant="danger"
+      :close-on-backdrop="false"
       :loading="isDeleting"
       aria-label="Delete interview"
       @close="showDeleteConfirm = false"
