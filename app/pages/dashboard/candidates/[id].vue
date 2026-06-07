@@ -364,34 +364,18 @@ async function handleDeleteDoc(docId: string) {
 
           </CandidateDocumentsPanel>
 
-          <!-- Document delete confirmation dialog -->
-          <Teleport to="body">
-            <div v-if="showDocDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center">
-              <div class="absolute inset-0 bg-black/75 backdrop-blur-[1px]" @click="showDocDeleteConfirm = null" />
-              <div class="factory-dashboard-portal relative mx-4 w-full max-w-sm border border-white/12 bg-black p-6 text-white shadow-2xl shadow-black/70">
-                <h3 class="mb-2 text-lg font-semibold text-white">Delete Document</h3>
-                <p class="mb-4 text-sm text-white/60">
-                  Are you sure you want to delete this document? This action cannot be undone.
-                </p>
-                <div class="flex justify-end gap-2">
-                  <button
-                    :disabled="isDeletingDoc"
-                    class="factory-toolbar-button inline-flex h-10 min-h-10 cursor-pointer items-center border px-3 py-0 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                    @click="showDocDeleteConfirm = null"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    :disabled="isDeletingDoc"
-                    class="factory-button-cta inline-flex h-10 min-h-10 cursor-pointer items-center border border-danger-500/60 bg-danger-600 px-3 py-0 text-xs font-medium text-white transition-colors hover:bg-danger-500 disabled:cursor-not-allowed disabled:opacity-50"
-                    @click="handleDeleteDoc(showDocDeleteConfirm!)"
-                  >
-                    {{ isDeletingDoc ? 'Deleting…' : 'Delete' }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </Teleport>
+          <ConfirmDialog
+            v-if="showDocDeleteConfirm"
+            title="Delete Document"
+            message="Are you sure you want to delete this document? This action cannot be undone."
+            confirm-label="Delete"
+            loading-label="Deleting…"
+            variant="danger"
+            :loading="isDeletingDoc"
+            aria-label="Delete document"
+            @close="showDocDeleteConfirm = null"
+            @confirm="handleDeleteDoc(showDocDeleteConfirm!)"
+          />
         </div>
       </div>
 
@@ -532,35 +516,22 @@ async function handleDeleteDoc(docId: string) {
         </form>
       </div>
 
-      <!-- Delete confirmation dialog -->
-      <Teleport to="body">
-        <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center">
-          <div class="absolute inset-0 bg-black/75 backdrop-blur-[1px]" @click="showDeleteConfirm = false" />
-          <div class="factory-dashboard-portal relative mx-4 w-full max-w-sm border border-white/12 bg-black p-6 text-white shadow-2xl shadow-black/70">
-            <h3 class="mb-2 text-lg font-semibold text-white">Delete Candidate</h3>
-            <p class="mb-4 text-sm text-white/60">
-              Are you sure you want to delete <strong>{{ formatCandidateName(candidate) }}</strong>?
-              This will also delete all their applications and documents. This action cannot be undone.
-            </p>
-            <div class="flex justify-end gap-2">
-              <button
-                :disabled="isDeleting"
-                class="factory-toolbar-button inline-flex h-10 min-h-10 cursor-pointer items-center border px-3 py-0 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                @click="showDeleteConfirm = false"
-              >
-                Cancel
-              </button>
-              <button
-                :disabled="isDeleting"
-                class="factory-button-cta inline-flex h-10 min-h-10 cursor-pointer items-center border border-danger-500/60 bg-danger-600 px-3 py-0 text-xs font-medium text-white transition-colors hover:bg-danger-500 disabled:cursor-not-allowed disabled:opacity-50"
-                @click="handleDelete"
-              >
-                {{ isDeleting ? 'Deleting…' : 'Delete' }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Teleport>
+      <ConfirmDialog
+        v-if="showDeleteConfirm"
+        title="Delete Candidate"
+        confirm-label="Delete"
+        loading-label="Deleting…"
+        variant="danger"
+        :loading="isDeleting"
+        aria-label="Delete candidate"
+        @close="showDeleteConfirm = false"
+        @confirm="handleDelete"
+      >
+        <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
+          Are you sure you want to delete <strong>{{ formatCandidateName(candidate) }}</strong>?
+          This will also delete all their applications and documents. This action cannot be undone.
+        </p>
+      </ConfirmDialog>
     </template>
   </div>
 </template>

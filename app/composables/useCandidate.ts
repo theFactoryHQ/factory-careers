@@ -5,6 +5,10 @@ import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
  * Composable for a single candidate detail with update and delete mutations.
  * Wraps `useFetch('/api/candidates/:id')` with a reactive key.
  */
+function invalidateCandidatesListCache() {
+  clearNuxtData(key => key.startsWith('candidates-'))
+}
+
 export function useCandidate(id: MaybeRefOrGetter<string>) {
   const localePath = useLocalePath()
   const { handlePreviewReadOnlyError } = usePreviewReadOnly()
@@ -34,7 +38,7 @@ export function useCandidate(id: MaybeRefOrGetter<string>) {
         body: payload,
       })
       await refresh()
-      await refreshNuxtData('candidates')
+      await invalidateCandidatesListCache()
       return updated
     } catch (error) {
       handlePreviewReadOnlyError(error)
@@ -50,7 +54,9 @@ export function useCandidate(id: MaybeRefOrGetter<string>) {
       handlePreviewReadOnlyError(error)
       throw error
     }
-    await refreshNuxtData('candidates')
+    await invalidateCandidatesListCache()
+    clearNuxtData(`candidate-${candidateId.value}`)
+    clearNuxtData('applications')
     await navigateTo(localePath('/dashboard/candidates'))
   }
 

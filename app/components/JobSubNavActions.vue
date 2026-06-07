@@ -341,34 +341,21 @@ function openPropertyEditor(scope: 'org' | 'job') {
     @close="showPropertyEditor = false"
   />
 
-  <!-- Delete Job Confirm -->
-  <AppModalShell
+  <ConfirmDialog
     v-if="showDeleteConfirm"
+    title="Delete Job"
+    confirm-label="Delete"
+    loading-label="Deleting…"
+    variant="danger"
+    :loading="isDeleting"
+    aria-label="Delete job"
     @close="showDeleteConfirm = false"
+    @confirm="handleDelete"
   >
-    <AppModalPanel class="max-w-sm p-6">
-        <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Job</h3>
-        <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
-          Are you sure you want to delete <strong>{{ job?.title }}</strong>? This will also delete all associated applications. This action cannot be undone.
-        </p>
-        <div class="flex justify-end gap-2">
-          <button
-            :disabled="isDeleting"
-            class="ui-button ui-button-secondary px-3 py-1.5 text-sm"
-            @click="showDeleteConfirm = false"
-          >
-            Cancel
-          </button>
-          <button
-            :disabled="isDeleting"
-            class="ui-button ui-button-danger px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="handleDelete"
-          >
-            {{ isDeleting ? 'Deleting…' : 'Delete' }}
-          </button>
-        </div>
-    </AppModalPanel>
-  </AppModalShell>
+    <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
+      Are you sure you want to delete <strong>{{ job?.title }}</strong>? This will also delete all associated applications. This action cannot be undone.
+    </p>
+  </ConfirmDialog>
 
   <!-- Apply Candidate Modal -->
   <ApplyCandidateModal

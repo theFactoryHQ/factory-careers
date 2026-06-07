@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { test, expect, selectFactorySelectOption } from '../fixtures'
+import { createJob, publishJob } from '../helpers/recruiting-fixtures'
 
 type JobFixture = {
   id: string
@@ -14,24 +15,6 @@ type QuestionFixture = {
   required: boolean
   options: string[] | null
   displayOrder: number
-}
-
-async function createJob(page: Page, title: string): Promise<JobFixture> {
-  const response = await page.request.post('/api/jobs', {
-    data: {
-      title,
-      description: `E2E fixture for ${title}`,
-      location: 'Remote',
-      type: 'full_time',
-      requireResume: false,
-      requireCoverLetter: false,
-      applicationComplianceEnabled: false,
-      autoScoreOnApply: false,
-    },
-  })
-
-  expect(response.status(), `Create job API returned ${response.status()}`).toBe(201)
-  return await response.json() as JobFixture
 }
 
 async function createQuestion(
@@ -55,15 +38,6 @@ async function listQuestions(page: Page, jobId: string): Promise<QuestionFixture
   const response = await page.request.get(`/api/jobs/${jobId}/questions`)
   expect(response.status(), `List questions API returned ${response.status()}`).toBe(200)
   return await response.json() as QuestionFixture[]
-}
-
-async function publishJob(page: Page, jobId: string): Promise<JobFixture> {
-  const response = await page.request.patch(`/api/jobs/${jobId}`, {
-    data: { status: 'open' },
-  })
-
-  expect(response.status(), `Publish job API returned ${response.status()}`).toBe(200)
-  return await response.json() as JobFixture
 }
 
 function questionRow(page: Page, label: string) {
@@ -142,7 +116,7 @@ test.describe('Application form builder lifecycle', () => {
   test('persists edit, reorder, and delete changes before publishing to the public form', async ({ authenticatedPage }, testInfo) => {
     const page = authenticatedPage
     const runId = `${Date.now()}-r${testInfo.retry}`
-    const job = await createJob(page, `Application Form Builder ${runId}`)
+    const job = await createJob(page.request, `Application Form Builder ${runId}`)
 
     await createQuestion(page, job.id, {
       label: `Portfolio link ${runId}`,
@@ -196,7 +170,7 @@ test.describe('Application form builder lifecycle', () => {
     await expect(questionRow(page, `Portfolio link ${runId}`)).toBeVisible()
     await expect(questionRow(page, `Deprecated question ${runId}`)).toHaveCount(0)
 
-    const published = await publishJob(page, job.id)
+    const published = await publishJob(page.request, job.id)
     await page.goto(`/jobs/${published.slug}/apply`)
     await page.waitForLoadState('networkidle')
     await expect(page.getByRole('heading', { name: job.title })).toBeVisible()

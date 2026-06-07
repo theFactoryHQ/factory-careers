@@ -817,34 +817,21 @@ const statusCounts = computed(() => {
       </div>
     </Teleport>
 
-    <!-- Delete Confirm Modal -->
-    <AppModalShell
+    <ConfirmDialog
       v-if="showDeleteConfirm"
-      layout="flex"
+      title="Delete Interview"
+      confirm-label="Delete"
+      loading-label="Deleting…"
+      variant="danger"
       :close-on-backdrop="false"
+      :loading="isDeleting"
+      aria-label="Delete interview"
+      @close="showDeleteConfirm = false"
+      @confirm="handleDelete"
     >
-      <AppModalPanel class="max-w-sm p-6">
-          <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">Delete Interview</h3>
-          <p class="text-sm text-surface-600 dark:text-surface-400 mb-5">
-            Are you sure you want to delete <strong>{{ deletingInterview?.title }}</strong>? This action cannot be undone.
-          </p>
-          <div class="flex justify-end gap-2">
-            <button
-              :disabled="isDeleting"
-              class="ui-button ui-button-secondary"
-              @click="showDeleteConfirm = false"
-            >
-              Cancel
-            </button>
-            <button
-              :disabled="isDeleting"
-              class="ui-button ui-button-danger"
-              @click="handleDelete"
-            >
-              {{ isDeleting ? 'Deleting…' : 'Delete' }}
-            </button>
-          </div>
-      </AppModalPanel>
-    </AppModalShell>
+      <p class="text-sm text-surface-600 dark:text-surface-400 mb-5">
+        Are you sure you want to delete <strong>{{ deletingInterview?.title }}</strong>? This action cannot be undone.
+      </p>
+    </ConfirmDialog>
   </div>
 </template>

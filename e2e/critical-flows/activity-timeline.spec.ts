@@ -1,23 +1,15 @@
 import type { APIRequestContext, APIResponse, Browser, Page } from '@playwright/test'
 import { assertMutatingE2ESafety } from '../safety'
 import { expect, test } from '../fixtures'
-
-type JobRecord = {
-  id: string
-  title: string
-}
-
-type CandidateRecord = {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-}
-
-type ApplicationRecord = {
-  id: string
-  status: string
-}
+import {
+  createApplication,
+  createCandidate,
+  createJob,
+  updateApplicationStatus,
+  type ApplicationRecord,
+  type CandidateRecord,
+  type JobRecord,
+} from '../helpers/recruiting-fixtures'
 
 type InterviewRecord = {
   id: string
@@ -45,57 +37,12 @@ async function expectStatus(response: APIResponse, expected: number, label: stri
   expect(response.status(), `${label} returned ${response.status()}: ${await response.text()}`).toBe(expected)
 }
 
-async function createJob(request: APIRequestContext, title: string): Promise<JobRecord> {
-  const response = await request.post('/api/jobs', {
-    data: {
-      title,
-      description: 'Seeded by activity timeline E2E.',
-      location: 'Remote',
-      type: 'full_time',
-      requireResume: false,
-      requireCoverLetter: false,
-      applicationComplianceEnabled: false,
-      autoScoreOnApply: false,
-    },
+async function createTimelineCandidate(request: Parameters<typeof createCandidate>[0], unique: string): Promise<CandidateRecord> {
+  return createCandidate(request, {
+    firstName: 'Timeline',
+    lastName: `Audit ${unique}`,
+    email: `timeline.audit.${unique}@example.com`,
   })
-  await expectStatus(response, 201, 'Create job API')
-  return await response.json() as JobRecord
-}
-
-async function createCandidate(request: APIRequestContext, unique: string): Promise<CandidateRecord> {
-  const response = await request.post('/api/candidates', {
-    data: {
-      firstName: 'Timeline',
-      lastName: `Audit ${unique}`,
-      email: `timeline.audit.${unique}@example.com`,
-    },
-  })
-  await expectStatus(response, 201, 'Create candidate API')
-  return await response.json() as CandidateRecord
-}
-
-async function createApplication(
-  request: APIRequestContext,
-  candidateId: string,
-  jobId: string,
-): Promise<ApplicationRecord> {
-  const response = await request.post('/api/applications', {
-    data: {
-      candidateId,
-      jobId,
-      notes: 'Initial activity timeline E2E application note.',
-    },
-  })
-  await expectStatus(response, 201, 'Create application API')
-  return await response.json() as ApplicationRecord
-}
-
-async function moveApplicationToScreening(request: APIRequestContext, applicationId: string): Promise<ApplicationRecord> {
-  const response = await request.patch(`/api/applications/${applicationId}`, {
-    data: { status: 'screening' },
-  })
-  await expectStatus(response, 200, 'Move application API')
-  return await response.json() as ApplicationRecord
 }
 
 async function createApplicationComment(request: APIRequestContext, applicationId: string, unique: string) {
@@ -228,10 +175,14 @@ test.describe('Activity timeline and audit log', () => {
 
     const unique = `${Date.now()}-r${testInfo.retry}`
     const job = await createJob(page.request, `Activity Timeline Job ${unique}`)
-    const candidate = await createCandidate(page.request, unique)
+    const candidate = await createTimelineCandidate(page.request, unique)
     const candidateName = `${candidate.firstName} ${candidate.lastName}`
-    const application = await createApplication(page.request, candidate.id, job.id)
-    await moveApplicationToScreening(page.request, application.id)
+    const application = await createApplication(page.request, {
+      candidateId: candidate.id,
+      jobId: job.id,
+      notes: 'Initial activity timeline E2E application note.',
+    })
+    await updateApplicationStatus(page.request, application.id, 'screening')
     await createApplicationComment(page.request, application.id, unique)
     const interview = await createInterview(page.request, application.id, unique)
 
