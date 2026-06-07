@@ -1,5 +1,5 @@
 import { eq, and } from 'drizzle-orm'
-import { z } from 'zod'
+import { uuidParamSchema } from '../../../../utils/schemas/common'
 import { candidate, document } from '../../../../database/schema'
 import {
   MAX_FILE_SIZE,
@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
   // 1. Validate candidate exists and belongs to this org
   // ─────────────────────────────────────────────
 
-  const { id: candidateId } = await getValidatedRouterParams(event, z.object({ id: z.string().uuid() }).parse)
+  const { id: candidateId } = await getValidatedRouterParams(event, uuidParamSchema.parse)
 
   const existingCandidate = await db.query.candidate.findFirst({
     where: and(

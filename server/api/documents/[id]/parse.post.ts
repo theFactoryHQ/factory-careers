@@ -1,9 +1,8 @@
 import { eq, and } from 'drizzle-orm'
+import { resourceIdParamSchema } from '../../../utils/schemas/common'
 import { document } from '../../../database/schema'
 import { parseDocument } from '../../../utils/resume-parser'
-import { z } from 'zod'
 
-const paramsSchema = z.object({ id: z.string().min(1) })
 
 /**
  * POST /api/documents/:id/parse
@@ -21,7 +20,7 @@ const paramsSchema = z.object({ id: z.string().min(1) })
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { document: ['update'] })
   const orgId = session.session.activeOrganizationId
-  const { id: documentId } = await getValidatedRouterParams(event, paramsSchema.parse)
+  const { id: documentId } = await getValidatedRouterParams(event, resourceIdParamSchema.parse)
 
   const doc = await db.query.document.findFirst({
     where: and(

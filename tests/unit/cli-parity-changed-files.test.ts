@@ -25,6 +25,19 @@ describe('CLI parity changed-file guard', () => {
     ])).toMatchObject({ ok: true })
   })
 
+  it('accepts CLI parity evidence for server foundation refactors without contract changes', () => {
+    expect(evaluateCliParityEvidence([
+      'server/api/ai-config/index.get.ts',
+      'server/api/candidates/[id]/properties/[propId].put.ts',
+      'server/utils/authenticateSession.ts',
+      'server/utils/orgScope.ts',
+      'tests/unit/cli-parity-changed-files.test.ts',
+    ])).toMatchObject({
+      ok: true,
+      message: 'CLI parity evidence found.',
+    })
+  })
+
   it('passes when parity-sensitive files include CLI evidence', () => {
     expect(evaluateCliParityEvidence([
       'server/api/jobs/index.post.ts',

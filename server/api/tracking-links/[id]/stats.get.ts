@@ -1,5 +1,6 @@
 import { eq, and, sql, count, gte, lte, desc } from 'drizzle-orm'
 import { applicationSource, application, trackingLink, job, candidate } from '../../../database/schema'
+import { findOrgScopedOr404, orgScopedIdWhere } from '../../../utils/orgScope'
 import { trackingLinkIdSchema, sourceStatsQuerySchema } from '../../../utils/schemas/trackingLink'
 
 /**
@@ -19,13 +20,12 @@ export default defineEventHandler(async (event) => {
   const query = await getValidatedQuery(event, sourceStatsQuerySchema.parse)
 
   // ─── Fetch the link itself ────────────────
-  const link = await db.query.trackingLink.findFirst({
-    where: and(eq(trackingLink.id, id), eq(trackingLink.organizationId, orgId)),
-  })
-
-  if (!link) {
-    throw createError({ statusCode: 404, statusMessage: 'Tracking link not found' })
-  }
+  const link = await findOrgScopedOr404(
+    db.query.trackingLink.findFirst({
+      where: orgScopedIdWhere(trackingLink, id, orgId),
+    }),
+    'Tracking link not found',
+  )
 
   // ─── Scoped job title ─────────────────────
   let jobTitle: string | null = null

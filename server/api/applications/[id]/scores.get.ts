@@ -1,9 +1,8 @@
 import { eq, and, desc } from 'drizzle-orm'
+import { resourceIdParamSchema } from '../../../utils/schemas/common'
 import { application, criterionScore, analysisRun, scoringCriterion, job, orgSettings } from '../../../database/schema'
-import { z } from 'zod'
 import { DEFAULT_SCORING_BANDS, findScoringBand, resolveScoringBands } from '~~/shared/scoring-bands'
 
-const paramsSchema = z.object({ id: z.string().min(1) })
 
 function extractAnalysisSummary(rawResponse: unknown) {
   if (!rawResponse || typeof rawResponse !== 'object') {
@@ -22,7 +21,7 @@ function extractAnalysisSummary(rawResponse: unknown) {
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { scoring: ['read'] })
   const orgId = session.session.activeOrganizationId
-  const { id: applicationId } = await getValidatedRouterParams(event, paramsSchema.parse)
+  const { id: applicationId } = await getValidatedRouterParams(event, resourceIdParamSchema.parse)
 
   // Verify application belongs to org
   const app = await db.query.application.findFirst({

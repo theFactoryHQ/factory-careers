@@ -1,11 +1,11 @@
 import { and, eq } from 'drizzle-orm'
-import { z } from 'zod'
 import { aiConfig } from '../../database/schema'
+import { toPublicAiConfig } from '../../utils/ai/publicConfig'
+import { resourceIdParamSchema } from '../../utils/schemas/common'
 import { updateAiConfigSchema } from '../../utils/schemas/scoring'
 import { encrypt } from '../../utils/encryption'
 import { assertSafeServerSideUrl } from '../../utils/serverSideUrl'
 
-const paramsSchema = z.object({ id: z.string().min(1) })
 
 /**
  * PATCH /api/ai-config/:id
@@ -16,7 +16,7 @@ const paramsSchema = z.object({ id: z.string().min(1) })
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { aiConfig: ['update'] })
   const orgId = session.session.activeOrganizationId
-  const { id } = await getValidatedRouterParams(event, paramsSchema.parse)
+  const { id } = await getValidatedRouterParams(event, resourceIdParamSchema.parse)
   const body = await readValidatedBody(event, updateAiConfigSchema.parse)
 
   if (body.baseUrl) {
@@ -64,13 +64,5 @@ export default defineEventHandler(async (event) => {
     resourceId: id,
   })
 
-  const { apiKeyEncrypted, ...rest } = updated!
-  return {
-    config: {
-      ...rest,
-      inputPricePer1m: rest.inputPricePer1m != null ? Number(rest.inputPricePer1m) : null,
-      outputPricePer1m: rest.outputPricePer1m != null ? Number(rest.outputPricePer1m) : null,
-      hasApiKey: Boolean(apiKeyEncrypted),
-    },
-  }
+  return { config: toPublicAiConfig(updated!) }
 })

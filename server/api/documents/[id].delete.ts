@@ -1,5 +1,5 @@
 import { eq, and } from 'drizzle-orm'
-import { z } from 'zod'
+import { uuidParamSchema } from '../../utils/schemas/common'
 import { document } from '../../database/schema'
 
 /**
@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { document: ['delete'] })
   const orgId = session.session.activeOrganizationId
 
-  const { id: documentId } = await getValidatedRouterParams(event, z.object({ id: z.string().uuid() }).parse)
+  const { id: documentId } = await getValidatedRouterParams(event, uuidParamSchema.parse)
 
   // Query scoped by BOTH id AND organizationId — prevents IDOR
   const doc = await db.query.document.findFirst({

@@ -1,8 +1,7 @@
 import { eq, and, isNull } from 'drizzle-orm'
+import { resourceIdParamSchema } from '../../../utils/schemas/common'
 import { application, job } from '../../../database/schema'
-import { z } from 'zod'
 
-const paramsSchema = z.object({ id: z.string().min(1) })
 
 /**
  * POST /api/jobs/:id/analyze-all
@@ -14,7 +13,7 @@ const paramsSchema = z.object({ id: z.string().min(1) })
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { scoring: ['create'] })
   const orgId = session.session.activeOrganizationId
-  const { id: jobId } = await getValidatedRouterParams(event, paramsSchema.parse)
+  const { id: jobId } = await getValidatedRouterParams(event, resourceIdParamSchema.parse)
 
   // Verify job belongs to org
   const jobRecord = await db.query.job.findFirst({

@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { aiConfig } from '../../database/schema'
+import { toPublicAiConfig } from '../../utils/ai/publicConfig'
 
 /**
  * GET /api/ai-config
@@ -32,10 +33,5 @@ export default defineEventHandler(async (event) => {
     orderBy: (t, { desc }) => [desc(t.isDefaultChatbot), desc(t.isDefaultAnalysis), desc(t.createdAt)],
   })
 
-  return rows.map(({ apiKeyEncrypted, ...rest }) => ({
-    ...rest,
-    inputPricePer1m: rest.inputPricePer1m != null ? Number(rest.inputPricePer1m) : null,
-    outputPricePer1m: rest.outputPricePer1m != null ? Number(rest.outputPricePer1m) : null,
-    hasApiKey: Boolean(apiKeyEncrypted),
-  }))
+  return rows.map(toPublicAiConfig)
 })

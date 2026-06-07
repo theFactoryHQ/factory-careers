@@ -1,14 +1,13 @@
 import { and, desc, eq } from 'drizzle-orm'
+import { resourceIdParamSchema } from '../../../utils/schemas/common'
 import { application, analysisRun, analysisRunFeedback } from '../../../database/schema'
 import { createScoringFeedbackSchema } from '../../../utils/schemas/scoring'
-import { z } from 'zod'
 
-const paramsSchema = z.object({ id: z.string().min(1) })
 
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { scoring: ['update'] })
   const orgId = session.session.activeOrganizationId
-  const { id: applicationId } = await getValidatedRouterParams(event, paramsSchema.parse)
+  const { id: applicationId } = await getValidatedRouterParams(event, resourceIdParamSchema.parse)
   const body = await readValidatedBody(event, createScoringFeedbackSchema.parse)
 
   const app = await db.query.application.findFirst({

@@ -1,5 +1,5 @@
 import { eq, and, isNull } from 'drizzle-orm'
-import { z } from 'zod'
+import { uuidParamSchema } from '../../utils/schemas/common'
 import { inviteLink } from '../../database/schema'
 
 /**
@@ -10,7 +10,7 @@ import { inviteLink } from '../../database/schema'
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { invitation: ['cancel'] })
   const orgId = session.session.activeOrganizationId
-  const { id: linkId } = await getValidatedRouterParams(event, z.object({ id: z.string().uuid() }).parse)
+  const { id: linkId } = await getValidatedRouterParams(event, uuidParamSchema.parse)
 
   const [revoked] = await db
     .update(inviteLink)

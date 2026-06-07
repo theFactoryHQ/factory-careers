@@ -1,9 +1,8 @@
 import { eq, and } from 'drizzle-orm'
+import { resourceIdParamSchema } from '../../../../utils/schemas/common'
 import { scoringCriterion, job } from '../../../../database/schema'
 import { updateWeightsSchema } from '../../../../utils/schemas/scoring'
-import { z } from 'zod'
 
-const paramsSchema = z.object({ id: z.string().min(1) })
 
 /**
  * PATCH /api/jobs/:id/criteria
@@ -12,7 +11,7 @@ const paramsSchema = z.object({ id: z.string().min(1) })
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { scoring: ['update'] })
   const orgId = session.session.activeOrganizationId
-  const { id: jobId } = await getValidatedRouterParams(event, paramsSchema.parse)
+  const { id: jobId } = await getValidatedRouterParams(event, resourceIdParamSchema.parse)
   const body = await readValidatedBody(event, updateWeightsSchema.parse)
 
   // Verify job belongs to org

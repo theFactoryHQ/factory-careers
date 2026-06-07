@@ -1,5 +1,5 @@
-import { eq, and } from 'drizzle-orm'
 import { trackingLink } from '../../database/schema'
+import { findOrgScopedOr404, orgScopedIdWhere } from '../../utils/orgScope'
 import { trackingLinkIdSchema, updateTrackingLinkSchema } from '../../utils/schemas/trackingLink'
 
 /**
@@ -13,18 +13,17 @@ export default defineEventHandler(async (event) => {
   const { id } = await getValidatedRouterParams(event, trackingLinkIdSchema.parse)
   const body = await readValidatedBody(event, updateTrackingLinkSchema.parse)
 
-  const existing = await db.query.trackingLink.findFirst({
-    where: and(eq(trackingLink.id, id), eq(trackingLink.organizationId, orgId)),
-    columns: { id: true },
-  })
-
-  if (!existing) {
-    throw createError({ statusCode: 404, statusMessage: 'Tracking link not found' })
-  }
+  await findOrgScopedOr404(
+    db.query.trackingLink.findFirst({
+      where: orgScopedIdWhere(trackingLink, id, orgId),
+      columns: { id: true },
+    }),
+    'Tracking link not found',
+  )
 
   const [updated] = await db.update(trackingLink)
     .set({ ...body, updatedAt: new Date() })
-    .where(and(eq(trackingLink.id, id), eq(trackingLink.organizationId, orgId)))
+    .where(orgScopedIdWhere(trackingLink, id, orgId))
     .returning()
 
   if (!updated) {

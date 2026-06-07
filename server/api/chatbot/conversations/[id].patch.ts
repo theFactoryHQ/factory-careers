@@ -1,5 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { uuidParamSchema } from '../../../utils/schemas/common'
 import { aiConfig, chatbotAgent, chatbotConversation, chatbotFolder, job } from '../../../database/schema'
 import { requireChatbotAccess } from '../../../utils/chatbotAccess'
 import type { ChatbotConversationSummary, ChatbotScope } from '../../../../shared/chatbot'
@@ -26,7 +27,7 @@ export default defineEventHandler(async (event): Promise<{ conversation: Chatbot
   const session = await requireChatbotAccess(event)
   const orgId = session.session.activeOrganizationId
   const userId = session.user.id
-  const { id } = await getValidatedRouterParams(event, z.object({ id: z.string().uuid() }).parse)
+  const { id } = await getValidatedRouterParams(event, uuidParamSchema.parse)
 
   const body = await readValidatedBody(event, bodySchema.parse)
 
