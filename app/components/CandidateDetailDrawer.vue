@@ -228,6 +228,7 @@ const documentPreviewState = computed(() => ({
         :application-id="interviewTargetApp.id"
         :candidate-name="formatCandidateName(candidate)"
         :job-title="interviewTargetApp.jobTitle"
+        tone="inverse"
         @close="showInterviewSidebar = false"
         @scheduled="showInterviewSidebar = false"
       />

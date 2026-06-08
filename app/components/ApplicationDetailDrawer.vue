@@ -237,6 +237,7 @@ const {
         :application-id="applicationId"
         :candidate-name="formatCandidateName(application.candidate)"
         :job-title="application.job.title"
+        tone="inverse"
         @close="showInterviewSidebar = false"
         @scheduled="showInterviewSidebar = false"
       />
