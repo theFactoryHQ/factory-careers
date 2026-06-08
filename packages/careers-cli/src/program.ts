@@ -22,7 +22,9 @@ import {
 } from './cliRuntime'
 import { registerCommentsCommands } from './commands/comments'
 import { registerEmailTemplatesCommands } from './commands/email-templates'
+import { registerFeedbackCommands } from './commands/feedback'
 import { registerPropertiesCommands } from './commands/properties'
+import { registerSourceTrackingCommands } from './commands/source-tracking'
 import { removeProfileToken, saveProfile } from './config'
 import { normalizeCliError } from './errors'
 import {
@@ -39,20 +41,6 @@ type DocumentUploadOptions = GlobalOptions & {
 
 type DocumentDownloadOptions = GlobalOptions & {
   output?: string
-}
-
-type SourceTrackingListOptions = GlobalOptions & {
-  page?: string
-  limit?: string
-  jobId?: string
-  channel?: string
-  active?: string
-}
-
-type SourceStatsOptions = GlobalOptions & {
-  jobId?: string
-  from?: string
-  to?: string
 }
 
 type InterviewListOptions = GlobalOptions & {
@@ -962,48 +950,8 @@ export function createProgram(io: CliIo = {}): Command {
   registerCommentsCommands(program, runtime)
   registerEmailTemplatesCommands(program, runtime)
   registerPropertiesCommands(program, runtime)
-
-  const feedback = program
-    .command('feedback')
-    .description('Inspect and submit authenticated product feedback')
-
-  addGlobalOptions(
-    feedback
-      .command('status')
-      .description('Show whether feedback submission is configured'),
-  ).action(async (options: GlobalOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    const token = requireAuthenticatedProfile(profile)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: `${profile.baseUrl}/api/feedback/config`,
-      method: 'GET',
-      token,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  addGlobalOptions(
-    feedback
-      .command('submit')
-      .description('Submit product feedback from stdin JSON')
-      .option('--stdin', 'Read request body as JSON from stdin'),
-  ).action(async (options: StdinOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    requireMutationConfirmation(globals)
-    const token = requireAuthenticatedProfile(profile)
-    const body = await readStdinJson(io, options.stdin)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: `${profile.baseUrl}/api/feedback`,
-      method: 'POST',
-      token,
-      body,
-    })
-
-    outputResult(io, globals, result)
-  })
+  registerFeedbackCommands(program, runtime)
+  registerSourceTrackingCommands(program, runtime)
 
   const system = program
     .command('system')
@@ -1042,165 +990,6 @@ export function createProgram(io: CliIo = {}): Command {
     const result = await requestJson<unknown>({
       fetch: getFetch(io),
       url: `${profile.baseUrl}/api/cli/capabilities`,
-      method: 'GET',
-      token,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  const sourceTracking = program
-    .command('source-tracking')
-    .description('Manage source tracking links and analytics')
-
-  addGlobalOptions(
-    sourceTracking
-      .command('list')
-      .description('List tracking links')
-      .option('--page <number>', 'Page number')
-      .option('--limit <number>', 'Page size')
-      .option('--job-id <id>', 'Filter by job ID')
-      .option('--channel <channel>', 'Filter by source channel')
-      .option('--active <true|false>', 'Filter by active state'),
-  ).action(async (options: SourceTrackingListOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    const token = requireAuthenticatedProfile(profile)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: appendQuery(`${profile.baseUrl}/api/tracking-links`, {
-        page: options.page,
-        limit: options.limit,
-        jobId: options.jobId,
-        channel: options.channel,
-        isActive: options.active,
-      }),
-      method: 'GET',
-      token,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  addGlobalOptions(
-    sourceTracking
-      .command('get')
-      .description('Get a tracking link')
-      .argument('<id>', 'Tracking link ID'),
-  ).action(async (id: string, options: GlobalOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    const token = requireAuthenticatedProfile(profile)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: `${profile.baseUrl}/api/tracking-links/${encodeURIComponent(id)}`,
-      method: 'GET',
-      token,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  addGlobalOptions(
-    sourceTracking
-      .command('create')
-      .description('Create a tracking link')
-      .option('--stdin', 'Read request body as JSON from stdin'),
-  ).action(async (options: StdinOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    requireMutationConfirmation(globals)
-    const token = requireAuthenticatedProfile(profile)
-    const body = await readStdinJson(io, options.stdin)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: `${profile.baseUrl}/api/tracking-links`,
-      method: 'POST',
-      token,
-      body,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  addGlobalOptions(
-    sourceTracking
-      .command('update')
-      .description('Update a tracking link')
-      .argument('<id>', 'Tracking link ID')
-      .option('--stdin', 'Read request body as JSON from stdin'),
-  ).action(async (id: string, options: StdinOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    requireMutationConfirmation(globals)
-    const token = requireAuthenticatedProfile(profile)
-    const body = await readStdinJson(io, options.stdin)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: `${profile.baseUrl}/api/tracking-links/${encodeURIComponent(id)}`,
-      method: 'PATCH',
-      token,
-      body,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  addGlobalOptions(
-    sourceTracking
-      .command('delete')
-      .description('Delete a tracking link')
-      .argument('<id>', 'Tracking link ID'),
-  ).action(async (id: string, options: GlobalOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    requireMutationConfirmation(globals)
-    const token = requireAuthenticatedProfile(profile)
-    await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: `${profile.baseUrl}/api/tracking-links/${encodeURIComponent(id)}`,
-      method: 'DELETE',
-      token,
-    })
-
-    outputResult(io, globals, { deleted: true, id })
-  })
-
-  addGlobalOptions(
-    sourceTracking
-      .command('link-stats')
-      .description('Show stats for a tracking link')
-      .argument('<id>', 'Tracking link ID')
-      .option('--from <datetime>', 'Inclusive start datetime')
-      .option('--to <datetime>', 'Inclusive end datetime'),
-  ).action(async (id: string, options: SourceStatsOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    const token = requireAuthenticatedProfile(profile)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: appendQuery(`${profile.baseUrl}/api/tracking-links/${encodeURIComponent(id)}/stats`, {
-        from: options.from,
-        to: options.to,
-      }),
-      method: 'GET',
-      token,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  addGlobalOptions(
-    sourceTracking
-      .command('stats')
-      .description('Show source tracking stats')
-      .option('--job-id <id>', 'Filter by job ID')
-      .option('--from <datetime>', 'Inclusive start datetime')
-      .option('--to <datetime>', 'Inclusive end datetime'),
-  ).action(async (options: SourceStatsOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    const token = requireAuthenticatedProfile(profile)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: appendQuery(`${profile.baseUrl}/api/source-tracking/stats`, {
-        jobId: options.jobId,
-        from: options.from,
-        to: options.to,
-      }),
       method: 'GET',
       token,
     })

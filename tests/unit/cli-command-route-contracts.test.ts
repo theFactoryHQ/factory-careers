@@ -120,20 +120,26 @@ function factoryRegisteredRouteExists(source: string, route: string): boolean {
   if (!source.includes('registerJsonCommand')) return false
 
   const method = expectedMethod(route)
+  const isIdRoute = route.includes('/[id]')
+
+  if (isIdRoute) {
+    const factoryPath = route
+      .replace(/^server\/api\//, '/api/')
+      .replace(/\.(delete|get|patch|post|put)\.ts$/, '')
+      .replace(/\/index$/, '')
+      .replace('/[id]', '/${encodeURIComponent(id)}')
+
+    return source
+      .split('registerJsonCommand')
+      .some((chunk) => chunk.includes(`method: '${method}'`) && chunk.includes(factoryPath))
+  }
+
   const parts = staticApiParts(route)
   const basePath = `/${parts.join('/')}`
-  const isIdRoute = route.includes('/[id]')
 
   return source
     .split('registerJsonCommand')
-    .some((chunk) => {
-      if (!chunk.includes(`method: '${method}'`)) return false
-      if (isIdRoute) {
-        const resourcePath = parts.slice(1).join('/')
-        return chunk.includes(`/api/${resourcePath}/\${encodeURIComponent(id)}`)
-      }
-      return chunk.includes(`path: '${basePath}'`)
-    })
+    .some((chunk) => chunk.includes(`method: '${method}'`) && chunk.includes(`path: '${basePath}'`))
 }
 
 function routeSpecificRequestExists(source: string, route: string): boolean {
