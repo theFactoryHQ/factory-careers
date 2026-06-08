@@ -112,6 +112,7 @@ const canConfirmDelete = computed(() => {
 })
 
 function closeDeleteConfirm() {
+  if (isDeleting.value) return
   showDeleteConfirm.value = false
   deleteConfirmText.value = ''
 }
@@ -286,6 +287,7 @@ async function handleDeleteOrg() {
       confirm-label="Permanently delete"
       loading-label="Deleting…"
       variant="danger"
+      :close-on-backdrop="false"
       :loading="isDeleting"
       :confirm-disabled="!canConfirmDelete"
       show-danger-icon
