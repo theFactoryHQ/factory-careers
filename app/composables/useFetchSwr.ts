@@ -39,7 +39,7 @@ export function getSwrCachedData<T>(
     return cached
   }
 
-  return cached
+  return undefined
 }
 
 /** Watch a useFetch data ref and stamp successful payloads on the client. */

@@ -25,6 +25,10 @@ describe('useFetchSwr', () => {
 
     expect(getSwrCachedData('applications-{}', nuxtApp)).toBe(cached)
     expect(getSwrCachedData('missing', nuxtApp)).toBeUndefined()
+
+    const stale = { data: [{ id: '1' }], _fetchedAt: Date.now() - DEFAULT_FETCH_SWR_TTL_MS - 1 }
+    nuxtApp.payload.data['applications-stale'] = stale
+    expect(getSwrCachedData('applications-stale', nuxtApp)).toBeUndefined()
   })
 
   it('skips cache on explicit refresh causes so mutations refetch fresh data', () => {
