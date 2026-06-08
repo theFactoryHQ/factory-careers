@@ -50,6 +50,7 @@ describe('dashboard modal primitives', () => {
       'app/pages/dashboard/emails/templates/index.vue',
       'app/pages/dashboard/interviews/[id].vue',
       'app/pages/dashboard/interviews/index.vue',
+      'app/pages/dashboard/settings/index.vue',
     ]
 
     for (const file of directModalFiles) {
@@ -109,6 +110,7 @@ describe('dashboard modal primitives', () => {
       'app/pages/dashboard/interviews/[id].vue',
       'app/components/CandidateDetailSidebar.vue',
       'app/components/JobSubNavActions.vue',
+      'app/pages/dashboard/settings/index.vue',
     ]
 
     for (const file of migratedFiles) {
