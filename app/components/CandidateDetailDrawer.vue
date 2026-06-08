@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { patchApplication } from '~/composables/useApplication'
+import type { ApplicationStatus } from '~~/shared/application-status'
+
 const props = defineProps<{
   candidateId: string
 }>()
@@ -15,7 +18,21 @@ const { formatCandidateName } = useOrgSettings()
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
-const activeTab = ref<'applications' | 'documents'>('applications')
+const candidateDetailTabs = ['applications', 'documents'] as const
+const activeTab = ref<(typeof candidateDetailTabs)[number]>('applications')
+
+function handleCandidateTabKeydown(event: KeyboardEvent) {
+  const currentIndex = candidateDetailTabs.indexOf(activeTab.value)
+  if (currentIndex === -1) return
+
+  if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    activeTab.value = candidateDetailTabs[(currentIndex + 1) % candidateDetailTabs.length]!
+  } else if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    activeTab.value = candidateDetailTabs[(currentIndex - 1 + candidateDetailTabs.length) % candidateDetailTabs.length]!
+  }
+}
 
 // ─── Apply to job modal ───────────────────────────────────────────────────────
 
@@ -36,10 +53,7 @@ const transitioningApplicationIds = ref<Set<string>>(new Set())
 async function updateTransitionTargetStatus(status: string) {
   const appId = transitionTarget.value?.id
   if (!appId) return
-  await $fetch(`/api/applications/${appId}`, {
-    method: 'PATCH',
-    body: { status },
-  })
+  await patchApplication(appId, { status: status as ApplicationStatus })
 }
 
 const { transitionToStatus } = useApplicationStatusActions({
@@ -114,8 +128,19 @@ const documentPreviewState = computed(() => ({
 
       <!-- Tabs -->
       <div class="border-b border-white/10">
-        <div class="flex gap-1">
+        <div
+          role="tablist"
+          aria-label="Candidate sections"
+          class="flex gap-1"
+          @keydown="handleCandidateTabKeydown"
+        >
           <button
+            id="candidate-tab-applications"
+            role="tab"
+            type="button"
+            aria-controls="candidate-tabpanel-applications"
+            :aria-selected="activeTab === 'applications'"
+            :tabindex="activeTab === 'applications' ? 0 : -1"
             class="cursor-pointer px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
             :class="activeTab === 'applications'
               ? 'border-brand-500 text-brand-400'
@@ -125,6 +150,12 @@ const documentPreviewState = computed(() => ({
             Applications ({{ candidate.applications?.length ?? 0 }})
           </button>
           <button
+            id="candidate-tab-documents"
+            role="tab"
+            type="button"
+            aria-controls="candidate-tabpanel-documents"
+            :aria-selected="activeTab === 'documents'"
+            :tabindex="activeTab === 'documents' ? 0 : -1"
             class="cursor-pointer px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
             :class="activeTab === 'documents'
               ? 'border-brand-500 text-brand-400'
@@ -139,6 +170,9 @@ const documentPreviewState = computed(() => ({
       <!-- Applications tab -->
       <CandidateApplicationsPanel
         v-if="activeTab === 'applications'"
+        id="candidate-tabpanel-applications"
+        role="tabpanel"
+        aria-labelledby="candidate-tab-applications"
         :applications="candidate.applications ?? []"
         surface="drawer"
         show-status-transitions
@@ -151,6 +185,9 @@ const documentPreviewState = computed(() => ({
       <!-- Documents tab -->
       <CandidateDocumentsPanel
         v-if="activeTab === 'documents'"
+        id="candidate-tabpanel-documents"
+        role="tabpanel"
+        aria-labelledby="candidate-tab-documents"
         :documents="candidate.documents ?? []"
         :preview="documentPreviewState"
         surface="drawer"

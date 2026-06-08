@@ -11,11 +11,15 @@ describe('candidate detail drawer', () => {
     const source = readProjectFile('app/components/CandidateApplicationsPanel.vue')
     const drawer = readProjectFile('app/components/CandidateDetailDrawer.vue')
     const badge = readProjectFile('app/components/ApplicationStatusBadge.vue')
+    const useApplication = readProjectFile('app/composables/useApplication.ts')
 
     expect(drawer).toContain('<CandidateApplicationsPanel')
     expect(drawer).toContain('show-status-transitions')
     expect(drawer).toContain('const transitioningApplicationIds = ref<Set<string>>(new Set())')
     expect(drawer).toContain('useApplicationStatusActions')
+    expect(drawer).toContain('patchApplication')
+    expect(drawer).not.toContain('$fetch(`/api/applications/${appId}`')
+    expect(useApplication).toContain('export async function patchApplication')
     expect(source).toContain('APPLICATION_STATUS_TRANSITIONS')
     expect(source).toContain('getApplicationTransitionButtonClass(nextStatus, \'factory\')')
     expect(source).toContain('getApplicationTransitionActionLabel(nextStatus)')
@@ -85,5 +89,33 @@ describe('candidate detail drawer', () => {
     expect(modal).toContain('<AppModalShell')
     expect(modal).not.toContain('ui-modal-frame')
     expect(modal).not.toContain('ui-modal-list-row')
+  })
+
+  it('exposes accessible candidate detail tabs with keyboard navigation in drawer and page', () => {
+    const drawer = readProjectFile('app/components/CandidateDetailDrawer.vue')
+    const page = readProjectFile('app/pages/dashboard/candidates/[id].vue')
+
+    for (const source of [drawer, page]) {
+      expect(source).toContain('role="tablist"')
+      expect(source).toContain('role="tab"')
+      expect(source).toContain(':aria-selected="activeTab === \'applications\'"')
+      expect(source).toContain(':aria-selected="activeTab === \'documents\'"')
+      expect(source).toContain('handleCandidateTabKeydown')
+      expect(source).toContain("event.key === 'ArrowRight'")
+      expect(source).toContain("event.key === 'ArrowLeft'")
+    }
+  })
+
+  it('keeps status transitions on the full candidate page aligned with the drawer', () => {
+    const drawer = readProjectFile('app/components/CandidateDetailDrawer.vue')
+    const page = readProjectFile('app/pages/dashboard/candidates/[id].vue')
+
+    for (const source of [drawer, page]) {
+      expect(source).toContain('show-status-transitions')
+      expect(source).toContain('useApplicationStatusActions')
+      expect(source).toContain('transitioningApplicationIds')
+      expect(source).toContain('patchApplication')
+      expect(source).toContain('@transition="handleApplicationTransition"')
+    }
   })
 })
