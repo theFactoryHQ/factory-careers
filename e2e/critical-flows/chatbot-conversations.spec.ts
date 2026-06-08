@@ -1,5 +1,5 @@
-import { readFile, rm } from 'node:fs/promises'
 import { test, expect } from '../fixtures'
+import { readJsonlCapture, setupCaptureFile } from '../helpers/captured-jsonl'
 import { assertMutatingE2ESafety } from '../safety'
 
 type CapturedChatbotRequest = {
@@ -20,26 +20,17 @@ type CapturedChatbotRequest = {
   toolNames: string[]
 }
 
-async function readCapturedChatbotRequests(capturePath: string): Promise<CapturedChatbotRequest[]> {
-  try {
-    const contents = await readFile(capturePath, 'utf8')
-    return contents
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => JSON.parse(line) as CapturedChatbotRequest)
-      .filter((request) => request.schemaName === 'ChatbotChat')
-  }
-  catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return []
-    throw error
-  }
+function readCapturedChatbotRequests(capturePath: string) {
+  return readJsonlCapture<CapturedChatbotRequest>(
+    capturePath,
+    request => request.schemaName === 'ChatbotChat',
+  )
 }
 
 test.describe('Chatbot agents and conversations', () => {
   test('creates an agent, sends a mocked conversation turn, and persists it after reload', async ({ authenticatedPage }, testInfo) => {
     const page = authenticatedPage
     const baseURL = String(testInfo.project.use.baseURL ?? '')
-    const capturePath = process.env.FACTORY_AI_CAPTURE_PATH
 
     assertMutatingE2ESafety({
       env: {
@@ -48,8 +39,7 @@ test.describe('Chatbot agents and conversations', () => {
       },
     })
     expect(process.env.FACTORY_AI_TEST_MODE, 'Chatbot E2E must use mock mode, not a real provider').toBe('mock')
-    expect(capturePath, 'FACTORY_AI_CAPTURE_PATH must be set for chatbot E2E').toBeTruthy()
-    await rm(capturePath!, { force: true })
+    const capturePath = await setupCaptureFile('FACTORY_AI_CAPTURE_PATH', 'chatbot E2E')
 
     const runId = `${Date.now()}-${testInfo.workerIndex}-${testInfo.retry}`
     const modelName = 'factory-e2e-chatbot-response'
@@ -126,12 +116,12 @@ test.describe('Chatbot agents and conversations', () => {
     })
     expect(missingConversationResponse.status(), `Missing conversation returned ${missingConversationResponse.status()}`).toBe(404)
 
-    await expect.poll(async () => (await readCapturedChatbotRequests(capturePath!)).length, {
+    await expect.poll(async () => (await readCapturedChatbotRequests(capturePath)).length, {
       message: 'chatbot mock stream should capture the prompt context',
       timeout: 10_000,
     }).toBeGreaterThanOrEqual(1)
 
-    const captured = await readCapturedChatbotRequests(capturePath!)
+    const captured = await readCapturedChatbotRequests(capturePath)
     const chatRequest = captured.find(request => request.model === modelName)
     expect(chatRequest, 'chatbot request should be captured').toBeTruthy()
     expect(chatRequest?.provider).toBe('openai')
@@ -149,7 +139,6 @@ test.describe('Chatbot agents and conversations', () => {
   test('uploads a knowledge file and includes it in mocked chatbot context', async ({ authenticatedPage }, testInfo) => {
     const page = authenticatedPage
     const baseURL = String(testInfo.project.use.baseURL ?? '')
-    const capturePath = process.env.FACTORY_AI_CAPTURE_PATH
 
     assertMutatingE2ESafety({
       env: {
@@ -158,8 +147,7 @@ test.describe('Chatbot agents and conversations', () => {
       },
     })
     expect(process.env.FACTORY_AI_TEST_MODE, 'Chatbot knowledge E2E must use mock mode, not a real provider').toBe('mock')
-    expect(capturePath, 'FACTORY_AI_CAPTURE_PATH must be set for chatbot E2E').toBeTruthy()
-    await rm(capturePath!, { force: true })
+    const capturePath = await setupCaptureFile('FACTORY_AI_CAPTURE_PATH', 'chatbot E2E')
 
     const runId = `${Date.now()}-${testInfo.workerIndex}-${testInfo.retry}`
     const modelName = 'factory-e2e-chatbot-knowledge-response'
@@ -224,12 +212,12 @@ test.describe('Chatbot agents and conversations', () => {
     })
     expect(invalidAttachmentResponse.status(), `Invalid attachment returned ${invalidAttachmentResponse.status()}`).toBe(410)
 
-    await expect.poll(async () => (await readCapturedChatbotRequests(capturePath!)).length, {
+    await expect.poll(async () => (await readCapturedChatbotRequests(capturePath)).length, {
       message: 'chatbot mock stream should capture uploaded knowledge context',
       timeout: 10_000,
     }).toBeGreaterThanOrEqual(1)
 
-    const captured = await readCapturedChatbotRequests(capturePath!)
+    const captured = await readCapturedChatbotRequests(capturePath)
     const chatRequest = captured.find(request => request.model === modelName)
     expect(chatRequest, 'chatbot knowledge request should be captured').toBeTruthy()
     expect(chatRequest?.provider).toBe('openai')

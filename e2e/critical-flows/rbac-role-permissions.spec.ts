@@ -1,35 +1,12 @@
-import { randomUUID } from 'node:crypto'
 import { type Browser, type Page } from '@playwright/test'
-import postgres from 'postgres'
 import { test, expect } from '../fixtures'
+import { grantOrganizationRole, lookupMembership } from '../helpers/db'
 
 interface SignedInOrg {
   page: Page
   userId: string
   organizationId: string
   close: () => Promise<void>
-}
-
-async function lookupMembership(email: string, organizationName: string) {
-  expect(process.env.DATABASE_URL, 'DATABASE_URL is required for RBAC e2e membership lookup').toBeTruthy()
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
-
-  try {
-    const [membership] = await sql<{ userId: string, organizationId: string }[]>`
-      select u.id as "userId", o.id as "organizationId"
-      from "user" u
-      inner join "member" m on m."user_id" = u.id
-      inner join "organization" o on o.id = m."organization_id"
-      where u.email = ${email} and o.name = ${organizationName}
-      limit 1
-    `
-
-    expect(membership, `expected ${email} to belong to ${organizationName}`).toBeTruthy()
-    return membership
-  }
-  finally {
-    await sql.end()
-  }
 }
 
 async function signUpWithOrg(browser: Browser, label: string): Promise<SignedInOrg> {
@@ -91,35 +68,6 @@ async function signUpWithOrg(browser: Browser, label: string): Promise<SignedInO
     userId: membership.userId,
     organizationId: membership.organizationId,
     close: () => context.close(),
-  }
-}
-
-async function grantOrganizationRole(userId: string, organizationId: string, role: 'admin' | 'member') {
-  expect(process.env.DATABASE_URL, 'DATABASE_URL is required for RBAC role grant').toBeTruthy()
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
-
-  try {
-    await sql.begin(async (tx) => {
-      const [membership] = await tx<{ id: string }[]>`
-        insert into "member" ("id", "user_id", "organization_id", "role")
-        values (${randomUUID()}, ${userId}, ${organizationId}, ${role})
-        on conflict ("user_id", "organization_id")
-        do update set "role" = ${role}
-        returning "id"
-      `
-      expect(membership?.id, `expected ${role} membership to exist after grant`).toBeTruthy()
-
-      const updatedSessions = await tx<{ id: string }[]>`
-        update "session"
-        set "active_organization_id" = ${organizationId}, "updated_at" = now()
-        where "user_id" = ${userId}
-        returning "id"
-      `
-      expect(updatedSessions.length, 'expected role grant to update an active session').toBeGreaterThan(0)
-    })
-  }
-  finally {
-    await sql.end()
   }
 }
 

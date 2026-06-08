@@ -1,100 +1,15 @@
-import { rm } from 'node:fs/promises'
 import type { Page } from '@playwright/test'
 import { test, expect, selectFactorySelectOption } from '../fixtures'
-import postgres from 'postgres'
-import type { Sql } from 'postgres'
+import { setupCaptureFile } from '../helpers/captured-jsonl'
 import { type CapturedEmail, readCapturedEmails } from '../helpers/captured-emails'
-
-type PrivacyRequestRecord = {
-  id: string
-  organizationId: string | null
-  status: string
-  requesterName: string
-  requesterEmail: string
-  stateOfResidence: string
-  applicationId: string | null
-  details: string | null
-  verificationTokenHash: string
-  verifiedAt: Date | null
-  completedAt: Date | null
-  resolutionNotes: string | null
-}
-
-type CandidateApplicationRecord = {
-  candidateId: string
-  applicationId: string
-  organizationId: string
-}
-
-async function lookupPrivacyRequest(sql: Sql, requesterEmail: string) {
-  const [request] = await sql<PrivacyRequestRecord[]>`
-    select
-      id,
-      organization_id as "organizationId",
-      status,
-      requester_name as "requesterName",
-      requester_email as "requesterEmail",
-      state_of_residence as "stateOfResidence",
-      application_id as "applicationId",
-      details,
-      verification_token_hash as "verificationTokenHash",
-      verified_at as "verifiedAt",
-      completed_at as "completedAt",
-      resolution_notes as "resolutionNotes"
-    from privacy_request
-    where requester_email = ${requesterEmail}
-    order by created_at desc
-    limit 1
-  `
-
-  return request ?? null
-}
-
-async function lookupCandidateApplication(sql: Sql, requesterEmail: string) {
-  const [record] = await sql<CandidateApplicationRecord[]>`
-    select
-      c.id as "candidateId",
-      a.id as "applicationId",
-      c.organization_id as "organizationId"
-    from candidate c
-    join application a on a.candidate_id = c.id and a.organization_id = c.organization_id
-    where c.email = ${requesterEmail}
-    order by a.created_at desc
-    limit 1
-  `
-
-  return record ?? null
-}
-
-async function countCandidateRows(sql: Sql, candidateId: string) {
-  const [row] = await sql<{ count: number }[]>`
-    select count(*)::int as count
-    from candidate
-    where id = ${candidateId}
-  `
-  return row?.count ?? 0
-}
-
-async function countApplicationRows(sql: Sql, applicationId: string) {
-  const [row] = await sql<{ count: number }[]>`
-    select count(*)::int as count
-    from application
-    where id = ${applicationId}
-  `
-  return row?.count ?? 0
-}
-
-async function countPrivacyAuditRows(sql: Sql, organizationId: string, requestId: string) {
-  const [row] = await sql<{ count: number }[]>`
-    select count(*)::int as count
-    from activity_log
-    where organization_id = ${organizationId}
-      and resource_type = 'privacy_request'
-      and resource_id = ${requestId}
-      and action = 'deleted'
-  `
-  return row?.count ?? 0
-}
+import {
+  assertE2eDatabaseUrl,
+  countApplicationRows,
+  countCandidateRows,
+  countPrivacyAuditRows,
+  lookupCandidateApplication,
+  lookupPrivacyRequest,
+} from '../helpers/db'
 
 function extractVerifyUrl(email: CapturedEmail) {
   const content = `${email.text}\n${email.html}`
@@ -146,16 +61,11 @@ async function signUpAndCreateOrganization(page: Page, id: string) {
 
 test.describe('Privacy request fake mail', () => {
   test('verifies deletion request persistence, fake-mail verification, and confirmation', async ({ page }, testInfo) => {
-    const capturePath = process.env.FACTORY_EMAIL_CAPTURE_PATH
-    expect(capturePath, 'FACTORY_EMAIL_CAPTURE_PATH must be set for privacy request E2E').toBeTruthy()
     expect(process.env.FACTORY_EMAIL_TEST_MODE, 'E2E mail must use capture mode, not a real provider').toBe('capture')
-    expect(process.env.DATABASE_URL, 'DATABASE_URL is required for privacy request e2e coverage').toBeTruthy()
+    assertE2eDatabaseUrl('privacy request e2e coverage')
+    const capturePath = await setupCaptureFile('FACTORY_EMAIL_CAPTURE_PATH', 'privacy request E2E')
 
-    await rm(capturePath!, { force: true })
-    const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
-
-    try {
-      const id = `${Date.now()}-${testInfo.workerIndex}-${Math.random().toString(36).slice(2)}`
+    const id = `${Date.now()}-${testInfo.workerIndex}-${Math.random().toString(36).slice(2)}`
       const requester = {
         name: `Privacy Requester ${id}`,
         email: `privacy.requester.${id}@example.com`,
@@ -184,80 +94,72 @@ test.describe('Privacy request fake mail', () => {
       expect(submitResponse.status()).toBe(202)
       await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible()
 
-      await expect.poll(async () => (await readCapturedEmails(capturePath!)).length, {
-        message: 'privacy request should capture requester verification and internal alert emails',
-        timeout: 10_000,
-      }).toBeGreaterThanOrEqual(2)
+    await expect.poll(async () => (await readCapturedEmails(capturePath)).length, {
+      message: 'privacy request should capture requester verification and internal alert emails',
+      timeout: 10_000,
+    }).toBeGreaterThanOrEqual(2)
 
-      const request = await lookupPrivacyRequest(sql, requester.email)
-      expect(request, 'privacy request should be persisted').toBeTruthy()
-      expect(request).toMatchObject({
-        status: 'submitted',
-        requesterName: requester.name,
-        requesterEmail: requester.email,
-        stateOfResidence: requester.state,
-        verifiedAt: null,
-      })
-      expect(request?.details).toContain(requester.context)
-      expect(request?.details).toContain(requester.details)
-      expect(request?.verificationTokenHash).toMatch(/^[a-f0-9]{64}$/)
+    const request = await lookupPrivacyRequest(requester.email)
+    expect(request, 'privacy request should be persisted').toBeTruthy()
+    expect(request).toMatchObject({
+      status: 'submitted',
+      requesterName: requester.name,
+      requesterEmail: requester.email,
+      stateOfResidence: requester.state,
+      verifiedAt: null,
+    })
+    expect(request?.details).toContain(requester.context)
+    expect(request?.details).toContain(requester.details)
+    expect(request?.verificationTokenHash).toMatch(/^[a-f0-9]{64}$/)
 
-      const capturedEmails = await readCapturedEmails(capturePath!)
-      const verificationEmail = capturedEmails.find((email) => email.subject === 'Verify your deletion request — Factory Careers')
-      expect(verificationEmail, 'requester verification email should be captured').toBeTruthy()
-      expect(verificationEmail?.renderError, 'requester verification email should render successfully').toBeUndefined()
-      expect(verificationEmail?.to).toContain(requester.email)
-      expect(verificationEmail?.text).toContain(requester.name)
-      expect(verificationEmail?.text).toContain('Verify your deletion request')
+    const capturedEmails = await readCapturedEmails(capturePath)
+    const verificationEmail = capturedEmails.find((email) => email.subject === 'Verify your deletion request — Factory Careers')
+    expect(verificationEmail, 'requester verification email should be captured').toBeTruthy()
+    expect(verificationEmail?.renderError, 'requester verification email should render successfully').toBeUndefined()
+    expect(verificationEmail?.to).toContain(requester.email)
+    expect(verificationEmail?.text).toContain(requester.name)
+    expect(verificationEmail?.text).toContain('Verify your deletion request')
 
-      const verifyUrl = extractVerifyUrl(verificationEmail!)
-      expect(verifyUrl, 'verification email should contain a local verification URL').toContain('/api/privacy-requests/verify?token=')
-      expect(verifyUrl).not.toContain(request.verificationTokenHash)
-      expect(verifyUrl).not.toContain('thefactoryhq.com')
+    const verifyUrl = extractVerifyUrl(verificationEmail!)
+    expect(verifyUrl, 'verification email should contain a local verification URL').toContain('/api/privacy-requests/verify?token=')
+    expect(verifyUrl).not.toContain(request!.verificationTokenHash)
+    expect(verifyUrl).not.toContain('thefactoryhq.com')
 
-      const internalAlert = capturedEmails.find((email) => email.subject === `Privacy deletion request: ${requester.email}`)
-      expect(internalAlert, 'privacy-team alert email should be captured').toBeTruthy()
-      expect(internalAlert?.renderError, 'privacy-team alert email should render successfully').toBeUndefined()
-      expect(internalAlert?.to).toContain(privacyInbox)
-      expect(internalAlert?.text).toContain(requester.name)
-      expect(internalAlert?.text).toContain(requester.email)
-      expect(internalAlert?.text).toContain(requester.state)
+    const internalAlert = capturedEmails.find((email) => email.subject === `Privacy deletion request: ${requester.email}`)
+    expect(internalAlert, 'privacy-team alert email should be captured').toBeTruthy()
+    expect(internalAlert?.renderError, 'privacy-team alert email should render successfully').toBeUndefined()
+    expect(internalAlert?.to).toContain(privacyInbox)
+    expect(internalAlert?.text).toContain(requester.name)
+    expect(internalAlert?.text).toContain(requester.email)
+    expect(internalAlert?.text).toContain(requester.state)
 
-      const verifyResponse = await page.request.get(verifyUrl)
-      expect(verifyResponse.status()).toBe(200)
-      await expect.poll(async () => (await lookupPrivacyRequest(sql, requester.email))?.status, {
-        message: 'privacy request should move to verified after opening the verification URL',
-        timeout: 10_000,
-      }).toBe('verified')
+    const verifyResponse = await page.request.get(verifyUrl)
+    expect(verifyResponse.status()).toBe(200)
+    await expect.poll(async () => (await lookupPrivacyRequest(requester.email))?.status, {
+      message: 'privacy request should move to verified after opening the verification URL',
+      timeout: 10_000,
+    }).toBe('verified')
 
-      const verifiedRequest = await lookupPrivacyRequest(sql, requester.email)
-      expect(verifiedRequest?.verifiedAt).toBeTruthy()
+    const verifiedRequest = await lookupPrivacyRequest(requester.email)
+    expect(verifiedRequest?.verifiedAt).toBeTruthy()
 
-      await expect.poll(async () => (await readCapturedEmails(capturePath!)).length, {
-        message: 'privacy verification should capture confirmation email',
-        timeout: 10_000,
-      }).toBeGreaterThanOrEqual(3)
+    await expect.poll(async () => (await readCapturedEmails(capturePath)).length, {
+      message: 'privacy verification should capture confirmation email',
+      timeout: 10_000,
+    }).toBeGreaterThanOrEqual(3)
 
-      const confirmationEmail = (await readCapturedEmails(capturePath!))
-        .find((email) => email.subject === 'Deletion request verified — Factory Careers')
-      expect(confirmationEmail, 'requester confirmation email should be captured').toBeTruthy()
-      expect(confirmationEmail?.renderError, 'requester confirmation email should render successfully').toBeUndefined()
-      expect(confirmationEmail?.to).toContain(requester.email)
-      expect(confirmationEmail?.text).toContain('Request verified')
-    }
-    finally {
-      await sql.end()
-    }
+    const confirmationEmail = (await readCapturedEmails(capturePath))
+      .find((email) => email.subject === 'Deletion request verified — Factory Careers')
+    expect(confirmationEmail, 'requester confirmation email should be captured').toBeTruthy()
+    expect(confirmationEmail?.renderError, 'requester confirmation email should render successfully').toBeUndefined()
+    expect(confirmationEmail?.to).toContain(requester.email)
+    expect(confirmationEmail?.text).toContain('Request verified')
   })
 
   test('fulfills a verified deletion request from the dashboard and removes matched applicant data', async ({ authenticatedPage, browser }, testInfo) => {
-    const capturePath = process.env.FACTORY_EMAIL_CAPTURE_PATH
-    expect(capturePath, 'FACTORY_EMAIL_CAPTURE_PATH must be set for privacy request E2E').toBeTruthy()
     expect(process.env.FACTORY_EMAIL_TEST_MODE, 'E2E mail must use capture mode, not a real provider').toBe('capture')
-    expect(process.env.DATABASE_URL, 'DATABASE_URL is required for privacy request e2e coverage').toBeTruthy()
-
-    await rm(capturePath!, { force: true })
-    const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
+    assertE2eDatabaseUrl('privacy request e2e coverage')
+    const capturePath = await setupCaptureFile('FACTORY_EMAIL_CAPTURE_PATH', 'privacy request E2E')
     const page = authenticatedPage
     const id = `${Date.now()}-${testInfo.workerIndex}-${Math.random().toString(36).slice(2)}`
     const requester = {
@@ -269,8 +171,7 @@ test.describe('Privacy request fake mail', () => {
       applicationState: 'CA',
     }
 
-    try {
-      const createJobResponse = await page.request.post('/api/jobs', {
+    const createJobResponse = await page.request.post('/api/jobs', {
         data: {
           title: `Privacy Fulfillment Role ${id}`,
           description: 'Role used to verify privacy request fulfillment removes applicant data.',
@@ -304,7 +205,7 @@ test.describe('Privacy request fake mail', () => {
       })
       expect(applyResponse.status(), `Apply API returned ${applyResponse.status()}`).toBe(201)
 
-      const candidateApplication = await lookupCandidateApplication(sql, requester.email)
+    const candidateApplication = await lookupCandidateApplication(requester.email)
       expect(candidateApplication, 'candidate/application fixture should be persisted').toBeTruthy()
 
       const privacyResponse = await page.request.post('/api/privacy-requests', {
@@ -319,12 +220,12 @@ test.describe('Privacy request fake mail', () => {
       })
       expect(privacyResponse.status(), `Privacy request API returned ${privacyResponse.status()}`).toBe(202)
 
-      await expect.poll(async () => (await readCapturedEmails(capturePath!)).length, {
+    await expect.poll(async () => (await readCapturedEmails(capturePath)).length, {
         message: 'privacy request should capture verification email',
         timeout: 10_000,
       }).toBeGreaterThanOrEqual(1)
 
-      const verificationEmail = (await readCapturedEmails(capturePath!))
+    const verificationEmail = (await readCapturedEmails(capturePath))
         .find((email) => email.subject === 'Verify your deletion request — Factory Careers')
       expect(verificationEmail, 'requester verification email should be captured').toBeTruthy()
       const verifyUrl = extractVerifyUrl(verificationEmail!)
@@ -333,12 +234,12 @@ test.describe('Privacy request fake mail', () => {
 
       const verifyResponse = await page.request.get(verifyUrl)
       expect(verifyResponse.status()).toBe(200)
-      await expect.poll(async () => (await lookupPrivacyRequest(sql, requester.email))?.status, {
+    await expect.poll(async () => (await lookupPrivacyRequest(requester.email))?.status, {
         message: 'privacy request should move to verified before dashboard fulfillment',
         timeout: 10_000,
       }).toBe('verified')
 
-      const verifiedRequest = await lookupPrivacyRequest(sql, requester.email)
+    const verifiedRequest = await lookupPrivacyRequest(requester.email)
       expect(verifiedRequest).toMatchObject({
         organizationId: candidateApplication!.organizationId,
         applicationId: candidateApplication!.applicationId,
@@ -385,16 +286,16 @@ test.describe('Privacy request fake mail', () => {
       await expect(page.getByText('completed').first()).toBeVisible()
       await expect(page.getByText('No candidates match this verified email in the active organization.')).toBeVisible()
 
-      await expect.poll(() => countCandidateRows(sql, candidateApplication!.candidateId), {
+    await expect.poll(() => countCandidateRows(candidateApplication!.candidateId), {
         message: 'fulfillment should delete matched candidate personal data',
         timeout: 10_000,
       }).toBe(0)
-      await expect.poll(() => countApplicationRows(sql, candidateApplication!.applicationId), {
+    await expect.poll(() => countApplicationRows(candidateApplication!.applicationId), {
         message: 'fulfillment should cascade-delete matched application data',
         timeout: 10_000,
       }).toBe(0)
 
-      const completedRequest = await lookupPrivacyRequest(sql, requester.email)
+    const completedRequest = await lookupPrivacyRequest(requester.email)
       expect(completedRequest).toMatchObject({
         id: verifiedRequest!.id,
         status: 'completed',
@@ -402,13 +303,9 @@ test.describe('Privacy request fake mail', () => {
       })
       expect(completedRequest?.completedAt).toBeTruthy()
       expect(completedRequest?.resolutionNotes).toContain(requester.email)
-      await expect.poll(() => countPrivacyAuditRows(sql, candidateApplication!.organizationId, verifiedRequest!.id), {
+    await expect.poll(() => countPrivacyAuditRows(candidateApplication!.organizationId, verifiedRequest!.id), {
         message: 'privacy fulfillment should preserve an audit trail',
         timeout: 10_000,
       }).toBeGreaterThanOrEqual(1)
-    }
-    finally {
-      await sql.end()
-    }
   })
 })

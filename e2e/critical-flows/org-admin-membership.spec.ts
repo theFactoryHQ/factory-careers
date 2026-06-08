@@ -1,81 +1,17 @@
 import type { Browser, Page } from '@playwright/test'
-import postgres from 'postgres'
 import { assertMutatingE2ESafety } from '../safety'
 import { expect, expectFloatingMenuNotClipped, selectFactorySelectOption, test } from '../fixtures'
+import {
+  lookupJoinRequestStatus,
+  lookupMemberByEmail,
+  lookupMembership,
+} from '../helpers/db'
 
 interface SignedInApplicant {
   email: string
   name: string
   page: Page
   close: () => Promise<void>
-}
-
-interface MembershipLookup {
-  userId: string
-  memberId: string
-  organizationId: string
-}
-
-async function lookupMembership(email: string, organizationName: string): Promise<MembershipLookup> {
-  expect(process.env.DATABASE_URL, 'DATABASE_URL is required for org admin e2e membership lookup').toBeTruthy()
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
-
-  try {
-    const [membership] = await sql<MembershipLookup[]>`
-      select
-        u.id as "userId",
-        m.id as "memberId",
-        o.id as "organizationId"
-      from "user" u
-      inner join "member" m on m."user_id" = u.id
-      inner join "organization" o on o.id = m."organization_id"
-      where u.email = ${email} and o.name = ${organizationName}
-      limit 1
-    `
-
-    expect(membership, `expected ${email} to belong to ${organizationName}`).toBeTruthy()
-    return membership
-  }
-  finally {
-    await sql.end()
-  }
-}
-
-async function lookupMemberByEmail(email: string, organizationId: string) {
-  expect(process.env.DATABASE_URL, 'DATABASE_URL is required for org admin e2e member lookup').toBeTruthy()
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
-
-  try {
-    const [member] = await sql<Array<{ id: string, role: string }>>`
-      select m.id, m.role
-      from "member" m
-      inner join "user" u on u.id = m."user_id"
-      where u.email = ${email} and m."organization_id" = ${organizationId}
-      limit 1
-    `
-    return member
-  }
-  finally {
-    await sql.end()
-  }
-}
-
-async function lookupJoinRequestStatus(requestId: string) {
-  expect(process.env.DATABASE_URL, 'DATABASE_URL is required for org admin e2e join-request lookup').toBeTruthy()
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
-
-  try {
-    const [request] = await sql<Array<{ status: string, reviewedAt: Date | null }>>`
-      select status, "reviewed_at" as "reviewedAt"
-      from "join_request"
-      where id = ${requestId}
-      limit 1
-    `
-    return request
-  }
-  finally {
-    await sql.end()
-  }
 }
 
 async function signUpWithoutOrganization(browser: Browser, baseURL: string, label: string): Promise<SignedInApplicant> {
