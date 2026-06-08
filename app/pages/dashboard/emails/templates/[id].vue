@@ -34,36 +34,31 @@ const notFound = computed(() => {
   return templates.value !== null && !customTemplate.value
 })
 
-// ─── Form state ──────────────────────────────────────────────────
-const form = reactive({
-  purpose: 'interview_invitation' as 'interview_invitation' | 'application_acknowledgement' | 'application_rejection',
-  name: '',
-  subject: '',
-  body: '',
-})
+const {
+  form,
+  purposeOptions,
+  showPreview,
+  previewSubject,
+  previewBody,
+  loadFromSource,
+  isDirtyComparedTo,
+  trimmedPayload,
+} = useEmailTemplateForm()
 
-const purposeOptions = [
-  { value: 'interview_invitation', label: 'Interview Invitation' },
-  { value: 'application_acknowledgement', label: 'Application Acknowledgement' },
-  { value: 'application_rejection', label: 'Application Rejection' },
-] as const
+const templateSource = computed(() =>
+  isSystemTemplate.value ? systemTemplate.value : customTemplate.value,
+)
 
 const hasLoaded = ref(false)
 const isDirty = computed(() => {
   if (!hasLoaded.value) return false
-  const source = isSystemTemplate.value ? systemTemplate.value : customTemplate.value
-  if (!source) return false
-  return form.purpose !== source.purpose || form.name !== source.name || form.subject !== source.subject || form.body !== source.body
+  return isDirtyComparedTo(templateSource.value)
 })
 
-// Initialize form from template data
 watchEffect(() => {
-  const source = isSystemTemplate.value ? systemTemplate.value : customTemplate.value
+  const source = templateSource.value
   if (source && !hasLoaded.value) {
-    form.name = source.name
-    form.purpose = source.purpose
-    form.subject = source.subject
-    form.body = source.body
+    loadFromSource(source)
     hasLoaded.value = true
   }
 })
@@ -73,19 +68,15 @@ const isSaving = ref(false)
 
 async function handleSave() {
   if (isSystemTemplate.value) return
-  if (!form.name.trim() || !form.subject.trim() || !form.body.trim()) {
+  const payload = trimmedPayload()
+  if (!payload.name || !payload.subject || !payload.body) {
     toast.error('All fields are required')
     return
   }
 
   isSaving.value = true
   try {
-    await updateTemplate(templateId, {
-      purpose: form.purpose,
-      name: form.name.trim(),
-      subject: form.subject.trim(),
-      body: form.body.trim(),
-    })
+    await updateTemplate(templateId, payload)
     toast.success('Template saved')
     hasLoaded.value = false // Re-sync
   } catch (err: any) {
@@ -133,31 +124,6 @@ async function handleDelete() {
     isDeleting.value = false
   }
 }
-
-// ─── Preview ─────────────────────────────────────────────────────
-const showPreview = ref(false)
-
-const sampleVariables: Record<string, string> = {
-  candidateName: 'Alex Johnson',
-  candidateFirstName: 'Alex',
-  candidateLastName: 'Johnson',
-  candidateEmail: 'alex@example.com',
-  jobTitle: 'Senior Frontend Engineer',
-  interviewTitle: 'Technical Interview — Round 2',
-  interviewDate: 'Monday, March 16, 2026',
-  interviewTime: '2:00 PM',
-  interviewDuration: '60',
-  interviewType: 'Video Call',
-  interviewLocation: 'https://meet.google.com/abc-defg-hij',
-  interviewers: 'Sarah Chen, Michael Park',
-  organizationName: 'Acme Corp',
-  applicationDate: 'March 16, 2026',
-  applicationStatus: 'Rejected',
-  dashboardApplicationUrl: 'https://careers.example.com/dashboard/applications/app_123',
-}
-
-const previewSubject = computed(() => renderTemplatePreview(form.subject, sampleVariables))
-const previewBody = computed(() => renderTemplatePreview(form.body, sampleVariables))
 
 useSeoMeta({
   title: computed(() => form.name ? `${form.name} — Email Templates — Factory Careers` : 'Email Template — Factory Careers'),

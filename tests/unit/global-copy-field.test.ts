@@ -9,7 +9,7 @@ describe('global copy field', () => {
   it('provides a reusable click-anywhere copy field with animated success state', () => {
     const component = readProjectFile('app/components/CopyField.vue')
 
-    expect(component).toContain('navigator.clipboard.writeText(props.value)')
+    expect(component).toContain('useCopyToClipboard()')
     expect(component).toContain('@click="copyValue"')
     expect(component).toContain('CheckCircle2')
     expect(component).toContain('copied ?')

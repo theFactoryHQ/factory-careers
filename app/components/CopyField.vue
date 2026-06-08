@@ -22,30 +22,20 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
-const copied = ref(false)
-let resetTimer: ReturnType<typeof setTimeout> | null = null
+const { copied, copy } = useCopyToClipboard()
 
 async function copyValue() {
   if (!props.value) return
 
-  try {
-    await navigator.clipboard.writeText(props.value)
-    copied.value = true
+  const didCopy = await copy(props.value)
+  if (didCopy) {
     emit('copied', props.value)
-
-    if (resetTimer) clearTimeout(resetTimer)
-    resetTimer = setTimeout(() => {
-      copied.value = false
-    }, 1600)
-  } catch {
-    emit('error', props.value)
-    toast.info(props.value)
+    return
   }
-}
 
-onBeforeUnmount(() => {
-  if (resetTimer) clearTimeout(resetTimer)
-})
+  emit('error', props.value)
+  toast.info(props.value)
+}
 </script>
 
 <template>

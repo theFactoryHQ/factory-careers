@@ -1,82 +1,14 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
-import {
-  Building2, Users, UserCircle, Settings, Plug, Brain, ShieldCheck, Globe, FileCheck2,
-} from 'lucide-vue-next'
+import { Settings } from 'lucide-vue-next'
+import { filterVisibleSettingsNav, settingsNavItems } from '~/config/settings-nav'
 
 const route = useRoute()
 const localePath = useLocalePath()
 const runtimeConfig = useRuntimeConfig()
 const languageFeatureEnabled = runtimeConfig.public.languageFeatureEnabled === true
 
-const settingsNav: Array<{
-  label: string
-  description: string
-  to: string
-  icon: Component
-  exact: boolean
-  badge?: string
-}> = [
-  {
-    label: 'General',
-    description: 'Organization profile',
-    to: '/dashboard/settings',
-    icon: Building2,
-    exact: true,
-  },
-  {
-    label: 'Localization',
-    description: 'Names & date formats',
-    to: '/dashboard/settings/localization',
-    icon: Globe,
-    exact: true,
-  },
-  {
-    label: 'Members',
-    description: 'Team & invitations',
-    to: '/dashboard/settings/members',
-    icon: Users,
-    exact: true,
-  },
-  {
-    label: 'Integrations',
-    description: 'Calendar & services',
-    to: '/dashboard/settings/integrations',
-    icon: Plug,
-    exact: true,
-  },
-  {
-    label: 'AI Configuration',
-    description: 'Models & API keys',
-    to: '/dashboard/settings/ai',
-    icon: Brain,
-    exact: true,
-  },
-  {
-    label: 'Single Sign-On',
-    description: 'Enterprise SSO',
-    to: '/dashboard/settings/sso',
-    icon: ShieldCheck,
-    exact: true,
-  },
-  {
-    label: 'Privacy Requests',
-    description: 'Deletion reviews',
-    to: '/dashboard/settings/privacy-requests',
-    icon: FileCheck2,
-    exact: true,
-  },
-  {
-    label: 'Account',
-    description: 'Profile & security',
-    to: '/dashboard/settings/account',
-    icon: UserCircle,
-    exact: true,
-  },
-]
-
 const visibleSettingsNav = computed(() =>
-  settingsNav.filter((item) => languageFeatureEnabled || item.to !== '/dashboard/settings/localization'),
+  filterVisibleSettingsNav(settingsNavItems, languageFeatureEnabled),
 )
 
 function isActive(to: string, exact: boolean) {

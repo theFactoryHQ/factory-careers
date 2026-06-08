@@ -10,8 +10,7 @@ describe('applicant email copy behavior', () => {
   it('uses a shared inline copy control for applicant email displays', () => {
     const component = readProjectFile('app/components/CopyEmailButton.vue')
 
-    expect(component).toContain('navigator.clipboard.writeText(email)')
-    expect(component).toContain("document.execCommand('copy')")
+    expect(component).toContain('useCopyToClipboard({ useFallback: true })')
     expect(component).toContain("toast.success('Email copied', email)")
     expect(component).not.toContain('mailto:')
   })

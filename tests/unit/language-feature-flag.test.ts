@@ -63,12 +63,15 @@ describe('language feature flag', () => {
   })
 
   it('hides localization settings navigation when language support is disabled', () => {
+    const settingsNav = read('app/config/settings-nav.ts')
     const sidebar = read('app/components/SettingsSidebar.vue')
     const mobileNav = read('app/components/SettingsMobileNav.vue')
 
+    expect(settingsNav).toMatch(/filterVisibleSettingsNav/)
+    expect(settingsNav).toMatch(/languageFeatureEnabled \|\| item\.to !== '\/dashboard\/settings\/localization'/)
     expect(sidebar).toMatch(/languageFeatureEnabled/)
-    expect(sidebar).toMatch(/filter\(\(item\) => languageFeatureEnabled \|\| item\.to !== '\/dashboard\/settings\/localization'\)/)
+    expect(sidebar).toMatch(/filterVisibleSettingsNav\(settingsNavItems, languageFeatureEnabled\)/)
     expect(mobileNav).toMatch(/languageFeatureEnabled/)
-    expect(mobileNav).toMatch(/filter\(\(item\) => languageFeatureEnabled \|\| item\.to !== '\/dashboard\/settings\/localization'\)/)
+    expect(mobileNav).toMatch(/filterVisibleSettingsNav\(settingsNavItems, languageFeatureEnabled\)/)
   })
 })
