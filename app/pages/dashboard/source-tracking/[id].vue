@@ -58,12 +58,17 @@ const {
 } = useFetch(() => `/api/tracking-links/${linkId.value}/stats`, {
   key: `tracking-link-detail-${linkId.value}`,
   headers: useRequestHeaders(['cookie']),
+  getCachedData: getSwrCachedData,
   query: computed(() => {
     const q: Record<string, string> = {}
     if (dateFrom.value) q.from = dateFrom.value
     return q
   }),
 })
+
+watchFetchSwrStamp(detail)
+
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, detail)
 
 const link = computed(() => detail.value?.link)
 const funnel = computed(() => detail.value?.funnel ?? { new: 0, screening: 0, interview: 0, offer: 0, hired: 0, rejected: 0 })
@@ -231,8 +236,10 @@ async function handleSidebarUpdated() {
 
 <template>
   <div class="mx-auto max-w-6xl">
+    <StaleRevalidateBar v-if="isRevalidating" />
+
     <!-- ─── Loading skeleton ─── -->
-    <div v-if="fetchStatus === 'pending'">
+    <div v-if="showSkeleton">
       <div class="mb-8">
         <div class="h-4 w-32 bg-surface-200 dark:bg-surface-700 rounded animate-pulse mb-4" />
         <div class="h-8 w-64 bg-surface-200 dark:bg-surface-700 rounded-lg animate-pulse mb-2" />

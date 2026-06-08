@@ -40,10 +40,12 @@ type InterviewStatus = typeof STATUS_OPTIONS[number]
 const activeStatus = ref<InterviewStatus | undefined>(undefined)
 const activeView = ref<'list' | 'calendar'>('list')
 
-const { interviews, total, status: fetchStatus, error, refresh, updateInterview, deleteInterviewById } = useInterviews({
+const { data, interviews, total, status: fetchStatus, error, refresh, updateInterview, deleteInterviewById } = useInterviews({
   status: activeStatus,
   limit: 100,
 })
+
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, data)
 
 // ─── Filtered + sorted ───────────────────────────────────────────
 const filteredInterviews = computed(() => {
@@ -311,6 +313,8 @@ const statusCounts = computed(() => {
 
 <template>
   <div class="mx-auto max-w-6xl">
+    <StaleRevalidateBar v-if="isRevalidating" />
+
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -377,7 +381,7 @@ const statusCounts = computed(() => {
     </div>
 
     <!-- Loading state -->
-    <div v-if="fetchStatus === 'pending'">
+    <div v-if="showSkeleton">
       <div class="space-y-3">
         <div
           v-for="i in 3"

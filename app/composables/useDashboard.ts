@@ -45,6 +45,7 @@ export function useDashboard() {
   const topJobs = computed(() => data.value?.topJobs ?? [])
 
   return {
+    data,
     counts,
     pipeline,
     jobsByStatus,

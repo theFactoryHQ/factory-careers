@@ -68,13 +68,15 @@ function clearFilters() {
   propertyFilters.value = []
 }
 
-const { candidates, total, fetchStatus, error, refresh } = useCandidates({
+const { data, candidates, total, fetchStatus, error, refresh } = useCandidates({
   search: debouncedSearch,
   gender: filterGender,
   dobFrom: filterDobFrom,
   dobTo: filterDobTo,
   propertyFilters,
 })
+
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, data)
 
 // Org localization (name + date format)
 const { formatCandidateName, formatDateTime } = useOrgSettings()
@@ -207,6 +209,8 @@ const selectedCandidateId = ref<string | null>(null)
 
 <template>
   <div class="mx-auto max-w-6xl">
+    <StaleRevalidateBar v-if="isRevalidating" />
+
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -333,7 +337,7 @@ const selectedCandidateId = ref<string | null>(null)
     </FilterDrawer>
 
     <!-- Loading state -->
-    <div v-if="fetchStatus === 'pending'" class="text-center py-12 text-white/60">
+    <div v-if="showSkeleton" class="text-center py-12 text-white/60">
       Loading candidates…
     </div>
 

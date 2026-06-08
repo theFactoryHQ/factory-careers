@@ -19,6 +19,8 @@ const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 const toast = useToast()
 
 const { candidate, status: fetchStatus, error, refresh, updateCandidate, deleteCandidate } = useCandidate(candidateId)
+
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, candidate)
 const { formatCandidateName } = useOrgSettings()
 
 useSeoMeta({
@@ -227,6 +229,8 @@ const {
 
 <template>
   <div class="mx-auto w-full max-w-3xl">
+    <StaleRevalidateBar v-if="isRevalidating" />
+
     <!-- Back link -->
     <AppBackLink
       :to="$localePath('/dashboard/candidates')"
@@ -236,7 +240,7 @@ const {
     </AppBackLink>
 
     <!-- Loading -->
-    <div v-if="fetchStatus === 'pending'" class="py-12 text-center text-white/50">
+    <div v-if="showSkeleton" class="py-12 text-center text-white/50">
       Loading candidate…
     </div>
 

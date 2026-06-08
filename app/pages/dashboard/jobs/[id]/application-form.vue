@@ -18,6 +18,8 @@ const toast = useToast()
 const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 
 const { job, status: fetchStatus, error, updateJob } = useJob(jobId)
+
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, job)
 const { defaultSalaryUnit } = useOrgSettings()
 const { questions: previewQuestions } = useJobQuestions(jobId)
 const showApplicationPreview = ref(false)
@@ -390,10 +392,12 @@ async function copyTrackingUrl(code: string) {
 
 <template>
   <div class="mx-auto max-w-3xl">
+    <StaleRevalidateBar v-if="isRevalidating" />
+
     <JobSubNavActions :job-id="jobId" />
 
     <!-- Loading -->
-    <div v-if="fetchStatus === 'pending' && !job" class="text-center py-12 text-surface-400">
+    <div v-if="showSkeleton" class="text-center py-12 text-surface-400">
       Loading…
     </div>
 

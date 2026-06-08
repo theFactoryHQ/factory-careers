@@ -14,6 +14,8 @@ const { track } = useTrack()
 
 const { job, status: fetchStatus, error: fetchError, deleteJob } = useJob(jobId)
 
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, job)
+
 useSeoMeta({
   title: computed(() =>
     job.value ? `Settings — ${job.value.title} — Factory Careers` : 'Job Settings — Factory Careers',
@@ -40,9 +42,11 @@ async function handleDelete() {
 
 <template>
   <div class="mx-auto max-w-3xl">
+    <StaleRevalidateBar v-if="isRevalidating" />
+
     <JobSubNavActions :job-id="jobId" />
 
-    <div v-if="fetchStatus === 'pending' && !job" class="py-12 text-center text-surface-400">
+    <div v-if="showSkeleton" class="py-12 text-center text-surface-400">
       Loading...
     </div>
 

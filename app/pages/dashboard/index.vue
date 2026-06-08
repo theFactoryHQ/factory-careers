@@ -29,6 +29,7 @@ let dashboardNowTimer: ReturnType<typeof setInterval> | undefined
 // ─────────────────────────────────────────────
 
 const {
+  data,
   counts,
   jobsByStatus,
   recentApplications,
@@ -37,6 +38,8 @@ const {
   error,
   refresh,
 } = useDashboard()
+
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, data)
 
 // ─────────────────────────────────────────────
 // Upcoming interviews (next 7 days)
@@ -162,8 +165,10 @@ const isEmpty = computed(() =>
 
 <template>
   <div class="mx-auto max-w-6xl">
+    <StaleRevalidateBar v-if="isRevalidating" />
+
     <!-- ─── Loading skeleton ─── -->
-    <div v-if="fetchStatus === 'pending'">
+    <div v-if="showSkeleton">
       <!-- Header skeleton -->
       <div class="mb-10">
         <div class="h-8 w-56 bg-surface-200 dark:bg-surface-700 rounded-lg animate-pulse mb-2" />
