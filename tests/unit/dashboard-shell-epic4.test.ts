@@ -13,6 +13,8 @@ describe('dashboard shell epic 4', () => {
 
     for (const snippet of [
       'useFocusTrap',
+      'previousBodyOverflow',
+      'document.body.style.overflow = previousBodyOverflow',
       'factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-[55]',
       'fixed inset-y-0 right-0 z-[60]',
       'Open full page',
@@ -39,6 +41,11 @@ describe('dashboard shell epic 4', () => {
       '<AppModalShell',
       '<AppModalPanel',
       'useDebouncedRef',
+      'import.meta.dev',
+      'ApplicationLinkModal requires candidateId when mode is "job".',
+      'ApplicationLinkModal requires jobId when mode is "candidate".',
+      'immediate: props.mode === \'job\'',
+      'immediate: props.mode === \'candidate\'',
       'Choose an open role for this candidate.',
       'Search candidates by name or email',
     ]) {

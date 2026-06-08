@@ -26,12 +26,22 @@ const resolvedZIndexClass = computed(() => props.zIndexClass ?? (props.mode === 
 
 const modalAriaLabel = computed(() => props.mode === 'job' ? 'Apply to job' : 'Add candidate')
 
+if (import.meta.dev) {
+  if (props.mode === 'job' && !props.candidateId) {
+    throw new Error('ApplicationLinkModal requires candidateId when mode is "job".')
+  }
+  if (props.mode === 'candidate' && !props.jobId) {
+    throw new Error('ApplicationLinkModal requires jobId when mode is "candidate".')
+  }
+}
+
 // ─── Job mode: list open roles for a candidate ────────────────────────────────
 
 const { data: jobData, status: jobFetchStatus } = useFetch('/api/jobs', {
   key: 'application-link-job-list',
   query: { status: 'open' },
   headers: useRequestHeaders(['cookie']),
+  immediate: props.mode === 'job',
 })
 
 const jobs = computed(() => jobData.value?.data ?? [])
@@ -51,6 +61,7 @@ const { data: candidateData, status: searchStatus } = useFetch('/api/candidates'
     limit: 20,
   })),
   headers: useRequestHeaders(['cookie']),
+  immediate: props.mode === 'candidate',
 })
 
 const candidates = computed(() => candidateData.value?.data ?? [])
@@ -77,12 +88,22 @@ async function createApplication(payload: { candidateId: string, jobId: string }
 }
 
 function applyToJob(jobId: string) {
-  if (!props.candidateId) return
+  if (!props.candidateId) {
+    if (import.meta.dev) {
+      throw new Error('ApplicationLinkModal requires candidateId when mode is "job".')
+    }
+    return
+  }
   return createApplication({ candidateId: props.candidateId, jobId })
 }
 
 function applyCandidate(candidateId: string) {
-  if (!props.jobId) return
+  if (!props.jobId) {
+    if (import.meta.dev) {
+      throw new Error('ApplicationLinkModal requires jobId when mode is "candidate".')
+    }
+    return
+  }
   return createApplication({ candidateId, jobId: props.jobId })
 }
 </script>

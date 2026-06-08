@@ -13,13 +13,15 @@ const emit = defineEmits<{
 }>()
 
 const drawerRef = ref<HTMLElement | null>(null)
+let previousBodyOverflow = ''
 
 onMounted(() => {
+  previousBodyOverflow = document.body.style.overflow
   document.body.style.overflow = 'hidden'
 })
 
 onUnmounted(() => {
-  document.body.style.overflow = ''
+  document.body.style.overflow = previousBodyOverflow
 })
 
 useFocusTrap({
