@@ -7,17 +7,24 @@ function readProjectFile(path: string) {
 }
 
 describe('table fullscreen mode', () => {
+  it('useDashboardListPage exits fullscreen on Escape', () => {
+    const helper = readProjectFile('app/composables/useDashboardListPage.ts')
+
+    expect(helper).toContain("event.key === 'Escape' && isFullscreen.value")
+    expect(helper).toContain('window.addEventListener')
+    expect(helper).toContain('window.removeEventListener')
+  })
+
   for (const path of [
     'app/pages/dashboard/candidates/index.vue',
     'app/pages/dashboard/applications/index.vue',
   ]) {
-    it(`${path} uses an opaque fullscreen surface and exits on Escape`, () => {
+    it(`${path} uses an opaque fullscreen surface and shared list page state`, () => {
       const source = readProjectFile(path)
 
       expect(source).toContain('factory-fullscreen-surface')
-      expect(source).toContain("event.key === 'Escape' && isFullscreen.value")
-      expect(source).toContain('window.addEventListener')
-      expect(source).toContain('window.removeEventListener')
+      expect(source).toContain('useDashboardListPage')
+      expect(source).toContain('isFullscreen')
     })
   }
 
