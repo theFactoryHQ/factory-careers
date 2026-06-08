@@ -49,6 +49,7 @@ describe('scoring feedback and history', () => {
 
   it('renders the scoring feedback control next to scoring actions on both application detail surfaces', () => {
     const component = readProjectFile('app/components/ScoringFeedbackControl.vue')
+    const scoringPanel = readProjectFile('app/components/ApplicationScoringPanel.vue')
     const drawer = readProjectFile('app/components/ApplicationDetailDrawer.vue')
     const fullPage = readProjectFile('app/pages/dashboard/applications/[id].vue')
 
@@ -59,8 +60,12 @@ describe('scoring feedback and history', () => {
     expect(component).toContain("submitFeedback('up')")
     expect(component).toContain('$fetch(`/api/applications/${props.applicationId}/scoring-feedback`')
 
+    expect(scoringPanel).toContain('<ScoringFeedbackControl')
+    expect(scoringPanel).toContain(':application-id="applicationId"')
+    expect(scoringPanel).toContain(':analysis-run-id="analysisRunId"')
+
     for (const source of [drawer, fullPage]) {
-      expect(source).toContain('<ScoringFeedbackControl')
+      expect(source).toContain('<ApplicationScoringPanel')
       expect(source).toContain(':application-id="applicationId"')
       expect(source).toContain(':analysis-run-id="scoringData?.latestRun?.id ?? null"')
     }

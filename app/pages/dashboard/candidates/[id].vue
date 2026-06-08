@@ -153,63 +153,22 @@ function openScheduleInterview(app: { id: string; job: { title: string } }) {
 // Documents — upload, download, delete
 // ─────────────────────────────────────────────
 
-const { uploadDocument, downloadDocument, getPreviewUrl, deleteDocument } = useDocuments()
-
-const fileInput = ref<HTMLInputElement | null>(null)
-const selectedDocType = ref<'resume' | 'cover_letter' | 'other'>('resume')
-const isUploading = ref(false)
-const showDocDeleteConfirm = ref<string | null>(null)
-const isDeletingDoc = ref(false)
-const documentPreview = useDocumentPreview({
+const {
+  fileInput,
+  selectedDocType,
+  isUploading,
+  showDocDeleteConfirm,
+  isDeletingDoc,
+  documentPreview,
+  documentPreviewState,
+  triggerFileSelect,
+  handleFileSelected,
+  handleDeleteDoc,
+} = useApplicationDocumentActions({
+  candidateId,
   documents: () => candidate.value?.documents,
-  getPreviewUrl,
-  downloadDocument,
-  onDownloadError: () => toast.error('Failed to download document'),
+  trackDownloads: false,
 })
-const documentPreviewState = computed(() => ({
-  showPreview: documentPreview.showPreview.value,
-  previewUrl: documentPreview.previewUrl.value,
-  previewFilename: documentPreview.previewFilename.value,
-  previewDocId: documentPreview.previewDocId.value,
-  previewError: documentPreview.previewError.value,
-  isPdfPreview: documentPreview.isPdfPreview.value,
-}))
-
-function triggerFileSelect() {
-  fileInput.value?.click()
-}
-
-async function handleFileSelected(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-
-  isUploading.value = true
-
-  try {
-    await uploadDocument(candidateId, file, selectedDocType.value)
-  } catch (err: any) {
-    const msg = err.data?.statusMessage ?? err.statusMessage ?? 'Upload failed'
-    toast.error('Upload failed', { message: msg, statusCode: err.data?.statusCode ?? err.statusCode })
-  } finally {
-    isUploading.value = false
-    // Reset input so the same file can be re-selected
-    input.value = ''
-  }
-}
-
-async function handleDeleteDoc(docId: string) {
-  isDeletingDoc.value = true
-  try {
-    await deleteDocument(docId, candidateId)
-    showDocDeleteConfirm.value = null
-  } catch (err: any) {
-    if (handlePreviewReadOnlyError(err)) return
-    toast.error('Failed to delete document', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
-  } finally {
-    isDeletingDoc.value = false
-  }
-}
 
 </script>
 
