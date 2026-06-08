@@ -37,7 +37,11 @@ describe('panel close buttons', () => {
       'app/components/ApplicationLinkModal.vue',
     ]) {
       const source = readProjectFile(path)
-      expect(source, `${path} close button should be an explicit button type`).toMatch(/type="button"[\s\S]*ui-panel-close-button|ui-panel-close-button[\s\S]*type="button"/)
+      const closeButtons = [...source.matchAll(/<button\b[^>]*\bui-panel-close-button\b[^>]*>/g)]
+      expect(closeButtons.length, `${path} should declare a ui-panel-close-button`).toBeGreaterThan(0)
+      for (const [match] of closeButtons) {
+        expect(match, `${path} panel close button should be an explicit button type`).toContain('type="button"')
+      }
     }
   })
 })
