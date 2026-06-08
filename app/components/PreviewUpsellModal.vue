@@ -2,7 +2,7 @@
 import { Eye, X, Github, Rocket, Cloud } from 'lucide-vue-next'
 
 const emit = defineEmits<{
-  (e: 'close'): void
+  close: []
 }>()
 
 const { message } = usePreviewReadOnly()

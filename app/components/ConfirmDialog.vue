@@ -29,8 +29,8 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'close'): void
-  (e: 'confirm'): void
+  close: []
+  confirm: []
 }>()
 
 const confirmButtonClass = computed(() => (
