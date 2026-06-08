@@ -30,7 +30,7 @@ describe('application detail epic 5 pr2', () => {
     expect(source).toContain('focusOnEdit: true')
     expect(source).toContain('source: options.source')
     expect(source).toContain('updateApplication({ notes })')
-    expect(source).toContain('updateApplication({ status: status as any })')
+    expect(source).toContain('updateApplication({ status: status as ApplicationStatus })')
   })
 
   it('uses the shared surface composable on drawer and full page', () => {

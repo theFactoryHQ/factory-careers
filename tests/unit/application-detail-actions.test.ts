@@ -51,11 +51,21 @@ describe('application detail shared actions', () => {
   })
 
   it('uses the shared composables on every application detail surface', () => {
+    const surfaceComposable = readProjectFile('app/composables/useApplicationDetailSurface.ts')
+
+    expect(surfaceComposable).toContain('useApplicationStatusActions')
+    expect(surfaceComposable).toContain('useEditableApplicationNotes')
+
     for (const path of applicationDetailSurfaces) {
       const source = readProjectFile(path)
+      const usesSharedSurface = path !== 'app/components/CandidateDetailSidebar.vue'
 
-      expect(source, `${path} should use shared status actions`).toContain('useApplicationStatusActions')
-      expect(source, `${path} should use shared editable notes`).toContain('useEditableApplicationNotes')
+      if (usesSharedSurface) {
+        expect(source, `${path} should use shared surface orchestration`).toContain('useApplicationDetailSurface')
+      } else {
+        expect(source, `${path} should use shared status actions`).toContain('useApplicationStatusActions')
+        expect(source, `${path} should use shared editable notes`).toContain('useEditableApplicationNotes')
+      }
       expect(source, `${path} should not define local status transitions`).not.toContain('APPLICATION_STATUS_TRANSITIONS')
       expect(source, `${path} should not define local transition state`).not.toContain('const isTransitioning = ref')
       expect(source, `${path} should not define local transition handler`).not.toContain('function handleTransition')

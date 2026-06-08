@@ -1,4 +1,5 @@
 import type { MaybeRefOrGetter } from 'vue'
+import type { ApplicationStatus } from '~~/shared/application-status'
 
 type ApplicationDetailTarget = {
   score: number | null
@@ -46,7 +47,7 @@ export function useApplicationDetailSurface(options: UseApplicationDetailSurface
 
   const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicationStatusActions({
     application: options.application,
-    updateStatus: status => options.updateApplication({ status: status as any }),
+    updateStatus: status => options.updateApplication({ status: status as ApplicationStatus }),
   })
 
   const {
