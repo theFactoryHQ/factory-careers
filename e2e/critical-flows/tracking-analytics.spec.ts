@@ -1,4 +1,4 @@
-import { test, expect, selectFactorySelectOption } from '../fixtures'
+import { test, expect, selectFactorySelectOption, withGuestContext } from '../fixtures'
 
 const JOB_TITLE = 'Tracking Analytics Test Job'
 const LINK_NAME = 'LinkedIn Analytics Campaign'
@@ -89,33 +89,33 @@ test.describe('Tracking analytics', () => {
     const copiedUrls = await page.evaluate(() => (window as any).__copiedTrackingUrls as string[])
     expect(copiedUrls.at(-1)).toContain(`/api/public/track/${encodeURIComponent(trackingLink.code)}`)
 
-    const candidateContext = await browser.newContext()
-    const candidatePage = await candidateContext.newPage()
-    await candidatePage.goto(`/api/public/track/${trackingLink.code}`)
-    await candidatePage.waitForURL('**/jobs?ref=*', { waitUntil: 'commit', timeout: 15_000 })
-    expect(new URL(candidatePage.url()).searchParams.get('ref')).toBe(trackingLink.code)
+    await withGuestContext(browser, async (candidatePage) => {
+      await candidatePage.goto(`/api/public/track/${trackingLink.code}`)
+      await candidatePage.waitForURL('**/jobs?ref=*', { waitUntil: 'commit', timeout: 15_000 })
+      expect(new URL(candidatePage.url()).searchParams.get('ref')).toBe(trackingLink.code)
 
-    await candidatePage.getByRole('link', { name: jobTitle }).first().click()
-    await candidatePage.waitForURL(`**/jobs/${publishedJob.slug}**`, { waitUntil: 'commit', timeout: 15_000 })
-    await candidatePage.getByRole('link', { name: 'Apply Now' }).first().click()
-    await candidatePage.waitForURL(`**/jobs/${publishedJob.slug}/apply**`, { waitUntil: 'commit', timeout: 15_000 })
-    expect(new URL(candidatePage.url()).searchParams.get('ref')).toBe(trackingLink.code)
+      await candidatePage.getByRole('link', { name: jobTitle }).first().click()
+      await candidatePage.waitForURL(`**/jobs/${publishedJob.slug}**`, { waitUntil: 'commit', timeout: 15_000 })
+      await candidatePage.getByRole('link', { name: 'Apply Now' }).first().click()
+      await candidatePage.waitForURL(`**/jobs/${publishedJob.slug}/apply**`, { waitUntil: 'commit', timeout: 15_000 })
+      expect(new URL(candidatePage.url()).searchParams.get('ref')).toBe(trackingLink.code)
 
-    const applyResponse = await candidatePage.request.post(`/api/public/jobs/${publishedJob.slug}/apply`, {
-      data: {
-        firstName: applicant.firstName,
-        lastName: applicant.lastName,
-        email: applicant.email,
-        country: 'United States',
-        state: 'CA',
-        ref: trackingLink.code,
-        utmSource: 'linkedin',
-        utmMedium: 'social',
-        utmCampaign: UTM_CAMPAIGN,
-        responses: [],
-      },
+      const applyResponse = await candidatePage.request.post(`/api/public/jobs/${publishedJob.slug}/apply`, {
+        data: {
+          firstName: applicant.firstName,
+          lastName: applicant.lastName,
+          email: applicant.email,
+          country: 'United States',
+          state: 'CA',
+          ref: trackingLink.code,
+          utmSource: 'linkedin',
+          utmMedium: 'social',
+          utmCampaign: UTM_CAMPAIGN,
+          responses: [],
+        },
+      })
+      expect(applyResponse.status(), `Apply API returned ${applyResponse.status()}`).toBe(201)
     })
-    expect(applyResponse.status(), `Apply API returned ${applyResponse.status()}`).toBe(201)
 
     await expect.poll(async () => {
       const response = await page.request.get(`/api/tracking-links/${trackingLink.id}`)
@@ -140,7 +140,5 @@ test.describe('Tracking analytics', () => {
     await expect(attributionRow).toContainText(jobTitle)
     await expect(attributionRow).toContainText('LinkedIn')
     await expect(attributionRow).toContainText(`via ${linkName}`)
-
-    await candidateContext.close()
   })
 })

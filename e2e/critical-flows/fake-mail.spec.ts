@@ -1,6 +1,6 @@
 import { rm } from "node:fs/promises";
 import type { Page } from "@playwright/test";
-import { test, expect, selectFactorySelectOption } from "../fixtures";
+import { test, expect, selectFactorySelectOption, withGuestContext } from "../fixtures";
 import { readCapturedEmails } from "../helpers/captured-emails";
 
 const JOB_TITLE = "Email Capture Test Job";
@@ -75,27 +75,27 @@ test.describe("Fake mail capture", () => {
     expect(publishedJob.slug, "published job slug must be present").toBeTruthy();
     await expect(recruiterPage.getByRole("heading", { name: "Your job is live!" })).toBeVisible({ timeout: 30_000 });
 
-    const candidateContext = await browser.newContext();
-    const candidatePage = await candidateContext.newPage();
-    await candidatePage.goto(`/jobs/${publishedJob.slug}/apply`);
-    await candidatePage.waitForLoadState("networkidle");
-    await candidatePage.getByLabel("First name").fill(applicant.firstName);
-    await candidatePage.getByLabel("Last name").fill(applicant.lastName);
-    await candidatePage.getByLabel("Email").fill(applicant.email);
-    await selectFactorySelectOption(candidatePage, /Country/, "United States");
-    await selectFactorySelectOption(candidatePage, /State/, "California");
+    await withGuestContext(browser, async (candidatePage) => {
+      await candidatePage.goto(`/jobs/${publishedJob.slug}/apply`);
+      await candidatePage.waitForLoadState("networkidle");
+      await candidatePage.getByLabel("First name").fill(applicant.firstName);
+      await candidatePage.getByLabel("Last name").fill(applicant.lastName);
+      await candidatePage.getByLabel("Email").fill(applicant.email);
+      await selectFactorySelectOption(candidatePage, /Country/, "United States");
+      await selectFactorySelectOption(candidatePage, /State/, "California");
 
-    const submitButton = await advanceToSubmitButton(candidatePage);
-    const [applyResponse] = await Promise.all([
-      candidatePage.waitForResponse(
-        (resp) => resp.url().includes(`/api/public/jobs/${publishedJob.slug}/apply`) && resp.request().method() === "POST",
-        { timeout: 30_000 },
-      ),
-      submitButton.click(),
-    ]);
-    expect(applyResponse.status(), `Apply API returned ${applyResponse.status()}`).toBe(201);
-    await candidatePage.waitForURL(`**/jobs/${publishedJob.slug}/confirmation`, { waitUntil: "commit", timeout: 15_000 });
-    await expect(candidatePage.getByRole("heading", { name: "Application submitted" })).toBeVisible();
+      const submitButton = await advanceToSubmitButton(candidatePage);
+      const [applyResponse] = await Promise.all([
+        candidatePage.waitForResponse(
+          (resp) => resp.url().includes(`/api/public/jobs/${publishedJob.slug}/apply`) && resp.request().method() === "POST",
+          { timeout: 30_000 },
+        ),
+        submitButton.click(),
+      ]);
+      expect(applyResponse.status(), `Apply API returned ${applyResponse.status()}`).toBe(201);
+      await candidatePage.waitForURL(`**/jobs/${publishedJob.slug}/confirmation`, { waitUntil: "commit", timeout: 15_000 });
+      await expect(candidatePage.getByRole("heading", { name: "Application submitted" })).toBeVisible();
+    });
 
     await expect.poll(async () => (await readCapturedEmails(capturePath!)).length, {
       message: "application submission should capture receipt and team alert emails",
@@ -119,7 +119,5 @@ test.describe("Fake mail capture", () => {
     expect(teamAlert?.text).toContain(applicant.email);
     expect(teamAlert?.text).toContain(jobTitle);
     expect(teamAlert?.text).toContain(`/dashboard/applications/`);
-
-    await candidateContext.close();
   });
 });

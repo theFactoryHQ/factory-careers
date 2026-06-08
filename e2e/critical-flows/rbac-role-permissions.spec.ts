@@ -1,84 +1,17 @@
-import { type Browser, type Page } from '@playwright/test'
-import { test, expect } from '../fixtures'
+import { test, expect, signUpUser } from '../fixtures'
 import { grantOrganizationRole, lookupMembership } from '../helpers/db'
-
-interface SignedInOrg {
-  page: Page
-  userId: string
-  organizationId: string
-  close: () => Promise<void>
-}
-
-async function signUpWithOrg(browser: Browser, label: string): Promise<SignedInOrg> {
-  const context = await browser.newContext()
-  const page = await context.newPage()
-  const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
-  const account = {
-    name: `RBAC ${label} ${id}`,
-    email: `rbac-${label}-${id}@test.local`,
-    password: 'TestPassword123!',
-    orgName: `RBAC ${label} Org ${id}`,
-  }
-
-  await page.goto('/auth/sign-up')
-  await page.waitForLoadState('networkidle')
-  await page.getByLabel('Name').fill(account.name)
-  await page.getByLabel('Email').fill(account.email)
-  await page.getByLabel('Password', { exact: true }).fill(account.password)
-  await page.getByLabel('Confirm password').fill(account.password)
-
-  await Promise.all([
-    page.waitForResponse(
-      resp => resp.url().includes('/api/auth/sign-up') && resp.status() === 200,
-      { timeout: 30_000 },
-    ),
-    page.getByRole('button', { name: 'Sign up' }).click(),
-  ])
-
-  await page.waitForURL(
-    url => url.pathname.includes('/onboarding/') || url.pathname.includes('/auth/sign-in'),
-    { waitUntil: 'commit', timeout: 30_000 },
-  )
-
-  if (page.url().includes('/auth/sign-in')) {
-    await page.waitForLoadState('networkidle')
-    await page.getByLabel('Email').fill(account.email)
-    await page.getByLabel('Password').fill(account.password)
-
-    await Promise.all([
-      page.waitForResponse(
-        resp => resp.url().includes('/api/auth/sign-in') && resp.status() === 200,
-        { timeout: 30_000 },
-      ),
-      page.getByRole('button', { name: 'Sign in' }).click(),
-    ])
-
-    await page.waitForURL('**/onboarding/**', { waitUntil: 'commit', timeout: 30_000 })
-  }
-
-  await page.getByLabel('Organization name').waitFor({ state: 'visible', timeout: 30_000 })
-  await page.getByLabel('Organization name').fill(account.orgName)
-  await page.getByRole('button', { name: 'Create organization' }).click()
-  await page.waitForURL('**/dashboard**', { waitUntil: 'commit' })
-
-  const membership = await lookupMembership(account.email, account.orgName)
-
-  return {
-    page,
-    userId: membership.userId,
-    organizationId: membership.organizationId,
-    close: () => context.close(),
-  }
-}
 
 test.describe('RBAC role permissions', () => {
   test('member UI restrictions agree with direct API authorization while owner actions still work', async ({ authenticatedPage, testAccount, browser }, testInfo) => {
     const ownerPage = authenticatedPage
     const ownerMembership = await lookupMembership(testAccount.email, testAccount.orgName)
-    const member = await signUpWithOrg(browser, `member-${testInfo.workerIndex}`)
+    const member = await signUpUser(browser, {
+      label: `member-${testInfo.workerIndex}`,
+      withOrg: true,
+    })
 
     try {
-      await grantOrganizationRole(member.userId, ownerMembership.organizationId, 'member')
+      await grantOrganizationRole(member.userId!, ownerMembership.organizationId, 'member')
 
       const memberApi = member.page.context().request
       const ownerApi = ownerPage.context().request

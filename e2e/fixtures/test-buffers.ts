@@ -35,6 +35,48 @@ export const MINIMAL_PDF = Buffer.from(
 )
 
 /**
+ * Minimal valid PDF 1.4 document with embedded text content.
+ * Useful when tests need parseable resume text, not just magic-byte validity.
+ */
+export function createTextPdf(text: string): Buffer {
+  const pdfText = text.replace(/[\\()]/g, match => `\\${match}`)
+  const streamContent = `BT /F1 12 Tf 72 700 Td (${pdfText}) Tj ET`
+  const chunks = ['%PDF-1.4\n']
+  const offsets = [0]
+
+  function appendObject(index: number, body: string) {
+    offsets[index] = Buffer.byteLength(chunks.join(''), 'utf8')
+    chunks.push(`${index} 0 obj\n${body}\nendobj\n`)
+  }
+
+  appendObject(1, '<< /Type /Catalog /Pages 2 0 R >>')
+  appendObject(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>')
+  appendObject(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>')
+  appendObject(4, [
+    `<< /Length ${Buffer.byteLength(streamContent, 'utf8')} >>`,
+    'stream',
+    streamContent,
+    'endstream',
+  ].join('\n'))
+  appendObject(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>')
+
+  const xrefOffset = Buffer.byteLength(chunks.join(''), 'utf8')
+  chunks.push([
+    'xref',
+    '0 6',
+    '0000000000 65535 f ',
+    ...offsets.slice(1).map(offset => `${offset.toString().padStart(10, '0')} 00000 n `),
+    'trailer',
+    '<< /Size 6 /Root 1 0 R >>',
+    'startxref',
+    String(xrefOffset),
+    '%%EOF',
+  ].join('\n'))
+
+  return Buffer.from(chunks.join(''))
+}
+
+/**
  * Minimal OLE2 Compound Binary File (.doc).
  * Starts with the 8-byte OLE2 magic `D0 CF 11 E0 A1 B1 1A E1`.
  * The server only accepts OLE2 documents as Word files when it also sees

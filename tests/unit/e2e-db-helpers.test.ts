@@ -50,5 +50,8 @@ describe('E2E database helpers', () => {
       expect(source, spec).not.toContain("import postgres from 'postgres'")
       expect(source, spec).not.toContain('async function lookupMembership(')
     }
+
+    expect(readProjectFile('e2e/critical-flows/org-admin-membership.spec.ts')).toContain('signUpUser')
+    expect(readProjectFile('e2e/critical-flows/rbac-role-permissions.spec.ts')).toContain('signUpUser')
   })
 })

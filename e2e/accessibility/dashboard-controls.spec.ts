@@ -1,10 +1,9 @@
 import {
-  expect,
   expectFocusRestored,
   openWithKeyboard,
   runAxeScan,
-  test,
-} from '../fixtures'
+} from '../accessibility'
+import { expect, test } from '../fixtures'
 
 test.describe('dashboard keyboard controls', () => {
   test('candidate table menus support keyboard open, navigation, and Escape restore', async ({ authenticatedPage: page }) => {
