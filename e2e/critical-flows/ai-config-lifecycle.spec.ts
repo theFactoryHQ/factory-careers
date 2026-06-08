@@ -1,5 +1,5 @@
-import { readFile, rm } from 'node:fs/promises'
 import { test, expect } from '../fixtures'
+import { readJsonlCapture, setupCaptureFile } from '../helpers/captured-jsonl'
 
 type CapturedAiRequest = {
   schemaName: string
@@ -17,26 +17,10 @@ type AiConfigRow = {
   isDefaultAnalysis: boolean
 }
 
-async function readCapturedAiRequests(capturePath: string): Promise<CapturedAiRequest[]> {
-  try {
-    const contents = await readFile(capturePath, 'utf8')
-    return contents
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => JSON.parse(line) as CapturedAiRequest)
-  }
-  catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return []
-    throw error
-  }
-}
-
 test.describe('AI configuration lifecycle', () => {
   test('creates, edits, tests, defaults, and uses local AI config for generated job criteria', async ({ authenticatedPage }, testInfo) => {
-    const capturePath = process.env.FACTORY_AI_CAPTURE_PATH
     expect(process.env.FACTORY_AI_TEST_MODE, 'AI E2E must use mock mode, not a real provider').toBe('mock')
-    expect(capturePath, 'FACTORY_AI_CAPTURE_PATH must be set for AI E2E').toBeTruthy()
-    await rm(capturePath!, { force: true })
+    const capturePath = await setupCaptureFile('FACTORY_AI_CAPTURE_PATH', 'AI E2E')
 
     const page = authenticatedPage
     const runId = `${Date.now()}-${testInfo.workerIndex}-${testInfo.retry}`
@@ -170,12 +154,12 @@ test.describe('AI configuration lifecycle', () => {
       jobId: job.id,
     }))
 
-    await expect.poll(async () => (await readCapturedAiRequests(capturePath!)).length, {
+    await expect.poll(async () => (await readJsonlCapture<CapturedAiRequest>(capturePath)).length, {
       message: 'AI mock provider should capture connection checks and generated criteria',
       timeout: 10_000,
     }).toBeGreaterThanOrEqual(3)
 
-    const captured = await readCapturedAiRequests(capturePath!)
+    const captured = await readJsonlCapture<CapturedAiRequest>(capturePath)
     const generatedCriteriaRequest = captured.find(request => request.schemaName === 'GeneratedCriteria')
     expect(generatedCriteriaRequest, 'generated criteria request should be captured').toBeTruthy()
     expect(generatedCriteriaRequest?.provider).toBe('openai')

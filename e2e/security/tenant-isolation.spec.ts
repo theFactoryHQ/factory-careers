@@ -1,8 +1,14 @@
-import { randomUUID } from 'node:crypto'
 import { type Browser, type Page } from '@playwright/test'
-import postgres from 'postgres'
 import { test, expect } from '../fixtures'
 import { VALID_FILE_CONFIGS } from '../fixtures/test-buffers'
+import {
+  attributeApplicationSource,
+  deleteMembership,
+  expireInviteLink,
+  grantOrganizationRole,
+  insertSsoProvider,
+  lookupMembership,
+} from '../helpers/db'
 
 interface SignedInOrg {
   page: Page
@@ -72,28 +78,6 @@ async function signUpWithOrg(browser: Browser, label: string): Promise<SignedInO
     memberId: membership.memberId,
     organizationId: membership.organizationId,
     close: () => context.close(),
-  }
-}
-
-async function lookupMembership(email: string, organizationName: string) {
-  expect(process.env.DATABASE_URL, 'DATABASE_URL is required for membership lookup e2e coverage').toBeTruthy()
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
-
-  try {
-    const [membership] = await sql<{ userId: string, memberId: string, organizationId: string }[]>`
-      select u.id as "userId", m.id as "memberId", o.id as "organizationId"
-      from "user" u
-      inner join "member" m on m."user_id" = u.id
-      inner join "organization" o on o.id = m."organization_id"
-      where u.email = ${email} and o.name = ${organizationName}
-      limit 1
-    `
-
-    expect(membership, `expected ${email} to belong to ${organizationName}`).toBeTruthy()
-    return membership
-  }
-  finally {
-    await sql.end()
   }
 }
 
@@ -246,147 +230,7 @@ async function expectStatus(response: { status: () => number }, allowedStatuses:
   expect(allowedStatuses, `unexpected response status ${response.status()}`).toContain(response.status())
 }
 
-async function deleteMembership(userId: string, organizationId: string) {
-  expect(process.env.DATABASE_URL, 'DATABASE_URL is required for stale-membership e2e coverage').toBeTruthy()
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
 
-  try {
-    await sql`delete from "member" where "user_id" = ${userId} and "organization_id" = ${organizationId}`
-  }
-  finally {
-    await sql.end()
-  }
-}
-
-async function grantOrganizationRole(userId: string, organizationId: string, role: 'admin' | 'member'): Promise<string> {
-  expect(process.env.DATABASE_URL, 'DATABASE_URL is required for member RBAC e2e coverage').toBeTruthy()
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
-
-  try {
-    const result = await sql.begin(async (tx) => {
-      const [membership] = await tx<{ id: string }[]>`
-        insert into "member" ("id", "user_id", "organization_id", "role")
-        values (${randomUUID()}, ${userId}, ${organizationId}, ${role})
-        on conflict ("user_id", "organization_id")
-        do update set "role" = ${role}
-        returning "id"
-      `
-
-      const updatedSessions = await tx`
-        update "session"
-        set "active_organization_id" = ${organizationId}, "updated_at" = now()
-        where "user_id" = ${userId}
-        returning "id"
-      `
-
-      return { membership, updatedSessions }
-    })
-
-    const membershipId = result.membership?.id
-    expect(result.updatedSessions.length, `expected an active session for ${userId}`).toBeGreaterThan(0)
-    expect(membershipId, `expected membership for ${userId}`).toBeTruthy()
-    return membershipId!
-  }
-  finally {
-    await sql.end()
-  }
-}
-
-async function expireInviteLink(linkId: string) {
-  expect(process.env.DATABASE_URL, 'DATABASE_URL is required for invite-link e2e coverage').toBeTruthy()
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
-
-  try {
-    await sql`
-      update "invite_link"
-      set "expires_at" = now() - interval '1 hour'
-      where "id" = ${linkId}
-    `
-  }
-  finally {
-    await sql.end()
-  }
-}
-
-async function attributeApplicationSource(
-  organizationId: string,
-  applicationId: string,
-  trackingLinkId: string,
-) {
-  expect(process.env.DATABASE_URL, 'DATABASE_URL is required for source-tracking e2e coverage').toBeTruthy()
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
-
-  try {
-    await sql.begin(async (tx) => {
-      await tx`
-        insert into "application_source" (
-          "id",
-          "organization_id",
-          "application_id",
-          "channel",
-          "tracking_link_id",
-          "utm_source",
-          "utm_medium",
-          "utm_campaign",
-          "referrer_domain"
-        )
-        values (
-          ${randomUUID()},
-          ${organizationId},
-          ${applicationId},
-          'linkedin',
-          ${trackingLinkId},
-          'linkedin',
-          'social',
-          'tenant-isolation',
-          'linkedin.com'
-        )
-      `
-
-      await tx`
-        update "tracking_link"
-        set "application_count" = "application_count" + 1
-        where "id" = ${trackingLinkId}
-      `
-    })
-  }
-  finally {
-    await sql.end()
-  }
-}
-
-async function insertSsoProvider(organizationId: string, userId: string, providerId: string) {
-  expect(process.env.DATABASE_URL, 'DATABASE_URL is required for SSO provider e2e coverage').toBeTruthy()
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
-  const id = randomUUID()
-
-  try {
-    await sql`
-      insert into "sso_provider" (
-        "id",
-        "issuer",
-        "domain",
-        "oidc_config",
-        "user_id",
-        "provider_id",
-        "organization_id"
-      )
-      values (
-        ${id},
-        ${`https://idp-${providerId}.example.com`},
-        ${`${providerId}.example.com`},
-        '{}',
-        ${userId},
-        ${providerId},
-        ${organizationId}
-      )
-    `
-    return id
-  }
-  finally {
-    await sql.end()
-  }
-}
 
 test.describe('Security — tenant isolation and document access', () => {
   test('denies cross-organization direct resource and document access @security-core', async ({ browser }) => {

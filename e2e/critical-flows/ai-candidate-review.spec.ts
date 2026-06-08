@@ -1,7 +1,10 @@
-import { randomUUID } from 'node:crypto'
-import { readFile, rm } from 'node:fs/promises'
-import postgres from 'postgres'
 import { test, expect, selectFactorySelectOption } from '../fixtures'
+import { readJsonlCapture, setupCaptureFile } from '../helpers/captured-jsonl'
+import {
+  lookupApplicationByEmail,
+  seedCrossTenantSentinel,
+  seedParsedResume,
+} from '../helpers/db'
 
 type CapturedAiRequest = {
   schemaName: string
@@ -11,153 +14,10 @@ type CapturedAiRequest = {
   model: string
 }
 
-type ApplicationLookup = {
-  applicationId: string
-  candidateId: string
-  organizationId: string
-}
-
-async function readCapturedAiRequests(capturePath: string): Promise<CapturedAiRequest[]> {
-  try {
-    const contents = await readFile(capturePath, 'utf8')
-    return contents
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => JSON.parse(line) as CapturedAiRequest)
-  }
-  catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return []
-    throw error
-  }
-}
-
-async function lookupApplicationByEmail(email: string): Promise<ApplicationLookup> {
-  expect(process.env.DATABASE_URL, 'DATABASE_URL is required for AI candidate review E2E').toBeTruthy()
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
-
-  try {
-    const [row] = await sql<ApplicationLookup[]>`
-      select
-        a.id as "applicationId",
-        c.id as "candidateId",
-        a.organization_id as "organizationId"
-      from application a
-      inner join candidate c on c.id = a.candidate_id
-      where c.email = ${email}
-      order by a.created_at desc
-      limit 1
-    `
-
-    expect(row, `expected application for ${email}`).toBeTruthy()
-    return row!
-  }
-  finally {
-    await sql.end()
-  }
-}
-
-async function seedParsedResume(params: {
-  organizationId: string
-  candidateId: string
-  resumeText: string
-}) {
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
-  const documentId = randomUUID()
-
-  try {
-    await sql`
-      insert into document (
-        id,
-        organization_id,
-        candidate_id,
-        type,
-        storage_key,
-        original_filename,
-        mime_type,
-        size_bytes,
-        parsed_content
-      )
-      values (
-        ${documentId},
-        ${params.organizationId},
-        ${params.candidateId},
-        'resume',
-        ${`${params.organizationId}/${params.candidateId}/${documentId}.txt`},
-        'deterministic-resume.txt',
-        'text/plain',
-        ${params.resumeText.length},
-        ${sql.json({ text: params.resumeText })}
-      )
-    `
-  }
-  finally {
-    await sql.end()
-  }
-}
-
-async function seedCrossTenantSentinel(sentinel: string) {
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1 })
-  const orgId = randomUUID()
-  const candidateId = randomUUID()
-  const jobId = randomUUID()
-  const applicationId = randomUUID()
-  const documentId = randomUUID()
-
-  try {
-    await sql.begin(async (tx) => {
-      await tx`
-        insert into organization (id, name, slug)
-        values (${orgId}, ${`Sentinel Org ${orgId.slice(0, 8)}`}, ${`sentinel-${orgId.slice(0, 8)}`})
-      `
-      await tx`
-        insert into job (id, organization_id, title, slug, description, status, active_from)
-        values (${jobId}, ${orgId}, 'Sentinel Role', ${`sentinel-role-${jobId.slice(0, 8)}`}, ${sentinel}, 'open', now())
-      `
-      await tx`
-        insert into candidate (id, organization_id, first_name, last_name, email)
-        values (${candidateId}, ${orgId}, 'Cross', 'Tenant', ${`cross-tenant-${candidateId}@example.com`})
-      `
-      await tx`
-        insert into application (id, organization_id, candidate_id, job_id, cover_letter_text)
-        values (${applicationId}, ${orgId}, ${candidateId}, ${jobId}, ${sentinel})
-      `
-      await tx`
-        insert into document (
-          id,
-          organization_id,
-          candidate_id,
-          type,
-          storage_key,
-          original_filename,
-          mime_type,
-          size_bytes,
-          parsed_content
-        )
-        values (
-          ${documentId},
-          ${orgId},
-          ${candidateId},
-          'resume',
-          ${`${orgId}/${candidateId}/${documentId}.txt`},
-          'sentinel-resume.txt',
-          'text/plain',
-          ${sentinel.length},
-          ${tx.json({ text: sentinel })}
-        )
-      `
-    })
-  }
-  finally {
-    await sql.end()
-  }
-}
-
 test.describe('AI candidate review', () => {
   test('scores a submitted candidate through the dashboard using deterministic local AI', async ({ authenticatedPage, browser }, testInfo) => {
-    const capturePath = process.env.FACTORY_AI_CAPTURE_PATH
     expect(process.env.FACTORY_AI_TEST_MODE, 'AI E2E must use mock mode, not a real provider').toBe('mock')
-    expect(capturePath, 'FACTORY_AI_CAPTURE_PATH must be set for AI E2E').toBeTruthy()
-    await rm(capturePath!, { force: true })
+    const capturePath = await setupCaptureFile('FACTORY_AI_CAPTURE_PATH', 'AI E2E')
 
     const page = authenticatedPage
     const runId = `${Date.now()}-${testInfo.workerIndex}-${testInfo.retry}`
@@ -288,12 +148,13 @@ test.describe('AI candidate review', () => {
       evidence: expect.stringContaining('athletes, entertainers, founders, media, and investments'),
     }))
 
-    await expect.poll(async () => (await readCapturedAiRequests(capturePath!)).length, {
+    await expect.poll(async () => (await readJsonlCapture<CapturedAiRequest>(capturePath)).length, {
       message: 'AI mock provider should capture the scoring request',
       timeout: 10_000,
     }).toBeGreaterThanOrEqual(1)
 
-    const captured = (await readCapturedAiRequests(capturePath!)).find(request => request.schemaName === 'CandidateScoring')
+    const captured = (await readJsonlCapture<CapturedAiRequest>(capturePath))
+      .find(request => request.schemaName === 'CandidateScoring')
     expect(captured, 'candidate scoring request should be captured').toBeTruthy()
     expect(captured?.provider).toBe('openai')
     expect(captured?.model).toBe('factory-e2e-candidate-review')
