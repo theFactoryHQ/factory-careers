@@ -21,13 +21,12 @@ describe('panel close buttons', () => {
   it('applies the close recipe to common filter and right side panel X controls', () => {
     for (const path of [
       'app/components/FilterDrawer.vue',
-      'app/components/ApplicationDetailDrawer.vue',
-      'app/components/CandidateDetailDrawer.vue',
+      'app/components/AppDetailDrawerShell.vue',
       'app/components/CandidateDetailSidebar.vue',
       'app/components/InterviewScheduleSidebar.vue',
       'app/components/PropertySchemaEditor.vue',
       'app/components/ChatbotSourcesPanel.vue',
-      'app/components/ApplyCandidateModal.vue',
+      'app/components/ApplicationLinkModal.vue',
     ]) {
       expect(readProjectFile(path), `${path} should use panel close styling`).toContain('ui-panel-close-button')
     }

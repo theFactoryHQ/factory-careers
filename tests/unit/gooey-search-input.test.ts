@@ -89,7 +89,7 @@ describe('search bar call sites', () => {
     'app/pages/dashboard/interviews/index.vue',
     'app/pages/dashboard/timeline.vue',
     'app/pages/dashboard/settings/members.vue',
-    'app/components/ApplyCandidateModal.vue',
+    'app/components/ApplicationLinkModal.vue',
     'app/pages/onboarding/create-org.vue',
   ]
 

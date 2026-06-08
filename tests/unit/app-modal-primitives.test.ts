@@ -33,6 +33,7 @@ describe('dashboard modal primitives', () => {
 
   it('prevents dashboard modals from reintroducing pasted shell classes', () => {
     const directModalFiles = [
+      'app/components/ApplicationLinkModal.vue',
       'app/components/ChatbotAgentManagerModal.vue',
       'app/components/FeedbackModal.vue',
       'app/components/InterviewEmailModal.vue',

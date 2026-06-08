@@ -27,8 +27,7 @@ const toastTargets = [
   'app/pages/dashboard/candidates/new.vue',
   'app/pages/dashboard/candidates/[id].vue',
   'app/components/CandidateDetailSidebar.vue',
-  'app/components/ApplyCandidateModal.vue',
-  'app/components/ApplyToJobModal.vue',
+  'app/components/ApplicationLinkModal.vue',
   'app/components/FeedbackModal.vue',
   'app/components/PropertySchemaEditor.vue',
   'app/pages/dashboard/jobs/new.vue',
@@ -145,11 +144,7 @@ const disallowedInlineActionErrors: Record<string, string[]> = {
     'uploadError.value = err.data?.statusMessage',
     'v-if="uploadError"',
   ],
-  'app/components/ApplyCandidateModal.vue': [
-    'applyError.value = err.data?.statusMessage',
-    'v-if="applyError"',
-  ],
-  'app/components/ApplyToJobModal.vue': [
+  'app/components/ApplicationLinkModal.vue': [
     'applyError.value = err.data?.statusMessage',
     'v-if="applyError"',
   ],

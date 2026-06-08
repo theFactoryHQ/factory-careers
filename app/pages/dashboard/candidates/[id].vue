@@ -301,8 +301,9 @@ async function handleDeleteDoc(docId: string) {
         />
 
         <!-- Apply to Job Modal -->
-        <ApplyToJobModal
+        <ApplicationLinkModal
           v-if="showApplyModal"
+          mode="job"
           :candidate-id="candidateId"
           @close="showApplyModal = false"
           @created="handleApplied"
