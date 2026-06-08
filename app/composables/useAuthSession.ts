@@ -12,9 +12,12 @@
  *   for fast repeated checks during navigation.
  * - Easy to extend later with stronger SWR / TTL if needed.
  *
- * Usage in middleware (async context):
+ * Usage in middleware, layouts, and shell components (async context):
  *   const { session } = await useAuthSession()
  *   if (!session.value) { ... }
+ *
+ * Do not call `authClient.useSession(useFetch)` outside this composable in
+ * dashboard shell code (`dashboard`/`settings` layouts, `AppTopBar`, PostHog identity).
  */
 import { authClient } from '~/utils/auth-client'
 

@@ -2,7 +2,7 @@
 import { Eye } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 
-const { data: session } = await authClient.useSession(useFetch)
+const { session } = await useAuthSession()
 
 const config = useRuntimeConfig()
 const { activeOrg } = useCurrentOrg()

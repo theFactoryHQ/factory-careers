@@ -23,7 +23,7 @@ export async function usePostHogIdentity() {
 
   if (!$posthogIdentifyUser) return
 
-  const { data: session } = await authClient.useSession(useFetch)
+  const { session } = await useAuthSession()
   const activeOrgState = authClient.useActiveOrganization()
 
   const { hasConsented } = useAnalyticsConsent()
