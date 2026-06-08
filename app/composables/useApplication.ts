@@ -1,4 +1,19 @@
 import type { MaybeRefOrGetter } from 'vue'
+import type { ApplicationStatus } from '~~/shared/application-status'
+
+export type ApplicationUpdatePayload = Partial<{
+  status: ApplicationStatus
+  notes: string | null
+  score: number | null
+}>
+
+/** PATCH `/api/applications/:id` — shared by detail surfaces and list transitions */
+export async function patchApplication(applicationId: string, payload: ApplicationUpdatePayload) {
+  return await $fetch(`/api/applications/${applicationId}`, {
+    method: 'PATCH',
+    body: payload,
+  })
+}
 
 /**
  * Composable for a single application detail with update mutation.
@@ -17,16 +32,9 @@ export function useApplication(id: MaybeRefOrGetter<string>) {
   )
 
   /** Update application fields (status, notes, score) and refresh caches */
-  async function updateApplication(payload: Partial<{
-    status: 'new' | 'screening' | 'interview' | 'offer' | 'hired' | 'rejected'
-    notes: string | null
-    score: number | null
-  }>) {
+  async function updateApplication(payload: ApplicationUpdatePayload) {
     try {
-      const updated = await $fetch(`/api/applications/${applicationId.value}`, {
-        method: 'PATCH',
-        body: payload,
-      })
+      const updated = await patchApplication(applicationId.value, payload)
       await refresh()
       await refreshNuxtData('applications')
       return updated

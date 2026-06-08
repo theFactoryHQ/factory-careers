@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Pencil, Trash2, Upload } from 'lucide-vue-next'
+import { patchApplication } from '~/composables/useApplication'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
+import type { ApplicationStatus } from '~~/shared/application-status'
 import {
   candidateEditFormSchema,
   normalizeEmptyCandidateFormFields,
@@ -31,7 +33,33 @@ useSeoMeta({
 // Tabs
 // ─────────────────────────────────────────────
 
-const activeTab = ref<'applications' | 'documents'>('applications')
+const candidateDetailTabs = ['applications', 'documents'] as const
+type CandidateDetailTab = (typeof candidateDetailTabs)[number]
+const activeTab = ref<CandidateDetailTab>('applications')
+const applicationsTabRef = ref<HTMLButtonElement | null>(null)
+const documentsTabRef = ref<HTMLButtonElement | null>(null)
+
+function focusCandidateTab(tab: CandidateDetailTab) {
+  const target = tab === 'applications' ? applicationsTabRef.value : documentsTabRef.value
+  target?.focus()
+}
+
+function handleCandidateTabKeydown(event: KeyboardEvent) {
+  const currentIndex = candidateDetailTabs.indexOf(activeTab.value)
+  if (currentIndex === -1) return
+
+  if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    const nextTab = candidateDetailTabs[(currentIndex + 1) % candidateDetailTabs.length]!
+    activeTab.value = nextTab
+    focusCandidateTab(nextTab)
+  } else if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    const nextTab = candidateDetailTabs[(currentIndex - 1 + candidateDetailTabs.length) % candidateDetailTabs.length]!
+    activeTab.value = nextTab
+    focusCandidateTab(nextTab)
+  }
+}
 
 // ─────────────────────────────────────────────
 // Edit mode
@@ -143,10 +171,35 @@ function handleApplied() {
 
 const showInterviewSidebar = ref(false)
 const interviewTargetApp = ref<{ id: string; jobTitle: string } | null>(null)
+const transitionTarget = ref<{ id: string; status: string } | null>(null)
+const transitioningApplicationIds = ref<Set<string>>(new Set())
+
+async function updateTransitionTargetStatus(status: ApplicationStatus) {
+  const appId = transitionTarget.value?.id
+  if (!appId) return
+  await patchApplication(appId, { status })
+}
+
+const { transitionToStatus } = useApplicationStatusActions({
+  application: computed(() => transitionTarget.value),
+  transitionKey: computed(() => transitionTarget.value?.id),
+  transitioningKeys: transitioningApplicationIds,
+  updateStatus: updateTransitionTargetStatus,
+  afterTransition: async () => {
+    await refresh()
+    await refreshNuxtData('applications')
+    toast.success('Application status updated')
+  },
+})
 
 function openScheduleInterview(app: { id: string; job: { title: string } }) {
   interviewTargetApp.value = { id: app.id, jobTitle: app.job.title }
   showInterviewSidebar.value = true
+}
+
+function handleApplicationTransition(app: { id: string; status: string }, status: ApplicationStatus) {
+  transitionTarget.value = app
+  transitionToStatus(status)
 }
 
 // ─────────────────────────────────────────────
@@ -229,8 +282,20 @@ const {
 
         <!-- Tabs -->
         <div class="mb-4 border-b border-white/10">
-          <div class="flex gap-1">
+          <div
+            role="tablist"
+            aria-label="Candidate sections"
+            class="flex gap-1"
+            @keydown="handleCandidateTabKeydown"
+          >
             <button
+              id="candidate-tab-applications"
+              ref="applicationsTabRef"
+              role="tab"
+              type="button"
+              aria-controls="candidate-tabpanel-applications"
+              :aria-selected="activeTab === 'applications'"
+              :tabindex="activeTab === 'applications' ? 0 : -1"
               class="-mb-px cursor-pointer border-b-2 px-3 py-2 text-sm font-medium transition-colors"
               :class="activeTab === 'applications'
                 ? 'border-brand-500 text-brand-400'
@@ -240,6 +305,13 @@ const {
               Applications ({{ candidate.applications?.length ?? 0 }})
             </button>
             <button
+              id="candidate-tab-documents"
+              ref="documentsTabRef"
+              role="tab"
+              type="button"
+              aria-controls="candidate-tabpanel-documents"
+              :aria-selected="activeTab === 'documents'"
+              :tabindex="activeTab === 'documents' ? 0 : -1"
               class="-mb-px cursor-pointer border-b-2 px-3 py-2 text-sm font-medium transition-colors"
               :class="activeTab === 'documents'
                 ? 'border-brand-500 text-brand-400'
@@ -252,11 +324,18 @@ const {
         </div>
 
         <CandidateApplicationsPanel
-          v-if="activeTab === 'applications'"
+          v-show="activeTab === 'applications'"
+          id="candidate-tabpanel-applications"
+          role="tabpanel"
+          aria-labelledby="candidate-tab-applications"
+          :hidden="activeTab !== 'applications'"
           :applications="candidate.applications ?? []"
           surface="page"
+          show-status-transitions
+          :transitioning-application-ids="transitioningApplicationIds"
           @apply="showApplyModal = true"
           @schedule="openScheduleInterview"
+          @transition="handleApplicationTransition"
         />
 
         <!-- Apply to Job Modal -->
@@ -279,7 +358,13 @@ const {
         />
 
         <!-- Documents tab -->
-        <div v-if="activeTab === 'documents'">
+        <div
+          v-show="activeTab === 'documents'"
+          id="candidate-tabpanel-documents"
+          role="tabpanel"
+          aria-labelledby="candidate-tab-documents"
+          :hidden="activeTab !== 'documents'"
+        >
           <input
             ref="fileInput"
             type="file"

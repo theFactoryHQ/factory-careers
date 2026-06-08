@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Briefcase, Calendar, Plus } from 'lucide-vue-next'
+import type { ApplicationStatus } from '~~/shared/application-status'
 import { APPLICATION_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 import {
   getApplicationTransitionActionLabel,
@@ -21,15 +22,15 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   apply: []
   schedule: [application: any]
-  transition: [application: any, status: string]
+  transition: [application: any, status: ApplicationStatus]
 }>()
 
 const localePath = useLocalePath()
 
 const panelClass = useCandidatePanelClass(() => props.surface)
 
-function getApplicationTransitions(status: string) {
-  return APPLICATION_STATUS_TRANSITIONS[status] ?? []
+function getApplicationTransitions(status: string): ApplicationStatus[] {
+  return (APPLICATION_STATUS_TRANSITIONS[status as ApplicationStatus] ?? []) as ApplicationStatus[]
 }
 </script>
 

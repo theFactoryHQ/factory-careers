@@ -475,6 +475,7 @@ test.describe('Candidate Application Flow — All Custom Question Field Types', 
     expect(fileIdText?.trim().length, 'file_upload response value must not be empty').toBeGreaterThan(0)
 
     // ── Documents tab: cover letter file should be listed ─────────────────────
+    // ApplicationDetailDrawer sidebar tabs remain role=button (not candidate page tabs).
     await page.getByRole('button', { name: /^Documents/i }).click()
     // The file uploaded via the file_upload custom question is stored as a
     // candidate document — verify the original filename is visible.

@@ -76,6 +76,8 @@ describe('dashboard shell epic 4', () => {
     expect(drawer).toContain('useApplicationStatusActions')
     expect(drawer).toContain('transitioningApplicationIds')
     expect(drawer).toContain('transitionKey: computed(() => transitionTarget.value?.id)')
+    expect(drawer).toContain('patchApplication')
+    expect(drawer).not.toContain('$fetch(`/api/applications/${appId}`')
     expect(drawer).not.toContain('handlePreviewReadOnlyError')
     expect(drawer).not.toContain('toast.error(\'Failed to update status\'')
     expect(statusActions).toContain('transitioningKeys?: Ref<Set<string>>')

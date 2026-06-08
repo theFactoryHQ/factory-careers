@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { patchApplication } from '~/composables/useApplication'
+import type { ApplicationStatus } from '~~/shared/application-status'
+
 const props = defineProps<{
   candidateId: string
 }>()
@@ -15,7 +18,33 @@ const { formatCandidateName } = useOrgSettings()
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
-const activeTab = ref<'applications' | 'documents'>('applications')
+const candidateDetailTabs = ['applications', 'documents'] as const
+type CandidateDetailTab = (typeof candidateDetailTabs)[number]
+const activeTab = ref<CandidateDetailTab>('applications')
+const applicationsTabRef = ref<HTMLButtonElement | null>(null)
+const documentsTabRef = ref<HTMLButtonElement | null>(null)
+
+function focusCandidateTab(tab: CandidateDetailTab) {
+  const target = tab === 'applications' ? applicationsTabRef.value : documentsTabRef.value
+  target?.focus()
+}
+
+function handleCandidateTabKeydown(event: KeyboardEvent) {
+  const currentIndex = candidateDetailTabs.indexOf(activeTab.value)
+  if (currentIndex === -1) return
+
+  if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    const nextTab = candidateDetailTabs[(currentIndex + 1) % candidateDetailTabs.length]!
+    activeTab.value = nextTab
+    focusCandidateTab(nextTab)
+  } else if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    const nextTab = candidateDetailTabs[(currentIndex - 1 + candidateDetailTabs.length) % candidateDetailTabs.length]!
+    activeTab.value = nextTab
+    focusCandidateTab(nextTab)
+  }
+}
 
 // ─── Apply to job modal ───────────────────────────────────────────────────────
 
@@ -33,13 +62,10 @@ const interviewTargetApp = ref<{ id: string; jobTitle: string } | null>(null)
 const transitionTarget = ref<{ id: string; status: string } | null>(null)
 const transitioningApplicationIds = ref<Set<string>>(new Set())
 
-async function updateTransitionTargetStatus(status: string) {
+async function updateTransitionTargetStatus(status: ApplicationStatus) {
   const appId = transitionTarget.value?.id
   if (!appId) return
-  await $fetch(`/api/applications/${appId}`, {
-    method: 'PATCH',
-    body: { status },
-  })
+  await patchApplication(appId, { status })
 }
 
 const { transitionToStatus } = useApplicationStatusActions({
@@ -59,7 +85,7 @@ function openScheduleInterview(app: { id: string; job: { title: string } }) {
   showInterviewSidebar.value = true
 }
 
-function handleApplicationTransition(app: { id: string; status: string }, status: string) {
+function handleApplicationTransition(app: { id: string; status: string }, status: ApplicationStatus) {
   transitionTarget.value = app
   transitionToStatus(status)
 }
@@ -114,8 +140,20 @@ const documentPreviewState = computed(() => ({
 
       <!-- Tabs -->
       <div class="border-b border-white/10">
-        <div class="flex gap-1">
+        <div
+          role="tablist"
+          aria-label="Candidate sections"
+          class="flex gap-1"
+          @keydown="handleCandidateTabKeydown"
+        >
           <button
+            id="candidate-tab-applications"
+            ref="applicationsTabRef"
+            role="tab"
+            type="button"
+            aria-controls="candidate-tabpanel-applications"
+            :aria-selected="activeTab === 'applications'"
+            :tabindex="activeTab === 'applications' ? 0 : -1"
             class="cursor-pointer px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
             :class="activeTab === 'applications'
               ? 'border-brand-500 text-brand-400'
@@ -125,6 +163,13 @@ const documentPreviewState = computed(() => ({
             Applications ({{ candidate.applications?.length ?? 0 }})
           </button>
           <button
+            id="candidate-tab-documents"
+            ref="documentsTabRef"
+            role="tab"
+            type="button"
+            aria-controls="candidate-tabpanel-documents"
+            :aria-selected="activeTab === 'documents'"
+            :tabindex="activeTab === 'documents' ? 0 : -1"
             class="cursor-pointer px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
             :class="activeTab === 'documents'
               ? 'border-brand-500 text-brand-400'
@@ -138,7 +183,11 @@ const documentPreviewState = computed(() => ({
 
       <!-- Applications tab -->
       <CandidateApplicationsPanel
-        v-if="activeTab === 'applications'"
+        v-show="activeTab === 'applications'"
+        id="candidate-tabpanel-applications"
+        role="tabpanel"
+        aria-labelledby="candidate-tab-applications"
+        :hidden="activeTab !== 'applications'"
         :applications="candidate.applications ?? []"
         surface="drawer"
         show-status-transitions
@@ -150,7 +199,11 @@ const documentPreviewState = computed(() => ({
 
       <!-- Documents tab -->
       <CandidateDocumentsPanel
-        v-if="activeTab === 'documents'"
+        v-show="activeTab === 'documents'"
+        id="candidate-tabpanel-documents"
+        role="tabpanel"
+        aria-labelledby="candidate-tab-documents"
+        :hidden="activeTab !== 'documents'"
         :documents="candidate.documents ?? []"
         :preview="documentPreviewState"
         surface="drawer"
