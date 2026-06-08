@@ -19,54 +19,19 @@ const { createTemplate } = useEmailTemplates()
 const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 const toast = useToast()
 
-// ─── Form state ──────────────────────────────────────────────────
-const form = reactive({
-  purpose: 'interview_invitation' as 'interview_invitation' | 'application_acknowledgement' | 'application_rejection',
-  name: '',
-  subject: '',
-  body: '',
-})
+const {
+  form,
+  purposeOptions,
+  showPreview,
+  previewSubject,
+  previewBody,
+  canSave,
+  trimmedPayload,
+} = useEmailTemplateForm()
 
-const purposeOptions = [
-  { value: 'interview_invitation', label: 'Interview Invitation' },
-  { value: 'application_acknowledgement', label: 'Application Acknowledgement' },
-  { value: 'application_rejection', label: 'Application Rejection' },
-] as const
-
-const showPreview = ref(false)
 const isSaving = ref(false)
 const validationError = ref('')
 
-const canSave = computed(() =>
-  form.name.trim().length > 0
-  && form.subject.trim().length > 0
-  && form.body.trim().length > 0,
-)
-
-// ─── Preview ─────────────────────────────────────────────────────
-const sampleVariables: Record<string, string> = {
-  candidateName: 'Alex Johnson',
-  candidateFirstName: 'Alex',
-  candidateLastName: 'Johnson',
-  candidateEmail: 'alex@example.com',
-  jobTitle: 'Senior Frontend Engineer',
-  interviewTitle: 'Technical Interview — Round 2',
-  interviewDate: 'Monday, March 16, 2026',
-  interviewTime: '2:00 PM',
-  interviewDuration: '60',
-  interviewType: 'Video Call',
-  interviewLocation: 'https://meet.google.com/abc-defg-hij',
-  interviewers: 'Sarah Chen, Michael Park',
-  organizationName: 'Acme Corp',
-  applicationDate: 'March 16, 2026',
-  applicationStatus: 'Rejected',
-  dashboardApplicationUrl: 'https://careers.example.com/dashboard/applications/app_123',
-}
-
-const previewSubject = computed(() => renderTemplatePreview(form.subject, sampleVariables))
-const previewBody = computed(() => renderTemplatePreview(form.body, sampleVariables))
-
-// ─── Save ────────────────────────────────────────────────────────
 async function handleCreate() {
   validationError.value = ''
   if (!canSave.value) {
@@ -76,12 +41,7 @@ async function handleCreate() {
 
   isSaving.value = true
   try {
-    const created = await createTemplate({
-      purpose: form.purpose,
-      name: form.name.trim(),
-      subject: form.subject.trim(),
-      body: form.body.trim(),
-    })
+    const created = await createTemplate(trimmedPayload())
     await navigateTo(localePath(`/dashboard/emails/templates/${(created as any).id}`))
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return

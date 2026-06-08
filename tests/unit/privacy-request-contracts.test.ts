@@ -102,13 +102,15 @@ describe('privacy request source contracts', () => {
 
   it('adds permissions and settings navigation for privacy requests', () => {
     const permissions = read('shared/permissions.ts')
+    const settingsNav = read('app/config/settings-nav.ts')
     const desktopNav = read('app/components/SettingsSidebar.vue')
     const mobileNav = read('app/components/SettingsMobileNav.vue')
 
     expect(permissions).toContain("privacyRequest: ['read', 'update']")
     expect(permissions).toContain("privacyRequest: []")
-    expect(desktopNav).toContain('/dashboard/settings/privacy-requests')
-    expect(mobileNav).toContain('/dashboard/settings/privacy-requests')
+    expect(settingsNav).toContain('/dashboard/settings/privacy-requests')
+    expect(desktopNav).toContain('settingsNavItems')
+    expect(mobileNav).toContain('settingsNavItems')
     expect(read('app/pages/dashboard/settings/privacy-requests.vue')).toContain('/api/privacy-requests')
   })
 })

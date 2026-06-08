@@ -1,66 +1,17 @@
 <script setup lang="ts">
 import {
-  Building2, Users, UserCircle, Plug, Brain, ShieldCheck, Globe, FileCheck2,
-} from 'lucide-vue-next'
+  filterVisibleSettingsNav,
+  settingsNavItems,
+  settingsNavMobileLabel,
+} from '~/config/settings-nav'
 
 const route = useRoute()
 const localePath = useLocalePath()
 const runtimeConfig = useRuntimeConfig()
 const languageFeatureEnabled = runtimeConfig.public.languageFeatureEnabled === true
 
-const settingsNav = [
-  {
-    label: 'General',
-    to: '/dashboard/settings',
-    icon: Building2,
-    exact: true,
-  },
-  {
-    label: 'Localization',
-    to: '/dashboard/settings/localization',
-    icon: Globe,
-    exact: true,
-  },
-  {
-    label: 'Members',
-    to: '/dashboard/settings/members',
-    icon: Users,
-    exact: true,
-  },
-  {
-    label: 'Integrations',
-    to: '/dashboard/settings/integrations',
-    icon: Plug,
-    exact: true,
-  },
-  {
-    label: 'AI',
-    to: '/dashboard/settings/ai',
-    icon: Brain,
-    exact: true,
-  },
-  {
-    label: 'SSO',
-    to: '/dashboard/settings/sso',
-    icon: ShieldCheck,
-    exact: true,
-  },
-  {
-    label: 'Privacy',
-    to: '/dashboard/settings/privacy-requests',
-    icon: FileCheck2,
-    exact: true,
-  },
-  {
-    label: 'Account',
-    to: '/dashboard/settings/account',
-    icon: UserCircle,
-    exact: true,
-  },
-]
-
 const visibleSettingsNav = computed(() =>
-  settingsNav.filter((item) => languageFeatureEnabled || item.to !== '/dashboard/settings/localization'),
+  filterVisibleSettingsNav(settingsNavItems, languageFeatureEnabled),
 )
 
 function isActive(to: string, exact: boolean) {
@@ -97,7 +48,7 @@ function isActive(to: string, exact: boolean) {
           : ''"
       >
         <component :is="item.icon" class="size-3.5" />
-        {{ item.label }}
+        {{ settingsNavMobileLabel(item) }}
       </NuxtLink>
     </nav>
   </div>
