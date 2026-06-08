@@ -50,7 +50,7 @@
     "test:e2e:production-session": "playwright test --config playwright.production.config.ts e2e/critical-flows/production-session-cache.spec.ts --workers=1",
     "test:e2e:security:core": "playwright test e2e/security/tenant-isolation.spec.ts --grep @security-core",
     "test:e2e:security:extended": "FEATURE_FLAG_CHATBOT_EXPERIENCE=true playwright test e2e/security/tenant-isolation.spec.ts --grep @security-extended",
-    "test:e2e:ui": "NUXT_DEVTOOLS=false FEATURE_FLAG_LANGUAGE_SUPPORT=true playwright test e2e/critical-flows/invitation-management.spec.ts e2e/critical-flows/mobile-keyboard-smoke.spec.ts e2e/critical-flows/accessibility-keyboard.spec.ts",
+    "test:e2e:ui": "NUXT_DEVTOOLS=false FEATURE_FLAG_LANGUAGE_SUPPORT=true playwright test e2e/critical-flows/invitation-management.spec.ts e2e/critical-flows/mobile-keyboard-smoke.spec.ts e2e/critical-flows/accessibility-keyboard.spec.ts e2e/critical-flows/application-link-modal.spec.ts",
     "test:e2e:a11y": "NUXT_DEVTOOLS=false playwright test e2e/accessibility --workers=1",
     "cli:pack": "npm pack --workspace @thefactory/careers-cli --dry-run",
     "cli:publish": "npm publish --workspace @thefactory/careers-cli",
