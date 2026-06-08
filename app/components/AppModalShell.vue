@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'close'): void
+  close: []
 }>()
 
 const attrs = useAttrs()
