@@ -152,21 +152,10 @@ export function useTrackingLinks(options?: {
     key: fetchKey,
     headers: useRequestHeaders(['cookie']),
     query: linksQuery,
-    // 45s SWR for source-tracking links (heavy dashboard page)
-    getCachedData(key, nuxtApp) {
-      const cached = nuxtApp.payload.data[key]
-      if (!cached) return undefined
-      const fetchedAt = (cached as any)._fetchedAt || 0
-      if (Date.now() - fetchedAt < 45_000) return cached
-      return cached
-    },
+    getCachedData: getSwrCachedData,
   })
 
-  if (import.meta.client) {
-    watch(data, (val) => {
-      if (val && !(val as any)._fetchedAt) (val as any)._fetchedAt = Date.now()
-    }, { immediate: true })
-  }
+  watchFetchSwrStamp(data)
 
   const links = computed<TrackingLink[]>(() => data.value?.data ?? [])
   const total = computed(() => data.value?.total ?? 0)

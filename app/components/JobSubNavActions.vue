@@ -87,7 +87,7 @@ const showApplyModal = ref(false)
 
 function handleCandidateApplied() {
   showApplyModal.value = false
-  refreshNuxtData(`pipeline-apps-${props.jobId}`)
+  refreshApplicationsListCaches()
 }
 
 // ─── Bulk AI scoring ──────────────────────────────────────────────────────────
@@ -121,7 +121,7 @@ async function scoreAllCandidates() {
       }
       scoringProgress.value.done++
     }
-    await refreshNuxtData(`pipeline-apps-${props.jobId}`)
+    await refreshApplicationsListCaches()
     if (failed === 0) {
       toast.success('Scoring complete', `${applicationIds.length} candidate${applicationIds.length === 1 ? '' : 's'} scored successfully.`)
     } else {

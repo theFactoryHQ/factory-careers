@@ -44,20 +44,14 @@ const { job: jobData, status: jobFetchStatus, error: jobError } = useJob(jobId)
 // ─────────────────────────────────────────────
 
 const {
-  data: appData,
-  status: appFetchStatus,
+  applications,
+  fetchStatus: appFetchStatus,
   error: appError,
   refresh: refreshApps,
-} = useFetch('/api/applications', {
-  key: `pipeline-apps-${jobId}`,
-  query: { jobId, limit: 100 },
-  headers: useRequestHeaders(['cookie']),
-})
+} = useApplications({ jobId, limit: 100 })
 
 const PIPELINE_STATUSES = ['new', 'screening', 'interview', 'offer', 'hired', 'rejected'] as const
 type PipelineStatus = typeof PIPELINE_STATUSES[number]
-
-const applications = computed(() => appData.value?.data ?? [])
 
 // Read initial pipeline stage from URL query param (?stage=screening)
 const initialStage = PIPELINE_STATUSES.includes(route.query.stage as any)

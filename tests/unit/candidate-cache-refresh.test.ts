@@ -11,7 +11,9 @@ describe('candidate cache refresh', () => {
     const useCandidates = readProjectFile('app/composables/useCandidates.ts')
 
     expect(useCandidates).toContain('`candidates-${JSON.stringify(query.value)}`')
+    expect(useCandidates).toContain('getSwrCachedData')
     expect(useCandidate).toContain("key.startsWith('candidates-')")
+    expect(useCandidate).toContain('getSwrCachedData')
     expect(useCandidate).not.toContain("refreshNuxtData('candidates')")
   })
 })

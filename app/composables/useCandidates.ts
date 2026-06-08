@@ -30,21 +30,10 @@ export function useCandidates(options?: {
     key: computed(() => `candidates-${JSON.stringify(query.value)}`),
     query,
     headers: useRequestHeaders(['cookie']),
-    // 45s SWR cache for candidate lists (very frequently accessed in dashboard)
-    getCachedData(key, nuxtApp) {
-      const cached = nuxtApp.payload.data[key]
-      if (!cached) return undefined
-      const fetchedAt = (cached as any)._fetchedAt || 0
-      if (Date.now() - fetchedAt < 45_000) return cached
-      return cached
-    },
+    getCachedData: getSwrCachedData,
   })
 
-  if (import.meta.client) {
-    watch(data, (val) => {
-      if (val && !(val as any)._fetchedAt) (val as any)._fetchedAt = Date.now()
-    }, { immediate: true })
-  }
+  watchFetchSwrStamp(data)
 
   const candidates = computed(() => data.value?.data ?? [])
   const total = computed(() => data.value?.total ?? 0)

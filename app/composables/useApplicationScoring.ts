@@ -27,10 +27,7 @@ export function useApplicationScoring() {
       if (options.refreshApplication !== false) {
         await options.refresh?.()
       }
-      await refreshNuxtData('applications')
-      if (options.jobId) {
-        await refreshNuxtData(`pipeline-apps-${options.jobId}`)
-      }
+      await refreshApplicationsListCaches()
 
       track('individual_scoring_completed', {
         application_id: applicationId,

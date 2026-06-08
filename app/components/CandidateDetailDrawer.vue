@@ -75,7 +75,7 @@ const { transitionToStatus } = useApplicationStatusActions({
   updateStatus: updateTransitionTargetStatus,
   afterTransition: async () => {
     await refresh()
-    await refreshNuxtData('applications')
+    await refreshApplicationsListCaches()
     toast.success('Application status updated')
   },
 })

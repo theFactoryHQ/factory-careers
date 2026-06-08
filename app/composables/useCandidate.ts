@@ -19,8 +19,11 @@ export function useCandidate(id: MaybeRefOrGetter<string>) {
     {
       key: computed(() => `candidate-${candidateId.value}`),
       headers: useRequestHeaders(['cookie']),
+      getCachedData: getSwrCachedData,
     },
   )
+
+  watchFetchSwrStamp(candidate)
 
   /** Update candidate fields (partial) and refresh both detail and list caches */
   async function updateCandidate(payload: Partial<{
@@ -56,7 +59,7 @@ export function useCandidate(id: MaybeRefOrGetter<string>) {
     }
     await invalidateCandidatesListCache()
     clearNuxtData(`candidate-${candidateId.value}`)
-    clearNuxtData('applications')
+    clearNuxtData(key => key.startsWith('applications-'))
     await navigateTo(localePath('/dashboard/candidates'))
   }
 

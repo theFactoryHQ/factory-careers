@@ -28,15 +28,18 @@ export function useApplication(id: MaybeRefOrGetter<string>) {
     {
       key: computed(() => `application-${applicationId.value}`),
       headers: useRequestHeaders(['cookie']),
+      getCachedData: getSwrCachedData,
     },
   )
+
+  watchFetchSwrStamp(application)
 
   /** Update application fields (status, notes, score) and refresh caches */
   async function updateApplication(payload: ApplicationUpdatePayload) {
     try {
       const updated = await patchApplication(applicationId.value, payload)
       await refresh()
-      await refreshNuxtData('applications')
+      await refreshApplicationsListCaches()
       return updated
     } catch (error) {
       handlePreviewReadOnlyError(error)
