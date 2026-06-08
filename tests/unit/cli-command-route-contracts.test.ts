@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Command } from 'commander'
 import { createProgram } from '../../packages/careers-cli/src/program'
@@ -116,6 +116,26 @@ function dynamicRouteEvidence(source: string, route: string): string[] {
   return []
 }
 
+function factoryRegisteredRouteExists(source: string, route: string): boolean {
+  if (!source.includes('registerJsonCommand')) return false
+
+  const method = expectedMethod(route)
+  const parts = staticApiParts(route)
+  const basePath = `/${parts.join('/')}`
+  const isIdRoute = route.includes('/[id]')
+
+  return source
+    .split('registerJsonCommand')
+    .some((chunk) => {
+      if (!chunk.includes(`method: '${method}'`)) return false
+      if (isIdRoute) {
+        const resourcePath = parts.slice(1).join('/')
+        return chunk.includes(`/api/${resourcePath}/\${encodeURIComponent(id)}`)
+      }
+      return chunk.includes(`path: '${basePath}'`)
+    })
+}
+
 function routeSpecificRequestExists(source: string, route: string): boolean {
   const method = expectedMethod(route)
   const dynamicEvidence = dynamicRouteEvidence(source, route)
@@ -132,9 +152,29 @@ function routeSpecificRequestExists(source: string, route: string): boolean {
     .filter((part) => !(/^server\/api\/chatbot\/(agents|folders)\//.test(route) && ['agents', 'folders'].includes(part)))
     .filter((part) => !(/^server\/api\/updates\/(changelog|system|version)\.get\.ts$/.test(route) && ['changelog', 'system', 'version'].includes(part)))
 
-  return requestBlocks(source).some((block) =>
+  if (requestBlocks(source).some((block) =>
     blockUsesMethod(block, method) && blockContainsParts(block, parts),
-  )
+  )) {
+    return true
+  }
+
+  return factoryRegisteredRouteExists(source, route)
+}
+
+function readCliSources(): string {
+  const srcDir = join(root, 'packages/careers-cli/src')
+  const files: string[] = []
+
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = join(dir, entry.name)
+      if (entry.isDirectory()) walk(fullPath)
+      else if (entry.name.endsWith('.ts')) files.push(fullPath)
+    }
+  }
+
+  walk(srcDir)
+  return files.map((file) => readFileSync(file, 'utf8')).join('\n')
 }
 
 describe('CLI command route contracts', () => {
@@ -150,10 +190,10 @@ describe('CLI command route contracts', () => {
   })
 
   it('keeps supported route methods and paths represented by the CLI implementation', () => {
-    const programSource = readFileSync(join(root, 'packages/careers-cli/src/program.ts'), 'utf8')
+    const cliSource = readCliSources()
     const missing = cliRouteCoverage
       .filter((entry) => entry.status === 'supported')
-      .filter((entry) => !routeSpecificRequestExists(programSource, entry.route))
+      .filter((entry) => !routeSpecificRequestExists(cliSource, entry.route))
       .map((entry) => `${entry.route} missing route-specific ${expectedMethod(entry.route)} request`)
 
     expect(missing).toEqual([])
