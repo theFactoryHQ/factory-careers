@@ -49,6 +49,49 @@ describe('CLI properties commands', () => {
     expect(JSON.parse(stdout[0])).toEqual([{ id: 'prop_1', name: 'Location' }])
   })
 
+  it('creates and updates properties from stdin JSON', async () => {
+    const dir = tempDir()
+    const configPath = join(dir, 'config.json')
+    writeAuthedConfig(configPath)
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === 'https://careers.example.com/api/properties' && init?.method === 'POST') {
+        expect(JSON.parse(String(init.body))).toEqual({ entityType: 'candidate', type: 'text', name: 'Location' })
+        return Response.json({ id: 'prop_1', name: 'Location' }, { status: 201 })
+      }
+      if (url === 'https://careers.example.com/api/properties/prop_1' && init?.method === 'PATCH') {
+        expect(JSON.parse(String(init.body))).toEqual({ name: 'Updated location' })
+        return Response.json({ id: 'prop_1', name: 'Updated location' })
+      }
+      throw new Error(`Unexpected URL ${url}`)
+    })
+    const createOut: string[] = []
+    const updateOut: string[] = []
+
+    const createExit = await runCli(
+      ['properties', 'create', '--stdin', '--yes', '--config', configPath, '--json'],
+      {
+        stdout: (value) => createOut.push(value),
+        stderr: () => {},
+        fetch: fetchMock as typeof fetch,
+        stdin: async () => JSON.stringify({ entityType: 'candidate', type: 'text', name: 'Location' }),
+      },
+    )
+    const updateExit = await runCli(
+      ['properties', 'update', 'prop_1', '--stdin', '--yes', '--config', configPath, '--json'],
+      {
+        stdout: (value) => updateOut.push(value),
+        stderr: () => {},
+        fetch: fetchMock as typeof fetch,
+        stdin: async () => JSON.stringify({ name: 'Updated location' }),
+      },
+    )
+
+    expect(createExit).toBe(0)
+    expect(updateExit).toBe(0)
+    expect(JSON.parse(createOut[0])).toEqual({ id: 'prop_1', name: 'Location' })
+    expect(JSON.parse(updateOut[0])).toEqual({ id: 'prop_1', name: 'Updated location' })
+  })
+
   it('creates and reorders properties from stdin JSON', async () => {
     const dir = tempDir()
     const configPath = join(dir, 'config.json')
@@ -92,5 +135,25 @@ describe('CLI properties commands', () => {
     expect(reorderExit).toBe(0)
     expect(JSON.parse(createOut[0])).toEqual({ id: 'prop_1', name: 'Location' })
     expect(JSON.parse(reorderOut[0])).toEqual({ ok: true })
+  })
+
+  it('deletes a property definition with confirmation', async () => {
+    const dir = tempDir()
+    const configPath = join(dir, 'config.json')
+    writeAuthedConfig(configPath)
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      expect(url).toBe('https://careers.example.com/api/properties/prop_1')
+      expect(init?.method).toBe('DELETE')
+      return new Response(null, { status: 204 })
+    })
+    const stdout: string[] = []
+
+    const exitCode = await runCli(
+      ['properties', 'delete', 'prop_1', '--yes', '--config', configPath, '--json'],
+      { stdout: (value) => stdout.push(value), stderr: () => {}, fetch: fetchMock as typeof fetch },
+    )
+
+    expect(exitCode).toBe(0)
+    expect(JSON.parse(stdout[0])).toEqual({ deleted: true, id: 'prop_1' })
   })
 })
