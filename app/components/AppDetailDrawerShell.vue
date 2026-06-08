@@ -53,13 +53,13 @@ useFocusTrap({
     >
       <aside
         ref="drawerRef"
-        class="factory-dashboard-portal fixed inset-y-0 right-0 z-[60] w-full max-w-2xl flex flex-col border-l border-white/12 bg-black text-white shadow-none"
+        class="factory-dashboard-portal ui-drawer-panel fixed inset-y-0 right-0 z-[60] w-full max-w-2xl flex flex-col border-l border-white/12 bg-black text-white shadow-none"
         role="dialog"
         aria-modal="true"
         :aria-label="drawerAriaLabel"
       >
-        <header class="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-white/[0.035] px-5 py-4">
-          <span class="truncate text-sm font-semibold text-white">{{ title }}</span>
+        <header class="ui-drawer-header flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-white/[0.035] px-5 py-4">
+          <h2 class="truncate text-sm font-semibold text-white">{{ title }}</h2>
           <div class="flex shrink-0 items-center gap-2">
             <NuxtLink
               :to="fullPageHref"
@@ -69,7 +69,8 @@ useFocusTrap({
               Open full page
             </NuxtLink>
             <button
-              class="ui-panel-close-button p-1.5 transition-colors"
+              type="button"
+              class="ui-button ui-button-ghost ui-panel-close-button shrink-0 p-1.5"
               :aria-label="closeAriaLabel"
               @click="emit('close')"
             >
@@ -78,7 +79,7 @@ useFocusTrap({
           </div>
         </header>
 
-        <div class="flex-1 space-y-4 overflow-y-auto bg-black p-5">
+        <div class="ui-drawer-body flex-1 space-y-4 overflow-y-auto bg-black p-5">
           <slot />
         </div>
       </aside>
