@@ -16,16 +16,21 @@ export function attachFetchSwrStamp<T>(data: T | null | undefined) {
 }
 
 type SwrCacheContext = {
-  cause?: unknown
+  cause?: 'initial' | 'refresh:hook' | 'refresh:manual' | 'watch'
 }
 
 /** Serve cached useFetch payload instantly within TTL, then allow background refresh. */
 export function getSwrCachedData<T>(
   key: string,
   nuxtApp: ReturnType<typeof useNuxtApp>,
-  _context?: SwrCacheContext,
+  context?: SwrCacheContext,
   ttlMs = DEFAULT_FETCH_SWR_TTL_MS,
 ): T | undefined {
+  // Explicit refreshes must hit the network — returning cache here would noop refresh().
+  if (context?.cause === 'refresh:manual' || context?.cause === 'refresh:hook') {
+    return undefined
+  }
+
   const cached = nuxtApp.payload.data[key] as (T & SwrStamped) | undefined
   if (!cached) return undefined
 

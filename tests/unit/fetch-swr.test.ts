@@ -26,6 +26,14 @@ describe('useFetchSwr', () => {
     expect(getSwrCachedData('applications-{}', nuxtApp)).toBe(cached)
     expect(getSwrCachedData('missing', nuxtApp)).toBeUndefined()
   })
+
+  it('skips cache on explicit refresh causes so mutations refetch fresh data', () => {
+    const cached = { data: [{ id: '1' }], _fetchedAt: Date.now() }
+    const nuxtApp = { payload: { data: { 'candidate-1': cached } } } as any
+
+    expect(getSwrCachedData('candidate-1', nuxtApp, { cause: 'refresh:manual' })).toBeUndefined()
+    expect(getSwrCachedData('candidate-1', nuxtApp, { cause: 'refresh:hook' })).toBeUndefined()
+  })
 })
 
 describe('applications cache contract', () => {
