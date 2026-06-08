@@ -53,6 +53,12 @@ export type CalendarOAuthCallbackQuery = {
   error?: string
 }
 
+function coerceQueryString(value: unknown): string | undefined {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) return typeof value[0] === 'string' ? value[0] : undefined
+  return undefined
+}
+
 export type HandleCalendarOAuthCallbackOptions = {
   stateCookieName: string
   callbackPath: string
@@ -77,7 +83,12 @@ export async function handleCalendarOAuthCallback(
   options: HandleCalendarOAuthCallbackOptions,
 ) {
   const session = await requireAuth(event)
-  const query = getQuery(event) as CalendarOAuthCallbackQuery
+  const rawQuery = getQuery(event)
+  const query: CalendarOAuthCallbackQuery = {
+    code: coerceQueryString(rawQuery.code),
+    state: coerceQueryString(rawQuery.state),
+    error: coerceQueryString(rawQuery.error),
+  }
 
   if (query.error) {
     return sendRedirect(event, options.consentDeniedRedirect)
