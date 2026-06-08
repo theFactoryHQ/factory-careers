@@ -5,7 +5,7 @@ import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 const route = useRoute()
 const isFullbleed = computed(() => !!route.meta.fullbleed)
 
-const { data: session } = await authClient.useSession(useFetch)
+const { session } = await useAuthSession()
 
 const config = useRuntimeConfig()
 const { activeOrg } = useCurrentOrg()

@@ -13,7 +13,7 @@ import { getJobStatusBadgeClass, getJobStatusLabel } from '~/utils/status-displa
 const route = useRoute()
 const localePath = useLocalePath()
 const getRouteBaseName = useRouteBaseName()
-const { data: session } = await authClient.useSession(useFetch)
+const { session } = await useAuthSession()
 const isSigningOut = ref(false)
 
 const showFeedbackModal = ref(false)
