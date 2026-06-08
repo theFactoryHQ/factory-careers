@@ -13,9 +13,7 @@ const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 
 const { job, updateJob, deleteJob, refresh: refreshJob } = useJob(props.jobId)
 
-// ─────────────────────────────────────────────
-// Job status transitions
-// ─────────────────────────────────────────────
+// ─── Job status transitions ───────────────────────────────────────────────────
 
 const jobTransitionLabels: Record<string, string> = {
   draft: 'Revert to Draft',
@@ -65,9 +63,7 @@ async function handleJobTransition(newStatus: string) {
   }
 }
 
-// ─────────────────────────────────────────────
-// Delete
-// ─────────────────────────────────────────────
+// ─── Delete ───────────────────────────────────────────────────────────────────
 
 const isDeleting = ref(false)
 const showDeleteConfirm = ref(false)
@@ -85,9 +81,7 @@ async function handleDelete() {
   }
 }
 
-// ─────────────────────────────────────────────
-// Add candidate modal
-// ─────────────────────────────────────────────
+// ─── Add candidate modal ──────────────────────────────────────────────────────
 
 const showApplyModal = ref(false)
 
@@ -96,9 +90,7 @@ function handleCandidateApplied() {
   refreshNuxtData(`pipeline-apps-${props.jobId}`)
 }
 
-// ─────────────────────────────────────────────
-// Bulk AI scoring
-// ─────────────────────────────────────────────
+// ─── Bulk AI scoring ──────────────────────────────────────────────────────────
 
 const isScoringAll = ref(false)
 const scoringProgress = ref({ done: 0, total: 0 })
@@ -155,9 +147,7 @@ async function scoreAllCandidates() {
   }
 }
 
-// ─────────────────────────────────────────────
-// More menu
-// ─────────────────────────────────────────────
+// ─── More menu ────────────────────────────────────────────────────────────────
 
 const showMoreMenu = ref(false)
 const moreMenuRef = ref<HTMLElement | null>(null)
@@ -192,9 +182,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
 })
 
-// ─────────────────────────────────────────────
-// Property schema editor (per-job)
-// ─────────────────────────────────────────────
+// ─── Property schema editor (per-job) ─────────────────────────────────────────
 
 const showPropertyEditor = ref(false)
 const propertyEditorScope = ref<'org' | 'job'>('job')
