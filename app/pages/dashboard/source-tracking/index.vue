@@ -76,13 +76,8 @@ const {
   refresh: refreshLinks,
 } = useTrackingLinks()
 
-// Fetch jobs for filter dropdown
-const { data: jobsData } = useFetch('/api/jobs', {
-  key: 'source-tracking-jobs',
-  headers: useRequestHeaders(['cookie']),
-  query: { limit: 100 },
-})
-const jobs = computed(() => (jobsData.value as any)?.data ?? [])
+// Fetch jobs for filter dropdown (shares cache with topbar via canonical jobsListKey)
+const { jobs } = useJobs({ limit: 100 })
 
 const { allowed: canManageLinks } = usePermission({ sourceTracking: ['create'] })
 

@@ -73,15 +73,7 @@ const activeJobId = computed(() => {
   return idParam
 })
 
-const {
-  data: sidebarJobsData,
-} = useFetch('/api/jobs', {
-  key: 'sidebar-jobs-list',
-  query: { limit: 100 },
-  headers: useRequestHeaders(['cookie']),
-})
-
-const sidebarJobs = computed(() => sidebarJobsData.value?.data ?? [])
+const { jobs: sidebarJobs } = useSidebarJobs()
 
 const activeJobTitle = computed(() => {
   if (!activeJobId.value) return null
