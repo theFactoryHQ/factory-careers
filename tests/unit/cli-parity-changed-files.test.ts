@@ -38,6 +38,22 @@ describe('CLI parity changed-file guard', () => {
     })
   })
 
+  it('accepts CLI parity evidence for Epic 7 pagination and pipeline helpers without contract changes', () => {
+    expect(evaluateCliParityEvidence([
+      'server/api/candidates/index.get.ts',
+      'server/api/applications/index.get.ts',
+      'server/api/jobs/index.get.ts',
+      'server/api/dashboard/stats.get.ts',
+      'server/api/tracking-links/[id]/stats.get.ts',
+      'server/api/source-tracking/stats.get.ts',
+      'shared/application-status.ts',
+      'tests/unit/cli-parity-changed-files.test.ts',
+    ])).toMatchObject({
+      ok: true,
+      message: 'CLI parity evidence found.',
+    })
+  })
+
   it('passes when parity-sensitive files include CLI evidence', () => {
     expect(evaluateCliParityEvidence([
       'server/api/jobs/index.post.ts',

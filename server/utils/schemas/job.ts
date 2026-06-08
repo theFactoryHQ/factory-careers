@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { CURRENCY_VALUES } from '~~/shared/currency-options'
 import { SALARY_UNIT_VALUES } from '~~/shared/salary-options'
+import { paginationQuerySchema } from './common'
 import { scoringBandsSchema } from './scoringBands'
 
 export { JOB_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
@@ -80,9 +81,7 @@ export const updateJobSchema = z.object({
 })
 
 /** Schema for job list query params */
-export const jobQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+export const jobQuerySchema = paginationQuerySchema().extend({
   status: z.enum(['draft', 'open', 'closed', 'archived']).optional(),
 })
 

@@ -6,6 +6,7 @@ import {
   candidateGenderValues,
   candidateUpdateFieldsSchema,
 } from '~~/shared/schemas/candidate'
+import { paginationQuerySchema } from './common'
 
 // ─────────────────────────────────────────────
 // Candidate validation schemas — shared across API routes
@@ -22,9 +23,7 @@ export const updateCandidateSchema = candidateUpdateFieldsSchema.extend({
 })
 
 /** Schema for candidate list query params */
-export const candidateQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+export const candidateQuerySchema = paginationQuerySchema().extend({
   search: z.string().trim().max(200).optional(),
   gender: candidateGenderSchema.optional(),
   dobFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'dobFrom must be YYYY-MM-DD').optional(),

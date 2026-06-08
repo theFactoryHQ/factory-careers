@@ -1,15 +1,8 @@
 import { eq, and, desc, count, inArray } from 'drizzle-orm'
 import { job, application } from '../../database/schema'
+import { emptyPipelineCounts, type PipelineCounts } from '~~/shared/application-status'
+import { paginatedListResponse, paginationOffset } from '../../utils/schemas/common'
 import { jobQuerySchema } from '../../utils/schemas/job'
-
-interface PipelineCounts {
-  new: number
-  screening: number
-  interview: number
-  offer: number
-  hired: number
-  rejected: number
-}
 
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { job: ['read'] })
@@ -17,7 +10,7 @@ export default defineEventHandler(async (event) => {
 
   const query = await getValidatedQuery(event, jobQuerySchema.parse)
 
-  const offset = (query.page - 1) * query.limit
+  const offset = paginationOffset(query.page, query.limit)
   const conditions = [eq(job.organizationId, orgId)]
   if (query.status) conditions.push(eq(job.status, query.status))
 
@@ -64,15 +57,15 @@ export default defineEventHandler(async (event) => {
       .groupBy(application.jobId, application.status)
 
     for (const row of pipelineRows) {
-      const entry = (pipelineMap[row.jobId] ??= { new: 0, screening: 0, interview: 0, offer: 0, hired: 0, rejected: 0 })
+      const entry = (pipelineMap[row.jobId] ??= emptyPipelineCounts())
       entry[row.status as keyof PipelineCounts] = row.count
     }
   }
 
   const enrichedData = data.map((j) => ({
     ...j,
-    pipeline: pipelineMap[j.id] ?? { new: 0, screening: 0, interview: 0, offer: 0, hired: 0, rejected: 0 },
+    pipeline: pipelineMap[j.id] ?? emptyPipelineCounts(),
   }))
 
-  return { data: enrichedData, total, page: query.page, limit: query.limit }
+  return paginatedListResponse(enrichedData, total, query.page, query.limit)
 })

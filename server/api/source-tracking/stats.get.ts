@@ -1,4 +1,5 @@
 import { eq, and, sql, count, gte, lte, desc } from 'drizzle-orm'
+import { emptyPipelineCounts } from '~~/shared/application-status'
 import { applicationSource, application, trackingLink, job, candidate } from '../../database/schema'
 import { sourceStatsQuerySchema } from '../../utils/schemas/trackingLink'
 
@@ -165,7 +166,7 @@ export default defineEventHandler(async (event) => {
   const funnel: Record<string, Record<string, number>> = {}
   for (const row of statusByChannel) {
     if (!funnel[row.channel]) {
-      funnel[row.channel] = { new: 0, screening: 0, interview: 0, offer: 0, hired: 0, rejected: 0 }
+      funnel[row.channel] = emptyPipelineCounts()
     }
     funnel[row.channel]![row.status] = row.count
   }

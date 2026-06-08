@@ -1,5 +1,6 @@
 import { eq, and, sql, count, gte, lte, desc } from 'drizzle-orm'
 import { applicationSource, application, trackingLink, job, candidate } from '../../../database/schema'
+import { emptyPipelineCounts } from '~~/shared/application-status'
 import { findOrgScopedOr404, orgScopedIdWhere } from '../../../utils/orgScope'
 import { trackingLinkIdSchema, sourceStatsQuerySchema } from '../../../utils/schemas/trackingLink'
 
@@ -127,7 +128,7 @@ export default defineEventHandler(async (event) => {
   ])
 
   // ─── Build funnel map ─────────────────────
-  const funnel: Record<string, number> = { new: 0, screening: 0, interview: 0, offer: 0, hired: 0, rejected: 0 }
+  const funnel: Record<string, number> = emptyPipelineCounts()
   for (const row of statusBreakdown) {
     funnel[row.status] = row.count
   }
