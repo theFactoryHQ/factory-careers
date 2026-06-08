@@ -21,6 +21,7 @@ import {
   type StdinOptions,
 } from './cliRuntime'
 import { registerCommentsCommands } from './commands/comments'
+import { registerEmailTemplatesCommands } from './commands/email-templates'
 import { removeProfileToken, saveProfile } from './config'
 import { normalizeCliError } from './errors'
 import {
@@ -964,6 +965,7 @@ export function createProgram(io: CliIo = {}): Command {
   })
 
   registerCommentsCommands(program, runtime)
+  registerEmailTemplatesCommands(program, runtime)
 
   const feedback = program
     .command('feedback')
@@ -1208,89 +1210,6 @@ export function createProgram(io: CliIo = {}): Command {
     })
 
     outputResult(io, globals, result)
-  })
-
-  const emailTemplates = program
-    .command('email-templates')
-    .description('Manage email templates')
-
-  addGlobalOptions(
-    emailTemplates
-      .command('list')
-      .description('List email templates'),
-  ).action(async (options: GlobalOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    const token = requireAuthenticatedProfile(profile)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: `${profile.baseUrl}/api/email-templates`,
-      method: 'GET',
-      token,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  addGlobalOptions(
-    emailTemplates
-      .command('create')
-      .description('Create an email template')
-      .option('--stdin', 'Read request body as JSON from stdin'),
-  ).action(async (options: StdinOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    requireMutationConfirmation(globals)
-    const token = requireAuthenticatedProfile(profile)
-    const body = await readStdinJson(io, options.stdin)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: `${profile.baseUrl}/api/email-templates`,
-      method: 'POST',
-      token,
-      body,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  addGlobalOptions(
-    emailTemplates
-      .command('update')
-      .description('Update an email template')
-      .argument('<id>', 'Email template ID')
-      .option('--stdin', 'Read request body as JSON from stdin'),
-  ).action(async (id: string, options: StdinOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    requireMutationConfirmation(globals)
-    const token = requireAuthenticatedProfile(profile)
-    const body = await readStdinJson(io, options.stdin)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: `${profile.baseUrl}/api/email-templates/${encodeURIComponent(id)}`,
-      method: 'PATCH',
-      token,
-      body,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  addGlobalOptions(
-    emailTemplates
-      .command('delete')
-      .description('Delete an email template')
-      .argument('<id>', 'Email template ID'),
-  ).action(async (id: string, options: GlobalOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    requireMutationConfirmation(globals)
-    const token = requireAuthenticatedProfile(profile)
-    await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: `${profile.baseUrl}/api/email-templates/${encodeURIComponent(id)}`,
-      method: 'DELETE',
-      token,
-    })
-
-    outputResult(io, globals, { deleted: true, id })
   })
 
   const interviews = program
