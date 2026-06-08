@@ -1,6 +1,7 @@
 import { and, asc, eq } from 'drizzle-orm'
 import { chatbotAgent } from '../../../database/schema'
 import { requireChatbotAccess } from '../../../utils/chatbotAccess'
+import { toChatbotAgent } from '../../../utils/chatbotDto'
 import type { ChatbotAgent } from '../../../../shared/chatbot'
 
 /**
@@ -22,16 +23,6 @@ export default defineEventHandler(async (event): Promise<{ agents: ChatbotAgent[
   })
 
   return {
-    agents: rows.map((r) => ({
-      id: r.id,
-      name: r.name,
-      description: r.description,
-      icon: r.icon,
-      systemPrompt: r.systemPrompt,
-      temperature: r.temperature ? Number(r.temperature) : null,
-      isDefault: r.isDefault,
-      createdAt: r.createdAt.getTime(),
-      updatedAt: r.updatedAt.getTime(),
-    })),
+    agents: rows.map(toChatbotAgent),
   }
 })

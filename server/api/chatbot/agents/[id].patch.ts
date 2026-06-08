@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { uuidParamSchema } from '../../../utils/schemas/common'
 import { chatbotAgent } from '../../../database/schema'
 import { requireChatbotAccess } from '../../../utils/chatbotAccess'
+import { toChatbotAgent } from '../../../utils/chatbotDto'
 import {
   CHATBOT_AGENT_PROMPT_MAX,
   type ChatbotAgent,
@@ -51,10 +52,6 @@ export default defineEventHandler(async (event): Promise<{ agent: ChatbotAgent }
   }
   if (body.isDefault !== undefined) updates.isDefault = body.isDefault
 
-  // Clear-and-set must be atomic so two concurrent "promote to default"
-  // requests cannot both observe `existing.isDefault === false` and leave
-  // multiple defaults. The partial unique index
-  // `chatbot_agent_default_per_user_idx` is the DB-level backstop.
   const [updated] = await db.transaction(async (tx) => {
     if (body.isDefault === true && !existing.isDefault) {
       await tx.update(chatbotAgent)
@@ -80,16 +77,6 @@ export default defineEventHandler(async (event): Promise<{ agent: ChatbotAgent }
   }
 
   return {
-    agent: {
-      id: updated.id,
-      name: updated.name,
-      description: updated.description,
-      icon: updated.icon,
-      systemPrompt: updated.systemPrompt,
-      temperature: updated.temperature ? Number(updated.temperature) : null,
-      isDefault: updated.isDefault,
-      createdAt: updated.createdAt.getTime(),
-      updatedAt: updated.updatedAt.getTime(),
-    },
+    agent: toChatbotAgent(updated),
   }
 })

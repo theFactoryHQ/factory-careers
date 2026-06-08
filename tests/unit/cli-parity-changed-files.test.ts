@@ -54,6 +54,37 @@ describe('CLI parity changed-file guard', () => {
     })
   })
 
+  it('accepts CLI parity evidence for Epic 7 server domain helpers without contract changes', () => {
+    expect(evaluateCliParityEvidence([
+      'server/api/activity-log/index.get.ts',
+      'server/api/calendar/google/callback.get.ts',
+      'server/api/calendar/google/connect.get.ts',
+      'server/api/calendar/microsoft/callback.get.ts',
+      'server/api/calendar/microsoft/connect.get.ts',
+      'server/api/chatbot/agents/[id].patch.ts',
+      'server/api/chatbot/agents/index.get.ts',
+      'server/api/chatbot/agents/index.post.ts',
+      'server/api/chatbot/folders/[id].patch.ts',
+      'server/api/chatbot/folders/index.get.ts',
+      'server/api/chatbot/folders/index.post.ts',
+      'server/api/source-tracking/stats.get.ts',
+      'server/api/tracking-links/[id]/stats.get.ts',
+      'server/api/updates/apply.post.ts',
+      'server/api/updates/changelog.get.ts',
+      'server/api/updates/system.get.ts',
+      'server/api/updates/version.get.ts',
+      'server/utils/sourceAnalytics.ts',
+      'server/utils/calendarOAuth.ts',
+      'server/utils/chatbotDto.ts',
+      'server/utils/activityLogEntries.ts',
+      'server/utils/appVersion.ts',
+      'tests/unit/cli-parity-changed-files.test.ts',
+    ])).toMatchObject({
+      ok: true,
+      message: 'CLI parity evidence found.',
+    })
+  })
+
   it('passes when parity-sensitive files include CLI evidence', () => {
     expect(evaluateCliParityEvidence([
       'server/api/jobs/index.post.ts',

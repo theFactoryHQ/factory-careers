@@ -6,55 +6,30 @@
  * encrypts and stores them, sets up the webhook, then redirects to settings.
  */
 import { exchangeCodeForTokens, saveCalendarIntegration, setupCalendarWebhook } from '../../../utils/google-calendar'
-import { timingSafeStringEqual } from '../../../utils/secureCompare'
+import { handleCalendarOAuthCallback } from '../../../utils/calendarOAuth'
+
+const GOOGLE_CALLBACK_PATH = '/api/calendar/google/callback'
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
 
-  const query = getQuery(event)
-  const code = query.code as string | undefined
-  const state = query.state as string | undefined
-  const error = query.error as string | undefined
+  return handleCalendarOAuthCallback(event, {
+    stateCookieName: 'gcal_oauth_state',
+    callbackPath: GOOGLE_CALLBACK_PATH,
+    consentDeniedRedirect: '/dashboard/settings/integrations?error=consent_denied',
+    successRedirect: '/dashboard/settings/integrations?success=connected',
+    oauthFailedRedirect: '/dashboard/settings/integrations?error=oauth_failed',
+    logFailureEvent: 'calendar.oauth_callback_failed',
+    onSuccess: async ({ code }) => {
+      const tokens = await exchangeCodeForTokens(code)
+      await saveCalendarIntegration(session.user.id, tokens)
 
-  // Google returns an error param if the user denied consent
-  if (error) {
-    return sendRedirect(event, '/dashboard/settings/integrations?error=consent_denied')
-  }
-
-  if (!code || !state) {
-    throw createError({ statusCode: 400, statusMessage: 'Missing authorization code or state' })
-  }
-
-  // Validate CSRF state token from cookie
-  const storedState = getCookie(event, 'gcal_oauth_state')
-  deleteCookie(event, 'gcal_oauth_state', { path: '/api/calendar/google/callback' })
-
-  if (!storedState || !timingSafeStringEqual(storedState, state)) {
-    throw createError({ statusCode: 403, statusMessage: 'Invalid OAuth state — possible CSRF attack' })
-  }
-
-  // Exchange authorization code for tokens
-  try {
-    const tokens = await exchangeCodeForTokens(code)
-
-    // Encrypt and store tokens
-    await saveCalendarIntegration(session.user.id, tokens)
-
-    // Set up webhook for two-way sync (non-blocking)
-    setupCalendarWebhook(session.user.id).catch(err => {
-      logWarn('calendar.webhook_setup_failed', {
-        posthog_distinct_id: session.user.id,
-        error_message: err instanceof Error ? err.message : String(err),
+      setupCalendarWebhook(session.user.id).catch((err) => {
+        logWarn('calendar.webhook_setup_failed', {
+          posthog_distinct_id: session.user.id,
+          error_message: err instanceof Error ? err.message : String(err),
+        })
       })
-    })
-
-    return sendRedirect(event, '/dashboard/settings/integrations?success=connected')
-  }
-  catch (err) {
-    logError('calendar.oauth_callback_failed', {
-      posthog_distinct_id: session.user.id,
-      error_message: err instanceof Error ? err.message : String(err),
-    })
-    return sendRedirect(event, '/dashboard/settings/integrations?error=oauth_failed')
-  }
+    },
+  })
 })

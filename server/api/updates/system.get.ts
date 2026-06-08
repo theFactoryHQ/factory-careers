@@ -1,8 +1,8 @@
-import { readFile, access } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { access } from 'node:fs/promises'
 import { totalmem, freemem } from 'node:os'
 import { sql } from 'drizzle-orm'
 import { HeadBucketCommand } from '@aws-sdk/client-s3'
+import { getAppVersion } from '../../utils/appVersion'
 
 /**
  * GET /api/updates/system
@@ -14,10 +14,7 @@ import { HeadBucketCommand } from '@aws-sdk/client-s3'
 export default defineEventHandler(async (event) => {
   await requireAuth(event)
 
-  const { version } = await readFile(
-    resolve(process.cwd(), 'package.json'),
-    'utf-8',
-  ).then(JSON.parse) as { version: string }
+  const version = await getAppVersion()
 
   // Check database connectivity
   let dbConnected = false
