@@ -18,20 +18,7 @@ export function useJob(id: MaybeRefOrGetter<string>) {
   )
 
   function syncJobListCache(updatedJob: { id: string } & Record<string, unknown>) {
-    const { data: sidebarJobsData } = useNuxtData<{ data: Array<Record<string, unknown>> }>('sidebar-jobs-list')
-    if (!sidebarJobsData.value?.data) return
-
-    sidebarJobsData.value = {
-      ...sidebarJobsData.value,
-      data: sidebarJobsData.value.data.map((item) => {
-        if (item.id !== updatedJob.id) return item
-        return {
-          ...item,
-          ...updatedJob,
-          pipeline: item.pipeline,
-        }
-      }),
-    }
+    patchJobsListCaches(updatedJob)
   }
 
   /** Update job fields (partial) and refresh both detail and list caches */
@@ -65,8 +52,7 @@ export function useJob(id: MaybeRefOrGetter<string>) {
       })
       syncJobListCache(updated)
       await refresh()
-      await refreshNuxtData('jobs')
-      await refreshNuxtData('sidebar-jobs-list')
+      await refreshJobsListCaches()
       return updated
     } catch (error) {
       handlePreviewReadOnlyError(error)
@@ -82,8 +68,7 @@ export function useJob(id: MaybeRefOrGetter<string>) {
       handlePreviewReadOnlyError(error)
       throw error
     }
-    await refreshNuxtData('jobs')
-    await refreshNuxtData('sidebar-jobs-list')
+    await refreshJobsListCaches()
     await navigateTo(localePath('/dashboard/jobs'))
   }
 

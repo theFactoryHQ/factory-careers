@@ -38,14 +38,10 @@ if (import.meta.dev) {
 
 // ─── Job mode: list open roles for a candidate ────────────────────────────────
 
-const { data: jobData, status: jobFetchStatus } = useFetch('/api/jobs', {
-  key: 'application-link-job-list',
-  query: { status: 'open' },
-  headers: useRequestHeaders(['cookie']),
+const { jobs, fetchStatus: jobFetchStatus } = useJobs({
+  status: 'open',
   immediate: props.mode === 'job',
 })
-
-const jobs = computed(() => jobData.value?.data ?? [])
 
 // ─── Candidate mode: search candidates for a job ──────────────────────────────
 

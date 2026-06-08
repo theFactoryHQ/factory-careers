@@ -87,14 +87,11 @@ onMounted(async () => {
 })
 
 // ── Jobs for the scope picker ──
-const { data: jobsData } = await useFetch('/api/jobs', {
-  key: 'chatbot-jobs',
-  query: { limit: 100 },
-  headers: useRequestHeaders(['cookie']),
-})
-const jobs = computed(() => (jobsData.value?.data ?? []) as Array<{ id: string; title: string; status: string }>)
+const { jobs } = useJobs({ limit: 100 })
 const selectedJob = computed(() =>
-  scope.value.kind === 'job' ? jobs.value.find((j) => j.id === scope.value.jobId) ?? null : null,
+  scope.value.kind === 'job'
+    ? (jobs.value as Array<{ id: string; title: string; status: string }>).find(j => j.id === scope.value.jobId) ?? null
+    : null,
 )
 
 const showScopePicker = ref(false)
