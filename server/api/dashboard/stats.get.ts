@@ -110,7 +110,7 @@ export default defineCachedEventHandler(async (event) => {
   // ─────────────────────────────────────────────
   // Transform grouped rows into keyed objects
   // ─────────────────────────────────────────────
-  const pipeline: Record<string, number> = { ...emptyPipelineCounts() }
+  const pipeline: Record<string, number> = emptyPipelineCounts()
   for (const row of pipelineRows) {
     pipeline[row.status] = row.count
   }
