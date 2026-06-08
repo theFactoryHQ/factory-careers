@@ -13,19 +13,22 @@ describe('auth session deduplication', () => {
     'app/composables/usePostHogIdentity.ts',
   ]
 
+  const useAuthSessionCallPattern = /await\s+useAuthSession\s*\(/
+  const directSessionFetchPattern = /await\s+authClient\.useSession\s*\(\s*useFetch\s*\)/
+
   it('routes dashboard shell session reads through useAuthSession', () => {
     for (const file of dashboardShellFiles) {
       const source = readProjectFile(file)
 
-      expect(source, file).toContain('useAuthSession')
-      expect(source, file).not.toContain('authClient.useSession(useFetch)')
+      expect(source, file).toMatch(useAuthSessionCallPattern)
+      expect(source, file).not.toMatch(directSessionFetchPattern)
     }
   })
 
   it('keeps useFetch-integrated session ownership in useAuthSession', () => {
     const source = readProjectFile('app/composables/useAuthSession.ts')
 
-    expect(source).toContain('authClient.useSession(useFetch)')
-    expect(source).toContain('export async function useAuthSession')
+    expect(source).toMatch(directSessionFetchPattern)
+    expect(source).toMatch(/export async function useAuthSession/)
   })
 })
