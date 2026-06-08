@@ -13,7 +13,7 @@ const props = withDefaults(defineProps<{
   id: string
   label: string
   icon: Component
-  ariaLabel: string
+  menuAriaLabel: string
   title?: string
   width?: number
   estimatedHeight?: number
@@ -64,7 +64,7 @@ defineExpose({ closeMenu })
       type="button"
       class="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-2.5 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-200 hover:border-brand-300 dark:hover:border-brand-700 cursor-pointer transition-colors"
       :title="title"
-      :aria-label="ariaLabel"
+      :aria-label="menuAriaLabel"
       v-bind="menu.triggerAttrs.value"
       @click="menu.toggleMenu()"
       @keydown="menu.onTriggerKeydown($event)"

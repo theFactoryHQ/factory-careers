@@ -38,7 +38,7 @@ function manageAgents() {
     id="chatbot-agent-menu"
     :label="label"
     :icon="Sparkles"
-    ariaLabel="Chatbot agent"
+    menu-aria-label="Chatbot agent"
     :width="256"
     :estimated-height="320"
   >

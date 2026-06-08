@@ -68,14 +68,15 @@ const isSaving = ref(false)
 
 async function handleSave() {
   if (isSystemTemplate.value) return
-  if (!trimmedPayload().name || !trimmedPayload().subject || !trimmedPayload().body) {
+  const payload = trimmedPayload()
+  if (!payload.name || !payload.subject || !payload.body) {
     toast.error('All fields are required')
     return
   }
 
   isSaving.value = true
   try {
-    await updateTemplate(templateId, trimmedPayload())
+    await updateTemplate(templateId, payload)
     toast.success('Template saved')
     hasLoaded.value = false // Re-sync
   } catch (err: any) {

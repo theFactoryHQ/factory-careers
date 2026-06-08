@@ -51,7 +51,7 @@ function manageModels() {
     id="chatbot-model-menu"
     :label="label"
     :icon="Brain"
-    ariaLabel="Chatbot model"
+    menu-aria-label="Chatbot model"
     :title="title"
     :width="288"
     :estimated-height="360"
