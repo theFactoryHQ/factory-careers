@@ -23,11 +23,25 @@ const {
   scoringSummaryFallback,
   isScoringApplication,
   scoreCurrentApplication,
-} = useApplicationScoringPanel({
+  showInterviewSidebar,
+  openInterviewScheduler,
+  allowedTransitions,
+  isTransitioning,
+  transitionToStatus,
+  isEditingNotes,
+  notesInput,
+  isSavingNotes,
+  notesSaveStatus,
+  startEditNotes,
+  saveNotes,
+  autosaveNotes,
+  finishEditNotes,
+} = useApplicationDetailSurface({
   applicationId,
   application,
   source: 'application_detail_page',
   refresh,
+  updateApplication,
 })
 
 useSeoMeta({
@@ -37,32 +51,6 @@ useSeoMeta({
       : 'Application — Factory Careers',
   ),
 })
-
-const showInterviewSidebar = ref(false)
-
-const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicationStatusActions({
-  application,
-  updateStatus: status => updateApplication({ status: status as any }),
-})
-
-const {
-  isEditingNotes,
-  notesInput,
-  isSavingNotes,
-  notesSaveStatus,
-  startEditNotes,
-  saveNotes,
-  autosaveNotes,
-  finishEditNotes,
-} = useEditableApplicationNotes({
-  application,
-  focusOnEdit: true,
-  save: notes => updateApplication({ notes }),
-})
-
-function openInterviewScheduler() {
-  showInterviewSidebar.value = true
-}
 </script>
 
 <template>
