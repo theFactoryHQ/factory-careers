@@ -13,9 +13,13 @@ const props = withDefaults(defineProps<{
   candidateName: string
   jobTitle: string
   teleportTarget?: string | HTMLElement
+  tone?: 'default' | 'inverse'
 }>(), {
   teleportTarget: 'body',
+  tone: 'default',
 })
+
+const isInverseTone = computed(() => props.tone === 'inverse')
 
 const emit = defineEmits<{
   close: []
@@ -488,7 +492,12 @@ async function handleMoveToInterview() {
       >
         <div
           ref="sidebarRef"
-          class="relative w-full max-w-2xl bg-white dark:bg-surface-900 shadow-2xl overflow-hidden flex flex-col border-l border-surface-200/40 dark:border-surface-800/60"
+          :class="[
+            'relative w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col',
+            isInverseTone
+              ? 'ui-drawer-panel ui-interview-schedule-sidebar border-l border-white/12 bg-black text-white shadow-none'
+              : 'bg-white dark:bg-surface-900 border-l border-surface-200/40 dark:border-surface-800/60',
+          ]"
           role="dialog"
           aria-modal="true"
           aria-label="Schedule interview"
@@ -505,11 +514,17 @@ async function handleMoveToInterview() {
                     <CheckCircle2 v-if="showSuccess" class="size-4 text-emerald-600 dark:text-emerald-400" />
                     <Calendar v-else class="size-4 text-brand-600 dark:text-brand-400" />
                   </div>
-                  <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-50 tracking-tight">
+                  <h2
+                    class="text-lg font-semibold tracking-tight"
+                    :class="isInverseTone ? 'text-white' : 'text-surface-900 dark:text-surface-50'"
+                  >
                     {{ showSuccess ? 'Interview Scheduled' : 'Schedule Interview' }}
                   </h2>
                 </div>
-                <p class="text-[13px] text-surface-500 dark:text-surface-400 truncate pl-[42px]">
+                <p
+                  class="text-[13px] truncate pl-[42px]"
+                  :class="isInverseTone ? 'text-white/42' : 'text-surface-500 dark:text-surface-400'"
+                >
                   {{ candidateName }} · {{ jobTitle }}
                 </p>
               </div>
@@ -523,7 +538,10 @@ async function handleMoveToInterview() {
             </div>
           </div>
 
-          <div class="h-px bg-gradient-to-r from-transparent via-surface-200 to-transparent dark:via-surface-700/60" />
+          <div
+            class="h-px"
+            :class="isInverseTone ? 'bg-white/10' : 'bg-gradient-to-r from-transparent via-surface-200 to-transparent dark:via-surface-700/60'"
+          />
 
           <!-- ─── Success view ─────────────────────────────────── -->
           <template v-if="showSuccess">
@@ -602,7 +620,12 @@ async function handleMoveToInterview() {
             </div>
 
             <!-- Success footer -->
-            <div class="shrink-0 border-t border-surface-200/60 dark:border-surface-800/40 bg-white/80 dark:bg-surface-900/80 backdrop-blur-sm px-6 py-4">
+            <div
+              class="shrink-0 border-t backdrop-blur-sm px-6 py-4"
+              :class="isInverseTone
+                ? 'border-white/10 bg-black/80'
+                : 'border-surface-200/60 dark:border-surface-800/40 bg-white/80 dark:bg-surface-900/80'"
+            >
               <button
                 type="button"
                 class="w-full rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-500 transition-colors cursor-pointer shadow-sm shadow-brand-600/20 dark:shadow-brand-500/10"
@@ -1072,7 +1095,12 @@ async function handleMoveToInterview() {
           </div>
 
           <!-- Footer with preview + submit -->
-          <div class="shrink-0 border-t border-surface-200/60 dark:border-surface-800/40 bg-white/80 dark:bg-surface-900/80 backdrop-blur-sm px-6 py-4">
+          <div
+            class="shrink-0 border-t backdrop-blur-sm px-6 py-4"
+            :class="isInverseTone
+              ? 'border-white/10 bg-black/80'
+              : 'border-surface-200/60 dark:border-surface-800/40 bg-white/80 dark:bg-surface-900/80'"
+          >
             <!-- Preview -->
             <div v-if="form.date && form.time" class="mb-3 flex items-center gap-2 min-w-0">
               <Calendar class="size-3.5 shrink-0 text-brand-500 dark:text-brand-400" />

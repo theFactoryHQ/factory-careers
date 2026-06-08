@@ -2514,6 +2514,56 @@
       #000000 !important;
   }
 
+  .factory-dashboard-portal .ui-interview-schedule-sidebar,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-interview-schedule-sidebar {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    border-color: rgb(255 255 255 / 0.12) !important;
+    box-shadow: none !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-interview-schedule-sidebar label,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-interview-schedule-sidebar h3 {
+    color: rgb(255 255 255 / 0.78) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-interview-schedule-sidebar input:not([type='checkbox']),
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-interview-schedule-sidebar textarea {
+    border-color: var(--ui-border-strong) !important;
+    background-color: rgb(255 255 255 / 0.035) !important;
+    color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-interview-schedule-sidebar input:not([type='checkbox'])::placeholder,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-interview-schedule-sidebar textarea::placeholder {
+    color: var(--ui-faint) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-interview-schedule-sidebar input:not([type='checkbox']):focus,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-interview-schedule-sidebar textarea:focus {
+    border-color: color-mix(in srgb, var(--color-brand-500) 75%, transparent) !important;
+    background-color: rgb(255 255 255 / 0.05) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-500) 20%, transparent) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-interview-schedule-sidebar .rounded-xl.border {
+    border-color: var(--ui-border-strong) !important;
+    background-color: rgb(255 255 255 / 0.025) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-interview-schedule-sidebar button.rounded-lg.px-3.py-1\.5.text-\[12px\] {
+    border-color: var(--ui-border-strong) !important;
+    background-color: rgb(255 255 255 / 0.035) !important;
+    color: rgb(255 255 255 / 0.68) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-interview-schedule-sidebar button.rounded-lg.px-3.py-1\.5.text-\[12px\].bg-brand-600,
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-interview-schedule-sidebar button.rounded-lg.px-2\.5.py-1\.5.bg-brand-600 {
+    border-color: transparent !important;
+    background-color: var(--color-brand-600) !important;
+    color: #ffffff !important;
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-filter-section {
     border-top: 1px solid var(--ui-border) !important;
     padding-top: 1rem;
