@@ -56,12 +56,12 @@ describe('application detail epic 5 pr1', () => {
   it('uses shared sub-panels on application detail surfaces without hand-rolled panel markup', () => {
     const expectations: Record<string, { uses: string[], avoids: string[] }> = {
       'app/components/ApplicationDetailDrawer.vue': {
-        uses: ['<ApplicationNotesPanel', '<ApplicationScoringPanel', '<ApplicationResponsesPanel', 'useApplicationScoringPanel'],
-        avoids: ['const scoringSummary = computed', 'const documentTypeLabels', 'const interviewTypeLabels'],
+        uses: ['<ApplicationNotesPanel', '<ApplicationScoringPanel', '<ApplicationResponsesPanel', 'useApplicationDetailSurface'],
+        avoids: ['const scoringSummary = computed', 'const documentTypeLabels', 'const interviewTypeLabels', 'useApplicationScoringPanel', 'useEditableApplicationNotes'],
       },
       'app/pages/dashboard/applications/[id].vue': {
-        uses: ['<ApplicationNotesPanel', '<ApplicationScoringPanel', '<ApplicationResponsesPanel', 'useApplicationScoringPanel'],
-        avoids: ['const scoringSummary = computed', 'type ApplicationScoresResponse', 'function scoreCurrentApplication'],
+        uses: ['<ApplicationNotesPanel', '<ApplicationScoringPanel', '<ApplicationResponsesPanel', 'useApplicationDetailSurface'],
+        avoids: ['const scoringSummary = computed', 'type ApplicationScoresResponse', 'function scoreCurrentApplication', 'useApplicationScoringPanel', 'useEditableApplicationNotes'],
       },
       'app/components/CandidateDetailSidebar.vue': {
         uses: [

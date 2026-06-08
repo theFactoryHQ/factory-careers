@@ -26,21 +26,11 @@ const {
   scoreBand,
   isScoringApplication,
   scoreCurrentApplication,
-} = useApplicationScoringPanel({
-  applicationId: () => props.applicationId,
-  application,
-  source: 'application_detail_drawer',
-  refreshApplication: false,
-})
-
-const showInterviewSidebar = ref(false)
-
-const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicationStatusActions({
-  application,
-  updateStatus: status => updateApplication({ status: status as any }),
-})
-
-const {
+  showInterviewSidebar,
+  openInterviewScheduler,
+  allowedTransitions,
+  isTransitioning,
+  transitionToStatus,
   isEditingNotes,
   notesInput,
   isSavingNotes,
@@ -49,10 +39,12 @@ const {
   saveNotes,
   autosaveNotes,
   finishEditNotes,
-} = useEditableApplicationNotes({
+} = useApplicationDetailSurface({
+  applicationId: () => props.applicationId,
   application,
-  focusOnEdit: true,
-  save: notes => updateApplication({ notes }),
+  source: 'application_detail_drawer',
+  refreshApplication: false,
+  updateApplication,
 })
 </script>
 
@@ -125,7 +117,7 @@ const {
                 </button>
                 <button
                   class="inline-flex shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap border border-white/16 bg-black px-2.5 py-1.5 text-[10px] font-semibold uppercase leading-none tracking-normal text-white/80 hover:border-brand-500 hover:bg-brand-500/12 hover:text-white transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
-                  @click="showInterviewSidebar = true"
+                  @click="openInterviewScheduler"
                 >
                   <Calendar class="size-3" />
                   Schedule Interview
