@@ -59,7 +59,7 @@ test.describe('ApplicationLinkModal and detail drawer smoke', () => {
     await expect(modal).toHaveCount(0)
   })
 
-  test('opens application detail drawer from job candidates table and closes with Escape', async ({ authenticatedPage }, testInfo) => {
+  test('opens candidate detail sidebar from job candidates table and closes with Escape', async ({ authenticatedPage }, testInfo) => {
     const page = authenticatedPage
     const unique = `${Date.now()}-r${testInfo.retry}`
     const job = await createJob(page.request, `E2E Application Drawer ${unique}`)
@@ -81,9 +81,9 @@ test.describe('ApplicationLinkModal and detail drawer smoke', () => {
     await expect(row).toBeVisible()
     await row.getByRole('button', { name: /Open application for Drawer Candidate/ }).click()
 
-    const drawer = page.locator('aside[aria-label="Application detail"]')
-    await expect(drawer).toBeVisible()
+    const sidebar = page.getByRole('dialog', { name: 'Candidate detail' })
+    await expect(sidebar).toBeVisible()
     await page.keyboard.press('Escape')
-    await expect(drawer).toHaveCount(0)
+    await expect(sidebar).toHaveCount(0)
   })
 })
