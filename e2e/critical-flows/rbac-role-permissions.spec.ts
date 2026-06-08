@@ -11,7 +11,7 @@ test.describe('RBAC role permissions', () => {
     })
 
     try {
-      await grantOrganizationRole(member.userId!, ownerMembership.organizationId, 'member')
+      await grantOrganizationRole(member.userId, ownerMembership.organizationId, 'member')
 
       const memberApi = member.page.context().request
       const ownerApi = ownerPage.context().request

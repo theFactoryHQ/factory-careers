@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { assertMutatingE2ESafety } from '../safety'
 import { expect, expectFloatingMenuNotClipped, selectFactorySelectOption, signUpUser, test } from '../fixtures'
 import {
@@ -6,7 +7,7 @@ import {
   lookupMembership,
 } from '../helpers/db'
 
-async function createJoinRequest(page: import('@playwright/test').Page, organizationId: string, message: string) {
+async function createJoinRequest(page: Page, organizationId: string, message: string) {
   const response = await page.request.post('/api/join-requests', {
     data: {
       organizationId,

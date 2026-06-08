@@ -123,6 +123,7 @@ export const test = base.extend<Fixtures>({
 
   authenticatedPageWithoutOrg: async ({ page, testAccount }, use) => {
     await signUpOnPage(page, testAccount)
+    await page.getByLabel('Organization name').waitFor({ state: 'visible', timeout: 30_000 })
     await use(page)
   },
 })

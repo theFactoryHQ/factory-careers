@@ -19,13 +19,24 @@ export type SignUpUserOptions = {
   orgName?: string
 }
 
-export type SignUpUserResult = SignUpCredentials & {
-  orgName?: string
+export type SignUpUserResultBase = SignUpCredentials & {
   page: Page
-  userId?: string
-  organizationId?: string
   close: () => Promise<void>
 }
+
+export type SignUpUserResultWithOrg = SignUpUserResultBase & {
+  orgName: string
+  userId: string
+  organizationId: string
+}
+
+export type SignUpUserResultWithoutOrg = SignUpUserResultBase & {
+  orgName?: undefined
+  userId?: undefined
+  organizationId?: undefined
+}
+
+export type SignUpUserResult = SignUpUserResultWithOrg | SignUpUserResultWithoutOrg
 
 const defaultPassword = () => process.env.E2E_TEST_PASSWORD || 'TestPassword123!'
 
@@ -78,6 +89,8 @@ export async function createOrganizationOnPage(page: Page, orgName: string): Pro
   await page.waitForURL('**/dashboard**', { waitUntil: 'commit' })
 }
 
+export async function signUpUser(browser: Browser, options: SignUpUserOptions & { withOrg: true }): Promise<SignUpUserResultWithOrg>
+export async function signUpUser(browser: Browser, options?: SignUpUserOptions): Promise<SignUpUserResult>
 export async function signUpUser(browser: Browser, options: SignUpUserOptions = {}): Promise<SignUpUserResult> {
   const context = await browser.newContext(options.baseURL ? { baseURL: options.baseURL } : {})
   const page = await context.newPage()
@@ -105,6 +118,9 @@ export async function signUpUser(browser: Browser, options: SignUpUserOptions = 
 
   await createOrganizationOnPage(page, orgName!)
   const membership = await lookupMembership(account.email, orgName!)
+  if (!membership.userId || !membership.organizationId) {
+    throw new Error(`Failed to resolve membership ids for ${account.email} in ${orgName}`)
+  }
 
   return {
     ...account,
