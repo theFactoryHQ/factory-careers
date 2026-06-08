@@ -517,7 +517,7 @@ const { interviews: applicationInterviews } = useInterviews({
   <InterviewScheduleSidebar
     v-if="showScheduleSidebar && application"
     :application-id="props.applicationId"
-    :candidate-name="`${application.candidate.firstName} ${application.candidate.lastName}`"
+    :candidate-name="formatCandidateName(application.candidate)"
     :job-title="application.job?.title ?? ''"
     @close="showScheduleSidebar = false"
     @scheduled="showScheduleSidebar = false"

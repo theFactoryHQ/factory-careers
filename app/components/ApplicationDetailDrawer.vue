@@ -235,7 +235,7 @@ const {
       <InterviewScheduleSidebar
         v-if="showInterviewSidebar && application"
         :application-id="applicationId"
-        :candidate-name="`${application.candidate.firstName} ${application.candidate.lastName}`"
+        :candidate-name="formatCandidateName(application.candidate)"
         :job-title="application.job.title"
         @close="showInterviewSidebar = false"
         @scheduled="showInterviewSidebar = false"
