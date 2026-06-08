@@ -1,5 +1,6 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import { computed, ref, toValue } from 'vue'
+import type { ApplicationStatus } from '~~/shared/application-status'
 import { APPLICATION_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 
 type ApplicationWithStatus = {
@@ -8,12 +9,12 @@ type ApplicationWithStatus = {
 
 type TransitionContext = {
   fromStatus?: string | null
-  toStatus: string
+  toStatus: ApplicationStatus
 }
 
 type UseApplicationStatusActionsOptions = {
   application: MaybeRefOrGetter<ApplicationWithStatus | null | undefined>
-  updateStatus: (status: string) => Promise<unknown>
+  updateStatus: (status: ApplicationStatus) => Promise<unknown>
   afterTransition?: (context: TransitionContext) => Promise<unknown> | unknown
   trackTransition?: (context: TransitionContext) => void
   transitionKey?: MaybeRefOrGetter<string | null | undefined>
@@ -24,10 +25,10 @@ export function useApplicationStatusActions(options: UseApplicationStatusActions
   const { handlePreviewReadOnlyError } = usePreviewReadOnly()
   const toast = useToast()
 
-  const allowedTransitions = computed(() => {
+  const allowedTransitions = computed((): ApplicationStatus[] => {
     const status = toValue(options.application)?.status
     if (!status) return []
-    return APPLICATION_STATUS_TRANSITIONS[status as keyof typeof APPLICATION_STATUS_TRANSITIONS] ?? []
+    return (APPLICATION_STATUS_TRANSITIONS[status as ApplicationStatus] ?? []) as ApplicationStatus[]
   })
 
   const isTransitioning = ref(false)
@@ -44,7 +45,7 @@ export function useApplicationStatusActions(options: UseApplicationStatusActions
     options.transitioningKeys.value = nextKeys
   }
 
-  async function transitionToStatus(newStatus: string) {
+  async function transitionToStatus(newStatus: ApplicationStatus) {
     const context = {
       fromStatus: toValue(options.application)?.status,
       toStatus: newStatus,
