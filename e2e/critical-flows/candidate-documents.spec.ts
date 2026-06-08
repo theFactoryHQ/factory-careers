@@ -1,7 +1,7 @@
 import type { APIRequestContext, APIResponse, Page } from '@playwright/test'
 import { assertMutatingE2ESafety } from '../safety'
 import { test, expect } from '../fixtures'
-import { INVALID_PNG } from '../fixtures/test-buffers'
+import { createTextPdf, INVALID_PNG } from '../fixtures/test-buffers'
 import {
   createApplication,
   createCandidate,
@@ -23,44 +23,6 @@ type ActivityItem = {
   resourceId: string
   resourceName?: string | null
   candidateName?: string | null
-}
-
-function createTextPdf(text: string): Buffer {
-  const pdfText = text.replace(/[\\()]/g, match => `\\${match}`)
-  const streamContent = `BT /F1 12 Tf 72 700 Td (${pdfText}) Tj ET`
-  const chunks = ['%PDF-1.4\n']
-  const offsets = [0]
-
-  function appendObject(index: number, body: string) {
-    offsets[index] = Buffer.byteLength(chunks.join(''), 'utf8')
-    chunks.push(`${index} 0 obj\n${body}\nendobj\n`)
-  }
-
-  appendObject(1, '<< /Type /Catalog /Pages 2 0 R >>')
-  appendObject(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>')
-  appendObject(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>')
-  appendObject(4, [
-    `<< /Length ${Buffer.byteLength(streamContent, 'utf8')} >>`,
-    'stream',
-    streamContent,
-    'endstream',
-  ].join('\n'))
-  appendObject(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>')
-
-  const xrefOffset = Buffer.byteLength(chunks.join(''), 'utf8')
-  chunks.push([
-    'xref',
-    '0 6',
-    '0000000000 65535 f ',
-    ...offsets.slice(1).map(offset => `${offset.toString().padStart(10, '0')} 00000 n `),
-    'trailer',
-    '<< /Size 6 /Root 1 0 R >>',
-    'startxref',
-    String(xrefOffset),
-    '%%EOF',
-  ].join('\n'))
-
-  return Buffer.from(chunks.join(''))
 }
 
 async function expectResponseStatus(response: APIResponse, expected: number, label: string) {

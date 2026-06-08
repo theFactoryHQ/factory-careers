@@ -1,5 +1,5 @@
-import { AxeBuilder } from '@axe-core/playwright'
-import { expect, expect as baseExpect, test as base, type Locator, type Page } from '@playwright/test'
+import { expect as baseExpect, test as base, type Locator, type Page } from '@playwright/test'
+import { createOrganizationOnPage, signUpOnPage } from './helpers/auth'
 
 /**
  * Shared test fixtures for Reqcore E2E tests.
@@ -30,6 +30,7 @@ function generateTestAccount(workerId: number): TestAccount {
 type Fixtures = {
   testAccount: TestAccount
   authenticatedPage: Page
+  authenticatedPageWithoutOrg: Page
 }
 
 export async function selectFactorySelectOption(page: Page, label: string | RegExp, optionName: string) {
@@ -94,53 +95,15 @@ export async function expectFloatingMenuNotClipped(menu: Locator) {
   baseExpect(clippingReport.clippingAncestors, JSON.stringify(clippingReport, null, 2)).toEqual([])
 }
 
-export async function openWithKeyboard(page: Page, trigger: Locator) {
-  await page.waitForLoadState('networkidle')
-  await trigger.press('Enter')
-  await expect(trigger).toHaveAttribute('aria-expanded', 'true')
-}
+export {
+  expectFocusRestored,
+  expectVisibleFocus,
+  openWithKeyboard,
+  runAxeScan,
+} from './accessibility'
 
-export async function expectFocusRestored(page: Page, trigger: Locator) {
-  await page.keyboard.press('Escape')
-  await expect(trigger).toBeFocused()
-  await expect(trigger).toHaveAttribute('aria-expanded', 'false')
-}
-
-export async function expectVisibleFocus(page: Page) {
-  const focusStyle = await page.evaluate(() => {
-    const el = document.activeElement as HTMLElement | null
-    if (!el) return null
-    const styles = window.getComputedStyle(el)
-    return {
-      outlineStyle: styles.outlineStyle,
-      outlineWidth: styles.outlineWidth,
-      boxShadow: styles.boxShadow,
-    }
-  })
-
-  expect(focusStyle).not.toBeNull()
-  expect(
-    focusStyle!.outlineStyle !== 'none'
-      || focusStyle!.outlineWidth !== '0px'
-      || focusStyle!.boxShadow !== 'none',
-  ).toBeTruthy()
-}
-
-export async function runAxeScan(page: Page) {
-  const results = await new AxeBuilder({ page })
-    .disableRules([
-      'color-contrast',
-      'heading-order',
-      'landmark-main-is-top-level',
-      'landmark-no-duplicate-main',
-      'landmark-unique',
-      'page-has-heading-one',
-      'region',
-    ])
-    .analyze()
-
-  expect(results.violations).toEqual([])
-}
+export { createGuestPage, withGuestContext } from './helpers/guest-context'
+export { signUpUser } from './helpers/auth'
 
 export const test = base.extend<Fixtures>({
   testAccount: [
@@ -153,58 +116,14 @@ export const test = base.extend<Fixtures>({
   ],
 
   authenticatedPage: async ({ page, testAccount }, use) => {
-    // Sign up
-    await page.goto('/auth/sign-up')
-    await page.waitForLoadState('networkidle')
-    await page.getByLabel('Name').fill(testAccount.name)
-    await page.getByLabel('Email').fill(testAccount.email)
-    await page.getByLabel('Password', { exact: true }).fill(testAccount.password)
-    await page.getByLabel('Confirm password').fill(testAccount.password)
+    await signUpOnPage(page, testAccount)
+    await createOrganizationOnPage(page, testAccount.orgName)
+    await use(page)
+  },
 
-    // Click sign-up and wait for the auth API response before expecting navigation
-    await Promise.all([
-      page.waitForResponse(
-        resp => resp.url().includes('/api/auth/sign-up') && resp.status() === 200,
-        { timeout: 30_000 },
-      ),
-      page.getByRole('button', { name: 'Sign up' }).click(),
-    ])
-
-    // After sign-up the app navigates to /onboarding/create-org, but the
-    // auth middleware may not yet recognise the freshly-set session cookie
-    // and redirect to /auth/sign-in instead.  Handle both outcomes.
-    await page.waitForURL(
-      url => url.pathname.includes('/onboarding/') || url.pathname.includes('/auth/sign-in'),
-      { waitUntil: 'commit', timeout: 30_000 },
-    )
-
-    // If we landed on sign-in, explicitly sign in with the new credentials
-    if (page.url().includes('/auth/sign-in')) {
-      await page.waitForLoadState('networkidle')
-      await page.getByLabel('Email').fill(testAccount.email)
-      await page.getByLabel('Password').fill(testAccount.password)
-
-      await Promise.all([
-        page.waitForResponse(
-          resp => resp.url().includes('/api/auth/sign-in') && resp.status() === 200,
-          { timeout: 30_000 },
-        ),
-        page.getByRole('button', { name: 'Sign in' }).click(),
-      ])
-
-      // Sign-in navigates to /dashboard, then require-org middleware
-      // redirects to /onboarding/create-org (user has no org yet)
-      await page.waitForURL('**/onboarding/**', { waitUntil: 'commit', timeout: 30_000 })
-    }
-
-    // Wait for the org-creation form to render (loading spinner may show first)
+  authenticatedPageWithoutOrg: async ({ page, testAccount }, use) => {
+    await signUpOnPage(page, testAccount)
     await page.getByLabel('Organization name').waitFor({ state: 'visible', timeout: 30_000 })
-    await page.getByLabel('Organization name').fill(testAccount.orgName)
-    await page.getByRole('button', { name: 'Create organization' }).click()
-
-    // Wait for redirect to dashboard (use 'commit' for SPA navigation)
-    await page.waitForURL('**/dashboard**', { waitUntil: 'commit' })
-
     await use(page)
   },
 })

@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures'
+import { test, expect, createGuestPage } from '../fixtures'
 
 const JOB_TITLE = 'Lifecycle Close Test Job'
 const JOB_DESCRIPTION = 'A published job used to verify close/unpublish behavior.'
@@ -44,54 +44,58 @@ test.describe('Job lifecycle after publish', () => {
     expect(publishedJob.status).toBe('open')
     await expect(page.getByRole('heading', { name: 'Your job is live!' })).toBeVisible({ timeout: 30_000 })
 
-    const publicContext = await browser.newContext()
-    const publicPage = await publicContext.newPage()
-    await publicPage.goto(`/jobs/${publishedJob.slug}`)
-    await expect(publicPage.getByRole('heading', { name: jobTitle })).toBeVisible({ timeout: 15_000 })
-    await expect(publicPage.getByRole('link', { name: /apply/i }).first()).toBeVisible()
+    const guest = await createGuestPage(browser)
+    const publicPage = guest.page
 
-    await page.goto(`/dashboard/jobs/${publishedJob.id}`)
-    await page.waitForLoadState('networkidle')
-    const dashboardBanner = page.getByRole('banner')
-    await expect(page.getByText(jobTitle).first()).toBeVisible({ timeout: 15_000 })
-    await expect(dashboardBanner).toContainText('Open')
+    try {
+      await publicPage.goto(`/jobs/${publishedJob.slug}`)
+      await expect(publicPage.getByRole('heading', { name: jobTitle })).toBeVisible({ timeout: 15_000 })
+      await expect(publicPage.getByRole('link', { name: /apply/i }).first()).toBeVisible()
 
-    const closeButton = page.getByRole('button', { name: /Close this job so new candidates can no longer apply/i })
-    await expect(closeButton).toBeVisible({ timeout: 15_000 })
-    const [closeResponse] = await Promise.all([
-      page.waitForResponse(
-        resp => resp.url().includes(`/api/jobs/${publishedJob.id}`) && resp.request().method() === 'PATCH',
-        { timeout: 30_000 },
-      ),
-      closeButton.click(),
-    ])
-    expect(closeResponse.status(), `Close API returned ${closeResponse.status()}`).toBe(200)
-    const closedJob = await closeResponse.json() as { id: string; status: string }
-    expect(closedJob).toEqual(expect.objectContaining({ id: publishedJob.id, status: 'closed' }))
+      await page.goto(`/dashboard/jobs/${publishedJob.id}`)
+      await page.waitForLoadState('networkidle')
+      const dashboardBanner = page.getByRole('banner')
+      await expect(page.getByText(jobTitle).first()).toBeVisible({ timeout: 15_000 })
+      await expect(dashboardBanner).toContainText('Open')
 
-    const jobResponse = await page.request.get(`/api/jobs/${publishedJob.id}`)
-    expect(jobResponse.status(), `Job API returned ${jobResponse.status()}`).toBe(200)
-    await expect(await jobResponse.json()).toEqual(expect.objectContaining({ status: 'closed' }))
-    await expect(dashboardBanner).toContainText('Closed', { timeout: 10_000 })
+      const closeButton = page.getByRole('button', { name: /Close this job so new candidates can no longer apply/i })
+      await expect(closeButton).toBeVisible({ timeout: 15_000 })
+      const [closeResponse] = await Promise.all([
+        page.waitForResponse(
+          resp => resp.url().includes(`/api/jobs/${publishedJob.id}`) && resp.request().method() === 'PATCH',
+          { timeout: 30_000 },
+        ),
+        closeButton.click(),
+      ])
+      expect(closeResponse.status(), `Close API returned ${closeResponse.status()}`).toBe(200)
+      const closedJob = await closeResponse.json() as { id: string; status: string }
+      expect(closedJob).toEqual(expect.objectContaining({ id: publishedJob.id, status: 'closed' }))
 
-    await publicPage.goto(`/jobs/${publishedJob.slug}`)
-    await expect(publicPage.getByRole('heading', { name: 'Job Not Found' })).toBeVisible({ timeout: 15_000 })
-    await publicPage.goto(`/jobs/${publishedJob.slug}/apply`)
-    await expect(publicPage.getByRole('heading', { name: 'Position Not Found' })).toBeVisible({ timeout: 15_000 })
+      const jobResponse = await page.request.get(`/api/jobs/${publishedJob.id}`)
+      expect(jobResponse.status(), `Job API returned ${jobResponse.status()}`).toBe(200)
+      await expect(await jobResponse.json()).toEqual(expect.objectContaining({ status: 'closed' }))
+      await expect(dashboardBanner).toContainText('Closed', { timeout: 10_000 })
 
-    const applyAfterCloseResponse = await publicPage.request.post(`/api/public/jobs/${publishedJob.slug}/apply`, {
-      data: {
-        firstName: 'Closed',
-        lastName: 'Applicant',
-        email: `closed.applicant.${Date.now()}.r${testInfo.retry}@example.com`,
-        country: 'United States',
-        state: 'CA',
-        responses: [],
-      },
-    })
-    expect(applyAfterCloseResponse.status(), 'Closed jobs must reject public application POSTs').toBe(404)
-    expect(await applyAfterCloseResponse.text()).toContain('not accepting applications')
+      await publicPage.goto(`/jobs/${publishedJob.slug}`)
+      await expect(publicPage.getByRole('heading', { name: 'Job Not Found' })).toBeVisible({ timeout: 15_000 })
+      await publicPage.goto(`/jobs/${publishedJob.slug}/apply`)
+      await expect(publicPage.getByRole('heading', { name: 'Position Not Found' })).toBeVisible({ timeout: 15_000 })
 
-    await publicContext.close()
+      const applyAfterCloseResponse = await publicPage.request.post(`/api/public/jobs/${publishedJob.slug}/apply`, {
+        data: {
+          firstName: 'Closed',
+          lastName: 'Applicant',
+          email: `closed.applicant.${Date.now()}.r${testInfo.retry}@example.com`,
+          country: 'United States',
+          state: 'CA',
+          responses: [],
+        },
+      })
+      expect(applyAfterCloseResponse.status(), 'Closed jobs must reject public application POSTs').toBe(404)
+      expect(await applyAfterCloseResponse.text()).toContain('not accepting applications')
+    }
+    finally {
+      await guest.close()
+    }
   })
 })

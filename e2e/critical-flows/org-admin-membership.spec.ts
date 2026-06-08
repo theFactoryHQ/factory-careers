@@ -1,74 +1,11 @@
-import type { Browser, Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { assertMutatingE2ESafety } from '../safety'
-import { expect, expectFloatingMenuNotClipped, selectFactorySelectOption, test } from '../fixtures'
+import { expect, expectFloatingMenuNotClipped, selectFactorySelectOption, signUpUser, test } from '../fixtures'
 import {
   lookupJoinRequestStatus,
   lookupMemberByEmail,
   lookupMembership,
 } from '../helpers/db'
-
-interface SignedInApplicant {
-  email: string
-  name: string
-  page: Page
-  close: () => Promise<void>
-}
-
-async function signUpWithoutOrganization(browser: Browser, baseURL: string, label: string): Promise<SignedInApplicant> {
-  const context = await browser.newContext({ baseURL })
-  const page = await context.newPage()
-  const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
-  const account = {
-    name: `Org Admin ${label} ${id}`,
-    email: `org-admin-${label}-${id}@test.local`,
-    password: process.env.E2E_TEST_PASSWORD || 'TestPassword123!',
-  }
-
-  await page.goto('/auth/sign-up')
-  await page.waitForLoadState('networkidle')
-  await page.getByLabel('Name').fill(account.name)
-  await page.getByLabel('Email').fill(account.email)
-  await page.getByLabel('Password', { exact: true }).fill(account.password)
-  await page.getByLabel('Confirm password').fill(account.password)
-
-  await Promise.all([
-    page.waitForResponse(
-      resp => resp.url().includes('/api/auth/sign-up') && resp.status() === 200,
-      { timeout: 30_000 },
-    ),
-    page.getByRole('button', { name: 'Sign up' }).click(),
-  ])
-
-  await page.waitForURL(
-    url => url.pathname.includes('/onboarding/') || url.pathname.includes('/auth/sign-in'),
-    { waitUntil: 'commit', timeout: 30_000 },
-  )
-
-  if (page.url().includes('/auth/sign-in')) {
-    await page.waitForLoadState('networkidle')
-    await page.getByLabel('Email').fill(account.email)
-    await page.getByLabel('Password').fill(account.password)
-
-    await Promise.all([
-      page.waitForResponse(
-        resp => resp.url().includes('/api/auth/sign-in') && resp.status() === 200,
-        { timeout: 30_000 },
-      ),
-      page.getByRole('button', { name: 'Sign in' }).click(),
-    ])
-
-    await page.waitForURL('**/onboarding/**', { waitUntil: 'networkidle', timeout: 30_000 })
-  }
-  else {
-    await page.waitForLoadState('networkidle')
-  }
-
-  return {
-    ...account,
-    page,
-    close: () => context.close(),
-  }
-}
 
 async function createJoinRequest(page: Page, organizationId: string, message: string) {
   const response = await page.request.post('/api/join-requests', {
@@ -96,8 +33,14 @@ test.describe('Organization administration and join requests', () => {
     const ownerMembership = await lookupMembership(testAccount.email, testAccount.orgName)
     const unique = `${Date.now()}-r${testInfo.retry}`
     const renamedOrg = `E2E Org Admin ${unique}`
-    const approvedApplicant = await signUpWithoutOrganization(browser, baseURL, `approved-${testInfo.workerIndex}`)
-    const rejectedApplicant = await signUpWithoutOrganization(browser, baseURL, `rejected-${testInfo.workerIndex}`)
+    const approvedApplicant = await signUpUser(browser, {
+      label: `approved-${testInfo.workerIndex}`,
+      baseURL,
+    })
+    const rejectedApplicant = await signUpUser(browser, {
+      label: `rejected-${testInfo.workerIndex}`,
+      baseURL,
+    })
 
     try {
       await page.goto('/dashboard/settings', { waitUntil: 'networkidle' })

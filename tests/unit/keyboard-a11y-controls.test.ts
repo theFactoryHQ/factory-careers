@@ -48,15 +48,17 @@ describe('remaining keyboard and accessibility controls', () => {
   })
 
   it('adds axe-backed keyboard Playwright coverage', () => {
-    const fixtures = readProjectFile('e2e/fixtures.ts')
+    const accessibility = readProjectFile('e2e/accessibility.ts')
     const regression = readProjectFile('e2e/accessibility/keyboard-regression.spec.ts')
     const dashboard = readProjectFile('e2e/accessibility/dashboard-controls.spec.ts')
 
-    expect(fixtures).toContain("from '@axe-core/playwright'")
-    expect(fixtures).toContain('runAxeScan')
-    expect(fixtures).toContain('expectFocusRestored')
+    expect(accessibility).toContain("from '@axe-core/playwright'")
+    expect(accessibility).toContain('runAxeScan')
+    expect(accessibility).toContain('expectFocusRestored')
+    expect(regression).toContain('../accessibility')
     expect(regression).toContain('runAxeScan')
     expect(regression).toContain('expectVisibleFocus')
+    expect(dashboard).toContain('../accessibility')
     expect(dashboard).toContain('Columns')
     expect(dashboard).toContain('timezone')
   })

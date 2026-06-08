@@ -1,11 +1,10 @@
 import {
-  expect,
   expectFocusRestored,
   expectVisibleFocus,
   openWithKeyboard,
   runAxeScan,
-  test,
-} from '../fixtures'
+} from '../accessibility'
+import { expect, test } from '../fixtures'
 
 test.describe('keyboard regression matrix', () => {
   test('public jobs page keeps search and filters keyboard reachable', async ({ page }) => {

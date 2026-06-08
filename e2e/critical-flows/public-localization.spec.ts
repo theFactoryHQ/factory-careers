@@ -1,4 +1,4 @@
-import { test, expect, selectFactorySelectOption } from '../fixtures'
+import { test, expect, selectFactorySelectOption, withGuestContext } from '../fixtures'
 import { advanceToSubmitButton } from '../helpers/application-form'
 
 type JobResponse = {
@@ -61,10 +61,7 @@ test.describe('Public localization flow', () => {
     const publishedJob = await publishJobResponse.json() as JobResponse
     expect(publishedJob.status).toBe('open')
 
-    const candidateContext = await browser.newContext()
-    const candidatePage = await candidateContext.newPage()
-
-    try {
+    await withGuestContext(browser, async (candidatePage) => {
       await candidatePage.goto('/jobs?i18nTest=1')
       await expect(candidatePage.getByTestId('i18n-probe')).toHaveText('Language')
       await expect(candidatePage.getByRole('link', { name: jobTitle })).toBeVisible({ timeout: 15_000 })
@@ -105,8 +102,6 @@ test.describe('Public localization flow', () => {
       })
       await expect(candidatePage.getByRole('heading', { name: 'Application submitted' })).toBeVisible()
       await expect(candidatePage.getByRole('link', { name: 'Browse more positions' })).toHaveAttribute('href', '/es/jobs')
-    } finally {
-      await candidateContext.close()
-    }
+    })
   })
 })
