@@ -22,6 +22,7 @@ import {
 } from './cliRuntime'
 import { registerCommentsCommands } from './commands/comments'
 import { registerEmailTemplatesCommands } from './commands/email-templates'
+import { registerPropertiesCommands } from './commands/properties'
 import { removeProfileToken, saveProfile } from './config'
 import { normalizeCliError } from './errors'
 import {
@@ -30,12 +31,6 @@ import {
   cliInterviewScheduleSchema,
   cliJobCreateSchema,
 } from './schemas'
-
-type PropertyListOptions = GlobalOptions & {
-  entityType?: string
-  jobId?: string
-  jobOnly?: boolean
-}
 
 type DocumentUploadOptions = GlobalOptions & {
   file?: string
@@ -966,6 +961,7 @@ export function createProgram(io: CliIo = {}): Command {
 
   registerCommentsCommands(program, runtime)
   registerEmailTemplatesCommands(program, runtime)
+  registerPropertiesCommands(program, runtime)
 
   const feedback = program
     .command('feedback')
@@ -2500,117 +2496,6 @@ export function createProgram(io: CliIo = {}): Command {
       fetch: getFetch(io),
       url: `${profile.baseUrl}/api/applications/${encodeURIComponent(applicationId)}/properties/${encodeURIComponent(propertyId)}`,
       method: 'PUT',
-      token,
-      body,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  const properties = program
-    .command('properties')
-    .description('Manage custom properties')
-
-  addGlobalOptions(
-    properties
-      .command('list')
-      .description('List property definitions')
-      .option('--entity-type <type>', 'Entity type: candidate or application')
-      .option('--job-id <id>', 'Job ID for application properties')
-      .option('--job-only', 'Only return job-scoped application properties'),
-  ).action(async (options: PropertyListOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    const token = requireAuthenticatedProfile(profile)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: appendQuery(`${profile.baseUrl}/api/properties`, {
-        entityType: options.entityType,
-        jobId: options.jobId,
-        jobOnly: options.jobOnly,
-      }),
-      method: 'GET',
-      token,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  addGlobalOptions(
-    properties
-      .command('create')
-      .description('Create a property definition')
-      .option('--stdin', 'Read request body as JSON from stdin'),
-  ).action(async (options: StdinOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    requireMutationConfirmation(globals)
-    const token = requireAuthenticatedProfile(profile)
-    const body = await readStdinJson(io, options.stdin)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: `${profile.baseUrl}/api/properties`,
-      method: 'POST',
-      token,
-      body,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  addGlobalOptions(
-    properties
-      .command('update')
-      .description('Update a property definition')
-      .argument('<id>', 'Property definition ID')
-      .option('--stdin', 'Read request body as JSON from stdin'),
-  ).action(async (id: string, options: StdinOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    requireMutationConfirmation(globals)
-    const token = requireAuthenticatedProfile(profile)
-    const body = await readStdinJson(io, options.stdin)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: `${profile.baseUrl}/api/properties/${encodeURIComponent(id)}`,
-      method: 'PATCH',
-      token,
-      body,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  addGlobalOptions(
-    properties
-      .command('delete')
-      .description('Delete a property definition')
-      .argument('<id>', 'Property definition ID'),
-  ).action(async (id: string, options: GlobalOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    requireMutationConfirmation(globals)
-    const token = requireAuthenticatedProfile(profile)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: `${profile.baseUrl}/api/properties/${encodeURIComponent(id)}`,
-      method: 'DELETE',
-      token,
-    })
-
-    outputResult(io, globals, result)
-  })
-
-  addGlobalOptions(
-    properties
-      .command('reorder')
-      .description('Reorder property definitions')
-      .option('--stdin', 'Read request body as JSON from stdin'),
-  ).action(async (options: StdinOptions, command: Command) => {
-    const { globals, profile } = getContext(command, options)
-    requireMutationConfirmation(globals)
-    const token = requireAuthenticatedProfile(profile)
-    const body = await readStdinJson(io, options.stdin)
-    const result = await requestJson<unknown>({
-      fetch: getFetch(io),
-      url: `${profile.baseUrl}/api/properties/reorder`,
-      method: 'POST',
       token,
       body,
     })

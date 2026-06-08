@@ -89,4 +89,22 @@ describe('CLI command factories', () => {
       code: 'CONFIRMATION_REQUIRED',
     })
   })
+
+  it('preserves properties delete confirmation behavior through migrated commands', async () => {
+    const dir = tempDir()
+    const configPath = join(dir, 'config.json')
+    writeAuthedConfig(configPath)
+    const stdout: string[] = []
+
+    const exitCode = await runCli(
+      ['properties', 'delete', 'prop_1', '--config', configPath, '--json'],
+      { stdout: (value) => stdout.push(value), stderr: () => {} },
+    )
+
+    expect(exitCode).toBe(1)
+    expect(JSON.parse(stdout[0])).toMatchObject({
+      status: 400,
+      code: 'CONFIRMATION_REQUIRED',
+    })
+  })
 })
