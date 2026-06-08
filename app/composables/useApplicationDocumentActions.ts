@@ -60,8 +60,8 @@ export function useApplicationDocumentActions(options: UseApplicationDocumentAct
       await options.afterMutation?.()
     } catch (err: any) {
       toast.error('Upload failed', {
-        message: err.data?.statusMessage ?? err.statusMessage,
-        statusCode: err.data?.statusCode ?? err.statusCode,
+        message: err?.data?.statusMessage ?? err?.statusMessage ?? 'Upload failed.',
+        statusCode: err?.data?.statusCode ?? err?.statusCode,
       })
     } finally {
       isUploading.value = false

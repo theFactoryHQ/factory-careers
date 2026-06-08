@@ -3,7 +3,6 @@ import {
   X, User, Calendar, Hash, FileText,
   ExternalLink, Phone, Upload, Brain, History,
 } from 'lucide-vue-next'
-import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 import {
   getApplicationTransitionButtonClass,
   getApplicationTransitionLabel,
