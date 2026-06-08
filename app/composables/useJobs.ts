@@ -34,12 +34,6 @@ function buildJobsListQuery(options?: {
   }))
 }
 
-function stampJobsListFetchedAt(data: JobsListResponse | null | undefined) {
-  if (data && !(data as JobsListResponse & { _fetchedAt?: number })._fetchedAt) {
-    (data as JobsListResponse & { _fetchedAt?: number })._fetchedAt = Date.now()
-  }
-}
-
 /** Patch every cached /api/jobs list payload that contains the updated job. */
 export function patchJobsListCaches(updatedJob: { id: string } & Record<string, unknown>) {
   const nuxtApp = useNuxtApp()
@@ -98,21 +92,10 @@ export function useJobs(options?: {
     query,
     ...(options?.immediate === undefined ? {} : { immediate: options.immediate }),
     headers: useRequestHeaders(['cookie']),
-    // 45s SWR cache — jobs lists are frequently visited and change infrequently within an org
-    getCachedData(key, nuxtApp) {
-      const cached = nuxtApp.payload.data[key]
-      if (!cached) return undefined
-      const fetchedAt = (cached as { _fetchedAt?: number })._fetchedAt || 0
-      if (Date.now() - fetchedAt < 45_000) return cached
-      return cached
-    },
+    getCachedData: getSwrCachedData,
   })
 
-  if (import.meta.client) {
-    watch(data, (val) => {
-      stampJobsListFetchedAt(val)
-    }, { immediate: true })
-  }
+  watchFetchSwrStamp(data)
 
   const jobs = computed(() => data.value?.data ?? [])
   const total = computed(() => data.value?.total ?? 0)

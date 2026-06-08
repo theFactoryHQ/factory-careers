@@ -14,8 +14,11 @@ export function useJob(id: MaybeRefOrGetter<string>) {
     {
       key: computed(() => `job-${jobId.value}`),
       headers: useRequestHeaders(['cookie']),
+      getCachedData: getSwrCachedData,
     },
   )
+
+  watchFetchSwrStamp(job)
 
   function syncJobListCache(updatedJob: { id: string } & Record<string, unknown>) {
     patchJobsListCaches(updatedJob)

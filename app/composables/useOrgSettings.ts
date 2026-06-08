@@ -8,7 +8,10 @@ export function useOrgSettings() {
   const { data, status, refresh } = useFetch('/api/org-settings', {
     key: 'org-settings',
     headers: useRequestHeaders(['cookie']),
+    getCachedData: getSwrCachedData,
   })
+
+  watchFetchSwrStamp(data)
 
   const nameDisplayFormat = computed(() => data.value?.nameDisplayFormat ?? 'first_last')
   const dateFormat = computed(() => data.value?.dateFormat ?? 'mdy')
