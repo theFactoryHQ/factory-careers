@@ -2514,7 +2514,7 @@
       #000000 !important;
   }
 
-  .factory-dashboard-portal.ui-interview-schedule-sidebar,
+  .factory-dashboard-portal .ui-interview-schedule-sidebar,
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-interview-schedule-sidebar {
     background-color: #000000 !important;
     color: #ffffff !important;
