@@ -120,33 +120,21 @@ function factoryRegisteredRouteExists(source: string, route: string): boolean {
   if (!source.includes('registerJsonCommand')) return false
 
   const method = expectedMethod(route)
-  const isIdRoute = route.includes('/[id]')
-
-  if (isIdRoute) {
-    const factoryPath = route
-      .replace(/^server\/api\//, '/api/')
-      .replace(/\.(delete|get|patch|post|put)\.ts$/, '')
-      .replace(/\/index$/, '')
-      .replace('/[id]', '/${encodeURIComponent(id)}')
-
-    return source
-      .split('registerJsonCommand')
-      .some((chunk) => chunk.includes(`method: '${method}'`) && chunk.includes(factoryPath))
-  }
-
-  const parts = staticApiParts(route)
-  const basePath = `/${parts.join('/')}`
+  const staticParts = staticApiParts(route)
 
   return source
     .split('registerJsonCommand')
-    .some((chunk) => chunk.includes(`method: '${method}'`) && chunk.includes(`path: '${basePath}'`))
+    .some((chunk) =>
+      chunk.includes(`method: '${method}'`)
+      && staticParts.every((part) => chunk.includes(part)),
+    )
 }
 
 function routeSpecificRequestExists(source: string, route: string): boolean {
   const method = expectedMethod(route)
   const dynamicEvidence = dynamicRouteEvidence(source, route)
-  if (dynamicEvidence.length > 0 && !dynamicEvidence.every((evidence) => source.includes(evidence))) {
-    return false
+  if (dynamicEvidence.length > 0) {
+    return dynamicEvidence.every((evidence) => source.includes(evidence))
   }
 
   if (/^server\/api\/calendar\/(google|microsoft)\/connect\.get\.ts$/.test(route)) {

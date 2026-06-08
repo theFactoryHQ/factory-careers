@@ -151,12 +151,12 @@ describe('CLI public commands', () => {
   })
 
   it('inherits server-side Factory org scoping through the public jobs API routes', () => {
-    const program = readFileSync(join(process.cwd(), 'packages/careers-cli/src/program.ts'), 'utf8')
+    const publicCommands = readFileSync(join(process.cwd(), 'packages/careers-cli/src/commands/public.ts'), 'utf8')
     const publicScope = readFileSync(join(process.cwd(), 'server/utils/publicJobScope.ts'), 'utf8')
 
     expect(publicScope).toContain('FACTORY_DISABLE_PUBLIC_ORG_CREATION')
-    expect(program).toContain('`${profile.baseUrl}/api/public/jobs`')
-    expect(program).toContain('`${profile.baseUrl}/api/public/jobs/${encodeURIComponent(slug)}`')
-    expect(program).toContain('`${profile.baseUrl}/api/public/jobs/${encodeURIComponent(slug)}/apply`')
+    expect(publicCommands).toContain("path: '/api/public/jobs'")
+    expect(publicCommands).toContain('`/api/public/jobs/${encodeURIComponent(slug)}`')
+    expect(publicCommands).toContain('`/api/public/jobs/${encodeURIComponent(slug)}/apply`')
   })
 })
