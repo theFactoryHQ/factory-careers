@@ -69,6 +69,7 @@ describe('application detail shared actions', () => {
 
   it('autosaves application notes instead of rendering manual save buttons', () => {
     const editableNotes = readProjectFile('app/composables/useEditableApplicationNotes.ts')
+    const notesPanel = readProjectFile('app/components/ApplicationNotesPanel.vue')
 
     expect(editableNotes).toContain('autosaveNotes')
     expect(editableNotes).toContain('notesSaveStatus')
@@ -77,11 +78,17 @@ describe('application detail shared actions', () => {
     expect(editableNotes).toContain('activeNotesSave')
     expect(editableNotes).toContain('Save notes after typing stops')
 
+    expect(notesPanel).toContain("emit('autosave')")
+    expect(notesPanel).toContain("emit('finishEdit')")
+    expect(notesPanel).toContain('notesSaveStatus')
+    expect(notesPanel).not.toContain("{{ isSavingNotes ? 'Saving…' : 'Save' }}")
+
     for (const path of applicationDetailSurfaces) {
       const source = readProjectFile(path)
 
-      expect(source, `${path} should use the autosave note handler`).toContain('@input="autosaveNotes"')
-      expect(source, `${path} should save before closing note edit mode`).toContain('@click="finishEditNotes"')
+      expect(source, `${path} should render the shared notes panel`).toContain('<ApplicationNotesPanel')
+      expect(source, `${path} should wire autosave through the shared panel`).toContain('@autosave="autosaveNotes"')
+      expect(source, `${path} should save before closing note edit mode`).toContain('@finish-edit="finishEditNotes"')
       expect(source, `${path} should surface autosave status`).toContain('notesSaveStatus')
       expect(source, `${path} should not render the old manual notes save label`).not.toContain("{{ isSavingNotes ? 'Saving…' : 'Save' }}")
     }

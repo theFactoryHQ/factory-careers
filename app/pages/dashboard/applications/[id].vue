@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { User, Briefcase, Calendar, Clock, FileText, MessageSquare, Brain, Loader2 } from 'lucide-vue-next'
+import { User, Briefcase, Calendar } from 'lucide-vue-next'
 import {
   getApplicationTransitionActionLabel,
   getApplicationTransitionButtonClass,
 } from '~/utils/status-display'
 import { formatPhoneNumber } from '~/utils/phone-format'
-import { formatResponseValue } from '~/utils/application-response-format'
 
 definePageMeta({
   layout: 'dashboard',
@@ -15,44 +14,21 @@ definePageMeta({
 const route = useRoute()
 const applicationId = route.params.id as string
 
-type ApplicationScoresResponse = {
-  compositeScore: number | null
-  scores: Array<{
-    criterionKey: string
-    maxScore: number
-    score: number
-    confidence: number
-    evidence: string
-    strengths: string[] | null
-    gaps: string[] | null
-    criterionName: string | null
-    weight: number | null
-    category: string | null
-  }>
-  latestRun: {
-    id: string
-    status: string
-    provider: string
-    model: string
-    compositeScore: number | null
-    promptTokens: number | null
-    completionTokens: number | null
-    createdAt: string
-    summary: string | null
-  } | null
-}
-
 const { application, status: fetchStatus, error, refresh, updateApplication } = useApplication(applicationId)
-const { isScoringApplication, scoreApplicationCandidate } = useApplicationScoring()
-const { data: scoringData, refresh: refreshScoring } = useFetch<ApplicationScoresResponse>(
-  `/api/applications/${applicationId}/scores`,
-  {
-    key: `application-scores-${applicationId}`,
-    headers: useRequestHeaders(['cookie']),
-  },
-)
-
 const { formatCandidateName } = useOrgSettings()
+
+const {
+  scoringData,
+  scoringSummary,
+  scoringSummaryFallback,
+  isScoringApplication,
+  scoreCurrentApplication,
+} = useApplicationScoringPanel({
+  applicationId,
+  application,
+  source: 'application_detail_page',
+  refresh,
+})
 
 useSeoMeta({
   title: computed(() =>
@@ -63,24 +39,22 @@ useSeoMeta({
 })
 
 const showInterviewSidebar = ref(false)
-const scoringSummary = computed(() => {
-  const summary = scoringData.value?.latestRun?.summary
-  return typeof summary === 'string' ? summary.trim() : ''
-})
-const scoringSummaryFallback = computed(() => {
-  if (application.value?.score != null) {
-    return 'No AI summary was stored for this score. Re-score to generate one.'
-  }
-
-  return 'Run analysis to generate an AI scoring summary.'
-})
 
 const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicationStatusActions({
   application,
   updateStatus: status => updateApplication({ status: status as any }),
 })
 
-const { isEditingNotes, notesInput, isSavingNotes, notesSaveStatus, notesTextarea, startEditNotes, saveNotes, autosaveNotes, finishEditNotes } = useEditableApplicationNotes({
+const {
+  isEditingNotes,
+  notesInput,
+  isSavingNotes,
+  notesSaveStatus,
+  startEditNotes,
+  saveNotes,
+  autosaveNotes,
+  finishEditNotes,
+} = useEditableApplicationNotes({
   application,
   focusOnEdit: true,
   save: notes => updateApplication({ notes }),
@@ -89,17 +63,6 @@ const { isEditingNotes, notesInput, isSavingNotes, notesSaveStatus, notesTextare
 function openInterviewScheduler() {
   showInterviewSidebar.value = true
 }
-
-async function scoreCurrentApplication() {
-  if (!application.value) return
-  await scoreApplicationCandidate(applicationId, {
-    refresh,
-    jobId: application.value.job.id,
-    source: 'application_detail_page',
-  })
-  await refreshScoring()
-}
-
 </script>
 
 <template>
@@ -240,118 +203,33 @@ async function scoreCurrentApplication() {
           </dl>
         </div>
 
-        <!-- Application scoring -->
-        <div class="ui-panel ui-dashboard-panel p-5 md:col-span-2">
-          <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="flex items-center gap-2">
-              <Brain class="size-4 text-surface-500 dark:text-surface-400" />
-              <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Scoring</h2>
-            </div>
-            <div class="flex items-center gap-2">
-              <ScoringFeedbackControl
-                :application-id="applicationId"
-                :analysis-run-id="scoringData?.latestRun?.id ?? null"
-              />
-              <button
-                type="button"
-                :disabled="isScoringApplication"
-                class="factory-button-cta factory-button-premium inline-flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1.5 px-2.5 py-0 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                @click="scoreCurrentApplication"
-              >
-                <Loader2 v-if="isScoringApplication" class="size-3 animate-spin" />
-                <Brain v-else class="size-3" />
-                {{ isScoringApplication ? 'Scoring...' : (application.score != null ? 'Re-score' : 'Run Analysis') }}
-              </button>
-            </div>
-          </div>
-
-          <dl class="grid gap-5 text-sm md:grid-cols-[10rem_minmax(0,1fr)]">
-            <div>
-              <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-500 dark:text-surface-500">Score</dt>
-              <dd class="mt-2 text-2xl font-semibold text-surface-900 dark:text-white">
-                {{ application.score != null ? application.score : '—' }}
-                <span v-if="application.score != null" class="ml-1 text-sm font-medium text-surface-500 dark:text-surface-500">
-                  pts
-                </span>
-              </dd>
-            </div>
-            <div>
-              <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-500 dark:text-surface-500">
-                AI summary
-              </dt>
-              <dd
-                v-if="scoringSummary"
-                class="mt-2 max-w-3xl text-sm leading-6 text-surface-700 dark:text-surface-300"
-              >
-                {{ scoringSummary }}
-              </dd>
-              <dd
-                v-else
-                class="mt-2 max-w-3xl text-sm leading-6 text-surface-500 dark:text-surface-500"
-              >
-                {{ scoringSummaryFallback }}
-              </dd>
-            </div>
-          </dl>
-        </div>
+        <ApplicationScoringPanel
+          surface="page"
+          :application-id="applicationId"
+          :score="application.score"
+          :analysis-run-id="scoringData?.latestRun?.id ?? null"
+          :scoring-summary="scoringSummary"
+          :scoring-summary-fallback="scoringSummaryFallback"
+          :is-scoring="isScoringApplication"
+          full-width
+          @score="scoreCurrentApplication"
+        />
       </div>
 
-      <!-- Notes -->
-      <div class="mt-4 ui-panel ui-dashboard-panel p-5 mb-4">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
-            <MessageSquare class="size-4 text-surface-500 dark:text-surface-400" />
-            <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">Notes</h2>
-          </div>
-          <button
-            v-if="!isEditingNotes && application.notes"
-            class="cursor-pointer text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors"
-            @click="startEditNotes"
-          >
-            Edit
-          </button>
-        </div>
-
-        <div v-if="isEditingNotes">
-          <textarea
-            ref="notesTextarea"
-            v-model="notesInput"
-            rows="4"
-            placeholder="Add notes about this application…"
-            class="w-full border border-white/16 bg-black/45 px-3 py-2 text-sm text-white placeholder:text-white/34 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
-            @input="autosaveNotes"
-            @blur="saveNotes"
-          />
-          <div class="flex items-center gap-2 mt-2">
-            <p class="min-w-0 flex-1 text-xs text-surface-400" role="status">
-              {{ notesSaveStatus === 'saving' || isSavingNotes ? 'Saving notes...' : notesSaveStatus === 'saved' ? 'Notes saved' : notesSaveStatus === 'error' ? 'Autosave failed' : 'Automatically saves changes' }}
-            </p>
-            <button
-              class="factory-toolbar-button cursor-pointer border px-3 py-1.5 text-xs font-medium text-white/78 hover:text-white transition-colors"
-              :disabled="isSavingNotes"
-              @click="finishEditNotes"
-            >
-              Done
-            </button>
-          </div>
-        </div>
-
-        <p
-          v-else-if="application.notes"
-          class="text-sm text-surface-600 dark:text-surface-300 whitespace-pre-wrap"
-        >
-          {{ application.notes }}
-        </p>
-        <button
-          v-else
-          type="button"
-          class="group flex w-full cursor-pointer items-center justify-between border border-dashed border-white/12 bg-black px-3 py-3 text-left text-sm text-surface-400 transition-colors hover:border-brand-500/70 hover:bg-brand-500/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40"
-          @click="startEditNotes"
-        >
-          <span class="italic">No notes yet.</span>
-          <span class="text-xs font-semibold uppercase text-brand-400 transition-colors group-hover:text-brand-300">Add Notes</span>
-        </button>
-      </div>
+      <ApplicationNotesPanel
+        surface="page"
+        :notes="application.notes"
+        :is-editing-notes="isEditingNotes"
+        :notes-input="notesInput"
+        :is-saving-notes="isSavingNotes"
+        :notes-save-status="notesSaveStatus"
+        focus-on-edit
+        @update:notes-input="notesInput = $event"
+        @start-edit="startEditNotes"
+        @autosave="autosaveNotes"
+        @save="saveNotes"
+        @finish-edit="finishEditNotes"
+      />
 
       <!-- Custom properties (Notion-style) -->
       <div class="ui-panel ui-dashboard-panel p-4 mb-4">
@@ -365,32 +243,11 @@ async function scoreCurrentApplication() {
         />
       </div>
 
-      <!-- Question Responses -->
-      <div
+      <ApplicationResponsesPanel
         v-if="application.responses && application.responses.length > 0"
-        class="ui-panel ui-dashboard-panel p-5"
-      >
-        <div class="flex items-center gap-2 mb-3">
-          <FileText class="size-4 text-surface-500 dark:text-surface-400" />
-          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">
-            Application Responses ({{ application.responses.length }})
-          </h2>
-        </div>
-        <div class="space-y-3">
-          <div
-            v-for="response in application.responses"
-            :key="response.id"
-            class="border-b border-white/10 pb-3 last:border-0 last:pb-0"
-          >
-            <dt class="text-xs font-medium text-surface-500 dark:text-surface-400 mb-0.5">
-              {{ response.question?.label ?? 'Unknown question' }}
-            </dt>
-            <dd class="text-sm text-surface-700 dark:text-surface-200">
-              {{ formatResponseValue(response.value) }}
-            </dd>
-          </div>
-        </div>
-      </div>
+        surface="page"
+        :responses="application.responses"
+      />
     </template>
   </div>
 

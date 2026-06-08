@@ -15,8 +15,10 @@ describe('candidate detail shared panels', () => {
       expect(source).toContain('<CandidateDetailsCard')
       expect(source).toContain('<CandidateApplicationsPanel')
       expect(source).toContain('<CandidateDocumentsPanel')
-      expect(source).toContain('useDocumentPreview')
     }
+
+    expect(drawer).toContain('useDocumentPreview')
+    expect(page).toContain('useApplicationDocumentActions')
 
     for (const path of [
       'app/components/CandidateDetailDrawer.vue',

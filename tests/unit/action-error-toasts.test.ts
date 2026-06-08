@@ -26,7 +26,6 @@ const toastTargets = [
   'app/components/JobQuestions.vue',
   'app/pages/dashboard/candidates/new.vue',
   'app/pages/dashboard/candidates/[id].vue',
-  'app/components/CandidateDetailSidebar.vue',
   'app/components/ApplicationLinkModal.vue',
   'app/components/FeedbackModal.vue',
   'app/components/PropertySchemaEditor.vue',
@@ -140,10 +139,6 @@ const disallowedInlineActionErrors: Record<string, string[]> = {
     'uploadError.value = msg',
     'v-if="uploadError"',
   ],
-  'app/components/CandidateDetailSidebar.vue': [
-    'uploadError.value = err.data?.statusMessage',
-    'v-if="uploadError"',
-  ],
   'app/components/ApplicationLinkModal.vue': [
     'applyError.value = err.data?.statusMessage',
     'v-if="applyError"',
@@ -171,6 +166,14 @@ describe('action error toast handling', () => {
         expect(source, `${path} should not keep inline action error pattern: ${pattern}`).not.toContain(pattern)
       }
     }
+
+    const sidebar = readProjectFile('app/components/CandidateDetailSidebar.vue')
+    const documentActions = readProjectFile('app/composables/useApplicationDocumentActions.ts')
+
+    expect(sidebar).toContain('useApplicationDocumentActions')
+    expect(sidebar).not.toContain('useToast()')
+    expect(documentActions).toContain('useToast()')
+    expect(documentActions).toContain('toast.error(')
   })
 
   it('keeps client-side form validation anchored in the form', () => {
