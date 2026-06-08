@@ -91,7 +91,7 @@ async function uploadPdfFromDashboard(page: Page, candidateId: string, filename:
   await page.waitForLoadState('networkidle')
   await expect(page.getByRole('heading', { name: /Candidate|Document/i })).toBeVisible()
 
-  const documentsTab = page.getByRole('button', { name: /^Documents \(/ })
+  const documentsTab = page.getByRole('tab', { name: /^Documents \(/ })
   const uploadButton = page.getByRole('button', { name: 'Upload Document' })
   await expect(documentsTab).toBeVisible()
   await expect(async () => {

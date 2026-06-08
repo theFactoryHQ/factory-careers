@@ -1,7 +1,8 @@
 import type { MaybeRefOrGetter } from 'vue'
+import type { ApplicationStatus } from '~~/shared/application-status'
 
 export type ApplicationUpdatePayload = Partial<{
-  status: 'new' | 'screening' | 'interview' | 'offer' | 'hired' | 'rejected'
+  status: ApplicationStatus
   notes: string | null
   score: number | null
 }>

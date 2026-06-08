@@ -34,7 +34,15 @@ useSeoMeta({
 // ─────────────────────────────────────────────
 
 const candidateDetailTabs = ['applications', 'documents'] as const
-const activeTab = ref<(typeof candidateDetailTabs)[number]>('applications')
+type CandidateDetailTab = (typeof candidateDetailTabs)[number]
+const activeTab = ref<CandidateDetailTab>('applications')
+const applicationsTabRef = ref<HTMLButtonElement | null>(null)
+const documentsTabRef = ref<HTMLButtonElement | null>(null)
+
+function focusCandidateTab(tab: CandidateDetailTab) {
+  const target = tab === 'applications' ? applicationsTabRef.value : documentsTabRef.value
+  target?.focus()
+}
 
 function handleCandidateTabKeydown(event: KeyboardEvent) {
   const currentIndex = candidateDetailTabs.indexOf(activeTab.value)
@@ -42,10 +50,14 @@ function handleCandidateTabKeydown(event: KeyboardEvent) {
 
   if (event.key === 'ArrowRight') {
     event.preventDefault()
-    activeTab.value = candidateDetailTabs[(currentIndex + 1) % candidateDetailTabs.length]!
+    const nextTab = candidateDetailTabs[(currentIndex + 1) % candidateDetailTabs.length]!
+    activeTab.value = nextTab
+    focusCandidateTab(nextTab)
   } else if (event.key === 'ArrowLeft') {
     event.preventDefault()
-    activeTab.value = candidateDetailTabs[(currentIndex - 1 + candidateDetailTabs.length) % candidateDetailTabs.length]!
+    const nextTab = candidateDetailTabs[(currentIndex - 1 + candidateDetailTabs.length) % candidateDetailTabs.length]!
+    activeTab.value = nextTab
+    focusCandidateTab(nextTab)
   }
 }
 
@@ -162,10 +174,10 @@ const interviewTargetApp = ref<{ id: string; jobTitle: string } | null>(null)
 const transitionTarget = ref<{ id: string; status: string } | null>(null)
 const transitioningApplicationIds = ref<Set<string>>(new Set())
 
-async function updateTransitionTargetStatus(status: string) {
+async function updateTransitionTargetStatus(status: ApplicationStatus) {
   const appId = transitionTarget.value?.id
   if (!appId) return
-  await patchApplication(appId, { status: status as ApplicationStatus })
+  await patchApplication(appId, { status })
 }
 
 const { transitionToStatus } = useApplicationStatusActions({
@@ -185,7 +197,7 @@ function openScheduleInterview(app: { id: string; job: { title: string } }) {
   showInterviewSidebar.value = true
 }
 
-function handleApplicationTransition(app: { id: string; status: string }, status: string) {
+function handleApplicationTransition(app: { id: string; status: string }, status: ApplicationStatus) {
   transitionTarget.value = app
   transitionToStatus(status)
 }
@@ -278,6 +290,7 @@ const {
           >
             <button
               id="candidate-tab-applications"
+              ref="applicationsTabRef"
               role="tab"
               type="button"
               aria-controls="candidate-tabpanel-applications"
@@ -293,6 +306,7 @@ const {
             </button>
             <button
               id="candidate-tab-documents"
+              ref="documentsTabRef"
               role="tab"
               type="button"
               aria-controls="candidate-tabpanel-documents"
@@ -310,10 +324,11 @@ const {
         </div>
 
         <CandidateApplicationsPanel
-          v-if="activeTab === 'applications'"
+          v-show="activeTab === 'applications'"
           id="candidate-tabpanel-applications"
           role="tabpanel"
           aria-labelledby="candidate-tab-applications"
+          :hidden="activeTab !== 'applications'"
           :applications="candidate.applications ?? []"
           surface="page"
           show-status-transitions
@@ -344,10 +359,11 @@ const {
 
         <!-- Documents tab -->
         <div
-          v-if="activeTab === 'documents'"
+          v-show="activeTab === 'documents'"
           id="candidate-tabpanel-documents"
           role="tabpanel"
           aria-labelledby="candidate-tab-documents"
+          :hidden="activeTab !== 'documents'"
         >
           <input
             ref="fileInput"
