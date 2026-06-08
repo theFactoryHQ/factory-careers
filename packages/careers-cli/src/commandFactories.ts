@@ -34,12 +34,17 @@ export type RegisterJsonCommandConfig = {
   path: string | ((...args: string[]) => string)
   args?: JsonCommandArg[]
   options?: JsonCommandOption[]
+  alias?: string | string[]
   mutation?: boolean
   stdin?: boolean
   schema?: { parse: (value: unknown) => unknown }
+  body?: (context: JsonCommandContext) => unknown
   requireAuth?: boolean
   requireOptions?: RequiredOptionSpec[]
-  query?: (options: Record<string, unknown>) => Record<string, string | boolean | undefined>
+  query?: (
+    options: Record<string, unknown>,
+    args: string[],
+  ) => Record<string, string | boolean | undefined>
   deleteAck?: boolean
   formatResult?: (context: JsonCommandContext & { result: unknown }) => unknown
 }
@@ -71,6 +76,9 @@ export function registerJsonCommand(
   config: RegisterJsonCommandConfig,
 ): Command {
   let command = parent.command(config.name).description(config.description)
+  if (config.alias) {
+    command = command.alias(config.alias)
+  }
 
   for (const arg of config.args ?? []) {
     command = command.argument(`<${arg.name}>`, arg.description)
@@ -107,7 +115,7 @@ export function registerJsonCommand(
     const apiPath = resolvePath(config.path, args)
     let url = `${profile.baseUrl}${apiPath}`
     if (config.query) {
-      url = runtime.appendQuery(url, config.query(options))
+      url = runtime.appendQuery(url, config.query(options, args))
     }
 
     let body: unknown
@@ -116,6 +124,8 @@ export function registerJsonCommand(
       if (config.schema) {
         body = runtime.validateStdinPayload(config.schema, body)
       }
+    } else if (config.body) {
+      body = config.body({ args, options, globals })
     }
 
     const apiResult = await requestJson<unknown>({
