@@ -12,7 +12,7 @@ describe('application detail epic 5 pr3', () => {
 
     expect(sidebar).toContain('useApplication(() => props.applicationId)')
     expect(sidebar).toContain('updateApplication')
-    expect(sidebar).toContain('updateStatus: status => updateApplication({ status: status as any })')
+    expect(sidebar).toMatch(/updateStatus:\s*status\s*=>\s*updateApplication\(\{\s*status:\s*status\s+as\s+ApplicationStatus\s*\}\)/)
     expect(sidebar).toContain('save: notes => updateApplication({ notes })')
     expect(sidebar).toContain("track('sidebar_status_changed'")
     expect(sidebar).toContain("emit('updated')")

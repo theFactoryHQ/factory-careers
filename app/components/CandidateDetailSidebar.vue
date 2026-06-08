@@ -8,6 +8,7 @@ import {
   getApplicationTransitionLabel,
 } from '~/utils/status-display'
 import { formatPhoneNumber } from '~/utils/phone-format'
+import type { ApplicationStatus } from '~~/shared/application-status'
 
 
 const props = defineProps<{
@@ -71,7 +72,7 @@ const documents = computed(() => candidateData.value?.documents ?? [])
 
 const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicationStatusActions({
   application,
-  updateStatus: status => updateApplication({ status: status as any }),
+  updateStatus: status => updateApplication({ status: status as ApplicationStatus }),
   trackTransition: ({ fromStatus, toStatus }) => {
     track('sidebar_status_changed', {
       application_id: props.applicationId,
