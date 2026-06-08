@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { APPLICATION_STATUSES } from '~~/shared/application-status'
+import { paginationQuerySchema } from './common'
 
 export { APPLICATION_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 
@@ -15,18 +17,16 @@ export const createApplicationSchema = z.object({
 
 /** Schema for updating an existing application (status transitions, notes, score) */
 export const updateApplicationSchema = z.object({
-  status: z.enum(['new', 'screening', 'interview', 'offer', 'hired', 'rejected']).optional(),
+  status: z.enum(APPLICATION_STATUSES).optional(),
   notes: z.string().max(5000).nullish(),
   score: z.number().int().min(0).max(100).nullish(),
 })
 
 /** Schema for application list query params */
-export const applicationQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+export const applicationQuerySchema = paginationQuerySchema().extend({
   jobId: z.string().min(1).optional(),
   candidateId: z.string().min(1).optional(),
-  status: z.enum(['new', 'screening', 'interview', 'offer', 'hired', 'rejected']).optional(),
+  status: z.enum(APPLICATION_STATUSES).optional(),
   /** JSON-encoded array of { propertyDefinitionId, op, value } filters */
   propertyFilters: z.string().optional(),
 })

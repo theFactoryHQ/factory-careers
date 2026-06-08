@@ -1,5 +1,6 @@
 import { eq, and, or, ilike, desc, sql, gte, lte, inArray } from 'drizzle-orm'
 import { candidate, application } from '../../database/schema'
+import { paginatedListResponse, paginationOffset } from '../../utils/schemas/common'
 import { candidateQuerySchema } from '../../utils/schemas/candidate'
 import {
   loadPropertyEntriesForEntities,
@@ -12,7 +13,7 @@ export default defineEventHandler(async (event) => {
 
   const query = await getValidatedQuery(event, candidateQuerySchema.parse)
 
-  const offset = (query.page - 1) * query.limit
+  const offset = paginationOffset(query.page, query.limit)
   const conditions = [eq(candidate.organizationId, orgId)]
 
   if (query.search) {
@@ -48,7 +49,7 @@ export default defineEventHandler(async (event) => {
       filters: propertyFilters,
     })
     if (!matching || matching.size === 0) {
-      return { data: [], total: 0, page: query.page, limit: query.limit }
+      return paginatedListResponse([], 0, query.page, query.limit)
     }
     conditions.push(inArray(candidate.id, [...matching]))
   }
@@ -90,5 +91,5 @@ export default defineEventHandler(async (event) => {
   })
   const enriched = data.map((c) => ({ ...c, properties: propertyMap.get(c.id) ?? [] }))
 
-  return { data: enriched, total, page: query.page, limit: query.limit }
+  return paginatedListResponse(enriched, total, query.page, query.limit)
 })

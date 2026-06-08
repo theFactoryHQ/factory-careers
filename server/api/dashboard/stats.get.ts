@@ -1,4 +1,5 @@
 import { eq, and, desc, sql, count } from 'drizzle-orm'
+import { emptyPipelineCounts } from '~~/shared/application-status'
 import { application, candidate, job } from '../../database/schema'
 
 /**
@@ -109,14 +110,7 @@ export default defineCachedEventHandler(async (event) => {
   // ─────────────────────────────────────────────
   // Transform grouped rows into keyed objects
   // ─────────────────────────────────────────────
-  const pipeline: Record<string, number> = {
-    new: 0,
-    screening: 0,
-    interview: 0,
-    offer: 0,
-    hired: 0,
-    rejected: 0,
-  }
+  const pipeline: Record<string, number> = { ...emptyPipelineCounts() }
   for (const row of pipelineRows) {
     pipeline[row.status] = row.count
   }
