@@ -47,7 +47,7 @@ const { data: jobData, status: jobFetchStatus } = useFetch('/api/jobs', {
 
 const jobs = computed(() => jobData.value?.data ?? [])
 
-// ─── Candidate mode: search candidates for a job ────────────────────────────
+// ─── Candidate mode: search candidates for a job ──────────────────────────────
 
 const searchInput = ref('')
 const debouncedSearch = useDebouncedRef(searchInput, {
@@ -67,7 +67,7 @@ const { data: candidateData, status: searchStatus } = useFetch('/api/candidates'
 
 const candidates = computed(() => candidateData.value?.data ?? [])
 
-// ─── Create application ─────────────────────────────────────────────────────
+// ─── Create application ───────────────────────────────────────────────────────
 
 const isApplying = ref(false)
 
