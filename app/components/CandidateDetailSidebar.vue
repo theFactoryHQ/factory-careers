@@ -41,17 +41,10 @@ const activeTab = ref<'overview' | 'documents' | 'responses' | 'ai_analysis' | '
 const sidebarRef = ref<HTMLElement | null>(null)
 
 // ─────────────────────────────────────────────
-// Fetch application detail
+// Application detail
 // ─────────────────────────────────────────────
 
-const { data: application, status: fetchStatus, refresh } = useFetch(
-  () => `/api/applications/${props.applicationId}`,
-  {
-    key: computed(() => `sidebar-application-${props.applicationId}`),
-    headers: useRequestHeaders(['cookie']),
-    watch: [() => props.applicationId],
-  },
-)
+const { application, status: fetchStatus, refresh, updateApplication } = useApplication(() => props.applicationId)
 
 // ─────────────────────────────────────────────
 // Fetch full candidate detail (for documents)
@@ -76,23 +69,9 @@ watch(candidateId, (id) => {
 
 const documents = computed(() => candidateData.value?.documents ?? [])
 
-async function updateApplicationStatus(status: string) {
-  await $fetch(`/api/applications/${props.applicationId}`, {
-    method: 'PATCH',
-    body: { status },
-  })
-}
-
-async function updateApplicationNotes(notes: string | null) {
-  await $fetch(`/api/applications/${props.applicationId}`, {
-    method: 'PATCH',
-    body: { notes },
-  })
-}
-
 const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicationStatusActions({
   application,
-  updateStatus: updateApplicationStatus,
+  updateStatus: status => updateApplication({ status: status as any }),
   trackTransition: ({ fromStatus, toStatus }) => {
     track('sidebar_status_changed', {
       application_id: props.applicationId,
@@ -101,16 +80,14 @@ const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicati
     })
   },
   afterTransition: async () => {
-    await refresh()
     emit('updated')
   },
 })
 
 const { isEditingNotes, notesInput, isSavingNotes, notesSaveStatus, startEditNotes, saveNotes, autosaveNotes, finishEditNotes } = useEditableApplicationNotes({
   application,
-  save: updateApplicationNotes,
+  save: notes => updateApplication({ notes }),
   afterSave: async () => {
-    await refresh()
     emit('updated')
   },
 })
