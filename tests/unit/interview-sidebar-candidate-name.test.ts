@@ -27,7 +27,7 @@ describe('InterviewScheduleSidebar candidate-name formatting', () => {
       expect(
         source,
         `${path} should not concatenate firstName and lastName for candidate-name`,
-      ).not.toMatch(/:candidate-name="\$\{[^}]*firstName[^}]*lastName/)
+      ).not.toMatch(/:candidate-name="`\$\{[^}]*firstName[^}]*\}\s*\$\{[^}]*lastName/)
     }
   })
 })
