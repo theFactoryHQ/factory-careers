@@ -1,4 +1,4 @@
-import type { MaybeRefOrGetter } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 import { computed, ref, toValue } from 'vue'
 import { APPLICATION_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 
@@ -16,6 +16,8 @@ type UseApplicationStatusActionsOptions = {
   updateStatus: (status: string) => Promise<unknown>
   afterTransition?: (context: TransitionContext) => Promise<unknown> | unknown
   trackTransition?: (context: TransitionContext) => void
+  transitionKey?: MaybeRefOrGetter<string | null | undefined>
+  transitioningKeys?: Ref<Set<string>>
 }
 
 export function useApplicationStatusActions(options: UseApplicationStatusActionsOptions) {
@@ -30,13 +32,29 @@ export function useApplicationStatusActions(options: UseApplicationStatusActions
 
   const isTransitioning = ref(false)
 
+  function markTransitionStart(key: string | null | undefined) {
+    if (!key || !options.transitioningKeys) return
+    options.transitioningKeys.value = new Set([...options.transitioningKeys.value, key])
+  }
+
+  function markTransitionEnd(key: string | null | undefined) {
+    if (!key || !options.transitioningKeys) return
+    const nextKeys = new Set(options.transitioningKeys.value)
+    nextKeys.delete(key)
+    options.transitioningKeys.value = nextKeys
+  }
+
   async function transitionToStatus(newStatus: string) {
     const context = {
       fromStatus: toValue(options.application)?.status,
       toStatus: newStatus,
     }
+    const transitionKey = toValue(options.transitionKey)
+
+    if (transitionKey && options.transitioningKeys?.value.has(transitionKey)) return
 
     isTransitioning.value = true
+    markTransitionStart(transitionKey)
     try {
       await options.updateStatus(newStatus)
       options.trackTransition?.(context)
@@ -46,6 +64,7 @@ export function useApplicationStatusActions(options: UseApplicationStatusActions
       toast.error('Failed to update status', { message: err.data?.statusMessage, statusCode: err.data?.statusCode })
     } finally {
       isTransitioning.value = false
+      markTransitionEnd(transitionKey)
     }
   }
 

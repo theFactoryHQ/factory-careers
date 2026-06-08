@@ -50,6 +50,7 @@ describe('shared keyboard and popover primitives', () => {
 
   it('uses the shared primitives in representative dashboard controls', () => {
     const filterDrawer = readProjectFile('app/components/FilterDrawer.vue')
+    const detailDrawerShell = readProjectFile('app/components/AppDetailDrawerShell.vue')
     const applicationDetailDrawer = readProjectFile('app/components/ApplicationDetailDrawer.vue')
     const candidateDetailDrawer = readProjectFile('app/components/CandidateDetailDrawer.vue')
     const candidateDetailSidebar = readProjectFile('app/components/CandidateDetailSidebar.vue')
@@ -61,10 +62,16 @@ describe('shared keyboard and popover primitives', () => {
 
     expect(filterDrawer).toContain('useFocusTrap')
     expect(filterDrawer).not.toContain("document.addEventListener('keydown', onKeydown)")
-    for (const source of [applicationDetailDrawer, candidateDetailDrawer, candidateDetailSidebar, interviewScheduleSidebar]) {
+    for (const source of [detailDrawerShell, candidateDetailSidebar, interviewScheduleSidebar]) {
       expect(source).toContain('useFocusTrap')
       expect(source).toContain('role="dialog"')
       expect(source).toContain('aria-modal="true"')
+      expect(source).not.toContain("document.addEventListener('keydown', onKeydown)")
+      expect(source).not.toContain("window.addEventListener('keydown', onKeydown)")
+    }
+
+    for (const source of [applicationDetailDrawer, candidateDetailDrawer]) {
+      expect(source).toContain('<AppDetailDrawerShell')
       expect(source).not.toContain("document.addEventListener('keydown', onKeydown)")
       expect(source).not.toContain("window.addEventListener('keydown', onKeydown)")
     }

@@ -15,7 +15,7 @@ describe('candidate detail drawer', () => {
     expect(drawer).toContain('<CandidateApplicationsPanel')
     expect(drawer).toContain('show-status-transitions')
     expect(drawer).toContain('const transitioningApplicationIds = ref<Set<string>>(new Set())')
-    expect(drawer).toContain('if (transitioningApplicationIds.value.has(app.id)) return')
+    expect(drawer).toContain('useApplicationStatusActions')
     expect(source).toContain('APPLICATION_STATUS_TRANSITIONS')
     expect(source).toContain('getApplicationTransitionButtonClass(nextStatus, \'factory\')')
     expect(source).toContain('getApplicationTransitionActionLabel(nextStatus)')
@@ -65,21 +65,24 @@ describe('candidate detail drawer', () => {
 
   it('keeps the apply-to-job modal above drawer overlays', () => {
     const drawer = readProjectFile('app/components/CandidateDetailDrawer.vue')
-    const modal = readProjectFile('app/components/ApplyToJobModal.vue')
+    const shell = readProjectFile('app/components/AppDetailDrawerShell.vue')
+    const modal = readProjectFile('app/components/ApplicationLinkModal.vue')
 
-    expect(drawer).toContain('z-[55]')
-    expect(drawer).toContain('z-[60]')
+    expect(drawer).toContain('<AppDetailDrawerShell')
+    expect(shell).toContain('z-[55]')
+    expect(shell).toContain('z-[60]')
     expect(modal).toContain('z-[90]')
   })
 
   it('gives the apply-to-job modal a real dashboard layout', () => {
-    const modal = readProjectFile('app/components/ApplyToJobModal.vue')
+    const modal = readProjectFile('app/components/ApplicationLinkModal.vue')
 
     expect(modal).toContain('max-w-lg')
     expect(modal).toContain('max-h-[60vh] overflow-y-auto p-5')
     expect(modal).toContain('Choose an open role for this candidate.')
     expect(modal).toContain('group flex w-full cursor-pointer items-center justify-between')
     expect(modal).toContain('factory-button-cta factory-button-cta-sm')
+    expect(modal).toContain('<AppModalShell')
     expect(modal).not.toContain('ui-modal-frame')
     expect(modal).not.toContain('ui-modal-list-row')
   })

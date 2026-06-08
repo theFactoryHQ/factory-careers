@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { X, ExternalLink, User, Briefcase, Calendar, Clock, FileText, MessageSquare, Brain, Loader2 } from 'lucide-vue-next'
+import { User, Briefcase, Calendar, FileText, MessageSquare, Brain, Loader2 } from 'lucide-vue-next'
 import {
   getApplicationTransitionActionLabel,
   getApplicationTransitionButtonClass,
@@ -53,7 +53,6 @@ const scoringSummaryFallback = computed(() => {
 const scoreBand = computed(() => scoringData.value?.scoreBand ?? null)
 
 const showInterviewSidebar = ref(false)
-const drawerRef = ref<HTMLElement | null>(null)
 
 const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicationStatusActions({
   application,
@@ -79,89 +78,30 @@ async function scoreCurrentApplication() {
   await refreshScoring()
 }
 
-// ─── Body scroll lock + focus handling ────────────────────────────────────────
-
-onMounted(() => {
-  document.body.style.overflow = 'hidden'
-})
-
-onUnmounted(() => {
-  document.body.style.overflow = ''
-})
-
-useFocusTrap({
-  root: drawerRef,
-  active: true,
-  onEscape: () => emit('close'),
-})
 </script>
 
 <template>
-  <Teleport to="body">
-    <!-- Backdrop -->
-    <Transition
-      enter-active-class="transition-opacity duration-200"
-      leave-active-class="transition-opacity duration-150"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
+  <AppDetailDrawerShell
+    title="Application detail"
+    drawer-aria-label="Application detail"
+    :full-page-href="localePath(`/dashboard/applications/${applicationId}`)"
+    close-aria-label="Close application detail"
+    @close="emit('close')"
+  >
+    <!-- Loading -->
+    <div v-if="fetchStatus === 'pending'" class="text-center py-12 text-surface-400">
+      Loading application…
+    </div>
+
+    <!-- Error -->
+    <div
+      v-else-if="error"
+      class="border border-danger-500/45 bg-danger-500/10 p-4 text-sm text-danger-200"
     >
-      <div
-        class="factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-[55]"
-        @click="emit('close')"
-      />
-    </Transition>
+      {{ error.statusCode === 404 ? 'Application not found.' : 'Failed to load application.' }}
+    </div>
 
-    <!-- Panel -->
-    <Transition
-      enter-active-class="transition-transform duration-300 ease-out"
-      leave-active-class="transition-transform duration-200 ease-in"
-      enter-from-class="translate-x-full"
-      leave-to-class="translate-x-full"
-    >
-      <aside
-        ref="drawerRef"
-        class="factory-dashboard-portal fixed inset-y-0 right-0 z-[60] w-full max-w-2xl flex flex-col border-l border-white/12 bg-black text-white shadow-none"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Application detail"
-      >
-        <!-- Header -->
-        <header class="flex items-center justify-between gap-3 border-b border-white/10 bg-white/[0.035] px-5 py-4 shrink-0">
-          <span class="truncate text-sm font-semibold text-white">Application detail</span>
-          <div class="flex items-center gap-2 shrink-0">
-            <NuxtLink
-              :to="localePath(`/dashboard/applications/${applicationId}`)"
-              class="factory-toolbar-button inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-medium uppercase text-white/78 hover:text-white transition-colors"
-            >
-              <ExternalLink class="size-3.5" />
-              Open full page
-            </NuxtLink>
-            <button
-              class="ui-panel-close-button p-1.5 transition-colors"
-              aria-label="Close application detail"
-              @click="emit('close')"
-            >
-              <X class="size-4" />
-            </button>
-          </div>
-        </header>
-
-        <!-- Scrollable body -->
-        <div class="flex-1 overflow-y-auto bg-black p-5 space-y-4">
-          <!-- Loading -->
-          <div v-if="fetchStatus === 'pending'" class="text-center py-12 text-surface-400">
-            Loading application…
-          </div>
-
-          <!-- Error -->
-          <div
-            v-else-if="error"
-            class="border border-danger-500/45 bg-danger-500/10 p-4 text-sm text-danger-200"
-          >
-            {{ error.statusCode === 404 ? 'Application not found.' : 'Failed to load application.' }}
-          </div>
-
-          <template v-else-if="application">
+    <template v-else-if="application">
             <!-- Header card -->
             <div class="relative border border-white/12 bg-white/[0.025] p-5">
               <div class="flex flex-col gap-4 sm:pr-56">
@@ -428,19 +368,17 @@ useFocusTrap({
                 </div>
               </div>
             </div>
-          </template>
-        </div>
-      </aside>
-    </Transition>
+    </template>
 
-    <!-- Nested interview scheduling sidebar -->
-    <InterviewScheduleSidebar
-      v-if="showInterviewSidebar && application"
-      :application-id="applicationId"
-      :candidate-name="`${application.candidate.firstName} ${application.candidate.lastName}`"
-      :job-title="application.job.title"
-      @close="showInterviewSidebar = false"
-      @scheduled="showInterviewSidebar = false"
-    />
-  </Teleport>
+    <template #overlays>
+      <InterviewScheduleSidebar
+        v-if="showInterviewSidebar && application"
+        :application-id="applicationId"
+        :candidate-name="`${application.candidate.firstName} ${application.candidate.lastName}`"
+        :job-title="application.job.title"
+        @close="showInterviewSidebar = false"
+        @scheduled="showInterviewSidebar = false"
+      />
+    </template>
+  </AppDetailDrawerShell>
 </template>

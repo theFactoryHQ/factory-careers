@@ -358,8 +358,9 @@ function openPropertyEditor(scope: 'org' | 'job') {
   </ConfirmDialog>
 
   <!-- Apply Candidate Modal -->
-  <ApplyCandidateModal
+  <ApplicationLinkModal
     v-if="showApplyModal"
+    mode="candidate"
     :job-id="jobId"
     @close="showApplyModal = false"
     @created="handleCandidateApplied"
