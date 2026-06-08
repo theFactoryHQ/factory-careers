@@ -98,12 +98,13 @@ describe('epic 7 route migrations', () => {
     for (const path of [
       'server/api/jobs/index.get.ts',
       'server/api/dashboard/stats.get.ts',
-      'server/api/tracking-links/[id]/stats.get.ts',
-      'server/api/source-tracking/stats.get.ts',
     ]) {
       const source = readProjectFile(path)
       expect(source, path).toContain('emptyPipelineCounts')
       expect(source, path).not.toMatch(/\{\s*new:\s*0,\s*screening:\s*0/)
     }
+
+    const sourceAnalytics = readProjectFile('server/utils/sourceAnalytics.ts')
+    expect(sourceAnalytics).toContain('emptyPipelineCounts')
   })
 })

@@ -9,54 +9,37 @@ import {
   exchangeMicrosoftCodeForTokens,
   saveMicrosoftCalendarIntegration,
 } from '../../../utils/microsoft-calendar'
-import { timingSafeStringEqual } from '../../../utils/secureCompare'
+import { handleCalendarOAuthCallback } from '../../../utils/calendarOAuth'
+
+const MICROSOFT_CALLBACK_PATH = '/api/calendar/microsoft/callback'
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
   const activeOrgId = session.session.activeOrganizationId
 
-  const query = getQuery(event)
-  const code = query.code as string | undefined
-  const state = query.state as string | undefined
-  const error = query.error as string | undefined
+  return handleCalendarOAuthCallback(event, {
+    stateCookieName: 'mscal_oauth_state',
+    callbackPath: MICROSOFT_CALLBACK_PATH,
+    extraCookieNames: ['mscal_oauth_org'],
+    consentDeniedRedirect: '/dashboard/settings/integrations?error=consent_denied&provider=microsoft',
+    successRedirect: '/dashboard/settings/integrations?success=connected&provider=microsoft',
+    oauthFailedRedirect: '/dashboard/settings/integrations?error=oauth_failed&provider=microsoft',
+    logFailureEvent: 'calendar.microsoft_oauth_callback_failed',
+    resolveErrorRedirect: (err) => {
+      const message = err instanceof Error ? err.message : String(err)
+      if (message.startsWith('Microsoft Calendar group')) {
+        return '/dashboard/settings/integrations?error=calendar_not_accessible&provider=microsoft'
+      }
+      return null
+    },
+    onSuccess: async ({ code, extraCookies }) => {
+      const orgId = extraCookies.mscal_oauth_org || activeOrgId
+      if (!orgId) {
+        throw new Error('Missing active organization for Microsoft Calendar connection')
+      }
 
-  if (error) {
-    return sendRedirect(event, '/dashboard/settings/integrations?error=consent_denied&provider=microsoft')
-  }
-
-  if (!code || !state) {
-    throw createError({ statusCode: 400, statusMessage: 'Missing authorization code or state' })
-  }
-
-  const storedState = getCookie(event, 'mscal_oauth_state')
-  const storedOrgId = getCookie(event, 'mscal_oauth_org')
-  deleteCookie(event, 'mscal_oauth_state', { path: '/api/calendar/microsoft/callback' })
-  deleteCookie(event, 'mscal_oauth_org', { path: '/api/calendar/microsoft/callback' })
-
-  if (!storedState || !timingSafeStringEqual(storedState, state)) {
-    throw createError({ statusCode: 403, statusMessage: 'Invalid OAuth state — possible CSRF attack' })
-  }
-
-  try {
-    const orgId = storedOrgId || activeOrgId
-    if (!orgId) {
-      throw new Error('Missing active organization for Microsoft Calendar connection')
-    }
-
-    const tokens = await exchangeMicrosoftCodeForTokens(code)
-    await saveMicrosoftCalendarIntegration(session.user.id, orgId, tokens)
-
-    return sendRedirect(event, '/dashboard/settings/integrations?success=connected&provider=microsoft')
-  }
-  catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    logError('calendar.microsoft_oauth_callback_failed', {
-      posthog_distinct_id: session.user.id,
-      error_message: message,
-    })
-    if (message.startsWith('Microsoft Calendar group')) {
-      return sendRedirect(event, '/dashboard/settings/integrations?error=calendar_not_accessible&provider=microsoft')
-    }
-    return sendRedirect(event, '/dashboard/settings/integrations?error=oauth_failed&provider=microsoft')
-  }
+      const tokens = await exchangeMicrosoftCodeForTokens(code)
+      await saveMicrosoftCalendarIntegration(session.user.id, orgId, tokens)
+    },
+  })
 })

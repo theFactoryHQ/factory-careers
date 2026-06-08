@@ -1,5 +1,4 @@
-import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { getAppVersion, isNewerVersion } from '../../utils/appVersion'
 
 /**
  * GET /api/updates/version
@@ -11,10 +10,7 @@ import { resolve } from 'node:path'
 export default defineEventHandler(async (event) => {
   await requireAuth(event)
 
-  const { version: currentVersion } = await readFile(
-    resolve(process.cwd(), 'package.json'),
-    'utf-8',
-  ).then(JSON.parse) as { version: string }
+  const currentVersion = await getAppVersion()
 
   const owner = 'reqcore-inc'
   const repo = 'reqcore'
@@ -72,20 +68,3 @@ export default defineEventHandler(async (event) => {
     }
   }
 })
-
-/**
- * Simple semver comparison: returns true if `latest` is newer than `current`.
- * Handles standard x.y.z format.
- */
-function isNewerVersion(current: string, latest: string): boolean {
-  const currentParts = current.split('.').map(Number)
-  const latestParts = latest.split('.').map(Number)
-
-  for (let i = 0; i < 3; i++) {
-    const c = currentParts[i] ?? 0
-    const l = latestParts[i] ?? 0
-    if (l > c) return true
-    if (l < c) return false
-  }
-  return false
-}

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { uuidParamSchema } from '../../../utils/schemas/common'
 import { chatbotFolder } from '../../../database/schema'
 import { requireChatbotAccess } from '../../../utils/chatbotAccess'
+import { toChatbotFolder } from '../../../utils/chatbotDto'
 import type { ChatbotFolder } from '../../../../shared/chatbot'
 
 const bodySchema = z.object({
@@ -41,12 +42,6 @@ export default defineEventHandler(async (event): Promise<{ folder: ChatbotFolder
   }
 
   return {
-    folder: {
-      id: updated.id,
-      name: updated.name,
-      icon: updated.icon,
-      position: updated.position,
-      createdAt: updated.createdAt.getTime(),
-    },
+    folder: toChatbotFolder(updated),
   }
 })

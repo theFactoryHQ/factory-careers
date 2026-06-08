@@ -2,6 +2,7 @@ import { and, count, eq, max } from 'drizzle-orm'
 import { z } from 'zod'
 import { chatbotFolder } from '../../../database/schema'
 import { requireChatbotAccess } from '../../../utils/chatbotAccess'
+import { toChatbotFolder } from '../../../utils/chatbotDto'
 import {
   CHATBOT_FOLDER_MAX_PER_USER,
   type ChatbotFolder,
@@ -58,12 +59,6 @@ export default defineEventHandler(async (event): Promise<{ folder: ChatbotFolder
   }
 
   return {
-    folder: {
-      id: created.id,
-      name: created.name,
-      icon: created.icon,
-      position: created.position,
-      createdAt: created.createdAt.getTime(),
-    },
+    folder: toChatbotFolder(created),
   }
 })

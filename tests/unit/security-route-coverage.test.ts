@@ -184,7 +184,7 @@ describe('P0 tenant-isolation route coverage', () => {
       'server/api/candidates/index.get.ts': 'const conditions = [eq(candidate.organizationId, orgId)]',
       'server/api/applications/index.get.ts': 'const conditions = [eq(application.organizationId, orgId)]',
       'server/api/comments/index.get.ts': 'eq(comment.organizationId, orgId)',
-      'server/api/activity-log/index.get.ts': 'const conditions = [eq(activityLog.organizationId, orgId)]',
+      'server/utils/activityLogEntries.ts': 'const conditions = [eq(activityLog.organizationId, organizationId)]',
       'server/api/interviews/index.get.ts': 'const conditions = [eq(interview.organizationId, orgId)]',
       'server/api/tracking-links/index.get.ts': 'const conditions = [eq(trackingLink.organizationId, orgId)]',
       'server/api/email-templates/index.get.ts': 'where: eq(emailTemplate.organizationId, orgId)',
@@ -334,12 +334,14 @@ describe('P0 tenant-isolation route coverage', () => {
   })
 
   it('uses byte-safe OAuth state comparison for Microsoft calendar callbacks', () => {
-    const source = read('server/api/calendar/microsoft/callback.get.ts')
+    const route = read('server/api/calendar/microsoft/callback.get.ts')
+    const helper = read('server/utils/calendarOAuth.ts')
 
-    expect(source).toContain("from '../../../utils/secureCompare'")
-    expect(source).toContain('timingSafeStringEqual(storedState, state)')
-    expect(source).not.toContain('timingSafeEqual(')
-    expect(source).not.toContain('storedState.length !== state.length')
+    expect(route).toContain('handleCalendarOAuthCallback')
+    expect(helper).toContain("from './secureCompare'")
+    expect(helper).toContain('timingSafeStringEqual(storedState, query.state)')
+    expect(helper).not.toContain('timingSafeEqual(')
+    expect(helper).not.toContain('storedState.length !== state.length')
   })
 
   it('rolls back public applications when required document upload fails', () => {

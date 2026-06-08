@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { getAppVersion } from '../../utils/appVersion'
 
 interface ChangelogEntry {
   title: string
@@ -27,17 +28,13 @@ export default defineEventHandler(async (event) => {
     return { entries: [], currentVersion: null }
   }
 
-  const { version: currentVersion } = await readFile(
-    resolve(process.cwd(), 'package.json'),
-    'utf-8',
-  ).then(JSON.parse)
+  const currentVersion = await getAppVersion()
 
   const entries: ChangelogEntry[] = []
   let current: ChangelogEntry | null = null
   let currentSection: { heading: string; items: string[] } | null = null
 
   for (const line of raw.split('\n')) {
-    // Match ## headings (entries)
     const h2 = line.match(/^## \[(.+?)]\((.+?)\)\s*\((.+?)\)/)
     const h2Unreleased = line.match(/^## Unreleased/)
     const h2Date = line.match(/^## (\d{4}-\d{2}-\d{2})/)
@@ -64,7 +61,6 @@ export default defineEventHandler(async (event) => {
       continue
     }
 
-    // Match ### sub-headings (sections within an entry)
     const h3 = line.match(/^### (.+)/)
     if (h3 && current) {
       currentSection = { heading: h3[1] ?? '', items: [] }
@@ -72,7 +68,6 @@ export default defineEventHandler(async (event) => {
       continue
     }
 
-    // Match list items
     const item = line.match(/^\s*[*-]\s+(.+)/)
     if (item && currentSection) {
       currentSection.items.push(item[1] ?? '')
@@ -81,10 +76,8 @@ export default defineEventHandler(async (event) => {
 
   if (current) entries.push(current)
 
-  // Only keep versioned releases + Unreleased (not bare date entries)
   const releases = entries.filter(e => e.version !== null || e.title === 'Unreleased')
 
-  // Deduplicate entries with same title
   const seen = new Set<string>()
   const unique = releases.filter((e) => {
     const key = `${e.title}-${e.date}`

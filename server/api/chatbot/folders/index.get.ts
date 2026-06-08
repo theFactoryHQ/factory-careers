@@ -1,6 +1,7 @@
 import { and, asc, eq } from 'drizzle-orm'
 import { chatbotFolder } from '../../../database/schema'
 import { requireChatbotAccess } from '../../../utils/chatbotAccess'
+import { toChatbotFolder } from '../../../utils/chatbotDto'
 import type { ChatbotFolder } from '../../../../shared/chatbot'
 
 /**
@@ -20,12 +21,6 @@ export default defineEventHandler(async (event): Promise<{ folders: ChatbotFolde
   })
 
   return {
-    folders: rows.map((r) => ({
-      id: r.id,
-      name: r.name,
-      icon: r.icon,
-      position: r.position,
-      createdAt: r.createdAt.getTime(),
-    })),
+    folders: rows.map(toChatbotFolder),
   }
 })

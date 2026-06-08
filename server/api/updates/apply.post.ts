@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { getAppVersion } from '../../utils/appVersion'
 
 const execFileAsync = promisify(execFile)
 
@@ -29,13 +30,9 @@ export default defineEventHandler(async (event) => {
 
   const steps: UpdateResult['steps'] = []
 
-  // Read current version before update
-  const { readFile } = await import('node:fs/promises')
-  const { resolve } = await import('node:path')
   let previousVersion: string | null = null
   try {
-    const pkg = await readFile(resolve(process.cwd(), 'package.json'), 'utf-8')
-    previousVersion = JSON.parse(pkg).version
+    previousVersion = await getAppVersion()
   }
   catch {
     previousVersion = null

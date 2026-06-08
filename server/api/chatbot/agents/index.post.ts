@@ -2,6 +2,7 @@ import { and, count, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { chatbotAgent } from '../../../database/schema'
 import { requireChatbotAccess } from '../../../utils/chatbotAccess'
+import { toChatbotAgent } from '../../../utils/chatbotDto'
 import {
   CHATBOT_AGENT_MAX_PER_USER,
   CHATBOT_AGENT_PROMPT_MAX,
@@ -38,13 +39,10 @@ export default defineEventHandler(async (event): Promise<{ agent: ChatbotAgent }
   const body = await readValidatedBody(event, bodySchema.parse)
 
   const created = await db.transaction(async (tx) => {
-    // Serialise concurrent create requests for the same (org, user) so the
-    // count → insert sequence is race-free. The lock is released on commit.
     await tx.execute(
       sql`select pg_advisory_xact_lock(hashtext(${`chatbot_agent:${orgId}:${userId}`}))`,
     )
 
-    // Enforce per-user cap (now race-safe under the advisory lock).
     const [{ value: existing } = { value: 0 }] = await tx
       .select({ value: count() })
       .from(chatbotAgent)
@@ -60,7 +58,6 @@ export default defineEventHandler(async (event): Promise<{ agent: ChatbotAgent }
       })
     }
 
-    // If marking this agent as default, unset any previous default.
     if (body.isDefault) {
       await tx.update(chatbotAgent)
         .set({ isDefault: false, updatedAt: new Date() })
@@ -89,16 +86,6 @@ export default defineEventHandler(async (event): Promise<{ agent: ChatbotAgent }
   }
 
   return {
-    agent: {
-      id: created.id,
-      name: created.name,
-      description: created.description,
-      icon: created.icon,
-      systemPrompt: created.systemPrompt,
-      temperature: created.temperature ? Number(created.temperature) : null,
-      isDefault: created.isDefault,
-      createdAt: created.createdAt.getTime(),
-      updatedAt: created.updatedAt.getTime(),
-    },
+    agent: toChatbotAgent(created),
   }
 })
