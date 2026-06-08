@@ -111,6 +111,11 @@ const canConfirmDelete = computed(() => {
   return !!name && deleteConfirmText.value === name
 })
 
+function closeDeleteConfirm() {
+  showDeleteConfirm.value = false
+  deleteConfirmText.value = ''
+}
+
 async function handleDeleteOrg() {
   if (!canDeleteOrg.value || !canConfirmDelete.value) return
   isDeleting.value = true
@@ -272,44 +277,35 @@ async function handleDeleteOrg() {
           </button>
         </div>
 
-        <!-- Delete confirmation -->
-        <Transition
-          enter-active-class="transition-all duration-200"
-          leave-active-class="transition-all duration-200"
-          enter-from-class="opacity-0 -translate-y-2"
-          leave-to-class="opacity-0 -translate-y-2"
-        >
-          <div v-if="showDeleteConfirm" class="ui-alert ui-alert-danger mt-5 space-y-3">
-            <p class="text-sm text-surface-700 dark:text-surface-300">
-              Type <strong class="text-surface-900 dark:text-surface-100 font-semibold">{{ activeOrg?.name }}</strong> to confirm deletion:
-            </p>
-            <input
-              v-model="deleteConfirmText"
-              type="text"
-              class="ui-field"
-              :placeholder="activeOrg?.name"
-            />
-            <div class="flex items-center gap-2">
-              <button
-                :disabled="!canConfirmDelete || isDeleting"
-                class="ui-button ui-button-danger disabled:opacity-50 disabled:cursor-not-allowed"
-                @click="handleDeleteOrg"
-              >
-                <Loader2 v-if="isDeleting" class="size-4 animate-spin" />
-                <Trash2 v-else class="size-4" />
-                {{ isDeleting ? 'Deleting…' : 'Permanently delete' }}
-              </button>
-              <button
-                class="ui-button ui-button-secondary"
-                @click="showDeleteConfirm = false; deleteConfirmText = ''"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </Transition>
       </div>
     </section>
+
+    <ConfirmDialog
+      v-if="showDeleteConfirm"
+      title="Delete organization"
+      confirm-label="Permanently delete"
+      loading-label="Deleting…"
+      variant="danger"
+      :loading="isDeleting"
+      :confirm-disabled="!canConfirmDelete"
+      show-danger-icon
+      panel-class="max-w-md p-6"
+      aria-label="Delete organization"
+      @close="closeDeleteConfirm"
+      @confirm="handleDeleteOrg"
+    >
+      <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
+        Type <strong class="text-surface-900 dark:text-surface-100 font-semibold">{{ activeOrg?.name }}</strong> to confirm deletion. This action cannot be undone.
+      </p>
+      <label for="delete-org-confirm" class="sr-only">Confirm organization name</label>
+      <input
+        id="delete-org-confirm"
+        v-model="deleteConfirmText"
+        type="text"
+        class="ui-field"
+        :placeholder="activeOrg?.name"
+      />
+    </ConfirmDialog>
 
     <!-- Read-only notice for non-admin users -->
     <div v-if="!isUpdateOrgPermissionLoading && !canUpdateOrg" class="ui-alert ui-alert-info mt-6">
