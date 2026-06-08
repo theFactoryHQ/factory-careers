@@ -7,6 +7,7 @@ const props = withDefaults(defineProps<{
   candidateId?: string
   jobId?: string
   teleportTo?: string | HTMLElement
+  /** Modal stacking layer. Defaults to z-[90] in job mode (above drawer overlays) and z-50 in candidate mode. */
   zIndexClass?: string
 }>(), {
   teleportTo: 'body',
@@ -116,29 +117,33 @@ function applyCandidate(candidateId: string) {
     @close="emit('close')"
   >
     <AppModalPanel class="flex w-full max-w-lg flex-col overflow-hidden border border-white/12 bg-black text-white shadow-2xl shadow-black/70">
-      <div class="flex items-center justify-between gap-4 border-b border-white/10 bg-white/[0.035] px-5 py-4">
+      <header class="ui-panel-header flex items-center justify-between gap-4 px-5 py-4">
         <div class="flex min-w-0 items-center gap-3">
           <div class="flex size-9 shrink-0 items-center justify-center border border-brand-500/45 bg-brand-500/12 text-brand-300">
             <Briefcase v-if="mode === 'job'" class="size-4" />
             <UserPlus v-else class="size-4" />
           </div>
           <div class="min-w-0">
-            <h3 class="text-base font-semibold text-white">
-              {{ mode === 'job' ? 'Apply to Job' : 'Add Candidate' }}
-            </h3>
+            <h2 class="text-base font-semibold text-white">
+              {{ mode === 'job' ? 'Apply to job' : 'Add candidate' }}
+            </h2>
             <p v-if="mode === 'job'" class="mt-0.5 text-xs text-white/42">
               Choose an open role for this candidate.
+            </p>
+            <p v-else class="mt-0.5 text-xs text-white/42">
+              Search and link an existing candidate to this job.
             </p>
           </div>
         </div>
         <button
-          class="ui-panel-close-button inline-flex size-9 shrink-0 cursor-pointer items-center justify-center border border-transparent bg-transparent text-white/58 transition-colors hover:border-white hover:bg-white hover:text-black"
+          type="button"
+          class="ui-button ui-button-ghost ui-panel-close-button shrink-0 p-1.5"
           :aria-label="mode === 'job' ? 'Close apply to job modal' : 'Close add candidate modal'"
           @click="emit('close')"
         >
           <X class="size-4" />
         </button>
-      </div>
+      </header>
 
       <div v-if="mode === 'candidate'" class="px-5 pt-4">
         <GooeySearchInput

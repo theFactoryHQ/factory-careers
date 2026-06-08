@@ -30,5 +30,14 @@ describe('panel close buttons', () => {
     ]) {
       expect(readProjectFile(path), `${path} should use panel close styling`).toContain('ui-panel-close-button')
     }
+
+    for (const path of [
+      'app/components/FilterDrawer.vue',
+      'app/components/AppDetailDrawerShell.vue',
+      'app/components/ApplicationLinkModal.vue',
+    ]) {
+      const source = readProjectFile(path)
+      expect(source, `${path} close button should be an explicit button type`).toMatch(/type="button"[\s\S]*ui-panel-close-button|ui-panel-close-button[\s\S]*type="button"/)
+    }
   })
 })

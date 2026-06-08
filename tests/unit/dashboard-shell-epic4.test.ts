@@ -16,6 +16,10 @@ describe('dashboard shell epic 4', () => {
       'previousBodyOverflow',
       'document.body.style.overflow = previousBodyOverflow',
       'factory-dashboard-portal ui-modal-backdrop fixed inset-0 z-[55]',
+      'ui-drawer-panel',
+      'ui-drawer-header',
+      '<h2 class="truncate text-sm font-semibold text-white">{{ title }}</h2>',
+      'type="button"',
       'fixed inset-y-0 right-0 z-[60]',
       'Open full page',
       '<slot name="overlays" />',
@@ -38,15 +42,20 @@ describe('dashboard shell epic 4', () => {
 
     for (const snippet of [
       "mode: 'job' | 'candidate'",
+      '/** Modal stacking layer. Defaults to z-[90] in job mode',
       '<AppModalShell',
       '<AppModalPanel',
+      'ui-panel-header',
       'useDebouncedRef',
       'import.meta.dev',
       'ApplicationLinkModal requires candidateId when mode is "job".',
       'ApplicationLinkModal requires jobId when mode is "candidate".',
       'immediate: props.mode === \'job\'',
       'immediate: props.mode === \'candidate\'',
+      'Apply to job',
+      'Add candidate',
       'Choose an open role for this candidate.',
+      'Search and link an existing candidate to this job.',
       'Search candidates by name or email',
     ]) {
       expect(modal, snippet).toContain(snippet)
