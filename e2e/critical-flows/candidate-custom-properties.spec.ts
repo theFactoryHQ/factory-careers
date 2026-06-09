@@ -77,6 +77,8 @@ async function createCandidateTextPropertyFromDetail(page: Page, candidateId: st
   expect(property.id, 'candidate property id must be present').toBeTruthy()
   expect(property.name).toBe(name)
 
+  await expect(editor.getByText(name)).toBeVisible({ timeout: 10_000 })
+  await editor.getByRole('button', { name: 'Close properties' }).click()
   await expect(editor).toBeHidden({ timeout: 10_000 })
   await expect(page.getByText(name)).toBeVisible({ timeout: 10_000 })
 

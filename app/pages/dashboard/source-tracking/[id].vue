@@ -56,7 +56,7 @@ const {
   error: fetchError,
   refresh,
 } = useFetch(() => `/api/tracking-links/${linkId.value}/stats`, {
-  key: `tracking-link-detail-${linkId.value}`,
+  key: computed(() => `tracking-link-detail-${linkId.value}-${dateRange.value}`),
   headers: useRequestHeaders(['cookie']),
   getCachedData: getSwrCachedData,
   query: computed(() => {
