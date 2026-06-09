@@ -19,6 +19,9 @@ const isDemo = computed(() => {
 const isDemoAccount = computed(() => session.value?.user?.email === config.public.liveDemoEmail)
 
 useDashboardWarmPrefetch()
+
+// List route KeepAlive is enabled per page via `definePageMeta({ keepalive })` in
+// `shared/dashboard-keepalive.ts` (Nuxt applies it at the root `<NuxtPage>`).
 </script>
 
 <template>

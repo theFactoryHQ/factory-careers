@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { dashboardListPageKeepalive } from '~~/shared/dashboard-keepalive'
 import {
   Radio, ArrowRight, TrendingUp, Link2, Globe,
   BarChart3, Users, ExternalLink, Plus, AlertCircle,
@@ -11,6 +12,7 @@ import {
 definePageMeta({
   layout: 'dashboard',
   middleware: ['auth', 'require-org'],
+  keepalive: dashboardListPageKeepalive,
 })
 
 useSeoMeta({

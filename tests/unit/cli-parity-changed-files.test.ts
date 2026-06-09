@@ -38,6 +38,20 @@ describe('CLI parity changed-file guard', () => {
     })
   })
 
+  it('accepts CLI parity evidence for Epic 2 dashboard keepalive without contract changes', () => {
+    expect(evaluateCliParityEvidence([
+      'shared/dashboard-keepalive.ts',
+      'app/pages/dashboard/jobs/index.vue',
+      'app/pages/dashboard/candidates/index.vue',
+      'app/layouts/dashboard.vue',
+      'tests/unit/dashboard-keepalive.test.ts',
+      'tests/unit/cli-parity-changed-files.test.ts',
+    ])).toMatchObject({
+      ok: true,
+      message: 'CLI parity evidence found.',
+    })
+  })
+
   it('accepts CLI parity evidence for Epic 2 dashboard prefetch without contract changes', () => {
     expect(evaluateCliParityEvidence([
       'shared/dashboard-prefetch.ts',
