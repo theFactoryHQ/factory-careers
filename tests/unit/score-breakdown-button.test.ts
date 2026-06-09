@@ -41,13 +41,15 @@ describe('score breakdown actions', () => {
     expect(source).not.toContain('new Date(resolvedScoreData!.latestRun.createdAt).toLocaleString()')
   })
 
-  it('keeps re-score actions inside the score breakdown section', () => {
-    const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+  it('keeps re-score actions inside the lazy-loaded score breakdown panel', () => {
+    const pipelinePage = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+    const scorePanel = readProjectFile('app/components/job-pipeline/JobPipelineAiScorePanel.vue')
 
-    expect(source).toContain('<ScoreBreakdown')
-    expect(source).not.toContain('scoreIndividualCandidate')
-    expect(source).not.toContain('Score Candidate')
-    expect(source).not.toContain('inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium')
+    expect(pipelinePage).toContain('<JobPipelineAiScorePanel')
+    expect(scorePanel).toContain('<ScoreBreakdown')
+    expect(pipelinePage).not.toContain('scoreIndividualCandidate')
+    expect(pipelinePage).not.toContain('Score Candidate')
+    expect(pipelinePage).not.toContain('inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium')
   })
 
   it('formats the selected candidate score like the score breakdown value', () => {
