@@ -161,6 +161,8 @@ export default defineEventHandler(async (event) => {
     has_calendar_sync: !!calendarEventId,
   })
 
+  await invalidateOrgScopedDashboardCache(event)
+
   setResponseStatus(event, 201)
   return {
     ...created,

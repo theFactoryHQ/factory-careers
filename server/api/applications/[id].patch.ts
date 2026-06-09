@@ -92,6 +92,8 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  await invalidateOrgScopedDashboardCache(event)
+
   return updated
 })
 

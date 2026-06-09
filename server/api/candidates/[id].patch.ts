@@ -57,5 +57,7 @@ export default defineEventHandler(async (event) => {
     metadata: { name: `${updated.firstName} ${updated.lastName}` },
   })
 
+  await invalidateOrgScopedDashboardCache(event)
+
   return updated
 })

@@ -22,6 +22,14 @@ describe('orgScopedCacheOptions', () => {
     expect(source).toContain("varies: ['cookie', 'authorization']")
     expect(source).toContain('ORG_SCOPED_CACHE_MAX_AGE_SECONDS')
   })
+
+  it('scopes cache keys by organization and bumps generation on writes', () => {
+    expect(source).toContain('ORG_SCOPED_DASHBOARD_CACHE_NAME')
+    expect(source).toContain('async getKey(event: H3Event)')
+    expect(source).toContain('bumpOrgDashboardCacheVersion')
+    expect(source).toContain('invalidateOrgScopedDashboardCache')
+    expect(source).toContain('invalidateOrgScopedDashboardCacheForOrg')
+  })
 })
 
 describe('dashboard list API Nitro cache', () => {

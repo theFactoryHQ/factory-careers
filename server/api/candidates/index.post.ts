@@ -68,6 +68,8 @@ export default defineEventHandler(async (event) => {
     candidate_id: created.id,
   })
 
+  await invalidateOrgScopedDashboardCache(event)
+
   setResponseStatus(event, 201)
   return created
 })

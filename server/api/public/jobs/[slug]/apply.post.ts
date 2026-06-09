@@ -783,6 +783,8 @@ export default defineEventHandler(async (event) => {
     is_returning_candidate: !!existingCandidate,
   })
 
+  await invalidateOrgScopedDashboardCacheForOrg(orgId)
+
   setResponseStatus(event, 201)
   return { success: true }
 })
