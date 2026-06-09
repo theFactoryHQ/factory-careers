@@ -1,18 +1,11 @@
 import type { RouterConfig } from '@nuxt/schema'
 
 /**
- * Nuxt Router configuration focused on performance.
+ * Vue Router options for the Nuxt app.
  *
- * - Aggressive prefetch on hover for dashboard navigation (common in recruiting tools).
- * - Component prefetch enabled.
- *
- * Combined with the SWR client caching we added to composables,
- * this makes intra-dashboard navigation feel near-instant.
+ * Link prefetch defaults (`interaction` + `visibility`) live in `nuxt.config.ts`
+ * via `experimental.defaults.nuxtLink` and `shared/dashboard-prefetch.ts`.
  */
 export default <RouterConfig>{
-  linkPrefetch: 'hover',
-  prefetchComponents: true,
-
-  // Optional: more aggressive prefetch for the main dashboard sidebar links
-  // (can be expanded later with custom logic in a plugin if needed)
+  // scrollBehavior is provided by Nuxt's built-in router.options merge.
 }

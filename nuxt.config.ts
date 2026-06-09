@@ -6,6 +6,7 @@ import {
   I18N_DEFAULT_LOCALE,
   isLanguageFeatureEnabled,
 } from "./shared/language-feature";
+import { dashboardLinkPrefetchOn } from "./shared/dashboard-prefetch";
 
 const railwayEnvironmentName =
   process.env.RAILWAY_ENVIRONMENT_NAME?.toLowerCase() ?? "";
@@ -64,6 +65,15 @@ const isRailwayPreview =
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: process.env.NUXT_DEVTOOLS !== "false" },
+
+  experimental: {
+    defaults: {
+      nuxtLink: {
+        prefetch: true,
+        prefetchOn: dashboardLinkPrefetchOn,
+      },
+    },
+  },
 
   modules: [
     "@nuxtjs/i18n",
