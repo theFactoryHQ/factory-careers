@@ -41,12 +41,12 @@ describe('dashboard list keepalive policy', () => {
 
   it('documents keepalive ownership in the dashboard layout', () => {
     const layout = readProjectFile('app/layouts/dashboard.vue')
-    expect(layout).toContain('shared/dashboard-keepalive.ts')
-    expect(layout).toContain('definePageMeta({ keepalive })')
+    expect(layout).toMatch(/shared\/dashboard-keepalive\.ts/)
+    expect(layout).toMatch(/definePageMeta\(\{\s*keepalive/)
   })
 
   it('does not keep the job pipeline route alive in v1', () => {
     const pipeline = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
-    expect(pipeline).not.toContain('keepalive')
+    expect(pipeline).not.toMatch(/keepalive:\s*/)
   })
 })

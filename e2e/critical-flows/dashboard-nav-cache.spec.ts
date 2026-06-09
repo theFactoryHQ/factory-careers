@@ -10,11 +10,12 @@ test.describe('Dashboard list keepalive', () => {
     await page.getByLabel('Search candidates').waitFor({ state: 'visible', timeout: 15_000 })
     await page.getByLabel('Search candidates').fill(marker)
 
-    await page.getByRole('link', { name: 'Applications' }).first().click()
+    const topNav = page.getByRole('banner')
+    await topNav.getByRole('link', { name: 'Applications' }).click()
     await page.waitForURL('**/dashboard/applications', { timeout: 15_000 })
     await expect(page.getByLabel('Search applications')).toBeVisible({ timeout: 15_000 })
 
-    await page.getByRole('link', { name: 'Candidates' }).first().click()
+    await topNav.getByRole('link', { name: 'Candidates' }).click()
     await page.waitForURL('**/dashboard/candidates', { timeout: 15_000 })
 
     await expect(page.getByLabel('Search candidates')).toHaveValue(marker, { timeout: 10_000 })
