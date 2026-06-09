@@ -24,6 +24,8 @@ describe('job cache refresh', () => {
     const useJobsSource = readProjectFile('app/composables/useJobs.ts')
 
     expect(topbar).toContain('useSidebarJobs')
+    expect(topbar).toContain('activeJobDetail')
+    expect(topbar).toMatch(/job-\$\{activeJobId\.value\}/)
     expect(topbar).not.toContain('sidebar-jobs-list')
     expect(useJobsSource).toContain('export function jobsListKey')
     expect(useJobsSource).toMatch(/key:\s*computed\(\(\)\s*=>\s*jobsListKey/)

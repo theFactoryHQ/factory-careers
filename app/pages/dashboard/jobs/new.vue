@@ -673,10 +673,12 @@ async function handleSubmit(mode: 'publish' | 'draft' = publishChoice.value) {
 
     if (mode === 'publish' && created?.id) {
       // Publish the job immediately
-      await $fetch(`/api/jobs/${created.id}`, {
+      const published = await $fetch(`/api/jobs/${created.id}`, {
         method: 'PATCH',
         body: { status: 'open' },
       })
+      patchJobsListCaches(published)
+      await refreshJobsListCaches()
 
       // Build the real application link
       const base = `${requestUrl.protocol}//${requestUrl.host}`

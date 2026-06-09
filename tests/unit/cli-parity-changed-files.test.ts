@@ -38,6 +38,21 @@ describe('CLI parity changed-file guard', () => {
     })
   })
 
+  it('accepts CLI parity evidence for Epic 2 dashboard prefetch without contract changes', () => {
+    expect(evaluateCliParityEvidence([
+      'shared/dashboard-prefetch.ts',
+      'app/composables/useDashboardWarmPrefetch.ts',
+      'app/layouts/dashboard.vue',
+      'app/router.options.ts',
+      'nuxt.config.ts',
+      'tests/unit/dashboard-prefetch.test.ts',
+      'tests/unit/cli-parity-changed-files.test.ts',
+    ])).toMatchObject({
+      ok: true,
+      message: 'CLI parity evidence found.',
+    })
+  })
+
   it('accepts CLI parity evidence for Epic 2 list API Nitro cache without contract changes', () => {
     expect(evaluateCliParityEvidence([
       'server/api/jobs/index.get.ts',
