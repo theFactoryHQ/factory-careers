@@ -75,16 +75,36 @@ const activeJobId = computed(() => {
 
 const { jobs: sidebarJobs } = useSidebarJobs()
 
+const { data: activeJobDetail, refresh: refreshActiveJobDetail } = useFetch(
+  () => `/api/jobs/${activeJobId.value ?? '__idle__'}`,
+  {
+    key: computed(() => (activeJobId.value ? `job-${activeJobId.value}` : 'job-idle')),
+    headers: useRequestHeaders(['cookie']),
+    getCachedData: getSwrCachedData,
+    immediate: false,
+  },
+)
+
+watch(activeJobId, (id, previous) => {
+  if (!id) return
+  if (id !== previous) refreshActiveJobDetail()
+}, { immediate: true })
+
+watchFetchSwrStamp(activeJobDetail)
+
+const sidebarJob = computed(() => {
+  if (!activeJobId.value) return null
+  return sidebarJobs.value.find((j: { id: string }) => j.id === activeJobId.value) ?? null
+})
+
 const activeJobTitle = computed(() => {
   if (!activeJobId.value) return null
-  const found = sidebarJobs.value.find((j: any) => j.id === activeJobId.value)
-  return found?.title ?? 'Job'
+  return activeJobDetail.value?.title ?? sidebarJob.value?.title ?? 'Job'
 })
 
 const activeJobStatus = computed(() => {
   if (!activeJobId.value) return null
-  const found = sidebarJobs.value.find((j: any) => j.id === activeJobId.value)
-  return (found as any)?.status ?? null
+  return activeJobDetail.value?.status ?? (sidebarJob.value as { status?: string } | null)?.status ?? null
 })
 
 const { data: feedbackConfig } = useFetch('/api/feedback/config', {
