@@ -14,11 +14,15 @@ export default defineEventHandler(async (event) => {
   const { id, propId } = await getValidatedRouterParams(event, entityPropertyParamsSchema.parse)
   const { value } = await readValidatedBody(event, setPropertyValueSchema.parse)
 
-  return setEntityPropertyValue({
+  const result = await setEntityPropertyValue({
     organizationId: orgId,
     entityType: 'application',
     entityId: id,
     propId,
     value,
   })
+
+  await invalidateOrgScopedDashboardCache(event)
+
+  return result
 })

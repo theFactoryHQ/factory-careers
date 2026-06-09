@@ -18,6 +18,8 @@ const MUTATION_HANDLERS_WITH_INVALIDATION = [
   'server/api/interviews/[id]/index.patch.ts',
   'server/api/interviews/[id]/index.delete.ts',
   'server/api/public/jobs/[slug]/apply.post.ts',
+  'server/api/candidates/[id]/properties/[propId].put.ts',
+  'server/api/applications/[id]/properties/[propId].put.ts',
 ]
 
 describe('org-scoped dashboard cache invalidation on writes', () => {
