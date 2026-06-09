@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { dashboardListPageKeepalive } from '~~/shared/dashboard-keepalive'
 import { FileText, Search, Briefcase, Clock, ArrowUp, ArrowDown, ArrowUpDown, Minimize2 } from 'lucide-vue-next'
 import type { SortDir } from '~/composables/useTableSort'
 import {
@@ -11,6 +12,7 @@ import { getPropertyValue } from '~/utils/property-display'
 definePageMeta({
   layout: 'dashboard',
   middleware: ['auth', 'require-org'],
+  keepalive: dashboardListPageKeepalive,
 })
 
 useSeoMeta({

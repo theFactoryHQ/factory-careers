@@ -34,7 +34,7 @@
     "preflight:cli-parity": "node scripts/run-pr-validation-preflight.mjs --step cli-parity",
     "typecheck": "nuxi typecheck",
     "test:e2e": "npx playwright test",
-    "test:e2e:smoke": "playwright test e2e/critical-flows/dropdown-styling.spec.ts e2e/critical-flows/job-creation.spec.ts e2e/critical-flows/source-tracking.spec.ts",
+    "test:e2e:smoke": "playwright test e2e/critical-flows/dashboard-nav-cache.spec.ts e2e/critical-flows/dropdown-styling.spec.ts e2e/critical-flows/job-creation.spec.ts e2e/critical-flows/source-tracking.spec.ts",
     "test:e2e:uploads": "playwright test e2e/critical-flows/resume-upload.spec.ts e2e/critical-flows/candidate-documents.spec.ts",
     "test:e2e:candidate": "FEATURE_FLAG_LANGUAGE_SUPPORT=true FACTORY_EMAIL_TEST_MODE=capture FACTORY_EMAIL_CAPTURE_PATH=/tmp/factory-careers-e2e-candidate-email.jsonl FACTORY_CAREERS_HIRING_INBOX=hiring-e2e@example.com playwright test e2e/critical-flows/candidate-application.spec.ts e2e/critical-flows/public-localization.spec.ts",
     "test:e2e:recruiter": "playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts e2e/critical-flows/application-saved-views.spec.ts e2e/critical-flows/application-custom-properties.spec.ts e2e/critical-flows/candidate-custom-properties.spec.ts e2e/critical-flows/application-board.spec.ts e2e/critical-flows/activity-timeline.spec.ts",

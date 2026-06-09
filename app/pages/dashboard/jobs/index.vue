@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { dashboardListPageKeepalive } from '~~/shared/dashboard-keepalive'
 import {
   Briefcase, Bell, Plus, Kanban,
   MapPin, Search, SlidersHorizontal, X,
@@ -9,6 +10,7 @@ import { getJobStatusBadgeClass } from '~/utils/status-display'
 definePageMeta({
   layout: 'dashboard',
   middleware: ['auth', 'require-org'],
+  keepalive: dashboardListPageKeepalive,
 })
 
 useSeoMeta({
