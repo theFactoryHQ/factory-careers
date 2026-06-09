@@ -1,7 +1,7 @@
 /**
- * Default NuxtLink prefetch policy for dashboard navigation.
- * `interaction` warms route chunks on tap/click (mobile) and pointer/focus (desktop).
- * `visibility` keeps viewport-based prefetch for sidebar links on scroll.
+ * Global NuxtLink prefetch defaults (wired via `nuxt.config` experimental.defaults.nuxtLink).
+ * Tuned for dashboard UX: `interaction` warms route chunks on tap/click (mobile) and
+ * pointer/focus (desktop); `visibility` keeps viewport-based prefetch for in-view links.
  */
 export const dashboardLinkPrefetchOn = {
   visibility: true,
