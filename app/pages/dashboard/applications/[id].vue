@@ -15,6 +15,8 @@ const route = useRoute()
 const applicationId = route.params.id as string
 
 const { application, status: fetchStatus, error, refresh, updateApplication } = useApplication(applicationId)
+
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, application)
 const { formatCandidateName } = useOrgSettings()
 
 const {
@@ -55,6 +57,8 @@ useSeoMeta({
 
 <template>
   <div class="mx-auto w-full max-w-6xl">
+    <StaleRevalidateBar v-if="isRevalidating" />
+
     <!-- Back link -->
     <AppBackLink
       :to="$localePath('/dashboard/applications')"
@@ -64,7 +68,7 @@ useSeoMeta({
     </AppBackLink>
 
     <!-- Loading -->
-    <div v-if="fetchStatus === 'pending'" class="text-center py-12 text-surface-400">
+    <div v-if="showSkeleton" class="text-center py-12 text-surface-400">
       Loading application…
     </div>
 

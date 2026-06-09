@@ -76,11 +76,13 @@ describe('application form requirement cards', () => {
     const settingsPage = readProjectFile('app/pages/dashboard/jobs/[id]/settings.vue')
     const aiPage = readProjectFile('app/pages/dashboard/jobs/[id]/ai-analysis.vue')
 
-    expect(applicationPage).toContain('fetchStatus === \'pending\' && !job')
+    expect(applicationPage).toContain('useStaleFetchUi')
+    expect(applicationPage).toContain('showSkeleton')
     expect(applicationPage.indexOf('<template v-if="job">')).toBeLessThan(applicationPage.indexOf('Failed to load job.'))
     expect(applicationPage).toContain('fetchStatus !== \'pending\' && !job && error')
 
-    expect(settingsPage).toContain('fetchStatus === \'pending\' && !job')
+    expect(settingsPage).toContain('useStaleFetchUi')
+    expect(settingsPage).toContain('showSkeleton')
     expect(settingsPage.indexOf('<template v-if="job">')).toBeLessThan(settingsPage.indexOf('Failed to load job.'))
     expect(settingsPage).toContain('fetchStatus !== \'pending\' && !job && fetchError')
 

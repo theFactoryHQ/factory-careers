@@ -22,7 +22,12 @@ useSeoMeta({
 const { data: stats, status: fetchStatus, error, refresh } = useFetch('/api/ai-analysis/stats', {
   key: 'ai-analysis-stats',
   headers: useRequestHeaders(['cookie']),
+  getCachedData: getSwrCachedData,
 })
+
+watchFetchSwrStamp(stats)
+
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, stats)
 
 const summary = computed(() => stats.value?.summary ?? {
   totalRuns: 0,
@@ -104,8 +109,10 @@ function formatDateTime(dateStr: string | Date): string {
 
 <template>
   <div class="mx-auto max-w-6xl">
+    <StaleRevalidateBar v-if="isRevalidating" />
+
     <!-- ─── Loading skeleton ─── -->
-    <div v-if="fetchStatus === 'pending'">
+    <div v-if="showSkeleton">
       <div class="mb-10">
         <div class="h-8 w-48 bg-surface-200 dark:bg-surface-700 rounded-lg animate-pulse mb-2" />
         <div class="h-4 w-64 bg-surface-200 dark:bg-surface-700 rounded animate-pulse" />

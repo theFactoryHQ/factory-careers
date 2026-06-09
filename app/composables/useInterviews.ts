@@ -170,7 +170,7 @@ export function useInterviews(options?: {
     }
   }
 
-  return { interviews, total, status, error, refresh, createInterview, updateInterview, deleteInterviewById }
+  return { data, interviews, total, status, error, refresh, createInterview, updateInterview, deleteInterviewById }
 }
 
 /**

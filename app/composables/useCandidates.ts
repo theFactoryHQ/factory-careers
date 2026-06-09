@@ -73,6 +73,7 @@ export function useCandidates(options?: {
   }
 
   return {
+    data,
     candidates,
     total,
     fetchStatus,

@@ -87,10 +87,12 @@ watch(activeStatus, (newStatus) => {
 const statusFilter = computed(() => activeStatus.value)
 const propertyFilters = ref<import('~~/shared/properties').PropertyFilter[]>([])
 
-const { applications, total, fetchStatus, error, refresh } = useApplications({
+const { data, applications, total, fetchStatus, error, refresh } = useApplications({
   status: statusFilter,
   propertyFilters,
 })
+
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, data)
 
 const { formatPersonName } = useOrgSettings()
 
@@ -235,6 +237,8 @@ const selectedApplicationId = ref<string | null>(null)
 
 <template>
   <div class="mx-auto max-w-6xl">
+    <StaleRevalidateBar v-if="isRevalidating" />
+
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -351,7 +355,7 @@ const selectedApplicationId = ref<string | null>(null)
     </FilterDrawer>
 
     <!-- Loading -->
-    <div v-if="fetchStatus === 'pending'" class="text-center py-16 text-surface-400">
+    <div v-if="showSkeleton" class="text-center py-16 text-surface-400">
       Loading applications…
     </div>
 

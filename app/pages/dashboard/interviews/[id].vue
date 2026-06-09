@@ -32,6 +32,8 @@ const { formatPersonName } = useOrgSettings()
 
 const { interview, status: fetchStatus, error, updateInterview, deleteInterview, refresh } = useInterview(interviewId)
 
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, interview)
+
 useSeoMeta({
   title: computed(() =>
     interview.value
@@ -322,6 +324,8 @@ const localePath = useLocalePath()
 
 <template>
   <div class="mx-auto max-w-3xl px-6 py-8">
+    <StaleRevalidateBar v-if="isRevalidating" />
+
     <!-- Back link -->
     <AppBackLink
       :to="$localePath('/dashboard/interviews')"
@@ -331,7 +335,7 @@ const localePath = useLocalePath()
     </AppBackLink>
 
     <!-- Loading -->
-    <div v-if="fetchStatus === 'pending'" class="flex flex-col items-center justify-center py-20">
+    <div v-if="showSkeleton" class="flex flex-col items-center justify-center py-20">
       <div class="size-8 rounded-full border-2 border-brand-200 border-t-brand-600 dark:border-brand-800 dark:border-t-brand-400 animate-spin" />
       <p class="mt-3 text-sm text-surface-400">Loading interview…</p>
     </div>

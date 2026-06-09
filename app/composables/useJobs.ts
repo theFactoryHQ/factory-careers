@@ -140,6 +140,7 @@ export function useJobs(options?: {
   }
 
   return {
+    data,
     jobs,
     total,
     fetchStatus,

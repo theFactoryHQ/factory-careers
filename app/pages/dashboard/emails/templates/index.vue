@@ -17,7 +17,9 @@ useSeoMeta({
 
 const localePath = useLocalePath()
 
-const { templates, status: fetchStatus, deleteTemplate } = useEmailTemplates()
+const { data, templates, status: fetchStatus, deleteTemplate } = useEmailTemplates()
+
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, data)
 const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 const toast = useToast()
 
@@ -56,6 +58,8 @@ async function handleDelete() {
 
 <template>
   <div class="mx-auto max-w-6xl">
+    <StaleRevalidateBar v-if="isRevalidating" />
+
     <!-- Page header -->
     <div class="mb-6 flex items-start justify-between gap-4">
       <div>
@@ -136,7 +140,7 @@ async function handleDelete() {
       </div>
 
       <!-- Loading state -->
-      <div v-if="fetchStatus === 'pending'" class="ui-empty-panel flex items-center gap-3 p-8 justify-center">
+      <div v-if="showSkeleton" class="ui-empty-panel flex items-center gap-3 p-8 justify-center">
         <div class="ui-spinner-brand size-5 animate-spin" />
         <span class="text-sm text-surface-400">Loading templates…</span>
       </div>

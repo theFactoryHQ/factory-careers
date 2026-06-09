@@ -94,6 +94,7 @@ export function useApplications(options?: {
   }
 
   return {
+    data,
     applications,
     total,
     fetchStatus,

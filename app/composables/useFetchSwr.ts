@@ -31,7 +31,7 @@ export function getSwrCachedData<T>(
     return undefined
   }
 
-  const cached = nuxtApp.payload.data[key] as (T & SwrStamped) | undefined
+  const cached = (nuxtApp.payload.data[key] ?? nuxtApp.static?.data?.[key]) as (T & SwrStamped) | undefined
   if (!cached) return undefined
 
   const fetchedAt = cached._fetchedAt || 0

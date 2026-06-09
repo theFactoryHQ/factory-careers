@@ -31,6 +31,16 @@ describe('useFetchSwr', () => {
     expect(getSwrCachedData('applications-stale', nuxtApp)).toBeUndefined()
   })
 
+  it('falls back to static payload data when payload cache is empty', () => {
+    const cached = { data: [{ id: '2' }], _fetchedAt: Date.now() }
+    const nuxtApp = {
+      payload: { data: {} },
+      static: { data: { 'jobs-{}': cached } },
+    } as any
+
+    expect(getSwrCachedData('jobs-{}', nuxtApp)).toBe(cached)
+  })
+
   it('skips cache on explicit refresh causes so mutations refetch fresh data', () => {
     const cached = { data: [{ id: '1' }], _fetchedAt: Date.now() }
     const nuxtApp = { payload: { data: { 'candidate-1': cached } } } as any

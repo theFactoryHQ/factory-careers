@@ -41,7 +41,9 @@ function getStageCount(pipeline: any, key: string): number {
 // Fetch jobs with pipeline data
 // ─────────────────────────────────────────────
 
-const { jobs, total, fetchStatus, error, refresh } = useJobs()
+const { data, jobs, total, fetchStatus, error, refresh } = useJobs()
+
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, data)
 
 const typeLabels: Record<string, string> = {
   full_time: 'Full-time',
@@ -312,8 +314,10 @@ const noResults = computed(() => !isEmpty.value && filteredJobs.value.length ===
       </p>
     </div>
 
+    <StaleRevalidateBar v-if="isRevalidating" />
+
     <!-- ─── Loading ─── -->
-    <div v-if="fetchStatus === 'pending'">
+    <div v-if="showSkeleton">
       <div class="space-y-4">
         <div
           v-for="i in 3"

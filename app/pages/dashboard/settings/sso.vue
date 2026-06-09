@@ -37,10 +37,17 @@ const {
   domain: string
   organizationId: string
 }>>('/api/sso/providers', {
-  default: () => [],
+  key: 'sso-providers',
+  headers: useRequestHeaders(['cookie']),
+  getCachedData: getSwrCachedData,
 })
 
-const hasProvider = computed(() => (providers.value?.length ?? 0) > 0)
+watchFetchSwrStamp(providers)
+
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, providers)
+
+const providersList = computed(() => providers.value ?? [])
+const hasProvider = computed(() => providersList.value.length > 0)
 
 // ─────────────────────────────────────────────
 // Registration form
@@ -259,7 +266,9 @@ async function copyCallbackUrl(providerId: string) {
     </div>
 
     <!-- Loading state -->
-    <div v-if="fetchStatus === 'pending'" class="flex items-center gap-3 py-12 justify-center">
+    <StaleRevalidateBar v-if="isRevalidating" />
+
+    <div v-if="showSkeleton" class="flex items-center gap-3 py-12 justify-center">
       <Loader2 class="size-5 animate-spin text-surface-400" />
       <span class="text-sm text-surface-400">Loading SSO configuration…</span>
     </div>
@@ -373,7 +382,7 @@ async function copyCallbackUrl(providerId: string) {
       <!-- Existing providers -->
       <div v-if="hasProvider" class="space-y-3 mb-6">
         <div
-          v-for="provider in providers"
+          v-for="provider in providersList"
           :key="provider.id"
           class="ui-panel ui-settings-panel"
         >

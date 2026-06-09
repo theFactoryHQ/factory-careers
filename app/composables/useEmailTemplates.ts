@@ -16,11 +16,15 @@ export interface EmailTemplate {
 export function useEmailTemplates() {
   const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 
-  const { data: templates, status, error, refresh } = useFetch<EmailTemplate[]>('/api/email-templates', {
+  const { data, status, error, refresh } = useFetch<EmailTemplate[]>('/api/email-templates', {
     key: 'email-templates',
     headers: useRequestHeaders(['cookie']),
-    default: () => [],
+    getCachedData: getSwrCachedData,
   })
+
+  watchFetchSwrStamp(data)
+
+  const templates = computed(() => data.value ?? [])
 
   async function createTemplate(payload: {
     purpose?: EmailTemplate['purpose']
@@ -88,5 +92,5 @@ export function useEmailTemplates() {
     }
   }
 
-  return { templates, status, error, refresh, createTemplate, updateTemplate, deleteTemplate, sendInvitation }
+  return { data, templates, status, error, refresh, createTemplate, updateTemplate, deleteTemplate, sendInvitation }
 }
