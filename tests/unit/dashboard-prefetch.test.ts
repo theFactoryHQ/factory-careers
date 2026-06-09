@@ -36,15 +36,20 @@ describe('dashboard warm prefetch wiring', () => {
     expect(source).toContain("'/dashboard/applications'")
   })
 
-  it('schedules idle route preload and list composable warming from the dashboard layout', () => {
+  it('schedules idle route preload from the dashboard layout while AppTopBar warms jobs data', () => {
     const layout = readProjectFile('app/layouts/dashboard.vue')
     expect(layout).toContain('useDashboardWarmPrefetch()')
 
     const composable = readProjectFile('app/composables/useDashboardWarmPrefetch.ts')
     expect(composable).toContain('preloadRouteComponents')
     expect(composable).toContain('requestIdleCallback')
-    expect(composable).toContain('useSidebarJobs()')
-    expect(composable).toContain('useCandidates()')
-    expect(composable).toContain('useApplications()')
+    expect(composable).not.toContain('useSidebarJobs()')
+    expect(layout).toContain('AppTopBar')
+  })
+
+  it('refreshes the shared jobs list cache after publishing from the new job wizard', () => {
+    const source = readProjectFile('app/pages/dashboard/jobs/new.vue')
+    expect(source).toContain('patchJobsListCaches(published)')
+    expect(source).toContain('refreshJobsListCaches()')
   })
 })

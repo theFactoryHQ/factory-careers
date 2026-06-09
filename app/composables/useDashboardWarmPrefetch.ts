@@ -23,10 +23,6 @@ export function useDashboardWarmPrefetch() {
   const localePath = useLocalePath()
   const route = useRoute()
 
-  useSidebarJobs()
-  useCandidates()
-  useApplications()
-
   onMounted(() => {
     scheduleIdleTask(() => {
       const dashboardHome = localePath('/dashboard')
