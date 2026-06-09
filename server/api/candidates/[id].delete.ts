@@ -49,6 +49,8 @@ export default defineEventHandler(async (event) => {
     metadata: { deletedDocumentCount: documentsToDelete.length },
   })
 
+  await invalidateOrgScopedDashboardCache(event)
+
   setResponseStatus(event, 204)
   return null
 })

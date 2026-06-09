@@ -38,6 +38,22 @@ describe('CLI parity changed-file guard', () => {
     })
   })
 
+  it('accepts CLI parity evidence for Epic 2 list API Nitro cache without contract changes', () => {
+    expect(evaluateCliParityEvidence([
+      'server/api/jobs/index.get.ts',
+      'server/api/candidates/index.get.ts',
+      'server/api/applications/index.get.ts',
+      'server/api/interviews/index.get.ts',
+      'server/api/dashboard/stats.get.ts',
+      'server/utils/httpCache.ts',
+      'tests/unit/list-api-cache.test.ts',
+      'tests/unit/cli-parity-changed-files.test.ts',
+    ])).toMatchObject({
+      ok: true,
+      message: 'CLI parity evidence found.',
+    })
+  })
+
   it('accepts CLI parity evidence for Epic 7 pagination and pipeline helpers without contract changes', () => {
     expect(evaluateCliParityEvidence([
       'server/api/candidates/index.get.ts',

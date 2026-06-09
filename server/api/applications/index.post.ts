@@ -80,6 +80,8 @@ export default defineEventHandler(async (event) => {
     metadata: { candidateId: body.candidateId, jobId: body.jobId },
   })
 
+  await invalidateOrgScopedDashboardCache(event)
+
   setResponseStatus(event, 201)
   return created
 })

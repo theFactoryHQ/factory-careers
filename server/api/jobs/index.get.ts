@@ -4,7 +4,7 @@ import { emptyPipelineCounts, type PipelineCounts } from '~~/shared/application-
 import { paginatedListResponse, paginationOffset } from '../../utils/schemas/common'
 import { jobQuerySchema } from '../../utils/schemas/job'
 
-export default defineEventHandler(async (event) => {
+export default defineCachedEventHandler(async (event) => {
   const session = await requirePermission(event, { job: ['read'] })
   const orgId = session.session.activeOrganizationId
 
@@ -68,4 +68,4 @@ export default defineEventHandler(async (event) => {
   }))
 
   return paginatedListResponse(enrichedData, total, query.page, query.limit)
-})
+}, orgScopedCacheOptions)

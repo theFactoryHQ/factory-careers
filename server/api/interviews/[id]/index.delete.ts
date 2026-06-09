@@ -71,6 +71,8 @@ export default defineEventHandler(async (event) => {
     resourceId: id,
   })
 
+  await invalidateOrgScopedDashboardCache(event)
+
   setResponseStatus(event, 204)
   return null
 })

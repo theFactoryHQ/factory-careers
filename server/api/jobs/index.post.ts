@@ -94,6 +94,8 @@ export default defineEventHandler(async (event) => {
     auto_score: created.autoScoreOnApply,
   })
 
+  await invalidateOrgScopedDashboardCache(event)
+
   setResponseStatus(event, 201)
   return created
 })
