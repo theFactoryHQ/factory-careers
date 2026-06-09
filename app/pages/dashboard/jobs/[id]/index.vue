@@ -527,6 +527,7 @@ const jobInterviewsFetchStarted = ref(false)
 
 const {
   data: jobInterviewsData,
+  error: jobInterviewsError,
   refresh: refreshJobInterviews,
   execute: executeJobInterviewsFetch,
 } = useFetch<{ data: Interview[] }>('/api/interviews', {
@@ -537,18 +538,21 @@ const {
   watch: false,
 })
 
-function ensureJobInterviewsLoaded() {
+async function ensureJobInterviewsLoaded() {
   if (jobInterviewsFetchStarted.value) return
   jobInterviewsFetchStarted.value = true
-  void executeJobInterviewsFetch()
+  await executeJobInterviewsFetch()
+  if (jobInterviewsError.value) {
+    jobInterviewsFetchStarted.value = false
+  }
 }
 
 watch(() => showSection.value.interviews, (show) => {
-  if (show) ensureJobInterviewsLoaded()
+  if (show) void ensureJobInterviewsLoaded()
 }, { immediate: true })
 
 watch(interviewFilter, (filter) => {
-  if (filter !== 'all') ensureJobInterviewsLoaded()
+  if (filter !== 'all') void ensureJobInterviewsLoaded()
 })
 
 const jobInterviews = computed(() => jobInterviewsData.value?.data ?? [])

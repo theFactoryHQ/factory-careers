@@ -28,6 +28,7 @@ const timelineItems = ref<TimelineEntry[]>([])
 const timelineLoading = ref(false)
 const timelineError = ref<string | null>(null)
 const timelineLoadedFor = ref<string | null>(null)
+const timelineRequestToken = ref(0)
 
 const timelineActionLabels: Record<string, string> = {
   created: 'Created',
@@ -64,19 +65,24 @@ function getTimelineActionStyle(action: string): TimelineActionStyle {
 }
 
 async function loadTimeline(candidateId: string) {
+  const requestToken = ++timelineRequestToken.value
   timelineLoading.value = true
   timelineError.value = null
   try {
     const result = await $fetch<{ items: TimelineEntry[] }>('/api/activity-log/candidate-timeline', {
       query: { candidateId },
     })
+    if (requestToken !== timelineRequestToken.value) return
     timelineItems.value = result.items
     timelineLoadedFor.value = candidateId
   } catch (err: any) {
+    if (requestToken !== timelineRequestToken.value) return
     timelineError.value = err?.data?.statusMessage ?? 'Failed to load timeline'
     timelineLoadedFor.value = null
   } finally {
-    timelineLoading.value = false
+    if (requestToken === timelineRequestToken.value) {
+      timelineLoading.value = false
+    }
   }
 }
 
@@ -92,9 +98,9 @@ watch(
     timelineItems.value = []
     timelineLoadedFor.value = null
     timelineError.value = null
+    timelineLoading.value = false
 
     if (!candidateId) return
-    if (timelineLoadedFor.value === candidateId) return
     void loadTimeline(candidateId)
   },
   { immediate: true },
@@ -163,7 +169,7 @@ watch(
               <ArrowRight class="size-2.5 text-surface-400 dark:text-surface-500 shrink-0" />
               <span v-if="item.metadata.to_status || item.metadata.toStatus" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getApplicationStatusBadgeClass(String(item.metadata.to_status ?? item.metadata.toStatus), 'soft')">{{ item.metadata.to_status ?? item.metadata.toStatus }}</span>
             </template>
-            <template v-else-if="item.action === 'scored' && item.metadata?.score">
+            <template v-else-if="item.action === 'scored' && item.metadata?.score != null">
               <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none bg-accent-100 text-accent-700 dark:bg-accent-900/60 dark:text-accent-300">{{ item.metadata.score }} pts</span>
             </template>
           </div>
