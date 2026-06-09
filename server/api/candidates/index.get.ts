@@ -7,7 +7,7 @@ import {
 } from '../../utils/properties'
 import { matchingEntityIdsForPropertyFilters, parsePropertyFiltersParam } from '../../utils/propertyFilters'
 
-export default defineEventHandler(async (event) => {
+export default defineCachedEventHandler(async (event) => {
   const session = await requirePermission(event, { candidate: ['read'] })
   const orgId = session.session.activeOrganizationId
 
@@ -92,4 +92,4 @@ export default defineEventHandler(async (event) => {
   const enriched = data.map((c) => ({ ...c, properties: propertyMap.get(c.id) ?? [] }))
 
   return paginatedListResponse(enriched, total, query.page, query.limit)
-})
+}, orgScopedCacheOptions)

@@ -2,7 +2,7 @@ import { and, count, desc, eq, gte, lte } from 'drizzle-orm'
 import { interview, application, candidate, job } from '../../database/schema'
 import { interviewQuerySchema } from '../../utils/schemas/interview'
 
-export default defineEventHandler(async (event) => {
+export default defineCachedEventHandler(async (event) => {
   const session = await requirePermission(event, { interview: ['read'] })
   const orgId = session.session.activeOrganizationId
 
@@ -74,4 +74,4 @@ export default defineEventHandler(async (event) => {
   ])
 
   return { data, total, page: query.page, limit: query.limit }
-})
+}, orgScopedCacheOptions)

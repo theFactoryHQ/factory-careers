@@ -12,7 +12,7 @@ import { matchingEntityIdsForPropertyFilters, parsePropertyFiltersParam } from '
  * List applications for the current organization.
  * Filterable by jobId, candidateId, status, and custom property filters. Paginated.
  */
-export default defineEventHandler(async (event) => {
+export default defineCachedEventHandler(async (event) => {
   const session = await requirePermission(event, { application: ['read'] })
   const orgId = session.session.activeOrganizationId
 
@@ -90,4 +90,4 @@ export default defineEventHandler(async (event) => {
   }))
 
   return paginatedListResponse(enriched, total, query.page, query.limit)
-})
+}, orgScopedCacheOptions)
