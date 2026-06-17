@@ -39,17 +39,23 @@ describe('application form requirement cards', () => {
     expect(cssRule(css, ':where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-requirement-option-description')).toContain('color: rgb(255 255 255 / 0.72) !important')
   })
 
-  it('renders the application link with the global click-anywhere copy field', () => {
+  it('renders the application link as a compact copy row', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
     const linkSection = source.slice(
       source.indexOf('Shareable application link'),
       source.indexOf('The application link will be available'),
     )
 
-    expect(linkSection).toContain('<CopyField')
-    expect(linkSection).toContain(':value="applicationUrl"')
-    expect(linkSection).toContain('label="application link"')
-    expect(linkSection).toContain('tone="brand"')
+    expect(linkSection).toContain('data-testid="application-link-panel"')
+    expect(source).toContain('useCopyToClipboard({ useFallback: true })')
+    expect(linkSection).toContain('applicationUrlLabel')
+    expect(linkSection).toContain('truncate')
+    expect(linkSection).toContain('copyApplicationLink')
+    expect(linkSection).toContain(':aria-label="applicationLinkCopied ? \'Copied application link\' : \'Copy application link\'"')
+    expect(linkSection).not.toContain('<details')
+    expect(linkSection).not.toContain('<summary')
+    expect(linkSection).not.toContain('<CopyField')
+    expect(linkSection).not.toContain('ui-panel-brand p-5 mb-6')
     expect(linkSection).not.toContain('readonly')
     expect(linkSection).not.toContain('class="ui-field')
   })

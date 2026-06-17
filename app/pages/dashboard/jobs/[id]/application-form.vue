@@ -58,6 +58,18 @@ const applicationUrl = computed(() => {
   const base = `${requestUrl.protocol}//${requestUrl.host}`
   return `${base}/jobs/${job.value?.slug ?? jobId}/apply`
 })
+const applicationUrlLabel = computed(() => `/jobs/${job.value?.slug ?? jobId}/apply`)
+const { copied: applicationLinkCopied, copy: copyApplicationUrl } = useCopyToClipboard({ useFallback: true })
+
+async function copyApplicationLink() {
+  const didCopy = await copyApplicationUrl(applicationUrl.value)
+  if (didCopy) {
+    toast.success('Application link copied')
+    return
+  }
+
+  toast.info(applicationUrl.value)
+}
 
 // ─────────────────────────────────────────────
 // Applicant-facing posting details
@@ -451,21 +463,25 @@ async function copyTrackingUrl(code: string) {
         </div>
       </div>
       <!-- Shareable application link (only when job is open) -->
-      <div v-if="job.status === 'open'" class="ui-panel-brand p-5 mb-6">
-        <div class="flex items-center gap-2 mb-2">
-          <Link2 class="size-4 text-brand-600 dark:text-brand-400" />
-          <h2 class="text-sm font-semibold text-brand-700 dark:text-brand-300">Application Link</h2>
-        </div>
-        <p class="text-xs text-surface-600 dark:text-surface-400 mb-3">
-          Share this link with candidates so they can apply to this position.
-        </p>
-        <CopyField
-          :value="applicationUrl"
-          label="application link"
-          title="Copy application link"
-          tone="brand"
-        />
-      </div>
+      <button
+        v-if="job.status === 'open'"
+        type="button"
+        data-testid="application-link-panel"
+        class="ui-panel-muted group/application-link mb-6 flex w-full cursor-pointer items-center gap-3 rounded-md border border-surface-200 bg-surface-50/70 px-4 py-3 text-left transition-colors hover:bg-surface-100/70 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:border-surface-800 dark:bg-surface-900/45 dark:hover:bg-surface-800/60"
+        :aria-label="applicationLinkCopied ? 'Copied application link' : 'Copy application link'"
+        :title="applicationLinkCopied ? 'Copied application link' : 'Copy application link'"
+        @click="copyApplicationLink"
+      >
+        <Link2 class="size-4 shrink-0 text-surface-500 dark:text-surface-400" />
+        <span class="flex min-w-0 flex-1 items-center gap-2">
+          <span class="shrink-0 text-sm font-medium text-surface-900 dark:text-surface-100">Application Link</span>
+          <span class="min-w-0 truncate text-xs text-surface-500 dark:text-surface-400">{{ applicationUrlLabel }}</span>
+        </span>
+        <span class="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-surface-400 transition-colors group-hover:bg-white group-hover:text-surface-800 dark:group-hover:bg-surface-800 dark:group-hover:text-surface-100">
+          <Check v-if="applicationLinkCopied" class="size-3.5 text-success-500" />
+          <Copy v-else class="size-3.5" />
+        </span>
+      </button>
 
       <div v-else class="ui-panel-muted p-4 mb-6 text-sm text-surface-500 dark:text-surface-400">
         The application link will be available when this job is published (status: <strong>open</strong>).
