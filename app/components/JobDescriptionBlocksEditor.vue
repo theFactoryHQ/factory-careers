@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { List, Plus, Trash2, Type } from 'lucide-vue-next'
+import { GripVertical, List, Plus, Type, X } from 'lucide-vue-next'
 import type { JobDescriptionBlock } from '~~/shared/job-listing-structure'
 
 const props = defineProps<{
@@ -21,6 +21,7 @@ function emptyBulletList(): JobDescriptionBlock {
 const blocks = computed(() => {
   return props.modelValue && props.modelValue.length > 0 ? props.modelValue : [emptyParagraph()]
 })
+const draggingBullet = ref<{ blockIndex: number, itemIndex: number } | null>(null)
 
 function emitBlocks(next: JobDescriptionBlock[]) {
   emit('update:modelValue', next.length > 0 ? next : [emptyParagraph()])
@@ -76,6 +77,40 @@ function removeBulletItem(blockIndex: number, itemIndex: number) {
   const items = block.items.filter((_, index) => index !== itemIndex)
   updateBlock(blockIndex, { ...block, items: items.length > 0 ? items : [''] })
 }
+
+function moveBulletItem(blockIndex: number, fromIndex: number, toIndex: number) {
+  const block = blocks.value[blockIndex]
+  if (block?.type !== 'bullet_list' || fromIndex === toIndex) return
+  if (fromIndex < 0 || toIndex < 0 || fromIndex >= block.items.length || toIndex >= block.items.length) return
+
+  const items = [...block.items]
+  const [item] = items.splice(fromIndex, 1)
+  if (item === undefined) return
+  items.splice(toIndex, 0, item)
+  updateBlock(blockIndex, { ...block, items })
+}
+
+function onBulletDragStart(event: DragEvent, blockIndex: number, itemIndex: number) {
+  draggingBullet.value = { blockIndex, itemIndex }
+  event.dataTransfer?.setData('text/plain', `${blockIndex}:${itemIndex}`)
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+}
+
+function onBulletDragOver(event: DragEvent) {
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+}
+
+function onBulletDrop(event: DragEvent, blockIndex: number, itemIndex: number) {
+  const dragged = draggingBullet.value
+  draggingBullet.value = null
+  if (!dragged || dragged.blockIndex !== blockIndex) return
+  event.preventDefault()
+  moveBulletItem(blockIndex, dragged.itemIndex, itemIndex)
+}
+
+function onBulletDragEnd() {
+  draggingBullet.value = null
+}
 </script>
 
 <template>
@@ -114,13 +149,12 @@ function removeBulletItem(blockIndex: number, itemIndex: number) {
         <button
           v-if="blocks.length > 1"
           type="button"
-          class="ui-button-ghost inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs text-surface-400 opacity-0 transition-opacity hover:text-danger-600 focus:opacity-100 group-hover/description-block:opacity-100 group-focus-within/description-block:opacity-100 dark:hover:text-danger-400"
+          class="ui-button-ghost inline-flex h-8 items-center rounded-md px-2.5 text-xs text-surface-400 opacity-0 transition-opacity hover:text-danger-600 focus:opacity-100 group-hover/description-block:opacity-100 group-focus-within/description-block:opacity-100 dark:hover:text-danger-400"
           aria-label="Remove description section"
           title="Remove section"
           @click="removeBlock(index)"
         >
-          <Trash2 class="size-3.5" />
-          Remove
+          Remove section
         </button>
       </div>
 
@@ -145,26 +179,43 @@ function removeBulletItem(blockIndex: number, itemIndex: number) {
           <div
             v-for="(item, itemIndex) in block.items"
             :key="itemIndex"
-            class="group/bullet-row flex items-center gap-2"
+            class="group/bullet-row relative"
+            :class="draggingBullet?.blockIndex === index && draggingBullet?.itemIndex === itemIndex ? 'opacity-45' : ''"
+            @dragover.prevent="onBulletDragOver"
+            @drop="onBulletDrop($event, index, itemIndex)"
           >
+            <button
+              v-if="block.items.length > 1"
+              type="button"
+              draggable="true"
+              class="absolute left-1.5 top-1/2 z-10 inline-flex size-7 -translate-y-1/2 cursor-grab items-center justify-center rounded-md text-surface-300 opacity-0 transition-colors hover:bg-surface-100 hover:text-surface-600 focus:opacity-100 active:cursor-grabbing group-hover/bullet-row:opacity-100 group-focus-within/bullet-row:opacity-100 dark:text-surface-600 dark:hover:bg-surface-800 dark:hover:text-surface-300"
+              aria-label="Reorder bullet point"
+              title="Drag to reorder. Use Alt+Up or Alt+Down from here to move with the keyboard."
+              @dragstart="onBulletDragStart($event, index, itemIndex)"
+              @dragend="onBulletDragEnd"
+              @keydown.alt.up.prevent="moveBulletItem(index, itemIndex, itemIndex - 1)"
+              @keydown.alt.down.prevent="moveBulletItem(index, itemIndex, itemIndex + 1)"
+            >
+              <GripVertical class="size-4" />
+            </button>
             <input
               :value="item"
               type="text"
               placeholder="Bullet point"
-              class="ui-field px-3 py-2 text-sm"
+              class="ui-field py-2 text-sm"
+              :class="block.items.length > 1 ? 'pl-9 pr-9' : 'px-3'"
               @input="updateBulletItem(index, itemIndex, ($event.target as HTMLInputElement).value)"
             />
             <button
               v-if="block.items.length > 1"
               type="button"
-              class="ui-button-ghost inline-flex size-9 shrink-0 items-center justify-center rounded-md text-surface-400 opacity-0 transition-opacity hover:text-danger-600 focus:opacity-100 group-hover/bullet-row:opacity-100 group-focus-within/bullet-row:opacity-100 dark:hover:text-danger-400"
+              class="absolute right-1.5 top-1/2 z-10 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-surface-300 opacity-0 transition-colors hover:bg-danger-50 hover:text-danger-600 focus:opacity-100 group-hover/bullet-row:opacity-100 group-focus-within/bullet-row:opacity-100 dark:text-surface-600 dark:hover:bg-danger-950/40 dark:hover:text-danger-300"
               aria-label="Remove bullet point"
               title="Remove bullet"
               @click="removeBulletItem(index, itemIndex)"
             >
-              <Trash2 class="size-4" />
+              <X class="size-3.5" />
             </button>
-            <span v-else class="size-9 shrink-0" aria-hidden="true" />
           </div>
         </div>
         <button
