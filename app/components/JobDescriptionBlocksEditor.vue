@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { ChevronDown, GripVertical, List, Plus, Trash2, Type, X } from 'lucide-vue-next'
+import {
+  captureBlockTypeDraft as captureDraftFromBlock,
+  createBlockFromDraft,
+  reindexBlockTypeDraftsAfterRemoval,
+  type BlockTypeDraftsByIndex,
+} from '~/utils/jobDescriptionBlockTypeDrafts'
 import type { JobDescriptionBlock } from '~~/shared/job-listing-structure'
 
 const props = defineProps<{
@@ -23,6 +29,7 @@ const blocks = computed(() => {
 })
 const draggingBullet = ref<{ blockIndex: number, itemIndex: number } | null>(null)
 const collapsedBlockIndexes = ref<Set<number>>(new Set())
+const blockTypeDrafts = ref<BlockTypeDraftsByIndex>({})
 
 watch(() => blocks.value.length, (length) => {
   const next = new Set([...collapsedBlockIndexes.value].filter((index) => index < length))
@@ -39,10 +46,20 @@ function updateBlock(index: number, block: JobDescriptionBlock) {
   emitBlocks(next)
 }
 
+function captureBlockTypeDraft(index: number, block = blocks.value[index]) {
+  const currentDraft = blockTypeDrafts.value[index] ?? {}
+  if (!block) return currentDraft
+
+  const nextDraft = captureDraftFromBlock(currentDraft, block)
+  blockTypeDrafts.value = { ...blockTypeDrafts.value, [index]: nextDraft }
+  return nextDraft
+}
+
 function setBlockType(index: number, type: JobDescriptionBlock['type']) {
   const current = blocks.value[index]
   if (current?.type === type) return
-  updateBlock(index, type === 'paragraph' ? emptyParagraph() : emptyBulletList())
+  const draft = captureBlockTypeDraft(index, current)
+  updateBlock(index, createBlockFromDraft(type, draft, current))
 }
 
 function addBlock(type: JobDescriptionBlock['type']) {
@@ -55,6 +72,7 @@ function removeBlock(index: number) {
     if (collapsedIndex === index) return []
     return [collapsedIndex > index ? collapsedIndex - 1 : collapsedIndex]
   }))
+  blockTypeDrafts.value = reindexBlockTypeDraftsAfterRemoval(blockTypeDrafts.value, index)
 }
 
 function updateParagraph(index: number, body: string) {

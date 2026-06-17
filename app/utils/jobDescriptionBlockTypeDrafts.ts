@@ -1,0 +1,77 @@
+import type { JobDescriptionBlock } from '~~/shared/job-listing-structure'
+
+export type BlockTypeDraft = {
+  paragraphBody?: string
+  bulletHeading?: string
+  bulletItems?: string[]
+}
+
+export type BlockTypeDraftsByIndex = Record<number, BlockTypeDraft>
+
+function hasDraftValue(draft: BlockTypeDraft, key: keyof BlockTypeDraft) {
+  return Object.prototype.hasOwnProperty.call(draft, key)
+}
+
+function normalizeDraftBulletItems(items?: string[]) {
+  return items && items.length > 0 ? [...items] : ['']
+}
+
+function paragraphBodyToBulletItems(body: string) {
+  const items = body
+    .split(/\n+/)
+    .map((line) => line.replace(/^[-*]\s+/, '').trim())
+    .filter(Boolean)
+
+  return items.length > 0 ? items : ['']
+}
+
+function bulletBlockToParagraphBody(block: Extract<JobDescriptionBlock, { type: 'bullet_list' }>) {
+  return [block.heading, ...block.items]
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join('\n')
+}
+
+export function captureBlockTypeDraft(draft: BlockTypeDraft, block: JobDescriptionBlock): BlockTypeDraft {
+  return block.type === 'paragraph'
+    ? { ...draft, paragraphBody: block.body }
+    : { ...draft, bulletHeading: block.heading, bulletItems: [...block.items] }
+}
+
+export function createBlockFromDraft(
+  type: JobDescriptionBlock['type'],
+  draft: BlockTypeDraft,
+  fallbackBlock?: JobDescriptionBlock,
+): JobDescriptionBlock {
+  if (type === 'paragraph') {
+    return {
+      type: 'paragraph',
+      body: hasDraftValue(draft, 'paragraphBody')
+        ? draft.paragraphBody ?? ''
+        : fallbackBlock?.type === 'bullet_list'
+          ? bulletBlockToParagraphBody(fallbackBlock)
+          : '',
+    }
+  }
+
+  return {
+    type: 'bullet_list',
+    heading: hasDraftValue(draft, 'bulletHeading') ? draft.bulletHeading ?? '' : '',
+    items: hasDraftValue(draft, 'bulletItems')
+      ? normalizeDraftBulletItems(draft.bulletItems)
+      : fallbackBlock?.type === 'paragraph'
+        ? paragraphBodyToBulletItems(fallbackBlock.body)
+        : [''],
+  }
+}
+
+export function reindexBlockTypeDraftsAfterRemoval(
+  drafts: BlockTypeDraftsByIndex,
+  removedIndex: number,
+): BlockTypeDraftsByIndex {
+  return Object.fromEntries(Object.entries(drafts).flatMap(([draftIndex, draft]) => {
+    const numericDraftIndex = Number(draftIndex)
+    if (numericDraftIndex === removedIndex) return []
+    return [[numericDraftIndex > removedIndex ? numericDraftIndex - 1 : numericDraftIndex, draft]]
+  }))
+}
