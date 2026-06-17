@@ -534,12 +534,13 @@ async function copyTrackingUrl(code: string) {
         The application link will be available when this job is published (status: <strong>open</strong>).
       </div>
 
-      <form class="space-y-6" @submit.prevent="savePostingDetails">
-        <DashboardCollapsibleSection
-          id="application-section-basic-details"
-          title="Basic Details"
-          :default-open="true"
-        >
+      <DashboardSectionStack data-testid="application-section-organizer">
+        <form class="contents" @submit.prevent="savePostingDetails">
+          <DashboardCollapsibleSection
+            id="application-section-basic-details"
+            title="Basic Details"
+            :default-open="true"
+          >
           <div class="space-y-4">
             <div>
               <label for="application-title" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
@@ -637,13 +638,13 @@ async function copyTrackingUrl(code: string) {
               </p>
             </div>
           </div>
-        </DashboardCollapsibleSection>
+          </DashboardCollapsibleSection>
 
-        <DashboardCollapsibleSection
-          id="application-section-salary"
-          title="Salary & Compensation"
-          description="Adding salary information improves visibility on Google Jobs."
-        >
+          <DashboardCollapsibleSection
+            id="application-section-salary"
+            title="Salary & Compensation"
+            description="Adding salary information improves visibility on Google Jobs."
+          >
           <div class="space-y-4">
             <label class="flex cursor-pointer items-center gap-3">
               <input
@@ -714,13 +715,13 @@ async function copyTrackingUrl(code: string) {
               </div>
             </template>
           </div>
-        </DashboardCollapsibleSection>
+          </DashboardCollapsibleSection>
 
-        <DashboardCollapsibleSection
-          id="application-section-schedule"
-          title="Listing Schedule"
-          description="Set when this job posting goes live and when it automatically expires."
-        >
+          <DashboardCollapsibleSection
+            id="application-section-schedule"
+            title="Listing Schedule"
+            description="Set when this job posting goes live and when it automatically expires."
+          >
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label for="application-active-from" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
@@ -757,16 +758,14 @@ async function copyTrackingUrl(code: string) {
               <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Leave blank if there is no fixed expiry date.</p>
             </div>
           </div>
-        </DashboardCollapsibleSection>
+          </DashboardCollapsibleSection>
+        </form>
 
-      </form>
-
-      <DashboardCollapsibleSection
-        id="application-section-requirements"
-        class="mb-6"
-        title="Application requirements"
-        description="Choose what candidates must provide when applying."
-      >
+        <DashboardCollapsibleSection
+          id="application-section-requirements"
+          title="Application requirements"
+          description="Choose what candidates must provide when applying."
+        >
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           <button
             type="button"
@@ -814,14 +813,13 @@ async function copyTrackingUrl(code: string) {
         <p class="text-xs text-surface-400 dark:text-surface-500" role="status">
           {{ requirementsSaveStatus }}
         </p>
-      </DashboardCollapsibleSection>
+        </DashboardCollapsibleSection>
 
-      <DashboardCollapsibleSection
-        id="application-section-compliance"
-        class="mb-6"
-        title="Compliance questions"
-        description="Add voluntary self-identification questions for US equal employment opportunity reporting."
-      >
+        <DashboardCollapsibleSection
+          id="application-section-compliance"
+          title="Compliance questions"
+          description="Add voluntary self-identification questions for US equal employment opportunity reporting."
+        >
         <template #icon>
           <ShieldCheck class="size-4 text-surface-500 dark:text-surface-400" />
         </template>
@@ -893,25 +891,24 @@ async function copyTrackingUrl(code: string) {
         <p class="text-xs text-surface-400 dark:text-surface-500" role="status">
           {{ complianceSaveStatus }}
         </p>
-      </DashboardCollapsibleSection>
+        </DashboardCollapsibleSection>
 
-      <DashboardCollapsibleSection
-        id="application-section-questions"
-        class="mb-6"
-        title="Custom Questions"
-        description="Customize the questions applicants must answer when applying. All applications include name, email, and phone by default."
-      >
+        <DashboardCollapsibleSection
+          id="application-section-questions"
+          title="Custom Questions"
+          description="Customize the questions applicants must answer when applying. All applications include name, email, and phone by default."
+        >
         <template #icon>
           <FileText class="size-4 text-surface-500 dark:text-surface-400" />
         </template>
         <JobQuestions :job-id="jobId" />
-      </DashboardCollapsibleSection>
+        </DashboardCollapsibleSection>
 
-      <DashboardCollapsibleSection
-        id="application-section-tracking"
-        title="Tracking Links"
-        description="Create unique tracking links for this job to measure where applications come from."
-      >
+        <DashboardCollapsibleSection
+          id="application-section-tracking"
+          title="Tracking Links"
+          description="Create unique tracking links for this job to measure where applications come from."
+        >
         <template #icon>
           <Radio class="size-4 text-surface-500 dark:text-surface-400" />
         </template>
@@ -1007,7 +1004,8 @@ async function copyTrackingUrl(code: string) {
             </div>
           </div>
         </div>
-      </DashboardCollapsibleSection>
+        </DashboardCollapsibleSection>
+      </DashboardSectionStack>
     </template>
 
     <!-- ═══════════════════════════════════════ -->

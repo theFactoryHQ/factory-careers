@@ -203,10 +203,12 @@ describe('job listing structure', () => {
     const editPage = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
 
     expect(editPage).toContain('DashboardCollapsibleSection')
+    expect(editPage).toContain('DashboardSectionStack')
+    expect(editPage).toContain('data-testid="application-section-organizer"')
     const headerActionsIndex = editPage.indexOf('data-testid="application-form-header-actions"')
     const previewActionIndex = editPage.indexOf('Preview', headerActionsIndex)
     const saveActionIndex = editPage.indexOf("{{ isSavingPosting ? 'Saving...' : 'Save' }}")
-    const formStartIndex = editPage.indexOf('<form class="space-y-6"')
+    const formStartIndex = editPage.indexOf('<form class="contents"')
 
     expect(headerActionsIndex).toBeGreaterThan(-1)
     expect(previewActionIndex).toBeGreaterThan(headerActionsIndex)
@@ -215,6 +217,8 @@ describe('job listing structure', () => {
     expect(editPage).not.toContain('Preview form')
     expect(editPage).not.toContain("'Save changes'")
     expect(editPage).not.toContain('Save application details')
+    expect(editPage).not.toContain('class="mb-6"')
+    expect(editPage).not.toContain('<form class="space-y-6"')
 
     for (const sectionId of [
       'application-section-basic-details',
@@ -236,6 +240,9 @@ describe('job listing structure', () => {
     expect(collapsibleSection).toContain('role="region"')
     expect(collapsibleSection).toContain('group-open:rotate-0')
     expect(collapsibleSection).toContain('ChevronDown')
+
+    const sectionStack = readProjectFile('app/components/DashboardSectionStack.vue')
+    expect(sectionStack).toContain('class="grid gap-6"')
   })
 
   it('keeps the application slug synced to the title until manually edited', () => {
