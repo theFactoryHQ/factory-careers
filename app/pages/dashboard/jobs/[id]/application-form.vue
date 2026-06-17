@@ -449,7 +449,7 @@ async function copyTrackingUrl(code: string) {
             @click="showApplicationPreview = true"
           >
             <Eye class="size-4" />
-            Preview form
+            Preview
           </button>
           <button
             type="button"

@@ -64,7 +64,8 @@ describe('application form requirement cards', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
 
     expect(source).toContain('showApplicationPreview')
-    expect(source).toContain('Preview form')
+    expect(source).toContain('Preview')
+    expect(source).not.toContain('Preview form')
     expect(source).toContain('Application Preview')
     expect(source).toContain('Applicant view')
     expect(source).toContain('Name <span')

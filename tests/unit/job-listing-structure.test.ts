@@ -182,7 +182,7 @@ describe('job listing structure', () => {
 
     expect(editPage).toContain('DashboardCollapsibleSection')
     const headerActionsIndex = editPage.indexOf('data-testid="application-form-header-actions"')
-    const previewActionIndex = editPage.indexOf('Preview form')
+    const previewActionIndex = editPage.indexOf('Preview', headerActionsIndex)
     const saveActionIndex = editPage.indexOf("{{ isSavingPosting ? 'Saving...' : 'Save' }}")
     const formStartIndex = editPage.indexOf('<form class="space-y-6"')
 
@@ -190,6 +190,7 @@ describe('job listing structure', () => {
     expect(previewActionIndex).toBeGreaterThan(headerActionsIndex)
     expect(saveActionIndex).toBeGreaterThan(headerActionsIndex)
     expect(saveActionIndex).toBeLessThan(formStartIndex)
+    expect(editPage).not.toContain('Preview form')
     expect(editPage).not.toContain("'Save changes'")
     expect(editPage).not.toContain('Save application details')
 
