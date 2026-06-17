@@ -205,6 +205,7 @@ describe('job listing structure', () => {
     expect(editPage).toContain('DashboardCollapsibleSection')
     expect(editPage).toContain('DashboardSectionStack')
     expect(editPage).toContain('data-testid="application-section-organizer"')
+    const scheduleSection = editPage.match(/id="application-section-schedule"[\s\S]*?<\/DashboardCollapsibleSection>/)?.[0] ?? ''
     const headerActionsIndex = editPage.indexOf('data-testid="application-form-header-actions"')
     const previewActionIndex = editPage.indexOf('Preview', headerActionsIndex)
     const saveActionIndex = editPage.indexOf("{{ isSavingPosting ? 'Saving...' : 'Save' }}")
@@ -219,6 +220,8 @@ describe('job listing structure', () => {
     expect(editPage).not.toContain('Save application details')
     expect(editPage).not.toContain('class="mb-6"')
     expect(editPage).not.toContain('<form class="space-y-6"')
+    expect(scheduleSection).not.toContain('description=')
+    expect(scheduleSection).not.toContain('Set when this job posting goes live and when it automatically expires.')
 
     for (const sectionId of [
       'application-section-basic-details',

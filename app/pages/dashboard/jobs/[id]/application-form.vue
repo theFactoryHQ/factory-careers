@@ -720,7 +720,6 @@ async function copyTrackingUrl(code: string) {
           <DashboardCollapsibleSection
             id="application-section-schedule"
             title="Listing Schedule"
-            description="Set when this job posting goes live and when it automatically expires."
           >
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
