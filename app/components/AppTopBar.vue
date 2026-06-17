@@ -6,7 +6,7 @@ import {
   ChevronDown, Menu, X, Users, ChevronLeft,
   LayoutDashboard, Calendar, ArrowUpCircle,
   Cloud, Server, Sparkles, Radio, History,
-  MessageCircle, MoreHorizontal, Mail,
+  MessageCircle, MoreHorizontal, Mail, Home,
 } from 'lucide-vue-next'
 import { getJobStatusBadgeClass, getJobStatusLabel } from '~/utils/status-display'
 
@@ -602,6 +602,15 @@ function handleNewJobClick() {
 
                 <!-- Actions -->
                 <div class="py-1">
+                  <NuxtLink
+                    :to="localePath('/')"
+                    class="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors no-underline"
+                    role="menuitem"
+                    @click="userMenu.closeMenu()"
+                  >
+                    <Home class="size-4" />
+                    Careers homepage
+                  </NuxtLink>
                   <button
                     class="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-left"
                     :disabled="isSigningOut"

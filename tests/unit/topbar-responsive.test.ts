@@ -75,4 +75,16 @@ describe('dashboard top bar responsiveness', () => {
     expect(userDropdown).not.toContain('Mobile-only items')
     expect(mobileNav).toContain('v-for="item in navItems"')
   })
+
+  it('offers a user-menu link back to the public careers homepage', () => {
+    const userDropdown = source.match(/<!-- User dropdown -->[\s\S]*?<!-- Mobile hamburger -->/)?.[0] ?? ''
+    const signOutIndex = userDropdown.indexOf('Sign out')
+    const careersHomeIndex = userDropdown.indexOf('Careers homepage')
+
+    expect(userDropdown).toContain('id="topbar-user-menu"')
+    expect(careersHomeIndex).toBeGreaterThan(-1)
+    expect(signOutIndex).toBeGreaterThan(careersHomeIndex)
+    expect(userDropdown).toContain(':to="localePath(\'/\')"')
+    expect(userDropdown).toContain('@click="userMenu.closeMenu()"')
+  })
 })
