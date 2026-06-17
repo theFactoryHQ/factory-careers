@@ -36,6 +36,9 @@ const optionByValue = computed(() => new Map(props.options.map((option) => [opti
 const selectedDivisionOptions = computed(() => selectedValues.value.map((value) =>
   optionByValue.value.get(value) ?? { value, label: formatDivisionLabel(value) }
 ))
+const chevronClass = computed(() =>
+  props.tone === 'public' ? 'text-brand-500' : 'text-surface-500 dark:text-surface-400'
+)
 
 const { floatingStyle } = useFloatingMenu({
   open,
@@ -115,8 +118,8 @@ useOutsidePointer({
         </span>
       </span>
       <ChevronDown
-        class="size-4 shrink-0 text-brand-500 transition-transform duration-150"
-        :class="{ 'rotate-180': open }"
+        class="size-4 shrink-0 transition-transform duration-150"
+        :class="[chevronClass, { 'rotate-180': open }]"
       />
     </button>
 
