@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GripVertical, List, Plus, Type, X } from 'lucide-vue-next'
+import { ChevronDown, GripVertical, List, Plus, Type, X } from 'lucide-vue-next'
 import type { JobDescriptionBlock } from '~~/shared/job-listing-structure'
 
 const props = defineProps<{
@@ -22,6 +22,12 @@ const blocks = computed(() => {
   return props.modelValue && props.modelValue.length > 0 ? props.modelValue : [emptyParagraph()]
 })
 const draggingBullet = ref<{ blockIndex: number, itemIndex: number } | null>(null)
+const collapsedBlockIndexes = ref<Set<number>>(new Set())
+
+watch(() => blocks.value.length, (length) => {
+  const next = new Set([...collapsedBlockIndexes.value].filter((index) => index < length))
+  if (next.size !== collapsedBlockIndexes.value.size) collapsedBlockIndexes.value = next
+})
 
 function emitBlocks(next: JobDescriptionBlock[]) {
   emit('update:modelValue', next.length > 0 ? next : [emptyParagraph()])
@@ -45,6 +51,10 @@ function addBlock(type: JobDescriptionBlock['type']) {
 
 function removeBlock(index: number) {
   emitBlocks(blocks.value.filter((_, blockIndex) => blockIndex !== index))
+  collapsedBlockIndexes.value = new Set([...collapsedBlockIndexes.value].flatMap((collapsedIndex) => {
+    if (collapsedIndex === index) return []
+    return [collapsedIndex > index ? collapsedIndex - 1 : collapsedIndex]
+  }))
 }
 
 function updateParagraph(index: number, body: string) {
@@ -111,6 +121,39 @@ function onBulletDrop(event: DragEvent, blockIndex: number, itemIndex: number) {
 function onBulletDragEnd() {
   draggingBullet.value = null
 }
+
+function isBlockCollapsed(index: number) {
+  return collapsedBlockIndexes.value.has(index)
+}
+
+function toggleBlockCollapsed(index: number) {
+  const next = new Set(collapsedBlockIndexes.value)
+  if (next.has(index)) next.delete(index)
+  else next.add(index)
+  collapsedBlockIndexes.value = next
+}
+
+function getBlockKindLabel(block: JobDescriptionBlock) {
+  return block.type === 'paragraph' ? 'Paragraph' : 'Bullet section'
+}
+
+function getBlockTitle(block: JobDescriptionBlock, index: number) {
+  if (block.type === 'bullet_list') return block.heading.trim() || `Bullet section ${index + 1}`
+  return `Paragraph ${index + 1}`
+}
+
+function getBlockSummary(block: JobDescriptionBlock) {
+  if (block.type === 'paragraph') {
+    const body = block.body.trim().replace(/\s+/g, ' ')
+    if (!body) return 'Empty paragraph'
+    return body.length > 112 ? `${body.slice(0, 109)}...` : body
+  }
+
+  const items = block.items.map((item) => item.trim()).filter(Boolean)
+  const count = items.length
+  const countText = `${count} bullet point${count === 1 ? '' : 's'}`
+  return items[0] ? `${countText} - ${items[0]}` : 'No bullet points yet'
+}
 </script>
 
 <template>
@@ -120,7 +163,50 @@ function onBulletDragEnd() {
       :key="index"
       class="group/description-block rounded-md border border-surface-200 bg-white p-3 dark:border-surface-800 dark:bg-surface-950"
     >
-      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-start gap-2">
+        <button
+          type="button"
+          class="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-surface-50 focus:outline-none focus:ring-2 focus:ring-brand-500/25 dark:hover:bg-surface-900"
+          :aria-expanded="!isBlockCollapsed(index)"
+          :aria-controls="`job-description-block-${index}`"
+          @click="toggleBlockCollapsed(index)"
+        >
+          <ChevronDown
+            class="size-4 shrink-0 text-surface-400 transition-transform"
+            :class="isBlockCollapsed(index) ? '-rotate-90' : 'rotate-0'"
+          />
+          <span class="min-w-0 flex-1">
+            <span class="flex min-w-0 items-center gap-2">
+              <span class="shrink-0 rounded-full bg-surface-100 px-2 py-0.5 text-[11px] font-medium text-surface-500 dark:bg-surface-800 dark:text-surface-400">
+                {{ getBlockKindLabel(block) }}
+              </span>
+              <span class="truncate text-sm font-medium text-surface-900 dark:text-surface-100">
+                {{ getBlockTitle(block, index) }}
+              </span>
+            </span>
+            <span class="mt-0.5 block truncate text-xs text-surface-500 dark:text-surface-400">
+              {{ getBlockSummary(block) }}
+            </span>
+          </span>
+        </button>
+
+        <button
+          v-if="blocks.length > 1"
+          type="button"
+          class="ui-button-ghost mt-1 inline-flex h-8 items-center rounded-md px-2.5 text-xs text-surface-400 opacity-0 transition-opacity hover:text-danger-600 focus:opacity-100 group-hover/description-block:opacity-100 group-focus-within/description-block:opacity-100 dark:hover:text-danger-400"
+          aria-label="Remove description section"
+          title="Remove section"
+          @click="removeBlock(index)"
+        >
+          Remove section
+        </button>
+      </div>
+
+      <div
+        v-show="!isBlockCollapsed(index)"
+        :id="`job-description-block-${index}`"
+        class="mt-3 space-y-3"
+      >
         <div class="inline-flex overflow-hidden rounded-md border border-surface-200 dark:border-surface-700">
           <button
             type="button"
@@ -146,86 +232,75 @@ function onBulletDragEnd() {
           </button>
         </div>
 
-        <button
-          v-if="blocks.length > 1"
-          type="button"
-          class="ui-button-ghost inline-flex h-8 items-center rounded-md px-2.5 text-xs text-surface-400 opacity-0 transition-opacity hover:text-danger-600 focus:opacity-100 group-hover/description-block:opacity-100 group-focus-within/description-block:opacity-100 dark:hover:text-danger-400"
-          aria-label="Remove description section"
-          title="Remove section"
-          @click="removeBlock(index)"
-        >
-          Remove section
-        </button>
-      </div>
-
-      <textarea
-        v-if="block.type === 'paragraph'"
-        :value="block.body"
-        rows="4"
-        placeholder="Write a paragraph about the role..."
-        class="ui-field resize-y px-3 py-2 text-sm"
-        @input="updateParagraph(index, ($event.target as HTMLTextAreaElement).value)"
-      />
-
-      <div v-else class="space-y-2">
-        <input
-          :value="block.heading"
-          type="text"
-          placeholder="Section heading"
-          class="ui-field px-3 py-2 text-sm font-medium"
-          @input="updateBulletHeading(index, ($event.target as HTMLInputElement).value)"
+        <textarea
+          v-if="block.type === 'paragraph'"
+          :value="block.body"
+          rows="4"
+          placeholder="Write a paragraph about the role..."
+          class="ui-field resize-y px-3 py-2 text-sm"
+          @input="updateParagraph(index, ($event.target as HTMLTextAreaElement).value)"
         />
-        <div class="space-y-2">
-          <div
-            v-for="(item, itemIndex) in block.items"
-            :key="itemIndex"
-            class="group/bullet-row relative"
-            :class="draggingBullet?.blockIndex === index && draggingBullet?.itemIndex === itemIndex ? 'opacity-45' : ''"
-            @dragover.prevent="onBulletDragOver"
-            @drop="onBulletDrop($event, index, itemIndex)"
-          >
-            <button
-              v-if="block.items.length > 1"
-              type="button"
-              draggable="true"
-              class="absolute left-1.5 top-1/2 z-10 inline-flex size-7 -translate-y-1/2 cursor-grab items-center justify-center rounded-md text-surface-300 opacity-0 transition-colors hover:bg-surface-100 hover:text-surface-600 focus:opacity-100 active:cursor-grabbing group-hover/bullet-row:opacity-100 group-focus-within/bullet-row:opacity-100 dark:text-surface-600 dark:hover:bg-surface-800 dark:hover:text-surface-300"
-              aria-label="Reorder bullet point"
-              title="Drag to reorder. Use Alt+Up or Alt+Down from here to move with the keyboard."
-              @dragstart="onBulletDragStart($event, index, itemIndex)"
-              @dragend="onBulletDragEnd"
-              @keydown.alt.up.prevent="moveBulletItem(index, itemIndex, itemIndex - 1)"
-              @keydown.alt.down.prevent="moveBulletItem(index, itemIndex, itemIndex + 1)"
+
+        <div v-else class="space-y-2">
+          <input
+            :value="block.heading"
+            type="text"
+            placeholder="Section heading"
+            class="ui-field px-3 py-2 text-sm font-medium"
+            @input="updateBulletHeading(index, ($event.target as HTMLInputElement).value)"
+          />
+          <div class="space-y-2">
+            <div
+              v-for="(item, itemIndex) in block.items"
+              :key="itemIndex"
+              class="group/bullet-row relative"
+              :class="draggingBullet?.blockIndex === index && draggingBullet?.itemIndex === itemIndex ? 'opacity-45' : ''"
+              @dragover.prevent="onBulletDragOver"
+              @drop="onBulletDrop($event, index, itemIndex)"
             >
-              <GripVertical class="size-4" />
-            </button>
-            <input
-              :value="item"
-              type="text"
-              placeholder="Bullet point"
-              class="ui-field py-2 text-sm"
-              :class="block.items.length > 1 ? 'pl-9 pr-9' : 'px-3'"
-              @input="updateBulletItem(index, itemIndex, ($event.target as HTMLInputElement).value)"
-            />
-            <button
-              v-if="block.items.length > 1"
-              type="button"
-              class="absolute right-1.5 top-1/2 z-10 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-surface-300 opacity-0 transition-colors hover:bg-danger-50 hover:text-danger-600 focus:opacity-100 group-hover/bullet-row:opacity-100 group-focus-within/bullet-row:opacity-100 dark:text-surface-600 dark:hover:bg-danger-950/40 dark:hover:text-danger-300"
-              aria-label="Remove bullet point"
-              title="Remove bullet"
-              @click="removeBulletItem(index, itemIndex)"
-            >
-              <X class="size-3.5" />
-            </button>
+              <button
+                v-if="block.items.length > 1"
+                type="button"
+                draggable="true"
+                class="absolute left-1.5 top-1/2 z-10 inline-flex size-7 -translate-y-1/2 cursor-grab items-center justify-center rounded-md text-surface-300 opacity-0 transition-colors hover:bg-surface-100 hover:text-surface-600 focus:opacity-100 active:cursor-grabbing group-hover/bullet-row:opacity-100 group-focus-within/bullet-row:opacity-100 dark:text-surface-600 dark:hover:bg-surface-800 dark:hover:text-surface-300"
+                aria-label="Reorder bullet point"
+                title="Drag to reorder. Use Alt+Up or Alt+Down from here to move with the keyboard."
+                @dragstart="onBulletDragStart($event, index, itemIndex)"
+                @dragend="onBulletDragEnd"
+                @keydown.alt.up.prevent="moveBulletItem(index, itemIndex, itemIndex - 1)"
+                @keydown.alt.down.prevent="moveBulletItem(index, itemIndex, itemIndex + 1)"
+              >
+                <GripVertical class="size-4" />
+              </button>
+              <input
+                :value="item"
+                type="text"
+                placeholder="Bullet point"
+                class="ui-field py-2 text-sm"
+                :class="block.items.length > 1 ? 'pl-9 pr-9' : 'px-3'"
+                @input="updateBulletItem(index, itemIndex, ($event.target as HTMLInputElement).value)"
+              />
+              <button
+                v-if="block.items.length > 1"
+                type="button"
+                class="absolute right-1.5 top-1/2 z-10 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-surface-300 opacity-0 transition-colors hover:bg-danger-50 hover:text-danger-600 focus:opacity-100 group-hover/bullet-row:opacity-100 group-focus-within/bullet-row:opacity-100 dark:text-surface-600 dark:hover:bg-danger-950/40 dark:hover:text-danger-300"
+                aria-label="Remove bullet point"
+                title="Remove bullet"
+                @click="removeBulletItem(index, itemIndex)"
+              >
+                <X class="size-3.5" />
+              </button>
+            </div>
           </div>
+          <button
+            type="button"
+            class="ui-button ui-button-secondary h-8 px-3 text-xs"
+            @click="addBulletItem(index)"
+          >
+            <Plus class="size-3.5" />
+            Add bullet
+          </button>
         </div>
-        <button
-          type="button"
-          class="ui-button ui-button-secondary h-8 px-3 text-xs"
-          @click="addBulletItem(index)"
-        >
-          <Plus class="size-3.5" />
-          Add bullet
-        </button>
       </div>
     </div>
 

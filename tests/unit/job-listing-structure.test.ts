@@ -124,4 +124,14 @@ describe('job listing structure', () => {
     expect(useJob).toContain('descriptionBlocks?: JobDescriptionBlock[]')
     expect(cliSchemas).toContain('descriptionBlocks: jobDescriptionBlocksSchema.optional()')
   })
+
+  it('keeps long description block editors navigable with collapsible sections', () => {
+    const editor = readProjectFile('app/components/JobDescriptionBlocksEditor.vue')
+
+    expect(editor).toContain('collapsedBlockIndexes')
+    expect(editor).toContain('toggleBlockCollapsed')
+    expect(editor).toContain('aria-expanded')
+    expect(editor).toContain('isBlockCollapsed(index)')
+    expect(editor).toContain('getBlockSummary')
+  })
 })
