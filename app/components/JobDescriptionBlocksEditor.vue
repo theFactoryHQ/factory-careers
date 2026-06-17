@@ -136,24 +136,6 @@ function toggleBlockCollapsed(index: number) {
 function getBlockKindLabel(block: JobDescriptionBlock) {
   return block.type === 'paragraph' ? 'Paragraph' : 'Bullet section'
 }
-
-function getBlockTitle(block: JobDescriptionBlock, index: number) {
-  if (block.type === 'bullet_list') return block.heading.trim() || `Bullet section ${index + 1}`
-  return `Paragraph ${index + 1}`
-}
-
-function getBlockSummary(block: JobDescriptionBlock) {
-  if (block.type === 'paragraph') {
-    const body = block.body.trim().replace(/\s+/g, ' ')
-    if (!body) return 'Empty paragraph'
-    return body.length > 112 ? `${body.slice(0, 109)}...` : body
-  }
-
-  const items = block.items.map((item) => item.trim()).filter(Boolean)
-  const count = items.length
-  const countText = `${count} bullet point${count === 1 ? '' : 's'}`
-  return items[0] ? `${countText} - ${items[0]}` : 'No bullet points yet'
-}
 </script>
 
 <template>
@@ -175,17 +157,12 @@ function getBlockSummary(block: JobDescriptionBlock) {
             class="size-4 shrink-0 text-surface-400 transition-transform"
             :class="isBlockCollapsed(index) ? '-rotate-90' : 'rotate-0'"
           />
-          <span class="min-w-0 flex-1">
-            <span class="flex min-w-0 items-center gap-2">
-              <span class="shrink-0 rounded-full bg-surface-100 px-2 py-0.5 text-[11px] font-medium text-surface-500 dark:bg-surface-800 dark:text-surface-400">
-                {{ getBlockKindLabel(block) }}
-              </span>
-              <span class="truncate text-sm font-medium text-surface-900 dark:text-surface-100">
-                {{ getBlockTitle(block, index) }}
-              </span>
+          <span class="flex min-w-0 flex-1 items-center gap-2">
+            <span class="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-100 text-xs font-semibold text-surface-500 dark:bg-surface-800 dark:text-surface-300">
+              {{ index + 1 }}
             </span>
-            <span class="mt-0.5 block truncate text-xs text-surface-500 dark:text-surface-400">
-              {{ getBlockSummary(block) }}
+            <span class="truncate text-sm font-medium text-surface-900 dark:text-surface-100">
+              {{ getBlockKindLabel(block) }}
             </span>
           </span>
         </button>
