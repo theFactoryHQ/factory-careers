@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, GripVertical, List, Plus, Type, X } from 'lucide-vue-next'
+import { ChevronDown, GripVertical, List, Plus, Trash2, Type, X } from 'lucide-vue-next'
 import type { JobDescriptionBlock } from '~~/shared/job-listing-structure'
 
 const props = defineProps<{
@@ -143,7 +143,7 @@ function getBlockKindLabel(block: JobDescriptionBlock) {
     <div
       v-for="(block, index) in blocks"
       :key="index"
-      class="group/description-block rounded-md border border-surface-200 bg-white p-3 dark:border-surface-800 dark:bg-surface-950"
+      class="group/description-block relative rounded-md border border-surface-200 bg-white p-3 dark:border-surface-800 dark:bg-surface-950"
     >
       <div class="flex items-start gap-2">
         <button
@@ -170,12 +170,12 @@ function getBlockKindLabel(block: JobDescriptionBlock) {
         <button
           v-if="blocks.length > 1"
           type="button"
-          class="ui-button-ghost mt-1 inline-flex h-8 items-center rounded-md px-2.5 text-xs text-surface-400 opacity-0 transition-opacity hover:text-danger-600 focus:opacity-100 group-hover/description-block:opacity-100 group-focus-within/description-block:opacity-100 dark:hover:text-danger-400"
+          class="ui-button ui-button-ghost ui-button-ghost-danger absolute right-3 top-3 z-10 size-8 p-0 text-surface-400 opacity-0 transition-[background-color,color,opacity] hover:bg-danger-50 hover:text-danger-600 focus:opacity-100 group-hover/description-block:opacity-100 group-focus-within/description-block:opacity-100 dark:text-surface-500 dark:hover:bg-danger-950/40 dark:hover:text-danger-300"
           aria-label="Remove description section"
           title="Remove section"
           @click="removeBlock(index)"
         >
-          Remove section
+          <Trash2 class="size-3.5" />
         </button>
       </div>
 
