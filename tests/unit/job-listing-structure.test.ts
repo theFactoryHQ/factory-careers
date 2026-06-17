@@ -121,6 +121,7 @@ describe('job listing structure', () => {
     expect(editPage).toContain('JobDescriptionBlocksEditor')
     expect(publicIndex).toContain('divisionFilterOptions')
     expect(publicIndex).toContain('formatDivisionLabel')
+    expect(publicIndex).toContain(":class=\"typeFilter ? 'text-white' : 'text-white/55'\"")
     expect(publicDetail).toContain('job.value?.descriptionBlocks')
     expect(divisionMultiSelect).toContain('selectedDivisionOptions')
     expect(divisionMultiSelect).toContain('v-for="option in selectedDivisionOptions"')

@@ -237,7 +237,12 @@ function getDescriptionPreview(job: { description?: string | null; descriptionBl
           @click="typeDropdownOpen = !typeDropdownOpen"
           @keydown="typeListboxNavigation.onKeydown"
         >
-          <span>{{ selectedTypeLabel }}</span>
+          <span
+            class="truncate"
+            :class="typeFilter ? 'text-white' : 'text-white/55'"
+          >
+            {{ selectedTypeLabel }}
+          </span>
           <ChevronDown
             class="size-4 shrink-0 text-brand-500 transition-transform duration-150"
             :class="{ 'rotate-180': typeDropdownOpen }"
