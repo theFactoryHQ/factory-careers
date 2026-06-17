@@ -83,7 +83,7 @@ function removeBulletItem(blockIndex: number, itemIndex: number) {
     <div
       v-for="(block, index) in blocks"
       :key="index"
-      class="rounded-md border border-surface-200 bg-white p-3 dark:border-surface-800 dark:bg-surface-950"
+      class="group/description-block rounded-md border border-surface-200 bg-white p-3 dark:border-surface-800 dark:bg-surface-950"
     >
       <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div class="inline-flex overflow-hidden rounded-md border border-surface-200 dark:border-surface-700">
@@ -112,13 +112,15 @@ function removeBulletItem(blockIndex: number, itemIndex: number) {
         </div>
 
         <button
+          v-if="blocks.length > 1"
           type="button"
-          class="ui-button-ghost inline-flex size-8 items-center justify-center rounded-md text-surface-400 hover:text-danger-600 dark:hover:text-danger-400"
-          :disabled="blocks.length === 1"
-          title="Remove block"
+          class="ui-button-ghost inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs text-surface-400 opacity-0 transition-opacity hover:text-danger-600 focus:opacity-100 group-hover/description-block:opacity-100 group-focus-within/description-block:opacity-100 dark:hover:text-danger-400"
+          aria-label="Remove description section"
+          title="Remove section"
           @click="removeBlock(index)"
         >
-          <Trash2 class="size-4" />
+          <Trash2 class="size-3.5" />
+          Remove
         </button>
       </div>
 
@@ -143,7 +145,7 @@ function removeBulletItem(blockIndex: number, itemIndex: number) {
           <div
             v-for="(item, itemIndex) in block.items"
             :key="itemIndex"
-            class="flex items-center gap-2"
+            class="group/bullet-row flex items-center gap-2"
           >
             <input
               :value="item"
@@ -153,13 +155,16 @@ function removeBulletItem(blockIndex: number, itemIndex: number) {
               @input="updateBulletItem(index, itemIndex, ($event.target as HTMLInputElement).value)"
             />
             <button
+              v-if="block.items.length > 1"
               type="button"
-              class="ui-button-ghost inline-flex size-9 shrink-0 items-center justify-center rounded-md text-surface-400 hover:text-danger-600 dark:hover:text-danger-400"
+              class="ui-button-ghost inline-flex size-9 shrink-0 items-center justify-center rounded-md text-surface-400 opacity-0 transition-opacity hover:text-danger-600 focus:opacity-100 group-hover/bullet-row:opacity-100 group-focus-within/bullet-row:opacity-100 dark:hover:text-danger-400"
+              aria-label="Remove bullet point"
               title="Remove bullet"
               @click="removeBulletItem(index, itemIndex)"
             >
               <Trash2 class="size-4" />
             </button>
+            <span v-else class="size-9 shrink-0" aria-hidden="true" />
           </div>
         </div>
         <button
