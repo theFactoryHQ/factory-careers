@@ -1,5 +1,13 @@
 <script setup lang="ts">
 import { MapPin, Briefcase, ChevronLeft, ChevronRight, ChevronDown, Check } from 'lucide-vue-next'
+import {
+  FACTORY_DIVISIONS,
+  formatDivisionLabel,
+  jobDescriptionBlocksToPlainText,
+  normalizeJobDescriptionBlocks,
+  type FactoryDivision,
+  type JobDescriptionBlock,
+} from '~~/shared/job-listing-structure'
 
 definePageMeta({
   layout: 'public',
@@ -44,6 +52,7 @@ const page = ref(1)
 const searchInput = ref('')
 const searchQuery = ref('')
 const typeFilter = ref<string | undefined>(undefined)
+const divisionFilter = ref<FactoryDivision[]>([])
 const typeDropdownOpen = ref(false)
 const typeDropdownRef = ref<HTMLElement | null>(null)
 const typeDropdownTriggerRef = ref<HTMLButtonElement | null>(null)
@@ -69,15 +78,16 @@ watch(searchInput, (val) => {
 })
 
 // Reset page when filters change
-watch(typeFilter, () => {
+watch([typeFilter, divisionFilter], () => {
   page.value = 1
-})
+}, { deep: true })
 
 const queryParams = computed(() => ({
   page: page.value,
   limit: 20,
   ...(searchQuery.value && { search: searchQuery.value }),
   ...(typeFilter.value && { type: typeFilter.value }),
+  ...(divisionFilter.value.length > 0 && { divisions: divisionFilter.value.join(',') }),
 }))
 
 const { data, status: fetchStatus, error, refresh } = useFetch('/api/public/jobs', {
@@ -108,6 +118,7 @@ const typeOptions = [
   { label: 'Contract', value: 'contract' },
   { label: 'Internship', value: 'internship' },
 ] as const
+const divisionFilterOptions = FACTORY_DIVISIONS
 
 const selectedTypeLabel = computed(() => typeOptions.find(option => option.value === typeFilter.value)?.label ?? 'All types')
 const selectedTypeIndex = computed(() => typeOptions.findIndex(option => option.value === typeFilter.value))
@@ -168,6 +179,15 @@ function formatType(type?: string | null) {
 function formatPostedDate(activeFrom?: string | null, createdAt?: string | null) {
   const date = activeFrom ?? createdAt
   return date ? formatDate(date) : 'recently'
+}
+
+function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[] {
+  return Array.isArray(divisions) ? divisions : []
+}
+
+function getDescriptionPreview(job: { description?: string | null; descriptionBlocks?: JobDescriptionBlock[] | null }) {
+  const blockPreview = jobDescriptionBlocksToPlainText(normalizeJobDescriptionBlocks(job.descriptionBlocks ?? []))
+  return blockPreview || job.description || ''
 }
 </script>
 
@@ -245,6 +265,14 @@ function formatPostedDate(activeFrom?: string | null, createdAt?: string | null)
           </ul>
         </Teleport>
       </div>
+
+      <JobDivisionMultiSelect
+        v-model="divisionFilter"
+        :options="divisionFilterOptions"
+        placeholder="All divisions"
+        tone="public"
+        class="sm:w-56"
+      />
     </div>
 
     <!-- Loading state -->
@@ -282,9 +310,22 @@ function formatPostedDate(activeFrom?: string | null, createdAt?: string | null)
               </span>
             </div>
 
+            <div
+              v-if="getJobDivisions(j.divisions).length > 0"
+              class="mt-3 flex flex-wrap gap-2"
+            >
+              <span
+                v-for="division in getJobDivisions(j.divisions)"
+                :key="division"
+                class="border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-medium text-white/58"
+              >
+                {{ formatDivisionLabel(division) }}
+              </span>
+            </div>
+
             <!-- Description preview -->
-            <p v-if="j.description" class="mt-3 line-clamp-2 max-w-3xl text-sm leading-6 text-white/54">
-              {{ j.description }}
+            <p v-if="getDescriptionPreview(j)" class="mt-3 line-clamp-2 max-w-3xl text-sm leading-6 text-white/54">
+              {{ getDescriptionPreview(j) }}
             </p>
           </div>
 
@@ -341,7 +382,7 @@ function formatPostedDate(activeFrom?: string | null, createdAt?: string | null)
       <Briefcase class="mx-auto mb-3 size-10 text-brand-500" />
       <h2 class="mb-1 text-base font-semibold text-white">No open positions</h2>
       <p class="text-sm text-white/50">
-        <template v-if="searchQuery || typeFilter">
+        <template v-if="searchQuery || typeFilter || divisionFilter.length > 0">
           No jobs match your current filters. Try adjusting your search.
         </template>
         <template v-else>

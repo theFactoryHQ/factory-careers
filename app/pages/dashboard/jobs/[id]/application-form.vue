@@ -4,6 +4,13 @@ import { z } from 'zod'
 import { getSourceChannelLabel } from '~/utils/status-display'
 import { CURRENCY_OPTIONS, CURRENCY_VALUES } from '~~/shared/currency-options'
 import { todayDateInputValue, toDateInputValue } from '~~/shared/date-input'
+import {
+  jobDescriptionBlocksToMarkdown,
+  legacyDescriptionToBlocks,
+  normalizeJobDescriptionBlocks,
+  type FactoryDivision,
+  type JobDescriptionBlock,
+} from '~~/shared/job-listing-structure'
 import { SALARY_UNIT_OPTIONS, SALARY_UNIT_VALUES } from '~~/shared/salary-options'
 
 definePageMeta({
@@ -59,6 +66,8 @@ const applicationUrl = computed(() => {
 const form = ref({
   title: '',
   description: '',
+  divisions: [] as FactoryDivision[],
+  descriptionBlocks: [{ type: 'paragraph', body: '' }] as JobDescriptionBlock[],
   location: '',
   type: 'full_time' as string,
   slug: '',
@@ -75,9 +84,12 @@ const form = ref({
 
 watch([job, defaultSalaryUnit], ([j]) => {
   if (!j) return
+  const descriptionBlocks = normalizeJobDescriptionBlocks(j.descriptionBlocks)
   form.value = {
     title: j.title ?? '',
     description: j.description ?? '',
+    divisions: Array.isArray(j.divisions) ? j.divisions : [],
+    descriptionBlocks: descriptionBlocks.length > 0 ? descriptionBlocks : legacyDescriptionToBlocks(j.description),
     location: j.location ?? '',
     type: j.type ?? 'full_time',
     slug: j.slug ?? '',
@@ -110,6 +122,8 @@ watch(() => form.value.salaryNegotiable, (negotiable) => {
 const postingSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   description: z.string().optional(),
+  divisions: z.array(z.string()).optional(),
+  descriptionBlocks: z.array(z.any()).optional(),
   location: z.string().optional(),
   type: z.enum(['full_time', 'part_time', 'contract', 'internship']),
   slug: z.string().max(80).optional(),
@@ -141,9 +155,12 @@ async function savePostingDetails() {
   postingErrors.value = {}
   isSavingPosting.value = true
   try {
+    const descriptionBlocks = normalizeJobDescriptionBlocks(form.value.descriptionBlocks)
     await updateJob({
       title: form.value.title,
-      description: form.value.description || null,
+      description: jobDescriptionBlocksToMarkdown(descriptionBlocks) || null,
+      divisions: form.value.divisions,
+      descriptionBlocks,
       location: form.value.location || null,
       type: form.value.type,
       slug: form.value.slug || undefined,
@@ -459,16 +476,21 @@ async function copyTrackingUrl(code: string) {
             </div>
 
             <div>
-              <label for="application-description" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+              <label for="application-divisions" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                Division
+              </label>
+              <JobDivisionMultiSelect
+                id="application-divisions"
+                v-model="form.divisions"
+                placeholder="Select divisions"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                 Description
               </label>
-              <textarea
-                id="application-description"
-                v-model="form.description"
-                rows="6"
-                placeholder="Describe the role, responsibilities, and requirements..."
-                class="ui-field px-3 py-2 text-sm"
-              ></textarea>
+              <JobDescriptionBlocksEditor v-model="form.descriptionBlocks" />
             </div>
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">

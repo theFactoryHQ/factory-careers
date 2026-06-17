@@ -1,6 +1,7 @@
 import { eq, and } from 'drizzle-orm'
 import { job } from '../../database/schema'
 import { idParamSchema, updateJobSchema, JOB_STATUS_TRANSITIONS } from '../../utils/schemas/job'
+import { jobDescriptionBlocksToMarkdown, normalizeJobDescriptionBlocks } from '~~/shared/job-listing-structure'
 
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { job: ['update'] })
@@ -33,6 +34,11 @@ export default defineEventHandler(async (event) => {
   // Regenerate slug when title or custom slug changes
   const updates: Record<string, unknown> = { ...body, updatedAt: new Date() }
   delete (updates as any).slug // remove raw slug from spread — we set it explicitly below
+  if (body.descriptionBlocks !== undefined) {
+    const descriptionBlocks = normalizeJobDescriptionBlocks(body.descriptionBlocks)
+    updates.descriptionBlocks = descriptionBlocks
+    updates.description = jobDescriptionBlocksToMarkdown(descriptionBlocks) || null
+  }
   if (body.title || body.slug) {
     updates.slug = generateJobSlug(body.title ?? existing.title, id, body.slug)
   }
@@ -45,6 +51,8 @@ export default defineEventHandler(async (event) => {
       title: job.title,
       slug: job.slug,
       description: job.description,
+      divisions: job.divisions,
+      descriptionBlocks: job.descriptionBlocks,
       location: job.location,
       type: job.type,
       status: job.status,

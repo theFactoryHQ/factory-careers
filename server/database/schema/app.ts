@@ -13,6 +13,7 @@ import {
 import { relations, sql } from 'drizzle-orm'
 import { organization, user } from './auth'
 import type { ScoringBand } from '~~/shared/scoring-bands'
+import type { FactoryDivision, JobDescriptionBlock } from '~~/shared/job-listing-structure'
 
 // ─────────────────────────────────────────────
 // Enums
@@ -85,6 +86,8 @@ export const job = pgTable('job', {
   title: text('title').notNull(),
   slug: text('slug').notNull().unique(),
   description: text('description'),
+  divisions: jsonb('divisions').$type<FactoryDivision[]>().notNull().default(sql`'[]'::jsonb`),
+  descriptionBlocks: jsonb('description_blocks').$type<JobDescriptionBlock[]>().notNull().default(sql`'[]'::jsonb`),
   location: text('location'),
   type: jobTypeEnum('type').notNull().default('full_time'),
   status: jobStatusEnum('status').notNull().default('draft'),

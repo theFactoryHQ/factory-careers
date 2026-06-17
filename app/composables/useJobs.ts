@@ -1,4 +1,5 @@
 import type { Ref } from 'vue'
+import type { FactoryDivision, JobDescriptionBlock } from '~~/shared/job-listing-structure'
 
 export type JobsListQuery = {
   page?: number
@@ -104,6 +105,8 @@ export function useJobs(options?: {
   async function createJob(payload: {
     title: string
     description?: string
+    divisions?: FactoryDivision[]
+    descriptionBlocks?: JobDescriptionBlock[]
     location?: string
     type?: 'full_time' | 'part_time' | 'contract' | 'internship'
     experienceLevel?: 'junior' | 'mid' | 'senior' | 'lead'

@@ -1,0 +1,127 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+import { createJobSchema, updateJobSchema } from '../../server/utils/schemas/job'
+import { publicJobsQuerySchema } from '../../server/utils/schemas/publicApplication'
+
+const readProjectFile = (path: string) =>
+  readFileSync(join(process.cwd(), path), 'utf8')
+
+describe('job listing structure', () => {
+  it('defines Factory division options and structured description helpers', async () => {
+    const listingStructure = await import('../../shared/job-listing-structure')
+
+    expect(listingStructure.FACTORY_DIVISIONS).toEqual([
+      { value: 'factory_capital', label: 'Factory Capital' },
+      { value: 'factory_services', label: 'Factory Services' },
+      { value: 'factory_partners', label: 'Factory Partners' },
+      { value: 'factory_entertainment', label: 'Factory Entertainment' },
+      { value: 'factory_cares', label: 'Factory Cares' },
+      { value: 'factory_club', label: 'Factory Club' },
+    ])
+
+    const blocks = listingStructure.normalizeJobDescriptionBlocks([
+      { type: 'paragraph', body: '  Build with operators across the Factory platform.  ' },
+      { type: 'bullet_list', heading: 'You will', items: ['  Lead searches ', '', 'Run structured hiring loops'] },
+      { type: 'paragraph', body: '   ' },
+    ])
+
+    expect(blocks).toEqual([
+      { type: 'paragraph', body: 'Build with operators across the Factory platform.' },
+      { type: 'bullet_list', heading: 'You will', items: ['Lead searches', 'Run structured hiring loops'] },
+    ])
+    expect(listingStructure.jobDescriptionBlocksToMarkdown(blocks)).toBe([
+      'Build with operators across the Factory platform.',
+      '### You will',
+      '- Lead searches',
+      '- Run structured hiring loops',
+    ].join('\n\n'))
+    expect(listingStructure.jobDescriptionBlocksToPlainText(blocks)).toContain('You will')
+    expect(listingStructure.legacyDescriptionToBlocks('Legacy description')).toEqual([
+      { type: 'paragraph', body: 'Legacy description' },
+    ])
+  })
+
+  it('validates listing divisions and description blocks on job schemas', () => {
+    const descriptionBlocks = [
+      { type: 'paragraph', body: 'Work across Factory divisions.' },
+      { type: 'bullet_list', heading: 'Responsibilities', items: ['Build systems'] },
+    ] as const
+
+    expect(createJobSchema.parse({
+      title: 'Platform Recruiter',
+      divisions: ['factory_services', 'factory_club'],
+      descriptionBlocks,
+    })).toMatchObject({
+      divisions: ['factory_services', 'factory_club'],
+      descriptionBlocks,
+    })
+
+    expect(updateJobSchema.parse({
+      divisions: ['factory_capital'],
+      descriptionBlocks,
+    })).toMatchObject({
+      divisions: ['factory_capital'],
+      descriptionBlocks,
+    })
+
+    expect(createJobSchema.safeParse({
+      title: 'Invalid division',
+      divisions: ['not_a_factory_division'],
+    }).success).toBe(false)
+  })
+
+  it('persists and returns listing divisions and description blocks across job routes', () => {
+    const appSchema = readProjectFile('server/database/schema/app.ts')
+    const createRoute = readProjectFile('server/api/jobs/index.post.ts')
+    const getRoute = readProjectFile('server/api/jobs/[id].get.ts')
+    const listRoute = readProjectFile('server/api/jobs/index.get.ts')
+    const patchRoute = readProjectFile('server/api/jobs/[id].patch.ts')
+    const publicList = readProjectFile('server/api/public/jobs/index.get.ts')
+    const publicDetail = readProjectFile('server/api/public/jobs/[slug].get.ts')
+    const migration = readProjectFile('server/database/migrations/0047_job_listing_structure.sql')
+    const journal = readProjectFile('server/database/migrations/meta/_journal.json')
+
+    expect(appSchema).toContain("divisions: jsonb('divisions')")
+    expect(appSchema).toContain("descriptionBlocks: jsonb('description_blocks')")
+    expect(createRoute).toContain('const descriptionBlocks = normalizeJobDescriptionBlocks(body.descriptionBlocks)')
+    expect(createRoute).toContain('divisions: body.divisions')
+    expect(createRoute).toContain('descriptionBlocks')
+    expect(patchRoute).toContain('jobDescriptionBlocksToMarkdown(descriptionBlocks)')
+    expect(getRoute).toContain('divisions: true')
+    expect(getRoute).toContain('descriptionBlocks: true')
+    expect(listRoute).toContain('divisions: true')
+    expect(publicList).toContain('buildDivisionFilter(query.divisions)')
+    expect(publicList).toContain('descriptionBlocks: true')
+    expect(publicDetail).toContain('descriptionBlocks: true')
+    expect(migration).toContain('ADD COLUMN IF NOT EXISTS "divisions" jsonb')
+    expect(migration).toContain('ADD COLUMN IF NOT EXISTS "description_blocks" jsonb')
+    expect(journal).toContain('"tag": "0047_job_listing_structure"')
+  })
+
+  it('supports public job board division filtering and dashboard editor wiring', () => {
+    expect(publicJobsQuerySchema.parse({
+      divisions: 'factory_capital,factory_club',
+    }).divisions).toEqual(['factory_capital', 'factory_club'])
+
+    const createPage = readProjectFile('app/pages/dashboard/jobs/new.vue')
+    const editPage = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
+    const publicIndex = readProjectFile('app/pages/jobs/index.vue')
+    const publicDetail = readProjectFile('app/pages/jobs/[slug]/index.vue')
+    const useJobs = readProjectFile('app/composables/useJobs.ts')
+    const useJob = readProjectFile('app/composables/useJob.ts')
+    const cliSchemas = readProjectFile('packages/careers-cli/src/schemas.ts')
+
+    expect(createPage).toContain('JobDivisionMultiSelect')
+    expect(createPage).toContain('JobDescriptionBlocksEditor')
+    expect(editPage).toContain('JobDivisionMultiSelect')
+    expect(editPage).toContain('JobDescriptionBlocksEditor')
+    expect(publicIndex).toContain('divisionFilterOptions')
+    expect(publicIndex).toContain('formatDivisionLabel')
+    expect(publicDetail).toContain('job.value?.descriptionBlocks')
+    expect(useJobs).toContain('divisions?: FactoryDivision[]')
+    expect(useJobs).toContain('descriptionBlocks?: JobDescriptionBlock[]')
+    expect(useJob).toContain('descriptionBlocks?: JobDescriptionBlock[]')
+    expect(cliSchemas).toContain('descriptionBlocks: jobDescriptionBlocksSchema.optional()')
+  })
+})

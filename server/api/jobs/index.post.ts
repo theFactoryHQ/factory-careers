@@ -1,5 +1,6 @@
 import { job } from '../../database/schema'
 import { createJobSchema } from '../../utils/schemas/job'
+import { jobDescriptionBlocksToMarkdown, normalizeJobDescriptionBlocks } from '~~/shared/job-listing-structure'
 
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { job: ['create'] })
@@ -10,13 +11,17 @@ export default defineEventHandler(async (event) => {
   // Generate a deterministic ID upfront so we can build the slug
   const jobId = crypto.randomUUID()
   const slug = generateJobSlug(body.title, jobId, body.slug)
+  const descriptionBlocks = normalizeJobDescriptionBlocks(body.descriptionBlocks)
+  const generatedDescription = jobDescriptionBlocksToMarkdown(descriptionBlocks)
 
   const [created] = await db.insert(job).values({
     id: jobId,
     organizationId: orgId,
     title: body.title,
     slug,
-    description: body.description,
+    description: generatedDescription || body.description,
+    divisions: body.divisions,
+    descriptionBlocks,
     location: body.location,
     type: body.type,
     salaryMin: body.salaryMin,
@@ -41,6 +46,8 @@ export default defineEventHandler(async (event) => {
     title: job.title,
     slug: job.slug,
     description: job.description,
+    divisions: job.divisions,
+    descriptionBlocks: job.descriptionBlocks,
     location: job.location,
     type: job.type,
     status: job.status,

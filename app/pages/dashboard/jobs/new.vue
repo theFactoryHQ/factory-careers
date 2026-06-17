@@ -37,6 +37,13 @@ import {
 } from 'lucide-vue-next'
 import { z } from 'zod'
 import { todayDateInputValue } from '~~/shared/date-input'
+import {
+  jobDescriptionBlocksToMarkdown,
+  legacyDescriptionToBlocks,
+  normalizeJobDescriptionBlocks,
+  type FactoryDivision,
+  type JobDescriptionBlock,
+} from '~~/shared/job-listing-structure'
 
 definePageMeta({
   layout: 'dashboard',
@@ -86,13 +93,17 @@ const steps = [
 // Step 1: Job details (API-supported fields)
 const form = ref({
   title: '',
-  description: '',
+  divisions: [] as FactoryDivision[],
+  descriptionBlocks: [{ type: 'paragraph', body: '' }] as JobDescriptionBlock[],
   location: '',
   type: 'full_time' as 'full_time' | 'part_time' | 'contract' | 'internship',
   experienceLevel: 'mid' as 'junior' | 'mid' | 'senior' | 'lead',
   remoteStatus: undefined as 'remote' | 'hybrid' | 'onsite' | undefined,
   activeFrom: todayDateInputValue(),
 })
+const jobDescriptionMarkdown = computed(() =>
+  jobDescriptionBlocksToMarkdown(normalizeJobDescriptionBlocks(form.value.descriptionBlocks)),
+)
 
 // Step 2: Application form (client-only for now)
 const applicationForm = ref({
@@ -181,7 +192,7 @@ async function generateAiCriteria() {
     toast.warning('Job title required', 'Add a job title in Step 1 first so AI can generate relevant criteria.')
     return
   }
-  if (!form.value.description) {
+  if (!jobDescriptionMarkdown.value) {
     toast.warning('Job description required', 'Add a job description in Step 1 first so AI can generate relevant criteria.')
     return
   }
@@ -191,7 +202,7 @@ async function generateAiCriteria() {
       method: 'POST',
       body: {
         title: form.value.title,
-        description: form.value.description,
+        description: jobDescriptionMarkdown.value,
       },
     })
     scoringCriteria.value = (result.criteria ?? []).map((c: any) => ({
@@ -299,7 +310,13 @@ function restoreFormFromStorage() {
     const raw = localStorage.getItem(AUTO_SAVE_KEY)
     if (!raw) return
     const data = JSON.parse(raw)
-    if (data.form) Object.assign(form.value, data.form)
+    if (data.form) {
+      Object.assign(form.value, data.form)
+      if (!Array.isArray(form.value.divisions)) form.value.divisions = []
+      if (!Array.isArray(data.form.descriptionBlocks) && typeof data.form.description === 'string') {
+        form.value.descriptionBlocks = legacyDescriptionToBlocks(data.form.description)
+      }
+    }
     if (data.applicationForm) Object.assign(applicationForm.value, data.applicationForm)
     if (data.scoringCriteria) scoringCriteria.value = data.scoringCriteria
     if (data.scoringMode) scoringMode.value = data.scoringMode
@@ -322,7 +339,8 @@ function resetState() {
   currentStep.value = 1
   form.value = {
     title: '',
-    description: '',
+    divisions: [],
+    descriptionBlocks: [{ type: 'paragraph', body: '' }],
     location: '',
     type: 'full_time',
     experienceLevel: 'mid',
@@ -503,6 +521,8 @@ const formSchema = z.object({
     .min(1, 'Title is required')
     .max(200, 'Title must be 200 characters or less'),
   description: z.string().optional(),
+  divisions: z.array(z.string()).optional(),
+  descriptionBlocks: z.array(z.any()).optional(),
   location: z.string().optional(),
   type: z.enum(['full_time', 'part_time', 'contract', 'internship']),
 })
@@ -618,7 +638,9 @@ async function handleSubmit(mode: 'publish' | 'draft' = publishChoice.value) {
   try {
     const created = await createJob({
       title: form.value.title,
-      description: form.value.description || undefined,
+      description: jobDescriptionMarkdown.value || undefined,
+      divisions: form.value.divisions,
+      descriptionBlocks: form.value.descriptionBlocks,
       location: form.value.location || undefined,
       type: form.value.type,
       experienceLevel: form.value.experienceLevel || undefined,
@@ -905,21 +927,25 @@ const questionTypeLabels: Record<QuestionType, string> = {
                     />
                   </div>
                 </div>
+                <div>
+                  <label for="job-divisions" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Division</label>
+                  <JobDivisionMultiSelect
+                    id="job-divisions"
+                    v-model="form.divisions"
+                    placeholder="Select divisions"
+                  />
+                </div>
               </div>
 
               <!-- Section: Description -->
               <div class="space-y-6">
                 <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-6 pb-2 border-b border-surface-100 dark:border-surface-800">Description</h2>
                 <div>
-                  <label for="description" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+                  <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
                     About the role
                   </label>
-                  <textarea
-                    id="description"
-                    v-model="form.description"
-                    rows="10"
-                    placeholder="Describe the role, responsibilities, and requirements…"
-                    class="w-full rounded-lg border px-4 py-3 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors border-surface-300 dark:border-surface-700"
+                  <JobDescriptionBlocksEditor
+                    v-model="form.descriptionBlocks"
                   />
                   <p class="mt-2 text-xs text-surface-500">Minimum 700 characters recommended.</p>
                 </div>

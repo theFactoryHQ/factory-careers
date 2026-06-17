@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import { MapPin, Briefcase, Building2, ArrowLeft, ExternalLink, Calendar } from 'lucide-vue-next'
+import {
+  formatDivisionLabel,
+  jobDescriptionBlocksToMarkdown,
+  jobDescriptionBlocksToPlainText,
+  normalizeJobDescriptionBlocks,
+  type FactoryDivision,
+} from '~~/shared/job-listing-structure'
 
 definePageMeta({
   layout: 'public',
@@ -46,7 +53,13 @@ function markdownToPlainText(markdown?: string | null): string {
     .trim()
 }
 
-const jobDescriptionPlain = computed(() => markdownToPlainText(job.value?.description))
+const structuredDescriptionBlocks = computed(() => normalizeJobDescriptionBlocks(job.value?.descriptionBlocks ?? []))
+const renderedDescription = computed(() =>
+  jobDescriptionBlocksToMarkdown(structuredDescriptionBlocks.value) || job.value?.description || '',
+)
+const jobDescriptionPlain = computed(() =>
+  jobDescriptionBlocksToPlainText(structuredDescriptionBlocks.value) || markdownToPlainText(job.value?.description),
+)
 
 function serializeJsonLd(value: Record<string, unknown>): string {
   return JSON.stringify(value)
@@ -205,6 +218,10 @@ function formatSalary(min?: number | null, max?: number | null, currency?: strin
   if (min && max) return `${fmt(min)} – ${fmt(max)}${unitLabel}`
   return `${fmt(min || max!)}${unitLabel}`
 }
+
+function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[] {
+  return Array.isArray(divisions) ? divisions : []
+}
 </script>
 
 <template>
@@ -297,6 +314,13 @@ function formatSalary(min?: number | null, max?: number | null, currency?: strin
               {{ job.location }}
             </span>
             <span
+              v-for="division in getJobDivisions(job.divisions)"
+              :key="division"
+              class="inline-flex items-center gap-1.5 border border-white/10 bg-black/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/52"
+            >
+              {{ formatDivisionLabel(division) }}
+            </span>
+            <span
               v-if="job.salaryNegotiable || formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryUnit)"
               class="inline-flex items-center gap-1.5 border border-success-500/35 bg-success-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-success-300"
             >
@@ -318,12 +342,12 @@ function formatSalary(min?: number | null, max?: number | null, currency?: strin
       </div>
 
       <!-- Description card -->
-      <div v-if="job.description" class="mb-5 overflow-hidden border border-white/10 bg-white/[0.03]">
+      <div v-if="renderedDescription" class="mb-5 overflow-hidden border border-white/10 bg-white/[0.03]">
         <div class="border-b border-white/10 px-6 py-4 sm:px-8">
           <h2 class="text-sm font-semibold text-white">About this role</h2>
         </div>
         <div class="px-6 py-6 sm:px-8">
-          <MarkdownDescription :value="job.description" />
+          <MarkdownDescription :value="renderedDescription" />
         </div>
       </div>
 
