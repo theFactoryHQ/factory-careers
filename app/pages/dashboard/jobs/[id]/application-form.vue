@@ -727,11 +727,10 @@ async function copyTrackingUrl(code: string) {
               <label for="application-active-from" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                 Active From
               </label>
-              <input
+              <DashboardDatePicker
                 id="application-active-from"
                 v-model="form.activeFrom"
-                type="date"
-                class="ui-field px-3 py-2 text-sm"
+                placeholder="Select active date"
               />
               <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Defaults to today for new jobs.</p>
             </div>
@@ -739,22 +738,13 @@ async function copyTrackingUrl(code: string) {
               <label for="application-valid-through" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                 Valid Through
               </label>
-              <div class="flex items-center gap-2">
-                <input
-                  id="application-valid-through"
-                  v-model="form.validThrough"
-                  type="date"
-                  class="ui-field px-3 py-2 text-sm"
-                />
-                <button
-                  v-if="form.validThrough"
-                  type="button"
-                  class="shrink-0 text-xs text-surface-400 underline transition-colors hover:text-danger-500 dark:hover:text-danger-400"
-                  @click="form.validThrough = ''"
-                >
-                  Clear
-                </button>
-              </div>
+              <DashboardDatePicker
+                id="application-valid-through"
+                v-model="form.validThrough"
+                placeholder="No expiry date"
+                clear-label="Clear expiry date"
+                allow-clear
+              />
               <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Leave blank if there is no fixed expiry date.</p>
             </div>
           </div>

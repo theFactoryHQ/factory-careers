@@ -245,6 +245,29 @@ describe('job listing structure', () => {
     expect(sectionStack).toContain('class="grid gap-6"')
   })
 
+  it('uses the styled dashboard date picker for application schedule dates', () => {
+    const editPage = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
+
+    expect(editPage).toContain('<DashboardDatePicker')
+    expect(editPage).toContain('id="application-active-from"')
+    expect(editPage).toContain('v-model="form.activeFrom"')
+    expect(editPage).toContain('id="application-valid-through"')
+    expect(editPage).toContain('v-model="form.validThrough"')
+    expect(editPage).not.toContain('id="application-active-from"\n                v-model="form.activeFrom"\n                type="date"')
+    expect(editPage).not.toContain('id="application-valid-through"\n                  v-model="form.validThrough"\n                  type="date"')
+
+    const datePicker = readProjectFile('app/components/DashboardDatePicker.vue')
+    expect(datePicker).toContain('useFloatingMenu')
+    expect(datePicker).toContain('width: 320')
+    expect(datePicker).toContain('useOutsidePointer')
+    expect(datePicker).toContain('aria-haspopup="dialog"')
+    expect(datePicker).toContain('role="dialog"')
+    expect(datePicker).toContain("data-testid=\"dashboard-date-picker-day\"")
+    expect(datePicker).toContain('Calendar')
+    expect(datePicker).toContain('ChevronLeft')
+    expect(datePicker).toContain('ChevronRight')
+  })
+
   it('keeps the application slug synced to the title until manually edited', () => {
     const editPage = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
     const slugify = readProjectFile('server/utils/slugify.ts')
