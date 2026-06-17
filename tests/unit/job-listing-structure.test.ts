@@ -140,8 +140,10 @@ describe('job listing structure', () => {
     const postedIndex = cardMeta.indexOf('Posted {{ formatPostedDate')
 
     expect(publicIndex).toContain('function formatDivisionBadgeSuffix')
+    expect(publicIndex).toContain('Clock')
     expect(cardMeta).toContain('text-brand-500">FACTORY</span>')
     expect(cardMeta).toContain('uppercase tracking-[0.16em]')
+    expect(cardMeta).toContain('<Clock class="size-3.5" />')
     expect(locationIndex).toBeGreaterThan(-1)
     expect(divisionIndex).toBeGreaterThan(locationIndex)
     expect(postedIndex).toBeGreaterThan(divisionIndex)

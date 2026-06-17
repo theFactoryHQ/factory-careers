@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { MapPin, Briefcase, ChevronLeft, ChevronRight, ChevronDown, Check } from 'lucide-vue-next'
+import { MapPin, Briefcase, Clock, ChevronLeft, ChevronRight, ChevronDown, Check } from 'lucide-vue-next'
 import {
   FACTORY_DIVISIONS,
   formatDivisionLabel,
@@ -321,7 +321,8 @@ function getDescriptionPreview(job: { description?: string | null; descriptionBl
                   {{ formatDivisionBadgeSuffix(division) }}
                 </span>
               </span>
-              <span class="text-white/60">
+              <span class="inline-flex items-center gap-1 text-white/60">
+                <Clock class="size-3.5" />
                 Posted {{ formatPostedDate(j.activeFrom, j.createdAt) }}
               </span>
             </div>
