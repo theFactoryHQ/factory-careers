@@ -32,11 +32,10 @@ const panelRef = ref<HTMLElement | null>(null)
 
 const selectedValues = computed(() => props.modelValue ?? [])
 const selectedValueSet = computed(() => new Set(selectedValues.value))
-const selectedLabel = computed(() => {
-  if (selectedValues.value.length === 0) return props.placeholder
-  if (selectedValues.value.length === 1) return formatDivisionLabel(selectedValues.value[0])
-  return `${selectedValues.value.length} divisions`
-})
+const optionByValue = computed(() => new Map(props.options.map((option) => [option.value, option])))
+const selectedDivisionOptions = computed(() => selectedValues.value.map((value) =>
+  optionByValue.value.get(value) ?? { value, label: formatDivisionLabel(value) }
+))
 
 const { floatingStyle } = useFloatingMenu({
   open,
@@ -83,7 +82,7 @@ useOutsidePointer({
       ref="triggerRef"
       :id="selectId"
       type="button"
-      class="flex h-10 min-h-10 w-full items-center justify-between gap-2 border px-3 py-0 text-left text-sm outline-none transition-colors"
+      class="flex min-h-10 w-full items-center justify-between gap-2 border px-3 py-2 text-left text-sm outline-none transition-colors"
       :class="tone === 'public'
         ? 'border-white/14 bg-black/35 text-white hover:border-brand-500/60 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25'
         : 'factory-filter-select factory-filter-dropdown-trigger text-surface-900 dark:text-surface-100 focus:outline-none'"
@@ -93,7 +92,28 @@ useOutsidePointer({
       @click="toggleOpen"
       @keydown="handleKeydown"
     >
-      <span class="truncate">{{ selectedLabel }}</span>
+      <span class="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+        <template v-if="selectedDivisionOptions.length > 0">
+          <span
+            v-for="option in selectedDivisionOptions"
+            :key="option.value"
+            data-testid="selected-division-badge"
+            class="inline-flex max-w-full items-center truncate rounded-full border px-2 py-0.5 text-xs font-medium leading-5"
+            :class="tone === 'public'
+              ? 'border-white/16 bg-white/10 text-white'
+              : 'border-brand-500/25 bg-brand-500/10 text-brand-700 dark:border-brand-400/25 dark:bg-brand-400/10 dark:text-brand-100'"
+          >
+            {{ option.label }}
+          </span>
+        </template>
+        <span
+          v-else
+          class="truncate"
+          :class="tone === 'public' ? 'text-white/55' : 'text-surface-500 dark:text-surface-400'"
+        >
+          {{ placeholder }}
+        </span>
+      </span>
       <ChevronDown
         class="size-4 shrink-0 text-brand-500 transition-transform duration-150"
         :class="{ 'rotate-180': open }"
