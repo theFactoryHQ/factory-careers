@@ -187,25 +187,29 @@ function getBlockKindLabel(block: JobDescriptionBlock) {
         <div class="inline-flex overflow-hidden rounded-md border border-surface-200 dark:border-surface-700">
           <button
             type="button"
-            class="inline-flex h-8 items-center gap-1.5 px-2.5 text-xs font-medium transition-colors"
+            class="inline-flex size-8 items-center justify-center text-xs font-medium transition-colors"
             :class="block.type === 'paragraph'
               ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300'
               : 'text-surface-500 hover:bg-surface-50 dark:text-surface-400 dark:hover:bg-surface-900'"
+            :aria-pressed="block.type === 'paragraph'"
+            aria-label="Use paragraph block"
+            title="Paragraph"
             @click="setBlockType(index, 'paragraph')"
           >
             <Type class="size-3.5" />
-            Paragraph
           </button>
           <button
             type="button"
-            class="inline-flex h-8 items-center gap-1.5 border-l border-surface-200 px-2.5 text-xs font-medium transition-colors dark:border-surface-700"
+            class="inline-flex size-8 items-center justify-center border-l border-surface-200 text-xs font-medium transition-colors dark:border-surface-700"
             :class="block.type === 'bullet_list'
               ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300'
               : 'text-surface-500 hover:bg-surface-50 dark:text-surface-400 dark:hover:bg-surface-900'"
+            :aria-pressed="block.type === 'bullet_list'"
+            aria-label="Use bullet section block"
+            title="Bullets"
             @click="setBlockType(index, 'bullet_list')"
           >
             <List class="size-3.5" />
-            Bullets
           </button>
         </div>
 
