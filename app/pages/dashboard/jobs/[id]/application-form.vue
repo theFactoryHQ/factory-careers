@@ -458,9 +458,11 @@ async function copyTrackingUrl(code: string) {
       </div>
 
       <form class="space-y-6" @submit.prevent="savePostingDetails">
-        <!-- Basic Details -->
-        <section class="ui-panel p-5">
-          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-4">Basic Details</h2>
+        <DashboardCollapsibleSection
+          id="application-section-basic-details"
+          title="Basic Details"
+          :default-open="true"
+        >
           <div class="space-y-4">
             <div>
               <label for="application-title" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
@@ -557,14 +559,13 @@ async function copyTrackingUrl(code: string) {
               </p>
             </div>
           </div>
-        </section>
+        </DashboardCollapsibleSection>
 
-        <!-- Salary & Compensation -->
-        <section class="ui-panel p-5">
-          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1">Salary & Compensation</h2>
-          <p class="text-xs text-surface-400 dark:text-surface-500 mb-5">
-            Adding salary information improves visibility on Google Jobs.
-          </p>
+        <DashboardCollapsibleSection
+          id="application-section-salary"
+          title="Salary & Compensation"
+          description="Adding salary information improves visibility on Google Jobs."
+        >
           <div class="space-y-4">
             <label class="flex cursor-pointer items-center gap-3">
               <input
@@ -635,14 +636,13 @@ async function copyTrackingUrl(code: string) {
               </div>
             </template>
           </div>
-        </section>
+        </DashboardCollapsibleSection>
 
-        <!-- Listing Schedule -->
-        <section class="ui-panel p-5">
-          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1">Listing Schedule</h2>
-          <p class="text-xs text-surface-400 dark:text-surface-500 mb-5">
-            Set when this job posting goes live and when it automatically expires.
-          </p>
+        <DashboardCollapsibleSection
+          id="application-section-schedule"
+          title="Listing Schedule"
+          description="Set when this job posting goes live and when it automatically expires."
+        >
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label for="application-active-from" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
@@ -679,7 +679,7 @@ async function copyTrackingUrl(code: string) {
               <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Leave blank if there is no fixed expiry date.</p>
             </div>
           </div>
-        </section>
+        </DashboardCollapsibleSection>
 
         <div class="flex items-center justify-start pb-2">
           <button
@@ -693,12 +693,12 @@ async function copyTrackingUrl(code: string) {
         </div>
       </form>
 
-      <!-- Application Requirements -->
-      <div class="ui-panel p-5 mb-6">
-        <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1">Application requirements</h2>
-        <p class="text-xs text-surface-400 dark:text-surface-500 mb-4">
-          Choose what candidates must provide when applying.
-        </p>
+      <DashboardCollapsibleSection
+        id="application-section-requirements"
+        class="mb-6"
+        title="Application requirements"
+        description="Choose what candidates must provide when applying."
+      >
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           <button
             type="button"
@@ -746,17 +746,17 @@ async function copyTrackingUrl(code: string) {
         <p class="text-xs text-surface-400 dark:text-surface-500" role="status">
           {{ requirementsSaveStatus }}
         </p>
-      </div>
+      </DashboardCollapsibleSection>
 
-      <!-- Compliance Questions -->
-      <div class="ui-panel p-5 mb-6">
-        <div class="mb-3 flex items-center gap-2">
+      <DashboardCollapsibleSection
+        id="application-section-compliance"
+        class="mb-6"
+        title="Compliance questions"
+        description="Add voluntary self-identification questions for US equal employment opportunity reporting."
+      >
+        <template #icon>
           <ShieldCheck class="size-4 text-surface-500 dark:text-surface-400" />
-          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300">Compliance questions</h2>
-        </div>
-        <p class="mb-4 text-xs text-surface-400 dark:text-surface-500">
-          Add voluntary self-identification questions for US equal employment opportunity reporting.
-        </p>
+        </template>
 
         <div class="mb-4 space-y-3">
           <button
@@ -825,44 +825,45 @@ async function copyTrackingUrl(code: string) {
         <p class="text-xs text-surface-400 dark:text-surface-500" role="status">
           {{ complianceSaveStatus }}
         </p>
-      </div>
+      </DashboardCollapsibleSection>
 
-      <!-- Application Form Questions -->
-      <div class="ui-panel p-5 mb-6">
-        <div class="flex items-center gap-2 mb-3">
+      <DashboardCollapsibleSection
+        id="application-section-questions"
+        class="mb-6"
+        title="Custom Questions"
+        description="Customize the questions applicants must answer when applying. All applications include name, email, and phone by default."
+      >
+        <template #icon>
           <FileText class="size-4 text-surface-500 dark:text-surface-400" />
-          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300">Custom Questions</h2>
-        </div>
-        <p class="text-xs text-surface-400 dark:text-surface-500 mb-4">
-          Customize the questions applicants must answer when applying. All applications include name, email, and phone by default.
-        </p>
+        </template>
         <JobQuestions :job-id="jobId" />
-      </div>
+      </DashboardCollapsibleSection>
 
-      <!-- Tracking Links for this Job -->
-      <div class="ui-panel p-5">
-        <div class="flex items-center justify-between mb-1">
-          <div class="flex items-center gap-2">
-            <Radio class="size-4 text-surface-500 dark:text-surface-400" />
-            <NuxtLink
-              :to="localePath({ path: '/dashboard/source-tracking', query: { jobId } })"
-              class="text-sm font-semibold text-surface-700 dark:text-surface-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
-            >
-              Tracking Links
-            </NuxtLink>
-          </div>
+      <DashboardCollapsibleSection
+        id="application-section-tracking"
+        title="Tracking Links"
+        description="Create unique tracking links for this job to measure where applications come from."
+      >
+        <template #icon>
+          <Radio class="size-4 text-surface-500 dark:text-surface-400" />
+        </template>
+        <template #actions>
+          <NuxtLink
+            :to="localePath({ path: '/dashboard/source-tracking', query: { jobId } })"
+            class="ui-button ui-button-secondary px-3 py-1.5 text-xs no-underline"
+          >
+            View all
+          </NuxtLink>
           <button
             v-if="canManageLinks"
+            type="button"
             class="ui-button ui-button-primary px-3 py-1.5 text-xs"
             @click="showCreateLinkModal = true"
           >
             <Plus class="size-3.5" />
             New Link
           </button>
-        </div>
-        <p class="text-xs text-surface-400 dark:text-surface-500 mb-4">
-          Create unique tracking links for this job to measure where applications come from.
-        </p>
+        </template>
 
         <div v-if="linksStatus === 'pending'" class="ui-empty-state py-6 text-sm">
           Loading…
@@ -938,7 +939,7 @@ async function copyTrackingUrl(code: string) {
             </div>
           </div>
         </div>
-      </div>
+      </DashboardCollapsibleSection>
     </template>
 
     <!-- ═══════════════════════════════════════ -->

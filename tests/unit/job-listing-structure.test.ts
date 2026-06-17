@@ -137,4 +137,30 @@ describe('job listing structure', () => {
     expect(editor).not.toContain('getBlockTitle')
     expect(editor).not.toContain('getBlockSummary')
   })
+
+  it('keeps application form panels navigable with collapsible sections', () => {
+    const editPage = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
+
+    expect(editPage).toContain('DashboardCollapsibleSection')
+    for (const sectionId of [
+      'application-section-basic-details',
+      'application-section-salary',
+      'application-section-schedule',
+      'application-section-requirements',
+      'application-section-compliance',
+      'application-section-questions',
+      'application-section-tracking',
+    ]) {
+      expect(editPage).toContain(`id="${sectionId}"`)
+    }
+    expect(editPage).toContain(':default-open="true"')
+
+    const collapsibleSection = readProjectFile('app/components/DashboardCollapsibleSection.vue')
+    expect(collapsibleSection).toContain('<details')
+    expect(collapsibleSection).toContain('<summary')
+    expect(collapsibleSection).toContain(':open="defaultOpen"')
+    expect(collapsibleSection).toContain('role="region"')
+    expect(collapsibleSection).toContain('group-open:rotate-0')
+    expect(collapsibleSection).toContain('ChevronDown')
+  })
 })
