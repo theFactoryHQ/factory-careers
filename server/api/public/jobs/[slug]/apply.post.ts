@@ -445,6 +445,29 @@ export default defineEventHandler(async (event) => {
   }
 
   // ─────────────────────────────────────────────
+  // 7a. Enforce document capacity before application side effects
+  // ─────────────────────────────────────────────
+
+  const builtInFileCount = resumeUpload ? 1 : 0
+  const totalNewFiles = uploadedFiles.size + builtInFileCount
+  if (totalNewFiles > 0) {
+    const existingDocCount = await db.$count(
+      document,
+      and(
+        eq(document.candidateId, candidateId),
+        eq(document.organizationId, orgId),
+      ),
+    )
+
+    if (existingDocCount + totalNewFiles > MAX_DOCUMENTS_PER_CANDIDATE) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: `Document limit reached. Maximum ${MAX_DOCUMENTS_PER_CANDIDATE} documents per candidate`,
+      })
+    }
+  }
+
+  // ─────────────────────────────────────────────
   // 8. Create application
   // ─────────────────────────────────────────────
 
@@ -552,26 +575,6 @@ export default defineEventHandler(async (event) => {
   // ─────────────────────────────────────────────
   // 10. Upload files to S3 and create document records
   // ─────────────────────────────────────────────
-
-  // Enforce per-candidate document limit (same as authenticated upload)
-  const builtInFileCount = resumeUpload ? 1 : 0
-  const totalNewFiles = uploadedFiles.size + builtInFileCount
-  if (totalNewFiles > 0) {
-    const existingDocCount = await db.$count(
-      document,
-      and(
-        eq(document.candidateId, candidateId),
-        eq(document.organizationId, orgId),
-      ),
-    )
-
-    if (existingDocCount + totalNewFiles > MAX_DOCUMENTS_PER_CANDIDATE) {
-      throw createError({
-        statusCode: 409,
-        statusMessage: `Document limit reached. Maximum ${MAX_DOCUMENTS_PER_CANDIDATE} documents per candidate`,
-      })
-    }
-  }
 
   const uploadedDocuments: { id: string; storageKey: string }[] = []
 

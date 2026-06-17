@@ -2,7 +2,12 @@ import type { H3Event } from 'h3'
 
 export function assertUploadContentLength(event: H3Event, maxBytes: number): void {
   const rawContentLength = getHeader(event, 'content-length')
-  if (!rawContentLength) return
+  if (!rawContentLength) {
+    throw createError({
+      statusCode: 411,
+      statusMessage: 'Content-Length header required for file uploads',
+    })
+  }
 
   const contentLength = Number(rawContentLength)
   if (!Number.isSafeInteger(contentLength) || contentLength < 0) {

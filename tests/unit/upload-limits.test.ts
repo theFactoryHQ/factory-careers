@@ -29,9 +29,9 @@ describe('upload content-length guard', () => {
       .not.toThrow()
   })
 
-  it('ignores missing content-length so chunked uploads still reach per-file validation', () => {
+  it('rejects missing content-length before multipart buffering', () => {
     expect(() => assertUploadContentLength(makeEvent() as any, 10 * 1024 * 1024))
-      .not.toThrow()
+      .toThrow(expect.objectContaining({ statusCode: 411 }))
   })
 
   it('rejects malformed content-length values', () => {

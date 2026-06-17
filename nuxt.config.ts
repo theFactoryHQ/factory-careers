@@ -230,9 +230,6 @@ export default defineNuxtConfig({
         }
         return email;
       })(),
-      /** Public live-demo passcode used to prefill sign-in */
-      liveDemoPasscode:
-        process.env.LIVE_DEMO_SECRET || process.env.DEMO_PASSWORD || "",
       /** Whether in-app feedback via GitHub Issues is enabled */
       feedbackEnabled: !!(
         process.env.GITHUB_FEEDBACK_TOKEN && process.env.GITHUB_FEEDBACK_REPO
