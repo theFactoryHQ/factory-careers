@@ -185,6 +185,12 @@ function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[
   return Array.isArray(divisions) ? divisions : []
 }
 
+function formatDivisionBadgeSuffix(division: FactoryDivision) {
+  const label = formatDivisionLabel(division).trim()
+  const suffix = label.replace(/^Factory\s*/i, '').trim()
+  return (suffix || label).toUpperCase()
+}
+
 function getDescriptionPreview(job: { description?: string | null; descriptionBlocks?: JobDescriptionBlock[] | null }) {
   const blockPreview = jobDescriptionBlocksToPlainText(normalizeJobDescriptionBlocks(job.descriptionBlocks ?? []))
   return blockPreview || job.description || ''
@@ -305,21 +311,18 @@ function getDescriptionPreview(job: { description?: string | null; descriptionBl
                 <MapPin class="size-3.5" />
                 {{ j.location }}
               </span>
-              <span class="text-white/60">
-                Posted {{ formatPostedDate(j.activeFrom, j.createdAt) }}
-              </span>
-            </div>
-
-            <div
-              v-if="getJobDivisions(j.divisions).length > 0"
-              class="mt-3 flex flex-wrap gap-2"
-            >
               <span
                 v-for="division in getJobDivisions(j.divisions)"
                 :key="division"
-                class="border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-medium text-white/58"
+                class="inline-flex items-center whitespace-nowrap border border-brand-500/25 bg-brand-500/[0.07] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/62"
               >
-                {{ formatDivisionLabel(division) }}
+                <span>
+                  <span class="text-brand-500">FACTORY</span>
+                  {{ formatDivisionBadgeSuffix(division) }}
+                </span>
+              </span>
+              <span class="text-white/60">
+                Posted {{ formatPostedDate(j.activeFrom, j.createdAt) }}
               </span>
             </div>
 

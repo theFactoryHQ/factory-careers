@@ -132,6 +132,22 @@ describe('job listing structure', () => {
     expect(cliSchemas).toContain('descriptionBlocks: jobDescriptionBlocksSchema.optional()')
   })
 
+  it('places public listing division badges inline after location with uppercase Factory treatment', () => {
+    const publicIndex = readProjectFile('app/pages/jobs/index.vue')
+    const cardMeta = publicIndex.match(/<!-- Meta -->[\s\S]*?<!-- Description preview -->/)?.[0] ?? ''
+    const locationIndex = cardMeta.indexOf('j.location')
+    const divisionIndex = cardMeta.indexOf('v-for="division in getJobDivisions(j.divisions)"')
+    const postedIndex = cardMeta.indexOf('Posted {{ formatPostedDate')
+
+    expect(publicIndex).toContain('function formatDivisionBadgeSuffix')
+    expect(cardMeta).toContain('text-brand-500">FACTORY</span>')
+    expect(cardMeta).toContain('uppercase tracking-[0.16em]')
+    expect(locationIndex).toBeGreaterThan(-1)
+    expect(divisionIndex).toBeGreaterThan(locationIndex)
+    expect(postedIndex).toBeGreaterThan(divisionIndex)
+    expect(cardMeta).not.toContain('class="mt-3 flex flex-wrap gap-2"')
+  })
+
   it('keeps long description block editors navigable with collapsible sections', () => {
     const editor = readProjectFile('app/components/JobDescriptionBlocksEditor.vue')
 
