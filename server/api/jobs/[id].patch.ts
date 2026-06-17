@@ -39,8 +39,13 @@ export default defineEventHandler(async (event) => {
     updates.descriptionBlocks = descriptionBlocks
     updates.description = jobDescriptionBlocksToMarkdown(descriptionBlocks) || null
   }
-  if (body.title || body.slug) {
-    updates.slug = generateJobSlug(body.title ?? existing.title, id, body.slug)
+  if (body.title !== undefined || body.slug !== undefined) {
+    updates.slug = await generateUniqueJobSlug({
+      title: body.title ?? existing.title,
+      id,
+      customSlug: body.slug,
+      currentJobId: id,
+    })
   }
 
   const [updated] = await db.update(job)

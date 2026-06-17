@@ -8,9 +8,9 @@ export default defineEventHandler(async (event) => {
 
   const body = await readValidatedBody(event, createJobSchema.parse)
 
-  // Generate a deterministic ID upfront so we can build the slug
+  // Generate a deterministic ID upfront so we can return it immediately.
   const jobId = crypto.randomUUID()
-  const slug = generateJobSlug(body.title, jobId, body.slug)
+  const slug = await generateUniqueJobSlug({ title: body.title, id: jobId, customSlug: body.slug })
   const descriptionBlocks = normalizeJobDescriptionBlocks(body.descriptionBlocks)
   const generatedDescription = jobDescriptionBlocksToMarkdown(descriptionBlocks)
 

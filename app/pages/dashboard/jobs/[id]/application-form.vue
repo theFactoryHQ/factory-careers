@@ -94,17 +94,56 @@ const form = ref({
   validThrough: '',
 })
 
+const slugManuallyEdited = ref(false)
+const lastAutoSlug = ref('')
+
+function generateTitleSlug(title: string): string {
+  const base = title
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80)
+
+  return base || 'job'
+}
+
+function looksLikeGeneratedSlug(slug: string, title: string): boolean {
+  const trimmedSlug = slug.trim()
+  if (!trimmedSlug) return false
+
+  const titleSlug = generateTitleSlug(title)
+  if (trimmedSlug === titleSlug) return true
+
+  return trimmedSlug.startsWith(`${titleSlug}-`) && /(?:-[0-9a-f]{7,8})+$/i.test(trimmedSlug)
+}
+
+function markSlugManuallyEdited() {
+  const slug = form.value.slug.trim()
+  slugManuallyEdited.value = Boolean(slug) && slug !== lastAutoSlug.value
+}
+
 watch([job, defaultSalaryUnit], ([j]) => {
   if (!j) return
   const descriptionBlocks = normalizeJobDescriptionBlocks(j.descriptionBlocks)
+  const title = j.title ?? ''
+  const loadedSlug = j.slug ?? ''
+  const autoSlug = generateTitleSlug(title)
+  const shouldUseAutoSlug = !loadedSlug || looksLikeGeneratedSlug(loadedSlug, title)
+
+  slugManuallyEdited.value = !shouldUseAutoSlug
+  lastAutoSlug.value = autoSlug
+
   form.value = {
-    title: j.title ?? '',
+    title,
     description: j.description ?? '',
     divisions: Array.isArray(j.divisions) ? j.divisions : [],
     descriptionBlocks: descriptionBlocks.length > 0 ? descriptionBlocks : legacyDescriptionToBlocks(j.description),
     location: j.location ?? '',
     type: j.type ?? 'full_time',
-    slug: j.slug ?? '',
+    slug: shouldUseAutoSlug ? autoSlug : loadedSlug,
     salaryMin: j.salaryMin ?? null,
     salaryMax: j.salaryMax ?? null,
     salaryCurrency: j.salaryCurrency ?? 'USD',
@@ -116,6 +155,14 @@ watch([job, defaultSalaryUnit], ([j]) => {
     validThrough: j.validThrough ? toDateInputValue(j.validThrough) : '',
   }
 }, { immediate: true })
+
+watch(() => form.value.title, (title) => {
+  const nextAutoSlug = generateTitleSlug(title)
+  lastAutoSlug.value = nextAutoSlug
+  if (!slugManuallyEdited.value) {
+    form.value.slug = nextAutoSlug
+  }
+})
 
 watch(() => form.value.salaryNegotiable, (negotiable) => {
   if (negotiable) {
@@ -583,9 +630,10 @@ async function copyTrackingUrl(code: string) {
                 type="text"
                 placeholder="auto-generated-from-title"
                 class="ui-field px-3 py-2 text-xs font-mono"
+                @input="markSlugManuallyEdited"
               />
               <p class="mt-1 text-xs text-surface-400 dark:text-surface-500">
-                Used in the public application URL. Leave blank to auto-generate from title.
+                Auto-updates from the title until edited. Leave blank to auto-generate from title.
               </p>
             </div>
           </div>

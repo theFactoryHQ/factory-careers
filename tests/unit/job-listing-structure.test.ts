@@ -237,4 +237,33 @@ describe('job listing structure', () => {
     expect(collapsibleSection).toContain('group-open:rotate-0')
     expect(collapsibleSection).toContain('ChevronDown')
   })
+
+  it('keeps the application slug synced to the title until manually edited', () => {
+    const editPage = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
+    const slugify = readProjectFile('server/utils/slugify.ts')
+
+    expect(slugify).not.toContain('shortId')
+    expect(slugify).not.toContain('id.replace')
+    expect(slugify).toContain("return base || 'job'")
+    expect(editPage).toContain('const slugManuallyEdited = ref(false)')
+    expect(editPage).toContain('function generateTitleSlug')
+    expect(editPage).toContain('function looksLikeGeneratedSlug')
+    expect(editPage).toContain('function markSlugManuallyEdited')
+    expect(editPage).toContain('watch(() => form.value.title')
+    expect(editPage).toContain('@input="markSlugManuallyEdited"')
+    expect(editPage).toContain('Auto-updates from the title until edited.')
+  })
+
+  it('resolves duplicate job slugs with readable suffixes instead of id fragments', () => {
+    const createRoute = readProjectFile('server/api/jobs/index.post.ts')
+    const patchRoute = readProjectFile('server/api/jobs/[id].patch.ts')
+    const slugify = readProjectFile('server/utils/slugify.ts')
+
+    expect(slugify).toContain('export async function generateUniqueJobSlug')
+    expect(slugify).toContain('appendJobSlugSuffix')
+    expect(slugify).toContain('statusCode: 409')
+    expect(createRoute).toContain('await generateUniqueJobSlug')
+    expect(patchRoute).toContain('await generateUniqueJobSlug')
+    expect(patchRoute).toContain('body.slug !== undefined')
+  })
 })
