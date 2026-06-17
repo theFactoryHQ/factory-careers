@@ -458,7 +458,7 @@ async function copyTrackingUrl(code: string) {
             @click="savePostingDetails"
           >
             <Save class="size-4" />
-            {{ isSavingPosting ? 'Saving...' : 'Save changes' }}
+            {{ isSavingPosting ? 'Saving...' : 'Save' }}
           </button>
         </div>
       </div>
