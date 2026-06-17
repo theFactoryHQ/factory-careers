@@ -148,7 +148,7 @@ function getBlockKindLabel(block: JobDescriptionBlock) {
       <div class="flex items-start gap-2">
         <button
           type="button"
-          class="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-surface-50 focus:outline-none focus:ring-2 focus:ring-brand-500/25 dark:hover:bg-surface-900"
+          class="group/block-toggle flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left transition-[background-color,box-shadow,color] hover:bg-brand-50/80 hover:ring-1 hover:ring-brand-500/25 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:hover:bg-brand-950/40 dark:hover:ring-brand-500/30"
           :aria-expanded="!isBlockCollapsed(index)"
           :aria-controls="`job-description-block-${index}`"
           @click="toggleBlockCollapsed(index)"
@@ -158,10 +158,10 @@ function getBlockKindLabel(block: JobDescriptionBlock) {
             :class="isBlockCollapsed(index) ? '-rotate-90' : 'rotate-0'"
           />
           <span class="flex min-w-0 flex-1 items-center gap-2">
-            <span class="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-100 text-xs font-semibold text-surface-500 dark:bg-surface-800 dark:text-surface-300">
+            <span class="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-100 text-xs font-semibold text-surface-500 transition-colors group-hover/block-toggle:bg-brand-100 group-hover/block-toggle:text-brand-700 dark:bg-surface-800 dark:text-surface-300 dark:group-hover/block-toggle:bg-brand-900/50 dark:group-hover/block-toggle:text-brand-200">
               {{ index + 1 }}
             </span>
-            <span class="truncate text-sm font-medium text-surface-900 dark:text-surface-100">
+            <span class="truncate text-sm font-medium text-surface-900 transition-colors group-hover/block-toggle:text-brand-700 dark:text-surface-100 dark:group-hover/block-toggle:text-brand-200">
               {{ getBlockKindLabel(block) }}
             </span>
           </span>
