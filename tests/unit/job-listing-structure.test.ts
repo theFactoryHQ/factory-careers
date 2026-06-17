@@ -158,6 +158,17 @@ describe('job listing structure', () => {
     const editPage = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
 
     expect(editPage).toContain('DashboardCollapsibleSection')
+    const headerActionsIndex = editPage.indexOf('data-testid="application-form-header-actions"')
+    const previewActionIndex = editPage.indexOf('Preview form')
+    const saveChangesIndex = editPage.indexOf("{{ isSavingPosting ? 'Saving...' : 'Save changes' }}")
+    const formStartIndex = editPage.indexOf('<form class="space-y-6"')
+
+    expect(headerActionsIndex).toBeGreaterThan(-1)
+    expect(previewActionIndex).toBeGreaterThan(headerActionsIndex)
+    expect(saveChangesIndex).toBeGreaterThan(headerActionsIndex)
+    expect(saveChangesIndex).toBeLessThan(formStartIndex)
+    expect(editPage).not.toContain('Save application details')
+
     for (const sectionId of [
       'application-section-basic-details',
       'application-section-salary',

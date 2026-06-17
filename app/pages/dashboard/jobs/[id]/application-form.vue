@@ -427,14 +427,28 @@ async function copyTrackingUrl(code: string) {
             Configure the application experience for <strong>{{ job.title }}</strong>.
           </p>
         </div>
-        <button
-          type="button"
-          class="ui-button ui-button-secondary h-10 shrink-0 px-4 text-sm"
-          @click="showApplicationPreview = true"
+        <div
+          data-testid="application-form-header-actions"
+          class="flex flex-wrap items-center gap-2 sm:justify-end"
         >
-          <Eye class="size-4" />
-          Preview form
-        </button>
+          <button
+            type="button"
+            class="ui-button ui-button-secondary h-10 shrink-0 px-4 text-sm"
+            @click="showApplicationPreview = true"
+          >
+            <Eye class="size-4" />
+            Preview form
+          </button>
+          <button
+            type="button"
+            :disabled="isSavingPosting"
+            class="ui-button ui-button-primary h-10 shrink-0 px-5 text-sm"
+            @click="savePostingDetails"
+          >
+            <Save class="size-4" />
+            {{ isSavingPosting ? 'Saving...' : 'Save changes' }}
+          </button>
+        </div>
       </div>
       <!-- Shareable application link (only when job is open) -->
       <div v-if="job.status === 'open'" class="ui-panel-brand p-5 mb-6">
@@ -681,16 +695,6 @@ async function copyTrackingUrl(code: string) {
           </div>
         </DashboardCollapsibleSection>
 
-        <div class="flex items-center justify-start pb-2">
-          <button
-            type="submit"
-            :disabled="isSavingPosting"
-            class="ui-button ui-button-primary h-10 px-5 text-sm"
-          >
-            <Save class="size-4" />
-            {{ isSavingPosting ? 'Saving...' : 'Save application details' }}
-          </button>
-        </div>
       </form>
 
       <DashboardCollapsibleSection
