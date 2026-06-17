@@ -12,6 +12,7 @@ const factoryDivisionSchema = z.enum([
 const jobDescriptionBlocksSchema = z.array(z.discriminatedUnion('type', [
   z.object({
     type: z.literal('paragraph'),
+    heading: z.string().max(200).optional(),
     body: z.string().max(10000),
   }),
   z.object({

@@ -76,12 +76,21 @@ function removeBlock(index: number) {
 }
 
 function updateParagraph(index: number, body: string) {
-  updateBlock(index, { type: 'paragraph', body })
+  const block = blocks.value[index]
+  if (block?.type !== 'paragraph') return
+  updateBlock(index, { ...block, body })
 }
 
-function updateBulletHeading(index: number, heading: string) {
+function updateBlockHeading(index: number, heading: string) {
   const block = blocks.value[index]
-  if (block?.type !== 'bullet_list') return
+  if (!block) return
+
+  if (block.type === 'paragraph') {
+    const nextBlock = heading ? { ...block, heading } : { type: 'paragraph' as const, body: block.body }
+    updateBlock(index, nextBlock)
+    return
+  }
+
   updateBlock(index, { ...block, heading })
 }
 
@@ -151,7 +160,11 @@ function toggleBlockCollapsed(index: number) {
   collapsedBlockIndexes.value = next
 }
 
-function getBlockKindLabel(block: JobDescriptionBlock) {
+function getBlockHeadingValue(block: JobDescriptionBlock) {
+  return block.heading ?? ''
+}
+
+function getBlockHeadingPlaceholder(block: JobDescriptionBlock) {
   return block.type === 'paragraph' ? 'Paragraph' : 'Bullet section'
 }
 </script>
@@ -163,27 +176,33 @@ function getBlockKindLabel(block: JobDescriptionBlock) {
       :key="index"
       class="group/description-block relative rounded-md border border-surface-200 bg-white p-3 dark:border-surface-800 dark:bg-surface-950"
     >
-      <div class="flex items-start gap-2">
+      <div class="flex items-start gap-2 pr-9">
         <button
           type="button"
-          class="group/block-toggle flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left transition-[background-color,box-shadow,color] hover:bg-brand-50/80 hover:ring-1 hover:ring-brand-500/25 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:hover:bg-brand-950/40 dark:hover:ring-brand-500/30"
+          class="group/block-toggle inline-flex shrink-0 items-center gap-2 rounded-md px-2 py-1.5 text-left transition-[background-color,box-shadow,color] hover:bg-brand-50/80 hover:ring-1 hover:ring-brand-500/25 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:hover:bg-brand-950/40 dark:hover:ring-brand-500/30"
           :aria-expanded="!isBlockCollapsed(index)"
           :aria-controls="`job-description-block-${index}`"
+          aria-label="Toggle description section"
           @click="toggleBlockCollapsed(index)"
         >
           <ChevronDown
             class="size-4 shrink-0 text-surface-400 transition-transform"
             :class="isBlockCollapsed(index) ? '-rotate-90' : 'rotate-0'"
           />
-          <span class="flex min-w-0 flex-1 items-center gap-2">
-            <span class="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-100 text-xs font-semibold text-surface-500 transition-colors group-hover/block-toggle:bg-brand-100 group-hover/block-toggle:text-brand-700 dark:bg-surface-800 dark:text-surface-300 dark:group-hover/block-toggle:bg-brand-900/50 dark:group-hover/block-toggle:text-brand-200">
-              {{ index + 1 }}
-            </span>
-            <span class="truncate text-sm font-medium text-surface-900 transition-colors group-hover/block-toggle:text-brand-700 dark:text-surface-100 dark:group-hover/block-toggle:text-brand-200">
-              {{ getBlockKindLabel(block) }}
-            </span>
+          <span class="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-100 text-xs font-semibold text-surface-500 transition-colors group-hover/block-toggle:bg-brand-100 group-hover/block-toggle:text-brand-700 dark:bg-surface-800 dark:text-surface-300 dark:group-hover/block-toggle:bg-brand-900/50 dark:group-hover/block-toggle:text-brand-200">
+            {{ index + 1 }}
           </span>
         </button>
+        <input
+          :value="getBlockHeadingValue(block)"
+          type="text"
+          aria-label="Description section title"
+          :placeholder="getBlockHeadingPlaceholder(block)"
+          class="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm font-medium text-surface-900 outline-none transition-[background-color,border-color,box-shadow,color] placeholder:text-surface-500 hover:border-surface-200 hover:bg-surface-50 focus:border-brand-500/60 focus:bg-white focus:ring-2 focus:ring-brand-500/20 dark:text-surface-100 dark:placeholder:text-surface-400 dark:hover:border-surface-700 dark:hover:bg-surface-900/60 dark:focus:bg-surface-950"
+          @click.stop
+          @keydown.enter.prevent
+          @input="updateBlockHeading(index, ($event.target as HTMLInputElement).value)"
+        />
 
         <button
           v-if="blocks.length > 1"
@@ -241,13 +260,6 @@ function getBlockKindLabel(block: JobDescriptionBlock) {
         />
 
         <div v-else class="space-y-2">
-          <input
-            :value="block.heading"
-            type="text"
-            placeholder="Section heading"
-            class="ui-field px-3 py-2 text-sm font-medium"
-            @input="updateBulletHeading(index, ($event.target as HTMLInputElement).value)"
-          />
           <div class="space-y-2">
             <div
               v-for="(item, itemIndex) in block.items"

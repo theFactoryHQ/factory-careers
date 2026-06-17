@@ -1,6 +1,7 @@
 import type { JobDescriptionBlock } from '~~/shared/job-listing-structure'
 
 export type BlockTypeDraft = {
+  paragraphHeading?: string
   paragraphBody?: string
   bulletHeading?: string
   bulletItems?: string[]
@@ -26,7 +27,7 @@ function paragraphBodyToBulletItems(body: string) {
 }
 
 function bulletBlockToParagraphBody(block: Extract<JobDescriptionBlock, { type: 'bullet_list' }>) {
-  return [block.heading, ...block.items]
+  return block.items
     .map((line) => line.trim())
     .filter(Boolean)
     .join('\n')
@@ -34,7 +35,7 @@ function bulletBlockToParagraphBody(block: Extract<JobDescriptionBlock, { type: 
 
 export function captureBlockTypeDraft(draft: BlockTypeDraft, block: JobDescriptionBlock): BlockTypeDraft {
   return block.type === 'paragraph'
-    ? { ...draft, paragraphBody: block.body }
+    ? { ...draft, paragraphHeading: block.heading, paragraphBody: block.body }
     : { ...draft, bulletHeading: block.heading, bulletItems: [...block.items] }
 }
 
@@ -44,7 +45,12 @@ export function createBlockFromDraft(
   fallbackBlock?: JobDescriptionBlock,
 ): JobDescriptionBlock {
   if (type === 'paragraph') {
-    return {
+    const heading = hasDraftValue(draft, 'paragraphHeading')
+      ? draft.paragraphHeading ?? ''
+      : fallbackBlock?.type === 'bullet_list'
+        ? fallbackBlock.heading
+        : ''
+    const block: Extract<JobDescriptionBlock, { type: 'paragraph' }> = {
       type: 'paragraph',
       body: hasDraftValue(draft, 'paragraphBody')
         ? draft.paragraphBody ?? ''
@@ -52,11 +58,16 @@ export function createBlockFromDraft(
           ? bulletBlockToParagraphBody(fallbackBlock)
           : '',
     }
+    return heading ? { ...block, heading } : block
   }
 
   return {
     type: 'bullet_list',
-    heading: hasDraftValue(draft, 'bulletHeading') ? draft.bulletHeading ?? '' : '',
+    heading: hasDraftValue(draft, 'bulletHeading')
+      ? draft.bulletHeading ?? ''
+      : fallbackBlock?.type === 'paragraph'
+        ? fallbackBlock.heading ?? ''
+        : '',
     items: hasDraftValue(draft, 'bulletItems')
       ? normalizeDraftBulletItems(draft.bulletItems)
       : fallbackBlock?.type === 'paragraph'

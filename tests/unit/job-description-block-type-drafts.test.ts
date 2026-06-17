@@ -52,7 +52,8 @@ describe('job description block type drafts', () => {
       items: ['Design initiatives', 'Develop programming calendars'],
     })).toEqual({
       type: 'paragraph',
-      body: 'Factory Cares Responsibilities\nDesign initiatives\nDevelop programming calendars',
+      heading: 'Factory Cares Responsibilities',
+      body: 'Design initiatives\nDevelop programming calendars',
     })
   })
 

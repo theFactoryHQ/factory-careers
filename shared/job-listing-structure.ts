@@ -20,6 +20,7 @@ export const factoryDivisionSchema = z.enum(FACTORY_DIVISION_VALUES)
 
 export type ParagraphJobDescriptionBlock = {
   type: 'paragraph'
+  heading?: string
   body: string
 }
 
@@ -33,6 +34,7 @@ export type JobDescriptionBlock = ParagraphJobDescriptionBlock | BulletListJobDe
 
 export const paragraphJobDescriptionBlockSchema = z.object({
   type: z.literal('paragraph'),
+  heading: z.string().max(200).optional(),
   body: z.string().max(10000),
 })
 
@@ -59,8 +61,10 @@ export function normalizeJobDescriptionBlocks(blocks: unknown): JobDescriptionBl
 
   return parsed.data.flatMap((block): JobDescriptionBlock[] => {
     if (block.type === 'paragraph') {
+      const heading = cleanText(block.heading ?? '')
       const body = cleanText(block.body)
-      return body ? [{ type: 'paragraph', body }] : []
+      if (!body) return []
+      return [heading ? { type: 'paragraph', heading, body } : { type: 'paragraph', body }]
     }
 
     const heading = cleanText(block.heading)
@@ -72,7 +76,7 @@ export function normalizeJobDescriptionBlocks(blocks: unknown): JobDescriptionBl
 export function jobDescriptionBlocksToMarkdown(blocks: JobDescriptionBlock[]): string {
   return normalizeJobDescriptionBlocks(blocks)
     .flatMap((block) => {
-      if (block.type === 'paragraph') return [block.body]
+      if (block.type === 'paragraph') return block.heading ? [`### ${block.heading}`, block.body] : [block.body]
       return [`### ${block.heading}`, ...block.items.map((item) => `- ${item}`)]
     })
     .join('\n\n')
@@ -81,7 +85,7 @@ export function jobDescriptionBlocksToMarkdown(blocks: JobDescriptionBlock[]): s
 export function jobDescriptionBlocksToPlainText(blocks: JobDescriptionBlock[]): string {
   return normalizeJobDescriptionBlocks(blocks)
     .flatMap((block) => {
-      if (block.type === 'paragraph') return [block.body]
+      if (block.type === 'paragraph') return block.heading ? [block.heading, block.body] : [block.body]
       return [block.heading, ...block.items]
     })
     .join('\n')

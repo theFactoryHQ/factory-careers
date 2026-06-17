@@ -21,21 +21,23 @@ describe('job listing structure', () => {
     ])
 
     const blocks = listingStructure.normalizeJobDescriptionBlocks([
-      { type: 'paragraph', body: '  Build with operators across the Factory platform.  ' },
+      { type: 'paragraph', heading: '  Platform scope  ', body: '  Build with operators across the Factory platform.  ' },
       { type: 'bullet_list', heading: 'You will', items: ['  Lead searches ', '', 'Run structured hiring loops'] },
       { type: 'paragraph', body: '   ' },
     ])
 
     expect(blocks).toEqual([
-      { type: 'paragraph', body: 'Build with operators across the Factory platform.' },
+      { type: 'paragraph', heading: 'Platform scope', body: 'Build with operators across the Factory platform.' },
       { type: 'bullet_list', heading: 'You will', items: ['Lead searches', 'Run structured hiring loops'] },
     ])
     expect(listingStructure.jobDescriptionBlocksToMarkdown(blocks)).toBe([
+      '### Platform scope',
       'Build with operators across the Factory platform.',
       '### You will',
       '- Lead searches',
       '- Run structured hiring loops',
     ].join('\n\n'))
+    expect(listingStructure.jobDescriptionBlocksToPlainText(blocks)).toContain('Platform scope')
     expect(listingStructure.jobDescriptionBlocksToPlainText(blocks)).toContain('You will')
     expect(listingStructure.legacyDescriptionToBlocks('Legacy description')).toEqual([
       { type: 'paragraph', body: 'Legacy description' },
@@ -138,7 +140,11 @@ describe('job listing structure', () => {
     expect(editor).toContain('aria-expanded')
     expect(editor).toContain('isBlockCollapsed(index)')
     expect(editor).toContain('{{ index + 1 }}')
-    expect(editor).toContain('{{ getBlockKindLabel(block) }}')
+    expect(editor).toContain('getBlockHeadingValue')
+    expect(editor).toContain('getBlockHeadingPlaceholder')
+    expect(editor).toContain('updateBlockHeading')
+    expect(editor).toContain('aria-label="Description section title"')
+    expect(editor).toContain(':placeholder="getBlockHeadingPlaceholder(block)"')
     expect(editor).toContain('group/block-toggle')
     expect(editor).toContain('hover:ring-brand-500/25')
     expect(editor).toContain('group-hover/block-toggle:bg-brand-100')
@@ -158,6 +164,8 @@ describe('job listing structure', () => {
     expect(editor).toContain('blockTypeDrafts')
     expect(editor).toContain('captureBlockTypeDraft')
     expect(editor).toContain('createBlockFromDraft')
+    expect(editor).not.toContain('placeholder="Section heading"')
+    expect(editor).not.toContain('{{ getBlockKindLabel(block) }}')
     expect(editor).not.toContain("updateBlock(index, type === 'paragraph' ? emptyParagraph() : emptyBulletList())")
     expect(editor).not.toContain('getBlockTitle')
     expect(editor).not.toContain('getBlockSummary')
