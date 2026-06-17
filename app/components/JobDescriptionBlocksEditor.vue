@@ -303,14 +303,20 @@ function getBlockHeadingPlaceholder(block: JobDescriptionBlock) {
               </button>
             </div>
           </div>
-          <button
-            type="button"
-            class="ui-button ui-button-secondary h-8 px-3 text-xs"
-            @click="addBulletItem(index)"
-          >
-            <Plus class="size-3.5" />
-            Add bullet
-          </button>
+          <div class="flex pt-1 pl-8">
+            <button
+              type="button"
+              data-testid="add-bullet-inline-action"
+              class="group/add-bullet inline-flex h-7 items-center gap-1.5 rounded-full border border-transparent px-1.5 pr-2 text-xs font-medium text-surface-500 transition-[background-color,border-color,color] hover:border-surface-200 hover:bg-surface-50 hover:text-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:text-surface-400 dark:hover:border-surface-700 dark:hover:bg-surface-900/70 dark:hover:text-surface-100"
+              aria-label="Add bullet point"
+              @click="addBulletItem(index)"
+            >
+              <span class="inline-flex size-4 items-center justify-center rounded-full bg-surface-100 text-surface-500 transition-colors group-hover/add-bullet:bg-brand-500/10 group-hover/add-bullet:text-brand-600 dark:bg-surface-800 dark:text-surface-400 dark:group-hover/add-bullet:text-brand-300">
+                <Plus class="size-3" />
+              </span>
+              <span>Add bullet</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
