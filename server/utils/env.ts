@@ -331,7 +331,7 @@ export const envSchema = z
         code: z.ZodIssueCode.custom,
         path: ['SMTP_HOST'],
         message: 'SMTP_HOST is required when SMTP_USER or SMTP_PASS is set.',
-      })
+      });
     }
 
     if (data.FACTORY_EMAIL_TEST_MODE === "capture") {

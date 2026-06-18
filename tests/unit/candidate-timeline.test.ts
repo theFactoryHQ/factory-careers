@@ -127,6 +127,14 @@ function makeEntry(overrides: Partial<TimelineEntry> = {}): TimelineEntry {
   }
 }
 
+function isSidebarOpen(selectedAppId: string | null): boolean {
+  return Boolean(selectedAppId)
+}
+
+function shouldLoadTimeline(activeTab: 'overview' | 'timeline', loaded: boolean): boolean {
+  return activeTab === 'timeline' && !loaded
+}
+
 describe('getTimelineActionColor', () => {
   it('returns green for created', () => {
     expect(getTimelineActionColor('created')).toBe('bg-green-500')
@@ -258,22 +266,15 @@ describe('describeTimelineItem', () => {
 
 describe('source-tracking sidebar state', () => {
   it('selectedAppId starts as null (sidebar closed)', () => {
-    const selectedAppId: string | null = null
-    const sidebarOpen = Boolean(selectedAppId)
-    expect(sidebarOpen).toBe(false)
+    expect(isSidebarOpen(null)).toBe(false)
   })
 
   it('setting selectedAppId opens the sidebar', () => {
-    const selectedAppId: string | null = 'app-123'
-    const sidebarOpen = Boolean(selectedAppId)
-    expect(sidebarOpen).toBe(true)
+    expect(isSidebarOpen('app-123')).toBe(true)
   })
 
   it('clearing selectedAppId closes the sidebar', () => {
-    let selectedAppId: string | null = 'app-123'
-    selectedAppId = null
-    const sidebarOpen = Boolean(selectedAppId)
-    expect(sidebarOpen).toBe(false)
+    expect(isSidebarOpen(null)).toBe(false)
   })
 })
 
@@ -283,22 +284,13 @@ describe('source-tracking sidebar state', () => {
 
 describe('timeline tab lazy loading', () => {
   it('does not load until timeline tab is active', () => {
-    let activeTab: 'overview' | 'timeline' = 'overview'
-    let loaded = false
-
-    // Simulating the watch behavior
-    if (activeTab === 'timeline' && !loaded) {
-      loaded = true
-    }
-
-    expect(loaded).toBe(false)
+    expect(shouldLoadTimeline('overview', false)).toBe(false)
   })
 
   it('triggers load when timeline tab becomes active', () => {
-    let activeTab: 'overview' | 'timeline' = 'timeline'
     let loaded = false
 
-    if (activeTab === 'timeline' && !loaded) {
+    if (shouldLoadTimeline('timeline', loaded)) {
       loaded = true
     }
 
@@ -307,11 +299,7 @@ describe('timeline tab lazy loading', () => {
 
   it('does not reload if already loaded', () => {
     let loadCount = 0
-    const loaded = true
-
-    // Simulate switching back to timeline
-    const activeTab: 'overview' | 'timeline' = 'timeline'
-    if (activeTab === 'timeline' && !loaded) {
+    if (shouldLoadTimeline('timeline', true)) {
       loadCount++
     }
 
@@ -325,21 +313,22 @@ describe('timeline tab lazy loading', () => {
 
 describe('timeline state reset on application switch', () => {
   it('clears timeline data when applicationId changes', () => {
-    // Simulate initial state with loaded timeline
-    let timelineItems: TimelineEntry[] = [makeEntry()]
-    let timelineLoaded = true
-    let timelineError: string | null = null
-    let activeTab = 'timeline'
+    const state = {
+      timelineItems: [makeEntry()],
+      timelineLoaded: true,
+      timelineError: null as string | null,
+      activeTab: 'timeline',
+    }
 
     // Simulate applicationId change handler
-    activeTab = 'overview'
-    timelineItems = []
-    timelineLoaded = false
-    timelineError = null
+    state.activeTab = 'overview'
+    state.timelineItems = []
+    state.timelineLoaded = false
+    state.timelineError = null
 
-    expect(timelineItems).toEqual([])
-    expect(timelineLoaded).toBe(false)
-    expect(timelineError).toBeNull()
-    expect(activeTab).toBe('overview')
+    expect(state.timelineItems).toEqual([])
+    expect(state.timelineLoaded).toBe(false)
+    expect(state.timelineError).toBeNull()
+    expect(state.activeTab).toBe('overview')
   })
 })

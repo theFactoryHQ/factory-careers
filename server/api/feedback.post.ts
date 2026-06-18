@@ -35,8 +35,9 @@ function normalizeSingleLine(value: string): string {
   return value.replace(/[\r\n]+/g, ' ').trim()
 }
 
-function escapeMarkdownTableValue(value: string): string {
+export function escapeMarkdownTableValue(value: string): string {
   return normalizeSingleLine(value)
+    .replace(/\\/g, '\\\\')
     .replace(/\|/g, '\\|')
 }
 

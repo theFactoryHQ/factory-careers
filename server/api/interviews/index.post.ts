@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm'
-import { interview, interviewCalendarEvent, application, candidate, job, organization } from '../../database/schema'
+import { interview, interviewCalendarEvent, application, organization } from '../../database/schema'
 import { createInterviewSchema } from '../../utils/schemas/interview'
 import { createConnectedCalendarEvents } from '../../utils/calendar'
 

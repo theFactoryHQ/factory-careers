@@ -15,6 +15,15 @@ const baseEnv = {
 
 const originalEnv = { ...process.env }
 
+function isMicrosoftGraphUrl(value: unknown): boolean {
+  try {
+    return new URL(String(value)).hostname === 'graph.microsoft.com'
+  }
+  catch {
+    return false
+  }
+}
+
 function resetEnvCache() {
   delete (globalThis as Record<string, unknown>).__env
 }
@@ -141,7 +150,7 @@ describe('Microsoft Calendar app-only event creation', () => {
       }
 
       const eventNumber = fetchMock.mock.calls.filter(([calledUrl]) =>
-        String(calledUrl).includes('graph.microsoft.com'),
+        isMicrosoftGraphUrl(calledUrl),
       ).length
       return {
         id: `event-${eventNumber}`,
@@ -172,7 +181,7 @@ describe('Microsoft Calendar app-only event creation', () => {
       { email: 'recruiting@thefactoryhq.com', isPrimary: false, success: true },
     ])
 
-    const eventCalls = fetchMock.mock.calls.filter(([url]) => String(url).includes('graph.microsoft.com'))
+    const eventCalls = fetchMock.mock.calls.filter(([url]) => isMicrosoftGraphUrl(url))
     expect(eventCalls.map(([url]) => String(url))).toEqual([
       'https://graph.microsoft.com/v1.0/users/interviews%40thefactoryhq.com/calendar/events',
       'https://graph.microsoft.com/v1.0/users/doug%40thefactoryhq.com/calendar/events',

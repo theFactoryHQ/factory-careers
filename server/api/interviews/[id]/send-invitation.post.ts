@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm'
-import { interview, application, candidate, job, emailTemplate, organization, orgSettings } from '../../../database/schema'
+import { interview, application, emailTemplate, organization, orgSettings } from '../../../database/schema'
 import { interviewIdParamSchema } from '../../../utils/schemas/interview'
 import { sendInterviewInvitationSchema, SYSTEM_TEMPLATES } from '../../../utils/schemas/emailTemplate'
 import { sendInterviewInvitationEmail, renderTemplate, getFromEmail, type InterviewEmailData } from '../../../utils/email'

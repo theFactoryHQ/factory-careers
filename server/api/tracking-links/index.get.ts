@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from 'drizzle-orm'
+import { eq, and, desc } from 'drizzle-orm'
 import { trackingLink, job } from '../../database/schema'
 import { trackingLinkQuerySchema } from '../../utils/schemas/trackingLink'
 
