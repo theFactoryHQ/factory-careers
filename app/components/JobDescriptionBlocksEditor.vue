@@ -231,7 +231,7 @@ function getBlockHeadingPlaceholder(block: JobDescriptionBlock) {
           aria-required="true"
           :placeholder="getBlockHeadingPlaceholder(block)"
           required
-          class="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm font-medium text-surface-900 outline-none transition-[background-color,border-color,box-shadow,color] placeholder:text-surface-500 hover:border-surface-200 hover:bg-surface-50 focus:border-brand-500/60 focus:bg-white focus:ring-2 focus:ring-brand-500/20 dark:text-surface-100 dark:placeholder:text-surface-400 dark:hover:border-surface-700 dark:hover:bg-surface-900/60 dark:focus:bg-surface-950"
+          class="factory-description-heading-input min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm font-medium text-surface-900 outline-none transition-[background-color,border-color,box-shadow,color] placeholder:text-surface-500 hover:bg-transparent focus:border-brand-500/60 focus:bg-transparent focus:ring-2 focus:ring-brand-500/20 dark:text-surface-100 dark:placeholder:text-surface-400 dark:hover:bg-transparent dark:focus:bg-transparent"
           @click.stop
           @keydown.enter.prevent
           @input="onBlockHeadingInput(index, $event)"

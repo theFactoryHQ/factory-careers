@@ -163,6 +163,16 @@ describe('brand-neutral theme variables', () => {
     expect(interviewStatusFilters).not.toContain('tabular-nums text-[10px]')
   })
 
+  it('keeps description block heading inputs borderless until focus', () => {
+    const css = readProjectFile('app/assets/css/main.css')
+    const editor = readProjectFile('app/components/JobDescriptionBlocksEditor.vue')
+
+    expect(editor).toContain('factory-description-heading-input')
+    expect(css).toMatch(/\.factory-description-heading-input\s*\{[\s\S]*border-color:\s*transparent !important;[\s\S]*background-color:\s*transparent !important;[\s\S]*box-shadow:\s*none !important;/)
+    expect(css).toMatch(/\.factory-description-heading-input:hover\s*\{[\s\S]*border-color:\s*transparent !important;[\s\S]*background-color:\s*transparent !important;/)
+    expect(css).toMatch(/\.factory-description-heading-input:focus\s*\{[\s\S]*border-color:\s*color-mix\(in srgb, var\(--color-brand-500\) 75%, transparent\) !important;[\s\S]*background-color:\s*transparent !important;[\s\S]*box-shadow:\s*0 0 0 2px color-mix\(in srgb, var\(--color-brand-500\) 20%, transparent\) !important;/)
+  })
+
   it('uses the Factory view toggle recipe on the interviews list controls', () => {
     const interviews = readProjectFile('app/pages/dashboard/interviews/index.vue')
     const viewToggle = sliceBetween(interviews, '<!-- View toggle -->', '<!-- Loading state -->')

@@ -162,6 +162,7 @@ describe('job listing structure', () => {
 
   it('keeps long description block editors navigable with collapsible sections', () => {
     const editor = readProjectFile('app/components/JobDescriptionBlocksEditor.vue')
+    const headingInput = editor.match(/<input\s+data-testid="description-block-heading-input"[\s\S]*?@input="onBlockHeadingInput\(index, \$event\)"\s+\/>/)?.[0] ?? ''
 
     expect(editor).toContain('collapsedBlockIndexes')
     expect(editor).toContain('toggleBlockCollapsed')
@@ -181,6 +182,13 @@ describe('job listing structure', () => {
     expect(editor).toContain('data-testid="description-block-heading-input"')
     expect(editor).toContain('required')
     expect(editor).toContain(':placeholder="getBlockHeadingPlaceholder(block)"')
+    expect(headingInput).toContain('factory-description-heading-input')
+    expect(headingInput).toContain('border border-transparent bg-transparent')
+    expect(headingInput).toContain('hover:bg-transparent')
+    expect(headingInput).toContain('focus:border-brand-500/60')
+    expect(headingInput).toContain('focus:ring-2 focus:ring-brand-500/20')
+    expect(headingInput).not.toContain('hover:border-surface-200')
+    expect(headingInput).not.toContain('dark:hover:border-surface-700')
     expect(editor).toContain('group/block-toggle')
     expect(editor).toContain('hover:ring-brand-500/25')
     expect(editor).toContain('group-hover/block-toggle:bg-brand-100')
