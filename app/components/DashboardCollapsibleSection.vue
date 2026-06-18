@@ -103,7 +103,7 @@ function finishPanelTransition(event: TransitionEvent) {
     class="ui-panel relative overflow-hidden"
   >
     <div
-      class="flex items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-surface-50 dark:hover:bg-surface-900"
+      class="group/section-header flex items-start gap-3 px-5 py-4 text-left transition-colors"
       :class="$slots.actions ? 'pr-40' : 'pr-5'"
     >
       <button
@@ -114,14 +114,14 @@ function finishPanelTransition(event: TransitionEvent) {
         @click="toggleSection"
       >
         <ChevronDown
-          class="mt-0.5 size-4 shrink-0 text-surface-400 transition-transform duration-150"
+          class="mt-0.5 size-4 shrink-0 text-surface-400 transition-[color,transform] duration-150 group-hover/section-header:text-surface-600 dark:group-hover/section-header:text-surface-200"
           :class="isOpen ? 'rotate-0' : '-rotate-90'"
         />
         <span class="flex min-w-0 items-center gap-2 rounded-sm focus:outline-none">
           <slot name="icon" />
           <span
             :id="headingId"
-            class="truncate text-sm font-semibold text-surface-700 dark:text-surface-300"
+            class="truncate text-sm font-semibold text-surface-700 transition-colors group-hover/section-header:text-surface-900 dark:text-surface-300 dark:group-hover/section-header:text-surface-100"
           >
             {{ title }}
           </span>

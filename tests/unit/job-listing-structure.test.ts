@@ -303,6 +303,12 @@ describe('job listing structure', () => {
     expect(collapsibleSection).toContain(':aria-controls="contentId"')
     expect(collapsibleSection).toContain('role="region"')
     expect(collapsibleSection).toContain(":class=\"isOpen ? 'rotate-0' : '-rotate-90'\"")
+    const collapsibleHeader = collapsibleSection.match(/<div\s+class="[^"]*items-start[^"]*"[\s\S]*?<button/)?.[0] ?? ''
+    expect(collapsibleHeader).toContain('group/section-header')
+    expect(collapsibleHeader).toContain('transition-colors')
+    expect(collapsibleHeader).not.toContain('hover:bg-surface-50')
+    expect(collapsibleHeader).not.toContain('dark:hover:bg-surface-900')
+    expect(collapsibleSection).toContain('group-hover/section-header:text-surface-')
     expect(collapsibleSection).toContain('ChevronDown')
     expect(collapsibleSection).toContain('Info')
     expect(collapsibleSection).toContain(':title="description"')
