@@ -178,6 +178,7 @@ test.describe('Application form builder lifecycle', () => {
 
     await page.reload()
     await page.waitForLoadState('networkidle')
+    await openCustomQuestions(page)
     await expect(questionRow(page, `Candidate availability ${runId}`)).toBeVisible()
     await expect(questionRow(page, `Portfolio link ${runId}`)).toBeVisible()
     await expect(questionRow(page, `Deprecated question ${runId}`)).toHaveCount(0)
