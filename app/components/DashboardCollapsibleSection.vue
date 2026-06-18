@@ -16,11 +16,12 @@ const props = withDefaults(defineProps<{
 
 const headingId = computed(() => `${props.id}-heading`)
 const contentId = computed(() => `${props.id}-content`)
+const tooltipId = computed(() => `${props.id}-tooltip`)
 const isNested = computed(() => props.variant === 'nested')
 const sectionClass = computed(() =>
   isNested.value
-    ? 'relative overflow-hidden rounded-md border border-surface-200/80 bg-transparent px-3 py-2 dark:border-surface-800/90'
-    : 'ui-panel relative overflow-hidden',
+    ? 'relative rounded-md border border-surface-200/80 bg-transparent px-3 py-2 dark:border-surface-800/90'
+    : 'ui-panel relative',
 )
 const headerClass = computed(() =>
   isNested.value
@@ -37,6 +38,7 @@ const panelRef = ref<HTMLElement | null>(null)
 const panelHeight = ref(props.defaultOpen ? 'auto' : '0px')
 const panelOpacity = ref(props.defaultOpen ? '1' : '0')
 const isTransitioning = ref(false)
+const isTooltipOpen = ref(false)
 let transitionFallback: number | null = null
 
 watch(() => props.defaultOpen, (defaultOpen) => {
@@ -113,6 +115,15 @@ function finishPanelTransition(event: TransitionEvent) {
   if (event.target !== panelRef.value || event.propertyName !== 'height') return
   completePanelTransition()
 }
+
+function showTooltip() {
+  isTooltipOpen.value = true
+}
+
+function hideTooltip() {
+  isTooltipOpen.value = false
+}
+
 </script>
 
 <template>
@@ -147,16 +158,24 @@ function finishPanelTransition(event: TransitionEvent) {
         </button>
         <button
           v-if="description"
-          class="group/info relative inline-flex size-5 shrink-0 items-center justify-center rounded-full text-surface-400 outline-none transition-colors hover:text-surface-700 focus-visible:text-surface-700 focus-visible:ring-2 focus-visible:ring-brand-500/25 dark:hover:text-surface-200 dark:focus-visible:text-surface-200"
+          class="relative inline-flex size-5 shrink-0 items-center justify-center rounded-full text-surface-400 outline-none transition-colors hover:text-surface-700 focus-visible:text-surface-700 focus-visible:ring-2 focus-visible:ring-brand-500/25 dark:hover:text-surface-200 dark:focus-visible:text-surface-200"
           type="button"
           :title="description"
           :aria-label="description"
-          @click.stop
+          :aria-describedby="tooltipId"
+          @click.stop="showTooltip"
+          @mouseenter="showTooltip"
+          @mouseleave="hideTooltip"
+          @focus="showTooltip"
+          @blur="hideTooltip"
         >
           <Info class="size-3.5" />
           <span
-            class="pointer-events-none absolute left-1/2 top-full z-30 mt-2 hidden w-64 -translate-x-1/2 border border-surface-200 bg-white px-3 py-2 text-left text-xs font-normal leading-relaxed text-surface-600 shadow-lg group-hover/info:block group-focus/info:block dark:border-surface-700 dark:bg-surface-900 dark:text-surface-300"
-            aria-hidden="true"
+            :id="tooltipId"
+            class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 border border-surface-200 bg-white px-3 py-2 text-left text-xs font-normal leading-relaxed text-surface-600 opacity-0 shadow-lg transition-opacity duration-100 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-300"
+            :class="isTooltipOpen ? 'visible opacity-100' : 'invisible opacity-0'"
+            role="tooltip"
+            :aria-hidden="!isTooltipOpen"
           >
             {{ description }}
           </span>
