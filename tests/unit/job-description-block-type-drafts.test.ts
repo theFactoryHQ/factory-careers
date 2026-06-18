@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   captureBlockTypeDraft,
   createBlockFromDraft,
+  reindexBlockTypeDraftsAfterMove,
   reindexBlockTypeDraftsAfterRemoval,
 } from '../../app/utils/jobDescriptionBlockTypeDrafts'
 
@@ -65,6 +66,26 @@ describe('job description block type drafts', () => {
     }, 1)).toEqual({
       0: { paragraphBody: 'First' },
       1: { bulletHeading: 'Third', bulletItems: ['Third item'] },
+    })
+  })
+
+  it('reindexes drafts after a description block is moved', () => {
+    const drafts = {
+      0: { paragraphBody: 'First' },
+      1: { paragraphBody: 'Second' },
+      2: { bulletHeading: 'Third', bulletItems: ['Third item'] },
+    }
+
+    expect(reindexBlockTypeDraftsAfterMove(drafts, 0, 2)).toEqual({
+      0: { paragraphBody: 'Second' },
+      1: { bulletHeading: 'Third', bulletItems: ['Third item'] },
+      2: { paragraphBody: 'First' },
+    })
+
+    expect(reindexBlockTypeDraftsAfterMove(drafts, 2, 0)).toEqual({
+      0: { bulletHeading: 'Third', bulletItems: ['Third item'] },
+      1: { paragraphBody: 'First' },
+      2: { paragraphBody: 'Second' },
     })
   })
 })

@@ -3,6 +3,7 @@ import { ChevronDown, GripVertical, List, Plus, Trash2, Type, X } from 'lucide-v
 import {
   captureBlockTypeDraft as captureDraftFromBlock,
   createBlockFromDraft,
+  reindexBlockTypeDraftsAfterMove,
   reindexBlockTypeDraftsAfterRemoval,
   type BlockTypeDraftsByIndex,
 } from '~/utils/jobDescriptionBlockTypeDrafts'
@@ -28,6 +29,7 @@ const blocks = computed(() => {
   return props.modelValue && props.modelValue.length > 0 ? props.modelValue : [emptyParagraph()]
 })
 const draggingBullet = ref<{ blockIndex: number, itemIndex: number } | null>(null)
+const draggingBlockIndex = ref<number | null>(null)
 const collapsedBlockIndexes = ref<Set<number>>(new Set())
 const blockTypeDrafts = ref<BlockTypeDraftsByIndex>({})
 const editorRef = ref<HTMLElement | null>(null)
@@ -74,6 +76,29 @@ function removeBlock(index: number) {
     return [collapsedIndex > index ? collapsedIndex - 1 : collapsedIndex]
   }))
   blockTypeDrafts.value = reindexBlockTypeDraftsAfterRemoval(blockTypeDrafts.value, index)
+}
+
+function getMovedBlockIndex(index: number, fromIndex: number, toIndex: number) {
+  if (index === fromIndex) return toIndex
+  if (fromIndex < toIndex && index > fromIndex && index <= toIndex) return index - 1
+  if (fromIndex > toIndex && index >= toIndex && index < fromIndex) return index + 1
+  return index
+}
+
+function moveBlock(fromIndex: number, toIndex: number) {
+  if (fromIndex === toIndex) return
+  if (fromIndex < 0 || toIndex < 0 || fromIndex >= blocks.value.length || toIndex >= blocks.value.length) return
+
+  const next = [...blocks.value]
+  const [block] = next.splice(fromIndex, 1)
+  if (!block) return
+  next.splice(toIndex, 0, block)
+  emitBlocks(next)
+
+  collapsedBlockIndexes.value = new Set(
+    [...collapsedBlockIndexes.value].map(index => getMovedBlockIndex(index, fromIndex, toIndex)),
+  )
+  blockTypeDrafts.value = reindexBlockTypeDraftsAfterMove(blockTypeDrafts.value, fromIndex, toIndex)
 }
 
 function updateParagraph(index: number, body: string) {
@@ -179,6 +204,29 @@ function onBulletDragEnd() {
   draggingBullet.value = null
 }
 
+function onBlockDragStart(event: DragEvent, index: number) {
+  draggingBlockIndex.value = index
+  event.dataTransfer?.setData('text/plain', `description-block:${index}`)
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+}
+
+function onBlockDragOver(event: DragEvent) {
+  if (draggingBlockIndex.value === null) return
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+}
+
+function onBlockDrop(event: DragEvent, index: number) {
+  const dragged = draggingBlockIndex.value
+  draggingBlockIndex.value = null
+  if (dragged === null) return
+  event.preventDefault()
+  moveBlock(dragged, index)
+}
+
+function onBlockDragEnd() {
+  draggingBlockIndex.value = null
+}
+
 function isBlockCollapsed(index: number) {
   return collapsedBlockIndexes.value.has(index)
 }
@@ -205,8 +253,27 @@ function getBlockHeadingPlaceholder(block: JobDescriptionBlock) {
       v-for="(block, index) in blocks"
       :key="index"
       class="group/description-block relative rounded-md border border-surface-200 bg-white p-3 dark:border-surface-800 dark:bg-surface-950"
+      :class="draggingBlockIndex === index ? 'opacity-45' : ''"
+      @dragover.prevent="onBlockDragOver"
+      @drop="onBlockDrop($event, index)"
     >
       <div class="flex items-start gap-2 pr-9">
+        <button
+          v-if="blocks.length > 1"
+          type="button"
+          data-testid="description-block-reorder-handle"
+          draggable="true"
+          class="mt-0.5 inline-flex size-7 shrink-0 cursor-grab items-center justify-center rounded-md text-surface-400 opacity-60 transition-[background-color,color,opacity] hover:bg-surface-100 hover:text-surface-700 hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 active:cursor-grabbing dark:text-surface-600 dark:hover:bg-surface-800 dark:hover:text-surface-300"
+          aria-label="Reorder description section"
+          title="Drag to reorder. Use Alt+Up or Alt+Down from here to move with the keyboard."
+          @click.stop
+          @dragstart="onBlockDragStart($event, index)"
+          @dragend="onBlockDragEnd"
+          @keydown.alt.up.prevent="moveBlock(index, index - 1)"
+          @keydown.alt.down.prevent="moveBlock(index, index + 1)"
+        >
+          <GripVertical class="size-4" />
+        </button>
         <button
           type="button"
           class="group/block-toggle inline-flex shrink-0 items-center gap-2 rounded-md px-2 py-1.5 text-left transition-[background-color,box-shadow,color] hover:bg-brand-50/80 hover:ring-1 hover:ring-brand-500/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 dark:hover:bg-brand-950/40 dark:hover:ring-brand-500/30"

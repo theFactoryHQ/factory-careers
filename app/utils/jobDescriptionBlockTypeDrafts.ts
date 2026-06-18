@@ -86,3 +86,23 @@ export function reindexBlockTypeDraftsAfterRemoval(
     return [[numericDraftIndex > removedIndex ? numericDraftIndex - 1 : numericDraftIndex, draft]]
   }))
 }
+
+function getMovedIndex(index: number, fromIndex: number, toIndex: number) {
+  if (index === fromIndex) return toIndex
+  if (fromIndex < toIndex && index > fromIndex && index <= toIndex) return index - 1
+  if (fromIndex > toIndex && index >= toIndex && index < fromIndex) return index + 1
+  return index
+}
+
+export function reindexBlockTypeDraftsAfterMove(
+  drafts: BlockTypeDraftsByIndex,
+  fromIndex: number,
+  toIndex: number,
+): BlockTypeDraftsByIndex {
+  if (fromIndex === toIndex) return drafts
+
+  return Object.fromEntries(Object.entries(drafts).map(([draftIndex, draft]) => {
+    const numericDraftIndex = Number(draftIndex)
+    return [getMovedIndex(numericDraftIndex, fromIndex, toIndex), draft]
+  }))
+}
