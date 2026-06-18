@@ -7,6 +7,7 @@ import { job } from '../database/schema'
 
 const MAX_SLUG_LENGTH = 80
 const MAX_SLUG_COLLISION_ATTEMPTS = 100
+export const MAX_JOB_SLUG_WRITE_RETRIES = 3
 
 /**
  * Generates a URL-safe slug from a job title or custom slug.
@@ -62,4 +63,23 @@ export async function generateUniqueJobSlug(params: {
     statusCode: 409,
     statusMessage: 'Could not generate a unique job URL slug. Enter a custom slug and try again.',
   })
+}
+
+export function isJobSlugUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+
+  const candidate = error as {
+    code?: string
+    constraint?: string
+    message?: string
+    cause?: unknown
+  }
+  const message = candidate.message ?? ''
+  const isUniqueViolation = candidate.code === '23505'
+    && (candidate.constraint === 'job_slug_unique' || message.includes('job_slug_unique'))
+
+  if (isUniqueViolation) return true
+  if (!candidate.cause || candidate.cause === error) return false
+
+  return isJobSlugUniqueViolation(candidate.cause)
 }

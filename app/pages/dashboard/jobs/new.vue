@@ -38,7 +38,9 @@ import {
 import { z } from 'zod'
 import { todayDateInputValue } from '~~/shared/date-input'
 import {
+  factoryDivisionSchema,
   jobDescriptionBlocksToMarkdown,
+  jobDescriptionBlocksSchema,
   legacyDescriptionToBlocks,
   normalizeJobDescriptionBlocks,
   type FactoryDivision,
@@ -313,8 +315,14 @@ function restoreFormFromStorage() {
     if (data.form) {
       Object.assign(form.value, data.form)
       if (!Array.isArray(form.value.divisions)) form.value.divisions = []
-      if (!Array.isArray(data.form.descriptionBlocks) && typeof data.form.description === 'string') {
-        form.value.descriptionBlocks = legacyDescriptionToBlocks(data.form.description)
+      if (Array.isArray(data.form.descriptionBlocks)) {
+        const descriptionBlocks = normalizeJobDescriptionBlocks(data.form.descriptionBlocks)
+        form.value.descriptionBlocks = descriptionBlocks.length > 0 ? descriptionBlocks : [{ type: 'paragraph', body: '' }]
+      } else if (typeof data.form.description === 'string') {
+        const descriptionBlocks = legacyDescriptionToBlocks(data.form.description)
+        form.value.descriptionBlocks = descriptionBlocks.length > 0 ? descriptionBlocks : [{ type: 'paragraph', body: '' }]
+      } else {
+        form.value.descriptionBlocks = [{ type: 'paragraph', body: '' }]
       }
     }
     if (data.applicationForm) Object.assign(applicationForm.value, data.applicationForm)
@@ -521,8 +529,8 @@ const formSchema = z.object({
     .min(1, 'Title is required')
     .max(200, 'Title must be 200 characters or less'),
   description: z.string().optional(),
-  divisions: z.array(z.string()).optional(),
-  descriptionBlocks: z.array(z.any()).optional(),
+  divisions: z.array(factoryDivisionSchema).optional(),
+  descriptionBlocks: jobDescriptionBlocksSchema.optional(),
   location: z.string().optional(),
   type: z.enum(['full_time', 'part_time', 'contract', 'internship']),
 })

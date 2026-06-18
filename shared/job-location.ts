@@ -15,6 +15,11 @@ export function parseJobLocation(location: string | null | undefined): JobLocati
     return { city: '', state: '' }
   }
 
+  const stateOnly = trimmed.toUpperCase()
+  if (US_STATE_SET.has(stateOnly)) {
+    return { city: '', state: stateOnly as UsStateValue }
+  }
+
   const cityStateMatch = trimmed.match(/^(.+?),\s*([a-z]{2})$/i)
   const maybeState = cityStateMatch?.[2]?.toUpperCase() ?? ''
   if (cityStateMatch && US_STATE_SET.has(maybeState)) {

@@ -388,6 +388,7 @@ function getBlockKey(index: number) {
             v-if="block.type === 'paragraph'"
             :value="block.body"
             rows="4"
+            maxlength="10000"
             placeholder="Write a paragraph about the role..."
             class="ui-field resize-y px-3 py-2 text-sm"
             @input="updateParagraph(index, ($event.target as HTMLTextAreaElement).value)"
@@ -420,6 +421,7 @@ function getBlockKey(index: number) {
                 <input
                   :value="item"
                   type="text"
+                  maxlength="500"
                   placeholder="Bullet point"
                   class="ui-field py-2 text-sm"
                   :class="block.items.length > 1 ? 'pl-9 pr-9' : 'px-3'"

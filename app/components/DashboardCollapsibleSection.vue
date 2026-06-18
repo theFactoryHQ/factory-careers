@@ -124,6 +124,12 @@ function hideTooltip() {
   isTooltipOpen.value = false
 }
 
+function handleTooltipKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || !isTooltipOpen.value) return
+  event.preventDefault()
+  hideTooltip()
+}
+
 </script>
 
 <template>
@@ -168,6 +174,7 @@ function hideTooltip() {
           @mouseleave="hideTooltip"
           @focus="showTooltip"
           @blur="hideTooltip"
+          @keydown="handleTooltipKeydown"
         >
           <Info class="size-3.5" />
           <span

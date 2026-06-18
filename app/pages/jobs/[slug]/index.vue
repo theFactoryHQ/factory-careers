@@ -162,14 +162,14 @@ watchEffect(() => {
   }
 
   // Salary (baseSalary)
-  if (j.salaryDisplayOnListing && (j.salaryMin || j.salaryMax)) {
+  if (j.salaryDisplayOnListing && (hasSalaryValue(j.salaryMin) || hasSalaryValue(j.salaryMax))) {
     const value: Record<string, unknown> = { '@type': 'QuantitativeValue' }
-    if (j.salaryMin && j.salaryMax) {
+    if (hasSalaryValue(j.salaryMin) && hasSalaryValue(j.salaryMax)) {
       value.minValue = j.salaryMin
       value.maxValue = j.salaryMax
-    } else if (j.salaryMin) {
+    } else if (hasSalaryValue(j.salaryMin)) {
       value.value = j.salaryMin
-    } else if (j.salaryMax) {
+    } else if (hasSalaryValue(j.salaryMax)) {
       value.value = j.salaryMax
     }
     if (j.salaryUnit) {
@@ -209,14 +209,18 @@ function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString(locale.value)
 }
 
+function hasSalaryValue(value?: number | null): value is number {
+  return value != null
+}
+
 /** Format salary for display */
 function formatSalary(min?: number | null, max?: number | null, currency?: string | null, unit?: string | null): string | null {
-  if (!min && !max) return null
+  if (!hasSalaryValue(min) && !hasSalaryValue(max)) return null
   const cur = currency || 'USD'
   const fmt = (v: number) => new Intl.NumberFormat(locale.value, { style: 'currency', currency: cur, maximumFractionDigits: 0 }).format(v)
   const unitLabel = unit ? `/${unit.toLowerCase().replace('year', 'yr').replace('month', 'mo').replace('hour', 'hr')}` : ''
-  if (min && max) return `${fmt(min)} – ${fmt(max)}${unitLabel}`
-  return `${fmt(min || max!)}${unitLabel}`
+  if (hasSalaryValue(min) && hasSalaryValue(max)) return `${fmt(min)} – ${fmt(max)}${unitLabel}`
+  return `${fmt(hasSalaryValue(min) ? min : max!)}${unitLabel}`
 }
 
 function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[] {

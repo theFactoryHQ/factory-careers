@@ -34,12 +34,13 @@ export default defineEventHandler(async (event) => {
   // Regenerate slug when title or custom slug changes
   const updates: Record<string, unknown> = { ...body, updatedAt: new Date() }
   delete (updates as any).slug // remove raw slug from spread — we set it explicitly below
+  const shouldRegenerateSlug = body.title !== undefined || body.slug !== undefined
   if (body.descriptionBlocks !== undefined) {
     const descriptionBlocks = normalizeJobDescriptionBlocks(body.descriptionBlocks)
     updates.descriptionBlocks = descriptionBlocks
     updates.description = jobDescriptionBlocksToMarkdown(descriptionBlocks) || null
   }
-  if (body.title !== undefined || body.slug !== undefined) {
+  if (shouldRegenerateSlug) {
     updates.slug = await generateUniqueJobSlug({
       title: body.title ?? existing.title,
       id,
@@ -48,40 +49,62 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const [updated] = await db.update(job)
-    .set(updates)
-    .where(and(eq(job.id, id), eq(job.organizationId, orgId)))
-    .returning({
-      id: job.id,
-      title: job.title,
-      slug: job.slug,
-      description: job.description,
-      divisions: job.divisions,
-      descriptionBlocks: job.descriptionBlocks,
-      location: job.location,
-      type: job.type,
-      status: job.status,
-      salaryMin: job.salaryMin,
-      salaryMax: job.salaryMax,
-      salaryCurrency: job.salaryCurrency,
-      salaryUnit: job.salaryUnit,
-      salaryNegotiable: job.salaryNegotiable,
-      salaryDisplayOnListing: job.salaryDisplayOnListing,
-      remoteStatus: job.remoteStatus,
-      activeFrom: job.activeFrom,
-      validThrough: job.validThrough,
-      requireResume: job.requireResume,
-      requireCoverLetter: job.requireCoverLetter,
-      applicationComplianceEnabled: job.applicationComplianceEnabled,
-      includeEeo: job.includeEeo,
-      includeVeteran: job.includeVeteran,
-      includeDisability: job.includeDisability,
-      autoScoreOnApply: job.autoScoreOnApply,
-      scoringBands: job.scoringBands,
-      experienceLevel: job.experienceLevel,
-      createdAt: job.createdAt,
-      updatedAt: job.updatedAt,
-    })
+  let updated
+  for (let attempt = 0; attempt < MAX_JOB_SLUG_WRITE_RETRIES; attempt++) {
+    try {
+      const [result] = await db.update(job)
+        .set(updates)
+        .where(and(eq(job.id, id), eq(job.organizationId, orgId)))
+        .returning({
+          id: job.id,
+          title: job.title,
+          slug: job.slug,
+          description: job.description,
+          divisions: job.divisions,
+          descriptionBlocks: job.descriptionBlocks,
+          location: job.location,
+          type: job.type,
+          status: job.status,
+          salaryMin: job.salaryMin,
+          salaryMax: job.salaryMax,
+          salaryCurrency: job.salaryCurrency,
+          salaryUnit: job.salaryUnit,
+          salaryNegotiable: job.salaryNegotiable,
+          salaryDisplayOnListing: job.salaryDisplayOnListing,
+          remoteStatus: job.remoteStatus,
+          activeFrom: job.activeFrom,
+          validThrough: job.validThrough,
+          requireResume: job.requireResume,
+          requireCoverLetter: job.requireCoverLetter,
+          applicationComplianceEnabled: job.applicationComplianceEnabled,
+          includeEeo: job.includeEeo,
+          includeVeteran: job.includeVeteran,
+          includeDisability: job.includeDisability,
+          autoScoreOnApply: job.autoScoreOnApply,
+          scoringBands: job.scoringBands,
+          experienceLevel: job.experienceLevel,
+          createdAt: job.createdAt,
+          updatedAt: job.updatedAt,
+        })
+      updated = result
+      break
+    } catch (error) {
+      if (!shouldRegenerateSlug || !isJobSlugUniqueViolation(error)) throw error
+      if (attempt === MAX_JOB_SLUG_WRITE_RETRIES - 1) {
+        throw createError({
+          statusCode: 409,
+          statusMessage: 'Could not generate a unique job URL slug. Enter a custom slug and try again.',
+        })
+      }
+
+      updates.slug = await generateUniqueJobSlug({
+        title: body.title ?? existing.title,
+        id,
+        customSlug: body.slug,
+        currentJobId: id,
+      })
+    }
+  }
 
   if (!updated) {
     throw createError({ statusCode: 404, statusMessage: 'Not found' })

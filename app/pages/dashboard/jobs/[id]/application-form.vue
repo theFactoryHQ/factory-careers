@@ -6,7 +6,9 @@ import { CURRENCY_OPTIONS, CURRENCY_VALUES } from '~~/shared/currency-options'
 import { todayDateInputValue, toDateInputValue } from '~~/shared/date-input'
 import { buildJobLocation, parseJobLocation, type UsStateValue } from '~~/shared/job-location'
 import {
+  factoryDivisionSchema,
   jobDescriptionBlocksToMarkdown,
+  jobDescriptionBlocksSchema,
   legacyDescriptionToBlocks,
   normalizeJobDescriptionBlocks,
   type FactoryDivision,
@@ -185,8 +187,8 @@ watch(() => form.value.title, (title) => {
 const postingSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   description: z.string().optional(),
-  divisions: z.array(z.string()).optional(),
-  descriptionBlocks: z.array(z.any()).optional(),
+  divisions: z.array(factoryDivisionSchema).optional(),
+  descriptionBlocks: jobDescriptionBlocksSchema.optional(),
   city: z.string().max(120).optional(),
   state: z.enum(US_STATE_VALUES).optional().or(z.literal('')),
   type: z.enum(['full_time', 'part_time', 'contract', 'internship']),
