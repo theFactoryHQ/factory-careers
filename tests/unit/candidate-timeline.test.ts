@@ -274,7 +274,13 @@ describe('source-tracking sidebar state', () => {
   })
 
   it('clearing selectedAppId closes the sidebar', () => {
-    expect(isSidebarOpen(null)).toBe(false)
+    let selectedAppId: string | null = 'app-123'
+
+    expect(isSidebarOpen(selectedAppId)).toBe(true)
+
+    selectedAppId = null
+
+    expect(isSidebarOpen(selectedAppId)).toBe(false)
   })
 })
 
