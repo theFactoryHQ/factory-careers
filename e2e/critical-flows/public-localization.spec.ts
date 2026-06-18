@@ -44,6 +44,7 @@ test.describe('Public localization flow', () => {
         salaryMax: 55_000,
         salaryCurrency: 'EUR',
         salaryUnit: 'YEAR',
+        salaryDisplayOnListing: true,
         activeFrom: '2026-05-24T12:00:00.000Z',
         requireResume: false,
         requireCoverLetter: false,

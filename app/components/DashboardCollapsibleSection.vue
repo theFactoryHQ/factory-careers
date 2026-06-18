@@ -44,6 +44,7 @@ let transitionFallback: number | null = null
 watch(() => props.defaultOpen, (defaultOpen) => {
   clearTransitionFallback()
   isOpen.value = defaultOpen
+  isTransitioning.value = false
   panelHeight.value = defaultOpen ? 'auto' : '0px'
   panelOpacity.value = defaultOpen ? '1' : '0'
 })
@@ -198,6 +199,7 @@ function handleTooltipKeydown(event: KeyboardEvent) {
     </div>
 
     <div
+      v-show="isOpen || isTransitioning"
       ref="panelRef"
       class="overflow-hidden"
       :class="isTransitioning ? 'transition-[height,opacity] duration-150 ease-out motion-reduce:transition-none' : ''"

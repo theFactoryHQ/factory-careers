@@ -164,10 +164,11 @@ const typeLabels: Record<string, string> = {
         </div>
 
         <!-- Actions -->
-        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <div class="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 shrink-0">
           <button
             :disabled="index === 0"
             class="ui-button ui-button-ghost p-1 disabled:opacity-30"
+            :aria-label="`Move ${q.label} up`"
             title="Move up"
             @click="moveQuestion(index, 'up')"
           >
@@ -176,6 +177,7 @@ const typeLabels: Record<string, string> = {
           <button
             :disabled="index === questions.length - 1"
             class="ui-button ui-button-ghost p-1 disabled:opacity-30"
+            :aria-label="`Move ${q.label} down`"
             title="Move down"
             @click="moveQuestion(index, 'down')"
           >
@@ -183,6 +185,7 @@ const typeLabels: Record<string, string> = {
           </button>
           <button
             class="ui-button ui-button-ghost p-1"
+            :aria-label="`Edit ${q.label}`"
             title="Edit"
             @click="editingQuestion = q; showAddForm = false"
           >
@@ -191,6 +194,7 @@ const typeLabels: Record<string, string> = {
           <button
             :disabled="deletingId === q.id"
             class="ui-button ui-button-ghost ui-button-ghost-danger p-1 disabled:opacity-50"
+            :aria-label="`Delete ${q.label}`"
             title="Delete"
             @click="handleDelete(q.id)"
           >
