@@ -122,7 +122,17 @@ function looksLikeGeneratedSlug(slug: string, title: string): boolean {
   const titleSlug = generateTitleSlug(title)
   if (trimmedSlug === titleSlug) return true
 
-  return trimmedSlug.startsWith(`${titleSlug}-`) && /(?:-[0-9a-f]{7,8})+$/i.test(trimmedSlug)
+  const slugPrefix = `${titleSlug}-`
+  if (!trimmedSlug.startsWith(slugPrefix)) return false
+
+  const suffix = trimmedSlug.slice(slugPrefix.length)
+  const numericSuffix = Number(suffix)
+  const isReadableCollisionSuffix = String(numericSuffix) === suffix
+    && Number.isInteger(numericSuffix)
+    && numericSuffix >= 2
+  const isLegacyIdSuffix = /^[0-9a-f]{7,8}(?:-[0-9a-f]{7,8})*$/i.test(suffix)
+
+  return isReadableCollisionSuffix || isLegacyIdSuffix
 }
 
 function markSlugManuallyEdited() {
