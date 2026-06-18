@@ -331,6 +331,10 @@ describe('job listing structure', () => {
     const previewActionIndex = editPage.indexOf('Preview', headerActionsIndex)
     const saveActionIndex = editPage.indexOf("{{ isSavingPosting ? 'Saving...' : 'Save' }}")
     const formStartIndex = editPage.indexOf('<form class="contents"')
+    const linkPanel = editPage.slice(
+      editPage.indexOf('data-testid="application-link-panel"'),
+      editPage.indexOf('The application link will be available'),
+    )
     const collapsibleDescriptions = [
       'Adding salary information improves visibility on Google Jobs.',
       'Set when this job posting goes live and when it automatically expires.',
@@ -349,11 +353,14 @@ describe('job listing structure', () => {
     expect(editPage).not.toContain('Preview form')
     expect(editPage).not.toContain("'Save changes'")
     expect(editPage).not.toContain('Save application details')
-    expect(editPage).toContain('data-testid="application-link-panel"')
-    expect(editPage).toContain('group group/application-link')
-    expect(editPage).toContain('group/application-link')
-    expect(editPage).toContain("applicationLinkCopied ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100'")
-    expect(editPage).toContain('group-focus-visible:bg-white')
+    expect(linkPanel).toContain('data-testid="application-link-panel"')
+    expect(linkPanel).toContain('ui-panel-muted group mb-6')
+    expect(linkPanel).toContain("applicationLinkCopied ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100'")
+    expect(linkPanel).toContain('hover:bg-white')
+    expect(linkPanel).toContain('focus-visible:bg-white')
+    expect(linkPanel).not.toContain('cursor-pointer')
+    expect(linkPanel).not.toContain('hover:bg-surface-100/70')
+    expect(linkPanel).not.toContain('dark:hover:bg-surface-800/60')
     expect(editPage).not.toContain('class="mb-6"')
     expect(editPage).not.toContain('<form class="space-y-6"')
     for (const description of collapsibleDescriptions) {
