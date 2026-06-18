@@ -3068,21 +3068,19 @@
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-subnav-tab {
     min-height: 32px;
-    border: 1px solid var(--ui-border-strong) !important;
-    background-color: rgb(0 0 0 / 0.45) !important;
-    color: rgb(255 255 255 / 0.62) !important;
+    border: 0 !important;
+    background-color: transparent !important;
+    color: rgb(255 255 255 / 0.55) !important;
     box-shadow: none !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-subnav-tab:hover {
-    border-color: rgb(255 255 255 / 0.32) !important;
-    background-color: rgb(255 255 255 / 0.055) !important;
+    background-color: rgb(255 255 255 / 0.04) !important;
     color: #ffffff !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-subnav-tab-active {
-    border-color: color-mix(in srgb, var(--color-brand-500) 75%, transparent) !important;
-    background-color: color-mix(in srgb, var(--color-brand-500) 14%, #000000) !important;
+    background-color: rgb(255 255 255 / 0.04) !important;
     color: #ffffff !important;
   }
 

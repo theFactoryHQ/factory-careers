@@ -34,11 +34,17 @@ describe('dashboard top bar responsiveness', () => {
     expect(source).toContain('moreNavMenu.onMenuKeydown')
   })
 
-  it('uses bordered Factory controls for job context sub-navigation tabs', () => {
-    expect(source).toContain('factory-job-subnav-tab')
-    expect(source).toContain('factory-job-subnav-tab-active')
-    expect(source).toContain('factory-job-subnav-tab-inactive')
-    expect(source).not.toContain('border-transparent text-white/50')
+  it('uses ghost navigation styling for job context sub-navigation tabs', () => {
+    const jobSubNav = source.match(/<!-- Job context sub-navigation bar -->[\s\S]*?<!-- Mobile navigation menu -->/)?.[0] ?? ''
+
+    expect(jobSubNav).toContain('factory-job-subnav-tab')
+    expect(jobSubNav).toContain('factory-job-subnav-tab-active')
+    expect(jobSubNav).toContain('factory-job-subnav-tab-inactive')
+    expect(jobSubNav).toContain('border-0 bg-transparent')
+    expect(jobSubNav).toContain('bg-white/[0.04] text-white')
+    expect(jobSubNav).toContain('text-white/55 hover:bg-white/[0.04] hover:text-white')
+    expect(jobSubNav).not.toContain('border-brand-500/50')
+    expect(jobSubNav).not.toContain('bg-brand-500/12')
   })
 
   it('keeps the job application form tab label compact', () => {
