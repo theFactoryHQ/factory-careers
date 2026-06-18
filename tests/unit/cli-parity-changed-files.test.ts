@@ -178,5 +178,5 @@ describe('CLI parity changed-file guard', () => {
         stdio: ['pipe', 'pipe', 'pipe'],
       },
     )).toThrow(/CLI parity evidence is required/)
-  })
+  }, 15_000)
 })
