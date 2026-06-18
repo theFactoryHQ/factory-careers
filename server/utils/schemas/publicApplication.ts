@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { factoryDivisionSchema } from '~~/shared/job-listing-structure'
 import { COUNTRY_VALUES, US_STATE_VALUES } from '~~/shared/location-options'
 import {
   candidateFirstNameSchema,
@@ -82,10 +83,20 @@ export const publicJobIdSchema = z.object({
 // ─────────────────────────────────────────────
 
 /** Schema for public job listing query params */
+const publicJobDivisionsQuerySchema = z.preprocess((value) => {
+  const raw = Array.isArray(value) ? value : typeof value === 'string' ? [value] : []
+  const divisions = raw
+    .flatMap((item) => String(item).split(','))
+    .map((item) => item.trim())
+    .filter(Boolean)
+  return divisions.length > 0 ? divisions : undefined
+}, z.array(factoryDivisionSchema).optional())
+
 export const publicJobsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().min(1).max(200).optional(),
   type: z.enum(['full_time', 'part_time', 'contract', 'internship']).optional(),
   location: z.string().min(1).max(200).optional(),
+  divisions: publicJobDivisionsQuerySchema,
 })

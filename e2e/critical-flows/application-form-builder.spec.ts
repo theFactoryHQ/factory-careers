@@ -44,6 +44,17 @@ function questionRow(page: Page, label: string) {
   return page.locator('.ui-list-row').filter({ hasText: label })
 }
 
+async function openCustomQuestions(page: Page) {
+  const section = page.locator('#application-section-questions')
+  const toggle = section.getByRole('button', { name: 'Custom Questions', exact: true })
+
+  await expect(toggle).toBeVisible()
+  if (await toggle.getAttribute('aria-expanded') !== 'true') {
+    await toggle.click()
+  }
+  await expect(section.getByRole('region', { name: 'Custom Questions' })).toBeVisible()
+}
+
 async function editQuestion(
   page: Page,
   currentLabel: string,
@@ -140,6 +151,7 @@ test.describe('Application form builder lifecycle', () => {
     await page.goto(`/dashboard/jobs/${job.id}/application-form`)
     await page.waitForLoadState('networkidle')
     await expect(page.getByRole('heading', { name: 'Application Form' })).toBeVisible()
+    await openCustomQuestions(page)
     await expect(questionRow(page, `Portfolio link ${runId}`)).toBeVisible()
     await expect(questionRow(page, `Availability ${runId}`)).toBeVisible()
     await expect(questionRow(page, `Deprecated question ${runId}`)).toBeVisible()
@@ -166,6 +178,7 @@ test.describe('Application form builder lifecycle', () => {
 
     await page.reload()
     await page.waitForLoadState('networkidle')
+    await openCustomQuestions(page)
     await expect(questionRow(page, `Candidate availability ${runId}`)).toBeVisible()
     await expect(questionRow(page, `Portfolio link ${runId}`)).toBeVisible()
     await expect(questionRow(page, `Deprecated question ${runId}`)).toHaveCount(0)

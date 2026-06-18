@@ -6,7 +6,7 @@ import {
   ChevronDown, Menu, X, Users, ChevronLeft,
   LayoutDashboard, Calendar, ArrowUpCircle,
   Cloud, Server, Sparkles, Radio, History,
-  MessageCircle, MoreHorizontal, Mail,
+  MessageCircle, MoreHorizontal, Mail, Home,
 } from 'lucide-vue-next'
 import { getJobStatusBadgeClass, getJobStatusLabel } from '~/utils/status-display'
 
@@ -602,6 +602,15 @@ function handleNewJobClick() {
 
                 <!-- Actions -->
                 <div class="py-1">
+                  <NuxtLink
+                    :to="localePath('/')"
+                    class="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors no-underline"
+                    role="menuitem"
+                    @click="userMenu.closeMenu()"
+                  >
+                    <Home class="size-4" />
+                    Careers homepage
+                  </NuxtLink>
                   <button
                     class="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-left"
                     :disabled="isSigningOut"
@@ -701,10 +710,10 @@ function handleNewJobClick() {
                 v-for="tab in jobTabs"
                 :key="tab.to"
                 :to="$localePath(tab.to)"
-                class="factory-button-cta factory-button-cta-sm factory-job-subnav-tab flex items-center gap-1.5 border px-2.5 py-1 text-xs transition-all duration-200 no-underline whitespace-nowrap shrink-0"
+                class="factory-button-cta factory-button-cta-sm factory-job-subnav-tab flex items-center gap-1.5 border-0 bg-transparent px-2.5 py-1 text-xs transition-colors duration-200 no-underline whitespace-nowrap shrink-0"
                 :class="isActiveRoute(tab.to, tab.exact)
-                  ? 'factory-job-subnav-tab-active border-brand-500/50 bg-brand-500/12 text-white'
-                  : 'factory-job-subnav-tab-inactive text-white/50 hover:bg-white/[0.04] hover:text-white'"
+                  ? 'factory-job-subnav-tab-active bg-white/[0.04] text-white'
+                  : 'factory-job-subnav-tab-inactive text-white/55 hover:bg-white/[0.04] hover:text-white'"
               >
                 <component :is="tab.icon" class="size-3.5" />
                 <span class="hidden sm:inline">{{ tab.label }}</span>

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { CURRENCY_VALUES } from '~~/shared/currency-options'
+import { factoryDivisionSchema, jobDescriptionBlocksSchema } from '~~/shared/job-listing-structure'
 import { SALARY_UNIT_VALUES } from '~~/shared/salary-options'
 import { paginationQuerySchema } from './common'
 import { scoringBandsSchema } from './scoringBands'
@@ -14,6 +15,8 @@ export { JOB_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 export const createJobSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   description: z.string().optional(),
+  divisions: z.array(factoryDivisionSchema).optional().default([]),
+  descriptionBlocks: jobDescriptionBlocksSchema.optional().default([]),
   location: z.string().optional(),
   type: z.enum(['full_time', 'part_time', 'contract', 'internship']).default('full_time'),
   /** Optional custom slug — if omitted, generated from title */
@@ -25,6 +28,8 @@ export const createJobSchema = z.object({
   salaryUnit: z.enum(SALARY_UNIT_VALUES).nullable().optional(),
   /** Whether salary is negotiable (hides min/max range on public listing) */
   salaryNegotiable: z.boolean().optional().default(false),
+  /** Whether salary data is shown on public job listings */
+  salaryDisplayOnListing: z.boolean().optional().default(false),
   /** Remote work status: remote, hybrid, or onsite */
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).nullable().optional(),
   /** When this job listing goes live publicly */
@@ -52,6 +57,8 @@ export const createJobSchema = z.object({
 export const updateJobSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200).optional(),
   description: z.string().nullable().optional(),
+  divisions: z.array(factoryDivisionSchema).optional(),
+  descriptionBlocks: jobDescriptionBlocksSchema.optional(),
   location: z.string().nullable().optional(),
   type: z.enum(['full_time', 'part_time', 'contract', 'internship']).optional(),
   slug: z.string().max(80).optional(),
@@ -61,6 +68,7 @@ export const updateJobSchema = z.object({
   salaryCurrency: z.enum(CURRENCY_VALUES).nullable().optional(),
   salaryUnit: z.enum(SALARY_UNIT_VALUES).nullable().optional(),
   salaryNegotiable: z.boolean().optional(),
+  salaryDisplayOnListing: z.boolean().optional(),
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).nullable().optional(),
   activeFrom: z.coerce.date().optional(),
   /** Pass null to explicitly clear the expiry date */

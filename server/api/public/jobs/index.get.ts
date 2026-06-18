@@ -1,8 +1,9 @@
 import type { SQL } from 'drizzle-orm'
-import { eq, and, desc, ilike, lte, or } from 'drizzle-orm'
+import { eq, and, desc, ilike, lte, or, sql } from 'drizzle-orm'
 import { job } from '../../../database/schema'
 import { publicJobsQuerySchema } from '../../../utils/schemas/publicApplication'
 import { getPublicJobScopeCondition } from '../../../utils/publicJobScope'
+import type { FactoryDivision, JobDescriptionBlock } from '~~/shared/job-listing-structure'
 
 type PublicJobsQuery = Awaited<ReturnType<typeof publicJobsQuerySchema.parseAsync>>
 
@@ -11,12 +12,16 @@ type PublicJobRow = {
   title: string
   slug: string
   description: string | null
+  divisions: FactoryDivision[]
+  descriptionBlocks: JobDescriptionBlock[]
   location: string | null
   type: string
   salaryMin: number | null
   salaryMax: number | null
   salaryCurrency: string | null
   salaryUnit: string | null
+  salaryNegotiable?: boolean | null
+  salaryDisplayOnListing: boolean
   remoteStatus: string | null
   activeFrom?: Date | string | null
   createdAt: Date | string
@@ -31,6 +36,11 @@ function isMissingActiveFromColumn(error: unknown) {
 
   return (queryError.code === '42703' || queryError.cause?.code === '42703' || message.includes('Failed query'))
     && message.includes('active_from')
+}
+
+function buildDivisionFilter(divisions?: FactoryDivision[]) {
+  if (!divisions?.length) return undefined
+  return sql`${job.divisions} ?| array[${sql.join(divisions.map((division) => sql`${division}`), sql`, `)}]`
 }
 
 function buildPublicJobsWhere(query: PublicJobsQuery, includeActiveFrom: boolean, organizationScope?: SQL) {
@@ -59,6 +69,9 @@ function buildPublicJobsWhere(query: PublicJobsQuery, includeActiveFrom: boolean
     conditions.push(eq(job.type, query.type))
   }
 
+  const divisionFilter = buildDivisionFilter(query.divisions)
+  if (divisionFilter) conditions.push(divisionFilter)
+
   // Optional location filter
   if (query.location) {
     // Escape LIKE meta-characters to prevent pattern injection
@@ -78,12 +91,16 @@ async function listPublicJobs(query: PublicJobsQuery, offset: number, includeAct
         title: true,
         slug: true,
         description: true,
+        divisions: true,
+        descriptionBlocks: true,
         location: true,
         type: true,
         salaryMin: true,
         salaryMax: true,
         salaryCurrency: true,
         salaryUnit: true,
+        salaryNegotiable: true,
+        salaryDisplayOnListing: true,
         remoteStatus: true,
         activeFrom: true,
         createdAt: true,
@@ -93,12 +110,16 @@ async function listPublicJobs(query: PublicJobsQuery, offset: number, includeAct
         title: true,
         slug: true,
         description: true,
+        divisions: true,
+        descriptionBlocks: true,
         location: true,
         type: true,
         salaryMin: true,
         salaryMax: true,
         salaryCurrency: true,
         salaryUnit: true,
+        salaryNegotiable: true,
+        salaryDisplayOnListing: true,
         remoteStatus: true,
         createdAt: true,
       }
@@ -122,7 +143,7 @@ async function listPublicJobs(query: PublicJobsQuery, offset: number, includeAct
   const rows = data as PublicJobRow[]
 
   // Flatten org name into each job object. Legacy schemas fall back to createdAt for posted dates.
-  const flatData = rows.map(({ organization: org, ...j }) => ({
+  const flatData = rows.map(({ organization: org, ...j }) => stripSalaryForHiddenListing({
     ...j,
     activeFrom: j.activeFrom ?? j.createdAt,
     organizationName: org?.name ?? null,

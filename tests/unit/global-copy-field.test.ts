@@ -16,12 +16,13 @@ describe('global copy field', () => {
     expect(component).toContain('<Transition')
   })
 
-  it('uses the reusable copy field for URL copy affordances instead of standalone copy buttons', () => {
+  it('uses reusable copy primitives for URL copy affordances', () => {
     const applicationForm = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
     const newJob = readProjectFile('app/pages/dashboard/jobs/new.vue')
     const sourceTracking = readProjectFile('app/pages/dashboard/source-tracking/[id].vue')
 
-    expect(applicationForm).toContain('<CopyField')
+    expect(applicationForm).toContain('useCopyToClipboard({ useFallback: true })')
+    expect(applicationForm).toContain('data-testid="application-link-panel"')
     expect(newJob).toContain('<CopyField')
     expect(sourceTracking).toContain('<CopyField')
 

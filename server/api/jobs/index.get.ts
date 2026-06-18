@@ -25,6 +25,8 @@ export default defineCachedEventHandler(async (event) => {
         title: true,
         slug: true,
         description: true,
+        divisions: true,
+        descriptionBlocks: true,
         location: true,
         type: true,
         status: true,

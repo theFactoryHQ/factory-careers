@@ -1,4 +1,5 @@
 import type { MaybeRefOrGetter } from 'vue'
+import type { FactoryDivision, JobDescriptionBlock } from '~~/shared/job-listing-structure'
 
 /**
  * Composable for a single job detail with update and delete mutations.
@@ -28,6 +29,8 @@ export function useJob(id: MaybeRefOrGetter<string>) {
   async function updateJob(payload: Partial<{
     title: string
     description: string | null
+    divisions?: FactoryDivision[]
+    descriptionBlocks?: JobDescriptionBlock[]
     location: string | null
     type: 'full_time' | 'part_time' | 'contract' | 'internship'
     status: 'draft' | 'open' | 'closed' | 'archived'
@@ -36,6 +39,7 @@ export function useJob(id: MaybeRefOrGetter<string>) {
     salaryCurrency: string | null
     salaryUnit: 'YEAR' | 'MONTH' | 'HOUR' | null
     salaryNegotiable: boolean
+    salaryDisplayOnListing: boolean
     remoteStatus: 'remote' | 'hybrid' | 'onsite' | null
     activeFrom: Date
     validThrough: Date | null

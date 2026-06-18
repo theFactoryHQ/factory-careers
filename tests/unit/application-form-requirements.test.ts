@@ -39,17 +39,29 @@ describe('application form requirement cards', () => {
     expect(cssRule(css, ':where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-requirement-option-description')).toContain('color: rgb(255 255 255 / 0.72) !important')
   })
 
-  it('renders the application link with the global click-anywhere copy field', () => {
+  it('renders the application link as a compact copy row', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
     const linkSection = source.slice(
       source.indexOf('Shareable application link'),
       source.indexOf('The application link will be available'),
     )
 
-    expect(linkSection).toContain('<CopyField')
-    expect(linkSection).toContain(':value="applicationUrl"')
-    expect(linkSection).toContain('label="application link"')
-    expect(linkSection).toContain('tone="brand"')
+    expect(linkSection).toContain('data-testid="application-link-panel"')
+    expect(source).toContain('useCopyToClipboard({ useFallback: true })')
+    expect(linkSection).toContain('applicationUrlLabel')
+    expect(linkSection).toContain('truncate')
+    expect(linkSection).toContain('copyApplicationLink')
+    expect(linkSection).toContain('group-hover:opacity-100')
+    expect(linkSection).toContain(':aria-label="applicationLinkCopied ? \'Copied application link\' : \'Copy application link\'"')
+    expect(linkSection).toContain('@click="copyApplicationLink"')
+    expect(linkSection).toContain('pointer-events-none')
+    expect(linkSection).not.toContain('hover:bg-white')
+    expect(linkSection).not.toContain('dark:hover:bg-surface-800')
+    expect(linkSection).not.toContain('<details')
+    expect(linkSection).not.toContain('<summary')
+    expect(linkSection).not.toContain('hover:bg-surface-100/70')
+    expect(linkSection).not.toContain('<CopyField')
+    expect(linkSection).not.toContain('ui-panel-brand p-5 mb-6')
     expect(linkSection).not.toContain('readonly')
     expect(linkSection).not.toContain('class="ui-field')
   })
@@ -58,7 +70,8 @@ describe('application form requirement cards', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
 
     expect(source).toContain('showApplicationPreview')
-    expect(source).toContain('Preview form')
+    expect(source).toContain('Preview')
+    expect(source).not.toContain('Preview form')
     expect(source).toContain('Application Preview')
     expect(source).toContain('Applicant view')
     expect(source).toContain('Name <span')

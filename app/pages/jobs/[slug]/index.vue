@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import { MapPin, Briefcase, Building2, ArrowLeft, ExternalLink, Calendar } from 'lucide-vue-next'
+import {
+  formatDivisionLabel,
+  jobDescriptionBlocksToMarkdown,
+  jobDescriptionBlocksToPlainText,
+  normalizeJobDescriptionBlocks,
+  type FactoryDivision,
+} from '~~/shared/job-listing-structure'
 
 definePageMeta({
   layout: 'public',
@@ -46,7 +53,13 @@ function markdownToPlainText(markdown?: string | null): string {
     .trim()
 }
 
-const jobDescriptionPlain = computed(() => markdownToPlainText(job.value?.description))
+const structuredDescriptionBlocks = computed(() => normalizeJobDescriptionBlocks(job.value?.descriptionBlocks ?? []))
+const renderedDescription = computed(() =>
+  jobDescriptionBlocksToMarkdown(structuredDescriptionBlocks.value) || job.value?.description || '',
+)
+const jobDescriptionPlain = computed(() =>
+  jobDescriptionBlocksToPlainText(structuredDescriptionBlocks.value) || markdownToPlainText(job.value?.description),
+)
 
 function serializeJsonLd(value: Record<string, unknown>): string {
   return JSON.stringify(value)
@@ -149,14 +162,14 @@ watchEffect(() => {
   }
 
   // Salary (baseSalary)
-  if (j.salaryMin || j.salaryMax) {
+  if (j.salaryDisplayOnListing && (hasSalaryValue(j.salaryMin) || hasSalaryValue(j.salaryMax))) {
     const value: Record<string, unknown> = { '@type': 'QuantitativeValue' }
-    if (j.salaryMin && j.salaryMax) {
+    if (hasSalaryValue(j.salaryMin) && hasSalaryValue(j.salaryMax)) {
       value.minValue = j.salaryMin
       value.maxValue = j.salaryMax
-    } else if (j.salaryMin) {
+    } else if (hasSalaryValue(j.salaryMin)) {
       value.value = j.salaryMin
-    } else if (j.salaryMax) {
+    } else if (hasSalaryValue(j.salaryMax)) {
       value.value = j.salaryMax
     }
     if (j.salaryUnit) {
@@ -196,14 +209,22 @@ function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString(locale.value)
 }
 
+function hasSalaryValue(value?: number | null): value is number {
+  return value != null
+}
+
 /** Format salary for display */
 function formatSalary(min?: number | null, max?: number | null, currency?: string | null, unit?: string | null): string | null {
-  if (!min && !max) return null
+  if (!hasSalaryValue(min) && !hasSalaryValue(max)) return null
   const cur = currency || 'USD'
   const fmt = (v: number) => new Intl.NumberFormat(locale.value, { style: 'currency', currency: cur, maximumFractionDigits: 0 }).format(v)
   const unitLabel = unit ? `/${unit.toLowerCase().replace('year', 'yr').replace('month', 'mo').replace('hour', 'hr')}` : ''
-  if (min && max) return `${fmt(min)} – ${fmt(max)}${unitLabel}`
-  return `${fmt(min || max!)}${unitLabel}`
+  if (hasSalaryValue(min) && hasSalaryValue(max)) return `${fmt(min)} – ${fmt(max)}${unitLabel}`
+  return `${fmt(hasSalaryValue(min) ? min : max!)}${unitLabel}`
+}
+
+function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[] {
+  return Array.isArray(divisions) ? divisions : []
 }
 </script>
 
@@ -297,7 +318,14 @@ function formatSalary(min?: number | null, max?: number | null, currency?: strin
               {{ job.location }}
             </span>
             <span
-              v-if="job.salaryNegotiable || formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryUnit)"
+              v-for="division in getJobDivisions(job.divisions)"
+              :key="division"
+              class="inline-flex items-center gap-1.5 border border-white/10 bg-black/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/52"
+            >
+              {{ formatDivisionLabel(division) }}
+            </span>
+            <span
+              v-if="job.salaryDisplayOnListing && (job.salaryNegotiable || formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryUnit))"
               class="inline-flex items-center gap-1.5 border border-success-500/35 bg-success-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-success-300"
             >
               {{ job.salaryNegotiable ? 'Negotiable' : formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryUnit) }}
@@ -318,12 +346,12 @@ function formatSalary(min?: number | null, max?: number | null, currency?: strin
       </div>
 
       <!-- Description card -->
-      <div v-if="job.description" class="mb-5 overflow-hidden border border-white/10 bg-white/[0.03]">
+      <div v-if="renderedDescription" class="mb-5 overflow-hidden border border-white/10 bg-white/[0.03]">
         <div class="border-b border-white/10 px-6 py-4 sm:px-8">
           <h2 class="text-sm font-semibold text-white">About this role</h2>
         </div>
         <div class="px-6 py-6 sm:px-8">
-          <MarkdownDescription :value="job.description" />
+          <MarkdownDescription :value="renderedDescription" />
         </div>
       </div>
 

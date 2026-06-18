@@ -2,6 +2,12 @@
 import { MapPin, Briefcase, Building2 } from 'lucide-vue-next'
 import { COUNTRY_OPTIONS, US_STATE_OPTIONS } from '~~/shared/location-options'
 import { isRequiredCustomQuestionAnswered } from '~~/shared/custom-question-validation'
+import {
+  formatDivisionLabel,
+  jobDescriptionBlocksToMarkdown,
+  normalizeJobDescriptionBlocks,
+  type FactoryDivision,
+} from '~~/shared/job-listing-structure'
 
 definePageMeta({
   layout: 'public',
@@ -28,9 +34,13 @@ const { data: job, status: fetchStatus, error: fetchError } = useFetch(
   { key: `public-job-${jobSlug}` },
 )
 
+const renderedDescription = computed(() =>
+  jobDescriptionBlocksToMarkdown(normalizeJobDescriptionBlocks(job.value?.descriptionBlocks ?? [])) || job.value?.description || '',
+)
+
 useSeoMeta({
   title: computed(() => job.value ? `Apply — ${job.value.title}` : 'Apply'),
-  description: computed(() => job.value?.description?.slice(0, 160) ?? 'Submit your application'),
+  description: computed(() => renderedDescription.value.slice(0, 160) || 'Submit your application'),
   robots: 'noindex, nofollow',
 })
 
@@ -454,6 +464,10 @@ const typeLabels: Record<string, string> = {
   contract: 'Contract',
   internship: 'Internship',
 }
+
+function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[] {
+  return Array.isArray(divisions) ? divisions : []
+}
 </script>
 
 <template>
@@ -520,14 +534,21 @@ const typeLabels: Record<string, string> = {
               <MapPin class="size-3.5 text-brand-500" />
               {{ job.location }}
             </span>
+            <span
+              v-for="division in getJobDivisions(job.divisions)"
+              :key="division"
+              class="inline-flex items-center gap-1.5 border border-white/10 bg-black/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/52"
+            >
+              {{ formatDivisionLabel(division) }}
+            </span>
           </div>
 
           <h1 class="text-4xl font-light leading-none tracking-tight text-white sm:text-5xl">
             {{ job.title }}
           </h1>
 
-          <div v-if="job.description" class="mt-6 border-t border-white/10 pt-5">
-            <MarkdownDescription :value="job.description" />
+          <div v-if="renderedDescription" class="mt-6 border-t border-white/10 pt-5">
+            <MarkdownDescription :value="renderedDescription" />
           </div>
         </div>
       </div>

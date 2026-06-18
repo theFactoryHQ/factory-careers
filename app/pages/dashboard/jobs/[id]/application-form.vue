@@ -1,9 +1,20 @@
 <script setup lang="ts">
-import { FileText, Link2, Check, Plus, Copy, CheckCircle2, XCircle, ToggleLeft, ToggleRight, Trash2, Radio, ChevronDown, X, Eye, Save, ShieldCheck } from 'lucide-vue-next'
+import { Briefcase, CalendarClock, Check, CheckCircle2, ChevronDown, CircleDollarSign, ClipboardCheck, Copy, Eye, FileText, Link2, Plus, Radio, Save, ShieldCheck, ToggleLeft, ToggleRight, Trash2, X, XCircle } from 'lucide-vue-next'
 import { z } from 'zod'
 import { getSourceChannelLabel } from '~/utils/status-display'
 import { CURRENCY_OPTIONS, CURRENCY_VALUES } from '~~/shared/currency-options'
 import { todayDateInputValue, toDateInputValue } from '~~/shared/date-input'
+import { buildJobLocation, parseJobLocation, type UsStateValue } from '~~/shared/job-location'
+import {
+  factoryDivisionSchema,
+  jobDescriptionBlocksToMarkdown,
+  jobDescriptionBlocksSchema,
+  legacyDescriptionToBlocks,
+  normalizeJobDescriptionBlocks,
+  type FactoryDivision,
+  type JobDescriptionBlock,
+} from '~~/shared/job-listing-structure'
+import { US_STATE_OPTIONS, US_STATE_VALUES } from '~~/shared/location-options'
 import { SALARY_UNIT_OPTIONS, SALARY_UNIT_VALUES } from '~~/shared/salary-options'
 
 definePageMeta({
@@ -43,23 +54,16 @@ useSeoMeta({
 })
 
 // ─────────────────────────────────────────────
-// Application link
-// ─────────────────────────────────────────────
-
-const requestUrl = useRequestURL()
-const applicationUrl = computed(() => {
-  const base = `${requestUrl.protocol}//${requestUrl.host}`
-  return `${base}/jobs/${job.value?.slug ?? jobId}/apply`
-})
-
-// ─────────────────────────────────────────────
 // Applicant-facing posting details
 // ─────────────────────────────────────────────
 
 const form = ref({
   title: '',
   description: '',
-  location: '',
+  divisions: [] as FactoryDivision[],
+  descriptionBlocks: [{ type: 'paragraph', body: '' }] as JobDescriptionBlock[],
+  city: '',
+  state: '' as UsStateValue | '',
   type: 'full_time' as string,
   slug: '',
   salaryMin: null as number | null,
@@ -67,25 +71,104 @@ const form = ref({
   salaryCurrency: 'USD',
   salaryUnit: 'YEAR',
   salaryNegotiable: false,
+  salaryDisplayOnListing: false,
   remoteStatus: '' as string,
   experienceLevel: '' as string,
   activeFrom: todayDateInputValue(),
   validThrough: '',
 })
 
+// ─────────────────────────────────────────────
+// Application link
+// ─────────────────────────────────────────────
+
+const requestUrl = useRequestURL()
+const applicationSlug = computed(() => form.value.slug.trim() || job.value?.slug || jobId)
+const applicationUrl = computed(() => {
+  const base = `${requestUrl.protocol}//${requestUrl.host}`
+  return `${base}/jobs/${applicationSlug.value}/apply`
+})
+const applicationUrlLabel = computed(() => `/jobs/${applicationSlug.value}/apply`)
+const { copied: applicationLinkCopied, copy: copyApplicationUrl } = useCopyToClipboard({ useFallback: true })
+
+async function copyApplicationLink() {
+  const didCopy = await copyApplicationUrl(applicationUrl.value)
+  if (didCopy) {
+    toast.success('Application link copied')
+    return
+  }
+
+  toast.info(applicationUrl.value)
+}
+
+const slugManuallyEdited = ref(false)
+const lastAutoSlug = ref('')
+
+function generateTitleSlug(title: string): string {
+  const base = title
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80)
+
+  return base || 'job'
+}
+
+function looksLikeGeneratedSlug(slug: string, title: string): boolean {
+  const trimmedSlug = slug.trim()
+  if (!trimmedSlug) return false
+
+  const titleSlug = generateTitleSlug(title)
+  if (trimmedSlug === titleSlug) return true
+
+  const slugPrefix = `${titleSlug}-`
+  if (!trimmedSlug.startsWith(slugPrefix)) return false
+
+  const suffix = trimmedSlug.slice(slugPrefix.length)
+  const numericSuffix = Number(suffix)
+  const isReadableCollisionSuffix = String(numericSuffix) === suffix
+    && Number.isInteger(numericSuffix)
+    && numericSuffix >= 2
+  const isLegacyIdSuffix = /^[0-9a-f]{7,8}(?:-[0-9a-f]{7,8})*$/i.test(suffix)
+
+  return isReadableCollisionSuffix || isLegacyIdSuffix
+}
+
+function markSlugManuallyEdited() {
+  const slug = form.value.slug.trim()
+  slugManuallyEdited.value = Boolean(slug) && slug !== lastAutoSlug.value
+}
+
 watch([job, defaultSalaryUnit], ([j]) => {
   if (!j) return
+  const descriptionBlocks = normalizeJobDescriptionBlocks(j.descriptionBlocks)
+  const title = j.title ?? ''
+  const loadedSlug = j.slug ?? ''
+  const autoSlug = generateTitleSlug(title)
+  const shouldUseAutoSlug = !loadedSlug || looksLikeGeneratedSlug(loadedSlug, title)
+  const parsedLocation = parseJobLocation(j.location)
+
+  slugManuallyEdited.value = !shouldUseAutoSlug
+  lastAutoSlug.value = autoSlug
+
   form.value = {
-    title: j.title ?? '',
+    title,
     description: j.description ?? '',
-    location: j.location ?? '',
+    divisions: Array.isArray(j.divisions) ? j.divisions : [],
+    descriptionBlocks: descriptionBlocks.length > 0 ? descriptionBlocks : legacyDescriptionToBlocks(j.description),
+    city: parsedLocation.city,
+    state: parsedLocation.state,
     type: j.type ?? 'full_time',
-    slug: j.slug ?? '',
+    slug: shouldUseAutoSlug ? autoSlug : loadedSlug,
     salaryMin: j.salaryMin ?? null,
     salaryMax: j.salaryMax ?? null,
     salaryCurrency: j.salaryCurrency ?? 'USD',
     salaryUnit: j.salaryUnit ?? defaultSalaryUnit.value,
     salaryNegotiable: j.salaryNegotiable ?? false,
+    salaryDisplayOnListing: j.salaryDisplayOnListing ?? false,
     remoteStatus: j.remoteStatus ?? '',
     experienceLevel: j.experienceLevel ?? '',
     activeFrom: j.activeFrom ? toDateInputValue(j.activeFrom) : todayDateInputValue(),
@@ -93,24 +176,21 @@ watch([job, defaultSalaryUnit], ([j]) => {
   }
 }, { immediate: true })
 
-watch(() => form.value.salaryNegotiable, (negotiable) => {
-  if (negotiable) {
-    form.value.salaryMin = null
-    form.value.salaryMax = null
-    form.value.salaryCurrency = ''
-    form.value.salaryUnit = ''
-  } else if (!form.value.salaryCurrency) {
-    form.value.salaryCurrency = 'USD'
-    form.value.salaryUnit = defaultSalaryUnit.value
-  } else if (!form.value.salaryUnit) {
-    form.value.salaryUnit = defaultSalaryUnit.value
+watch(() => form.value.title, (title) => {
+  const nextAutoSlug = generateTitleSlug(title)
+  lastAutoSlug.value = nextAutoSlug
+  if (!slugManuallyEdited.value) {
+    form.value.slug = nextAutoSlug
   }
 })
 
 const postingSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   description: z.string().optional(),
-  location: z.string().optional(),
+  divisions: z.array(factoryDivisionSchema).optional(),
+  descriptionBlocks: jobDescriptionBlocksSchema.optional(),
+  city: z.string().max(120).optional(),
+  state: z.enum(US_STATE_VALUES).optional().or(z.literal('')),
   type: z.enum(['full_time', 'part_time', 'contract', 'internship']),
   slug: z.string().max(80).optional(),
   salaryMin: z.union([z.coerce.number().int().min(0), z.null()]).optional(),
@@ -118,6 +198,7 @@ const postingSchema = z.object({
   salaryCurrency: z.enum(CURRENCY_VALUES).optional().or(z.literal('')),
   salaryUnit: z.enum(SALARY_UNIT_VALUES).optional().or(z.literal('')),
   salaryNegotiable: z.boolean().optional(),
+  salaryDisplayOnListing: z.boolean().optional(),
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).optional().or(z.literal('')),
   experienceLevel: z.enum(['junior', 'mid', 'senior', 'lead']).optional().or(z.literal('')),
   activeFrom: z.string().optional(),
@@ -126,8 +207,40 @@ const postingSchema = z.object({
 
 const postingErrors = ref<Record<string, string>>({})
 const isSavingPosting = ref(false)
+const descriptionBlocksEditorRef = ref<{ reportValidity: () => boolean } | null>(null)
+
+function validateRequiredSalaryRange() {
+  postingErrors.value = {}
+
+  if (form.value.salaryMin === null || form.value.salaryMin === undefined) {
+    postingErrors.value.salaryMin = 'Minimum salary is required'
+  }
+  if (form.value.salaryMax === null || form.value.salaryMax === undefined) {
+    postingErrors.value.salaryMax = 'Maximum salary is required'
+  }
+  if (
+    typeof form.value.salaryMin === 'number'
+    && typeof form.value.salaryMax === 'number'
+    && form.value.salaryMax < form.value.salaryMin
+  ) {
+    postingErrors.value.salaryMax = 'Maximum salary must be greater than or equal to minimum salary'
+  }
+
+  return !postingErrors.value.salaryMin && !postingErrors.value.salaryMax
+}
 
 async function savePostingDetails() {
+  if (descriptionBlocksEditorRef.value && !descriptionBlocksEditorRef.value.reportValidity()) {
+    postingErrors.value = { ...postingErrors.value, descriptionBlocks: 'Add a title for each description section' }
+    toast.error('Add a title for each description section')
+    return
+  }
+
+  if (!validateRequiredSalaryRange()) {
+    toast.error('Add the internal salary range')
+    return
+  }
+
   const result = postingSchema.safeParse(form.value)
   if (!result.success) {
     postingErrors.value = {}
@@ -141,17 +254,21 @@ async function savePostingDetails() {
   postingErrors.value = {}
   isSavingPosting.value = true
   try {
+    const descriptionBlocks = normalizeJobDescriptionBlocks(form.value.descriptionBlocks)
     await updateJob({
       title: form.value.title,
-      description: form.value.description || null,
-      location: form.value.location || null,
+      description: jobDescriptionBlocksToMarkdown(descriptionBlocks) || null,
+      divisions: form.value.divisions,
+      descriptionBlocks,
+      location: buildJobLocation({ city: form.value.city, state: form.value.state }) || null,
       type: form.value.type,
       slug: form.value.slug || undefined,
       salaryNegotiable: form.value.salaryNegotiable,
-      salaryMin: form.value.salaryNegotiable ? null : (form.value.salaryMin ?? null),
-      salaryMax: form.value.salaryNegotiable ? null : (form.value.salaryMax ?? null),
-      salaryCurrency: form.value.salaryNegotiable ? null : (form.value.salaryCurrency || 'USD'),
-      salaryUnit: form.value.salaryNegotiable ? null : (form.value.salaryUnit || defaultSalaryUnit.value),
+      salaryDisplayOnListing: form.value.salaryDisplayOnListing,
+      salaryMin: form.value.salaryMin ?? null,
+      salaryMax: form.value.salaryMax ?? null,
+      salaryCurrency: form.value.salaryCurrency || 'USD',
+      salaryUnit: form.value.salaryUnit || defaultSalaryUnit.value,
       remoteStatus: form.value.remoteStatus || null,
       experienceLevel: (form.value.experienceLevel as 'junior' | 'mid' | 'senior' | 'lead' | null) || null,
       activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue()),
@@ -186,6 +303,11 @@ const experienceLevelOptions = [
   { value: 'mid', label: 'Mid-level' },
   { value: 'senior', label: 'Senior' },
   { value: 'lead', label: 'Lead' },
+]
+
+const jobStateOptions = [
+  { value: '', label: 'Not specified' },
+  ...US_STATE_OPTIONS,
 ]
 
 function onSalaryMinChange(e: Event) {
@@ -407,43 +529,71 @@ async function copyTrackingUrl(code: string) {
         <div>
           <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50">Application Form</h1>
           <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">
-            Configure the application experience for <strong>{{ job.title }}</strong>.
+            Configure the application experience for <strong>{{ job.title }}</strong>
           </p>
         </div>
-        <button
-          type="button"
-          class="ui-button ui-button-secondary h-10 shrink-0 px-4 text-sm"
-          @click="showApplicationPreview = true"
+        <div
+          data-testid="application-form-header-actions"
+          class="flex flex-wrap items-center gap-2 sm:justify-end"
         >
-          <Eye class="size-4" />
-          Preview form
-        </button>
+          <button
+            type="button"
+            class="ui-button ui-button-secondary h-10 shrink-0 px-4 text-sm"
+            @click="showApplicationPreview = true"
+          >
+            <Eye class="size-4" />
+            Preview
+          </button>
+          <button
+            type="button"
+            :disabled="isSavingPosting"
+            class="ui-button ui-button-primary h-10 shrink-0 px-5 text-sm"
+            @click="savePostingDetails"
+          >
+            <Save class="size-4" />
+            {{ isSavingPosting ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
       </div>
       <!-- Shareable application link (only when job is open) -->
-      <div v-if="job.status === 'open'" class="ui-panel-brand p-5 mb-6">
-        <div class="flex items-center gap-2 mb-2">
-          <Link2 class="size-4 text-brand-600 dark:text-brand-400" />
-          <h2 class="text-sm font-semibold text-brand-700 dark:text-brand-300">Application Link</h2>
-        </div>
-        <p class="text-xs text-surface-600 dark:text-surface-400 mb-3">
-          Share this link with candidates so they can apply to this position.
-        </p>
-        <CopyField
-          :value="applicationUrl"
-          label="application link"
-          title="Copy application link"
-          tone="brand"
-        />
-      </div>
+      <button
+        v-if="job.status === 'open'"
+        type="button"
+        data-testid="application-link-panel"
+        class="ui-panel-muted group mb-6 flex w-full cursor-pointer items-center gap-3 rounded-md border border-surface-200 bg-surface-50/70 px-4 py-3 text-left transition-[border-color,box-shadow] hover:border-surface-300 focus-visible:border-brand-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 dark:border-surface-800 dark:bg-surface-900/45 dark:hover:border-surface-700"
+        :aria-label="applicationLinkCopied ? 'Copied application link' : 'Copy application link'"
+        :title="applicationLinkCopied ? 'Copied application link' : 'Copy application link'"
+        @click="copyApplicationLink"
+      >
+        <Link2 class="size-4 shrink-0 text-surface-500 dark:text-surface-400" />
+        <span class="flex min-w-0 flex-1 items-center gap-2">
+          <span class="shrink-0 text-sm font-medium text-surface-900 dark:text-surface-100">Application Link</span>
+          <span class="min-w-0 truncate text-xs text-surface-500 dark:text-surface-400">{{ applicationUrlLabel }}</span>
+        </span>
+        <span
+          class="pointer-events-none inline-flex size-8 shrink-0 items-center justify-center text-surface-400 transition-[color,opacity] group-hover:text-surface-700 group-focus-visible:text-surface-700 dark:text-surface-500 dark:group-hover:text-surface-200 dark:group-focus-visible:text-surface-200"
+          :class="applicationLinkCopied ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100'"
+        >
+          <Check v-if="applicationLinkCopied" class="size-3.5 text-success-500" />
+          <Copy v-else class="size-3.5" />
+        </span>
+      </button>
 
       <div v-else class="ui-panel-muted p-4 mb-6 text-sm text-surface-500 dark:text-surface-400">
         The application link will be available when this job is published (status: <strong>open</strong>).
       </div>
 
-      <form class="space-y-6" @submit.prevent="savePostingDetails">
-        <!-- Basic Details -->
-        <section class="ui-panel p-5">
-          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-4">Basic Details</h2>
+      <DashboardSectionStack data-testid="application-section-organizer">
+        <form class="contents" @submit.prevent="savePostingDetails">
+          <DashboardCollapsibleSection
+            id="application-section-basic-details"
+            title="Basic Details"
+            :default-open="true"
+          >
+          <template #icon>
+            <Briefcase class="size-4 text-surface-500 dark:text-surface-400" />
+          </template>
+
           <div class="space-y-4">
             <div>
               <label for="application-title" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
@@ -459,29 +609,51 @@ async function copyTrackingUrl(code: string) {
             </div>
 
             <div>
-              <label for="application-description" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                Description
+              <label for="application-divisions" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                Division
               </label>
-              <textarea
-                id="application-description"
-                v-model="form.description"
-                rows="6"
-                placeholder="Describe the role, responsibilities, and requirements..."
-                class="ui-field px-3 py-2 text-sm"
-              ></textarea>
+              <JobDivisionMultiSelect
+                id="application-divisions"
+                v-model="form.divisions"
+                placeholder="Select divisions"
+              />
             </div>
 
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <DashboardCollapsibleSection
+              id="application-description-section"
+              title="Description"
+              :default-open="true"
+              variant="nested"
+              content-class="px-0 pb-0 pt-3"
+            >
+              <JobDescriptionBlocksEditor
+                ref="descriptionBlocksEditorRef"
+                v-model="form.descriptionBlocks"
+              />
+              <p v-if="postingErrors.descriptionBlocks" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ postingErrors.descriptionBlocks }}</p>
+            </DashboardCollapsibleSection>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
-                <label for="application-location" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                  Location
+                <label for="application-city" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  City
                 </label>
                 <input
-                  id="application-location"
-                  v-model="form.location"
+                  id="application-city"
+                  v-model="form.city"
                   type="text"
-                  placeholder="e.g. Remote / United States"
+                  placeholder="e.g. Los Angeles"
                   class="ui-field px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label for="application-state" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  State
+                </label>
+                <FactorySelect
+                  id="application-state"
+                  v-model="form.state"
+                  :options="jobStateOptions"
                 />
               </div>
               <div>
@@ -529,21 +701,40 @@ async function copyTrackingUrl(code: string) {
                 type="text"
                 placeholder="auto-generated-from-title"
                 class="ui-field px-3 py-2 text-xs font-mono"
+                @input="markSlugManuallyEdited"
               />
               <p class="mt-1 text-xs text-surface-400 dark:text-surface-500">
-                Used in the public application URL. Leave blank to auto-generate from title.
+                Auto-updates from the title until edited. Leave blank to auto-generate from title.
               </p>
             </div>
           </div>
-        </section>
+          </DashboardCollapsibleSection>
 
-        <!-- Salary & Compensation -->
-        <section class="ui-panel p-5">
-          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1">Salary & Compensation</h2>
-          <p class="text-xs text-surface-400 dark:text-surface-500 mb-5">
-            Adding salary information improves visibility on Google Jobs.
-          </p>
+          <DashboardCollapsibleSection
+            id="application-section-salary"
+            title="Salary & Compensation"
+            description="Adding salary information improves visibility on Google Jobs."
+          >
+          <template #icon>
+            <CircleDollarSign class="size-4 text-surface-500 dark:text-surface-400" />
+          </template>
+
           <div class="space-y-4">
+            <label class="flex cursor-pointer items-start justify-between gap-4 border border-surface-200 bg-surface-50/50 px-3 py-3 transition-colors hover:border-surface-300 dark:border-surface-800 dark:bg-surface-900/30 dark:hover:border-surface-700">
+              <span>
+                <span class="block text-sm font-medium text-surface-900 dark:text-surface-100">Display on listing</span>
+                <span class="mt-0.5 block text-xs text-surface-400 dark:text-surface-500">
+                  Publish the salary range on the candidate-facing job page.
+                </span>
+              </span>
+              <input
+                id="application-salary-display-on-listing"
+                v-model="form.salaryDisplayOnListing"
+                type="checkbox"
+                class="mt-0.5 size-4 shrink-0 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600"
+              />
+            </label>
+
             <label class="flex cursor-pointer items-center gap-3">
               <input
                 v-model="form.salaryNegotiable"
@@ -553,84 +744,88 @@ async function copyTrackingUrl(code: string) {
               <div>
                 <span class="text-sm font-medium text-surface-900 dark:text-surface-100">Salary is negotiable</span>
                 <p class="text-xs text-surface-400 dark:text-surface-500">
-                  Show "Negotiable" instead of a specific salary range.
+                  When displayed, show "Negotiable" instead of the salary range.
                 </p>
               </div>
             </label>
 
-            <template v-if="!form.salaryNegotiable">
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label for="application-salary-min" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                    Minimum Salary
-                  </label>
-                  <input
-                    id="application-salary-min"
-                    v-model.number="form.salaryMin"
-                    type="number"
-                    min="0"
-                    placeholder="e.g. 50000"
-                    class="ui-field px-3 py-2 text-sm"
-                    @change="onSalaryMinChange"
-                  />
-                </div>
-                <div>
-                  <label for="application-salary-max" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                    Maximum Salary
-                  </label>
-                  <input
-                    id="application-salary-max"
-                    v-model.number="form.salaryMax"
-                    type="number"
-                    min="0"
-                    placeholder="e.g. 80000"
-                    class="ui-field px-3 py-2 text-sm"
-                    @change="onSalaryMaxChange"
-                  />
-                </div>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label for="application-salary-min" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  Minimum Salary <span class="text-danger-500">*</span>
+                </label>
+                <input
+                  id="application-salary-min"
+                  v-model.number="form.salaryMin"
+                  type="number"
+                  min="0"
+                  required
+                  placeholder="e.g. 50000"
+                  class="ui-field px-3 py-2 text-sm"
+                  @change="onSalaryMinChange"
+                />
+                <p v-if="postingErrors.salaryMin" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ postingErrors.salaryMin }}</p>
               </div>
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label for="application-currency" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                    Currency
-                  </label>
-                  <FactorySelect
-                    id="application-currency"
-                    v-model="form.salaryCurrency"
-                    :options="CURRENCY_OPTIONS"
-                  />
-                </div>
-                <div>
-                  <label for="application-salary-unit" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                    Pay Period
-                  </label>
-                  <FactorySelect
-                    id="application-salary-unit"
-                    v-model="form.salaryUnit"
-                    :options="SALARY_UNIT_OPTIONS"
-                  />
-                </div>
+              <div>
+                <label for="application-salary-max" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  Maximum Salary <span class="text-danger-500">*</span>
+                </label>
+                <input
+                  id="application-salary-max"
+                  v-model.number="form.salaryMax"
+                  type="number"
+                  min="0"
+                  required
+                  placeholder="e.g. 80000"
+                  class="ui-field px-3 py-2 text-sm"
+                  @change="onSalaryMaxChange"
+                />
+                <p v-if="postingErrors.salaryMax" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ postingErrors.salaryMax }}</p>
               </div>
-            </template>
+            </div>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label for="application-currency" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  Currency
+                </label>
+                <FactorySelect
+                  id="application-currency"
+                  v-model="form.salaryCurrency"
+                  :options="CURRENCY_OPTIONS"
+                />
+              </div>
+              <div>
+                <label for="application-salary-unit" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  Pay Period
+                </label>
+                <FactorySelect
+                  id="application-salary-unit"
+                  v-model="form.salaryUnit"
+                  :options="SALARY_UNIT_OPTIONS"
+                />
+              </div>
+            </div>
           </div>
-        </section>
+          </DashboardCollapsibleSection>
 
-        <!-- Listing Schedule -->
-        <section class="ui-panel p-5">
-          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1">Listing Schedule</h2>
-          <p class="text-xs text-surface-400 dark:text-surface-500 mb-5">
-            Set when this job posting goes live and when it automatically expires.
-          </p>
+          <DashboardCollapsibleSection
+            id="application-section-schedule"
+            title="Listing Schedule"
+            description="Set when this job posting goes live and when it automatically expires."
+          >
+          <template #icon>
+            <CalendarClock class="size-4 text-surface-500 dark:text-surface-400" />
+          </template>
+
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label for="application-active-from" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                 Active From
               </label>
-              <input
+              <DashboardDatePicker
                 id="application-active-from"
                 v-model="form.activeFrom"
-                type="date"
-                class="ui-field px-3 py-2 text-sm"
+                placeholder="Select active date"
               />
               <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Defaults to today for new jobs.</p>
             </div>
@@ -638,45 +833,28 @@ async function copyTrackingUrl(code: string) {
               <label for="application-valid-through" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                 Valid Through
               </label>
-              <div class="flex items-center gap-2">
-                <input
-                  id="application-valid-through"
-                  v-model="form.validThrough"
-                  type="date"
-                  class="ui-field px-3 py-2 text-sm"
-                />
-                <button
-                  v-if="form.validThrough"
-                  type="button"
-                  class="shrink-0 text-xs text-surface-400 underline transition-colors hover:text-danger-500 dark:hover:text-danger-400"
-                  @click="form.validThrough = ''"
-                >
-                  Clear
-                </button>
-              </div>
+              <DashboardDatePicker
+                id="application-valid-through"
+                v-model="form.validThrough"
+                placeholder="No expiry date"
+                clear-label="Clear expiry date"
+                allow-clear
+              />
               <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Leave blank if there is no fixed expiry date.</p>
             </div>
           </div>
-        </section>
+          </DashboardCollapsibleSection>
+        </form>
 
-        <div class="flex items-center justify-start pb-2">
-          <button
-            type="submit"
-            :disabled="isSavingPosting"
-            class="ui-button ui-button-primary h-10 px-5 text-sm"
-          >
-            <Save class="size-4" />
-            {{ isSavingPosting ? 'Saving...' : 'Save application details' }}
-          </button>
-        </div>
-      </form>
+        <DashboardCollapsibleSection
+          id="application-section-requirements"
+          title="Application requirements"
+          description="Choose what candidates must provide when applying."
+        >
+        <template #icon>
+          <ClipboardCheck class="size-4 text-surface-500 dark:text-surface-400" />
+        </template>
 
-      <!-- Application Requirements -->
-      <div class="ui-panel p-5 mb-6">
-        <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1">Application requirements</h2>
-        <p class="text-xs text-surface-400 dark:text-surface-500 mb-4">
-          Choose what candidates must provide when applying.
-        </p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           <button
             type="button"
@@ -724,17 +902,16 @@ async function copyTrackingUrl(code: string) {
         <p class="text-xs text-surface-400 dark:text-surface-500" role="status">
           {{ requirementsSaveStatus }}
         </p>
-      </div>
+        </DashboardCollapsibleSection>
 
-      <!-- Compliance Questions -->
-      <div class="ui-panel p-5 mb-6">
-        <div class="mb-3 flex items-center gap-2">
+        <DashboardCollapsibleSection
+          id="application-section-compliance"
+          title="Compliance questions"
+          description="Add voluntary self-identification questions for US equal employment opportunity reporting."
+        >
+        <template #icon>
           <ShieldCheck class="size-4 text-surface-500 dark:text-surface-400" />
-          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300">Compliance questions</h2>
-        </div>
-        <p class="mb-4 text-xs text-surface-400 dark:text-surface-500">
-          Add voluntary self-identification questions for US equal employment opportunity reporting.
-        </p>
+        </template>
 
         <div class="mb-4 space-y-3">
           <button
@@ -803,44 +980,44 @@ async function copyTrackingUrl(code: string) {
         <p class="text-xs text-surface-400 dark:text-surface-500" role="status">
           {{ complianceSaveStatus }}
         </p>
-      </div>
+        </DashboardCollapsibleSection>
 
-      <!-- Application Form Questions -->
-      <div class="ui-panel p-5 mb-6">
-        <div class="flex items-center gap-2 mb-3">
+        <DashboardCollapsibleSection
+          id="application-section-questions"
+          title="Custom Questions"
+          description="Customize the questions applicants must answer when applying. All applications include name, email, and phone by default."
+        >
+        <template #icon>
           <FileText class="size-4 text-surface-500 dark:text-surface-400" />
-          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-300">Custom Questions</h2>
-        </div>
-        <p class="text-xs text-surface-400 dark:text-surface-500 mb-4">
-          Customize the questions applicants must answer when applying. All applications include name, email, and phone by default.
-        </p>
+        </template>
         <JobQuestions :job-id="jobId" />
-      </div>
+        </DashboardCollapsibleSection>
 
-      <!-- Tracking Links for this Job -->
-      <div class="ui-panel p-5">
-        <div class="flex items-center justify-between mb-1">
-          <div class="flex items-center gap-2">
-            <Radio class="size-4 text-surface-500 dark:text-surface-400" />
-            <NuxtLink
-              :to="localePath({ path: '/dashboard/source-tracking', query: { jobId } })"
-              class="text-sm font-semibold text-surface-700 dark:text-surface-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
-            >
-              Tracking Links
-            </NuxtLink>
-          </div>
+        <DashboardCollapsibleSection
+          id="application-section-tracking"
+          title="Tracking Links"
+          description="Create unique tracking links for this job to measure where applications come from."
+        >
+        <template #icon>
+          <Radio class="size-4 text-surface-500 dark:text-surface-400" />
+        </template>
+        <template #actions>
+          <NuxtLink
+            :to="localePath({ path: '/dashboard/source-tracking', query: { jobId } })"
+            class="ui-button ui-button-secondary px-3 py-1.5 text-xs no-underline"
+          >
+            View all
+          </NuxtLink>
           <button
             v-if="canManageLinks"
+            type="button"
             class="ui-button ui-button-primary px-3 py-1.5 text-xs"
             @click="showCreateLinkModal = true"
           >
             <Plus class="size-3.5" />
             New Link
           </button>
-        </div>
-        <p class="text-xs text-surface-400 dark:text-surface-500 mb-4">
-          Create unique tracking links for this job to measure where applications come from.
-        </p>
+        </template>
 
         <div v-if="linksStatus === 'pending'" class="ui-empty-state py-6 text-sm">
           Loading…
@@ -916,7 +1093,8 @@ async function copyTrackingUrl(code: string) {
             </div>
           </div>
         </div>
-      </div>
+        </DashboardCollapsibleSection>
+      </DashboardSectionStack>
     </template>
 
     <!-- ═══════════════════════════════════════ -->
