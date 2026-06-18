@@ -209,7 +209,7 @@ function getBlockHeadingPlaceholder(block: JobDescriptionBlock) {
       <div class="flex items-start gap-2 pr-9">
         <button
           type="button"
-          class="group/block-toggle inline-flex shrink-0 items-center gap-2 rounded-md px-2 py-1.5 text-left transition-[background-color,box-shadow,color] hover:bg-brand-50/80 hover:ring-1 hover:ring-brand-500/25 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:hover:bg-brand-950/40 dark:hover:ring-brand-500/30"
+          class="group/block-toggle inline-flex shrink-0 items-center gap-2 rounded-md px-2 py-1.5 text-left transition-[background-color,box-shadow,color] hover:bg-brand-50/80 hover:ring-1 hover:ring-brand-500/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 dark:hover:bg-brand-950/40 dark:hover:ring-brand-500/30"
           :aria-expanded="!isBlockCollapsed(index)"
           :aria-controls="`job-description-block-${index}`"
           aria-label="Toggle description section"

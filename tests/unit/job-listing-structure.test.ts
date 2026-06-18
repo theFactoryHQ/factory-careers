@@ -281,6 +281,8 @@ describe('job listing structure', () => {
     expect(headingInput).not.toContain('dark:hover:border-surface-700')
     expect(editor).toContain('group/block-toggle')
     expect(editor).toContain('hover:ring-brand-500/25')
+    expect(editor).toContain('focus-visible:ring-2 focus-visible:ring-brand-500/30')
+    expect(editor).not.toContain('focus:ring-2 focus:ring-brand-500/30')
     expect(editor).toContain('group-hover/block-toggle:bg-brand-100')
     expect(editor).toContain('dark:group-hover/block-toggle:text-brand-200')
     expect(editor).toContain('Trash2')
