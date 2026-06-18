@@ -8,7 +8,7 @@
  * Fix 5: Horizontal-scaling warning emitted when RAILWAY_REPLICA_COUNT > 1
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { createHash, hkdfSync, createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
 import { randomBytes as cryptoRandomBytes } from 'node:crypto'
 import { z } from 'zod'
@@ -146,7 +146,6 @@ describe('Fix 2: HKDF key separation', () => {
     // getAuthTag() must be called AFTER cipher.final()
     const ciphertextBody = Buffer.concat([cipher.update('test', 'utf-8'), cipher.final()])
     const authTag = cipher.getAuthTag()
-    const legacyCiphertext = Buffer.concat([iv, authTag, ciphertextBody])
 
     // The HKDF key is different, so the same plaintext encrypted with
     // the same IV would produce different output. We verify keys differ.
@@ -309,6 +308,16 @@ describe('Fix 4: Router params are validated with Zod schemas', () => {
 describe('Fix 5: In-memory rate limiter emits startup warning under horizontal scaling', () => {
   const originalEnv = process.env.RAILWAY_REPLICA_COUNT
 
+  function warnIfReplicaCountExceedsSingleInstance(count: number) {
+    if (count > 1) {
+      console.warn(
+        `[rateLimit] WARNING: RAILWAY_REPLICA_COUNT=${count}. `
+        + 'The in-memory rate limiter is NOT shared across replicas — effective limits are '
+        + `${count}× higher than configured. Move rate limiting to the edge.`,
+      )
+    }
+  }
+
   afterEach(() => {
     if (originalEnv === undefined) {
       delete process.env.RAILWAY_REPLICA_COUNT
@@ -321,15 +330,7 @@ describe('Fix 5: In-memory rate limiter emits startup warning under horizontal s
   it('warning logic triggers when RAILWAY_REPLICA_COUNT > 1', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
-      const count = 3
-      // Reproduce the startup check from rateLimit.ts
-      if (count > 1) {
-        console.warn(
-          `[rateLimit] WARNING: RAILWAY_REPLICA_COUNT=${count}. `
-          + 'The in-memory rate limiter is NOT shared across replicas — effective limits are '
-          + `${count}× higher than configured. Move rate limiting to the edge.`,
-        )
-      }
+      warnIfReplicaCountExceedsSingleInstance(3)
       expect(warnSpy).toHaveBeenCalledOnce()
       expect(warnSpy.mock.calls[0]![0]).toContain('RAILWAY_REPLICA_COUNT=3')
       expect(warnSpy.mock.calls[0]![0]).toContain('NOT shared across replicas')
@@ -342,10 +343,7 @@ describe('Fix 5: In-memory rate limiter emits startup warning under horizontal s
   it('no warning when RAILWAY_REPLICA_COUNT is 1 (single instance)', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
-      const count = 1
-      if (count > 1) {
-        console.warn('should not appear')
-      }
+      warnIfReplicaCountExceedsSingleInstance(1)
       expect(warnSpy).not.toHaveBeenCalled()
     }
     finally {
@@ -358,9 +356,7 @@ describe('Fix 5: In-memory rate limiter emits startup warning under horizontal s
     try {
       const rawCount: string | undefined = process.env.RAILWAY_REPLICA_COUNT
       const count = Number(rawCount ?? 0)
-      if (count > 1) {
-        console.warn('should not appear')
-      }
+      warnIfReplicaCountExceedsSingleInstance(count)
       expect(warnSpy).not.toHaveBeenCalled()
     }
     finally {
@@ -371,14 +367,7 @@ describe('Fix 5: In-memory rate limiter emits startup warning under horizontal s
   it('warning message contains actionable advice to move limiting to the edge', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
-      const count = 2
-      if (count > 1) {
-        console.warn(
-          `[rateLimit] WARNING: RAILWAY_REPLICA_COUNT=${count}. `
-          + 'The in-memory rate limiter is NOT shared across replicas — effective limits are '
-          + `${count}× higher than configured. Move rate limiting to the edge.`,
-        )
-      }
+      warnIfReplicaCountExceedsSingleInstance(2)
       expect(warnSpy.mock.calls[0]![0]).toContain('Move rate limiting to the edge')
     }
     finally {

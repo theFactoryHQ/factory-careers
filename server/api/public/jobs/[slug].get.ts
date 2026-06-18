@@ -1,5 +1,5 @@
-import { eq, and, asc, lte } from 'drizzle-orm'
-import { job, organization, orgSettings } from '../../../database/schema'
+import { eq, and, lte } from 'drizzle-orm'
+import { job, orgSettings } from '../../../database/schema'
 import { publicJobSlugSchema } from '../../../utils/schemas/publicApplication'
 import { getPublicJobScopeCondition } from '../../../utils/publicJobScope'
 import { isBuiltInLocationQuestion } from '~~/shared/built-in-application-fields'

@@ -332,7 +332,7 @@ export function extractResumeText(parsedContent: unknown): string | null {
   if (!parsedContent) return null
 
   // Structured ParsedResume format: { text: "...", sections: [...], metadata: {...} }
-  if (typeof parsedContent === 'object' && parsedContent !== null && 'text' in parsedContent) {
+  if (typeof parsedContent === 'object' && 'text' in parsedContent) {
     const text = (parsedContent as { text: unknown }).text
     if (typeof text === 'string' && text.trim()) return text
     // If it has a text property but it's empty, there's no useful content

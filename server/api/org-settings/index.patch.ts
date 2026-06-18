@@ -1,4 +1,3 @@
-import { eq } from 'drizzle-orm'
 import { orgSettings } from '../../database/schema'
 import { updateOrgSettingsSchema } from '../../utils/schemas/orgSettings'
 import { assertSignupDomainAllowlistUpdateAllowed } from '../../utils/signupDomainAllowlist'

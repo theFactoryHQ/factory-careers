@@ -2,7 +2,7 @@ import { eq, and } from 'drizzle-orm'
 import { resourceIdParamSchema } from '../../../utils/schemas/common'
 import {
   application, scoringCriterion, criterionScore,
-  analysisRun, analysisRunCriterionScore, document, candidate, orgSettings,
+  analysisRun, analysisRunCriterionScore, document, orgSettings,
 } from '../../../database/schema'
 import { scoreApplication, computeCompositeScore } from '../../../utils/ai/scoring'
 import type { CriterionDefinition } from '../../../utils/ai/scoring'
