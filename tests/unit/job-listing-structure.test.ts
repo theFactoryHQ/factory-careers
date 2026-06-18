@@ -10,6 +10,7 @@ const readProjectFile = (path: string) =>
 describe('job listing structure', () => {
   it('defines Factory division options and structured description helpers', async () => {
     const listingStructure = await import('../../shared/job-listing-structure')
+    const jobLocation = await import('../../shared/job-location')
 
     expect(listingStructure.FACTORY_DIVISIONS).toEqual([
       { value: 'factory_capital', label: 'Factory Capital' },
@@ -42,6 +43,11 @@ describe('job listing structure', () => {
     expect(listingStructure.legacyDescriptionToBlocks('Legacy description')).toEqual([
       { type: 'paragraph', body: 'Legacy description' },
     ])
+    expect(jobLocation.parseJobLocation('Los Angeles, CA')).toEqual({ city: 'Los Angeles', state: 'CA' })
+    expect(jobLocation.parseJobLocation('Remote / United States')).toEqual({ city: 'Remote / United States', state: '' })
+    expect(jobLocation.parseJobLocation('Austin, Texas')).toEqual({ city: 'Austin, Texas', state: '' })
+    expect(jobLocation.buildJobLocation({ city: ' Los Angeles ', state: 'CA' })).toBe('Los Angeles, CA')
+    expect(jobLocation.buildJobLocation({ city: 'Remote / United States', state: '' })).toBe('Remote / United States')
   })
 
   it('validates listing divisions and description blocks on job schemas', () => {
@@ -205,11 +211,18 @@ describe('job listing structure', () => {
     expect(editPage).toContain('DashboardCollapsibleSection')
     expect(editPage).toContain('DashboardSectionStack')
     expect(editPage).toContain('data-testid="application-section-organizer"')
-    const scheduleSection = editPage.match(/id="application-section-schedule"[\s\S]*?<\/DashboardCollapsibleSection>/)?.[0] ?? ''
     const headerActionsIndex = editPage.indexOf('data-testid="application-form-header-actions"')
     const previewActionIndex = editPage.indexOf('Preview', headerActionsIndex)
     const saveActionIndex = editPage.indexOf("{{ isSavingPosting ? 'Saving...' : 'Save' }}")
     const formStartIndex = editPage.indexOf('<form class="contents"')
+    const collapsibleDescriptions = [
+      'Adding salary information improves visibility on Google Jobs.',
+      'Set when this job posting goes live and when it automatically expires.',
+      'Choose what candidates must provide when applying.',
+      'Add voluntary self-identification questions for US equal employment opportunity reporting.',
+      'Customize the questions applicants must answer when applying. All applications include name, email, and phone by default.',
+      'Create unique tracking links for this job to measure where applications come from.',
+    ]
 
     expect(headerActionsIndex).toBeGreaterThan(-1)
     expect(previewActionIndex).toBeGreaterThan(headerActionsIndex)
@@ -220,8 +233,23 @@ describe('job listing structure', () => {
     expect(editPage).not.toContain('Save application details')
     expect(editPage).not.toContain('class="mb-6"')
     expect(editPage).not.toContain('<form class="space-y-6"')
-    expect(scheduleSection).not.toContain('description=')
-    expect(scheduleSection).not.toContain('Set when this job posting goes live and when it automatically expires.')
+    for (const description of collapsibleDescriptions) {
+      expect(editPage).toContain(`description="${description}"`)
+    }
+    expect(editPage).toContain('US_STATE_OPTIONS')
+    expect(editPage).toContain('parseJobLocation')
+    expect(editPage).toContain('buildJobLocation')
+    expect(editPage).toContain('const parsedLocation = parseJobLocation(j.location)')
+    expect(editPage).toContain('city: parsedLocation.city')
+    expect(editPage).toContain('state: parsedLocation.state')
+    expect(editPage).toContain('location: buildJobLocation({ city: form.value.city, state: form.value.state }) || null')
+    expect(editPage).toContain('id="application-city"')
+    expect(editPage).toContain('v-model="form.city"')
+    expect(editPage).toContain('id="application-state"')
+    expect(editPage).toContain('v-model="form.state"')
+    expect(editPage).toContain(':options="jobStateOptions"')
+    expect(editPage).not.toContain('id="application-location"')
+    expect(editPage).not.toContain('v-model="form.location"')
 
     for (const sectionId of [
       'application-section-basic-details',
@@ -243,6 +271,10 @@ describe('job listing structure', () => {
     expect(collapsibleSection).toContain('role="region"')
     expect(collapsibleSection).toContain('group-open:rotate-0')
     expect(collapsibleSection).toContain('ChevronDown')
+    expect(collapsibleSection).toContain('Info')
+    expect(collapsibleSection).toContain(':title="description"')
+    expect(collapsibleSection).toContain(':aria-label="description"')
+    expect(collapsibleSection).not.toContain('mt-1 block text-xs')
 
     const sectionStack = readProjectFile('app/components/DashboardSectionStack.vue')
     expect(sectionStack).toContain('class="grid gap-6"')

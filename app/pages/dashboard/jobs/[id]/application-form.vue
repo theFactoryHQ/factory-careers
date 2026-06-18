@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { getSourceChannelLabel } from '~/utils/status-display'
 import { CURRENCY_OPTIONS, CURRENCY_VALUES } from '~~/shared/currency-options'
 import { todayDateInputValue, toDateInputValue } from '~~/shared/date-input'
+import { buildJobLocation, parseJobLocation, type UsStateValue } from '~~/shared/job-location'
 import {
   jobDescriptionBlocksToMarkdown,
   legacyDescriptionToBlocks,
@@ -11,6 +12,7 @@ import {
   type FactoryDivision,
   type JobDescriptionBlock,
 } from '~~/shared/job-listing-structure'
+import { US_STATE_OPTIONS, US_STATE_VALUES } from '~~/shared/location-options'
 import { SALARY_UNIT_OPTIONS, SALARY_UNIT_VALUES } from '~~/shared/salary-options'
 
 definePageMeta({
@@ -80,7 +82,8 @@ const form = ref({
   description: '',
   divisions: [] as FactoryDivision[],
   descriptionBlocks: [{ type: 'paragraph', body: '' }] as JobDescriptionBlock[],
-  location: '',
+  city: '',
+  state: '' as UsStateValue | '',
   type: 'full_time' as string,
   slug: '',
   salaryMin: null as number | null,
@@ -132,6 +135,7 @@ watch([job, defaultSalaryUnit], ([j]) => {
   const loadedSlug = j.slug ?? ''
   const autoSlug = generateTitleSlug(title)
   const shouldUseAutoSlug = !loadedSlug || looksLikeGeneratedSlug(loadedSlug, title)
+  const parsedLocation = parseJobLocation(j.location)
 
   slugManuallyEdited.value = !shouldUseAutoSlug
   lastAutoSlug.value = autoSlug
@@ -141,7 +145,8 @@ watch([job, defaultSalaryUnit], ([j]) => {
     description: j.description ?? '',
     divisions: Array.isArray(j.divisions) ? j.divisions : [],
     descriptionBlocks: descriptionBlocks.length > 0 ? descriptionBlocks : legacyDescriptionToBlocks(j.description),
-    location: j.location ?? '',
+    city: parsedLocation.city,
+    state: parsedLocation.state,
     type: j.type ?? 'full_time',
     slug: shouldUseAutoSlug ? autoSlug : loadedSlug,
     salaryMin: j.salaryMin ?? null,
@@ -183,7 +188,8 @@ const postingSchema = z.object({
   description: z.string().optional(),
   divisions: z.array(z.string()).optional(),
   descriptionBlocks: z.array(z.any()).optional(),
-  location: z.string().optional(),
+  city: z.string().max(120).optional(),
+  state: z.enum(US_STATE_VALUES).optional().or(z.literal('')),
   type: z.enum(['full_time', 'part_time', 'contract', 'internship']),
   slug: z.string().max(80).optional(),
   salaryMin: z.union([z.coerce.number().int().min(0), z.null()]).optional(),
@@ -220,7 +226,7 @@ async function savePostingDetails() {
       description: jobDescriptionBlocksToMarkdown(descriptionBlocks) || null,
       divisions: form.value.divisions,
       descriptionBlocks,
-      location: form.value.location || null,
+      location: buildJobLocation({ city: form.value.city, state: form.value.state }) || null,
       type: form.value.type,
       slug: form.value.slug || undefined,
       salaryNegotiable: form.value.salaryNegotiable,
@@ -262,6 +268,11 @@ const experienceLevelOptions = [
   { value: 'mid', label: 'Mid-level' },
   { value: 'senior', label: 'Senior' },
   { value: 'lead', label: 'Lead' },
+]
+
+const jobStateOptions = [
+  { value: '', label: 'Not specified' },
+  ...US_STATE_OPTIONS,
 ]
 
 function onSalaryMinChange(e: Event) {
@@ -573,17 +584,27 @@ async function copyTrackingUrl(code: string) {
               <JobDescriptionBlocksEditor v-model="form.descriptionBlocks" />
             </div>
 
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
-                <label for="application-location" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                  Location
+                <label for="application-city" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  City
                 </label>
                 <input
-                  id="application-location"
-                  v-model="form.location"
+                  id="application-city"
+                  v-model="form.city"
                   type="text"
-                  placeholder="e.g. Remote / United States"
+                  placeholder="e.g. Los Angeles"
                   class="ui-field px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label for="application-state" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  State
+                </label>
+                <FactorySelect
+                  id="application-state"
+                  v-model="form.state"
+                  :options="jobStateOptions"
                 />
               </div>
               <div>
@@ -720,6 +741,7 @@ async function copyTrackingUrl(code: string) {
           <DashboardCollapsibleSection
             id="application-section-schedule"
             title="Listing Schedule"
+            description="Set when this job posting goes live and when it automatically expires."
           >
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
