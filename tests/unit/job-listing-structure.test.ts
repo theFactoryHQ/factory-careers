@@ -475,6 +475,9 @@ describe('job listing structure', () => {
     expect(editPage).toContain('watch(() => form.value.title')
     expect(editPage).toContain('@input="markSlugManuallyEdited"')
     expect(editPage).toContain('Auto-updates from the title until edited.')
+    expect(editPage).toContain('const applicationSlug = computed(() => form.value.slug.trim() || job.value?.slug || jobId)')
+    expect(editPage).toContain('return `${base}/jobs/${applicationSlug.value}/apply`')
+    expect(editPage).toContain('const applicationUrlLabel = computed(() => `/jobs/${applicationSlug.value}/apply`)')
   })
 
   it('resolves duplicate job slugs with readable suffixes instead of id fragments', () => {

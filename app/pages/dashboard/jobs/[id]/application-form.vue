@@ -52,28 +52,6 @@ useSeoMeta({
 })
 
 // ─────────────────────────────────────────────
-// Application link
-// ─────────────────────────────────────────────
-
-const requestUrl = useRequestURL()
-const applicationUrl = computed(() => {
-  const base = `${requestUrl.protocol}//${requestUrl.host}`
-  return `${base}/jobs/${job.value?.slug ?? jobId}/apply`
-})
-const applicationUrlLabel = computed(() => `/jobs/${job.value?.slug ?? jobId}/apply`)
-const { copied: applicationLinkCopied, copy: copyApplicationUrl } = useCopyToClipboard({ useFallback: true })
-
-async function copyApplicationLink() {
-  const didCopy = await copyApplicationUrl(applicationUrl.value)
-  if (didCopy) {
-    toast.success('Application link copied')
-    return
-  }
-
-  toast.info(applicationUrl.value)
-}
-
-// ─────────────────────────────────────────────
 // Applicant-facing posting details
 // ─────────────────────────────────────────────
 
@@ -97,6 +75,29 @@ const form = ref({
   activeFrom: todayDateInputValue(),
   validThrough: '',
 })
+
+// ─────────────────────────────────────────────
+// Application link
+// ─────────────────────────────────────────────
+
+const requestUrl = useRequestURL()
+const applicationSlug = computed(() => form.value.slug.trim() || job.value?.slug || jobId)
+const applicationUrl = computed(() => {
+  const base = `${requestUrl.protocol}//${requestUrl.host}`
+  return `${base}/jobs/${applicationSlug.value}/apply`
+})
+const applicationUrlLabel = computed(() => `/jobs/${applicationSlug.value}/apply`)
+const { copied: applicationLinkCopied, copy: copyApplicationUrl } = useCopyToClipboard({ useFallback: true })
+
+async function copyApplicationLink() {
+  const didCopy = await copyApplicationUrl(applicationUrl.value)
+  if (didCopy) {
+    toast.success('Application link copied')
+    return
+  }
+
+  toast.info(applicationUrl.value)
+}
 
 const slugManuallyEdited = ref(false)
 const lastAutoSlug = ref('')
