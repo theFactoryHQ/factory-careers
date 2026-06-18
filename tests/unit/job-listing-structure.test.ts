@@ -347,6 +347,11 @@ describe('job listing structure', () => {
     expect(editPage).not.toContain('Preview form')
     expect(editPage).not.toContain("'Save changes'")
     expect(editPage).not.toContain('Save application details')
+    expect(editPage).toContain('data-testid="application-link-panel"')
+    expect(editPage).toContain('group group/application-link')
+    expect(editPage).toContain('group/application-link')
+    expect(editPage).toContain("applicationLinkCopied ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100'")
+    expect(editPage).toContain('group-focus-visible:bg-white')
     expect(editPage).not.toContain('class="mb-6"')
     expect(editPage).not.toContain('<form class="space-y-6"')
     for (const description of collapsibleDescriptions) {

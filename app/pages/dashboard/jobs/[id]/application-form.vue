@@ -547,7 +547,7 @@ async function copyTrackingUrl(code: string) {
         v-if="job.status === 'open'"
         type="button"
         data-testid="application-link-panel"
-        class="ui-panel-muted group/application-link mb-6 flex w-full cursor-pointer items-center gap-3 rounded-md border border-surface-200 bg-surface-50/70 px-4 py-3 text-left transition-colors hover:bg-surface-100/70 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:border-surface-800 dark:bg-surface-900/45 dark:hover:bg-surface-800/60"
+        class="ui-panel-muted group group/application-link mb-6 flex w-full cursor-pointer items-center gap-3 rounded-md border border-surface-200 bg-surface-50/70 px-4 py-3 text-left transition-colors hover:bg-surface-100/70 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:border-surface-800 dark:bg-surface-900/45 dark:hover:bg-surface-800/60"
         :aria-label="applicationLinkCopied ? 'Copied application link' : 'Copy application link'"
         :title="applicationLinkCopied ? 'Copied application link' : 'Copy application link'"
         @click="copyApplicationLink"
@@ -557,7 +557,10 @@ async function copyTrackingUrl(code: string) {
           <span class="shrink-0 text-sm font-medium text-surface-900 dark:text-surface-100">Application Link</span>
           <span class="min-w-0 truncate text-xs text-surface-500 dark:text-surface-400">{{ applicationUrlLabel }}</span>
         </span>
-        <span class="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-surface-400 transition-colors group-hover:bg-white group-hover:text-surface-800 dark:group-hover:bg-surface-800 dark:group-hover:text-surface-100">
+        <span
+          class="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-surface-400 transition-[background-color,color,opacity] group-hover:bg-white group-hover:text-surface-800 group-focus-visible:bg-white group-focus-visible:text-surface-800 dark:group-hover:bg-surface-800 dark:group-hover:text-surface-100 dark:group-focus-visible:bg-surface-800 dark:group-focus-visible:text-surface-100"
+          :class="applicationLinkCopied ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100'"
+        >
           <Check v-if="applicationLinkCopied" class="size-3.5 text-success-500" />
           <Copy v-else class="size-3.5" />
         </span>
