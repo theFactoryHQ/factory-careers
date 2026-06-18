@@ -39,6 +39,7 @@ export function useJob(id: MaybeRefOrGetter<string>) {
     salaryCurrency: string | null
     salaryUnit: 'YEAR' | 'MONTH' | 'HOUR' | null
     salaryNegotiable: boolean
+    salaryDisplayOnListing: boolean
     remoteStatus: 'remote' | 'hybrid' | 'onsite' | null
     activeFrom: Date
     validThrough: Date | null

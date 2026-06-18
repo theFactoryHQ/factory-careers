@@ -40,6 +40,7 @@ export const cliJobCreateSchema = z.object({
   description: optionalText,
   divisions: z.array(factoryDivisionSchema).optional(),
   descriptionBlocks: jobDescriptionBlocksSchema.optional(),
+  salaryDisplayOnListing: z.boolean().optional(),
 }).passthrough()
 
 export const cliCandidateCreateSchema = z.object({

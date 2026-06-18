@@ -97,6 +97,7 @@ export const job = pgTable('job', {
   salaryCurrency: text('salary_currency'),
   salaryUnit: text('salary_unit'),
   salaryNegotiable: boolean('salary_negotiable').notNull().default(false),
+  salaryDisplayOnListing: boolean('salary_display_on_listing').notNull().default(false),
   remoteStatus: text('remote_status'),
   activeFrom: timestamp('active_from').notNull().defaultNow(),
   validThrough: timestamp('valid_through'),

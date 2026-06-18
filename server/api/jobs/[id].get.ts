@@ -25,6 +25,7 @@ export default defineEventHandler(async (event) => {
       salaryCurrency: true,
       salaryUnit: true,
       salaryNegotiable: true,
+      salaryDisplayOnListing: true,
       remoteStatus: true,
       activeFrom: true,
       validThrough: true,

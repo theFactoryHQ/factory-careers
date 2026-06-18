@@ -28,6 +28,8 @@ export const createJobSchema = z.object({
   salaryUnit: z.enum(SALARY_UNIT_VALUES).nullable().optional(),
   /** Whether salary is negotiable (hides min/max range on public listing) */
   salaryNegotiable: z.boolean().optional().default(false),
+  /** Whether salary data is shown on public job listings */
+  salaryDisplayOnListing: z.boolean().optional().default(false),
   /** Remote work status: remote, hybrid, or onsite */
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).nullable().optional(),
   /** When this job listing goes live publicly */
@@ -66,6 +68,7 @@ export const updateJobSchema = z.object({
   salaryCurrency: z.enum(CURRENCY_VALUES).nullable().optional(),
   salaryUnit: z.enum(SALARY_UNIT_VALUES).nullable().optional(),
   salaryNegotiable: z.boolean().optional(),
+  salaryDisplayOnListing: z.boolean().optional(),
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).nullable().optional(),
   activeFrom: z.coerce.date().optional(),
   /** Pass null to explicitly clear the expiry date */

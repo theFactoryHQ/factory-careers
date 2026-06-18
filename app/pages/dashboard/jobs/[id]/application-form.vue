@@ -91,6 +91,7 @@ const form = ref({
   salaryCurrency: 'USD',
   salaryUnit: 'YEAR',
   salaryNegotiable: false,
+  salaryDisplayOnListing: false,
   remoteStatus: '' as string,
   experienceLevel: '' as string,
   activeFrom: todayDateInputValue(),
@@ -154,6 +155,7 @@ watch([job, defaultSalaryUnit], ([j]) => {
     salaryCurrency: j.salaryCurrency ?? 'USD',
     salaryUnit: j.salaryUnit ?? defaultSalaryUnit.value,
     salaryNegotiable: j.salaryNegotiable ?? false,
+    salaryDisplayOnListing: j.salaryDisplayOnListing ?? false,
     remoteStatus: j.remoteStatus ?? '',
     experienceLevel: j.experienceLevel ?? '',
     activeFrom: j.activeFrom ? toDateInputValue(j.activeFrom) : todayDateInputValue(),
@@ -166,20 +168,6 @@ watch(() => form.value.title, (title) => {
   lastAutoSlug.value = nextAutoSlug
   if (!slugManuallyEdited.value) {
     form.value.slug = nextAutoSlug
-  }
-})
-
-watch(() => form.value.salaryNegotiable, (negotiable) => {
-  if (negotiable) {
-    form.value.salaryMin = null
-    form.value.salaryMax = null
-    form.value.salaryCurrency = ''
-    form.value.salaryUnit = ''
-  } else if (!form.value.salaryCurrency) {
-    form.value.salaryCurrency = 'USD'
-    form.value.salaryUnit = defaultSalaryUnit.value
-  } else if (!form.value.salaryUnit) {
-    form.value.salaryUnit = defaultSalaryUnit.value
   }
 })
 
@@ -197,6 +185,7 @@ const postingSchema = z.object({
   salaryCurrency: z.enum(CURRENCY_VALUES).optional().or(z.literal('')),
   salaryUnit: z.enum(SALARY_UNIT_VALUES).optional().or(z.literal('')),
   salaryNegotiable: z.boolean().optional(),
+  salaryDisplayOnListing: z.boolean().optional(),
   remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).optional().or(z.literal('')),
   experienceLevel: z.enum(['junior', 'mid', 'senior', 'lead']).optional().or(z.literal('')),
   activeFrom: z.string().optional(),
@@ -207,10 +196,35 @@ const postingErrors = ref<Record<string, string>>({})
 const isSavingPosting = ref(false)
 const descriptionBlocksEditorRef = ref<{ reportValidity: () => boolean } | null>(null)
 
+function validateRequiredSalaryRange() {
+  postingErrors.value = {}
+
+  if (form.value.salaryMin === null || form.value.salaryMin === undefined) {
+    postingErrors.value.salaryMin = 'Minimum salary is required'
+  }
+  if (form.value.salaryMax === null || form.value.salaryMax === undefined) {
+    postingErrors.value.salaryMax = 'Maximum salary is required'
+  }
+  if (
+    typeof form.value.salaryMin === 'number'
+    && typeof form.value.salaryMax === 'number'
+    && form.value.salaryMax < form.value.salaryMin
+  ) {
+    postingErrors.value.salaryMax = 'Maximum salary must be greater than or equal to minimum salary'
+  }
+
+  return !postingErrors.value.salaryMin && !postingErrors.value.salaryMax
+}
+
 async function savePostingDetails() {
   if (descriptionBlocksEditorRef.value && !descriptionBlocksEditorRef.value.reportValidity()) {
     postingErrors.value = { ...postingErrors.value, descriptionBlocks: 'Add a title for each description section' }
     toast.error('Add a title for each description section')
+    return
+  }
+
+  if (!validateRequiredSalaryRange()) {
+    toast.error('Add the internal salary range')
     return
   }
 
@@ -237,10 +251,11 @@ async function savePostingDetails() {
       type: form.value.type,
       slug: form.value.slug || undefined,
       salaryNegotiable: form.value.salaryNegotiable,
-      salaryMin: form.value.salaryNegotiable ? null : (form.value.salaryMin ?? null),
-      salaryMax: form.value.salaryNegotiable ? null : (form.value.salaryMax ?? null),
-      salaryCurrency: form.value.salaryNegotiable ? null : (form.value.salaryCurrency || 'USD'),
-      salaryUnit: form.value.salaryNegotiable ? null : (form.value.salaryUnit || defaultSalaryUnit.value),
+      salaryDisplayOnListing: form.value.salaryDisplayOnListing,
+      salaryMin: form.value.salaryMin ?? null,
+      salaryMax: form.value.salaryMax ?? null,
+      salaryCurrency: form.value.salaryCurrency || 'USD',
+      salaryUnit: form.value.salaryUnit || defaultSalaryUnit.value,
       remoteStatus: form.value.remoteStatus || null,
       experienceLevel: (form.value.experienceLevel as 'junior' | 'mid' | 'senior' | 'lead' | null) || null,
       activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue()),
@@ -689,6 +704,21 @@ async function copyTrackingUrl(code: string) {
           </template>
 
           <div class="space-y-4">
+            <label class="flex cursor-pointer items-start justify-between gap-4 border border-surface-200 bg-surface-50/50 px-3 py-3 transition-colors hover:border-surface-300 dark:border-surface-800 dark:bg-surface-900/30 dark:hover:border-surface-700">
+              <span>
+                <span class="block text-sm font-medium text-surface-900 dark:text-surface-100">Display on listing</span>
+                <span class="mt-0.5 block text-xs text-surface-400 dark:text-surface-500">
+                  Publish the salary range on the candidate-facing job page.
+                </span>
+              </span>
+              <input
+                id="application-salary-display-on-listing"
+                v-model="form.salaryDisplayOnListing"
+                type="checkbox"
+                class="mt-0.5 size-4 shrink-0 rounded border-surface-300 text-brand-600 focus:ring-brand-500 dark:border-surface-600"
+              />
+            </label>
+
             <label class="flex cursor-pointer items-center gap-3">
               <input
                 v-model="form.salaryNegotiable"
@@ -698,65 +728,67 @@ async function copyTrackingUrl(code: string) {
               <div>
                 <span class="text-sm font-medium text-surface-900 dark:text-surface-100">Salary is negotiable</span>
                 <p class="text-xs text-surface-400 dark:text-surface-500">
-                  Show "Negotiable" instead of a specific salary range.
+                  When displayed, show "Negotiable" instead of the salary range.
                 </p>
               </div>
             </label>
 
-            <template v-if="!form.salaryNegotiable">
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label for="application-salary-min" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                    Minimum Salary
-                  </label>
-                  <input
-                    id="application-salary-min"
-                    v-model.number="form.salaryMin"
-                    type="number"
-                    min="0"
-                    placeholder="e.g. 50000"
-                    class="ui-field px-3 py-2 text-sm"
-                    @change="onSalaryMinChange"
-                  />
-                </div>
-                <div>
-                  <label for="application-salary-max" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                    Maximum Salary
-                  </label>
-                  <input
-                    id="application-salary-max"
-                    v-model.number="form.salaryMax"
-                    type="number"
-                    min="0"
-                    placeholder="e.g. 80000"
-                    class="ui-field px-3 py-2 text-sm"
-                    @change="onSalaryMaxChange"
-                  />
-                </div>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label for="application-salary-min" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  Minimum Salary <span class="text-danger-500">*</span>
+                </label>
+                <input
+                  id="application-salary-min"
+                  v-model.number="form.salaryMin"
+                  type="number"
+                  min="0"
+                  required
+                  placeholder="e.g. 50000"
+                  class="ui-field px-3 py-2 text-sm"
+                  @change="onSalaryMinChange"
+                />
+                <p v-if="postingErrors.salaryMin" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ postingErrors.salaryMin }}</p>
               </div>
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label for="application-currency" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                    Currency
-                  </label>
-                  <FactorySelect
-                    id="application-currency"
-                    v-model="form.salaryCurrency"
-                    :options="CURRENCY_OPTIONS"
-                  />
-                </div>
-                <div>
-                  <label for="application-salary-unit" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                    Pay Period
-                  </label>
-                  <FactorySelect
-                    id="application-salary-unit"
-                    v-model="form.salaryUnit"
-                    :options="SALARY_UNIT_OPTIONS"
-                  />
-                </div>
+              <div>
+                <label for="application-salary-max" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  Maximum Salary <span class="text-danger-500">*</span>
+                </label>
+                <input
+                  id="application-salary-max"
+                  v-model.number="form.salaryMax"
+                  type="number"
+                  min="0"
+                  required
+                  placeholder="e.g. 80000"
+                  class="ui-field px-3 py-2 text-sm"
+                  @change="onSalaryMaxChange"
+                />
+                <p v-if="postingErrors.salaryMax" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ postingErrors.salaryMax }}</p>
               </div>
-            </template>
+            </div>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label for="application-currency" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  Currency
+                </label>
+                <FactorySelect
+                  id="application-currency"
+                  v-model="form.salaryCurrency"
+                  :options="CURRENCY_OPTIONS"
+                />
+              </div>
+              <div>
+                <label for="application-salary-unit" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                  Pay Period
+                </label>
+                <FactorySelect
+                  id="application-salary-unit"
+                  v-model="form.salaryUnit"
+                  :options="SALARY_UNIT_OPTIONS"
+                />
+              </div>
+            </div>
           </div>
           </DashboardCollapsibleSection>
 

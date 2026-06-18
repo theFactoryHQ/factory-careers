@@ -20,6 +20,8 @@ type PublicJobRow = {
   salaryMax: number | null
   salaryCurrency: string | null
   salaryUnit: string | null
+  salaryNegotiable?: boolean | null
+  salaryDisplayOnListing: boolean
   remoteStatus: string | null
   activeFrom?: Date | string | null
   createdAt: Date | string
@@ -97,6 +99,8 @@ async function listPublicJobs(query: PublicJobsQuery, offset: number, includeAct
         salaryMax: true,
         salaryCurrency: true,
         salaryUnit: true,
+        salaryNegotiable: true,
+        salaryDisplayOnListing: true,
         remoteStatus: true,
         activeFrom: true,
         createdAt: true,
@@ -114,6 +118,8 @@ async function listPublicJobs(query: PublicJobsQuery, offset: number, includeAct
         salaryMax: true,
         salaryCurrency: true,
         salaryUnit: true,
+        salaryNegotiable: true,
+        salaryDisplayOnListing: true,
         remoteStatus: true,
         createdAt: true,
       }
@@ -137,7 +143,7 @@ async function listPublicJobs(query: PublicJobsQuery, offset: number, includeAct
   const rows = data as PublicJobRow[]
 
   // Flatten org name into each job object. Legacy schemas fall back to createdAt for posted dates.
-  const flatData = rows.map(({ organization: org, ...j }) => ({
+  const flatData = rows.map(({ organization: org, ...j }) => stripSalaryForHiddenListing({
     ...j,
     activeFrom: j.activeFrom ?? j.createdAt,
     organizationName: org?.name ?? null,

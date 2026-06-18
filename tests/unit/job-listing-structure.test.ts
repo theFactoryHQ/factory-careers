@@ -63,6 +63,14 @@ describe('job listing structure', () => {
     })).toMatchObject({
       divisions: ['factory_services', 'factory_club'],
       descriptionBlocks,
+      salaryDisplayOnListing: false,
+    })
+
+    expect(createJobSchema.parse({
+      title: 'Published salary role',
+      salaryDisplayOnListing: true,
+    })).toMatchObject({
+      salaryDisplayOnListing: true,
     })
 
     expect(updateJobSchema.parse({
@@ -77,6 +85,88 @@ describe('job listing structure', () => {
       title: 'Invalid division',
       divisions: ['not_a_factory_division'],
     }).success).toBe(false)
+  })
+
+  it('keeps salary ranges internal unless display on listing is enabled', async () => {
+    const { stripSalaryForHiddenListing } = await import('../../server/utils/publicSalaryVisibility')
+
+    expect(stripSalaryForHiddenListing({
+      salaryDisplayOnListing: false,
+      salaryMin: 120000,
+      salaryMax: 160000,
+      salaryCurrency: 'USD',
+      salaryUnit: 'YEAR',
+      salaryNegotiable: true,
+    })).toMatchObject({
+      salaryMin: null,
+      salaryMax: null,
+      salaryCurrency: null,
+      salaryUnit: null,
+      salaryNegotiable: false,
+    })
+    expect(stripSalaryForHiddenListing({
+      salaryDisplayOnListing: true,
+      salaryMin: 120000,
+      salaryMax: 160000,
+      salaryCurrency: 'USD',
+      salaryUnit: 'YEAR',
+      salaryNegotiable: false,
+    })).toMatchObject({
+      salaryMin: 120000,
+      salaryMax: 160000,
+      salaryCurrency: 'USD',
+      salaryUnit: 'YEAR',
+    })
+
+    expect(updateJobSchema.parse({
+      salaryMin: 120000,
+      salaryMax: 160000,
+      salaryDisplayOnListing: true,
+    })).toMatchObject({
+      salaryDisplayOnListing: true,
+    })
+
+    const appSchema = readProjectFile('server/database/schema/app.ts')
+    const createRoute = readProjectFile('server/api/jobs/index.post.ts')
+    const getRoute = readProjectFile('server/api/jobs/[id].get.ts')
+    const patchRoute = readProjectFile('server/api/jobs/[id].patch.ts')
+    const publicList = readProjectFile('server/api/public/jobs/index.get.ts')
+    const publicDetail = readProjectFile('server/api/public/jobs/[slug].get.ts')
+    const publicSalaryVisibility = readProjectFile('server/utils/publicSalaryVisibility.ts')
+    const editPage = readProjectFile('app/pages/dashboard/jobs/[id]/application-form.vue')
+    const publicDetailPage = readProjectFile('app/pages/jobs/[slug]/index.vue')
+    const useJob = readProjectFile('app/composables/useJob.ts')
+    const cliSchemas = readProjectFile('packages/careers-cli/src/schemas.ts')
+    const migration = readProjectFile('server/database/migrations/0048_salary_display_on_listing.sql')
+    const journal = readProjectFile('server/database/migrations/meta/_journal.json')
+
+    expect(appSchema).toContain("salaryDisplayOnListing: boolean('salary_display_on_listing').notNull().default(false)")
+    expect(createRoute).toContain('salaryDisplayOnListing: body.salaryDisplayOnListing')
+    expect(createRoute).toContain('salaryDisplayOnListing: job.salaryDisplayOnListing')
+    expect(patchRoute).toContain('salaryDisplayOnListing: job.salaryDisplayOnListing')
+    expect(getRoute).toContain('salaryDisplayOnListing: true')
+    expect(publicList).toContain('stripSalaryForHiddenListing')
+    expect(publicList).toContain('salaryDisplayOnListing: true')
+    expect(publicDetail).toContain('stripSalaryForHiddenListing')
+    expect(publicDetail).toContain('salaryDisplayOnListing: true')
+    expect(publicSalaryVisibility).toContain('salaryDisplayOnListing')
+    expect(publicSalaryVisibility).toContain('salaryMin: null')
+    expect(publicSalaryVisibility).toContain('salaryNegotiable: false')
+    expect(editPage).toContain('salaryDisplayOnListing: false')
+    expect(editPage).toContain('salaryDisplayOnListing: j.salaryDisplayOnListing ?? false')
+    expect(editPage).toContain('salaryDisplayOnListing: form.value.salaryDisplayOnListing')
+    expect(editPage).toContain('id="application-salary-display-on-listing"')
+    expect(editPage).toContain('Display on listing')
+    expect(editPage).toContain("postingErrors.value.salaryMin = 'Minimum salary is required'")
+    expect(editPage).toContain("postingErrors.value.salaryMax = 'Maximum salary is required'")
+    expect(editPage).toContain('required')
+    expect(editPage).not.toContain('salaryMin: form.value.salaryNegotiable ? null')
+    expect(editPage).not.toContain('<template v-if="!form.salaryNegotiable">')
+    expect(publicDetailPage).toContain('job.salaryDisplayOnListing &&')
+    expect(useJob).toContain('salaryDisplayOnListing: boolean')
+    expect(cliSchemas).toContain('salaryDisplayOnListing: z.boolean().optional()')
+    expect(migration).toContain('ADD COLUMN IF NOT EXISTS "salary_display_on_listing" boolean DEFAULT false NOT NULL')
+    expect(journal).toContain('"tag": "0048_salary_display_on_listing"')
   })
 
   it('persists and returns listing divisions and description blocks across job routes', () => {

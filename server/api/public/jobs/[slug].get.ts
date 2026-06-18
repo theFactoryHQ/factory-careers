@@ -34,6 +34,7 @@ export default defineEventHandler(async (event) => {
       salaryCurrency: true,
       salaryUnit: true,
       salaryNegotiable: true,
+      salaryDisplayOnListing: true,
       remoteStatus: true,
       activeFrom: true,
       validThrough: true,
@@ -101,11 +102,11 @@ export default defineEventHandler(async (event) => {
     includeDisability: _includeDisability,
     ...jobData
   } = result
-  return {
+  return stripSalaryForHiddenListing({
     ...jobData,
     questions: jobData.questions.filter((q) => !isBuiltInLocationQuestion(q)),
     compliance,
     organizationName: org?.name ?? null,
     organizationLogo: org?.logo ?? null,
-  }
+  })
 })

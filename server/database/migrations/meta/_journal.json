@@ -344,6 +344,13 @@
       "when": 1779691800000,
       "tag": "0047_job_listing_structure",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1779692400000,
+      "tag": "0048_salary_display_on_listing",
+      "breakpoints": true
     }
   ]
 }

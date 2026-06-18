@@ -162,7 +162,7 @@ watchEffect(() => {
   }
 
   // Salary (baseSalary)
-  if (j.salaryMin || j.salaryMax) {
+  if (j.salaryDisplayOnListing && (j.salaryMin || j.salaryMax)) {
     const value: Record<string, unknown> = { '@type': 'QuantitativeValue' }
     if (j.salaryMin && j.salaryMax) {
       value.minValue = j.salaryMin
@@ -321,7 +321,7 @@ function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[
               {{ formatDivisionLabel(division) }}
             </span>
             <span
-              v-if="job.salaryNegotiable || formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryUnit)"
+              v-if="job.salaryDisplayOnListing && (job.salaryNegotiable || formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryUnit))"
               class="inline-flex items-center gap-1.5 border border-success-500/35 bg-success-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-success-300"
             >
               {{ job.salaryNegotiable ? 'Negotiable' : formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryUnit) }}
