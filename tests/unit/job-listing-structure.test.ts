@@ -420,6 +420,11 @@ describe('job listing structure', () => {
     expect(collapsibleSection).toContain('Info')
     expect(collapsibleSection).toContain(':title="description"')
     expect(collapsibleSection).toContain(':aria-label="description"')
+    expect(collapsibleSection).toContain('class="flex min-w-0 flex-1 items-start gap-2"')
+    expect(collapsibleSection).not.toContain('hover:bg-surface-100')
+    expect(collapsibleSection).not.toContain('focus-visible:bg-surface-100')
+    expect(collapsibleSection).not.toContain('dark:hover:bg-surface-800')
+    expect(collapsibleSection).not.toContain('dark:focus-visible:bg-surface-800')
     expect(collapsibleSection).not.toContain('mt-1 block text-xs')
 
     const sectionStack = readProjectFile('app/components/DashboardSectionStack.vue')

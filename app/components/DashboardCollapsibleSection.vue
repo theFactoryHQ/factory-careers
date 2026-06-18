@@ -123,43 +123,45 @@ function finishPanelTransition(event: TransitionEvent) {
     <div
       :class="[headerClass, $slots.actions ? (isNested ? 'pr-28' : 'pr-40') : (isNested ? 'pr-3' : 'pr-5')]"
     >
-      <button
-        type="button"
-        class="flex min-w-0 flex-1 cursor-pointer items-start gap-3 rounded-sm text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25"
-        :aria-expanded="isOpen"
-        :aria-controls="contentId"
-        @click="toggleSection"
-      >
-        <ChevronDown
-          class="mt-0.5 size-4 shrink-0 text-surface-400 transition-[color,transform] duration-150 group-hover/section-header:text-surface-600 dark:group-hover/section-header:text-surface-200"
-          :class="isOpen ? 'rotate-0' : '-rotate-90'"
-        />
-        <span class="flex min-w-0 items-center gap-2 rounded-sm focus:outline-none">
-          <slot name="icon" />
-          <span
-            :id="headingId"
-            class="truncate text-sm font-semibold text-surface-700 transition-colors group-hover/section-header:text-surface-900 dark:text-surface-300 dark:group-hover/section-header:text-surface-100"
-          >
-            {{ title }}
-          </span>
-        </span>
-      </button>
-      <button
-        v-if="description"
-        class="group/info relative inline-flex size-5 shrink-0 items-center justify-center rounded-full text-surface-400 outline-none transition-colors hover:bg-surface-100 hover:text-surface-700 focus-visible:bg-surface-100 focus-visible:text-surface-700 focus-visible:ring-2 focus-visible:ring-brand-500/25 dark:hover:bg-surface-800 dark:hover:text-surface-200 dark:focus-visible:bg-surface-800 dark:focus-visible:text-surface-200"
-        type="button"
-        :title="description"
-        :aria-label="description"
-        @click.stop
-      >
-        <Info class="size-3.5" />
-        <span
-          class="pointer-events-none absolute left-1/2 top-full z-30 mt-2 hidden w-64 -translate-x-1/2 border border-surface-200 bg-white px-3 py-2 text-left text-xs font-normal leading-relaxed text-surface-600 shadow-lg group-hover/info:block group-focus/info:block dark:border-surface-700 dark:bg-surface-900 dark:text-surface-300"
-          aria-hidden="true"
+      <div class="flex min-w-0 flex-1 items-start gap-2">
+        <button
+          type="button"
+          class="flex min-w-0 cursor-pointer items-start gap-3 rounded-sm text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25"
+          :aria-expanded="isOpen"
+          :aria-controls="contentId"
+          @click="toggleSection"
         >
-          {{ description }}
-        </span>
-      </button>
+          <ChevronDown
+            class="mt-0.5 size-4 shrink-0 text-surface-400 transition-[color,transform] duration-150 group-hover/section-header:text-surface-600 dark:group-hover/section-header:text-surface-200"
+            :class="isOpen ? 'rotate-0' : '-rotate-90'"
+          />
+          <span class="flex min-w-0 items-center gap-2 rounded-sm focus:outline-none">
+            <slot name="icon" />
+            <span
+              :id="headingId"
+              class="truncate text-sm font-semibold text-surface-700 transition-colors group-hover/section-header:text-surface-900 dark:text-surface-300 dark:group-hover/section-header:text-surface-100"
+            >
+              {{ title }}
+            </span>
+          </span>
+        </button>
+        <button
+          v-if="description"
+          class="group/info relative inline-flex size-5 shrink-0 items-center justify-center rounded-full text-surface-400 outline-none transition-colors hover:text-surface-700 focus-visible:text-surface-700 focus-visible:ring-2 focus-visible:ring-brand-500/25 dark:hover:text-surface-200 dark:focus-visible:text-surface-200"
+          type="button"
+          :title="description"
+          :aria-label="description"
+          @click.stop
+        >
+          <Info class="size-3.5" />
+          <span
+            class="pointer-events-none absolute left-1/2 top-full z-30 mt-2 hidden w-64 -translate-x-1/2 border border-surface-200 bg-white px-3 py-2 text-left text-xs font-normal leading-relaxed text-surface-600 shadow-lg group-hover/info:block group-focus/info:block dark:border-surface-700 dark:bg-surface-900 dark:text-surface-300"
+            aria-hidden="true"
+          >
+            {{ description }}
+          </span>
+        </button>
+      </div>
     </div>
 
     <div
