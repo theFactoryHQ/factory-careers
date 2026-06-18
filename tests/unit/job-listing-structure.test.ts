@@ -210,6 +210,8 @@ describe('job listing structure', () => {
     expect(editor).toContain('group/add-bullet')
     expect(editor).toContain('rounded-full border border-transparent')
     expect(editor).toContain('group-hover/add-bullet:bg-brand-500/10')
+    expect(editor).toContain('<span>Add</span>')
+    expect(editor).not.toContain('<span>Add bullet</span>')
     expect(editor).toContain('blockTypeDrafts')
     expect(editor).toContain('captureBlockTypeDraft')
     expect(editor).toContain('createBlockFromDraft')

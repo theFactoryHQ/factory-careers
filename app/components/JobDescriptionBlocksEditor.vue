@@ -347,7 +347,7 @@ function getBlockHeadingPlaceholder(block: JobDescriptionBlock) {
               <span class="inline-flex size-4 items-center justify-center rounded-full bg-surface-100 text-surface-500 transition-colors group-hover/add-bullet:bg-brand-500/10 group-hover/add-bullet:text-brand-600 dark:bg-surface-800 dark:text-surface-400 dark:group-hover/add-bullet:text-brand-300">
                 <Plus class="size-3" />
               </span>
-              <span>Add bullet</span>
+              <span>Add</span>
             </button>
           </div>
         </div>
