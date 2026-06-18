@@ -588,16 +588,19 @@ async function copyTrackingUrl(code: string) {
               />
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                Description
-              </label>
+            <DashboardCollapsibleSection
+              id="application-description-section"
+              title="Description"
+              :default-open="true"
+              variant="nested"
+              content-class="px-0 pb-0 pt-3"
+            >
               <JobDescriptionBlocksEditor
                 ref="descriptionBlocksEditorRef"
                 v-model="form.descriptionBlocks"
               />
               <p v-if="postingErrors.descriptionBlocks" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ postingErrors.descriptionBlocks }}</p>
-            </div>
+            </DashboardCollapsibleSection>
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>

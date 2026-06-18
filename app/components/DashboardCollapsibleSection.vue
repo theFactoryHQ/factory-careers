@@ -7,13 +7,31 @@ const props = withDefaults(defineProps<{
   description?: string
   defaultOpen?: boolean
   contentClass?: string
+  variant?: 'panel' | 'nested'
 }>(), {
   defaultOpen: false,
   contentClass: 'px-5 pb-5',
+  variant: 'panel',
 })
 
 const headingId = computed(() => `${props.id}-heading`)
 const contentId = computed(() => `${props.id}-content`)
+const isNested = computed(() => props.variant === 'nested')
+const sectionClass = computed(() =>
+  isNested.value
+    ? 'relative overflow-hidden rounded-md border border-surface-200/80 bg-transparent px-3 py-2 dark:border-surface-800/90'
+    : 'ui-panel relative overflow-hidden',
+)
+const headerClass = computed(() =>
+  isNested.value
+    ? 'group/section-header flex items-start gap-3 text-left transition-colors'
+    : 'group/section-header flex items-start gap-3 px-5 py-4 text-left transition-colors',
+)
+const actionsClass = computed(() =>
+  isNested.value
+    ? 'absolute right-3 top-2 flex items-center gap-2'
+    : 'absolute right-5 top-4 flex items-center gap-2',
+)
 const isOpen = ref(props.defaultOpen)
 const panelRef = ref<HTMLElement | null>(null)
 const panelHeight = ref(props.defaultOpen ? 'auto' : '0px')
@@ -100,11 +118,10 @@ function finishPanelTransition(event: TransitionEvent) {
 <template>
   <section
     :id="id"
-    class="ui-panel relative overflow-hidden"
+    :class="sectionClass"
   >
     <div
-      class="group/section-header flex items-start gap-3 px-5 py-4 text-left transition-colors"
-      :class="$slots.actions ? 'pr-40' : 'pr-5'"
+      :class="[headerClass, $slots.actions ? (isNested ? 'pr-28' : 'pr-40') : (isNested ? 'pr-3' : 'pr-5')]"
     >
       <button
         type="button"
@@ -147,7 +164,7 @@ function finishPanelTransition(event: TransitionEvent) {
 
     <div
       v-if="$slots.actions"
-      class="absolute right-5 top-4 flex items-center gap-2"
+      :class="actionsClass"
     >
       <slot name="actions" />
     </div>
