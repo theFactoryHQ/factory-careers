@@ -516,7 +516,7 @@ async function copyTrackingUrl(code: string) {
         <div>
           <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50">Application Form</h1>
           <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">
-            Configure the application experience for <strong>{{ job.title }}</strong>.
+            Configure the application experience for <strong>{{ job.title }}</strong>
           </p>
         </div>
         <div

@@ -344,6 +344,8 @@ describe('job listing structure', () => {
     expect(previewActionIndex).toBeGreaterThan(headerActionsIndex)
     expect(saveActionIndex).toBeGreaterThan(headerActionsIndex)
     expect(saveActionIndex).toBeLessThan(formStartIndex)
+    expect(editPage).toContain('Configure the application experience for <strong>{{ job.title }}</strong>')
+    expect(editPage).not.toContain('Configure the application experience for <strong>{{ job.title }}</strong>.')
     expect(editPage).not.toContain('Preview form')
     expect(editPage).not.toContain("'Save changes'")
     expect(editPage).not.toContain('Save application details')
