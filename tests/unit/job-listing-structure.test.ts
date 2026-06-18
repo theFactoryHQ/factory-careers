@@ -273,16 +273,23 @@ describe('job listing structure', () => {
     expect(editPage).not.toContain('id="application-location"')
     expect(editPage).not.toContain('v-model="form.location"')
 
-    for (const sectionId of [
-      'application-section-basic-details',
-      'application-section-salary',
-      'application-section-schedule',
-      'application-section-requirements',
-      'application-section-compliance',
-      'application-section-questions',
-      'application-section-tracking',
-    ]) {
+    const sectionIcons = [
+      ['application-section-basic-details', 'Briefcase'],
+      ['application-section-salary', 'CircleDollarSign'],
+      ['application-section-schedule', 'CalendarClock'],
+      ['application-section-requirements', 'ClipboardCheck'],
+      ['application-section-compliance', 'ShieldCheck'],
+      ['application-section-questions', 'FileText'],
+      ['application-section-tracking', 'Radio'],
+    ]
+
+    for (const [sectionId, iconName] of sectionIcons) {
       expect(editPage).toContain(`id="${sectionId}"`)
+      const sectionStart = editPage.indexOf(`id="${sectionId}"`)
+      const sectionEnd = editPage.indexOf('</DashboardCollapsibleSection>', sectionStart)
+      const sectionMarkup = editPage.slice(sectionStart, sectionEnd)
+      expect(sectionMarkup).toContain('<template #icon>')
+      expect(sectionMarkup).toContain(`<${iconName} class="size-4 text-surface-500 dark:text-surface-400" />`)
     }
     expect(editPage).toContain(':default-open="true"')
 

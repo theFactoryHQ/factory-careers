@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FileText, Link2, Check, Plus, Copy, CheckCircle2, XCircle, ToggleLeft, ToggleRight, Trash2, Radio, ChevronDown, X, Eye, Save, ShieldCheck } from 'lucide-vue-next'
+import { Briefcase, CalendarClock, Check, CheckCircle2, ChevronDown, CircleDollarSign, ClipboardCheck, Copy, Eye, FileText, Link2, Plus, Radio, Save, ShieldCheck, ToggleLeft, ToggleRight, Trash2, X, XCircle } from 'lucide-vue-next'
 import { z } from 'zod'
 import { getSourceChannelLabel } from '~/utils/status-display'
 import { CURRENCY_OPTIONS, CURRENCY_VALUES } from '~~/shared/currency-options'
@@ -559,6 +559,10 @@ async function copyTrackingUrl(code: string) {
             title="Basic Details"
             :default-open="true"
           >
+          <template #icon>
+            <Briefcase class="size-4 text-surface-500 dark:text-surface-400" />
+          </template>
+
           <div class="space-y-4">
             <div>
               <label for="application-title" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
@@ -677,6 +681,10 @@ async function copyTrackingUrl(code: string) {
             title="Salary & Compensation"
             description="Adding salary information improves visibility on Google Jobs."
           >
+          <template #icon>
+            <CircleDollarSign class="size-4 text-surface-500 dark:text-surface-400" />
+          </template>
+
           <div class="space-y-4">
             <label class="flex cursor-pointer items-center gap-3">
               <input
@@ -754,6 +762,10 @@ async function copyTrackingUrl(code: string) {
             title="Listing Schedule"
             description="Set when this job posting goes live and when it automatically expires."
           >
+          <template #icon>
+            <CalendarClock class="size-4 text-surface-500 dark:text-surface-400" />
+          </template>
+
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label for="application-active-from" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
@@ -788,6 +800,10 @@ async function copyTrackingUrl(code: string) {
           title="Application requirements"
           description="Choose what candidates must provide when applying."
         >
+        <template #icon>
+          <ClipboardCheck class="size-4 text-surface-500 dark:text-surface-400" />
+        </template>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           <button
             type="button"
