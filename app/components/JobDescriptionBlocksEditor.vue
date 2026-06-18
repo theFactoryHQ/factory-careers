@@ -30,6 +30,7 @@ const blocks = computed(() => {
 const draggingBullet = ref<{ blockIndex: number, itemIndex: number } | null>(null)
 const collapsedBlockIndexes = ref<Set<number>>(new Set())
 const blockTypeDrafts = ref<BlockTypeDraftsByIndex>({})
+const editorRef = ref<HTMLElement | null>(null)
 
 watch(() => blocks.value.length, (length) => {
   const next = new Set([...collapsedBlockIndexes.value].filter((index) => index < length))
@@ -93,6 +94,35 @@ function updateBlockHeading(index: number, heading: string) {
 
   updateBlock(index, { ...block, heading })
 }
+
+function validateBlockHeadingInput(input: HTMLInputElement) {
+  input.setCustomValidity(input.value.trim() ? '' : 'Add a title for this description section.')
+}
+
+function onBlockHeadingInput(index: number, event: Event) {
+  const input = event.target as HTMLInputElement
+  validateBlockHeadingInput(input)
+  updateBlockHeading(index, input.value)
+}
+
+function reportValidity() {
+  const headingInputs = editorRef.value
+    ? [...editorRef.value.querySelectorAll<HTMLInputElement>('[data-testid="description-block-heading-input"]')]
+    : []
+
+  for (const input of headingInputs) {
+    validateBlockHeadingInput(input)
+  }
+
+  const firstInvalid = editorRef.value?.querySelector<HTMLInputElement>('[data-testid="description-block-heading-input"]:invalid')
+  if (!firstInvalid) return true
+
+  firstInvalid.reportValidity()
+  firstInvalid.focus()
+  return false
+}
+
+defineExpose({ reportValidity })
 
 function updateBulletItem(blockIndex: number, itemIndex: number, value: string) {
   const block = blocks.value[blockIndex]
@@ -170,7 +200,7 @@ function getBlockHeadingPlaceholder(block: JobDescriptionBlock) {
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div ref="editorRef" class="space-y-3">
     <div
       v-for="(block, index) in blocks"
       :key="index"
@@ -194,14 +224,17 @@ function getBlockHeadingPlaceholder(block: JobDescriptionBlock) {
           </span>
         </button>
         <input
+          data-testid="description-block-heading-input"
           :value="getBlockHeadingValue(block)"
           type="text"
           aria-label="Description section title"
+          aria-required="true"
           :placeholder="getBlockHeadingPlaceholder(block)"
+          required
           class="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm font-medium text-surface-900 outline-none transition-[background-color,border-color,box-shadow,color] placeholder:text-surface-500 hover:border-surface-200 hover:bg-surface-50 focus:border-brand-500/60 focus:bg-white focus:ring-2 focus:ring-brand-500/20 dark:text-surface-100 dark:placeholder:text-surface-400 dark:hover:border-surface-700 dark:hover:bg-surface-900/60 dark:focus:bg-surface-950"
           @click.stop
           @keydown.enter.prevent
-          @input="updateBlockHeading(index, ($event.target as HTMLInputElement).value)"
+          @input="onBlockHeadingInput(index, $event)"
         />
 
         <button

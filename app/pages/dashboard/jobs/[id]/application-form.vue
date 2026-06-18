@@ -205,8 +205,15 @@ const postingSchema = z.object({
 
 const postingErrors = ref<Record<string, string>>({})
 const isSavingPosting = ref(false)
+const descriptionBlocksEditorRef = ref<{ reportValidity: () => boolean } | null>(null)
 
 async function savePostingDetails() {
+  if (descriptionBlocksEditorRef.value && !descriptionBlocksEditorRef.value.reportValidity()) {
+    postingErrors.value = { ...postingErrors.value, descriptionBlocks: 'Add a title for each description section' }
+    toast.error('Add a title for each description section')
+    return
+  }
+
   const result = postingSchema.safeParse(form.value)
   if (!result.success) {
     postingErrors.value = {}
@@ -581,7 +588,11 @@ async function copyTrackingUrl(code: string) {
               <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
                 Description
               </label>
-              <JobDescriptionBlocksEditor v-model="form.descriptionBlocks" />
+              <JobDescriptionBlocksEditor
+                ref="descriptionBlocksEditorRef"
+                v-model="form.descriptionBlocks"
+              />
+              <p v-if="postingErrors.descriptionBlocks" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ postingErrors.descriptionBlocks }}</p>
             </div>
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
