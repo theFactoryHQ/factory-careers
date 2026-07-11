@@ -494,6 +494,7 @@ export default defineEventHandler(async (event) => {
 
   if (newApplication && hasComplianceResponse(normalizedCompliance)) {
     await db.insert(applicationComplianceResponse).values({
+      id: crypto.randomUUID(),
       organizationId: orgId,
       applicationId: newApplication.id,
       candidateId,
