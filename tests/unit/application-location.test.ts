@@ -44,6 +44,23 @@ describe('built-in applicant location', () => {
     expect(dbSchema).toContain("state: text('state')")
   })
 
+  it('repairs deployed databases that missed the candidate location migration', () => {
+    const migration = readProjectFile('server/database/migrations/0049_candidate_location_repair.sql')
+    const journal = readProjectFile('server/database/migrations/meta/_journal.json')
+
+    expect(migration).toContain('ALTER TABLE "candidate" ADD COLUMN IF NOT EXISTS "country" text')
+    expect(migration).toContain('ALTER TABLE "candidate" ADD COLUMN IF NOT EXISTS "state" text')
+    expect(journal).toContain('"tag": "0049_candidate_location_repair"')
+  })
+
+  it('keeps readiness false when required candidate location columns are missing', () => {
+    const readiness = readProjectFile('server/api/readyz.get.ts')
+
+    expect(readiness).toContain('information_schema.columns')
+    expect(readiness).toContain("column_name IN ('country', 'state')")
+    expect(readiness).toContain('count(*) = 2')
+  })
+
   it('keeps the legacy location prompt out of custom questions', () => {
     const seed = readProjectFile('server/scripts/seed-factory.ts')
     const publicJob = readProjectFile('server/api/public/jobs/[slug].get.ts')
