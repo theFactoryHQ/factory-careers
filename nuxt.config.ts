@@ -1,4 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { createRequire } from "node:module";
 import tailwindcss from "@tailwindcss/vite";
 import { readEnvFlagOverrides } from "./shared/feature-flags";
 import {
@@ -7,6 +8,11 @@ import {
   isLanguageFeatureEnabled,
 } from "./shared/language-feature";
 import { dashboardLinkPrefetchOn } from "./shared/dashboard-prefetch";
+
+const require = createRequire(import.meta.url);
+const pdfjsWorkerPath = require.resolve(
+  "pdfjs-dist/legacy/build/pdf.worker.mjs",
+);
 
 const railwayEnvironmentName =
   process.env.RAILWAY_ENVIRONMENT_NAME?.toLowerCase() ?? "";
@@ -292,6 +298,14 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    // PDF.js resolves its worker dynamically, so Nitro's file tracer cannot
+    // discover it on its own. Keep it in the production server bundle for
+    // resume text extraction.
+    externals: {
+      traceInclude: [
+        pdfjsWorkerPath,
+      ],
+    },
     routeRules: {
       "/**": {
         headers: {
