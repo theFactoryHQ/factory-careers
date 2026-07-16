@@ -68,12 +68,17 @@ const totalCost = computed(() => calcCost(summary.value.totalPromptTokens, summa
 
 // Keep sparse API rows sparse at the contract boundary, then normalize the
 // presentation to a real rolling calendar window for predictable chart sizing.
-const usageWindowEnd = new Date()
-usageWindowEnd.setHours(12, 0, 0, 0)
+const fallbackUsageWindowEndDate = useState(
+  'ai-usage-window-end-date',
+  () => new Date().toISOString().slice(0, 10),
+)
+const usageWindowEndDate = computed(() =>
+  stats.value?.usagePeriod.endDate ?? fallbackUsageWindowEndDate.value,
+)
 
 const usageDays = computed(() => buildAiUsageSeries(
   dailyRuns.value as AiUsageDay[],
-  { endDate: usageWindowEnd },
+  { endDateKey: usageWindowEndDate.value },
 ))
 
 const usageTotals = computed(() => usageDays.value.reduce((totals, day) => ({
@@ -321,7 +326,7 @@ function formatDateTime(dateStr: string | Date): string {
             <div class="flex items-start justify-between gap-4">
               <div>
                 <h3 id="usage-runs-title" class="text-sm font-semibold text-surface-800 dark:text-surface-200">Runs per day</h3>
-                <p class="mt-0.5 text-xs text-surface-500 dark:text-surface-400">Completed and failed scoring runs</p>
+                <p class="mt-0.5 text-xs text-surface-500 dark:text-surface-400">Completed, failed, and partial scoring runs</p>
               </div>
               <span class="shrink-0 rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-medium tabular-nums text-brand-700 dark:bg-brand-950 dark:text-brand-300">
                 Peak {{ formatNumber(peakDailyRuns) }}

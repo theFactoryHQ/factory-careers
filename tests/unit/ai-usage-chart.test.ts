@@ -48,6 +48,24 @@ describe('AI usage chart defaults', () => {
     expect(formatUsageDate('2026-07-01', 'en-US')).toBe('Jul 1')
   })
 
+  it('keeps an API-provided window end stable across server and browser time zones', () => {
+    const previousTimeZone = process.env.TZ
+
+    try {
+      process.env.TZ = 'UTC'
+      const serverSeries = buildAiUsageSeries([], { endDateKey: '2031-01-02' })
+
+      process.env.TZ = 'America/New_York'
+      const browserSeries = buildAiUsageSeries([], { endDateKey: '2031-01-02' })
+
+      expect(serverSeries).toEqual(browserSeries)
+      expect(serverSeries.at(-1)?.date).toBe('2031-01-02')
+    }
+    finally {
+      process.env.TZ = previousTimeZone
+    }
+  })
+
   it('uses readable axis ceilings and keeps zero-value bars at zero height', () => {
     expect(getNiceUsageAxisMax(0)).toBe(1)
     expect(getNiceUsageAxisMax(1)).toBe(2)
@@ -69,6 +87,18 @@ describe('AI usage chart defaults', () => {
 
     expect(page).toContain('buildAiUsageSeries')
     expect(page).toContain('usageDays')
+    expect(page).toContain('stats.value?.usagePeriod.endDate')
+    expect(page).not.toContain('const usageWindowEnd = new Date()')
     expect(page).not.toContain('v-for="day in dailyRuns"')
+  })
+
+  it('describes every scoring status included in daily run counts', () => {
+    const page = readFileSync(
+      join(process.cwd(), 'app/pages/dashboard/ai-analysis.vue'),
+      'utf8',
+    )
+
+    expect(page).toContain('Completed, failed, and partial scoring runs')
+    expect(page).not.toContain('Completed and failed scoring runs')
   })
 })

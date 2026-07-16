@@ -14,10 +14,6 @@ export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { scoring: ['read'] })
   const orgId = session.session.activeOrganizationId
 
-  const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-  const thirtyDaysAgoISO = thirtyDaysAgo.toISOString()
-
   // Fetch pricing from ALL configs in the org so historical model breakdown
   // can be priced correctly even if the user has multiple configurations.
   const pricingConfigs = await db.query.aiConfig.findMany({
@@ -48,6 +44,7 @@ export default defineEventHandler(async (event) => {
     dailyRuns,
     recentRuns,
     modelBreakdown,
+    usagePeriodRows,
   ] = await Promise.all([
     // 1. Total runs
     db.$count(analysisRun, eq(analysisRun.organizationId, orgId)),
@@ -78,7 +75,7 @@ export default defineEventHandler(async (event) => {
       .from(analysisRun)
       .where(and(
         eq(analysisRun.organizationId, orgId),
-        sql`${analysisRun.createdAt} >= ${thirtyDaysAgoISO}`,
+        sql`${analysisRun.createdAt} >= CURRENT_DATE - INTERVAL '29 days'`,
       ))
       .groupBy(sql`DATE(${analysisRun.createdAt})`)
       .orderBy(sql`DATE(${analysisRun.createdAt})`),
@@ -118,14 +115,34 @@ export default defineEventHandler(async (event) => {
       .from(analysisRun)
       .where(eq(analysisRun.organizationId, orgId))
       .groupBy(analysisRun.provider, analysisRun.model),
+
+    // 8. Database-aligned calendar period used by the chart. Returning date
+    // keys avoids SSR/browser timezone drift during hydration.
+    db.execute<{ start_date: string, end_date: string }>(sql`
+      SELECT
+        TO_CHAR(CURRENT_DATE - INTERVAL '29 days', 'YYYY-MM-DD') AS start_date,
+        TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD') AS end_date
+    `),
   ])
 
   const usage = tokenUsage[0]
+  const usagePeriod = usagePeriodRows[0]
+
+  if (!usagePeriod) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Unable to determine AI usage period',
+    })
+  }
 
   const inputPrice = defaultAnalysisConfig?.inputPricePer1m != null ? Number(defaultAnalysisConfig.inputPricePer1m) : null
   const outputPrice = defaultAnalysisConfig?.outputPricePer1m != null ? Number(defaultAnalysisConfig.outputPricePer1m) : null
 
   return {
+    usagePeriod: {
+      startDate: usagePeriod.start_date,
+      endDate: usagePeriod.end_date,
+    },
     pricing: {
       inputPricePer1m: inputPrice,
       outputPricePer1m: outputPrice,

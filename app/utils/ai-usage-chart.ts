@@ -9,6 +9,7 @@ export interface AiUsageDay {
 
 interface BuildAiUsageSeriesOptions {
   endDate?: Date
+  endDateKey?: string
   days?: number
 }
 
@@ -34,7 +35,9 @@ export function buildAiUsageSeries(
   const days = Number.isInteger(requestedDays) && requestedDays > 0
     ? requestedDays
     : AI_USAGE_WINDOW_DAYS
-  const endDate = new Date(options.endDate ?? Date.now())
+  const endDate = options.endDateKey
+    ? parseDateKey(options.endDateKey.slice(0, 10))
+    : new Date(options.endDate ?? Date.now())
   endDate.setHours(12, 0, 0, 0)
 
   const valuesByDate = new Map<string, AiUsageDay>()
