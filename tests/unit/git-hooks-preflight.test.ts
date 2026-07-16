@@ -1,9 +1,38 @@
-import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
-import { describe, expect, it } from 'vitest'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
 import { getFetchArgsForBaseRef, getPrPreflightSteps } from '../../scripts/run-pr-validation-preflight.mjs'
 import { validateConventionalTitle } from '../../scripts/validate-conventional-title.mjs'
 import { getPrTitleValidationStatus } from '../../scripts/validate-current-pr-title.mjs'
+
+const tempDirectories: string[] = []
+
+function createGitRepository(remotes: string[]) {
+  const cwd = mkdtempSync(join(tmpdir(), 'factory-careers-preflight-remotes-'))
+  tempDirectories.push(cwd)
+
+  const init = spawnSync('git', ['init', '--quiet'], { cwd, encoding: 'utf8' })
+  if (init.status !== 0)
+    throw new Error(`git init failed: ${init.stderr}`)
+
+  for (const remote of remotes) {
+    const result = spawnSync('git', ['remote', 'add', remote, join(cwd, `${remote}.git`)], {
+      cwd,
+      encoding: 'utf8',
+    })
+    if (result.status !== 0)
+      throw new Error(`git remote add ${remote} failed: ${result.stderr}`)
+  }
+
+  return cwd
+}
+
+afterEach(() => {
+  for (const directory of tempDirectories.splice(0))
+    rmSync(directory, { recursive: true, force: true })
+})
 
 describe('git hook preflight checks', () => {
   it('accepts PR-title-compatible conventional commit subjects', () => {
@@ -65,35 +94,48 @@ describe('git hook preflight checks', () => {
   })
 
   it('fetches the configured base ref instead of hard-coding main', () => {
-    expect(getFetchArgsForBaseRef('main')).toEqual([
+    const originOnly = createGitRepository(['origin'])
+    const originAndUpstream = createGitRepository(['origin', 'upstream'])
+
+    expect(getFetchArgsForBaseRef('main', 'origin', { cwd: originOnly })).toEqual([
       '--no-tags',
       'origin',
       '+refs/heads/main:refs/remotes/origin/main',
     ])
-    expect(getFetchArgsForBaseRef('release/1.x')).toEqual([
+    expect(getFetchArgsForBaseRef('release/1.x', 'origin', { cwd: originOnly })).toEqual([
       '--no-tags',
       'origin',
       '+refs/heads/release/1.x:refs/remotes/origin/release/1.x',
     ])
-    expect(getFetchArgsForBaseRef('refs/heads/release/1.x')).toEqual([
+    expect(getFetchArgsForBaseRef('refs/heads/release/1.x', 'origin', { cwd: originOnly })).toEqual([
       '--no-tags',
       'origin',
       '+refs/heads/release/1.x:refs/remotes/origin/release/1.x',
     ])
-    expect(getFetchArgsForBaseRef('origin/release/1.4')).toEqual([
+    expect(getFetchArgsForBaseRef('origin/release/1.4', 'origin', { cwd: originOnly })).toEqual([
       '--no-tags',
       'origin',
       '+refs/heads/release/1.4:refs/remotes/origin/release/1.4',
     ])
-    expect(getFetchArgsForBaseRef('upstream/main')).toEqual([
+    expect(getFetchArgsForBaseRef('upstream/main', 'origin', { cwd: originAndUpstream })).toEqual([
       '--no-tags',
       'upstream',
       '+refs/heads/main:refs/remotes/upstream/main',
     ])
-    expect(getFetchArgsForBaseRef('release/1.x', 'upstream')).toEqual([
+    expect(getFetchArgsForBaseRef('release/1.x', 'upstream', { cwd: originAndUpstream })).toEqual([
       '--no-tags',
       'upstream',
       '+refs/heads/release/1.x:refs/remotes/upstream/release/1.x',
+    ])
+  })
+
+  it('treats an unconfigured remote-like prefix as a branch on origin', () => {
+    const originOnly = createGitRepository(['origin'])
+
+    expect(getFetchArgsForBaseRef('upstream/main', 'origin', { cwd: originOnly })).toEqual([
+      '--no-tags',
+      'origin',
+      '+refs/heads/upstream/main:refs/remotes/origin/upstream/main',
     ])
   })
 
