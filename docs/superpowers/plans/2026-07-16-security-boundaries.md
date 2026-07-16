@@ -54,17 +54,17 @@ export function defineOrgScopedCachedFunction<TInput, TResult>(
 - [ ] Run the focused tests; expect pass.
 - [ ] Commit with `fix: protect small-cohort compliance reporting`.
 
-### Task 3: Separate cron-only global calendar renewal
+### Task 3: Separate global cron renewal from organization-scoped renewal
 
 **Files:**
 - Modify: `server/api/calendar/renew-webhooks.post.ts`
 - Test: `tests/unit/calendar-renewal-scope.test.ts`
 
-- [ ] Write a failing test requiring a configured, timing-safe cron secret and no interactive permission fallback.
-- [ ] Make missing or invalid `x-cron-secret` return 403 before any integration query.
-- [ ] Keep global renewal behavior only after secret verification.
+- [ ] Write failing tests proving a configured, timing-safe cron secret can renew globally while an interactive administrator can renew only integrations whose `organizationId` matches the active organization.
+- [ ] Keep global renewal behavior only after valid cron-secret verification. Reject an invalid supplied secret before any integration query.
+- [ ] Preserve the supported CLI path by requiring `{ organization: ['update'] }` when no cron secret is supplied and adding `eq(calendarIntegration.organizationId, orgId)` to that branch.
 - [ ] Run the focused test; expect pass.
-- [ ] Commit with `fix: make global calendar renewal cron only`.
+- [ ] Commit with `fix: scope interactive calendar renewal by organization`.
 
 ### Task 4: Bound the public analytics proxy
 
