@@ -1,6 +1,14 @@
 import type { Command } from 'commander'
+import { requestJson } from '../api'
 import { registerJsonCommand } from '../commandFactories'
 import type { CliRuntime } from '../cliRuntime'
+import {
+  addProcessingWaitOptions,
+  executeProcessingBatch,
+  exitForUnsuccessfulBatch,
+  resolveProcessingWaitOptions,
+  type ProcessingWaitCommandOptions,
+} from '../processing'
 import { cliJobCreateSchema } from '../schemas'
 
 export function registerJobsCommands(program: Command, runtime: CliRuntime): Command {
@@ -69,12 +77,64 @@ export function registerJobsCommands(program: Command, runtime: CliRuntime): Com
   }
 
   registerJsonCommand(runtime, jobs, {
-    name: 'analyze-all',
-    description: 'Queue analysis for all unscored applications on a job',
-    method: 'POST',
-    path: (id) => `/api/jobs/${encodeURIComponent(id)}/analyze-all`,
+    name: 'pipeline',
+    description: 'List a bounded page of job pipeline applications',
+    method: 'GET',
+    path: id => `/api/jobs/${encodeURIComponent(id)}/pipeline`,
     args: [{ name: 'id', description: 'Job ID' }],
-    mutation: true,
+    options: [
+      { flags: '--page <number>', description: 'Page number' },
+      { flags: '--limit <number>', description: 'Page size (maximum 50)' },
+      { flags: '--stage <status>', description: 'Pipeline stage' },
+      { flags: '--search <query>', description: 'Search full application content' },
+      { flags: '--candidate-search <query>', description: 'Search candidate name or email' },
+      { flags: '--score <filter>', description: 'Score filter: all, high, medium, low, or none' },
+      { flags: '--interviews <filter>', description: 'Interview filter: all, has-interview, or no-interview' },
+      { flags: '--sort <order>', description: 'Pipeline sort order' },
+      { flags: '--property-filters <json>', description: 'JSON-encoded custom property filters' },
+    ],
+    query: options => ({
+      page: options.page as string | undefined,
+      limit: options.limit as string | undefined,
+      stage: options.stage as string | undefined,
+      search: options.search as string | undefined,
+      candidateSearch: options.candidateSearch as string | undefined,
+      score: options.score as string | undefined,
+      interviews: options.interviews as string | undefined,
+      sort: options.sort as string | undefined,
+      propertyFilters: options.propertyFilters as string | undefined,
+    }),
+  })
+
+  const analyzeAll = jobs
+    .command('analyze-all')
+    .description('Score every currently unscored application on a job')
+    .argument('<id>', 'Job ID')
+  addProcessingWaitOptions(analyzeAll)
+  runtime.addGlobalOptions(analyzeAll).action(async (
+    id: string,
+    options: ProcessingWaitCommandOptions,
+    command: Command,
+  ) => {
+    const { globals, profile } = runtime.getContext(command, options)
+    runtime.requireMutationConfirmation(globals)
+    const token = runtime.requireAuthenticatedProfile(profile)
+    const fetchImpl = runtime.getFetch(runtime.io)
+    const result = await executeProcessingBatch(signal => requestJson<unknown>({
+      fetch: fetchImpl,
+      url: `${profile.baseUrl}/api/jobs/${encodeURIComponent(id)}/analyze-all`,
+      method: 'POST',
+      token,
+      signal,
+    }), {
+      fetch: fetchImpl,
+      baseUrl: profile.baseUrl,
+      token,
+      sleep: runtime.getSleep(runtime.io),
+      options: resolveProcessingWaitOptions(options),
+    })
+    runtime.outputResult(runtime.io, globals, result)
+    exitForUnsuccessfulBatch(result)
   })
 
   const jobQuestions = jobs

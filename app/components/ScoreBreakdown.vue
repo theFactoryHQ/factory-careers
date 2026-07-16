@@ -27,6 +27,8 @@ const analyzeError = ref<string | null>(null)
 const parseFailedDocId = ref<string | null>(null)
 const isRetryingParse = ref(false)
 const expandedCriterion = ref<string | null>(null)
+const parseBatch = useProcessingBatch()
+let activeRetryRun = 0
 
 const { data: scoreData, status, refresh } = useFetch(
   () => `/api/applications/${props.applicationId}/scores`,
@@ -72,6 +74,8 @@ watch(scoreData, (val) => {
   }
 })
 watch(() => props.applicationId, (applicationId) => {
+  activeRetryRun++
+  parseBatch.stop()
   if (scoreData.value?.applicationId === applicationId) {
     cachedScoreData.value = { applicationId, data: scoreData.value }
   } else {
@@ -161,26 +165,40 @@ async function runAnalysis() {
 }
 
 async function retryParse() {
+  const run = ++activeRetryRun
   const applicationId = props.applicationId
   const documentId = parseFailedDocId.value
   if (!documentId) return
   isRetryingParse.value = true
   analyzeError.value = null
   try {
-    await $fetch(`/api/documents/${documentId}/parse`, {
-      method: 'POST',
-      headers: useRequestHeaders(['cookie']),
+    const result = await parseBatch.createAndDrain({
+      path: `/api/documents/${documentId}/parse`,
     })
-    if (applicationId !== props.applicationId) return
+    if (run !== activeRetryRun || applicationId !== props.applicationId) return
+    if (result.status !== 'completed') {
+      toast.error('Failed to re-parse resume', {
+        message: result.status === 'cancelled'
+          ? 'Document parsing was cancelled.'
+          : 'The resume did not contain extractable text.',
+      })
+      return
+    }
+    const documentState = await loadApplicationDocumentParseState(applicationId, documentId)
+    if (run !== activeRetryRun || applicationId !== props.applicationId) return
+    if (documentState?.parseStatus !== 'parsed') {
+      toast.add(documentProcessingBatchNotice(result, documentState))
+      return
+    }
     parseFailedDocId.value = null
     // Automatically re-run analysis after successful parse
     await runAnalysis()
   } catch (err: any) {
-    if (applicationId !== props.applicationId) return
+    if (run !== activeRetryRun || applicationId !== props.applicationId) return
+    if (isProcessingObservationAbort(err)) return
     toast.error('Failed to re-parse resume', { message: err?.data?.statusMessage ?? 'The file may be corrupted or image-based.', statusCode: err?.data?.statusCode })
-    parseFailedDocId.value = null
   } finally {
-    if (applicationId === props.applicationId) {
+    if (run === activeRetryRun && applicationId === props.applicationId) {
       isRetryingParse.value = false
     }
   }

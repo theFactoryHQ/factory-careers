@@ -1,11 +1,24 @@
 import { z } from 'zod'
 import { CURRENCY_VALUES } from '~~/shared/currency-options'
+import {
+  JOB_EXPERIENCE_LEVEL_VALUES,
+  JOB_REMOTE_STATUS_VALUES,
+  JOB_STATUS_VALUES,
+  JOB_TYPE_VALUES,
+  type ValidatedCreateJobRequest,
+  type ValidatedUpdateJobRequest,
+} from '~~/shared/job-contract'
 import { factoryDivisionSchema, jobDescriptionBlocksSchema } from '~~/shared/job-listing-structure'
 import { SALARY_UNIT_VALUES } from '~~/shared/salary-options'
 import { paginationQuerySchema } from './common'
 import { scoringBandsSchema } from './scoringBands'
 
 export { JOB_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
+
+const nonNullableDateSchema = z.preprocess(
+  value => value === null ? Number.NaN : value,
+  z.coerce.date(),
+)
 
 // ─────────────────────────────────────────────
 // Job validation schemas — shared across API routes
@@ -18,7 +31,7 @@ export const createJobSchema = z.object({
   divisions: z.array(factoryDivisionSchema).optional().default([]),
   descriptionBlocks: jobDescriptionBlocksSchema.optional().default([]),
   location: z.string().optional(),
-  type: z.enum(['full_time', 'part_time', 'contract', 'internship']).default('full_time'),
+  type: z.enum(JOB_TYPE_VALUES).default('full_time'),
   /** Optional custom slug — if omitted, generated from title */
   slug: z.string().max(80).optional(),
   /** Salary range fields for SEO-rich job postings (Google Jobs) */
@@ -31,9 +44,9 @@ export const createJobSchema = z.object({
   /** Whether salary data is shown on public job listings */
   salaryDisplayOnListing: z.boolean().optional().default(false),
   /** Remote work status: remote, hybrid, or onsite */
-  remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).nullable().optional(),
+  remoteStatus: z.enum(JOB_REMOTE_STATUS_VALUES).nullable().optional(),
   /** When this job listing goes live publicly */
-  activeFrom: z.coerce.date().optional().default(() => new Date()),
+  activeFrom: nonNullableDateSchema.optional().default(() => new Date()),
   /** When this job listing expires (required for Google Jobs rich results) */
   validThrough: z.coerce.date().nullable().optional(),
   /** Whether the application form requires a resume/CV upload */
@@ -50,8 +63,8 @@ export const createJobSchema = z.object({
   /** Job-specific score interpretation bands. Null means use org defaults. */
   scoringBands: scoringBandsSchema.nullable().optional(),
   /** Experience level required for this role */
-  experienceLevel: z.enum(['junior', 'mid', 'senior', 'lead']).optional(),
-})
+  experienceLevel: z.enum(JOB_EXPERIENCE_LEVEL_VALUES).optional(),
+}) satisfies z.ZodType<ValidatedCreateJobRequest>
 
 /** Schema for updating an existing job (all fields optional, no defaults — PATCH semantics) */
 export const updateJobSchema = z.object({
@@ -60,7 +73,7 @@ export const updateJobSchema = z.object({
   divisions: z.array(factoryDivisionSchema).optional(),
   descriptionBlocks: jobDescriptionBlocksSchema.optional(),
   location: z.string().nullable().optional(),
-  type: z.enum(['full_time', 'part_time', 'contract', 'internship']).optional(),
+  type: z.enum(JOB_TYPE_VALUES).optional(),
   slug: z.string().max(80).optional(),
   /** Pass null to explicitly clear a salary field */
   salaryMin: z.coerce.number().int().min(0).nullable().optional(),
@@ -69,8 +82,8 @@ export const updateJobSchema = z.object({
   salaryUnit: z.enum(SALARY_UNIT_VALUES).nullable().optional(),
   salaryNegotiable: z.boolean().optional(),
   salaryDisplayOnListing: z.boolean().optional(),
-  remoteStatus: z.enum(['remote', 'hybrid', 'onsite']).nullable().optional(),
-  activeFrom: z.coerce.date().optional(),
+  remoteStatus: z.enum(JOB_REMOTE_STATUS_VALUES).nullable().optional(),
+  activeFrom: nonNullableDateSchema.optional(),
   /** Pass null to explicitly clear the expiry date */
   validThrough: z.coerce.date().nullable().optional(),
   requireResume: z.boolean().optional(),
@@ -84,13 +97,13 @@ export const updateJobSchema = z.object({
   /** Job-specific score interpretation bands. Null means use org defaults. */
   scoringBands: scoringBandsSchema.nullable().optional(),
   /** Experience level required for this role */
-  experienceLevel: z.enum(['junior', 'mid', 'senior', 'lead']).nullable().optional(),
-  status: z.enum(['draft', 'open', 'closed', 'archived']).optional(),
-})
+  experienceLevel: z.enum(JOB_EXPERIENCE_LEVEL_VALUES).nullable().optional(),
+  status: z.enum(JOB_STATUS_VALUES).optional(),
+}) satisfies z.ZodType<ValidatedUpdateJobRequest>
 
 /** Schema for job list query params */
 export const jobQuerySchema = paginationQuerySchema().extend({
-  status: z.enum(['draft', 'open', 'closed', 'archived']).optional(),
+  status: z.enum(JOB_STATUS_VALUES).optional(),
 })
 
 /** Reusable schema for `:id` route params */

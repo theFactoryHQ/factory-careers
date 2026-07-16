@@ -16,9 +16,10 @@ import { registerJobsCommands } from './commands/jobs'
 import { registerOrgCommands } from './commands/org'
 import { registerPropertiesCommands } from './commands/properties'
 import { registerPublicCommands } from './commands/public'
+import { registerProcessingCommands } from './commands/processing'
 import { registerSourceTrackingCommands } from './commands/source-tracking'
 import { registerSystemCommands } from './commands/system'
-import { normalizeCliError } from './errors'
+import { CliExitCode, normalizeCliError } from './errors'
 
 export function createProgram(io: CliIo = {}): Command {
   const runtime = createCliRuntime(io)
@@ -48,6 +49,7 @@ export function createProgram(io: CliIo = {}): Command {
   registerAiConfigCommands(program, runtime)
   registerChatbotCommands(program, runtime)
   registerPublicCommands(program, runtime)
+  registerProcessingCommands(program, runtime)
   registerApplicationsCommands(program, runtime)
 
   return program
@@ -67,6 +69,7 @@ export async function runCli(argv: string[], io: CliIo = {
     if (err && typeof err === 'object' && (err as { code?: unknown }).code === 'commander.helpDisplayed') {
       return 0
     }
+    if (err instanceof CliExitCode) return err.exitCode
 
     const normalized = normalizeCliError(err)
 

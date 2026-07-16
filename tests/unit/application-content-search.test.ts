@@ -50,7 +50,7 @@ describe('application content search', () => {
     expect(migration).not.toContain('application_compliance_response')
   })
 
-  it('loads every page in bounded batches instead of stopping at 100 applications', () => {
+  it('keeps generic application lists bounded and delegates pipeline paging', () => {
     expect(remainingPageBatches(100, 100)).toEqual([])
     expect(remainingPageBatches(Number.NaN, 100)).toEqual([])
     expect(remainingPageBatches(250, Number.NaN)).toEqual([])
@@ -65,8 +65,10 @@ describe('application content search', () => {
 
     const composable = readProjectFile('app/composables/useApplications.ts')
     const page = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
-    expect(composable).toContain('remainingPageBatches(firstPage.total, firstPage.limit)')
-    expect(page).toContain('allPages: true')
+    expect(composable).not.toContain('allPages')
+    expect(composable).not.toContain('remainingPageBatches')
+    expect(page).toContain('useJobPipeline({')
+    expect(page).toContain('loadMore')
   })
 
   it('places broad application search above the pipeline and candidate search inside filters', () => {

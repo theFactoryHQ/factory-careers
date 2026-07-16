@@ -1,7 +1,30 @@
 import type { Ref } from 'vue'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
-import { remainingPageBatches } from '~~/shared/pagination'
-import type { PropertyFilter } from '~~/shared/properties'
+import type { PropertyEntry, PropertyFilter } from '~~/shared/properties'
+
+type ApplicationsListItem = {
+  id: string
+  status: string
+  score: number | null
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+  candidateId: string
+  candidateFirstName: string
+  candidateLastName: string
+  candidateEmail: string
+  jobId: string
+  jobTitle: string
+  jobStatus: string
+  properties: PropertyEntry[]
+}
+
+type ApplicationsListResponse = {
+  data: ApplicationsListItem[]
+  total: number
+  page: number
+  limit: number
+}
 
 export type ApplicationsListQuery = {
   page?: number
@@ -35,8 +58,8 @@ export function refreshApplicationsListCaches(activeKeyToPreserve?: string) {
 
 /**
  * Composable for managing the applications list with filtering, pagination, and mutations.
- * Uses canonical cache keys and client SWR. Pipeline callers can request every
- * page while the ordinary list contract remains paginated.
+ * Uses canonical cache keys and client SWR. All callers remain bounded by the
+ * API pagination contract; the job pipeline has its own incremental loader.
  */
 export function useApplications(options?: {
   page?: Ref<number | undefined> | number
@@ -46,7 +69,6 @@ export function useApplications(options?: {
   status?: Ref<string | undefined> | string
   search?: Ref<string | undefined> | string
   propertyFilters?: Ref<PropertyFilter[] | undefined> | PropertyFilter[]
-  allPages?: boolean
 }) {
   const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 
@@ -64,31 +86,10 @@ export function useApplications(options?: {
   })
 
   const requestFetch = useRequestFetch()
-  const dataKey = computed(() => {
-    const baseKey = applicationsListKey(query.value)
-    return options?.allPages ? `${baseKey}-all-pages` : baseKey
-  })
+  const dataKey = computed(() => applicationsListKey(query.value))
 
   const { data, status: fetchStatus, error, refresh } = useAsyncData(dataKey, async () => {
-    const firstQuery = options?.allPages
-      ? { ...query.value, page: 1 }
-      : query.value
-    const firstPage = await requestFetch('/api/applications', { query: firstQuery })
-
-    if (!options?.allPages || firstPage.data.length >= firstPage.total) {
-      return firstPage
-    }
-
-    const allApplications = [...firstPage.data]
-
-    for (const pageNumbers of remainingPageBatches(firstPage.total, firstPage.limit)) {
-      const pages = await Promise.all(pageNumbers.map(page => requestFetch('/api/applications', {
-        query: { ...query.value, page, limit: firstPage.limit },
-      })))
-      allApplications.push(...pages.flatMap(page => page.data))
-    }
-
-    return { ...firstPage, data: allApplications }
+    return requestFetch<ApplicationsListResponse>('/api/applications', { query: query.value })
   }, {
     getCachedData: getSwrCachedData,
   })

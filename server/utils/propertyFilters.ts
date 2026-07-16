@@ -1,6 +1,6 @@
 import { createError } from 'h3'
-import { propertyFiltersArraySchema, type PropertyEntityType } from './schemas/property'
-import { entityIdsMatchingFilters, type PropertyFilter } from './properties'
+import { propertyFiltersArraySchema } from './schemas/property'
+import type { PropertyFilter } from './properties'
 
 export function parsePropertyFiltersParam(value: string | undefined): PropertyFilter[] {
   if (!value) return []
@@ -18,18 +18,4 @@ export function parsePropertyFiltersParam(value: string | undefined): PropertyFi
   }
 
   return result.data as PropertyFilter[]
-}
-
-export async function matchingEntityIdsForPropertyFilters(opts: {
-  organizationId: string
-  entityType: PropertyEntityType
-  filters: PropertyFilter[]
-}): Promise<Set<string> | null> {
-  if (opts.filters.length === 0) return null
-
-  return entityIdsMatchingFilters({
-    organizationId: opts.organizationId,
-    entityType: opts.entityType,
-    filters: opts.filters,
-  })
 }

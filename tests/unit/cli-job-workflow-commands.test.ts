@@ -254,7 +254,17 @@ describe('CLI job workflow commands', () => {
         return Response.json({ criteria: [{ key: 'technical_depth' }], source: 'template' })
       }
       if (url === 'https://careers.example.com/api/jobs/job_1/analyze-all' && init?.method === 'POST') {
-        return Response.json({ applicationIds: ['app_1'], total: 1 })
+        return Response.json({
+          batchId: 'batch_job_1',
+          type: 'application_analysis',
+          status: 'completed',
+          counts: { pending: 0, processing: 0, succeeded: 1, failed: 0, cancelled: 0, attempted: 1, total: 1 },
+          errorsByCode: {},
+          createdAt: '2026-07-16T12:00:00.000Z',
+          startedAt: '2026-07-16T12:00:01.000Z',
+          completedAt: '2026-07-16T12:00:02.000Z',
+          retryAfterMs: null,
+        })
       }
       throw new Error(`Unexpected URL ${url}`)
     })
@@ -309,6 +319,10 @@ describe('CLI job workflow commands', () => {
     expect(JSON.parse(replaceOut[0])).toEqual({ criteria: [{ key: 'typescript', name: 'TypeScript' }] })
     expect(JSON.parse(weightsOut[0])).toEqual({ criteria: [{ key: 'typescript', weight: 80 }] })
     expect(JSON.parse(generateOut[0])).toEqual({ criteria: [{ key: 'technical_depth' }], source: 'template' })
-    expect(JSON.parse(analyzeOut[0])).toEqual({ applicationIds: ['app_1'], total: 1 })
+    expect(JSON.parse(analyzeOut[0])).toMatchObject({
+      batchId: 'batch_job_1',
+      status: 'completed',
+      counts: { succeeded: 1, total: 1 },
+    })
   })
 })

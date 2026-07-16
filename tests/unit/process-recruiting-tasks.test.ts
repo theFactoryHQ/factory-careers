@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import type { ProcessingTaskRecord } from '../../server/utils/processingQueue'
 import { AnalyzeApplicationError } from '../../server/utils/analyzeApplication'
 import { DocumentParseError } from '../../server/utils/resume-parser'
@@ -64,6 +64,8 @@ describe('durable recruiting task processor', () => {
   })
 
   it('marks a persistence-race skip as already scored', () => {
+    const completedOutcome = analysisTaskCompletionOutcome('analysis-run-1')
+    expectTypeOf(completedOutcome.result).toEqualTypeOf<string>()
     expect(analysisTaskCompletionOutcome(null)).toEqual({
       result: null,
       resultCode: 'already_scored',

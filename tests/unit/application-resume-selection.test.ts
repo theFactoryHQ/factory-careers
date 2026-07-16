@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   loadApplicationResume,
+  selectApplicationDocumentsWithResumeFallback,
   type ApplicationResumeDocument,
   type ApplicationResumeQuery,
   type ApplicationResumeQueryAdapter,
@@ -37,6 +38,17 @@ function createAdapter(rows: StoredResume[]) {
 }
 
 describe('application resume selection', () => {
+  it('adds the same legacy resume to detail projection when only an associated cover letter exists', () => {
+    const associatedCoverLetter = { id: 'cover-associated', type: 'cover_letter' as const }
+    const newestLegacyResume = { id: 'resume-legacy-newest', type: 'resume' as const }
+    const olderLegacyResume = { id: 'resume-legacy-older', type: 'resume' as const }
+
+    expect(selectApplicationDocumentsWithResumeFallback(
+      [associatedCoverLetter],
+      [newestLegacyResume, olderLegacyResume],
+    )).toEqual([associatedCoverLetter, newestLegacyResume])
+  })
+
   it('selects the resume associated with this application before a newer legacy resume', async () => {
     const associated = {
       id: 'resume-associated',

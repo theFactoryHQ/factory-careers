@@ -66,6 +66,12 @@ Global flags:
 - `--yes` confirms mutating commands.
 - `--no-input` disables interactive prompting.
 
+Durable scoring and document-processing commands also support:
+
+- `--no-wait` returns the newly created batch immediately so another process can resume it.
+- `--timeout <seconds>` sets a finite wait deadline (15 minutes by default).
+- `--poll-interval <ms>` sets the minimum delay between bounded drain attempts.
+
 ## Agent Usage
 
 Every command supports `--json`. Mutating commands require explicit automation intent: pass `--yes`, or use `--stdin` when the command reads a JSON payload from stdin. This is intentional so unattended agents opt in explicitly while still supporting non-interactive payload-driven workflows.
@@ -90,9 +96,53 @@ Errors in JSON mode use:
 ## Exit Codes
 
 - `0`: command succeeded.
-- `1`: command failed with an HTTP or CLI error.
+- `1`: command failed with an HTTP or CLI error, a batch finished as `failed` or `cancelled`, or the wait timed out.
 - Non-JSON mode prints errors to stderr.
 - JSON mode prints structured errors to stdout for agent parsing.
+
+Failed and cancelled batches are still printed once using the same sanitized
+batch shape as successful work. Once a batch has been created, a wait timeout
+returns `PROCESSING_TIMEOUT` with the `batchId` in `details`; the server-side
+work continues and can be resumed. If the initial create request itself times
+out, no batch identifier is available to the CLI.
+
+## Durable Processing Batches
+
+`jobs analyze-all`, `applications analyze-missing`, `documents parse`, and
+`documents parse-all` create durable batches. By default the CLI performs
+bounded drain requests and waits for a terminal status, so the workflow also
+works when the background worker is disabled. Responses always include
+`batchId`, `status`, task `counts`, sanitized `errorsByCode`, timestamps, and
+`retryAfterMs`.
+
+Return immediately and resume later:
+
+```bash
+factory-careers applications analyze-missing --yes --no-wait --json
+factory-careers processing get batch_123 --json
+factory-careers processing drain batch_123 --yes --timeout 900 --poll-interval 1000 --json
+```
+
+These bulk analysis commands select only applications whose score is missing;
+they do not enumerate a paginated application list or overwrite existing
+scores.
+
+## Job Pipeline Pages
+
+`jobs pipeline` reads one bounded server-filtered pipeline page (25 rows by
+default, 50 maximum). The response includes `data`, `total`, `page`, `limit`,
+and stage counts calculated with every active filter except the selected stage.
+
+```bash
+factory-careers jobs pipeline JOB_ID \
+  --stage interview --score high --interviews has-interview \
+  --sort score-desc --limit 25 --json
+```
+
+Use `--search` for application-wide content, `--candidate-search` for candidate
+name or email, and `--property-filters` for a JSON-encoded property-filter
+array. Increment `--page` while `page * limit < total`; the command never
+downloads the entire pipeline implicitly.
 
 ## Secrets
 
@@ -124,12 +174,13 @@ That response includes `CLI_API_CONTRACT_VERSION`, `MINIMUM_SUPPORTED_CLI_VERSIO
 Core commands:
 
 - `auth login`, `auth logout`, `auth status`, `auth whoami`
-- `jobs list`, `jobs get`, `jobs create`, `jobs update`, `jobs open`, `jobs close`, `jobs archive`, `jobs delete`, `jobs analyze-all`
+- `jobs list`, `jobs get`, `jobs pipeline`, `jobs create`, `jobs update`, `jobs open`, `jobs close`, `jobs archive`, `jobs delete`, `jobs analyze-all`
 - `jobs questions list`, `jobs questions create`, `jobs questions update`, `jobs questions delete`, `jobs questions reorder`
 - `jobs criteria list`, `jobs criteria replace`, `jobs criteria update-weights`, `jobs criteria generate`
 - `candidates list`, `candidates get`, `candidates create`, `candidates update`, `candidates delete`, `candidates set-property`
 - `documents list`, `documents upload`, `documents download`, `documents preview`, `documents delete`, `documents parse`, `documents parse-all`
-- `applications list`, `applications get`, `applications create`, `applications update`, `applications status`, `applications analyze`, `applications scores`, `applications set-property`
+- `applications list`, `applications get`, `applications create`, `applications update`, `applications status`, `applications analyze`, `applications analyze-missing`, `applications scores`, `applications set-property`
+- `processing get`, `processing drain`
 - `interviews list`, `interviews get`, `interviews schedule`, `interviews update`, `interviews cancel`, `interviews send-invitation`
 - `comments list`, `comments create`, `comments update`, `comments delete`
 - `feedback status`, `feedback submit`
@@ -180,6 +231,7 @@ Run analysis and inspect scores:
 ```bash
 factory-careers jobs criteria generate job_123 --stdin --yes --json
 factory-careers applications analyze app_123 --yes --json
+factory-careers applications analyze-missing --yes --json
 factory-careers applications scores app_123 --json
 ```
 

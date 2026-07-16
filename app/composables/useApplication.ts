@@ -1,4 +1,5 @@
 import type { MaybeRefOrGetter } from 'vue'
+import type { ApplicationDetailResponse } from '~~/shared/application-detail'
 import type { ApplicationStatus } from '~~/shared/application-status'
 
 export type ApplicationUpdatePayload = Partial<{
@@ -23,7 +24,7 @@ export function useApplication(id: MaybeRefOrGetter<string>) {
   const { handlePreviewReadOnlyError } = usePreviewReadOnly()
   const applicationId = computed(() => toValue(id))
 
-  const { data: fetchedApplication, status, error, refresh } = useFetch(
+  const { data: fetchedApplication, status, error, refresh } = useFetch<ApplicationDetailResponse>(
     () => `/api/applications/${applicationId.value}`,
     {
       key: computed(() => `application-${applicationId.value}`),

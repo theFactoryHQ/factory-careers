@@ -1,4 +1,4 @@
-import { eq, and, or, ilike, desc, sql, gte, lte, inArray } from 'drizzle-orm'
+import { eq, and, or, ilike, desc, sql, gte, lte } from 'drizzle-orm'
 import type { z } from 'zod'
 import { candidate, application } from '../../database/schema'
 import {
@@ -6,11 +6,8 @@ import {
   paginationOffset,
 } from '../../utils/schemas/common'
 import { candidateQuerySchema } from '../../utils/schemas/candidate'
-import { loadPropertyEntriesForEntities } from '../../utils/properties'
-import {
-  matchingEntityIdsForPropertyFilters,
-  parsePropertyFiltersParam,
-} from '../../utils/propertyFilters'
+import { loadPropertyEntriesForEntities, validatedPropertyFiltersCondition } from '../../utils/properties'
+import { parsePropertyFiltersParam } from '../../utils/propertyFilters'
 
 const getCachedCandidates = defineOrgScopedCachedFunction(
   'candidates-list',
@@ -45,15 +42,13 @@ const getCachedCandidates = defineOrgScopedCachedFunction(
 
     const propertyFilters = parsePropertyFiltersParam(query.propertyFilters)
     if (propertyFilters.length > 0) {
-      const matching = await matchingEntityIdsForPropertyFilters({
+      const propertyCondition = await validatedPropertyFiltersCondition({
         organizationId: orgId,
         entityType: 'candidate',
+        entityIdColumn: candidate.id,
         filters: propertyFilters,
       })
-      if (!matching || matching.size === 0) {
-        return paginatedListResponse([], 0, query.page, query.limit)
-      }
-      conditions.push(inArray(candidate.id, [...matching]))
+      if (propertyCondition) conditions.push(propertyCondition)
     }
 
     const where = and(...conditions)

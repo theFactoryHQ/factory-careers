@@ -45,9 +45,11 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      # Override localhost URLs with Docker-internal hostnames
+      # Override host-development values for the Docker network and port.
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       S3_ENDPOINT: http://minio:9000
+      BETTER_AUTH_URL: http://localhost:3000
+      NUXT_PUBLIC_SITE_URL: http://localhost:3000
     ports:
       - "3000:3000"
     depends_on:

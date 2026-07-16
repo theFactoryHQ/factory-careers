@@ -5,6 +5,16 @@ export type NormalizedCliError = {
   details?: unknown
 }
 
+export class CliExitCode extends Error {
+  readonly exitCode: number
+
+  constructor(exitCode: number) {
+    super(`CLI exited with status ${exitCode}`)
+    this.name = 'CliExitCode'
+    this.exitCode = exitCode
+  }
+}
+
 export function normalizeCliError(error: unknown): NormalizedCliError {
   if (error && typeof error === 'object') {
     const candidate = error as {

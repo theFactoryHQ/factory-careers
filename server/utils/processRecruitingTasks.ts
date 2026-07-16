@@ -384,7 +384,7 @@ export async function completeDocumentTaskAfterFollowOn<T>(
   return completeSourceTask()
 }
 
-export function analysisTaskCompletionOutcome<T>(result: T | null) {
+export function analysisTaskCompletionOutcome<T>(result: T) {
   return {
     result,
     resultCode: result === null ? 'already_scored' : 'analysis_completed',

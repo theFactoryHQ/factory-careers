@@ -82,6 +82,7 @@ export default defineNuxtConfig({
   },
 
   modules: [
+    "@nuxt/eslint",
     "@nuxtjs/i18n",
     "@nuxtjs/mdc",
     // Only load PostHog module when the API key is available;

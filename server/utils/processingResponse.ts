@@ -1,6 +1,7 @@
 import type { ProcessingBatchStatus } from './processingQueue'
+import type { ProcessingBatchResponse } from '../../shared/processing-batch'
 
-export function processingBatchResponse(status: ProcessingBatchStatus) {
+export function processingBatchResponse(status: ProcessingBatchStatus): ProcessingBatchResponse {
   return {
     batchId: status.batchId,
     type: status.type,

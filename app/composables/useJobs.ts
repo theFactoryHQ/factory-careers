@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import type { FactoryDivision, JobDescriptionBlock } from '~~/shared/job-listing-structure'
+import type { CreateJobRequest } from '~~/shared/job-contract'
 
 export type JobsListQuery = {
   page?: number
@@ -102,20 +102,7 @@ export function useJobs(options?: {
   const total = computed(() => data.value?.total ?? 0)
 
   /** Create a new job and refresh the list */
-  async function createJob(payload: {
-    title: string
-    description?: string
-    divisions?: FactoryDivision[]
-    descriptionBlocks?: JobDescriptionBlock[]
-    location?: string
-    type?: 'full_time' | 'part_time' | 'contract' | 'internship'
-    experienceLevel?: 'junior' | 'mid' | 'senior' | 'lead'
-    remoteStatus?: 'remote' | 'hybrid' | 'onsite'
-    activeFrom?: Date
-    requireResume?: boolean
-    requireCoverLetter?: boolean
-    autoScoreOnApply?: boolean
-  }) {
+  async function createJob(payload: CreateJobRequest) {
     try {
       const created = await $fetch('/api/jobs', {
         method: 'POST',

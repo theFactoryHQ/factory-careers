@@ -54,9 +54,18 @@ const getCachedInterviews = defineOrgScopedCachedFunction(
           jobTitle: job.title,
         })
         .from(interview)
-        .innerJoin(application, eq(application.id, interview.applicationId))
-        .innerJoin(candidate, eq(candidate.id, application.candidateId))
-        .innerJoin(job, eq(job.id, application.jobId))
+        .innerJoin(application, and(
+          eq(application.id, interview.applicationId),
+          eq(application.organizationId, orgId),
+        ))
+        .innerJoin(candidate, and(
+          eq(candidate.id, application.candidateId),
+          eq(candidate.organizationId, orgId),
+        ))
+        .innerJoin(job, and(
+          eq(job.id, application.jobId),
+          eq(job.organizationId, orgId),
+        ))
         .where(whereClause)
         .orderBy(desc(interview.scheduledAt))
         .limit(query.limit)
@@ -64,9 +73,18 @@ const getCachedInterviews = defineOrgScopedCachedFunction(
       db
         .select({ count: count() })
         .from(interview)
-        .innerJoin(application, eq(application.id, interview.applicationId))
-        .innerJoin(candidate, eq(candidate.id, application.candidateId))
-        .innerJoin(job, eq(job.id, application.jobId))
+        .innerJoin(application, and(
+          eq(application.id, interview.applicationId),
+          eq(application.organizationId, orgId),
+        ))
+        .innerJoin(candidate, and(
+          eq(candidate.id, application.candidateId),
+          eq(candidate.organizationId, orgId),
+        ))
+        .innerJoin(job, and(
+          eq(job.id, application.jobId),
+          eq(job.organizationId, orgId),
+        ))
         .where(whereClause)
         .then(rows => rows[0]?.count ?? 0),
     ])
