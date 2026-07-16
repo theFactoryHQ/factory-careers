@@ -1496,6 +1496,9 @@
     --ui-text: #ffffff;
     --ui-muted: rgb(255 255 255 / 0.58);
     --ui-faint: rgb(255 255 255 / 0.38);
+    --ui-control-fill: rgb(255 255 255 / 0.045);
+    --ui-control-fill-hover: rgb(255 255 255 / 0.085);
+    --ui-control-active: color-mix(in srgb, var(--color-brand-500) 14%, #000000);
     --factory-tone-border: var(--ui-border-strong);
     --factory-tone-danger-border: color-mix(in srgb, var(--color-danger-500) 52%, transparent);
     --factory-tone-danger-bg: color-mix(in srgb, var(--color-danger-950) 38%, #050505);
@@ -1640,15 +1643,15 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-secondary {
-    border-color: var(--ui-border-strong) !important;
-    background-color: var(--ui-panel) !important;
+    border-color: transparent !important;
+    background-color: var(--ui-control-fill) !important;
     color: rgb(255 255 255 / 0.72) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-secondary:hover:not(:disabled) {
-    border-color: #ffffff !important;
-    background-color: #ffffff !important;
-    color: #080808 !important;
+    border-color: transparent !important;
+    background-color: var(--ui-control-fill-hover) !important;
+    color: #ffffff !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-ghost {
@@ -1841,7 +1844,7 @@
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-tab {
     min-height: 38px;
-    border: 1px solid transparent !important;
+    border: 0 !important;
     border-radius: 0 !important;
     background-color: transparent !important;
     color: rgb(255 255 255 / 0.62) !important;
@@ -1853,14 +1856,12 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-tab:hover {
-    border-color: rgb(255 255 255 / 0.18) !important;
-    background-color: rgb(255 255 255 / 0.045) !important;
+    background-color: var(--ui-control-fill-hover) !important;
     color: #ffffff !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-tab-active {
-    border-color: color-mix(in srgb, var(--color-brand-500) 75%, transparent) !important;
-    background-color: color-mix(in srgb, var(--color-brand-500) 14%, #000000) !important;
+    background-color: var(--ui-control-active) !important;
     color: #ffffff !important;
     box-shadow: inset 0 -2px 0 var(--color-brand-500) !important;
   }
@@ -3041,15 +3042,27 @@
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button {
     min-height: 40px;
-    border-color: var(--ui-border-strong) !important;
-    background-color: #050505 !important;
+    border-color: transparent !important;
+    background-color: transparent !important;
     color: rgb(255 255 255 / 0.72) !important;
     box-shadow: none !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button:hover {
-    border-color: #ffffff !important;
-    background-color: #ffffff !important;
+    border-color: transparent !important;
+    background-color: var(--ui-control-fill-hover) !important;
+    color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button-danger {
+    border-color: var(--factory-tone-danger-action-border) !important;
+    background-color: var(--factory-tone-danger-bg-soft) !important;
+    color: var(--factory-tone-danger-text) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button-danger:hover {
+    border-color: var(--factory-tone-danger-action-hover-bg) !important;
+    background-color: var(--factory-tone-danger-action-hover-bg) !important;
     color: #080808 !important;
   }
 
@@ -3067,21 +3080,22 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-back-button:hover {
-    border-color: #ffffff !important;
-    background-color: #ffffff !important;
-    color: #080808 !important;
-  }
-
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button.is-active {
-    border-color: var(--color-brand-500) !important;
-    background-color: var(--color-brand-500) !important;
+    border-color: transparent !important;
+    background-color: var(--ui-control-fill-hover) !important;
     color: #ffffff !important;
   }
 
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button.is-active {
+    border-color: transparent !important;
+    background-color: var(--ui-control-active) !important;
+    color: #ffffff !important;
+    box-shadow: inset 0 -2px 0 var(--color-brand-500) !important;
+  }
+
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button.is-active:hover {
-    border-color: #ffffff !important;
-    background-color: #ffffff !important;
-    color: #080808 !important;
+    border-color: transparent !important;
+    background-color: var(--ui-control-active) !important;
+    color: #ffffff !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-subnav-tab {
@@ -3093,13 +3107,14 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-subnav-tab:hover {
-    background-color: rgb(255 255 255 / 0.04) !important;
+    background-color: var(--ui-control-fill-hover) !important;
     color: #ffffff !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-subnav-tab-active {
-    background-color: rgb(255 255 255 / 0.04) !important;
+    background-color: var(--ui-control-active) !important;
     color: #ffffff !important;
+    box-shadow: inset 0 -2px 0 var(--color-brand-500) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tabs {
@@ -3120,8 +3135,8 @@
     align-items: center;
     justify-content: center;
     gap: 5px;
-    border: 1px solid var(--ui-border-strong);
-    background-color: rgb(0 0 0 / 0.45);
+    border: 0;
+    background-color: transparent;
     padding: 0 8px;
     color: rgb(255 255 255 / 0.62);
     font-size: 11px;
@@ -3129,21 +3144,20 @@
     line-height: 1;
     text-transform: uppercase;
     transition:
-      border-color 150ms ease,
       color 150ms ease,
-      background-color 150ms ease;
+      background-color 150ms ease,
+      box-shadow 150ms ease;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tab:hover {
-    border-color: rgb(255 255 255 / 0.32);
-    background-color: rgb(255 255 255 / 0.055);
+    background-color: var(--ui-control-fill-hover);
     color: #ffffff;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tab-active {
-    border-color: color-mix(in srgb, var(--color-brand-500) 75%, transparent);
-    background-color: color-mix(in srgb, var(--color-brand-500) 14%, #000000);
+    background-color: var(--ui-control-active);
     color: #ffffff;
+    box-shadow: inset 0 -2px 0 var(--color-brand-500);
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tab-icon {
@@ -3261,17 +3275,23 @@
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-more-button {
     height: 32px;
     width: 32px;
-    border-color: var(--ui-border-strong) !important;
-    background-color: #050505 !important;
+    border-color: transparent !important;
+    background-color: transparent !important;
     color: rgb(255 255 255 / 0.58) !important;
     box-shadow: none !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-more-button:hover,
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-more-button[aria-expanded="true"] {
-    border-color: var(--color-brand-500) !important;
-    background-color: color-mix(in srgb, var(--color-brand-500) 16%, #000000) !important;
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-more-button:hover {
+    border-color: transparent !important;
+    background-color: var(--ui-control-fill-hover) !important;
     color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-more-button[aria-expanded="true"] {
+    border-color: transparent !important;
+    background-color: var(--ui-control-active) !important;
+    color: #ffffff !important;
+    box-shadow: inset 0 -2px 0 var(--color-brand-500) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-more-menu {
@@ -3376,12 +3396,13 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-view-toggle {
-    border-color: var(--ui-border-strong) !important;
+    border-color: transparent !important;
     border-radius: 0 !important;
-    background-color: #050505 !important;
+    background-color: var(--ui-control-fill) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-view-toggle button {
+    border: 0 !important;
     background-color: transparent !important;
     color: rgb(255 255 255 / 0.62) !important;
     font-size: 0.75rem !important;
@@ -3391,10 +3412,15 @@
     text-transform: uppercase !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-view-toggle button:hover,
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-view-toggle button.is-active {
-    background-color: var(--color-brand-500) !important;
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-view-toggle button:hover {
+    background-color: var(--ui-control-fill-hover) !important;
     color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-view-toggle button.is-active {
+    background-color: var(--ui-control-active) !important;
+    color: #ffffff !important;
+    box-shadow: inset 0 -2px 0 var(--color-brand-500) !important;
   }
 
 :where(.factory-dashboard-portal).factory-saved-views-panel,
@@ -3456,23 +3482,21 @@
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-stage-mini {
     min-width: 0;
-    border: 1px solid transparent !important;
+    border: 0 !important;
     background-color: transparent !important;
     color: rgb(255 255 255 / 0.5) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-stage-mini:hover {
-    border-color: rgb(255 255 255 / 0.18) !important;
-    background-color: rgb(255 255 255 / 0.055) !important;
+    background-color: var(--ui-control-fill-hover) !important;
     color: #ffffff !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-stage-mini.is-active {
-    border-color: color-mix(in srgb, var(--color-brand-500) 48%, transparent) !important;
-    background-color: color-mix(in srgb, var(--color-brand-500) 16%, #050505) !important;
+    background-color: var(--ui-control-active) !important;
     background-image: none !important;
     color: #ffffff !important;
-    box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--color-brand-500) 68%, transparent) !important;
+    box-shadow: inset 0 -2px 0 var(--color-brand-500) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-stage-mini-count {
@@ -3557,14 +3581,13 @@
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-dashboard-quick-action {
-    border: 1px solid transparent !important;
+    border: 0 !important;
     background-color: transparent !important;
     color: var(--ui-muted) !important;
   }
 
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-dashboard-quick-action:hover {
-    border-color: color-mix(in srgb, var(--color-brand-500) 42%, transparent) !important;
-    background-color: color-mix(in srgb, var(--color-brand-500) 12%, transparent) !important;
+    background-color: var(--ui-control-fill-hover) !important;
     color: #ffffff !important;
   }
 

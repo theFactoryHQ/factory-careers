@@ -158,7 +158,7 @@ function previewDocument(doc: { id: string, mimeType?: string | null }) {
             </button>
             <button
               v-if="allowDelete"
-              class="factory-toolbar-button inline-flex size-9 min-h-9 cursor-pointer items-center justify-center border p-0 text-danger-200 transition-colors hover:border-danger-400 hover:bg-danger-500/12 hover:text-white"
+              class="factory-toolbar-button factory-toolbar-button-danger inline-flex size-9 min-h-9 cursor-pointer items-center justify-center border p-0 transition-colors"
               title="Delete"
               @click="emit('delete', doc.id)"
             >

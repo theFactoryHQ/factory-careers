@@ -91,6 +91,8 @@ describe('job candidate header', () => {
       source.indexOf('<!-- Detail tabs -->'),
       source.indexOf('<!-- Detail content -->'),
     )
+    const detailTabStyles = styles.match(/\.factory-candidate-detail-tab\s*\{[^}]*\}/)?.[0] ?? ''
+    const activeDetailTabStyles = styles.match(/\.factory-candidate-detail-tab-active\s*\{[^}]*\}/)?.[0] ?? ''
 
     expect(detailTabs).toContain('factory-candidate-detail-tabs grid h-8 w-full grid-cols-7')
     expect(detailTabs).toContain('factory-candidate-detail-tab-bar')
@@ -106,8 +108,10 @@ describe('job candidate header', () => {
     expect(styles).toContain('.factory-candidate-detail-tab-label')
     expect(styles).toContain('.factory-candidate-detail-tab-tooltip')
     expect(styles).toContain('clip: rect(0, 0, 0, 0);')
-    expect(styles).toContain('height: 32px;')
-    expect(styles).toContain('border: 1px solid var(--ui-border-strong);')
+    expect(detailTabStyles).toContain('height: 32px;')
+    expect(detailTabStyles).toContain('border: 0;')
+    expect(activeDetailTabStyles).toContain('background-color: var(--ui-control-active);')
+    expect(activeDetailTabStyles).toContain('box-shadow: inset 0 -2px 0 var(--color-brand-500);')
     expect(styles).toContain('padding-block: 0.25rem !important;')
   })
 })
