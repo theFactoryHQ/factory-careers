@@ -23,6 +23,7 @@ self-hosters.
 
 ### Fixed
 
+- Removed the verbose search-scope helper from the job pipeline.
 - Pinned recruiter-search database functions to trusted schemas, protected device authorization with row-level security, and indexed durable-processing relationships used during cleanup.
 - Protected internal recruiter-search and durable-processing tables with the same server-role-only row-level security boundary used by existing production data.
 - Kept large job pipelines stable with bounded server pagination, accurate filtered stage counts, identity-safe selection, and application-scoped interview history.
