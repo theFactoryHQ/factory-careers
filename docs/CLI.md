@@ -108,6 +108,17 @@ factory-careers system capabilities --json
 
 That response includes `CLI_API_CONTRACT_VERSION`, `MINIMUM_SUPPORTED_CLI_VERSION`, resource groups, and the route coverage manifest used by tests. Portal/API changes that affect workflow payloads, response shapes, auth requirements, or resource coverage must update the CLI package, `packages/careers-cli/src/routeCoverage.ts`, shared schemas, docs, or tests in the same PR.
 
+### Release Status
+
+`factory-careers system version --json` returns the running `currentVersion`, the latest published Factory release metadata when available, and a `releaseStatus` with one of these meanings:
+
+- `current`: the running version is at least as recent as the latest published release.
+- `update-available`: a newer Factory Careers release is published.
+- `unpublished`: GitHub returned no Factory Careers release yet, such as before the first `v1.0.0` baseline is published.
+- `unavailable`: the release lookup failed, returned an unexpected response, or contained invalid release data.
+
+`latestVersion`, `releaseUrl`, `releaseNotes`, and `publishedAt` are `null` for `unpublished` and `unavailable`. In those states, `updateAvailable` is `false` because no comparison can be made; callers must use `releaseStatus` rather than treating that boolean as proof that the installation is current.
+
 ## Command Coverage
 
 Core commands:
