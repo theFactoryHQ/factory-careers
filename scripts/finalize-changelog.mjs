@@ -4,8 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { chmod, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-
-const changelogSections = new Set(['Added', 'Changed', 'Fixed', 'Removed'])
+import { hasChangelogItem } from './changelog-format.mjs'
 
 function assertVersion(version) {
   if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version))
@@ -19,23 +18,6 @@ function assertDate(date) {
   const parsed = new Date(`${date}T00:00:00Z`)
   if (Number.isNaN(parsed.valueOf()) || parsed.toISOString().slice(0, 10) !== date)
     throw new Error('date must be a real YYYY-MM-DD date')
-}
-
-function hasChangelogItem(body) {
-  let inSupportedSection = false
-
-  for (const line of body.split(/\r?\n/)) {
-    const section = line.match(/^###\s+(.+?)\s*$/)
-    if (section) {
-      inSupportedSection = changelogSections.has(section[1])
-      continue
-    }
-
-    if (inSupportedSection && /^\s*[-*]\s+\S/.test(line))
-      return true
-  }
-
-  return false
 }
 
 export function finalizeChangelog(raw, version, date) {
