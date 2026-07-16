@@ -127,6 +127,17 @@ function createQueueAdapter(options: { missingResourceIds?: string[] } = {}) {
       const task = working.tasks.get(input.taskId)
       return task?.organizationId === input.organizationId ? task : null
     },
+    async lockTasksForCleanup(input) {
+      return [...working.tasks.values()]
+        .filter(task => task.organizationId === input.organizationId)
+        .filter(task => task.id === input.taskId || (
+          (task.status === 'pending' || task.status === 'processing')
+          && input.targets.some(target =>
+            target.type === task.type && target.resourceId === task.resourceId,
+          )
+        ))
+        .sort((left, right) => left.id.localeCompare(right.id))
+    },
     async completeClaimedTask(input) {
       const task = working.tasks.get(input.taskId)
       if (!task || task.organizationId !== input.organizationId
@@ -266,6 +277,7 @@ function createQueueAdapter(options: { missingResourceIds?: string[] } = {}) {
       const linkedToSealed = (taskId: string) => [...state.items.values()].some(item =>
         item.organizationId === input.organizationId
         && item.taskId === taskId
+        && (!input.batchId || item.batchId === input.batchId)
         && !!state.batches.get(item.batchId)?.sealedAt,
       )
       const exhausted = [...state.tasks.values()]
@@ -299,6 +311,42 @@ function createQueueAdapter(options: { missingResourceIds?: string[] } = {}) {
         })) await createTransaction(state).refreshBatchStatus({ organizationId: input.organizationId, batchId, now: input.now })
       }
       return eligible.map(task => ({ ...task }))
+    },
+    async findRunnableOrganizationIds(input: any) {
+      const linkedToSealed = (task: ProcessingTaskRecord) => [...state.items.values()].some(item =>
+        item.organizationId === task.organizationId
+        && item.taskId === task.id
+        && !!state.batches.get(item.batchId)?.sealedAt,
+      )
+      return [...new Set([...state.tasks.values()]
+        .filter(task => input.types.includes(task.type))
+        .filter(task => !input.afterOrganizationId
+          || task.organizationId > input.afterOrganizationId)
+        .filter(linkedToSealed)
+        .filter(task => (task.status === 'pending'
+          && task.availableAt <= input.now
+          && task.attemptCount < task.maxAttempts)
+          || (task.status === 'processing'
+            && !!task.leaseExpiresAt
+            && task.leaseExpiresAt <= input.now))
+        .map(task => task.organizationId))]
+        .sort()
+        .slice(0, input.limit)
+    },
+    async readBatchStatus(input: any) {
+      const batch = state.batches.get(input.batchId)
+      if (!batch || batch.organizationId !== input.organizationId) return null
+      const tasks = [...state.items.values()]
+        .filter(item => item.organizationId === input.organizationId && item.batchId === input.batchId)
+        .map(item => state.tasks.get(item.taskId)!)
+        .map(task => ({
+          status: task.status,
+          resultCode: task.resultCode,
+          attemptCount: task.attemptCount,
+          availableAt: task.availableAt,
+          leaseExpiresAt: task.leaseExpiresAt,
+        }))
+      return { batch: { ...batch }, tasks }
     },
   } as unknown as ProcessingQueueAdapter
 
@@ -485,6 +533,153 @@ describe('durable processing queue', () => {
     expect(state.tasks.get(claimed!.id)?.resultCode).toBe('parse_unsupported')
   })
 
+  it('claims only tasks linked to the requested tenant batch', async () => {
+    const { adapter, state } = createQueueAdapter()
+    const now = new Date('2026-07-16T12:00:00.000Z')
+    const target = await queue.enqueueProcessingBatch({
+      organizationId: 'org-1', type: 'document_parse', resourceIds: ['document-a', 'document-b'], now,
+    }, adapter)
+    const other = await queue.enqueueProcessingBatch({
+      organizationId: 'org-1', type: 'document_parse', resourceIds: ['document-c'], now,
+    }, adapter)
+
+    const claimed = await queue.claimProcessingTasks({
+      organizationId: 'org-1', batchId: target.batch.id, types: ['document_parse'], limit: 10, now,
+    }, adapter)
+
+    expect(claimed.map(task => task.resourceId).sort()).toEqual(['document-a', 'document-b'])
+    expect(state.tasks.get(other.tasks[0]!.id)?.status).toBe('pending')
+  })
+
+  it('discovers only organizations with sealed runnable or expired work', async () => {
+    const { adapter } = createQueueAdapter()
+    const start = new Date('2026-07-16T12:00:00.000Z')
+    await queue.enqueueProcessingBatch({
+      organizationId: 'org-pending', type: 'document_parse', resourceIds: ['document-pending'], now: start,
+    }, adapter)
+    await queue.enqueueProcessingBatch({
+      organizationId: 'org-future', type: 'document_parse', resourceIds: ['document-future'],
+      availableAt: new Date('2026-07-16T13:00:00.000Z'), now: start,
+    }, adapter)
+    await queue.enqueueProcessingBatch({
+      organizationId: 'org-expired', type: 'application_analysis', resourceIds: ['application-expired'], now: start,
+    }, adapter)
+    await queue.claimProcessingTasks({
+      organizationId: 'org-expired', types: ['application_analysis'], leaseMs: 1_000, now: start,
+    }, adapter)
+
+    await expect(queue.findRunnableProcessingOrganizationIds({
+      types: [], now: new Date('2026-07-16T12:00:02.000Z'),
+    }, adapter)).resolves.toEqual([])
+    await expect(queue.findRunnableProcessingOrganizationIds({
+      types: ['document_parse', 'application_analysis'],
+      now: new Date('2026-07-16T12:00:02.000Z'),
+    }, adapter)).resolves.toEqual(['org-expired', 'org-pending'])
+    await expect(queue.findRunnableProcessingOrganizationIds({
+      types: ['document_parse', 'application_analysis'],
+      afterOrganizationId: 'org-expired',
+      now: new Date('2026-07-16T12:00:02.000Z'),
+    }, adapter)).resolves.toEqual(['org-pending'])
+  })
+
+  it('returns a tenant-scoped sanitized batch status without task or resource details', async () => {
+    const { adapter, state } = createQueueAdapter()
+    const createdAt = new Date('2026-07-16T12:00:00.000Z')
+    const startedAt = new Date('2026-07-16T12:01:00.000Z')
+    const completedAt = new Date('2026-07-16T12:02:00.000Z')
+    const result = await queue.enqueueProcessingBatch({
+      id: 'batch-status', organizationId: 'org-1', type: 'document_parse',
+      resourceIds: ['cancelled', 'failed-raw', 'failed-stable', 'pending', 'processing', 'succeeded'],
+      now: createdAt,
+    }, adapter)
+    const tasks = new Map(result.tasks.map(task => [task.resourceId, state.tasks.get(task.id)!]))
+    Object.assign(tasks.get('cancelled')!, { status: 'cancelled', resultCode: 'resource_removed' })
+    Object.assign(tasks.get('failed-raw')!, {
+      status: 'failed', resultCode: 'S3 access denied: secret-key', attemptCount: 1,
+    })
+    Object.assign(tasks.get('failed-stable')!, {
+      status: 'failed', resultCode: 'parse_timeout', attemptCount: 2,
+    })
+    Object.assign(tasks.get('processing')!, { status: 'processing', attemptCount: 1 })
+    Object.assign(tasks.get('succeeded')!, {
+      status: 'completed', resultCode: 'parse_completed', attemptCount: 1,
+    })
+    Object.assign(state.batches.get(result.batch.id)!, {
+      status: 'failed', startedAt, completedAt, updatedAt: completedAt,
+    })
+
+    const status = await queue.getProcessingBatchStatus({
+      organizationId: 'org-1', batchId: result.batch.id, now: completedAt,
+    }, adapter)
+
+    expect(status).toEqual({
+      batchId: 'batch-status',
+      type: 'document_parse',
+      status: 'failed',
+      counts: {
+        pending: 1,
+        processing: 1,
+        succeeded: 1,
+        failed: 2,
+        cancelled: 1,
+        attempted: 4,
+        total: 6,
+      },
+      errorsByCode: { parse_timeout: 1, processing_failed: 1 },
+      retryAfterMs: null,
+      timestamps: {
+        createdAt,
+        startedAt,
+        sealedAt: createdAt,
+        completedAt,
+        updatedAt: completedAt,
+      },
+    })
+    expect(JSON.stringify(status)).not.toContain('document-')
+    expect(JSON.stringify(status)).not.toContain('secret-key')
+    await expect(queue.getProcessingBatchStatus({
+      organizationId: 'org-2', batchId: result.batch.id,
+    }, adapter)).resolves.toBeNull()
+  })
+
+  it('reports bounded retry timing and distinguishes attempted from pre-claim cancellation', async () => {
+    const { adapter } = createQueueAdapter()
+    const now = new Date('2026-07-16T12:00:00.000Z')
+    const attempted = await queue.enqueueProcessingBatch({
+      organizationId: 'org-1', type: 'document_parse', resourceIds: ['attempted'], now,
+    }, adapter)
+    const unattempted = await queue.enqueueProcessingBatch({
+      organizationId: 'org-1', type: 'document_parse', resourceIds: ['unattempted'], now,
+    }, adapter)
+
+    await expect(queue.getProcessingBatchStatus({
+      organizationId: 'org-1', batchId: attempted.batch.id, now,
+    }, adapter)).resolves.toMatchObject({
+      counts: { attempted: 0 },
+      retryAfterMs: 1_000,
+    })
+    await queue.claimProcessingTasks({
+      organizationId: 'org-1', batchId: attempted.batch.id,
+      types: ['document_parse'], leaseMs: 2_500, now,
+    }, adapter)
+    await expect(queue.getProcessingBatchStatus({
+      organizationId: 'org-1', batchId: attempted.batch.id, now,
+    }, adapter)).resolves.toMatchObject({
+      counts: { attempted: 1 },
+      retryAfterMs: 2_500,
+    })
+
+    await queue.cancelDocumentProcessingTasks({
+      organizationId: 'org-1', documentIds: ['attempted', 'unattempted'], now,
+    }, adapter)
+    await expect(queue.getProcessingBatchStatus({
+      organizationId: 'org-1', batchId: attempted.batch.id, now,
+    }, adapter)).resolves.toMatchObject({ counts: { attempted: 1 }, retryAfterMs: null })
+    await expect(queue.getProcessingBatchStatus({
+      organizationId: 'org-1', batchId: unattempted.batch.id, now,
+    }, adapter)).resolves.toMatchObject({ counts: { attempted: 0 }, retryAfterMs: null })
+  })
+
   it('deduplicates resources, seals atomically, and completes an empty batch truthfully', async () => {
     const { adapter, state } = createQueueAdapter()
     const now = new Date('2026-07-16T12:00:00.000Z')
@@ -599,10 +794,18 @@ describe('durable processing queue', () => {
     await expect(queue.failProcessingTask({ ...fenced, resultCode: 'parse_failed' }, adapter)).rejects.toThrow('Processing task lease is stale')
     await expect(queue.renewProcessingTaskLease({ ...fenced, leaseMs: 10_000 }, adapter)).rejects.toThrow('Processing task lease is stale')
     let callbackRan = false
+    let failureCallbackRan = false
     await expect(queue.completeProcessingTaskWithDomainWrite(fenced, async () => {
       callbackRan = true
     }, adapter)).rejects.toThrow('Processing task lease is stale')
+    await expect(queue.failProcessingTaskWithDomainWrite({
+      ...fenced,
+      resultCode: 'parse_failed',
+    }, async () => {
+      failureCallbackRan = true
+    }, adapter)).rejects.toThrow('Processing task lease is stale')
     expect(callbackRan).toBe(false)
+    expect(failureCallbackRan).toBe(false)
     expect(state.domainWrites).toEqual([])
   })
 
@@ -629,6 +832,72 @@ describe('durable processing queue', () => {
     expect(state.tasks.get(task.id)?.status).toBe('completed')
   })
 
+  it('chooses a sanitized completion code atomically from the domain outcome', async () => {
+    const { adapter, state } = createQueueAdapter()
+    const now = new Date('2026-07-16T12:00:00.000Z')
+    const { task } = await queue.enqueueProcessingTask({
+      organizationId: 'org-1', type: 'application_analysis',
+      resourceId: 'application-1', now,
+    }, adapter)
+    const [claimed] = await queue.claimProcessingTasks({
+      organizationId: 'org-1', types: ['application_analysis'], now,
+    }, adapter)
+
+    const completed = await queue.completeProcessingTaskWithDomainOutcome({
+      organizationId: 'org-1', taskId: task.id,
+      expectedAttemptCount: claimed!.attemptCount, now,
+    }, async () => ({ result: null, resultCode: 'already_scored' }), adapter)
+
+    expect(completed).toMatchObject({
+      result: null,
+      task: { status: 'completed', resultCode: 'already_scored' },
+    })
+    expect(state.tasks.get(task.id)).toMatchObject({
+      status: 'completed', resultCode: 'already_scored',
+    })
+  })
+
+  it('runs domain writes and retryable failure atomically after fencing the task', async () => {
+    const { adapter, state } = createQueueAdapter()
+    const now = new Date('2026-07-16T12:00:00.000Z')
+    const { task } = await queue.enqueueProcessingTask({
+      organizationId: 'org-1', type: 'document_parse', resourceId: 'document-1', now,
+    }, adapter)
+    const [claimed] = await queue.claimProcessingTasks({
+      organizationId: 'org-1', types: ['document_parse'], now,
+    }, adapter)
+    const input = {
+      organizationId: 'org-1',
+      taskId: task.id,
+      expectedAttemptCount: claimed!.attemptCount,
+      resultCode: 'parse_timeout',
+      baseRetryDelayMs: 1_000,
+      now,
+    }
+
+    await expect(queue.failProcessingTaskWithDomainWrite(input, async (executor, lockedTask) => {
+      expect(lockedTask.id).toBe(task.id)
+      await executor.execute(sql`select 1`)
+      throw new Error('parse state write failed')
+    }, adapter)).rejects.toThrow('parse state write failed')
+    expect(state.domainWrites).toEqual([])
+    expect(state.tasks.get(task.id)?.status).toBe('processing')
+
+    const failed = await queue.failProcessingTaskWithDomainWrite(
+      input,
+      async (executor) => {
+        await executor.execute(sql`select 1`)
+        return 'parse-state-persisted'
+      },
+      adapter,
+    )
+    expect(failed).toMatchObject({
+      result: 'parse-state-persisted',
+      task: { status: 'pending', resultCode: 'parse_timeout' },
+    })
+    expect(state.domainWrites).toEqual(['domain-write'])
+  })
+
   it('prevents attempt one from running a domain callback after attempt two reclaims the task', async () => {
     const { adapter, state } = createQueueAdapter()
     const start = new Date('2026-07-16T12:00:00.000Z')
@@ -647,6 +916,69 @@ describe('durable processing queue', () => {
     expect(staleCallbackRan).toBe(false)
     expect(state.tasks.get(task.id)?.attemptCount).toBe(2)
     expect(second?.attemptCount).toBe(2)
+  })
+
+  it('fences destructive cleanup and terminalizes sibling active work without orphan tasks', async () => {
+    const { adapter, state } = createQueueAdapter()
+    const start = new Date('2026-07-16T12:00:00.000Z')
+    const reconciliation = await queue.enqueueProcessingTask({
+      organizationId: 'org-1', type: 'document_upload_reconciliation',
+      resourceId: 'document-1', now: start,
+    }, adapter)
+    const parse = await queue.enqueueProcessingTask({
+      organizationId: 'org-1', type: 'document_parse', resourceId: 'document-1', now: start,
+    }, adapter)
+    await queue.claimProcessingTasks({
+      organizationId: 'org-1', types: ['document_upload_reconciliation'],
+      now: start, leaseMs: 1_000,
+    }, adapter)
+    const [second] = await queue.claimProcessingTasks({
+      organizationId: 'org-1', types: ['document_upload_reconciliation'],
+      now: new Date('2026-07-16T12:00:02.000Z'), leaseMs: 5_000,
+    }, adapter)
+
+    let staleDeleteRan = false
+    await expect(queue.completeProcessingTaskWithResourceCleanup({
+      organizationId: 'org-1',
+      taskId: reconciliation.task.id,
+      expectedAttemptCount: 1,
+      resultCode: 'upload_missing',
+      resourceTargets: [{ type: 'document_parse', resourceId: 'document-1' }],
+      cancellationResultCode: 'resource_removed',
+      now: new Date('2026-07-16T12:00:02.500Z'),
+    }, async () => ({
+      cancellationTargets: [{ type: 'document_parse' as const, resourceId: 'document-1' }],
+      value: undefined,
+    }), async () => {
+      staleDeleteRan = true
+    }, adapter)).rejects.toThrow('Processing task lease is stale')
+    expect(staleDeleteRan).toBe(false)
+    expect(state.tasks.get(parse.task.id)?.status).toBe('pending')
+
+    await queue.completeProcessingTaskWithResourceCleanup({
+      organizationId: 'org-1',
+      taskId: reconciliation.task.id,
+      expectedAttemptCount: second!.attemptCount,
+      resultCode: 'upload_missing',
+      resourceTargets: [{ type: 'document_parse', resourceId: 'document-1' }],
+      cancellationResultCode: 'resource_removed',
+      now: new Date('2026-07-16T12:00:03.000Z'),
+    }, async () => ({
+      cancellationTargets: [{ type: 'document_parse' as const, resourceId: 'document-1' }],
+      value: undefined,
+    }), async (executor) => executor.execute(sql`select 1`), adapter)
+
+    expect(state.tasks.get(reconciliation.task.id)).toMatchObject({
+      status: 'completed', resultCode: 'upload_missing', attemptCount: 2,
+    })
+    expect(state.tasks.get(parse.task.id)).toMatchObject({
+      status: 'cancelled', resultCode: 'resource_removed',
+    })
+    expect([...state.tasks.values()].filter(task =>
+      task.resourceId === 'document-1'
+      && (task.status === 'pending' || task.status === 'processing'),
+    )).toEqual([])
+    expect(state.domainWrites).toEqual(['domain-write'])
   })
 
   it('renews only the current lease and bounds the heartbeat duration', async () => {

@@ -2,9 +2,14 @@ import { eq, and, asc, isNull, or, sql } from 'drizzle-orm'
 import { job, jobQuestion, organization, applicationSource, trackingLink, orgSettings } from '../../../../database/schema'
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
 import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
-import { autoScoreApplication } from '../../../../utils/ai/autoScore'
 import { sendApplicationTeamAlertEmail, sendConfiguredApplicationAcknowledgementEmail } from '../../../../utils/email'
-import { parseDocument } from '../../../../utils/resume-parser'
+import {
+  DEFAULT_DOCUMENT_PARSE_TIMEOUT_MS,
+  DocumentParseError,
+  parseDocumentDetailed,
+} from '../../../../utils/resume-parser'
+import { parseFailurePersistence, parseResultPersistence } from '../../../../utils/documentParseOutcome'
+import { enqueueProcessingTask } from '../../../../utils/processingQueue'
 import { assertUploadContentLength } from '../../../../utils/uploadLimits'
 import { readPositiveIntegerEnv } from '../../../../utils/rateLimitConfig'
 import { detectAllowedDocumentMimeType } from '../../../../utils/documentMime'
@@ -506,53 +511,73 @@ export default defineEventHandler(async (event) => {
   // 9. Upload reserved documents and persist parsed content
   // ─────────────────────────────────────────────
   const attemptedStorageKeys: string[] = []
-  let failedDocument: PlannedDocumentUpload | undefined
-  try {
-    for (const plannedDocument of plannedDocumentUploads) {
-      failedDocument = plannedDocument
-      attemptedStorageKeys.push(plannedDocument.storageKey)
+  let selectedResumeParsed = false
+  for (const plannedDocument of plannedDocumentUploads) {
+    attemptedStorageKeys.push(plannedDocument.storageKey)
+    try {
       await uploadToS3(plannedDocument.storageKey, plannedDocument.data, plannedDocument.mimeType)
+    } catch {
+      logError(plannedDocument.kind === 'resume'
+        ? 'application.resume_upload_failed'
+        : 'application.file_upload_failed', { result_code: 'storage_upload_failed' })
 
-      // Parsing is best-effort and returns null when extraction is unavailable.
-      const parsedContent = await parseDocument(plannedDocument.data, plannedDocument.mimeType)
-      const processingTaskId = documentProcessingTasks[plannedDocument.id]
-      if (!processingTaskId) throw new Error('Reserved application document task was not found')
-      await finalizeCandidateDocumentUpload({
-        documentId: plannedDocument.id,
+      const rollback = await rollbackPublicApplicationSubmission({
+        applicationId,
         organizationId: orgId,
-        candidateId,
-        processingTaskId,
-        parsedContent,
+        storageKeys: attemptedStorageKeys,
       })
-    }
-  } catch (uploadError) {
-    const isResume = failedDocument?.kind === 'resume'
-    logError(isResume ? 'application.resume_upload_failed' : 'application.file_upload_failed', {
-      job_id: jobId,
-      application_id: applicationId,
-      question_id: failedDocument?.questionId,
-      document_id: failedDocument?.id,
-      error_message: uploadError instanceof Error ? uploadError.message : String(uploadError),
-    })
+      if (!rollback.relationalCleanupSucceeded) {
+        throw createError({
+          statusCode: 500,
+          statusMessage: 'Your application was received, but a document could not be processed. Please contact support before retrying.',
+        })
+      }
 
-    const rollback = await rollbackPublicApplicationSubmission({
-      applicationId,
-      organizationId: orgId,
-      storageKeys: attemptedStorageKeys,
-    })
-    if (!rollback.relationalCleanupSucceeded) {
       throw createError({
-        statusCode: 500,
-        statusMessage: 'Your application was received, but a document could not be processed. Please contact support before retrying.',
+        statusCode: 502,
+        statusMessage: plannedDocument.kind === 'resume'
+          ? 'Failed to upload your resume. Please try again.'
+          : 'Failed to upload an application document. Please try again.',
       })
     }
 
-    throw createError({
-      statusCode: 502,
-      statusMessage: isResume
-        ? 'Failed to upload your resume. Please try again.'
-        : 'Failed to upload an application document. Please try again.',
+    const attemptedAt = new Date()
+    let parsePersistence
+    try {
+      parsePersistence = parseResultPersistence(
+        await parseDocumentDetailed(
+          plannedDocument.data,
+          plannedDocument.mimeType,
+          { timeoutMs: DEFAULT_DOCUMENT_PARSE_TIMEOUT_MS },
+        ),
+        attemptedAt,
+      )
+    } catch (error) {
+      const parseError = error instanceof DocumentParseError
+        ? error
+        : new DocumentParseError('parser_runtime_error', true, error)
+      parsePersistence = parseFailurePersistence(parseError, false, attemptedAt)
+      if (parseError.retryable) {
+        await enqueueProcessingTask({
+          organizationId: orgId,
+          type: 'document_parse',
+          resourceId: plannedDocument.id,
+        })
+      }
+    }
+
+    const processingTaskId = documentProcessingTasks[plannedDocument.id]
+    if (!processingTaskId) throw new Error('Reserved application document task was not found')
+    await finalizeCandidateDocumentUpload({
+      documentId: plannedDocument.id,
+      organizationId: orgId,
+      candidateId,
+      processingTaskId,
+      ...parsePersistence,
     })
+    if (plannedDocument.kind === 'resume' && parsePersistence.parseStatus === 'parsed') {
+      selectedResumeParsed = true
+    }
   }
 
   // ─────────────────────────────────────────────
@@ -655,16 +680,15 @@ export default defineEventHandler(async (event) => {
   }
 
   // ─────────────────────────────────────────────
-  // 13. Fire-and-forget auto AI scoring if enabled
+  // 13. Queue automatic scoring only after every upload is completed and the
+  // selected application resume has usable parsed text.
   // ─────────────────────────────────────────────
 
-  if (existingJob.autoScoreOnApply && newApplication) {
-    autoScoreApplication(newApplication.id, orgId).catch((err) => {
-      logError('application.auto_score_failed', {
-        application_id: newApplication.id,
-        job_id: jobId,
-        error_message: err instanceof Error ? err.message : String(err),
-      })
+  if (existingJob.autoScoreOnApply && newApplication && selectedResumeParsed) {
+    await enqueueProcessingTask({
+      organizationId: orgId,
+      type: 'application_analysis',
+      resourceId: newApplication.id,
     })
   }
 

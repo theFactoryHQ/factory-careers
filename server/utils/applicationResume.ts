@@ -7,6 +7,9 @@ const RESUME_ORDER = ['createdAtDesc', 'idDesc'] as const
 export type ApplicationResumeDocument = {
   id: string
   parsedContent: unknown
+  uploadStatus?: 'pending' | 'completed'
+  parseStatus?: 'pending' | 'parsed' | 'no_text' | 'failed'
+  parseRetryable?: boolean | null
 }
 
 export type ApplicationResumeQuery = {
@@ -25,6 +28,9 @@ const drizzleResumeQueryAdapter: ApplicationResumeQueryAdapter = {
     const [resume] = await db.select({
       id: document.id,
       parsedContent: document.parsedContent,
+      uploadStatus: document.uploadStatus,
+      parseStatus: document.parseStatus,
+      parseRetryable: document.parseRetryable,
     })
       .from(document)
       .where(and(

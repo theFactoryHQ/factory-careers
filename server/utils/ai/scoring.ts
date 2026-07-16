@@ -291,6 +291,7 @@ export async function scoreApplication(
     applicationNotes?: string | null
     organizationAnalysisContext?: string | null
   },
+  options: { abortSignal?: AbortSignal } = {},
 ): Promise<{ scoring: ReconciledScoringResponse; usage: { promptTokens: number; completionTokens: number } }> {
   const criteriaBlock = params.criteria
     .map((c, i) => `${i + 1}. **${c.name}** (key: "${c.key}", max: ${c.maxScore})\n   ${c.description ?? 'No description provided.'}`)
@@ -346,6 +347,7 @@ Evaluate this candidate against each criterion. Return your evaluation.`,
     schema: scoringResponseSchema,
     schemaName: 'CandidateScoring',
     schemaDescription: 'Structured candidate evaluation with per-criterion scores',
+    abortSignal: options.abortSignal,
   })
 
   const reconciledEvaluations = reconcileEvaluations(params.criteria, result.object.evaluations)

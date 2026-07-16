@@ -1,5 +1,5 @@
-import { and, eq } from 'drizzle-orm'
-import { document } from '../../database/schema'
+import { and, eq, isNull } from 'drizzle-orm'
+import { application } from '../../database/schema'
 import {
   enqueueProcessingBatch,
   getProcessingBatchStatus,
@@ -10,26 +10,25 @@ import { createRateLimiter } from '../../utils/rateLimit'
 const limiter = createRateLimiter({
   windowMs: 60_000,
   maxRequests: 10,
-  message: 'Too many bulk parsing requests. Please wait before retrying.',
+  message: 'Too many bulk analysis requests. Please wait before retrying.',
 })
 
-/** Queue every uploaded document whose parse state is currently retryable/pending. */
+/** Queue analysis for every currently unscored application in the organization. */
 export default defineEventHandler(async (event) => {
   await limiter(event)
-  const session = await requirePermission(event, { document: ['update'] })
+  const session = await requirePermission(event, { scoring: ['create'] })
   const organizationId = session.session.activeOrganizationId
-  const documentRows = await db.select({ id: document.id })
-    .from(document)
+  const applicationRows = await db.select({ id: application.id })
+    .from(application)
     .where(and(
-      eq(document.organizationId, organizationId),
-      eq(document.uploadStatus, 'completed'),
-      eq(document.parseStatus, 'pending'),
+      eq(application.organizationId, organizationId),
+      isNull(application.score),
     ))
 
   const { batch } = await enqueueProcessingBatch({
     organizationId,
-    type: 'document_parse',
-    resourceIds: documentRows.map(row => row.id),
+    type: 'application_analysis',
+    resourceIds: applicationRows.map(row => row.id),
   })
   const status = await getProcessingBatchStatus({ organizationId, batchId: batch.id })
   if (!status) throw createError({ statusCode: 500, statusMessage: 'Processing batch was not created' })

@@ -8,7 +8,13 @@ import {
   documentTypeSchema,
   sanitizeFilename,
 } from '../../../../utils/schemas/document'
-import { parseDocument } from '../../../../utils/resume-parser'
+import {
+  DEFAULT_DOCUMENT_PARSE_TIMEOUT_MS,
+  DocumentParseError,
+  parseDocumentDetailed,
+} from '../../../../utils/resume-parser'
+import { parseFailurePersistence, parseResultPersistence } from '../../../../utils/documentParseOutcome'
+import { enqueueProcessingTask } from '../../../../utils/processingQueue'
 import { assertUploadContentLength } from '../../../../utils/uploadLimits'
 import { detectAllowedDocumentMimeType } from '../../../../utils/documentMime'
 import {
@@ -148,26 +154,6 @@ export default defineEventHandler(async (event) => {
 
   try {
     await uploadToS3(storageKey, fileBuffer, mimeType)
-    const parsedContent = await parseDocument(fileBuffer, mimeType)
-    const created = await finalizeCandidateDocumentUpload({
-      documentId: reservedDocument.id,
-      organizationId: orgId,
-      candidateId,
-      processingTaskId: reservedDocument.processingTaskId,
-      parsedContent,
-    })
-
-    recordActivity({
-      organizationId: orgId,
-      actorId: session.user.id,
-      action: 'created',
-      resourceType: 'document',
-      resourceId: created.id,
-      metadata: { candidateId, filename: created.originalFilename, type: created.type },
-    })
-
-    setResponseStatus(event, 201)
-    return created
   } catch (uploadError) {
     const rollback = await rollbackCandidateDocumentUpload({
       documentId,
@@ -188,4 +174,51 @@ export default defineEventHandler(async (event) => {
       cause: uploadError,
     })
   }
+
+  const attemptedAt = new Date()
+  let parsePersistence
+  try {
+    parsePersistence = parseResultPersistence(
+      await parseDocumentDetailed(
+        fileBuffer,
+        mimeType,
+        { timeoutMs: DEFAULT_DOCUMENT_PARSE_TIMEOUT_MS },
+      ),
+      attemptedAt,
+    )
+  } catch (error) {
+    const parseError = error instanceof DocumentParseError
+      ? error
+      : new DocumentParseError('parser_runtime_error', true, error)
+    parsePersistence = parseFailurePersistence(parseError, false, attemptedAt)
+    if (parseError.retryable) {
+      // Follow-on work is enqueued before upload finalization and never from a
+      // task-completion callback, preserving the global queue lock order.
+      await enqueueProcessingTask({
+        organizationId: orgId,
+        type: 'document_parse',
+        resourceId: reservedDocument.id,
+      })
+    }
+  }
+
+  const created = await finalizeCandidateDocumentUpload({
+    documentId: reservedDocument.id,
+    organizationId: orgId,
+    candidateId,
+    processingTaskId: reservedDocument.processingTaskId,
+    ...parsePersistence,
+  })
+
+  recordActivity({
+    organizationId: orgId,
+    actorId: session.user.id,
+    action: 'created',
+    resourceType: 'document',
+    resourceId: created.id,
+    metadata: { candidateId, filename: created.originalFilename, type: created.type },
+  })
+
+  setResponseStatus(event, 201)
+  return created
 })

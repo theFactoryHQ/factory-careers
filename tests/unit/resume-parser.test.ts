@@ -205,6 +205,75 @@ describe('resume-parser', () => {
       expect(error.cause).toEqual({ message: 'raw dependency failure' })
       expect(JSON.stringify(error)).not.toContain('raw dependency failure')
     })
+
+    it('aborts a hung PDF parse on timeout and destroys the parser exactly once', async () => {
+      const destroy = vi.fn(async () => {})
+      const dependencies = {
+        createPdfParser: vi.fn(async () => ({
+          getText: vi.fn(() => new Promise<never>(() => {})),
+          destroy,
+        })),
+        timeoutMs: 5,
+      }
+
+      await expect(parseDocumentDetailed(
+        Buffer.from('pdf bytes'),
+        'application/pdf',
+        dependencies,
+      )).rejects.toMatchObject({ code: 'parser_timeout', retryable: true })
+      expect(destroy).toHaveBeenCalledTimes(1)
+    })
+
+    it('times out when PDF parser creation never resolves', async () => {
+      const createPdfParser = vi.fn(() => new Promise<never>(() => undefined))
+
+      await expect(parseDocumentDetailed(
+        Buffer.from('pdf bytes'),
+        'application/pdf',
+        { createPdfParser, timeoutMs: 5 },
+      )).rejects.toMatchObject({ code: 'parser_timeout', retryable: true })
+      expect(createPdfParser).toHaveBeenCalledOnce()
+    })
+
+    it('destroys a PDF parser exactly once when creation resolves after timeout', async () => {
+      let resolveParser!: (parser: {
+        getText: () => Promise<{ text: string; total: number }>
+        destroy: () => Promise<void>
+      }) => void
+      const destroy = vi.fn(async () => undefined)
+      const createPdfParser = vi.fn(() => new Promise<{
+        getText: () => Promise<{ text: string; total: number }>
+        destroy: () => Promise<void>
+      }>((resolve) => { resolveParser = resolve }))
+
+      await expect(parseDocumentDetailed(
+        Buffer.from('pdf bytes'),
+        'application/pdf',
+        { createPdfParser, timeoutMs: 5 },
+      )).rejects.toMatchObject({ code: 'parser_timeout', retryable: true })
+      resolveParser({
+        getText: vi.fn(async () => ({ text: 'late', total: 1 })),
+        destroy,
+      })
+      await vi.waitFor(() => expect(destroy).toHaveBeenCalledTimes(1))
+    })
+
+    it('honors an external abort signal and destroys the PDF parser exactly once', async () => {
+      const controller = new AbortController()
+      const destroy = vi.fn(async () => {})
+      const dependencies = {
+        createPdfParser: vi.fn(async () => ({
+          getText: vi.fn(() => new Promise<never>(() => {})),
+          destroy,
+        })),
+        abortSignal: controller.signal,
+      }
+      const parsing = parseDocumentDetailed(Buffer.from('pdf bytes'), 'application/pdf', dependencies)
+      controller.abort()
+
+      await expect(parsing).rejects.toMatchObject({ code: 'parser_aborted', retryable: true })
+      expect(destroy).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('parseDocument', () => {

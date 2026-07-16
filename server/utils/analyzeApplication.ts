@@ -15,28 +15,51 @@ import { loadAiConfig } from './ai/loadConfig'
 import type { SupportedProvider } from './ai/provider'
 import { recordActivity } from './recordActivity'
 import { extractResumeText } from './resume-parser'
+import type { ProcessingQueueDatabaseExecutor } from './processingQueue'
 
 export type AnalyzeApplicationErrorCode =
   | 'APPLICATION_NOT_FOUND'
   | 'MISSING_CRITERIA'
   | 'RESUME_PARSE_FAILED'
+  | 'RESUME_PARSE_PENDING'
+  | 'RESUME_UPLOAD_PENDING'
+  | 'RESUME_NO_TEXT'
   | 'RESUME_MISSING'
   | 'MISSING_JOB_DESCRIPTION'
+  | 'AI_CONFIGURATION_INVALID'
   | 'PROVIDER_FAILURE'
 
 export class AnalyzeApplicationError extends Error {
   readonly code: AnalyzeApplicationErrorCode
   readonly documentId?: string
+  readonly retryable: boolean
+  readonly failedRun?: {
+    organizationId: string
+    applicationId: string
+    status: 'failed'
+    provider: string
+    model: string
+    criteriaSnapshot: Record<string, unknown>[]
+    errorMessage: string
+    scoredById?: string
+  }
 
   constructor(
     code: AnalyzeApplicationErrorCode,
     message: string,
-    options: { documentId?: string, cause?: unknown } = {},
+    options: {
+      documentId?: string
+      cause?: unknown
+      retryable?: boolean
+      failedRun?: AnalyzeApplicationError['failedRun']
+    } = {},
   ) {
     super(message, options.cause === undefined ? undefined : { cause: options.cause })
     this.name = 'AnalyzeApplicationError'
     this.code = code
     this.documentId = options.documentId
+    this.retryable = options.retryable ?? false
+    this.failedRun = options.failedRun
   }
 }
 
@@ -45,6 +68,15 @@ export type AnalyzeApplicationInput = {
   applicationId: string
   aiConfigId?: string | null
   scoredById?: string
+  /** Queue-only guard. Manual callers intentionally omit this to force a fresh score. */
+  onlyIfUnscored?: boolean
+  abortSignal?: AbortSignal
+  /** Allows a claimed queue task to own the transaction that fences persistence. */
+  persistenceTransaction?: <T>(operation: (
+    executor: ProcessingQueueDatabaseExecutor,
+  ) => Promise<T>) => Promise<T>
+  /** Queue callers disable this because failed task history owns the fence. */
+  recordFailedRun?: boolean
 }
 
 export type AnalyzeApplicationResult = {
@@ -58,6 +90,39 @@ export type AnalyzeApplicationResult = {
   }
 }
 
+export type AnalyzeApplicationSkippedResult = {
+  skipped: true
+  reason: 'already_scored'
+}
+
+function isRetryableProviderFailure(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return true
+  const candidate = error as {
+    name?: string
+    code?: string
+    statusCode?: number
+    status?: number
+    response?: { status?: number }
+  }
+  const status = candidate.statusCode ?? candidate.status ?? candidate.response?.status
+  if (status !== undefined) {
+    return status === 408 || status === 409 || status === 429 || status >= 500
+  }
+  if (candidate.name === 'AbortError' || candidate.name === 'TimeoutError') return true
+  if (candidate.code && [
+    'AUTHENTICATION_ERROR',
+    'INVALID_API_KEY',
+    'PERMISSION_DENIED',
+  ].includes(candidate.code.toUpperCase())) return false
+  return true
+}
+
+function isExpectedAiConfigurationError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const candidate = error as { statusCode?: number; status?: number }
+  return (candidate.statusCode ?? candidate.status) === 422
+}
+
 /**
  * Analyze one application within an organization and persist its latest score
  * plus an immutable run snapshot. Callers own transport-specific error mapping.
@@ -67,7 +132,11 @@ export async function analyzeApplication({
   applicationId,
   aiConfigId,
   scoredById,
-}: AnalyzeApplicationInput): Promise<AnalyzeApplicationResult> {
+  onlyIfUnscored = false,
+  abortSignal,
+  persistenceTransaction,
+  recordFailedRun = true,
+}: AnalyzeApplicationInput): Promise<AnalyzeApplicationResult | AnalyzeApplicationSkippedResult> {
   const app = await db.query.application.findFirst({
     where: and(
       eq(application.id, applicationId),
@@ -87,10 +156,26 @@ export async function analyzeApplication({
     throw new AnalyzeApplicationError('APPLICATION_NOT_FOUND', 'Application not found')
   }
 
-  const config = await loadAiConfig(organizationId, {
-    purpose: 'analysis',
-    preferId: aiConfigId ?? null,
-  })
+  // A zero is a real score. Missing-only work must avoid provider usage whenever
+  // any score already exists.
+  if (onlyIfUnscored && app.score !== null) {
+    return { skipped: true, reason: 'already_scored' }
+  }
+
+  let config
+  try {
+    config = await loadAiConfig(organizationId, {
+      purpose: 'analysis',
+      preferId: aiConfigId ?? null,
+    })
+  } catch (error) {
+    if (!isExpectedAiConfigurationError(error)) throw error
+    throw new AnalyzeApplicationError(
+      'AI_CONFIGURATION_INVALID',
+      'AI analysis is not configured for this organization.',
+      { cause: error },
+    )
+  }
 
   const criteria = await db.select().from(scoringCriterion)
     .where(and(
@@ -114,10 +199,34 @@ export async function analyzeApplication({
 
   if (!resumeText) {
     if (resumeDocument) {
+      if (resumeDocument.uploadStatus === 'pending') {
+        throw new AnalyzeApplicationError(
+          'RESUME_UPLOAD_PENDING',
+          'Resume upload is still being finalized.',
+          { documentId: resumeDocument.id, retryable: true },
+        )
+      }
+      if (resumeDocument.parseStatus === 'pending') {
+        throw new AnalyzeApplicationError(
+          'RESUME_PARSE_PENDING',
+          'Resume parsing is still pending.',
+          { documentId: resumeDocument.id, retryable: true },
+        )
+      }
+      if (resumeDocument.parseStatus === 'no_text') {
+        throw new AnalyzeApplicationError(
+          'RESUME_NO_TEXT',
+          'The resume contains no extractable text.',
+          { documentId: resumeDocument.id },
+        )
+      }
       throw new AnalyzeApplicationError(
         'RESUME_PARSE_FAILED',
         'Resume was uploaded but text extraction failed. Try re-parsing the document.',
-        { documentId: resumeDocument.id },
+        {
+          documentId: resumeDocument.id,
+          retryable: false,
+        },
       )
     }
 
@@ -163,23 +272,38 @@ export async function analyzeApplication({
       coverLetterText: app.coverLetterText,
       applicationNotes: app.notes,
       organizationAnalysisContext: settings?.analysisContext ?? null,
-    })
+    }, { abortSignal })
   }
   catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
+    const message = 'AI provider request failed.'
 
-    await db.insert(analysisRun).values({
-      organizationId,
-      applicationId,
-      status: 'failed',
-      provider: config.provider,
-      model: config.model,
-      criteriaSnapshot: criteriaDefinitions as unknown as Record<string, unknown>[],
-      errorMessage: message,
-      scoredById,
+    if (recordFailedRun) {
+      await db.insert(analysisRun).values({
+        organizationId,
+        applicationId,
+        status: 'failed',
+        provider: config.provider,
+        model: config.model,
+        criteriaSnapshot: criteriaDefinitions as unknown as Record<string, unknown>[],
+        errorMessage: message,
+        scoredById,
+      })
+    }
+
+    throw new AnalyzeApplicationError('PROVIDER_FAILURE', message, {
+      cause: error,
+      retryable: isRetryableProviderFailure(error),
+      failedRun: {
+        organizationId,
+        applicationId,
+        status: 'failed',
+        provider: config.provider,
+        model: config.model,
+        criteriaSnapshot: criteriaDefinitions as unknown as Record<string, unknown>[],
+        errorMessage: message,
+        scoredById,
+      },
     })
-
-    throw new AnalyzeApplicationError('PROVIDER_FAILURE', message, { cause: error })
   }
 
   const compositeScore = computeCompositeScore(
@@ -198,7 +322,22 @@ export async function analyzeApplication({
     gaps: evaluation.gaps,
   }))
 
-  const createdRun = await db.transaction(async (tx) => {
+  const persist = async (tx: ProcessingQueueDatabaseExecutor) => {
+    if (onlyIfUnscored) {
+      const [lockedApplication] = await tx.select({ score: application.score })
+        .from(application)
+        .where(and(
+          eq(application.id, applicationId),
+          eq(application.organizationId, organizationId),
+        ))
+        .limit(1)
+        .for('update')
+      if (!lockedApplication) {
+        throw new AnalyzeApplicationError('APPLICATION_NOT_FOUND', 'Application not found')
+      }
+      if (lockedApplication.score !== null) return null
+    }
+
     const [run] = await tx.insert(analysisRun).values({
       organizationId,
       applicationId,
@@ -243,7 +382,12 @@ export async function analyzeApplication({
       ))
 
     return run
-  })
+  }
+  const createdRun = persistenceTransaction
+    ? await persistenceTransaction(persist)
+    : await db.transaction(tx => persist(tx as unknown as ProcessingQueueDatabaseExecutor))
+
+  if (!createdRun) return { skipped: true, reason: 'already_scored' }
 
   if (scoredById) {
     void recordActivity({

@@ -1,4 +1,4 @@
-import { and, asc, eq, exists, inArray, isNotNull, lte, or, sql } from 'drizzle-orm'
+import { and, asc, eq, exists, gt, inArray, isNotNull, lte, or, sql } from 'drizzle-orm'
 import {
   application,
   document,
@@ -17,6 +17,8 @@ export const DOCUMENT_UPLOAD_RECONCILIATION_GRACE_MS = 15 * 60 * 1000
 const MIN_PROCESSING_TASK_LEASE_MS = 1_000
 const MAX_PROCESSING_TASK_LEASE_MS = 15 * 60 * 1000
 const MAX_PROCESSING_TASK_RETRY_DELAY_MS = 24 * 60 * 60 * 1000
+const MIN_PROCESSING_STATUS_RETRY_AFTER_MS = 1_000
+const MAX_PROCESSING_STATUS_RETRY_AFTER_MS = 30_000
 const RESULT_CODE_PATTERN = /^[a-z0-9]+(?:_[a-z0-9]+)*$/
 
 export type ProcessingTaskType = typeof processingTask.$inferSelect.type
@@ -91,6 +93,11 @@ export type ProcessingQueueTransaction = {
   linkBatchItem(input: ProcessingBatchItemRecord): Promise<ProcessingBatchItemRecord | null>
   sealBatch(input: BatchScope & { now: Date }): Promise<ProcessingBatchRecord | null>
   lockTask(input: { organizationId: string; taskId: string }): Promise<ProcessingTaskRecord | null>
+  lockTasksForCleanup(input: {
+    organizationId: string
+    taskId: string
+    targets: ProcessingTaskTarget[]
+  }): Promise<ProcessingTaskRecord[]>
   completeClaimedTask(input: {
     organizationId: string
     taskId: string
@@ -136,10 +143,26 @@ export type ProcessingQueueTransaction = {
 
 type ClaimTasksInput = {
   organizationId: string
+  batchId?: string
   types: ProcessingTaskType[]
   limit: number
   now: Date
   leaseExpiresAt: Date
+}
+
+type FindRunnableOrganizationIdsInput = {
+  types: ProcessingTaskType[]
+  limit: number
+  now: Date
+  afterOrganizationId?: string
+}
+
+type ProcessingBatchStatusSnapshot = {
+  batch: ProcessingBatchRecord
+  tasks: Array<Pick<
+    ProcessingTaskRecord,
+    'status' | 'resultCode' | 'attemptCount' | 'availableAt' | 'leaseExpiresAt'
+  >>
 }
 
 export type ProcessingQueueAdapter = {
@@ -148,6 +171,8 @@ export type ProcessingQueueAdapter = {
     executor: ProcessingQueueDatabaseExecutor,
   ) => Promise<T>): Promise<T>
   claimTasks(input: ClaimTasksInput): Promise<ProcessingTaskRecord[]>
+  findRunnableOrganizationIds(input: FindRunnableOrganizationIdsInput): Promise<string[]>
+  readBatchStatus(input: BatchScope): Promise<ProcessingBatchStatusSnapshot | null>
 }
 
 function normalizePositiveInteger(value: number | undefined, fallback: number): number {
@@ -398,6 +423,32 @@ function createDrizzleQueueTransaction(
       return task ?? null
     },
 
+    async lockTasksForCleanup(input) {
+      const targets = normalizeProcessingTaskTargets(input.targets)
+      const targetPredicate = targets.length > 0
+        ? or(...targets.map(target => and(
+            eq(processingTask.type, target.type),
+            eq(processingTask.resourceId, target.resourceId),
+          )))
+        : undefined
+      return executor.select()
+        .from(processingTask)
+        .where(and(
+          eq(processingTask.organizationId, input.organizationId),
+          targetPredicate
+            ? or(
+                eq(processingTask.id, input.taskId),
+                and(
+                  targetPredicate,
+                  inArray(processingTask.status, ['pending', 'processing']),
+                ),
+              )
+            : eq(processingTask.id, input.taskId),
+        ))
+        .orderBy(asc(processingTask.id))
+        .for('update')
+    },
+
     async completeClaimedTask(input) {
       const [task] = await executor.update(processingTask)
         .set({
@@ -579,14 +630,18 @@ async function refreshBatchesForTask(
   }
 }
 
-const drizzleQueueAdapter: ProcessingQueueAdapter = {
-  transaction: operation => db.transaction(async (executor) => {
+/** @internal Exported so PostgreSQL integration tests can use an isolated database. */
+export function createDrizzleProcessingQueueAdapter(
+  database: typeof db,
+): ProcessingQueueAdapter {
+  return {
+  transaction: operation => database.transaction(async (executor) => {
     const databaseExecutor = executor as unknown as ProcessingQueueDatabaseExecutor
     return operation(createDrizzleQueueTransaction(databaseExecutor), databaseExecutor)
   }),
 
   async claimTasks(input) {
-    return db.transaction(async (executor) => {
+    return database.transaction(async (executor) => {
       const hasSealedBatch = exists(
         executor.select({ value: sql`1` })
           .from(processingBatchItem)
@@ -597,6 +652,7 @@ const drizzleQueueAdapter: ProcessingQueueAdapter = {
           .where(and(
             eq(processingBatchItem.organizationId, processingTask.organizationId),
             eq(processingBatchItem.taskId, processingTask.id),
+            input.batchId ? eq(processingBatchItem.batchId, input.batchId) : undefined,
             isNotNull(processingBatch.sealedAt),
           )),
       )
@@ -679,7 +735,77 @@ const drizzleQueueAdapter: ProcessingQueueAdapter = {
       return claimed
     })
   },
+
+  async findRunnableOrganizationIds(input) {
+    const hasSealedBatch = exists(
+      database.select({ value: sql`1` })
+        .from(processingBatchItem)
+        .innerJoin(processingBatch, and(
+          eq(processingBatch.id, processingBatchItem.batchId),
+          eq(processingBatch.organizationId, processingBatchItem.organizationId),
+        ))
+        .where(and(
+          eq(processingBatchItem.organizationId, processingTask.organizationId),
+          eq(processingBatchItem.taskId, processingTask.id),
+          isNotNull(processingBatch.sealedAt),
+        )),
+    )
+    const rows = await database.selectDistinct({ organizationId: processingTask.organizationId })
+      .from(processingTask)
+      .where(and(
+        inArray(processingTask.type, input.types),
+        input.afterOrganizationId
+          ? gt(processingTask.organizationId, input.afterOrganizationId)
+          : undefined,
+        hasSealedBatch,
+        or(
+          and(
+            eq(processingTask.status, 'pending'),
+            lte(processingTask.availableAt, input.now),
+            sql`${processingTask.attemptCount} < ${processingTask.maxAttempts}`,
+          ),
+          and(
+            eq(processingTask.status, 'processing'),
+            lte(processingTask.leaseExpiresAt, input.now),
+          ),
+        ),
+      ))
+      .orderBy(asc(processingTask.organizationId))
+      .limit(input.limit)
+    return rows.map(row => row.organizationId)
+  },
+
+  async readBatchStatus(input) {
+    const [batch] = await database.select()
+      .from(processingBatch)
+      .where(and(
+        eq(processingBatch.id, input.batchId),
+        eq(processingBatch.organizationId, input.organizationId),
+      ))
+      .limit(1)
+    if (!batch) return null
+    const tasks = await database.select({
+      status: processingTask.status,
+      resultCode: processingTask.resultCode,
+      attemptCount: processingTask.attemptCount,
+      availableAt: processingTask.availableAt,
+      leaseExpiresAt: processingTask.leaseExpiresAt,
+    })
+      .from(processingBatchItem)
+      .innerJoin(processingTask, and(
+        eq(processingTask.id, processingBatchItem.taskId),
+        eq(processingTask.organizationId, processingBatchItem.organizationId),
+      ))
+      .where(and(
+        eq(processingBatchItem.organizationId, input.organizationId),
+        eq(processingBatchItem.batchId, input.batchId),
+      ))
+    return { batch, tasks }
+  },
 }
+}
+
+const drizzleQueueAdapter = createDrizzleProcessingQueueAdapter(db)
 
 export type EnqueueProcessingTaskInput = ActiveTaskKey & {
   batchId?: string
@@ -901,6 +1027,7 @@ export async function enqueueProcessingBatch(
 
 export type ClaimProcessingTasksInput = {
   organizationId: string
+  batchId?: string
   types: ProcessingTaskType[]
   limit?: number
   leaseMs?: number
@@ -915,11 +1042,124 @@ export async function claimProcessingTasks(
   const now = input.now ?? new Date()
   return adapter.claimTasks({
     organizationId: input.organizationId,
+    batchId: input.batchId,
     types: [...new Set(input.types)],
     limit: normalizeClaimLimit(input.limit),
     now,
     leaseExpiresAt: new Date(now.getTime() + normalizeLeaseMs(input.leaseMs)),
   })
+}
+
+export type FindRunnableProcessingOrganizationIdsInput = {
+  types: ProcessingTaskType[]
+  limit?: number
+  now?: Date
+  afterOrganizationId?: string
+}
+
+export async function findRunnableProcessingOrganizationIds(
+  input: FindRunnableProcessingOrganizationIdsInput,
+  adapter: ProcessingQueueAdapter = drizzleQueueAdapter,
+): Promise<string[]> {
+  if (input.types.length === 0) return []
+  return adapter.findRunnableOrganizationIds({
+    types: [...new Set(input.types)],
+    limit: normalizeClaimLimit(input.limit),
+    now: input.now ?? new Date(),
+    afterOrganizationId: input.afterOrganizationId,
+  })
+}
+
+export type ProcessingBatchStatus = {
+  batchId: string
+  type: ProcessingTaskType
+  status: ProcessingTaskStatus
+  counts: {
+    pending: number
+    processing: number
+    succeeded: number
+    failed: number
+    cancelled: number
+    attempted: number
+    total: number
+  }
+  errorsByCode: Record<string, number>
+  retryAfterMs: number | null
+  timestamps: {
+    createdAt: Date
+    startedAt: Date | null
+    sealedAt: Date | null
+    completedAt: Date | null
+    updatedAt: Date
+  }
+}
+
+function sanitizedProcessingResultCode(resultCode: string | null): string {
+  return resultCode
+    && resultCode.length <= 64
+    && RESULT_CODE_PATTERN.test(resultCode)
+    ? resultCode
+    : 'processing_failed'
+}
+
+export async function getProcessingBatchStatus(
+  input: BatchScope & { now?: Date },
+  adapter: ProcessingQueueAdapter = drizzleQueueAdapter,
+): Promise<ProcessingBatchStatus | null> {
+  const snapshot = await adapter.readBatchStatus(input)
+  if (!snapshot) return null
+
+  const counts = {
+    pending: snapshot.tasks.filter(task => task.status === 'pending').length,
+    processing: snapshot.tasks.filter(task => task.status === 'processing').length,
+    succeeded: snapshot.tasks.filter(task => task.status === 'completed').length,
+    failed: snapshot.tasks.filter(task => task.status === 'failed').length,
+    cancelled: snapshot.tasks.filter(task => task.status === 'cancelled').length,
+    attempted: snapshot.tasks.filter(task => task.attemptCount > 0).length,
+    total: snapshot.tasks.length,
+  }
+  const errorCounts = new Map<string, number>()
+  for (const task of snapshot.tasks) {
+    if (task.status !== 'failed') continue
+    const code = sanitizedProcessingResultCode(task.resultCode)
+    errorCounts.set(code, (errorCounts.get(code) ?? 0) + 1)
+  }
+  const terminal = ['completed', 'failed', 'cancelled'].includes(snapshot.batch.status)
+  const now = input.now ?? new Date()
+  const nextRunnableAt = snapshot.tasks
+    .flatMap((task) => {
+      if (task.status === 'pending') return [task.availableAt]
+      if (task.status === 'processing' && task.leaseExpiresAt) return [task.leaseExpiresAt]
+      return []
+    })
+    .sort((left, right) => left.getTime() - right.getTime())[0]
+  const retryAfterMs = terminal
+    ? null
+    : Math.min(
+        Math.max(
+          nextRunnableAt ? nextRunnableAt.getTime() - now.getTime() : 0,
+          MIN_PROCESSING_STATUS_RETRY_AFTER_MS,
+        ),
+        MAX_PROCESSING_STATUS_RETRY_AFTER_MS,
+      )
+
+  return {
+    batchId: snapshot.batch.id,
+    type: snapshot.batch.type,
+    status: snapshot.batch.status,
+    counts,
+    errorsByCode: Object.fromEntries([...errorCounts].sort(([left], [right]) =>
+      left.localeCompare(right),
+    )),
+    retryAfterMs,
+    timestamps: {
+      createdAt: snapshot.batch.createdAt,
+      startedAt: snapshot.batch.startedAt,
+      sealedAt: snapshot.batch.sealedAt,
+      completedAt: snapshot.batch.completedAt,
+      updatedAt: snapshot.batch.updatedAt,
+    },
+  }
 }
 
 export type CompleteProcessingTaskInput = {
@@ -943,25 +1183,27 @@ function assertCurrentProcessingLease(
   }
 }
 
-async function completeWithinTransaction(
+async function completeWithinTransaction<T>(
   input: CompleteProcessingTaskInput,
   tx: ProcessingQueueTransaction,
   executor: ProcessingQueueDatabaseExecutor,
   operation: (
     executor: ProcessingQueueDatabaseExecutor,
     task: ProcessingTaskRecord,
-  ) => Promise<unknown>,
-): Promise<{ task: ProcessingTaskRecord; result: unknown } | null> {
+  ) => Promise<T>,
+  resultCodeFromResult?: (result: T) => string,
+): Promise<{ task: ProcessingTaskRecord; result: T } | null> {
   const now = input.now ?? new Date()
   const locked = await tx.lockTask(input)
   if (!locked) return null
   assertCurrentProcessingLease(locked, input.expectedAttemptCount, now)
   const result = await operation(executor, locked)
+  const resultCode = resultCodeFromResult?.(result) ?? input.resultCode
   const completed = await tx.completeClaimedTask({
     organizationId: input.organizationId,
     taskId: input.taskId,
     expectedAttemptCount: input.expectedAttemptCount,
-    resultCode: normalizeResultCode(input.resultCode, 'completed'),
+    resultCode: normalizeResultCode(resultCode, 'completed'),
     now,
   })
   if (!completed) throw new Error('Processing task lease is stale')
@@ -982,8 +1224,117 @@ export async function completeProcessingTaskWithDomainWrite<T>(
   adapter: ProcessingQueueAdapter = drizzleQueueAdapter,
 ): Promise<{ task: ProcessingTaskRecord; result: T } | null> {
   return adapter.transaction(async (tx, executor) => {
-    const completed = await completeWithinTransaction(input, tx, executor, operation)
-    return completed as { task: ProcessingTaskRecord; result: T } | null
+    return completeWithinTransaction(input, tx, executor, operation)
+  })
+}
+
+export type ProcessingTaskDomainOutcome<T> = {
+  result: T
+  resultCode: string
+}
+
+/** Complete a task with a code derived atomically from its domain write result. */
+export async function completeProcessingTaskWithDomainOutcome<T>(
+  input: Omit<CompleteProcessingTaskInput, 'resultCode'>,
+  operation: (
+    executor: ProcessingQueueDatabaseExecutor,
+    task: ProcessingTaskRecord,
+  ) => Promise<ProcessingTaskDomainOutcome<T>>,
+  adapter: ProcessingQueueAdapter = drizzleQueueAdapter,
+): Promise<{ task: ProcessingTaskRecord; result: T } | null> {
+  return adapter.transaction(async (tx, executor) => {
+    const completed = await completeWithinTransaction(
+      input,
+      tx,
+      executor,
+      operation,
+      outcome => outcome.resultCode,
+    )
+    return completed
+      ? { task: completed.task, result: completed.result.result }
+      : null
+  })
+}
+
+export type ProcessingResourceCleanupPreparation<T> = {
+  cancellationTargets: ProcessingTaskTarget[]
+  value: T
+}
+
+/**
+ * Atomically terminalize sibling work and perform destructive domain cleanup.
+ *
+ * Lock order is resource advisory locks, then every affected task row in stable
+ * ID order, then domain rows. The preparation callback must only read the
+ * resource-fenced domain state needed to discover sibling task targets.
+ */
+export async function completeProcessingTaskWithResourceCleanup<TPrepared, TResult>(
+  input: CompleteProcessingTaskInput & {
+    resourceTargets: ProcessingTaskTarget[]
+    cancellationResultCode?: string
+  },
+  prepare: (
+    executor: ProcessingQueueDatabaseExecutor,
+  ) => Promise<ProcessingResourceCleanupPreparation<TPrepared>>,
+  operation: (
+    executor: ProcessingQueueDatabaseExecutor,
+    task: ProcessingTaskRecord,
+    prepared: TPrepared,
+  ) => Promise<TResult>,
+  adapter: ProcessingQueueAdapter = drizzleQueueAdapter,
+): Promise<{ task: ProcessingTaskRecord; result: TResult } | null> {
+  return adapter.transaction(async (tx, executor) => {
+    const now = input.now ?? new Date()
+    await tx.prepareTaskResources({
+      organizationId: input.organizationId,
+      targets: input.resourceTargets,
+      validate: false,
+    })
+    const preparation = await prepare(executor)
+    const cancellationTargets = normalizeProcessingTaskTargets(preparation.cancellationTargets)
+    const lockedTasks = await tx.lockTasksForCleanup({
+      organizationId: input.organizationId,
+      taskId: input.taskId,
+      targets: cancellationTargets,
+    })
+    const currentTask = lockedTasks.find(task => task.id === input.taskId)
+    if (!currentTask) return null
+    assertCurrentProcessingLease(currentTask, input.expectedAttemptCount, now)
+
+    const siblingTargets = cancellationTargets.filter(target =>
+      target.type !== currentTask.type || target.resourceId !== currentTask.resourceId,
+    )
+    const cancelled = siblingTargets.length > 0
+      ? await tx.cancelTasks({
+          organizationId: input.organizationId,
+          targets: siblingTargets,
+          resultCode: normalizeResultCode(input.cancellationResultCode, 'resource_removed'),
+          now,
+        })
+      : []
+    for (const task of [...cancelled].sort((left, right) => left.id.localeCompare(right.id))) {
+      await refreshBatchesForTask(tx, {
+        organizationId: input.organizationId,
+        taskId: task.id,
+        now,
+      })
+    }
+
+    const result = await operation(executor, currentTask, preparation.value)
+    const completed = await tx.completeClaimedTask({
+      organizationId: input.organizationId,
+      taskId: input.taskId,
+      expectedAttemptCount: input.expectedAttemptCount,
+      resultCode: normalizeResultCode(input.resultCode, 'completed'),
+      now,
+    })
+    if (!completed) throw new Error('Processing task lease is stale')
+    await refreshBatchesForTask(tx, {
+      organizationId: input.organizationId,
+      taskId: completed.id,
+      now,
+    })
+    return { task: completed, result }
   })
 }
 
@@ -1049,42 +1400,74 @@ export type FailProcessingTaskInput = {
   now?: Date
 }
 
+async function failWithinTransaction<T>(
+  input: FailProcessingTaskInput,
+  tx: ProcessingQueueTransaction,
+  executor: ProcessingQueueDatabaseExecutor,
+  operation: (
+    executor: ProcessingQueueDatabaseExecutor,
+    task: ProcessingTaskRecord,
+  ) => Promise<T>,
+): Promise<{ task: ProcessingTaskRecord; result: T } | null> {
+  const now = input.now ?? new Date()
+  const task = await tx.lockTask(input)
+  if (!task) return null
+  assertCurrentProcessingLease(task, input.expectedAttemptCount, now)
+  const terminal = input.retryable === false || task.attemptCount >= task.maxAttempts
+  const baseDelayMs = normalizePositiveInteger(
+    input.baseRetryDelayMs,
+    DEFAULT_PROCESSING_TASK_RETRY_DELAY_MS,
+  )
+  const retryDelayMs = Math.min(
+    baseDelayMs * (2 ** Math.max(0, task.attemptCount - 1)),
+    MAX_PROCESSING_TASK_RETRY_DELAY_MS,
+  )
+  const resultCode = normalizeResultCode(input.resultCode, 'processing_failed')
+  // The task lock is deliberately acquired before the domain callback. The
+  // callback may update domain state, but must not enqueue additional work.
+  const result = await operation(executor, task)
+  const updated = await tx.updateTaskFailure({
+    organizationId: input.organizationId,
+    taskId: input.taskId,
+    status: terminal ? 'failed' : 'pending',
+    availableAt: terminal ? now : new Date(now.getTime() + retryDelayMs),
+    resultCode,
+    completedAt: terminal ? now : null,
+    expectedAttemptCount: input.expectedAttemptCount,
+    now,
+  })
+  if (!updated) throw new Error('Processing task lease is stale')
+  await refreshBatchesForTask(tx, {
+    organizationId: input.organizationId,
+    taskId: updated.id,
+    now,
+  })
+  return { task: updated, result }
+}
+
+export async function failProcessingTaskWithDomainWrite<T>(
+  input: FailProcessingTaskInput,
+  operation: (
+    executor: ProcessingQueueDatabaseExecutor,
+    task: ProcessingTaskRecord,
+  ) => Promise<T>,
+  adapter: ProcessingQueueAdapter = drizzleQueueAdapter,
+): Promise<{ task: ProcessingTaskRecord; result: T } | null> {
+  return adapter.transaction((tx, executor) =>
+    failWithinTransaction(input, tx, executor, operation),
+  )
+}
+
 export async function failProcessingTask(
   input: FailProcessingTaskInput,
   adapter: ProcessingQueueAdapter = drizzleQueueAdapter,
 ): Promise<ProcessingTaskRecord | null> {
-  return adapter.transaction(async (tx) => {
-    const now = input.now ?? new Date()
-    const task = await tx.lockTask(input)
-    if (!task) return null
-    assertCurrentProcessingLease(task, input.expectedAttemptCount, now)
-    const terminal = input.retryable === false || task.attemptCount >= task.maxAttempts
-    const baseDelayMs = normalizePositiveInteger(
-      input.baseRetryDelayMs,
-      DEFAULT_PROCESSING_TASK_RETRY_DELAY_MS,
-    )
-    const retryDelayMs = Math.min(
-      baseDelayMs * (2 ** Math.max(0, task.attemptCount - 1)),
-      MAX_PROCESSING_TASK_RETRY_DELAY_MS,
-    )
-    const updated = await tx.updateTaskFailure({
-      organizationId: input.organizationId,
-      taskId: input.taskId,
-      status: terminal ? 'failed' : 'pending',
-      availableAt: terminal ? now : new Date(now.getTime() + retryDelayMs),
-      resultCode: normalizeResultCode(input.resultCode, 'processing_failed'),
-      completedAt: terminal ? now : null,
-      expectedAttemptCount: input.expectedAttemptCount,
-      now,
-    })
-    if (!updated) throw new Error('Processing task lease is stale')
-    await refreshBatchesForTask(tx, {
-      organizationId: input.organizationId,
-      taskId: updated.id,
-      now,
-    })
-    return updated
-  })
+  const failed = await failProcessingTaskWithDomainWrite(
+    input,
+    async () => undefined,
+    adapter,
+  )
+  return failed?.task ?? null
 }
 
 export type PendingUploadReconciliationCompletionOutcome =

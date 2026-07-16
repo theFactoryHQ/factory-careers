@@ -142,6 +142,10 @@ describe('candidate document reservations', () => {
           organizationId: 'org-1',
           processingTaskId: 'task-document-1',
           documentId: 'document-1',
+          parseStatus: 'parsed',
+          parseResultCode: null,
+          parseRetryable: null,
+          parseAttemptedAt: new Date('2026-07-16T12:01:00.000Z'),
         })
         committed.push('task:locked', 'document:completed', 'task:completed')
         return {
@@ -165,6 +169,10 @@ describe('candidate document reservations', () => {
       candidateId: 'candidate-1',
       processingTaskId: 'task-document-1',
       parsedContent: { text: 'Ada Lovelace' },
+      parseStatus: 'parsed',
+      parseResultCode: null,
+      parseRetryable: null,
+      parseAttemptedAt: new Date('2026-07-16T12:01:00.000Z'),
     }, adapter)
 
     expect(finalized.uploadStatus).toBe('completed')
@@ -215,6 +223,10 @@ describe('candidate document reservations', () => {
       candidateId: 'candidate-1',
       processingTaskId: 'task-document-1',
       parsedContent: { text: 'slow upload' },
+      parseStatus: 'parsed',
+      parseResultCode: null,
+      parseRetryable: null,
+      parseAttemptedAt: new Date('2026-07-16T12:01:00.000Z'),
     }, adapter)).resolves.toMatchObject({
       id: 'document-1',
       uploadStatus: 'completed',

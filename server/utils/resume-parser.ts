@@ -38,6 +38,7 @@ function ensurePdfjsPolyfills() {
 }
 
 const PARSER_VERSION = '1.1'
+export const DEFAULT_DOCUMENT_PARSE_TIMEOUT_MS = 60_000
 
 export type DocumentParseErrorCode
   = | 'empty_file'
@@ -111,6 +112,46 @@ interface PdfTextParser {
 
 export interface DocumentParseDependencies {
   createPdfParser?: (buffer: Buffer) => Promise<PdfTextParser>
+  abortSignal?: AbortSignal
+  timeoutMs?: number
+}
+
+function namedControlError(name: 'AbortError' | 'TimeoutError', message: string): Error {
+  const error = new Error(message)
+  error.name = name
+  return error
+}
+
+async function withParseControls<T>(
+  operation: Promise<T>,
+  options: Pick<DocumentParseDependencies, 'abortSignal' | 'timeoutMs'>,
+): Promise<T> {
+  const controls: Promise<never>[] = []
+  let abortHandler: (() => void) | undefined
+  let timeout: ReturnType<typeof setTimeout> | undefined
+
+  if (options.abortSignal) {
+    controls.push(new Promise((_, reject) => {
+      abortHandler = () => reject(namedControlError('AbortError', 'Document parsing was aborted'))
+      if (options.abortSignal!.aborted) abortHandler()
+      else options.abortSignal!.addEventListener('abort', abortHandler, { once: true })
+    }))
+  }
+  if (options.timeoutMs && Number.isFinite(options.timeoutMs) && options.timeoutMs > 0) {
+    controls.push(new Promise((_, reject) => {
+      timeout = setTimeout(
+        () => reject(namedControlError('TimeoutError', 'Document parsing timed out')),
+        Math.floor(options.timeoutMs!),
+      )
+    }))
+  }
+
+  try {
+    return controls.length > 0 ? await Promise.race([operation, ...controls]) : await operation
+  } finally {
+    if (timeout) clearTimeout(timeout)
+    if (abortHandler) options.abortSignal?.removeEventListener('abort', abortHandler)
+  }
 }
 
 const SUPPORTED_MIME_TYPES = new Set([
@@ -196,11 +237,15 @@ export async function parseDocumentDetailed(
   try {
     switch (mimeType) {
       case 'application/pdf':
-        return await parsePdf(buffer, dependencies.createPdfParser ?? createDefaultPdfParser)
+        return await parsePdf(
+          buffer,
+          dependencies.createPdfParser ?? createDefaultPdfParser,
+          dependencies,
+        )
       case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        return await parseDocx(buffer)
+        return await withParseControls(parseDocx(buffer), dependencies)
       case 'application/msword':
-        return await parseDoc(buffer)
+        return await withParseControls(parseDoc(buffer), dependencies)
       default:
         // The supported MIME precondition above makes this unreachable, while
         // keeping the switch exhaustive if another format is added later.
@@ -250,14 +295,36 @@ export async function parseDocument(
 async function parsePdf(
   buffer: Buffer,
   createPdfParser: (buffer: Buffer) => Promise<PdfTextParser>,
+  controls: Pick<DocumentParseDependencies, 'abortSignal' | 'timeoutMs'>,
 ): Promise<DocumentParseResult> {
   let parser: PdfTextParser | undefined
-
-  try {
-    parser = await createPdfParser(buffer)
+  let cleanupStarted = false
+  const destroyParser = async (target: PdfTextParser): Promise<void> => {
+    if (cleanupStarted) return
+    cleanupStarted = true
+    try {
+      await target.destroy()
+    }
+    catch (cleanupError) {
+      // Cleanup must never replace a successful parse/no-text classification
+      // or the primary extraction error thrown from the try block.
+      logError('resume_parser.cleanup_failed', {
+        source_format: 'pdf',
+        error_name: errorName(cleanupError),
+      })
+    }
+  }
+  const parserPromise = Promise.resolve().then(() => createPdfParser(buffer))
+  const extractionPromise = parserPromise.then(async (createdParser) => {
+    parser = createdParser
     // pdf-parse's default page joiner includes synthetic `-- N of N --`
     // markers. Disable it so an image-only PDF is not mistaken for text.
-    const result = await parser.getText({ pageJoiner: '' })
+    return createdParser.getText({ pageJoiner: '' })
+  })
+
+  try {
+    // One control window covers both parser construction and text extraction.
+    const result = await withParseControls(extractionPromise, controls)
     const text = normalizeText(result.text)
 
     if (!text) {
@@ -286,17 +353,12 @@ async function parsePdf(
   }
   finally {
     if (parser) {
-      try {
-        await parser.destroy()
-      }
-      catch (cleanupError) {
-        // Cleanup must never replace a successful parse/no-text classification
-        // or the primary extraction error thrown from the try block.
-        logError('resume_parser.cleanup_failed', {
-          source_format: 'pdf',
-          error_name: errorName(cleanupError),
-        })
-      }
+      await destroyParser(parser)
+    }
+    else {
+      // A parser factory may ignore cancellation and resolve after the caller
+      // has timed out. Dispose that late instance without delaying the caller.
+      void parserPromise.then(destroyParser, () => undefined)
     }
   }
 }

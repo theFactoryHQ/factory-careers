@@ -17,11 +17,16 @@ const harness = vi.hoisted(() => {
   const txDeleteWhere = vi.fn()
   const txUpdateWhere = vi.fn()
   const txUpdateSet = vi.fn(() => ({ where: txUpdateWhere }))
+  const txApplicationForUpdate = vi.fn()
+  const txApplicationLimit = vi.fn(() => ({ for: txApplicationForUpdate }))
+  const txApplicationWhere = vi.fn(() => ({ limit: txApplicationLimit }))
+  const txApplicationFrom = vi.fn(() => ({ where: txApplicationWhere }))
 
   const tx = {
     insert: vi.fn(() => ({ values: txInsertValues })),
     delete: vi.fn(() => ({ where: txDeleteWhere })),
     update: vi.fn(() => ({ set: txUpdateSet })),
+    select: vi.fn(() => ({ from: txApplicationFrom })),
   }
 
   const db = {
@@ -53,6 +58,7 @@ const harness = vi.hoisted(() => {
     txDeleteWhere,
     txUpdateWhere,
     txUpdateSet,
+    txApplicationForUpdate,
     tx,
     db,
   }
@@ -72,6 +78,7 @@ const { AnalyzeApplicationError, analyzeApplication } = await import('../../serv
 
 const applicationRecord = {
   id: 'application-1',
+  score: null,
   coverLetterText: 'A focused cover letter.',
   notes: 'Recruiter note.',
   candidate: { id: 'candidate-1', firstName: 'Casey', lastName: 'Candidate' },
@@ -141,6 +148,7 @@ describe('analyzeApplication', () => {
     harness.failedRunValues.mockResolvedValue(undefined)
     harness.txDeleteWhere.mockResolvedValue(undefined)
     harness.txUpdateWhere.mockResolvedValue(undefined)
+    harness.txApplicationForUpdate.mockResolvedValue([{ score: null }])
     harness.recordActivity.mockResolvedValue(undefined)
   })
 
@@ -174,6 +182,7 @@ describe('analyzeApplication', () => {
         resumeText: 'Platform reliability resume.',
         organizationAnalysisContext: 'Use the organization context.',
       }),
+      { abortSignal: undefined },
     )
 
     const completedRun = harness.txInsertValues.mock.calls[0]?.[0]
@@ -228,6 +237,71 @@ describe('analyzeApplication', () => {
     expect(harness.db.transaction).not.toHaveBeenCalled()
   })
 
+  it('reports a pending parse as a retryable prerequisite without calling the provider', async () => {
+    harness.loadApplicationResume.mockResolvedValue({
+      id: 'resume-pending',
+      parsedContent: null,
+      uploadStatus: 'completed',
+      parseStatus: 'pending',
+      parseRetryable: true,
+    })
+    harness.extractResumeText.mockReturnValue(null)
+
+    await expect(analyzeApplication({
+      organizationId: 'org-1',
+      applicationId: 'application-1',
+    })).rejects.toMatchObject({
+      code: 'RESUME_PARSE_PENDING',
+      retryable: true,
+      documentId: 'resume-pending',
+    })
+    expect(harness.scoreApplication).not.toHaveBeenCalled()
+  })
+
+  it('treats an exhausted retryable parse as terminal until manual reparse', async () => {
+    harness.loadApplicationResume.mockResolvedValue({
+      id: 'resume-exhausted',
+      parsedContent: null,
+      uploadStatus: 'completed',
+      parseStatus: 'failed',
+      parseRetryable: true,
+    })
+    harness.extractResumeText.mockReturnValue(null)
+
+    await expect(analyzeApplication({
+      organizationId: 'org-1',
+      applicationId: 'application-1',
+    })).rejects.toMatchObject({ code: 'RESUME_PARSE_FAILED', retryable: false })
+  })
+
+  it('maps missing or invalid AI configuration to a stable terminal prerequisite', async () => {
+    harness.loadAiConfig.mockRejectedValueOnce(Object.assign(new Error('private config detail'), {
+      statusCode: 422,
+    }))
+
+    await expect(analyzeApplication({
+      organizationId: 'org-1',
+      applicationId: 'application-1',
+    })).rejects.toMatchObject({
+      code: 'AI_CONFIGURATION_INVALID',
+      message: 'AI analysis is not configured for this organization.',
+      retryable: false,
+    })
+    expect(harness.scoreApplication).not.toHaveBeenCalled()
+  })
+
+  it('does not misclassify a statusless AI configuration database failure as terminal', async () => {
+    const databaseError = new Error('connection reset while loading config')
+    harness.loadAiConfig.mockRejectedValueOnce(databaseError)
+
+    await expect(analyzeApplication({
+      organizationId: 'org-1',
+      applicationId: 'application-1',
+    })).rejects.toBe(databaseError)
+    expect(harness.scoreApplication).not.toHaveBeenCalled()
+    expect(harness.failedRunValues).not.toHaveBeenCalled()
+  })
+
   it('reports a missing resume separately from a parsing failure', async () => {
     harness.loadApplicationResume.mockResolvedValue(null)
     harness.extractResumeText.mockReturnValue(null)
@@ -262,7 +336,7 @@ describe('analyzeApplication', () => {
     })).rejects.toSatisfy((error: unknown) =>
       error instanceof AnalyzeApplicationError
       && error.code === 'PROVIDER_FAILURE'
-      && error.message === 'provider unavailable')
+      && error.message === 'AI provider request failed.')
 
     expect(harness.failedRunValues).toHaveBeenCalledWith(expect.objectContaining({
       organizationId: 'org-1',
@@ -270,9 +344,54 @@ describe('analyzeApplication', () => {
       status: 'failed',
       provider: 'openai',
       model: 'gpt-4.1-mini',
-      errorMessage: 'provider unavailable',
+      errorMessage: 'AI provider request failed.',
       scoredById: 'user-1',
     }))
+  })
+
+  it.each([
+    { statusCode: 401, retryable: false },
+    { statusCode: 429, retryable: true },
+    { statusCode: 503, retryable: true },
+  ])('classifies provider status $statusCode without leaking its response', async ({ statusCode, retryable }) => {
+    harness.scoreApplication.mockRejectedValueOnce(Object.assign(
+      new Error('private provider response'),
+      { statusCode },
+    ))
+
+    await expect(analyzeApplication({
+      organizationId: 'org-1',
+      applicationId: 'application-1',
+    })).rejects.toMatchObject({
+      code: 'PROVIDER_FAILURE',
+      message: 'AI provider request failed.',
+      retryable,
+    })
+    expect(JSON.stringify(harness.failedRunValues.mock.calls)).not.toContain('private provider response')
+  })
+
+  it('retries unknown provider codes within the bounded queue attempts', async () => {
+    harness.scoreApplication.mockRejectedValueOnce(Object.assign(
+      new Error('private provider response'),
+      { code: 'SOME_PROVIDER_CODE' },
+    ))
+
+    await expect(analyzeApplication({
+      organizationId: 'org-1',
+      applicationId: 'application-1',
+    })).rejects.toMatchObject({ code: 'PROVIDER_FAILURE', retryable: true })
+  })
+
+  it('suppresses unfenced failed-run writes for claimed queue work', async () => {
+    harness.scoreApplication.mockRejectedValueOnce(new Error('private provider response'))
+
+    await expect(analyzeApplication({
+      organizationId: 'org-1',
+      applicationId: 'application-1',
+      recordFailedRun: false,
+    })).rejects.toMatchObject({ code: 'PROVIDER_FAILURE' })
+
+    expect(harness.failedRunValues).not.toHaveBeenCalled()
   })
 
   it('preserves the latest successful score metadata when a later provider attempt fails', async () => {
@@ -300,5 +419,63 @@ describe('analyzeApplication', () => {
       rawResponse: scoring,
       scoredById: 'user-1',
     })
+  })
+
+  it('does not call the provider when missing-only analysis sees a score of zero', async () => {
+    harness.applicationFindFirst.mockResolvedValue({ ...applicationRecord, score: 0 })
+
+    await expect(analyzeApplication({
+      organizationId: 'org-1',
+      applicationId: 'application-1',
+      onlyIfUnscored: true,
+    })).resolves.toEqual({ skipped: true, reason: 'already_scored' })
+
+    expect(harness.loadAiConfig).not.toHaveBeenCalled()
+    expect(harness.scoreApplication).not.toHaveBeenCalled()
+    expect(harness.db.transaction).not.toHaveBeenCalled()
+  })
+
+  it('passes the queue abort signal through to the provider call', async () => {
+    const controller = new AbortController()
+
+    await analyzeApplication({
+      organizationId: 'org-1',
+      applicationId: 'application-1',
+      abortSignal: controller.signal,
+    })
+
+    expect(harness.scoreApplication).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      { abortSignal: controller.signal },
+    )
+  })
+
+  it('does not overwrite a score that wins after the provider precheck', async () => {
+    harness.txApplicationForUpdate.mockResolvedValue([{ score: 55 }])
+
+    await expect(analyzeApplication({
+      organizationId: 'org-1',
+      applicationId: 'application-1',
+      onlyIfUnscored: true,
+    })).resolves.toEqual({ skipped: true, reason: 'already_scored' })
+
+    expect(harness.scoreApplication).toHaveBeenCalledTimes(1)
+    expect(harness.txInsertValues).not.toHaveBeenCalled()
+    expect(harness.txUpdateSet).not.toHaveBeenCalled()
+  })
+
+  it('can persist through a caller-owned transaction for atomic task fencing', async () => {
+    const persistenceTransaction = vi.fn(async operation => operation(harness.tx))
+
+    await expect(analyzeApplication({
+      organizationId: 'org-1',
+      applicationId: 'application-1',
+      onlyIfUnscored: true,
+      persistenceTransaction,
+    })).resolves.toMatchObject({ analysisRunId: 'run-1' })
+
+    expect(persistenceTransaction).toHaveBeenCalledTimes(1)
+    expect(harness.db.transaction).not.toHaveBeenCalled()
   })
 })

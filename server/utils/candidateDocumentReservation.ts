@@ -68,6 +68,10 @@ export type CandidateDocumentFinalizationInput = {
   candidateId: string
   processingTaskId: string
   parsedContent: unknown
+  parseStatus: 'pending' | 'parsed' | 'no_text' | 'failed'
+  parseResultCode: string | null
+  parseRetryable: boolean | null
+  parseAttemptedAt: Date
 }
 
 type FinalizedCandidateDocument = Omit<ReservedCandidateDocument, 'processingTaskId'>
@@ -158,6 +162,10 @@ const finalizationAdapter: CandidateDocumentFinalizationAdapter = {
             .set({
               parsedContent: input.parsedContent as any,
               uploadStatus: 'completed',
+              parseStatus: input.parseStatus,
+              parseResultCode: input.parseResultCode,
+              parseRetryable: input.parseRetryable,
+              parseAttemptedAt: input.parseAttemptedAt,
             })
             .where(and(
               eq(document.id, input.documentId),
