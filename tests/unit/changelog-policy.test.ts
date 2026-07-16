@@ -58,6 +58,7 @@ function createRepository(options: { withRemote?: boolean } = {}) {
     runGit(cwd, ['remote', 'add', 'origin', remote])
     runGit(cwd, ['tag', 'unrelated-tag'])
     runGit(cwd, ['push', '--set-upstream', 'origin', 'main'])
+    runGit(cwd, ['push', 'origin', 'main:refs/heads/release/1.x'])
     runGit(cwd, ['push', 'origin', 'unrelated-tag'])
   }
 
@@ -76,6 +77,7 @@ function commitChanges(cwd: string, files: Record<string, string>) {
 function runValidator(cwd: string, overrides: NodeJS.ProcessEnv = {}) {
   const env = { ...process.env }
   delete env.PR_PREFLIGHT_BASE_REF
+  delete env.PR_PREFLIGHT_REMOTE
   delete env.CHANGELOG_SKIP
   Object.assign(env, overrides)
 
@@ -425,6 +427,80 @@ describe('changelog commands', () => {
     expect(spawnSync('git', ['rev-parse', '--verify', 'refs/tags/unrelated-tag'], { cwd }).status).not.toBe(0)
   })
 
+  it.each([
+    { baseRef: 'main', resolvedRef: 'origin/main' },
+    { baseRef: 'release/1.x', resolvedRef: 'origin/release/1.x' },
+    { baseRef: 'refs/heads/release/1.x', resolvedRef: 'origin/release/1.x' },
+    { baseRef: 'origin/release/1.x', resolvedRef: 'origin/release/1.x' },
+  ])('fetches missing $baseRef into resolvable $resolvedRef', ({ baseRef, resolvedRef }) => {
+    const cwd = createRepository({ withRemote: true })
+    commitChanges(cwd, {
+      'CHANGELOG.md': baseline.replace(
+        '- Existing unreleased item.',
+        '- Existing unreleased item.\n- Add configurable base refs.',
+      ),
+    })
+    runGit(cwd, ['update-ref', '-d', 'refs/heads/main'])
+    runGit(cwd, ['update-ref', '-d', 'refs/heads/release/1.x'])
+    runGit(cwd, ['update-ref', '-d', 'refs/remotes/origin/main'])
+    runGit(cwd, ['update-ref', '-d', 'refs/remotes/origin/release/1.x'])
+
+    const result = runValidator(cwd, { PR_PREFLIGHT_BASE_REF: baseRef })
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(spawnSync('git', ['rev-parse', '--verify', resolvedRef], { cwd }).status).toBe(0)
+  })
+
+  it('does not fetch base refs that already resolve locally', () => {
+    const cwd = createRepository({ withRemote: true })
+    const baseSha = runGit(cwd, ['rev-parse', 'main'])
+    runGit(cwd, ['branch', 'release/1.x', 'main'])
+    runGit(cwd, [
+      'fetch',
+      '--no-tags',
+      'origin',
+      '+refs/heads/release/1.x:refs/remotes/origin/release/1.x',
+    ])
+    commitChanges(cwd, {
+      'CHANGELOG.md': baseline.replace(
+        '- Existing unreleased item.',
+        '- Existing unreleased item.\n- Avoid unnecessary base fetches.',
+      ),
+    })
+    runGit(cwd, ['remote', 'set-url', 'origin', join(cwd, 'missing-remote.git')])
+
+    for (const baseRef of [
+      'main',
+      'release/1.x',
+      'refs/heads/release/1.x',
+      'origin/release/1.x',
+      baseSha,
+    ]) {
+      const result = runValidator(cwd, { PR_PREFLIGHT_BASE_REF: baseRef })
+      expect(result.status, `${baseRef}: ${result.stderr}`).toBe(0)
+    }
+  })
+
+  it('fetches a missing explicit SHA before comparing against it', () => {
+    const cwd = createRepository({ withRemote: true })
+    const baseSha = runGit(cwd, ['rev-parse', 'main'])
+    commitChanges(cwd, {
+      'CHANGELOG.md': baseline.replace(
+        '- Existing unreleased item.',
+        '- Existing unreleased item.\n- Compare against fetched commits.',
+      ),
+    })
+    runGit(cwd, ['update-ref', '-d', 'refs/heads/main'])
+    runGit(cwd, ['update-ref', '-d', 'refs/remotes/origin/main'])
+    rmSync(join(cwd, '.git', 'objects', baseSha.slice(0, 2), baseSha.slice(2)))
+    expect(spawnSync('git', ['rev-parse', '--verify', `${baseSha}^{commit}`], { cwd }).status).not.toBe(0)
+
+    const result = runValidator(cwd, { PR_PREFLIGHT_BASE_REF: baseSha })
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(spawnSync('git', ['rev-parse', '--verify', `${baseSha}^{commit}`], { cwd }).status).toBe(0)
+  })
+
   it('reports a missing Unreleased entry with an actionable error', () => {
     const cwd = createRepository()
     commitChanges(cwd, { 'feature.txt': 'new behavior\n' })
@@ -478,6 +554,24 @@ describe('changelog commands', () => {
     expect(result.stderr).toBe('')
   })
 
+  it('keeps the public silent npm extraction command safe for stdout redirection', () => {
+    const expected = `${getReleaseNotes(readFileSync('CHANGELOG.md', 'utf8'), '1.0.0')}\n`
+    const result = spawnSync('npm', [
+      'run',
+      '--silent',
+      'changelog:extract',
+      '--',
+      '1.0.0',
+    ], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+    })
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toBe(expected)
+    expect(result.stderr).toBe('')
+  })
+
   it('rejects an unknown release version', () => {
     const cwd = createExtractorFixture()
 
@@ -500,6 +594,6 @@ describe('changelog commands', () => {
 
     expect(result.status).toBe(1)
     expect(result.stdout).toBe('')
-    expect(result.stderr).toContain('changelog:extract: usage: npm run changelog:extract -- <MAJOR.MINOR.PATCH>')
+    expect(result.stderr).toContain('changelog:extract: usage: npm run --silent changelog:extract -- <MAJOR.MINOR.PATCH>')
   })
 })

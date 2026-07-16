@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { getReleaseNotes } from './changelog-format.mjs'
 
-const usage = 'usage: npm run changelog:extract -- <MAJOR.MINOR.PATCH>'
+const usage = 'usage: npm run --silent changelog:extract -- <MAJOR.MINOR.PATCH>'
 
 function getVersion(args) {
   if (args.length !== 1 || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(args[0]))

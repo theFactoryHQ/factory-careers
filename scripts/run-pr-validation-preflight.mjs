@@ -1,6 +1,9 @@
 import { spawnSync } from 'node:child_process'
 import { argv, exit } from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { getFetchArgsForBaseRef, resolveBaseRef } from './git-base-ref.mjs'
+
+export { getFetchArgsForBaseRef }
 
 const productionEnv = {
   DATABASE_URL: 'postgresql://factory_app:database-password-for-ci-prod-check@db.internal:5432/factory_careers',
@@ -32,54 +35,17 @@ function run(command, args, options = {}) {
   return result.status ?? 1
 }
 
-function commandSucceeds(command, args) {
-  return spawnSync(command, args, { stdio: 'ignore' }).status === 0
-}
-
-export function getFetchArgsForBaseRef(baseRef, fallbackRemote = 'origin') {
-  const remoteRef = /^(?<remote>[^/\s]+)\/(?<branch>.+)$/.exec(baseRef)
-
-  if (remoteRef?.groups) {
-    const { remote, branch } = remoteRef.groups
-
-    return [
-      '--no-tags',
-      remote,
-      `+refs/heads/${branch}:refs/remotes/${remote}/${branch}`,
-    ]
-  }
-
-  if (/^refs\/heads\/.+/.test(baseRef)) {
-    const branch = baseRef.replace(/^refs\/heads\//, '')
-
-    return [
-      '--no-tags',
-      fallbackRemote,
-      `+refs/heads/${branch}:refs/remotes/${fallbackRemote}/${branch}`,
-    ]
-  }
-
-  return ['--no-tags', fallbackRemote, baseRef]
-}
-
 function getChangedFiles() {
-  const baseRef = process.env.PR_PREFLIGHT_BASE_REF || 'origin/main'
+  const requestedBaseRef = process.env.PR_PREFLIGHT_BASE_REF || 'origin/main'
   const remote = process.env.PR_PREFLIGHT_REMOTE || 'origin'
-
-  if (!commandSucceeds('git', ['rev-parse', '--verify', baseRef])) {
-    const fetchStatus = run('git', ['fetch', ...getFetchArgsForBaseRef(baseRef, remote)])
-
-    if (fetchStatus !== 0) {
-      throw new Error(`Unable to fetch ${baseRef} for CLI parity evidence.`)
-    }
-  }
+  const baseRef = resolveBaseRef(requestedBaseRef, remote)
 
   const result = spawnSync('git', ['diff', '--name-only', `${baseRef}...HEAD`], {
     encoding: 'utf8',
   })
 
   if (result.status !== 0) {
-    throw new Error(`Unable to compute changed files against ${baseRef}.`)
+    throw new Error(`Unable to compute changed files against ${requestedBaseRef}.`)
   }
 
   return result.stdout

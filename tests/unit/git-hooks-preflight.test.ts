@@ -65,6 +65,21 @@ describe('git hook preflight checks', () => {
   })
 
   it('fetches the configured base ref instead of hard-coding main', () => {
+    expect(getFetchArgsForBaseRef('main')).toEqual([
+      '--no-tags',
+      'origin',
+      '+refs/heads/main:refs/remotes/origin/main',
+    ])
+    expect(getFetchArgsForBaseRef('release/1.x')).toEqual([
+      '--no-tags',
+      'origin',
+      '+refs/heads/release/1.x:refs/remotes/origin/release/1.x',
+    ])
+    expect(getFetchArgsForBaseRef('refs/heads/release/1.x')).toEqual([
+      '--no-tags',
+      'origin',
+      '+refs/heads/release/1.x:refs/remotes/origin/release/1.x',
+    ])
     expect(getFetchArgsForBaseRef('origin/release/1.4')).toEqual([
       '--no-tags',
       'origin',
@@ -74,6 +89,11 @@ describe('git hook preflight checks', () => {
       '--no-tags',
       'upstream',
       '+refs/heads/main:refs/remotes/upstream/main',
+    ])
+    expect(getFetchArgsForBaseRef('release/1.x', 'upstream')).toEqual([
+      '--no-tags',
+      'upstream',
+      '+refs/heads/release/1.x:refs/remotes/upstream/release/1.x',
     ])
   })
 

@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { getChangelogItems, getReleaseNotes, getUnreleasedItems } from './changelog-format.mjs'
-import { getFetchArgsForBaseRef } from './run-pr-validation-preflight.mjs'
+import { resolveBaseRef } from './git-base-ref.mjs'
 
 const changelogFile = 'CHANGELOG.md'
 const packageFile = 'package.json'
@@ -115,30 +115,6 @@ function runGit(args, message) {
   return result.stdout
 }
 
-function hasGitRef(ref) {
-  const result = spawnSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], {
-    encoding: 'utf8',
-  })
-
-  if (result.error)
-    throw new Error(`Unable to inspect base ref ${ref}: ${result.error.message}`)
-
-  return result.status === 0
-}
-
-function ensureBaseRef(baseRef, remote) {
-  if (hasGitRef(baseRef))
-    return
-
-  runGit(
-    ['fetch', ...getFetchArgsForBaseRef(baseRef, remote)],
-    `Unable to fetch ${baseRef}; set PR_PREFLIGHT_BASE_REF to a reachable base ref`,
-  )
-
-  if (!hasGitRef(baseRef))
-    throw new Error(`Fetched ${baseRef}, but Git still cannot resolve it as a commit`)
-}
-
 function readBaseFile(baseRef, file) {
   return runGit(
     ['show', `${baseRef}:${file}`],
@@ -172,13 +148,13 @@ async function readCurrentFile(file) {
 }
 
 export async function main(env = process.env) {
-  const baseRef = env.PR_PREFLIGHT_BASE_REF || 'origin/main'
+  const requestedBaseRef = env.PR_PREFLIGHT_BASE_REF || 'origin/main'
   const remote = env.PR_PREFLIGHT_REMOTE || 'origin'
-  ensureBaseRef(baseRef, remote)
+  const baseRef = resolveBaseRef(requestedBaseRef, remote)
 
   const changedFiles = runGit(
     ['diff', '--name-only', `${baseRef}...HEAD`],
-    `Unable to compute changed files against ${baseRef}`,
+    `Unable to compute changed files against ${requestedBaseRef}`,
   ).split('\n').filter(Boolean)
 
   const [currentChangelog, currentPackage] = await Promise.all([
