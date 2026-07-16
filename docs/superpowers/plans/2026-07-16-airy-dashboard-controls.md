@@ -108,15 +108,8 @@ Make the `.factory-view-toggle` outer border transparent with `var(--ui-control-
 - [ ] **Step 5: Add explicit focus-visible treatment**
 
 ```css
-:where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
-  .ui-button,
-  .ui-tab,
-  .factory-toolbar-button,
-  .factory-job-subnav-tab,
-  .factory-candidate-detail-tab,
-  .factory-view-toggle button
-):focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--color-brand-500) 70%, white);
+:where(.factory-dashboard-shell, .factory-dashboard-portal) :is(button:not(.gooey-search-trigger):not(.gooey-search-clear), a):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-brand-500) 62%, transparent) !important;
   outline-offset: 2px;
 }
 ```
