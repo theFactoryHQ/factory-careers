@@ -1,6 +1,6 @@
 {
   "name": "@thefactory/careers-cli",
-  "version": "1.4.0",
+  "version": "1.0.0",
   "description": "Authenticated command-line interface for Factory Careers",
   "type": "module",
   "license": "AGPL-3.0-only",

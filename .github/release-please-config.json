@@ -22,7 +22,18 @@
         { "type": "ci", "section": "🏗️ Build & CI" },
         { "type": "chore", "section": "🧹 Chores", "hidden": true }
       ],
-      "extra-files": []
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "packages/careers-cli/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "package-lock.json",
+          "jsonpath": "$.packages[\"packages/careers-cli\"].version"
+        }
+      ]
     }
   }
 }
