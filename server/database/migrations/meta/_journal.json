@@ -414,6 +414,13 @@
       "when": 1784221200000,
       "tag": "0057_processing_search_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1784224800000,
+      "tag": "0058_processing_schema_advisories",
+      "breakpoints": true
     }
   ]
 }
