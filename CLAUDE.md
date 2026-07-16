@@ -148,6 +148,7 @@ self-hoster would notice.
   request; the matching version section must be nonempty afterward.
   `## Unreleased` must contain no entries after finalization.
 - Release-please retains `skip-changelog: true` only to avoid overwriting curated notes.
+- The exact curated changelog section for that version becomes the GitHub Release body.
 - Keep release and commit links scoped to `theFactoryHQ/factory-careers`.
 - Preserve inherited Reqcore history in its archive; do not mix new Factory
   Careers changes into the archived upstream record.
