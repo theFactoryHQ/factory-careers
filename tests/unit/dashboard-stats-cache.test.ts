@@ -3,15 +3,28 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 describe('dashboard stats cache', () => {
-  const stats = readFileSync(join(process.cwd(), 'server/api/dashboard/stats.get.ts'), 'utf8')
-  const httpCache = readFileSync(join(process.cwd(), 'server/utils/httpCache.ts'), 'utf8')
+  const stats = readFileSync(
+    join(process.cwd(), 'server/api/dashboard/stats.get.ts'),
+    'utf8',
+  )
+  const httpCache = readFileSync(
+    join(process.cwd(), 'server/utils/httpCache.ts'),
+    'utf8',
+  )
 
-  it('routes dashboard stats through the shared org-scoped cache helper', () => {
-    expect(stats).toContain('defineCachedEventHandler')
-    expect(stats).toContain('orgScopedCacheOptions')
+  it('authorizes dashboard stats before calling the shared org-scoped data cache', () => {
+    expect(stats).toContain('defineOrgScopedCachedFunction')
+    expect(stats).toContain('defineEventHandler')
+    expect(stats.indexOf('requirePermission')).toBeLessThan(
+      stats.indexOf('return getCachedDashboardStats'),
+    )
+    expect(stats).not.toContain('defineCachedEventHandler')
   })
 
-  it('varies by cookie and bearer tokens so the cached handler preserves auth headers', () => {
-    expect(httpCache).toContain("varies: ['cookie', 'authorization']")
+  it('keys cached data by authorized org, cache generation, and normalized input', () => {
+    expect(httpCache).toContain('defineCachedFunction')
+    expect(httpCache).toContain('getOrgDashboardCacheVersion(organizationId)')
+    expect(httpCache).toContain('hash(input)')
+    expect(httpCache).not.toContain("varies: ['cookie', 'authorization']")
   })
 })

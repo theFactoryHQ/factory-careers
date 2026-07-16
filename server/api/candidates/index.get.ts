@@ -1,95 +1,109 @@
 import { eq, and, or, ilike, desc, sql, gte, lte, inArray } from 'drizzle-orm'
+import type { z } from 'zod'
 import { candidate, application } from '../../database/schema'
-import { paginatedListResponse, paginationOffset } from '../../utils/schemas/common'
-import { candidateQuerySchema } from '../../utils/schemas/candidate'
 import {
-  loadPropertyEntriesForEntities,
-} from '../../utils/properties'
-import { matchingEntityIdsForPropertyFilters, parsePropertyFiltersParam } from '../../utils/propertyFilters'
+  paginatedListResponse,
+  paginationOffset,
+} from '../../utils/schemas/common'
+import { candidateQuerySchema } from '../../utils/schemas/candidate'
+import { loadPropertyEntriesForEntities } from '../../utils/properties'
+import {
+  matchingEntityIdsForPropertyFilters,
+  parsePropertyFiltersParam,
+} from '../../utils/propertyFilters'
 
-export default defineCachedEventHandler(async (event) => {
-  const session = await requirePermission(event, { candidate: ['read'] })
-  const orgId = session.session.activeOrganizationId
+const getCachedCandidates = defineOrgScopedCachedFunction(
+  'candidates-list',
+  async (orgId, query: z.infer<typeof candidateQuerySchema>) => {
+    const offset = paginationOffset(query.page, query.limit)
+    const conditions = [eq(candidate.organizationId, orgId)]
 
-  const query = await getValidatedQuery(event, candidateQuerySchema.parse)
+    if (query.search) {
+      // Escape LIKE meta-characters to prevent pattern injection
+      const escaped = query.search.replace(/[%_\\]/g, '\\$&')
+      const pattern = `%${escaped}%`
+      conditions.push(
+        or(
+          ilike(candidate.firstName, pattern),
+          ilike(candidate.lastName, pattern),
+          ilike(candidate.email, pattern),
+        )!,
+      )
+    }
 
-  const offset = paginationOffset(query.page, query.limit)
-  const conditions = [eq(candidate.organizationId, orgId)]
+    if (query.gender) {
+      conditions.push(eq(candidate.gender, query.gender))
+    }
 
-  if (query.search) {
-    // Escape LIKE meta-characters to prevent pattern injection
-    const escaped = query.search.replace(/[%_\\]/g, '\\$&')
-    const pattern = `%${escaped}%`
-    conditions.push(
-      or(
-        ilike(candidate.firstName, pattern),
-        ilike(candidate.lastName, pattern),
-        ilike(candidate.email, pattern),
-      )!,
-    )
-  }
+    // dateOfBirth is stored as ISO 8601 text (YYYY-MM-DD), so lexicographic comparison works
+    if (query.dobFrom) {
+      conditions.push(gte(candidate.dateOfBirth, query.dobFrom))
+    }
+    if (query.dobTo) {
+      conditions.push(lte(candidate.dateOfBirth, query.dobTo))
+    }
 
-  if (query.gender) {
-    conditions.push(eq(candidate.gender, query.gender))
-  }
+    const propertyFilters = parsePropertyFiltersParam(query.propertyFilters)
+    if (propertyFilters.length > 0) {
+      const matching = await matchingEntityIdsForPropertyFilters({
+        organizationId: orgId,
+        entityType: 'candidate',
+        filters: propertyFilters,
+      })
+      if (!matching || matching.size === 0) {
+        return paginatedListResponse([], 0, query.page, query.limit)
+      }
+      conditions.push(inArray(candidate.id, [...matching]))
+    }
 
-  // dateOfBirth is stored as ISO 8601 text (YYYY-MM-DD), so lexicographic comparison works
-  if (query.dobFrom) {
-    conditions.push(gte(candidate.dateOfBirth, query.dobFrom))
-  }
-  if (query.dobTo) {
-    conditions.push(lte(candidate.dateOfBirth, query.dobTo))
-  }
+    const where = and(...conditions)
 
-  const propertyFilters = parsePropertyFiltersParam(query.propertyFilters)
-  if (propertyFilters.length > 0) {
-    const matching = await matchingEntityIdsForPropertyFilters({
+    const [data, total] = await Promise.all([
+      db
+        .select({
+          id: candidate.id,
+          firstName: candidate.firstName,
+          lastName: candidate.lastName,
+          displayName: candidate.displayName,
+          email: candidate.email,
+          phone: candidate.phone,
+          gender: candidate.gender,
+          dateOfBirth: candidate.dateOfBirth,
+          quickNotes: candidate.quickNotes,
+          createdAt: candidate.createdAt,
+          updatedAt: candidate.updatedAt,
+          applicationCount: sql<number>`count(${application.id})::int`,
+        })
+        .from(candidate)
+        .leftJoin(application, eq(application.candidateId, candidate.id))
+        .where(where)
+        .groupBy(candidate.id)
+        .orderBy(desc(candidate.createdAt))
+        .limit(query.limit)
+        .offset(offset),
+      db.$count(candidate, where),
+    ])
+
+    // Bulk-attach properties for the current page
+    const ids = data.map(c => c.id)
+    const propertyMap = await loadPropertyEntriesForEntities({
       organizationId: orgId,
       entityType: 'candidate',
-      filters: propertyFilters,
+      entityIds: ids,
     })
-    if (!matching || matching.size === 0) {
-      return paginatedListResponse([], 0, query.page, query.limit)
-    }
-    conditions.push(inArray(candidate.id, [...matching]))
-  }
+    const enriched = data.map(c => ({
+      ...c,
+      properties: propertyMap.get(c.id) ?? [],
+    }))
 
-  const where = and(...conditions)
+    return paginatedListResponse(enriched, total, query.page, query.limit)
+  },
+)
 
-  const [data, total] = await Promise.all([
-    db
-      .select({
-        id: candidate.id,
-        firstName: candidate.firstName,
-        lastName: candidate.lastName,
-        displayName: candidate.displayName,
-        email: candidate.email,
-        phone: candidate.phone,
-        gender: candidate.gender,
-        dateOfBirth: candidate.dateOfBirth,
-        quickNotes: candidate.quickNotes,
-        createdAt: candidate.createdAt,
-        updatedAt: candidate.updatedAt,
-        applicationCount: sql<number>`count(${application.id})::int`,
-      })
-      .from(candidate)
-      .leftJoin(application, eq(application.candidateId, candidate.id))
-      .where(where)
-      .groupBy(candidate.id)
-      .orderBy(desc(candidate.createdAt))
-      .limit(query.limit)
-      .offset(offset),
-    db.$count(candidate, where),
-  ])
+export default defineEventHandler(async event => {
+  const session = await requirePermission(event, { candidate: ['read'] })
+  const orgId = session.session.activeOrganizationId
+  const query = await getValidatedQuery(event, candidateQuerySchema.parse)
 
-  // Bulk-attach properties for the current page
-  const ids = data.map((c) => c.id)
-  const propertyMap = await loadPropertyEntriesForEntities({
-    organizationId: orgId,
-    entityType: 'candidate',
-    entityIds: ids,
-  })
-  const enriched = data.map((c) => ({ ...c, properties: propertyMap.get(c.id) ?? [] }))
-
-  return paginatedListResponse(enriched, total, query.page, query.limit)
-}, orgScopedCacheOptions)
+  return getCachedCandidates(orgId, query)
+})
