@@ -13,6 +13,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com). Categories: **Add
 * **blog:** add Cluster 8 career page articles — pillar (career-page-that-converts) and two supporting articles (career-page-seo, google-for-jobs-structured-data)
 * **blog:** add incoming links to career page content from how-applicant-tracking-systems-work, open-source-applicant-tracking-system, and self-hosted-vs-cloud-ats
 
+### Fixed
+
+* **analytics:** restrict the PostHog browser proxy to required SDK routes with bounded request and response streaming, safe headers, and separate ingestion and asset rate limits
+
 ---
 
 ## [1.4.0](https://github.com/reqcore-inc/reqcore/compare/v1.3.0...v1.4.0) (2026-04-30)
