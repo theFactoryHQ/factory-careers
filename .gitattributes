@@ -1,0 +1,3 @@
+tests/fixtures/resumes/*.pdf binary
+tests/fixtures/resumes/*.doc binary
+tests/fixtures/resumes/*.docx binary

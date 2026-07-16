@@ -198,7 +198,7 @@ describeWithPostgres('application current analysis run PostgreSQL constraints', 
     const suffix = randomUUID().replaceAll('-', '').slice(0, 12)
     const freshDatabase = `careers_score_fresh_${suffix}`
     const upgradeDatabase = `careers_score_upgrade_${suffix}`
-    const partialMigrations = migrationsThrough(54)
+    const partialMigrations = migrationsThrough(55)
 
     try {
       await admin.unsafe(`create database "${freshDatabase}"`)
