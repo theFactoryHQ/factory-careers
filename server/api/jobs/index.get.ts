@@ -1,73 +1,88 @@
 import { eq, and, desc, count, inArray } from 'drizzle-orm'
+import type { z } from 'zod'
 import { job, application } from '../../database/schema'
-import { emptyPipelineCounts, type PipelineCounts } from '~~/shared/application-status'
-import { paginatedListResponse, paginationOffset } from '../../utils/schemas/common'
+import {
+  emptyPipelineCounts,
+  type PipelineCounts,
+} from '~~/shared/application-status'
+import {
+  paginatedListResponse,
+  paginationOffset,
+} from '../../utils/schemas/common'
 import { jobQuerySchema } from '../../utils/schemas/job'
 
-export default defineCachedEventHandler(async (event) => {
+const getCachedJobs = defineOrgScopedCachedFunction(
+  'jobs-list',
+  async (orgId, query: z.infer<typeof jobQuerySchema>) => {
+    const offset = paginationOffset(query.page, query.limit)
+    const conditions = [eq(job.organizationId, orgId)]
+    if (query.status) conditions.push(eq(job.status, query.status))
+
+    const [data, total] = await Promise.all([
+      db.query.job.findMany({
+        where: and(...conditions),
+        limit: query.limit,
+        offset,
+        orderBy: [desc(job.createdAt)],
+        columns: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          divisions: true,
+          descriptionBlocks: true,
+          location: true,
+          type: true,
+          status: true,
+          experienceLevel: true,
+          remoteStatus: true,
+          activeFrom: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      db.$count(job, and(...conditions)),
+    ])
+
+    // Fetch pipeline counts (application status breakdown) for returned jobs
+    const jobIds = data.map(j => j.id)
+    let pipelineMap: Record<string, PipelineCounts> = {}
+
+    if (jobIds.length > 0) {
+      const pipelineRows = await db
+        .select({
+          jobId: application.jobId,
+          status: application.status,
+          count: count().as('count'),
+        })
+        .from(application)
+        .where(
+          and(
+            eq(application.organizationId, orgId),
+            inArray(application.jobId, jobIds),
+          ),
+        )
+        .groupBy(application.jobId, application.status)
+
+      for (const row of pipelineRows) {
+        const entry = (pipelineMap[row.jobId] ??= emptyPipelineCounts())
+        entry[row.status as keyof PipelineCounts] = row.count
+      }
+    }
+
+    const enrichedData = data.map(j => ({
+      ...j,
+      pipeline: pipelineMap[j.id] ?? emptyPipelineCounts(),
+    }))
+
+    return paginatedListResponse(enrichedData, total, query.page, query.limit)
+  },
+)
+
+export default defineEventHandler(async event => {
   const session = await requirePermission(event, { job: ['read'] })
   const orgId = session.session.activeOrganizationId
-
   const query = await getValidatedQuery(event, jobQuerySchema.parse)
 
-  const offset = paginationOffset(query.page, query.limit)
-  const conditions = [eq(job.organizationId, orgId)]
-  if (query.status) conditions.push(eq(job.status, query.status))
-
-  const [data, total] = await Promise.all([
-    db.query.job.findMany({
-      where: and(...conditions),
-      limit: query.limit,
-      offset,
-      orderBy: [desc(job.createdAt)],
-      columns: {
-        id: true,
-        title: true,
-        slug: true,
-        description: true,
-        divisions: true,
-        descriptionBlocks: true,
-        location: true,
-        type: true,
-        status: true,
-        experienceLevel: true,
-        remoteStatus: true,
-        activeFrom: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    }),
-    db.$count(job, and(...conditions)),
-  ])
-
-  // Fetch pipeline counts (application status breakdown) for returned jobs
-  const jobIds = data.map((j) => j.id)
-  let pipelineMap: Record<string, PipelineCounts> = {}
-
-  if (jobIds.length > 0) {
-    const pipelineRows = await db
-      .select({
-        jobId: application.jobId,
-        status: application.status,
-        count: count().as('count'),
-      })
-      .from(application)
-      .where(and(
-        eq(application.organizationId, orgId),
-        inArray(application.jobId, jobIds),
-      ))
-      .groupBy(application.jobId, application.status)
-
-    for (const row of pipelineRows) {
-      const entry = (pipelineMap[row.jobId] ??= emptyPipelineCounts())
-      entry[row.status as keyof PipelineCounts] = row.count
-    }
-  }
-
-  const enrichedData = data.map((j) => ({
-    ...j,
-    pipeline: pipelineMap[j.id] ?? emptyPipelineCounts(),
-  }))
-
-  return paginatedListResponse(enrichedData, total, query.page, query.limit)
-}, orgScopedCacheOptions)
+  return getCachedJobs(orgId, query)
+})

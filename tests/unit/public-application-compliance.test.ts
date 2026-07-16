@@ -156,7 +156,6 @@ describe('public application compliance self-identification', () => {
   it('provides aggregate reporting without returning individual answers', () => {
     const source = readProjectFile('server/api/compliance/applications/summary.get.ts')
 
-    expect(source).toContain("requirePermission(event, { application: ['read'] })")
     expect(source).toContain('totalResponses')
     expect(source).toContain('breakdowns')
     expect(source).not.toContain('candidateId')

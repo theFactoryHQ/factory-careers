@@ -456,6 +456,8 @@ export const calendarIntegration = pgTable('calendar_integration', {
   userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
   organizationId: text('organization_id').references(() => organization.id, { onDelete: 'cascade' }),
   provider: calendarProviderEnum('provider').notNull().default('google'),
+  /** Stable connection generation; changes only when OAuth reconnects, not when tokens refresh */
+  connectionGeneration: text('connection_generation').notNull().$defaultFn(() => crypto.randomUUID()),
   /** AES-256-GCM encrypted provider OAuth2 access token (null for app-only integrations) */
   accessTokenEncrypted: text('access_token_encrypted'),
   /** AES-256-GCM encrypted provider OAuth2 refresh token (null for app-only integrations) */

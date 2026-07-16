@@ -7,6 +7,8 @@ import {
   removeCalendarIntegration as removeGoogleCalendarIntegration,
   setupCalendarWebhook as setupGoogleCalendarWebhook,
   isGoogleCalendarConfigured,
+  type GoogleCalendarIntegrationIdentity,
+  type GoogleCalendarIntegrationSnapshot,
 } from './google-calendar'
 import {
   createMicrosoftCalendarEvents,
@@ -18,6 +20,7 @@ import {
   isMicrosoftCalendarConfigured,
   isMicrosoftCalendarApplicationMode,
   type MicrosoftCalendarSyncResult,
+  type MicrosoftCalendarIntegrationIdentity,
 } from './microsoft-calendar'
 
 export type CalendarProvider = 'google' | 'microsoft'
@@ -48,6 +51,17 @@ export interface CalendarEventRecord {
   isPrimary: boolean
 }
 
+function googleIntegrationIdentity(
+  integration: { id: string, userId: string | null, organizationId: string | null },
+  fallbackUserId: string,
+): GoogleCalendarIntegrationIdentity {
+  return {
+    integrationId: integration.id,
+    userId: integration.userId ?? fallbackUserId,
+    organizationId: integration.organizationId,
+  }
+}
+
 export function getPreferredCalendarProvider(): CalendarProvider | null {
   if (isMicrosoftCalendarConfigured()) return 'microsoft'
   if (isGoogleCalendarConfigured()) return 'google'
@@ -65,19 +79,16 @@ export function isCalendarProviderConfigured(provider: CalendarProvider): boolea
 }
 
 export async function getConnectedCalendarIntegration(userId: string, organizationId?: string | null) {
-  const microsoft = organizationId
-    ? await db.query.calendarIntegration.findFirst({
-        where: and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, 'microsoft')),
-      })
-    : null
-  if (microsoft) return microsoft
+  if (organizationId) {
+    const microsoft = await db.query.calendarIntegration.findFirst({
+      where: and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, 'microsoft')),
+    })
+    if (microsoft) return microsoft
 
-  const google = organizationId
-    ? await db.query.calendarIntegration.findFirst({
-        where: and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, 'google')),
-      })
-    : null
-  if (google) return google
+    return await db.query.calendarIntegration.findFirst({
+      where: and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, 'google')),
+    }) ?? null
+  }
 
   const userMicrosoft = await db.query.calendarIntegration.findFirst({
     where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'microsoft')),
@@ -92,12 +103,11 @@ export async function getConnectedCalendarIntegration(userId: string, organizati
 async function resolveCalendarIntegration(userId: string, organizationId?: string | null, provider?: CalendarProvider | null) {
   if (!provider) return await getConnectedCalendarIntegration(userId, organizationId)
 
-  const orgIntegration = organizationId
-    ? await db.query.calendarIntegration.findFirst({
-        where: and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, provider)),
-      })
-    : null
-  if (orgIntegration) return orgIntegration
+  if (organizationId) {
+    return await db.query.calendarIntegration.findFirst({
+      where: and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, provider)),
+    }) ?? null
+  }
 
   return await db.query.calendarIntegration.findFirst({
     where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, provider)),
@@ -134,7 +144,10 @@ export async function createConnectedCalendarEvents(
     return results.map(result => ({ ...result, provider: 'microsoft' }))
   }
   if (integration?.provider === 'google') {
-    const result = await createGoogleCalendarEvent(integration.userId ?? userId, data)
+    const result = await createGoogleCalendarEvent(
+      googleIntegrationIdentity(integration, userId),
+      data,
+    )
     return result
       ? [{
           provider: 'google',
@@ -159,7 +172,13 @@ export async function updateConnectedCalendarEvent(
 ): Promise<string | null> {
   const integration = await resolveCalendarIntegration(userId, organizationId, provider)
   if (integration?.provider === 'microsoft') return await updateMicrosoftCalendarEvent(integration.userId ?? userId, integration.organizationId, eventId, data)
-  if (integration?.provider === 'google') return await updateGoogleCalendarEvent(integration.userId ?? userId, eventId, data)
+  if (integration?.provider === 'google') {
+    return await updateGoogleCalendarEvent(
+      googleIntegrationIdentity(integration, userId),
+      eventId,
+      data,
+    )
+  }
   return null
 }
 
@@ -171,7 +190,12 @@ export async function cancelConnectedCalendarEvent(
 ): Promise<boolean> {
   const integration = await resolveCalendarIntegration(userId, organizationId, provider)
   if (integration?.provider === 'microsoft') return await cancelMicrosoftCalendarEvent(integration.userId ?? userId, integration.organizationId, eventId)
-  if (integration?.provider === 'google') return await cancelGoogleCalendarEvent(integration.userId ?? userId, eventId)
+  if (integration?.provider === 'google') {
+    return await cancelGoogleCalendarEvent(
+      googleIntegrationIdentity(integration, userId),
+      eventId,
+    )
+  }
   return false
 }
 
@@ -235,16 +259,37 @@ export async function removeConnectedCalendarIntegration(userId: string, organiz
   if (!integration) return
 
   if (integration.provider === 'microsoft') {
-    await removeMicrosoftCalendarIntegration(integration.userId ?? userId, integration.organizationId ?? undefined)
+    const identity: MicrosoftCalendarIntegrationIdentity = {
+      integrationId: integration.id,
+      userId: integration.userId,
+      organizationId: integration.organizationId,
+      connectionGeneration: integration.connectionGeneration,
+    }
+    const removed = await removeMicrosoftCalendarIntegration(identity)
+    if (!removed) throw createError({ statusCode: 409, statusMessage: 'Calendar connection changed; retry disconnect' })
     return
   }
 
-  await removeGoogleCalendarIntegration(integration.userId ?? userId)
+  const googleUserId = integration.userId ?? userId
+  const snapshot: GoogleCalendarIntegrationSnapshot = {
+    integrationId: integration.id,
+    userId: googleUserId,
+    organizationId: integration.organizationId,
+    connectionGeneration: integration.connectionGeneration,
+  }
+  const removed = await removeGoogleCalendarIntegration(snapshot)
+  if (!removed) throw createError({ statusCode: 409, statusMessage: 'Calendar connection changed; retry disconnect' })
 }
 
 export async function setupConnectedCalendarWebhook(userId: string, organizationId?: string | null, provider?: CalendarProvider | null): Promise<boolean> {
   const integration = await resolveCalendarIntegration(userId, organizationId, provider)
-  if (integration?.provider === 'google') return await setupGoogleCalendarWebhook(integration.userId ?? userId)
+  if (integration?.provider === 'google') {
+    return await setupGoogleCalendarWebhook({
+      integrationId: integration.id,
+      userId: integration.userId ?? userId,
+      organizationId: integration.organizationId,
+    })
+  }
 
   // Microsoft Graph event creation/update/delete works without a webhook.
   // RSVP/back-sync via Graph change subscriptions can be added later without

@@ -5,7 +5,7 @@
  * calendar APIs to create, update, and cancel interview events on Factory's
  * shared Microsoft 365 group calendar.
  */
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { env } from './env'
 import { encrypt, decrypt } from './encryption'
 import { calendarIntegration, orgSettings } from '../database/schema'
@@ -53,6 +53,30 @@ type MicrosoftGraphContext = {
   accessToken: string
   integrationId: string
   calendarId: string
+  userId: string | null
+  organizationId: string | null
+  connectionGeneration: string
+}
+
+export type MicrosoftCalendarIntegrationIdentity = Readonly<{
+  integrationId: string
+  userId: string | null
+  organizationId: string | null
+  connectionGeneration: string
+}>
+
+function microsoftIntegrationGenerationWhere(identity: MicrosoftCalendarIntegrationIdentity) {
+  return and(
+    eq(calendarIntegration.id, identity.integrationId),
+    eq(calendarIntegration.provider, 'microsoft'),
+    identity.userId === null
+      ? isNull(calendarIntegration.userId)
+      : eq(calendarIntegration.userId, identity.userId),
+    identity.organizationId === null
+      ? isNull(calendarIntegration.organizationId)
+      : eq(calendarIntegration.organizationId, identity.organizationId),
+    eq(calendarIntegration.connectionGeneration, identity.connectionGeneration),
+  )
 }
 
 export type MicrosoftCalendarSyncResult = {
@@ -260,20 +284,39 @@ async function refreshMicrosoftAccessToken(userId: string, organizationId?: stri
 
     if (!tokens.access_token) return null
 
-    await db.update(calendarIntegration)
+    const refreshedAccessTokenEncrypted = encrypt(tokens.access_token, secret)
+    const refreshedRefreshTokenEncrypted = tokens.refresh_token
+      ? encrypt(tokens.refresh_token, secret)
+      : integration.refreshTokenEncrypted
+    const identity: MicrosoftCalendarIntegrationIdentity = {
+      integrationId: integration.id,
+      userId: integration.userId,
+      organizationId: integration.organizationId,
+      connectionGeneration: integration.connectionGeneration,
+    }
+    const persisted = await db.update(calendarIntegration)
       .set({
-        accessTokenEncrypted: encrypt(tokens.access_token, secret),
+        accessTokenEncrypted: refreshedAccessTokenEncrypted,
         ...(tokens.refresh_token
-          ? { refreshTokenEncrypted: encrypt(tokens.refresh_token, secret) }
+          ? { refreshTokenEncrypted: refreshedRefreshTokenEncrypted }
           : {}),
         updatedAt: new Date(),
       })
-      .where(eq(calendarIntegration.id, integration.id))
+      .where(and(
+        microsoftIntegrationGenerationWhere(identity),
+        eq(calendarIntegration.refreshTokenEncrypted, integration.refreshTokenEncrypted),
+      ))
+      .returning({ id: calendarIntegration.id })
+
+    if (!persisted[0]) return null
 
     return {
       accessToken: tokens.access_token,
       integrationId: integration.id,
       calendarId: integration.calendarId,
+      userId: integration.userId,
+      organizationId: integration.organizationId,
+      connectionGeneration: integration.connectionGeneration,
     }
   }
   catch (err) {
@@ -384,12 +427,19 @@ async function graphFetchGroupCalendar<T>(
   if (!groupId) {
     const group = await resolveMicrosoftCalendarGroup(context.accessToken)
     groupId = group.id
-    await db.update(calendarIntegration)
+    const updated = await db.update(calendarIntegration)
       .set({
         calendarId: group.id,
         updatedAt: new Date(),
       })
-      .where(eq(calendarIntegration.id, context.integrationId))
+      .where(microsoftIntegrationGenerationWhere({
+        integrationId: context.integrationId,
+        userId: context.userId,
+        organizationId: context.organizationId,
+        connectionGeneration: context.connectionGeneration,
+      }))
+      .returning({ id: calendarIntegration.id })
+    if (!updated[0]) throw new Error('Microsoft Calendar credentials changed during group resolution')
   }
 
   return await microsoftGraphFetchWithAccessToken<T>(
@@ -543,59 +593,82 @@ export async function saveMicrosoftCalendarIntegration(userId: string, organizat
 }): Promise<void> {
   const secret = env.BETTER_AUTH_SECRET
   const group = await resolveMicrosoftCalendarGroup(params.accessToken)
-
-  await db.delete(calendarIntegration)
-    .where(and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, 'microsoft')))
-  await db.delete(calendarIntegration)
-    .where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'microsoft')))
-  await db.insert(calendarIntegration).values({
+  const values = {
     userId,
     organizationId,
-    provider: 'microsoft',
+    provider: 'microsoft' as const,
+    connectionGeneration: crypto.randomUUID(),
     accessTokenEncrypted: encrypt(params.accessToken, secret),
     refreshTokenEncrypted: encrypt(params.refreshToken, secret),
     calendarId: group.id,
     accountEmail: normalizeEmail(params.email) || params.email,
-  })
-}
-
-export async function removeMicrosoftCalendarIntegration(userId: string, organizationId?: string | null): Promise<void> {
-  await db.delete(calendarIntegration)
-    .where(organizationId
-      ? and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, 'microsoft'))
-      : and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'microsoft')))
-}
-
-/**
- * Enable Microsoft Calendar integration at the organization level using application (app-only) permissions.
- * This is used when MICROSOFT_CALENDAR_AUTH_MODE=application.
- * No user tokens are stored; the system uses client_credentials from the pre-configured app registration.
- */
-export async function enableMicrosoftCalendarAppIntegration(organizationId: string): Promise<void> {
-  // Obtain an app token to resolve the target calendar/group
-  let accessToken: string
-  try {
-    accessToken = await getMicrosoftApplicationAccessToken()
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    throw new Error(`Failed to obtain app token for Microsoft Calendar: ${message}`)
+    updatedAt: new Date(),
   }
 
-  const group = await resolveMicrosoftCalendarGroup(accessToken)
-  const expectedEmail = getMicrosoftCalendarAccountEmail()
+  try {
+    await db.transaction(async (tx) => {
+      const existingForUser = await tx.query.calendarIntegration.findFirst({
+        where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'microsoft')),
+      })
+      const existingForOrganization = await tx.query.calendarIntegration.findFirst({
+        where: and(
+          eq(calendarIntegration.organizationId, organizationId),
+          eq(calendarIntegration.provider, 'microsoft'),
+        ),
+      })
 
-  await db.delete(calendarIntegration)
-    .where(and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, 'microsoft')))
+      if (existingForUser?.organizationId && existingForUser.organizationId !== organizationId) {
+        throw microsoftCalendarIntegrationConflict()
+      }
+      if (existingForOrganization && existingForOrganization.id !== existingForUser?.id) {
+        throw microsoftCalendarIntegrationConflict()
+      }
 
-  await db.insert(calendarIntegration).values({
-    userId: null, // organization-level / app-only
-    organizationId,
-    provider: 'microsoft',
-    accessTokenEncrypted: null,
-    refreshTokenEncrypted: null,
-    calendarId: group.id,
-    accountEmail: normalizeEmail(expectedEmail) || expectedEmail,
+      if (existingForUser) {
+        const updated = await tx.update(calendarIntegration)
+          .set(values)
+          .where(and(
+            eq(calendarIntegration.id, existingForUser.id),
+            eq(calendarIntegration.userId, userId),
+            eq(calendarIntegration.provider, 'microsoft'),
+            existingForUser.organizationId === null
+              ? isNull(calendarIntegration.organizationId)
+              : eq(calendarIntegration.organizationId, existingForUser.organizationId),
+          ))
+          .returning({ id: calendarIntegration.id })
+        if (!updated[0]) throw microsoftCalendarIntegrationConflict()
+        return
+      }
+
+      await tx.insert(calendarIntegration).values(values)
+    })
+  }
+  catch (error) {
+    if (isMicrosoftCalendarUniqueViolation(error)) {
+      throw microsoftCalendarIntegrationConflict()
+    }
+    throw error
+  }
+}
+
+function microsoftCalendarIntegrationConflict() {
+  return createError({
+    statusCode: 409,
+    statusMessage: 'Microsoft Calendar is already connected to a different organization or account',
   })
+}
+
+function isMicrosoftCalendarUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  if ('code' in error && error.code === '23505') return true
+  return 'cause' in error && isMicrosoftCalendarUniqueViolation(error.cause)
+}
+
+export async function removeMicrosoftCalendarIntegration(identity: MicrosoftCalendarIntegrationIdentity): Promise<boolean> {
+  const deleted = await db.delete(calendarIntegration)
+    .where(microsoftIntegrationGenerationWhere(identity))
+    .returning({ id: calendarIntegration.id })
+  return Boolean(deleted[0])
 }
 
 export async function createMicrosoftCalendarEvent(
