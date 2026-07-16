@@ -5,7 +5,7 @@
  * for two-way interview scheduling sync.
  */
 import { google, type calendar_v3 } from 'googleapis'
-import { eq, and, isNull } from 'drizzle-orm'
+import { eq, and, exists, isNull } from 'drizzle-orm'
 import { encrypt, decrypt } from './encryption'
 import { calendarIntegration, interview } from '../database/schema'
 
@@ -28,6 +28,16 @@ function googleIntegrationConditions(identity: GoogleCalendarIntegrationIdentity
 
 function googleIntegrationWhere(identity: GoogleCalendarIntegrationIdentity) {
   return and(...googleIntegrationConditions(identity))
+}
+
+function googleCredentialGenerationWhere(
+  identity: GoogleCalendarIntegrationIdentity,
+  refreshTokenEncrypted: string,
+) {
+  return and(
+    ...googleIntegrationConditions(identity),
+    eq(calendarIntegration.refreshTokenEncrypted, refreshTokenEncrypted),
+  )
 }
 
 function calendarIntegrationConflict() {
@@ -160,7 +170,7 @@ export async function exchangeCodeForTokens(code: string): Promise<{
  */
 export async function getCalendarClient(
   owner: string | GoogleCalendarIntegrationIdentity,
-  expectedAccessTokenEncrypted?: string,
+  expectedRefreshTokenEncrypted?: string,
 ): Promise<calendar_v3.Calendar | null> {
   const userId = typeof owner === 'string' ? owner : owner.userId
   const integration = await db.query.calendarIntegration.findFirst({
@@ -168,14 +178,14 @@ export async function getCalendarClient(
       ? and(
           eq(calendarIntegration.userId, userId),
           eq(calendarIntegration.provider, 'google'),
-          ...(expectedAccessTokenEncrypted
-            ? [eq(calendarIntegration.accessTokenEncrypted, expectedAccessTokenEncrypted)]
+          ...(expectedRefreshTokenEncrypted
+            ? [eq(calendarIntegration.refreshTokenEncrypted, expectedRefreshTokenEncrypted)]
             : []),
         )
       : and(
           ...googleIntegrationConditions(owner),
-          ...(expectedAccessTokenEncrypted
-            ? [eq(calendarIntegration.accessTokenEncrypted, expectedAccessTokenEncrypted)]
+          ...(expectedRefreshTokenEncrypted
+            ? [eq(calendarIntegration.refreshTokenEncrypted, expectedRefreshTokenEncrypted)]
             : []),
         ),
   })
@@ -407,11 +417,11 @@ export async function createCalendarEvent(
     where: typeof owner === 'string'
       ? and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google'))
       : googleIntegrationWhere(owner),
-    columns: { accessTokenEncrypted: true, calendarId: true },
+    columns: { calendarId: true, refreshTokenEncrypted: true },
   })
 
-  if (!integration?.accessTokenEncrypted) return null
-  const calendar = await getCalendarClient(owner, integration.accessTokenEncrypted)
+  if (!integration?.refreshTokenEncrypted) return null
+  const calendar = await getCalendarClient(owner, integration.refreshTokenEncrypted)
   if (!calendar) return null
 
   const calendarId = integration?.calendarId || 'primary'
@@ -500,11 +510,11 @@ export async function updateCalendarEvent(
     where: typeof owner === 'string'
       ? and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google'))
       : googleIntegrationWhere(owner),
-    columns: { accessTokenEncrypted: true, calendarId: true },
+    columns: { calendarId: true, refreshTokenEncrypted: true },
   })
 
-  if (!integration?.accessTokenEncrypted) return null
-  const calendar = await getCalendarClient(owner, integration.accessTokenEncrypted)
+  if (!integration?.refreshTokenEncrypted) return null
+  const calendar = await getCalendarClient(owner, integration.refreshTokenEncrypted)
   if (!calendar) return null
 
   const calendarId = integration?.calendarId || 'primary'
@@ -583,11 +593,11 @@ export async function cancelCalendarEvent(
     where: typeof owner === 'string'
       ? and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google'))
       : googleIntegrationWhere(owner),
-    columns: { accessTokenEncrypted: true, calendarId: true },
+    columns: { calendarId: true, refreshTokenEncrypted: true },
   })
 
-  if (!integration?.accessTokenEncrypted) return false
-  const calendar = await getCalendarClient(owner, integration.accessTokenEncrypted)
+  if (!integration?.refreshTokenEncrypted) return false
+  const calendar = await getCalendarClient(owner, integration.refreshTokenEncrypted)
   if (!calendar) return false
 
   const calendarId = integration?.calendarId || 'primary'
@@ -625,16 +635,16 @@ export async function setupCalendarWebhook(identity: GoogleCalendarIntegrationId
   const integration = await db.query.calendarIntegration.findFirst({
     where: googleIntegrationWhere(identity),
     columns: {
-      accessTokenEncrypted: true,
       calendarId: true,
+      refreshTokenEncrypted: true,
       webhookChannelId: true,
       webhookResourceId: true,
     },
   })
 
-  if (!integration?.accessTokenEncrypted) return false
+  if (!integration?.refreshTokenEncrypted) return false
 
-  const calendar = await getCalendarClient(identity, integration.accessTokenEncrypted)
+  const calendar = await getCalendarClient(identity, integration.refreshTokenEncrypted)
   if (!calendar) return false
 
   // Stop existing channel if any
@@ -685,7 +695,7 @@ export async function setupCalendarWebhook(identity: GoogleCalendarIntegrationId
       })
       .where(and(
         ...googleIntegrationConditions(identity),
-        eq(calendarIntegration.accessTokenEncrypted, integration.accessTokenEncrypted),
+        eq(calendarIntegration.refreshTokenEncrypted, integration.refreshTokenEncrypted),
         integration.webhookChannelId === null
           ? isNull(calendarIntegration.webhookChannelId)
           : eq(calendarIntegration.webhookChannelId, integration.webhookChannelId),
@@ -723,14 +733,15 @@ export async function performIncrementalSync(identity: GoogleCalendarIntegration
   if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') return
 
   const { userId } = identity
-  const calendar = await getCalendarClient(identity)
-  if (!calendar) return
-
   const integration = await db.query.calendarIntegration.findFirst({
     where: googleIntegrationWhere(identity),
   })
 
-  if (!integration) return
+  if (!integration?.refreshTokenEncrypted) return
+
+  const credentialGeneration = integration.refreshTokenEncrypted
+  const calendar = await getCalendarClient(identity, credentialGeneration)
+  if (!calendar) return
 
   const calendarId = integration.calendarId || 'primary'
 
@@ -768,10 +779,12 @@ export async function performIncrementalSync(identity: GoogleCalendarIntegration
         // If syncToken is invalid (410 Gone), clear it and do a full re-sync
         if (err && typeof err === 'object' && 'code' in err && (err as { code: number }).code === 410) {
           if (integration.syncToken) {
-            await db.update(calendarIntegration)
+            const cleared = await db.update(calendarIntegration)
               .set({ syncToken: null, updatedAt: new Date() })
-              .where(googleIntegrationWhere(identity))
-            return performIncrementalSync(identity)
+              .where(googleCredentialGenerationWhere(identity, credentialGeneration))
+              .returning({ id: calendarIntegration.id })
+            if (cleared[0]) return await performIncrementalSync(identity)
+            return
           }
           // Already cleared syncToken but still getting 410 — bail out
           logError('calendar.persistent_410_error', {
@@ -784,10 +797,20 @@ export async function performIncrementalSync(identity: GoogleCalendarIntegration
 
       const events = data.items ?? []
 
+      const generationStillCurrent = await db.query.calendarIntegration.findFirst({
+        where: googleCredentialGenerationWhere(identity, credentialGeneration),
+        columns: { id: true },
+      })
+      if (!generationStillCurrent) return
+
       for (const event of events) {
         if (!event.id) continue
         if (identity.organizationId !== null) {
-          await syncEventAttendeeStatus(event, identity.organizationId)
+          await syncEventAttendeeStatus(
+            event,
+            identity,
+            credentialGeneration,
+          )
         }
       }
 
@@ -799,7 +822,7 @@ export async function performIncrementalSync(identity: GoogleCalendarIntegration
     if (nextSyncToken) {
       await db.update(calendarIntegration)
         .set({ syncToken: nextSyncToken, updatedAt: new Date() })
-        .where(googleIntegrationWhere(identity))
+        .where(googleCredentialGenerationWhere(identity, credentialGeneration))
     }
   }
   catch (err) {
@@ -830,9 +853,12 @@ function mapAttendeeStatus(
  */
 async function syncEventAttendeeStatus(
   event: calendar_v3.Schema$Event,
-  organizationId: string,
+  identity: GoogleCalendarIntegrationIdentity,
+  credentialGeneration: string,
 ): Promise<void> {
   if (!event.id) return
+  if (identity.organizationId === null) return
+  const organizationId = identity.organizationId
 
   // Find the interview linked to this Google Calendar event
   const interviewRecord = await db.query.interview.findFirst({
@@ -874,6 +900,11 @@ async function syncEventAttendeeStatus(
     .where(and(
       eq(interview.id, interviewRecord.id),
       eq(interview.organizationId, organizationId),
+      exists(
+        db.select({ id: calendarIntegration.id })
+          .from(calendarIntegration)
+          .where(googleCredentialGenerationWhere(identity, credentialGeneration)),
+      ),
     ))
 
   console.info(

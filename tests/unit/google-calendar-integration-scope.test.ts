@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const drizzleMocks = vi.hoisted(() => ({
   and: vi.fn((...conditions: unknown[]) => ({ operator: 'and', conditions })),
   eq: vi.fn((column: unknown, value: unknown) => ({ operator: 'eq', column, value })),
+  exists: vi.fn((query: unknown) => ({ operator: 'exists', query })),
   isNull: vi.fn((column: unknown) => ({ operator: 'isNull', column })),
 }))
 
@@ -48,6 +49,9 @@ const updateSetMock = vi.fn(() => ({ where: updateWhereMock }))
 const insertReturningMock = vi.fn()
 const insertValuesMock = vi.fn(() => ({ returning: insertReturningMock }))
 const deleteWhereMock = vi.fn()
+const selectWhereMock = vi.fn(() => ({ query: 'credential-generation' }))
+const selectFromMock = vi.fn(() => ({ where: selectWhereMock }))
+const selectMock = vi.fn(() => ({ from: selectFromMock }))
 
 vi.stubGlobal('env', {
   BETTER_AUTH_SECRET: 'test-auth-secret',
@@ -63,6 +67,7 @@ const transactionClient = {
   update: vi.fn(() => ({ set: updateSetMock })),
   insert: vi.fn(() => ({ values: insertValuesMock })),
   delete: vi.fn(() => ({ where: deleteWhereMock })),
+  select: selectMock,
 }
 vi.stubGlobal('db', {
   ...transactionClient,
@@ -356,8 +361,44 @@ describe('Google Calendar integration identity scope', () => {
       operator: 'and',
       conditions: expect.arrayContaining([{
         operator: 'eq',
-        column: calendarIntegration.accessTokenEncrypted,
-        value: 'stored-access',
+        column: calendarIntegration.refreshTokenEncrypted,
+        value: 'stored-refresh',
+      }]),
+    }))
+  })
+
+  it('keeps webhook setup valid when its access token refreshes during watch creation', async () => {
+    const identity = {
+      integrationId: 'integration-token-refresh',
+      userId: 'user-token-refresh',
+      organizationId: 'org-token-refresh',
+    }
+    findFirstMock.mockResolvedValue({
+      id: identity.integrationId,
+      userId: identity.userId,
+      organizationId: identity.organizationId,
+      provider: 'google',
+      accessTokenEncrypted: 'stored-access',
+      refreshTokenEncrypted: 'stable-refresh-generation',
+      calendarId: 'primary',
+      webhookChannelId: null,
+      webhookResourceId: null,
+      syncToken: null,
+    })
+    calendarClient.events.watch.mockImplementationOnce(async () => {
+      const tokenListener = oauthClient.on.mock.calls.find(([event]) => event === 'tokens')?.[1]
+      await tokenListener({ access_token: 'rotated-access-token' })
+      return { data: { resourceId: 'resource-exact', expiration: '1780000000000' } }
+    })
+
+    await expect(setupCalendarWebhook(identity)).resolves.toBe(true)
+
+    expect(updateWhereMock).toHaveBeenCalledWith(expect.objectContaining({
+      operator: 'and',
+      conditions: expect.arrayContaining([{
+        operator: 'eq',
+        column: calendarIntegration.refreshTokenEncrypted,
+        value: 'stable-refresh-generation',
       }]),
     }))
   })
@@ -493,5 +534,43 @@ describe('Google Calendar integration identity scope', () => {
     await performIncrementalSync(identity)
 
     expect(interviewFindFirstMock).not.toHaveBeenCalled()
+  })
+
+  it('drops stale-account sync results when OAuth reconnect changes credential generation', async () => {
+    const identity = {
+      integrationId: 'integration-sync-race',
+      userId: 'user-sync-race',
+      organizationId: 'org-sync-race',
+    }
+    const oldGeneration = {
+      id: identity.integrationId,
+      userId: identity.userId,
+      organizationId: identity.organizationId,
+      provider: 'google',
+      accessTokenEncrypted: 'stored-access-old',
+      refreshTokenEncrypted: 'stored-refresh-old',
+      calendarId: 'primary',
+      syncToken: null,
+    }
+    findFirstMock
+      .mockResolvedValueOnce(oldGeneration)
+      .mockResolvedValueOnce(oldGeneration)
+      .mockResolvedValueOnce(null)
+    calendarClient.events.list.mockResolvedValue({
+      data: {
+        items: [{
+          id: 'event-from-old-account',
+          attendees: [{ email: 'candidate@example.com', responseStatus: 'accepted' }],
+        }],
+        nextSyncToken: 'old-account-sync-token',
+      },
+    })
+
+    await performIncrementalSync(identity)
+
+    expect(interviewFindFirstMock).not.toHaveBeenCalled()
+    expect(updateSetMock).not.toHaveBeenCalledWith(expect.objectContaining({
+      syncToken: 'old-account-sync-token',
+    }))
   })
 })
