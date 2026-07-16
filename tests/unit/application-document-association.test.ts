@@ -26,12 +26,14 @@ describe('application document association', () => {
 
   it('associates built-in and custom public uploads with the new application', () => {
     const route = readProjectFile('server/api/public/jobs/[slug]/apply.post.ts')
-    const documentInserts = [...route.matchAll(/db\.insert\(document\)\.values\(\{([\s\S]*?)\n\s*\}\)/g)]
+    const transaction = readProjectFile('server/utils/createPublicApplication.ts')
 
-    expect(documentInserts).toHaveLength(2)
-    for (const [, values] of documentInserts) {
-      expect(values).toContain('applicationId: newApplication!.id')
-    }
+    expect(route).toContain("kind: 'custom'")
+    expect(route).toContain("kind: 'resume'")
+    expect(route).toContain('documents: plannedDocumentUploads.map')
+    expect(transaction).toContain('await tx.insertDocuments')
+    expect(transaction).toContain('applicationId,')
+    expect(transaction).toContain('...reservedDocument')
   })
 
   it('returns application documents through the existing candidate.documents contract with a legacy-only fallback', () => {

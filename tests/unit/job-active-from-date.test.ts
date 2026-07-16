@@ -30,9 +30,10 @@ describe('job active-from date', () => {
     expect(applicationForm).toContain('id="application-active-from"')
     expect(applicationForm).toContain('activeFrom: todayDateInputValue()')
     expect(applicationForm).toContain('activeFrom: j.activeFrom ? toDateInputValue(j.activeFrom) : todayDateInputValue()')
-    expect(applicationForm).toContain('activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue())')
+    expect(applicationForm).toContain('activeFrom: dateInputToStartOfLocalDay(form.value.activeFrom || todayDateInputValue())')
+    expect(applicationForm).toContain('validThrough: form.value.validThrough ? dateInputToEndOfLocalDay(form.value.validThrough) : null')
     expect(newJob).toContain('activeFrom: todayDateInputValue()')
-    expect(newJob).toContain('activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue())')
+    expect(newJob).toContain('activeFrom: dateInputToStartOfLocalDay(form.value.activeFrom || todayDateInputValue())')
     expect(useJobs).toContain('activeFrom?: Date')
   })
 

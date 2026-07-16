@@ -7,6 +7,7 @@ import {
   questionResponse,
 } from '../database/schema'
 import { db } from './db'
+import { CandidateDocumentLimitError, lockCandidateDocumentCapacity } from './candidateDocumentReservation'
 
 type ResponseValue = string | string[] | number | boolean
 
@@ -36,7 +37,15 @@ export type PublicApplicationTransactionInput = {
     questionId: string
     value: ResponseValue
   }>
-  newDocumentCount: number
+  documents: Array<{
+    id: string
+    type: 'resume' | 'cover_letter' | 'other'
+    storageKey: string
+    originalFilename: string
+    mimeType: string
+    sizeBytes: number
+    questionId?: string
+  }>
   maxDocumentsPerCandidate: number
 }
 
@@ -48,12 +57,27 @@ export type PublicApplicationTransaction = {
     organizationId: string
     candidateId: string
   }): Promise<number>
+  lockCandidateDocuments(input: {
+    organizationId: string
+    candidateId: string
+  }): Promise<void>
   insertApplication(input: {
     organizationId: string
     candidateId: string
     jobId: string
     coverLetterText: string | null
   }): Promise<string | null>
+  insertDocuments(inputs: Array<{
+    id: string
+    organizationId: string
+    candidateId: string
+    applicationId: string
+    type: 'resume' | 'cover_letter' | 'other'
+    storageKey: string
+    originalFilename: string
+    mimeType: string
+    sizeBytes: number
+  }>): Promise<void>
   insertComplianceResponse(input: ComplianceResponseInput & {
     organizationId: string
     applicationId: string
@@ -78,9 +102,9 @@ export class DuplicatePublicApplicationError extends Error {
   }
 }
 
-export class PublicApplicationDocumentLimitError extends Error {
-  constructor(readonly maximum: number) {
-    super(`Document limit reached. Maximum ${maximum} documents per candidate`)
+export class PublicApplicationDocumentLimitError extends CandidateDocumentLimitError {
+  constructor(maximum: number) {
+    super(maximum)
     this.name = 'PublicApplicationDocumentLimitError'
   }
 }
@@ -129,6 +153,10 @@ const drizzleTransactionAdapter: PublicApplicationTransactionAdapter = {
         return row?.count ?? 0
       },
 
+      async lockCandidateDocuments(input) {
+        await lockCandidateDocumentCapacity(tx, input)
+      },
+
       async insertApplication(input) {
         const [row] = await tx.insert(application)
           .values({
@@ -143,6 +171,10 @@ const drizzleTransactionAdapter: PublicApplicationTransactionAdapter = {
           })
           .returning({ id: application.id })
         return row?.id ?? null
+      },
+
+      async insertDocuments(inputs) {
+        await tx.insert(document).values(inputs)
       },
 
       async insertComplianceResponse(input) {
@@ -171,12 +203,16 @@ export async function createPublicApplication(
       email: input.candidate.email.toLowerCase(),
     })
 
-    if (input.newDocumentCount > 0) {
+    if (input.documents.length > 0) {
+      await tx.lockCandidateDocuments({
+        organizationId: input.organizationId,
+        candidateId,
+      })
       const existingDocumentCount = await tx.countCandidateDocuments({
         organizationId: input.organizationId,
         candidateId,
       })
-      if (existingDocumentCount + input.newDocumentCount > input.maxDocumentsPerCandidate) {
+      if (existingDocumentCount + input.documents.length > input.maxDocumentsPerCandidate) {
         throw new PublicApplicationDocumentLimitError(input.maxDocumentsPerCandidate)
       }
     }
@@ -191,6 +227,15 @@ export async function createPublicApplication(
       throw new DuplicatePublicApplicationError()
     }
 
+    if (input.documents.length > 0) {
+      await tx.insertDocuments(input.documents.map(({ questionId: _questionId, ...reservedDocument }) => ({
+        organizationId: input.organizationId,
+        candidateId,
+        applicationId,
+        ...reservedDocument,
+      })))
+    }
+
     if (input.compliance) {
       await tx.insertComplianceResponse({
         organizationId: input.organizationId,
@@ -200,8 +245,14 @@ export async function createPublicApplication(
       })
     }
 
-    if (input.responses.length > 0) {
-      await tx.insertQuestionResponses(input.responses.map((response) => ({
+    const responses = [
+      ...input.responses,
+      ...input.documents.flatMap(reservedDocument => reservedDocument.questionId
+        ? [{ questionId: reservedDocument.questionId, value: reservedDocument.id }]
+        : []),
+    ]
+    if (responses.length > 0) {
+      await tx.insertQuestionResponses(responses.map((response) => ({
         organizationId: input.organizationId,
         applicationId,
         ...response,

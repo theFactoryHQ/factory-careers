@@ -36,7 +36,7 @@ import {
   AlertTriangle,
 } from 'lucide-vue-next'
 import { z } from 'zod'
-import { todayDateInputValue } from '~~/shared/date-input'
+import { dateInputToStartOfLocalDay, todayDateInputValue } from '~~/shared/date-input'
 import {
   factoryDivisionSchema,
   jobDescriptionBlocksToMarkdown,
@@ -653,7 +653,7 @@ async function handleSubmit(mode: 'publish' | 'draft' = publishChoice.value) {
       type: form.value.type,
       experienceLevel: form.value.experienceLevel || undefined,
       remoteStatus: form.value.remoteStatus || undefined,
-      activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue()),
+      activeFrom: dateInputToStartOfLocalDay(form.value.activeFrom || todayDateInputValue()),
       requireResume: applicationForm.value.requireResume,
       requireCoverLetter: applicationForm.value.requireCoverLetter,
       autoScoreOnApply: autoScoreOnApply.value,

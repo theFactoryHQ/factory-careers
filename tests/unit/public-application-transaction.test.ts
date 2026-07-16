@@ -9,6 +9,7 @@ import {
 type State = {
   candidates: Map<string, string>
   applications: Map<string, string>
+  documents: Map<string, string>
   complianceResponses: string[]
   questionResponses: string[]
 }
@@ -17,6 +18,7 @@ function cloneState(state: State): State {
   return {
     candidates: new Map(state.candidates),
     applications: new Map(state.applications),
+    documents: new Map(state.documents),
     complianceResponses: [...state.complianceResponses],
     questionResponses: [...state.questionResponses],
   }
@@ -29,6 +31,7 @@ function createTestAdapter(options: {
   const state: State = {
     candidates: new Map(),
     applications: new Map(),
+    documents: new Map(),
     complianceResponses: [],
     questionResponses: [],
   }
@@ -52,14 +55,20 @@ function createTestAdapter(options: {
           return id
         },
         async countCandidateDocuments() {
-          return 0
+          return [...working.documents.values()].filter(candidateId => candidateId === 'candidate-1').length
         },
+        async lockCandidateDocuments() {},
         async insertApplication(input) {
           const key = `${input.organizationId}:${input.candidateId}:${input.jobId}`
           if (working.applications.has(key)) return null
           const id = `application-${working.applications.size + 1}`
           working.applications.set(key, id)
           return id
+        },
+        async insertDocuments(inputs) {
+          for (const input of inputs) {
+            working.documents.set(input.id, input.candidateId)
+          }
         },
         async insertComplianceResponse(input) {
           if (options.failCompliance) throw new Error('compliance write failed')
@@ -75,6 +84,7 @@ function createTestAdapter(options: {
         const result = await operation(tx)
         state.candidates = working.candidates
         state.applications = working.applications
+        state.documents = working.documents
         state.complianceResponses = working.complianceResponses
         state.questionResponses = working.questionResponses
         return result
@@ -107,7 +117,7 @@ const applicationInput: PublicApplicationTransactionInput = {
   responses: [
     { questionId: 'question-1', value: 'Analytical Engine' },
   ],
-  newDocumentCount: 0,
+  documents: [],
   maxDocumentsPerCandidate: 10,
 }
 
@@ -156,5 +166,38 @@ describe('createPublicApplication transaction', () => {
     expect(state.applications.size).toBe(1)
     expect(state.complianceResponses).toHaveLength(1)
     expect(state.questionResponses).toHaveLength(1)
+  })
+
+  it('reserves document rows before commit so concurrent applications cannot exceed the cap', async () => {
+    const { adapter, state } = createTestAdapter()
+    const withDocuments = (jobId: string, firstDocument: number): PublicApplicationTransactionInput => ({
+      ...applicationInput,
+      jobId,
+      documents: Array.from({ length: 6 }, (_, index) => {
+        const number = firstDocument + index
+        return {
+          id: `document-${number}`,
+          type: 'resume' as const,
+          storageKey: `org-1/applications/document-${number}.pdf`,
+          originalFilename: `resume-${number}.pdf`,
+          mimeType: 'application/pdf',
+          sizeBytes: 100,
+        }
+      }),
+    })
+
+    const results = await Promise.allSettled([
+      createPublicApplication(withDocuments('job-1', 1), adapter),
+      createPublicApplication(withDocuments('job-2', 7), adapter),
+    ])
+
+    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
+    expect(results.find(result => result.status === 'rejected')).toMatchObject({
+      reason: expect.objectContaining({
+        name: 'PublicApplicationDocumentLimitError',
+      }),
+    })
+    expect(state.documents.size).toBe(6)
+    expect(state.applications.size).toBe(1)
   })
 })

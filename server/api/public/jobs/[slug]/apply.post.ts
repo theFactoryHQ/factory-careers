@@ -1,5 +1,5 @@
 import { eq, and, asc, sql } from 'drizzle-orm'
-import { job, application, jobQuestion, questionResponse, document, organization, applicationSource, trackingLink, orgSettings } from '../../../../database/schema'
+import { job, jobQuestion, document, organization, applicationSource, trackingLink, orgSettings } from '../../../../database/schema'
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
 import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
 import { autoScoreApplication } from '../../../../utils/ai/autoScore'
@@ -18,6 +18,7 @@ import {
   DuplicatePublicApplicationError,
   PublicApplicationDocumentLimitError,
 } from '../../../../utils/createPublicApplication'
+import { rollbackPublicApplicationSubmission } from '../../../../utils/rollbackPublicApplicationSubmission'
 import {
   MAX_FILE_SIZE,
   MAX_DOCUMENTS_PER_CANDIDATE,
@@ -393,8 +394,60 @@ export default defineEventHandler(async (event) => {
   // 6. Persist the relational application core in one transaction
   // ─────────────────────────────────────────────
 
-  const builtInFileCount = resumeUpload ? 1 : 0
-  const totalNewFiles = uploadedFiles.size + builtInFileCount
+  type PlannedDocumentUpload = {
+    id: string
+    kind: 'custom' | 'resume'
+    questionId?: string
+    type: 'resume' | 'cover_letter' | 'other'
+    storageKey: string
+    originalFilename: string
+    mimeType: string
+    sizeBytes: number
+    data: Buffer
+  }
+
+  const plannedDocumentUploads: PlannedDocumentUpload[] = []
+  for (const [questionId, file] of uploadedFiles) {
+    const id = crypto.randomUUID()
+    const mimeType = file.type!
+    const extension = MIME_TO_EXTENSION[mimeType] ?? 'bin'
+    const question = questions.find(candidateQuestion => candidateQuestion.id === questionId)
+    const label = question?.label?.toLowerCase() ?? ''
+    const type = label.includes('resume') || label.includes('cv')
+      ? 'resume'
+      : label.includes('cover letter')
+        ? 'cover_letter'
+        : 'other'
+
+    plannedDocumentUploads.push({
+      id,
+      kind: 'custom',
+      questionId,
+      type,
+      storageKey: `${orgId}/applications/${id}.${extension}`,
+      originalFilename: sanitizeFilename(file.filename),
+      mimeType,
+      sizeBytes: file.data.length,
+      data: file.data,
+    })
+  }
+
+  if (resumeUpload) {
+    const id = crypto.randomUUID()
+    const mimeType = resumeMimeType!
+    const extension = MIME_TO_EXTENSION[mimeType] ?? 'bin'
+    plannedDocumentUploads.push({
+      id,
+      kind: 'resume',
+      type: 'resume',
+      storageKey: `${orgId}/applications/${id}.${extension}`,
+      originalFilename: sanitizeFilename(resumeUpload.filename),
+      mimeType,
+      sizeBytes: resumeUpload.data.length,
+      data: resumeUpload.data,
+    })
+  }
+
   const normalizedCompliance = complianceConfig.enabled
     ? {
         sex: complianceConfig.includeEeo ? compliance?.sex : undefined,
@@ -426,7 +479,7 @@ export default defineEventHandler(async (event) => {
           }
         : undefined,
       responses: validNonFileResponses,
-      newDocumentCount: totalNewFiles,
+      documents: plannedDocumentUploads.map(({ data: _data, kind: _kind, ...reservedDocument }) => reservedDocument),
       maxDocumentsPerCandidate: MAX_DOCUMENTS_PER_CANDIDATE,
     })
   } catch (error) {
@@ -445,188 +498,108 @@ export default defineEventHandler(async (event) => {
     throw error
   }
 
-  const { candidateId, applicationId } = createdApplication
+  const { applicationId } = createdApplication
   const newApplication = { id: applicationId }
 
   // ─────────────────────────────────────────────
-  // 8b. Record source attribution
+  // 9. Upload reserved documents and persist parsed content
+  // ─────────────────────────────────────────────
+  const attemptedStorageKeys: string[] = []
+  let failedDocument: PlannedDocumentUpload | undefined
+  try {
+    for (const plannedDocument of plannedDocumentUploads) {
+      failedDocument = plannedDocument
+      attemptedStorageKeys.push(plannedDocument.storageKey)
+      await uploadToS3(plannedDocument.storageKey, plannedDocument.data, plannedDocument.mimeType)
+
+      // Parsing is best-effort and returns null when extraction is unavailable.
+      const parsedContent = await parseDocument(plannedDocument.data, plannedDocument.mimeType)
+      const [updated] = await db.update(document)
+        .set({ parsedContent: parsedContent as any })
+        .where(and(
+          eq(document.id, plannedDocument.id),
+          eq(document.organizationId, orgId),
+          eq(document.applicationId, applicationId),
+        ))
+        .returning({ id: document.id })
+      if (!updated) throw new Error('Reserved application document was not found')
+    }
+  } catch (uploadError) {
+    const isResume = failedDocument?.kind === 'resume'
+    logError(isResume ? 'application.resume_upload_failed' : 'application.file_upload_failed', {
+      job_id: jobId,
+      application_id: applicationId,
+      question_id: failedDocument?.questionId,
+      document_id: failedDocument?.id,
+      error_message: uploadError instanceof Error ? uploadError.message : String(uploadError),
+    })
+
+    const rollback = await rollbackPublicApplicationSubmission({
+      applicationId,
+      organizationId: orgId,
+      storageKeys: attemptedStorageKeys,
+    })
+    if (!rollback.relationalCleanupSucceeded) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Your application was received, but a document could not be processed. Please contact support before retrying.',
+      })
+    }
+
+    throw createError({
+      statusCode: 502,
+      statusMessage: isResume
+        ? 'Failed to upload your resume. Please try again.'
+        : 'Failed to upload an application document. Please try again.',
+    })
+  }
+
+  // ─────────────────────────────────────────────
+  // 10. Record source attribution after required uploads succeed
   // ─────────────────────────────────────────────
 
   try {
     const refererHeader = getHeader(event, 'referer') || getHeader(event, 'referrer')
     const referrerDomain = refererHeader ? extractDomain(refererHeader) : null
 
-    // Resolve tracking link from ?ref= code
-    let resolvedLink: { id: string; channel: typeof trackingLink.$inferSelect['channel'] } | null = null
-    if (sourceRef) {
-      const found = await db.query.trackingLink.findFirst({
-        where: and(eq(trackingLink.code, sourceRef), eq(trackingLink.organizationId, orgId)),
-        columns: { id: true, channel: true },
-      })
-      if (found) {
-        resolvedLink = found
-        // Increment application counter on tracking link
-        await db.update(trackingLink)
-          .set({ applicationCount: sql`${trackingLink.applicationCount} + 1` })
-          .where(eq(trackingLink.id, found.id))
+    await db.transaction(async (tx) => {
+      let resolvedLink: { id: string; channel: typeof trackingLink.$inferSelect['channel'] } | null = null
+      if (sourceRef) {
+        const found = await tx.query.trackingLink.findFirst({
+          where: and(eq(trackingLink.code, sourceRef), eq(trackingLink.organizationId, orgId)),
+          columns: { id: true, channel: true },
+        })
+        if (found) {
+          resolvedLink = found
+          await tx.update(trackingLink)
+            .set({ applicationCount: sql`${trackingLink.applicationCount} + 1` })
+            .where(and(eq(trackingLink.id, found.id), eq(trackingLink.organizationId, orgId)))
+        }
       }
-    }
 
-    // Determine channel: tracking link > utm_source mapping > referrer mapping > direct
-    const channel = resolvedLink?.channel
-      ?? mapUtmToChannel(utmSource)
-      ?? mapReferrerToChannel(referrerDomain)
-      ?? 'direct'
+      const channel = resolvedLink?.channel
+        ?? mapUtmToChannel(utmSource)
+        ?? mapReferrerToChannel(referrerDomain)
+        ?? 'direct'
 
-    await db.insert(applicationSource).values({
-      organizationId: orgId,
-      applicationId: newApplication!.id,
-      channel: channel as typeof applicationSource.$inferInsert.channel,
-      trackingLinkId: resolvedLink?.id ?? null,
-      utmSource: utmSource ?? null,
-      utmMedium: utmMedium ?? null,
-      utmCampaign: utmCampaign ?? null,
-      utmTerm: utmTerm ?? null,
-      utmContent: utmContent ?? null,
-      referrerDomain,
+      await tx.insert(applicationSource).values({
+        organizationId: orgId,
+        applicationId,
+        channel: channel as typeof applicationSource.$inferInsert.channel,
+        trackingLinkId: resolvedLink?.id ?? null,
+        utmSource: utmSource ?? null,
+        utmMedium: utmMedium ?? null,
+        utmCampaign: utmCampaign ?? null,
+        utmTerm: utmTerm ?? null,
+        utmContent: utmContent ?? null,
+        referrerDomain,
+      })
     })
   } catch (sourceErr) {
-    // Source tracking is best-effort — never fail an application for attribution
     logWarn('application.source_tracking_failed', {
-      application_id: newApplication?.id,
+      application_id: applicationId,
       error_message: sourceErr instanceof Error ? sourceErr.message : String(sourceErr),
     })
-  }
-
-  // ─────────────────────────────────────────────
-  // 9. Upload files to S3 and create document records
-  // ─────────────────────────────────────────────
-
-  const uploadedDocuments: { id: string; storageKey: string }[] = []
-
-  for (const [questionId, file] of uploadedFiles) {
-    const docId = crypto.randomUUID()
-    const mimeType = file.type!
-    const extension = MIME_TO_EXTENSION[mimeType] ?? 'bin'
-    const storageKey = `${orgId}/${candidateId}/${docId}.${extension}`
-
-    // Determine document type from question label heuristics
-    const question = questions.find((q) => q.id === questionId)
-    const label = question?.label?.toLowerCase() ?? ''
-    let docType: 'resume' | 'cover_letter' | 'other' = 'other'
-    if (label.includes('resume') || label.includes('cv')) {
-      docType = 'resume'
-    } else if (label.includes('cover letter')) {
-      docType = 'cover_letter'
-    }
-
-    try {
-      await uploadToS3(storageKey, file.data, mimeType)
-
-      // Parse document content (best-effort — does not block upload)
-      const parsedContent = await parseDocument(file.data, mimeType)
-
-      const [created] = await db.insert(document).values({
-        id: docId,
-        organizationId: orgId,
-        candidateId,
-        applicationId: newApplication!.id,
-        type: docType,
-        storageKey,
-        originalFilename: sanitizeFilename(file.filename),
-        mimeType,
-        sizeBytes: file.data.length,
-        parsedContent: parsedContent as any,
-      }).returning({ id: document.id })
-
-      uploadedDocuments.push({ id: created!.id, storageKey })
-
-      // Store a response linking the file_upload question to the document ID
-      await db.insert(questionResponse).values({
-        organizationId: orgId,
-        applicationId: newApplication!.id,
-        questionId,
-        value: docId,
-      })
-    } catch (uploadError) {
-      // Clean up orphaned S3 object on DB failure
-      try {
-        await deleteFromS3(storageKey)
-      } catch (cleanupError) {
-        logWarn('application.s3_orphan_cleanup_failed', {
-          storage_key: storageKey,
-          error_message: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
-        })
-      }
-      logError('application.file_upload_failed', {
-        job_id: jobId,
-        application_id: newApplication?.id,
-        question_id: questionId,
-        error_message: uploadError instanceof Error ? uploadError.message : String(uploadError),
-      })
-      await rollbackApplicationSubmission({
-        applicationId: newApplication!.id,
-        organizationId: orgId,
-        uploadedDocuments,
-      })
-
-      throw createError({ statusCode: 502, statusMessage: 'Failed to upload an application document. Please try again.' })
-    }
-  }
-
-  // ─────────────────────────────────────────────
-  // 11. Upload built-in resume file
-  // ─────────────────────────────────────────────
-
-  if (resumeUpload) {
-    const file = resumeUpload
-    const mimeType = resumeMimeType!
-
-    const docId = crypto.randomUUID()
-    const extension = MIME_TO_EXTENSION[mimeType] ?? 'bin'
-    const storageKey = `${orgId}/${candidateId}/${docId}.${extension}`
-
-    try {
-      await uploadToS3(storageKey, file.data, mimeType)
-
-      // Parse resume content (best-effort — does not block upload)
-      const parsedContent = await parseDocument(file.data, mimeType)
-
-      await db.insert(document).values({
-        id: docId,
-        organizationId: orgId,
-        candidateId,
-        applicationId: newApplication!.id,
-        type: 'resume',
-        storageKey,
-        originalFilename: sanitizeFilename(file.filename),
-        mimeType,
-        sizeBytes: file.data.length,
-        parsedContent: parsedContent as any,
-      })
-    } catch (uploadError) {
-      try {
-        await deleteFromS3(storageKey)
-      } catch (cleanupError) {
-        logWarn('application.s3_orphan_cleanup_failed', {
-          storage_key: storageKey,
-          error_message: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
-        })
-      }
-      logError('application.resume_upload_failed', {
-        job_id: jobId,
-        application_id: newApplication?.id,
-        error_message: uploadError instanceof Error ? uploadError.message : String(uploadError),
-      })
-
-      await rollbackApplicationSubmission({
-        applicationId: newApplication!.id,
-        organizationId: orgId,
-        uploadedDocuments,
-      })
-
-      throw createError({ statusCode: 502, statusMessage: 'Failed to upload your resume. Please try again.' })
-    }
   }
 
   // ─────────────────────────────────────────────
@@ -718,52 +691,6 @@ export default defineEventHandler(async (event) => {
   setResponseStatus(event, 201)
   return { success: true }
 })
-
-async function rollbackApplicationSubmission(params: {
-  applicationId: string
-  organizationId: string
-  uploadedDocuments: { id: string; storageKey: string }[]
-}): Promise<void> {
-  for (const doc of params.uploadedDocuments) {
-    try {
-      await deleteFromS3(doc.storageKey)
-    } catch (cleanupError) {
-      logWarn('application.rollback_s3_cleanup_failed', {
-        application_id: params.applicationId,
-        document_id: doc.id,
-        storage_key: doc.storageKey,
-        error_message: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
-      })
-    }
-  }
-
-  try {
-    await db.delete(questionResponse)
-      .where(and(
-        eq(questionResponse.applicationId, params.applicationId),
-        eq(questionResponse.organizationId, params.organizationId),
-      ))
-
-    for (const doc of params.uploadedDocuments) {
-      await db.delete(document)
-        .where(and(
-          eq(document.id, doc.id),
-          eq(document.organizationId, params.organizationId),
-        ))
-    }
-
-    await db.delete(application)
-      .where(and(
-        eq(application.id, params.applicationId),
-        eq(application.organizationId, params.organizationId),
-      ))
-  } catch (rollbackError) {
-    logError('application.rollback_failed', {
-      application_id: params.applicationId,
-      error_message: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
-    })
-  }
-}
 
 function hasComplianceResponse(value: {
   sex?: string

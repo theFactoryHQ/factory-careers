@@ -3,7 +3,12 @@ import { Briefcase, CalendarClock, Check, CheckCircle2, ChevronDown, CircleDolla
 import { z } from 'zod'
 import { getSourceChannelLabel } from '~/utils/status-display'
 import { CURRENCY_OPTIONS, CURRENCY_VALUES } from '~~/shared/currency-options'
-import { todayDateInputValue, toDateInputValue } from '~~/shared/date-input'
+import {
+  dateInputToEndOfLocalDay,
+  dateInputToStartOfLocalDay,
+  todayDateInputValue,
+  toDateInputValue,
+} from '~~/shared/date-input'
 import { buildJobLocation, parseJobLocation, type UsStateValue } from '~~/shared/job-location'
 import {
   factoryDivisionSchema,
@@ -271,8 +276,8 @@ async function savePostingDetails() {
       salaryUnit: form.value.salaryUnit || defaultSalaryUnit.value,
       remoteStatus: form.value.remoteStatus || null,
       experienceLevel: (form.value.experienceLevel as 'junior' | 'mid' | 'senior' | 'lead' | null) || null,
-      activeFrom: form.value.activeFrom ? new Date(form.value.activeFrom) : new Date(todayDateInputValue()),
-      validThrough: form.value.validThrough ? new Date(form.value.validThrough) : null,
+      activeFrom: dateInputToStartOfLocalDay(form.value.activeFrom || todayDateInputValue()),
+      validThrough: form.value.validThrough ? dateInputToEndOfLocalDay(form.value.validThrough) : null,
     } as any)
     toast.success('Application details saved')
   } catch (err: any) {
@@ -840,7 +845,7 @@ async function copyTrackingUrl(code: string) {
                 clear-label="Clear expiry date"
                 allow-clear
               />
-              <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Leave blank if there is no fixed expiry date.</p>
+              <p class="mt-1.5 text-xs text-surface-400 dark:text-surface-500">Applications remain open through the selected day in your local timezone. Leave blank for no expiry.</p>
             </div>
           </div>
           </DashboardCollapsibleSection>

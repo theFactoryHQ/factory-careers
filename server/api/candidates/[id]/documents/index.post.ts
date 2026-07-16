@@ -11,6 +11,12 @@ import {
 import { parseDocument } from '../../../../utils/resume-parser'
 import { assertUploadContentLength } from '../../../../utils/uploadLimits'
 import { detectAllowedDocumentMimeType } from '../../../../utils/documentMime'
+import {
+  CandidateDocumentLimitError,
+  reserveCandidateDocument,
+  rollbackCandidateDocumentUpload,
+  type ReservedCandidateDocument,
+} from '../../../../utils/candidateDocumentReservation'
 
 const MULTIPART_OVERHEAD_BYTES = 1024 * 1024
 const MAX_DOCUMENT_UPLOAD_BODY_BYTES = MAX_FILE_SIZE + MULTIPART_OVERHEAD_BYTES
@@ -29,7 +35,8 @@ const MAX_DOCUMENT_UPLOAD_BODY_BYTES = MAX_FILE_SIZE + MULTIPART_OVERHEAD_BYTES
  *   - MIME type validated from file magic bytes (not just Content-Type header)
  *   - Storage key is server-generated (no user-controlled path components)
  *   - Per-candidate document limit enforced
- *   - Orphaned S3 objects cleaned up on DB insert failure
+ *   - Document capacity is reserved under a candidate-scoped transaction lock
+ *   - Relational reservations are removed before best-effort S3 compensation
  */
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { document: ['create'] })
@@ -107,46 +114,16 @@ export default defineEventHandler(async (event) => {
   }
 
   // ─────────────────────────────────────────────
-  // 6. Check per-candidate document limit
-  // ─────────────────────────────────────────────
-
-  const existingDocCount = await db.$count(
-    document,
-    and(
-      eq(document.candidateId, candidateId),
-      eq(document.organizationId, orgId),
-    ),
-  )
-
-  if (existingDocCount >= MAX_DOCUMENTS_PER_CANDIDATE) {
-    throw createError({
-      statusCode: 409,
-      statusMessage: `Document limit reached. Maximum ${MAX_DOCUMENTS_PER_CANDIDATE} documents per candidate`,
-    })
-  }
-
-  // ─────────────────────────────────────────────
-  // 7. Generate safe storage key and upload to S3
+  // 6. Reserve capacity and a document row before touching storage
   // ─────────────────────────────────────────────
 
   const documentId = crypto.randomUUID()
   const extension = MIME_TO_EXTENSION[mimeType] ?? 'bin'
   const storageKey = `${orgId}/${candidateId}/${documentId}.${extension}`
 
-  await uploadToS3(storageKey, fileBuffer, mimeType)
-
-  // ─────────────────────────────────────────────
-  // 8. Parse document content (best-effort — does not block upload)
-  // ─────────────────────────────────────────────
-
-  const parsedContent = await parseDocument(fileBuffer, mimeType)
-
-  // ─────────────────────────────────────────────
-  // 9. Insert DB record — clean up S3 on failure
-  // ─────────────────────────────────────────────
-
+  let reservedDocument: ReservedCandidateDocument
   try {
-    const [created] = await db.insert(document).values({
+    reservedDocument = await reserveCandidateDocument({
       id: documentId,
       organizationId: orgId,
       candidateId,
@@ -155,18 +132,40 @@ export default defineEventHandler(async (event) => {
       originalFilename: sanitizeFilename(filePart.filename),
       mimeType,
       sizeBytes: fileBuffer.length,
-      parsedContent: parsedContent as any,
-    }).returning({
-      id: document.id,
-      type: document.type,
-      originalFilename: document.originalFilename,
-      mimeType: document.mimeType,
-      sizeBytes: document.sizeBytes,
-      createdAt: document.createdAt,
+      maxDocumentsPerCandidate: MAX_DOCUMENTS_PER_CANDIDATE,
     })
+  } catch (reservationError) {
+    if (reservationError instanceof CandidateDocumentLimitError) {
+      throw createError({ statusCode: 409, statusMessage: reservationError.message })
+    }
+    throw reservationError
+  }
+
+  // ─────────────────────────────────────────────
+  // 7. Upload and parse, then finalize the reserved row
+  // ─────────────────────────────────────────────
+
+  try {
+    await uploadToS3(storageKey, fileBuffer, mimeType)
+    const parsedContent = await parseDocument(fileBuffer, mimeType)
+    const [created] = await db.update(document)
+      .set({ parsedContent: parsedContent as any })
+      .where(and(
+        eq(document.id, reservedDocument.id),
+        eq(document.organizationId, orgId),
+        eq(document.candidateId, candidateId),
+      ))
+      .returning({
+        id: document.id,
+        type: document.type,
+        originalFilename: document.originalFilename,
+        mimeType: document.mimeType,
+        sizeBytes: document.sizeBytes,
+        createdAt: document.createdAt,
+      })
 
     if (!created) {
-      throw createError({ statusCode: 500, statusMessage: 'Failed to create document' })
+      throw new Error('Reserved candidate document was not found')
     }
 
     recordActivity({
@@ -180,16 +179,24 @@ export default defineEventHandler(async (event) => {
 
     setResponseStatus(event, 201)
     return created
-  } catch (dbError) {
-    // Clean up the orphaned S3 object if DB insert fails
-    try {
-      await deleteFromS3(storageKey)
-    } catch (cleanupError) {
-      logWarn('document.s3_orphan_cleanup_failed', {
-        storage_key: storageKey,
-        error_message: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+  } catch (uploadError) {
+    const rollback = await rollbackCandidateDocumentUpload({
+      documentId,
+      organizationId: orgId,
+      candidateId,
+      storageKey,
+    })
+    if (!rollback.relationalCleanupSucceeded) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'The document record was created, but its upload could not be completed. Please contact support before retrying.',
       })
     }
-    throw dbError
+
+    throw createError({
+      statusCode: 502,
+      statusMessage: 'Failed to upload the document. Please try again.',
+      cause: uploadError,
+    })
   }
 })
