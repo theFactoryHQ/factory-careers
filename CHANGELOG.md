@@ -39,6 +39,7 @@ Earlier inherited history remains available in the archive.
 ### Fixed
 
 - Distinguished a pending first Factory GitHub release from network or service failures in the Updates experience.
+- Kept the Updates status icon synchronized with manual release checks.
 - Hardened public application uploads, authorization boundaries, tenant isolation, dependency security, and production validation gates.
 - Bundled the PDF parsing worker required to process candidate resumes reliably in production.
 - Restricted the PostHog browser proxy to required SDK routes with bounded streaming, safe headers, and separate ingestion and asset rate limits.

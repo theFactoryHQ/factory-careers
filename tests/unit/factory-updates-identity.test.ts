@@ -109,4 +109,10 @@ describe('Factory Careers updates identity', () => {
     expect(updatesPage).toContain('{{ releasePresentation.description }}')
     expect(updatesPage).toContain('{{ releasePresentation.latestLabel }}')
   })
+
+  it('shows the status-card spinner throughout a manual release re-check', () => {
+    const updatesPage = readProjectFile('app/pages/dashboard/updates.vue')
+
+    expect(updatesPage).toContain('<Loader2 v-if="versionLoading || isChecking" class="size-5 animate-spin" />')
+  })
 })

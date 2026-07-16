@@ -247,7 +247,7 @@ function formatDate(dateString: string | null | undefined): string {
                   ? 'bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400'
                   : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'"
           >
-            <Loader2 v-if="versionLoading" class="size-5 animate-spin" />
+            <Loader2 v-if="versionLoading || isChecking" class="size-5 animate-spin" />
             <ArrowUpCircle v-else-if="versionInfo?.releaseStatus === 'update-available'" class="size-5" />
             <Info v-else-if="versionInfo?.releaseStatus === 'unpublished'" class="size-5" />
             <AlertTriangle v-else-if="versionInfo?.releaseStatus === 'unavailable'" class="size-5" />

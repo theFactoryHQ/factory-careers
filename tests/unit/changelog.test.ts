@@ -78,6 +78,26 @@ describe('parseChangelog', () => {
     expect(entries.map(entry => entry.title)).toEqual(['Unreleased', '2026-07-16'])
   })
 
+  it('parses CRLF changelogs without retaining carriage returns', () => {
+    const entries = parseChangelog([
+      '## Unreleased',
+      '',
+      '### Fixed',
+      '',
+      '- Keep parsed release notes portable.',
+    ].join('\r\n'))
+
+    expect(entries).toEqual([
+      {
+        title: 'Unreleased',
+        date: null,
+        version: null,
+        link: null,
+        sections: [{ heading: 'Fixed', items: ['Keep parsed release notes portable.'] }],
+      },
+    ])
+  })
+
   it('omits empty entries without hiding a later populated entry with the same identity', () => {
     const entries = parseChangelog(`## Unreleased
 
