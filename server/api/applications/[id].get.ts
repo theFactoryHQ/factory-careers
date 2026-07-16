@@ -16,6 +16,17 @@ export default defineEventHandler(async (event) => {
   const result = await db.query.application.findFirst({
     where: and(eq(application.id, id), eq(application.organizationId, orgId)),
     with: {
+      documents: {
+        columns: {
+          id: true,
+          type: true,
+          originalFilename: true,
+          mimeType: true,
+          createdAt: true,
+        },
+        where: (associatedDocument, { eq }) => eq(associatedDocument.organizationId, orgId),
+        orderBy: (document, { desc }) => [desc(document.createdAt), desc(document.id)],
+      },
       candidate: {
         columns: { id: true, firstName: true, lastName: true, email: true, phone: true },
         with: {
@@ -27,7 +38,11 @@ export default defineEventHandler(async (event) => {
               mimeType: true,
               createdAt: true,
             },
-            orderBy: (document, { desc }) => [desc(document.createdAt)],
+            where: (legacyDocument, { and, eq, isNull }) => and(
+              eq(legacyDocument.organizationId, orgId),
+              isNull(legacyDocument.applicationId),
+            ),
+            orderBy: (document, { desc }) => [desc(document.createdAt), desc(document.id)],
           },
         },
       },
@@ -49,6 +64,15 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Not found' })
   }
 
+  const {
+    documents: applicationDocuments,
+    candidate: { documents: legacyCandidateDocuments, ...applicationCandidate },
+    ...applicationResult
+  } = result
+  const selectedDocuments = applicationDocuments.length > 0
+    ? applicationDocuments
+    : legacyCandidateDocuments
+
   const properties = await loadPropertyEntriesForEntity({
     organizationId: orgId,
     entityType: 'application',
@@ -56,5 +80,12 @@ export default defineEventHandler(async (event) => {
     jobId: result.jobId,
   })
 
-  return { ...result, properties }
+  return {
+    ...applicationResult,
+    candidate: {
+      ...applicationCandidate,
+      documents: selectedDocuments,
+    },
+    properties,
+  }
 })
