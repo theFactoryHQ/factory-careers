@@ -6,22 +6,59 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const readProjectFile = (path: string) =>
   readFileSync(join(process.cwd(), path), 'utf8')
 
-const CACHED_LIST_HANDLERS = [
-  'server/api/jobs/index.get.ts',
-  'server/api/candidates/index.get.ts',
-  'server/api/applications/index.get.ts',
-  'server/api/interviews/index.get.ts',
-  'server/api/dashboard/stats.get.ts',
+const CACHED_LIST_ROUTES = [
+  { file: 'server/api/jobs/index.get.ts', cacheName: 'jobs-list' },
+  { file: 'server/api/candidates/index.get.ts', cacheName: 'candidates-list' },
+  {
+    file: 'server/api/applications/index.get.ts',
+    cacheName: 'applications-list',
+  },
+  { file: 'server/api/interviews/index.get.ts', cacheName: 'interviews-list' },
+  { file: 'server/api/dashboard/stats.get.ts', cacheName: 'dashboard-stats' },
 ] as const
 
 const cachedResponse = { source: 'org-cache' }
 const requirePermissionMock = vi.fn()
+const getValidatedQueryMock = vi.fn()
+const storageItems = new Map<string, unknown>()
+let capturedCacheOptions: {
+  maxAge: number
+  swr: boolean
+  name: string
+  getKey: (organizationId: string, input: unknown) => Promise<string>
+}
+
+const createCachedFunctionMock = () =>
+  vi.fn(async (_organizationId: string, _input: unknown) => cachedResponse)
+const routeCachedFunctions = new Map<
+  string,
+  ReturnType<typeof createCachedFunctionMock>
+>()
 
 vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
-vi.stubGlobal('defineCachedEventHandler', () => async () => cachedResponse)
-vi.stubGlobal('orgScopedCacheOptions', {})
-vi.stubGlobal('defineOrgScopedCachedFunction', () => async () => cachedResponse)
+vi.stubGlobal(
+  'defineCachedFunction',
+  (loader: unknown, options: typeof capturedCacheOptions) => {
+    capturedCacheOptions = options
+    return loader
+  },
+)
+vi.stubGlobal('useStorage', () => ({
+  getItem: async (key: string) => storageItems.get(key),
+  setItem: async (key: string, value: unknown) => {
+    storageItems.set(key, value)
+  },
+}))
+vi.stubGlobal('defineOrgScopedCachedFunction', (name: string) => {
+  const cachedFunction = createCachedFunctionMock()
+  routeCachedFunctions.set(name, cachedFunction)
+  return cachedFunction
+})
 vi.stubGlobal('requirePermission', requirePermissionMock)
+vi.stubGlobal('getValidatedQuery', getValidatedQueryMock)
+
+const { bumpOrgDashboardCacheVersion, defineOrgScopedCachedFunction } =
+  await import('../../server/utils/httpCache')
 
 const cachedListHandlers = await Promise.all([
   import('../../server/api/jobs/index.get'),
@@ -30,7 +67,10 @@ const cachedListHandlers = await Promise.all([
   import('../../server/api/interviews/index.get'),
   import('../../server/api/dashboard/stats.get'),
 ]).then(modules =>
-  modules.map(module => module.default as (event: unknown) => Promise<unknown>),
+  modules.map((module, index) => ({
+    ...CACHED_LIST_ROUTES[index]!,
+    handler: module.default as (event: unknown) => Promise<unknown>,
+  })),
 )
 
 function findOuterHandlerCalls(source: string, file: string) {
@@ -91,46 +131,94 @@ function findOuterHandlerCalls(source: string, file: string) {
 }
 
 describe('defineOrgScopedCachedFunction', () => {
-  it('defines org-generation SWR cache keys without request events or auth headers', () => {
-    const source = readProjectFile('server/utils/httpCache.ts')
+  beforeEach(() => {
+    storageItems.clear()
+    defineOrgScopedCachedFunction('jobs-list', async () => cachedResponse)
+  })
 
-    expect(source).toContain('defineOrgScopedCachedFunction')
-    expect(source).toContain('defineCachedFunction')
-    expect(source).toContain('ORG_SCOPED_CACHE_MAX_AGE_SECONDS')
-    expect(source).toContain('swr: true')
-    expect(source).toMatch(
-      /getKey:\s*async \(organizationId[^)]*,\s*input[^)]*\)/,
-    )
-    expect(source).toContain('getOrgDashboardCacheVersion(organizationId)')
-    expect(source).toContain('hash(input)')
-    expect(source).not.toContain('defineCachedEventHandler')
-    expect(source).not.toContain("varies: ['cookie', 'authorization']")
+  it('uses route-specific Nitro SWR options', () => {
+    expect(capturedCacheOptions).toMatchObject({
+      maxAge: 30,
+      swr: true,
+      name: 'org-dashboard-jobslist',
+    })
+  })
+
+  it('does not collide organization IDs that differ only by punctuation', async () => {
+    const input = { page: 1, limit: 20 }
+
+    const dashedKey = await capturedCacheOptions.getKey('org-a', input)
+    const compactKey = await capturedCacheOptions.getKey('orga', input)
+
+    expect(dashedKey).not.toBe(compactKey)
+  })
+
+  it('changes keys for different normalized inputs', async () => {
+    const firstKey = await capturedCacheOptions.getKey('org-a', {
+      page: 1,
+      limit: 20,
+    })
+    const secondKey = await capturedCacheOptions.getKey('org-a', {
+      page: 2,
+      limit: 20,
+    })
+
+    expect(firstKey).not.toBe(secondKey)
+  })
+
+  it('changes keys after the organization cache generation is bumped', async () => {
+    const input = { page: 1, limit: 20 }
+    const initialKey = await capturedCacheOptions.getKey('org-a', input)
+
+    await bumpOrgDashboardCacheVersion('org-a')
+    const bumpedKey = await capturedCacheOptions.getKey('org-a', input)
+
+    expect(initialKey).not.toBe(bumpedKey)
   })
 })
 
 describe('dashboard list API authorization boundary', () => {
   beforeEach(() => {
     requirePermissionMock.mockReset()
+    getValidatedQueryMock.mockReset()
+    getValidatedQueryMock.mockResolvedValue({ page: 1, limit: 20 })
+    for (const cachedFunction of routeCachedFunctions.values()) {
+      cachedFunction.mockClear()
+    }
     requirePermissionMock.mockRejectedValue(
       Object.assign(new Error('Forbidden'), { statusCode: 403 }),
     )
   })
 
-  it.each(
-    cachedListHandlers.map(
-      (handler, index) => [CACHED_LIST_HANDLERS[index], handler] as const,
-    ),
-  )(
-    '%s rechecks permission before returning an available cache hit',
-    async (_file, handler) => {
+  it.each(cachedListHandlers)(
+    '$file rechecks permission before returning an available cache hit',
+    async ({ cacheName, handler }) => {
       await expect(handler({})).rejects.toMatchObject({ statusCode: 403 })
       expect(requirePermissionMock).toHaveBeenCalledTimes(1)
+      expect(routeCachedFunctions.get(cacheName)).not.toHaveBeenCalled()
     },
   )
 
-  it.each(CACHED_LIST_HANDLERS)(
-    '%s keeps authorization in the outer event handler before its org cache lookup',
-    file => {
+  it.each(cachedListHandlers)(
+    '$file passes the exact authorized organization ID to the cached function',
+    async ({ cacheName, handler }) => {
+      requirePermissionMock.mockResolvedValue({
+        session: { activeOrganizationId: 'org-a' },
+      })
+
+      await handler({})
+
+      expect(routeCachedFunctions.get(cacheName)).toHaveBeenCalledTimes(1)
+      expect(routeCachedFunctions.get(cacheName)).toHaveBeenCalledWith(
+        'org-a',
+        expect.anything(),
+      )
+    },
+  )
+
+  it.each(CACHED_LIST_ROUTES)(
+    '$file keeps authorization in the outer event handler before its org cache lookup',
+    ({ file }) => {
       const source = readProjectFile(file)
       const { cachedFunctionNames, calls } = findOuterHandlerCalls(source, file)
       const permissionCall = calls.find(

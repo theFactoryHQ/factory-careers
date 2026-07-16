@@ -7,10 +7,6 @@ describe('dashboard stats cache', () => {
     join(process.cwd(), 'server/api/dashboard/stats.get.ts'),
     'utf8',
   )
-  const httpCache = readFileSync(
-    join(process.cwd(), 'server/utils/httpCache.ts'),
-    'utf8',
-  )
 
   it('authorizes dashboard stats before calling the shared org-scoped data cache', () => {
     expect(stats).toContain('defineOrgScopedCachedFunction')
@@ -19,12 +15,5 @@ describe('dashboard stats cache', () => {
       stats.indexOf('return getCachedDashboardStats'),
     )
     expect(stats).not.toContain('defineCachedEventHandler')
-  })
-
-  it('keys cached data by authorized org, cache generation, and normalized input', () => {
-    expect(httpCache).toContain('defineCachedFunction')
-    expect(httpCache).toContain('getOrgDashboardCacheVersion(organizationId)')
-    expect(httpCache).toContain('hash(input)')
-    expect(httpCache).not.toContain("varies: ['cookie', 'authorization']")
   })
 })

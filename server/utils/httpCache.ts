@@ -65,9 +65,8 @@ export function defineOrgScopedCachedFunction<Input, Result>(
     swr: true,
     name: `${ORG_SCOPED_DASHBOARD_CACHE_NAME}-${escapeCacheKeyPart(name)}`,
     getKey: async (organizationId: string, input: Input) => {
-      const orgPart = escapeCacheKeyPart(organizationId)
       const version = await getOrgDashboardCacheVersion(organizationId)
-      return `${orgPart}:v${version}:${hash(input)}`
+      return hash({ organizationId, version, input })
     },
   })
 }
