@@ -30,9 +30,10 @@ changes. Migration guidance must accompany any such change.
 
 ## Pull-request changelog gate
 
-Every ordinary user- or operator-visible pull request must add a genuinely new item
-under `## Unreleased` in one supported category: **Added**, **Changed**, **Fixed**,
-or **Removed**. Rewording an existing item does not satisfy the gate.
+Every ordinary user- or operator-visible pull request must preserve every distinct existing item
+under `## Unreleased` and add a genuinely new item in one supported category:
+**Added**, **Changed**, **Fixed**, or **Removed**.
+Do not remove, reword, or replace existing Unreleased items.
 
 The maintainer-applied exact `skip-changelog` label is only for genuinely internal changes.
 Use the same exception locally with `CHANGELOG_SKIP=true npm run preflight:pr`,

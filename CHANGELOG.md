@@ -18,7 +18,7 @@ self-hosters.
 
 ### Changed
 
-- Made CI require curated Unreleased entries for user- and operator-visible pull requests and block unfinalized release PRs, with GitHub Releases published and validated from the exact versioned changelog section.
+- Made CI require ordinary user- and operator-visible pull requests to preserve existing Unreleased entries and add a genuinely new curated item, and block unfinalized release PRs, with GitHub Releases published and validated from the exact versioned changelog section.
 - Shared typed job create and update contracts across the dashboard and API while preserving deliberate null-versus-omitted field behavior.
 - Made the generated Nuxt ESLint configuration a required local and pull-request gate, and clarified that host development runs on port 3001 while the full Docker stack remains on port 3000.
 

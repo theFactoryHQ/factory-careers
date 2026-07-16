@@ -59,8 +59,9 @@ describe('agent guidance', () => {
     const releaseBodyRule = 'The exact curated changelog section for that version becomes the GitHub Release body'
 
     expect(claude).toBe(agents)
-    expect(agents).toContain('Every ordinary user- or operator-visible pull request must add a genuinely new item')
-    expect(agents).toContain('under `## Unreleased`')
+    expect(agents).toContain('Every ordinary user- or operator-visible pull request must preserve every distinct existing item')
+    expect(agents).toContain('under `## Unreleased` and add a genuinely new item')
+    expect(agents).toContain('Do not remove, reword, or replace existing Unreleased items')
     expect(agents).toContain('The maintainer-applied exact `skip-changelog` label is only for genuinely internal changes')
     expect(agents).toContain('CHANGELOG_SKIP=true npm run preflight:pr')
     expect(agents).toContain('Release or version-changing pull requests cannot use this exception')

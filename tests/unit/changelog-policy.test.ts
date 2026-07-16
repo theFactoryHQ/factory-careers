@@ -198,6 +198,47 @@ describe('changelog policy', () => {
     expect(validate()).toBe('pull-request')
   })
 
+  it.each([
+    {
+      change: 'removes a base item while adding a new item',
+      currentItems: '- Keep recruiter reports.\n- Add interview summaries.',
+    },
+    {
+      change: 'rewords a base item',
+      currentItems: '- Keep recruiter reports.\n- Keep candidate export workflows.',
+    },
+    {
+      change: 'replaces the base items with new items',
+      currentItems: '- Replace existing release notes.\n- Add interview summaries.',
+    },
+  ])('rejects an ordinary pull request that $change', ({ currentItems }) => {
+    const baseChangelog = baseline.replace(
+      '- Existing unreleased item.',
+      '- Keep recruiter reports.\n- Keep candidate exports.',
+    )
+    const currentChangelog = baseChangelog.replace(
+      '- Keep recruiter reports.\n- Keep candidate exports.',
+      currentItems,
+    )
+
+    expect(() => validate({ baseChangelog, currentChangelog })).toThrow(
+      'Preserve every existing distinct CHANGELOG.md item under ## Unreleased; do not remove, reword, or replace existing items',
+    )
+  })
+
+  it('accepts an ordinary pull request that preserves every distinct base item and adds a distinct item', () => {
+    const baseChangelog = baseline.replace(
+      '- Existing unreleased item.',
+      '- Keep recruiter reports.\n- Keep candidate exports.\n- Keep recruiter reports.',
+    )
+    const currentChangelog = baseChangelog.replace(
+      '- Keep recruiter reports.\n- Keep candidate exports.\n- Keep recruiter reports.',
+      '- Keep candidate exports.\n- Keep recruiter reports.\n- Add interview summaries.',
+    )
+
+    expect(validate({ baseChangelog, currentChangelog })).toBe('pull-request')
+  })
+
   it('rejects an ordinary pull request without a changelog update', () => {
     expect(() => validate({
       changedFiles: ['app/pages/dashboard/index.vue'],

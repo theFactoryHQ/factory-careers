@@ -135,8 +135,9 @@ Update `CHANGELOG.md` in the same change whenever work adds, changes, fixes, or
 removes behavior that a recruiter, administrator, operator, integrator, or
 self-hoster would notice.
 
-- Every ordinary user- or operator-visible pull request must add a genuinely new item
-  under `## Unreleased` using **Added**, **Changed**, **Fixed**, or **Removed**.
+- Every ordinary user- or operator-visible pull request must preserve every distinct existing item
+  under `## Unreleased` and add a genuinely new item using **Added**, **Changed**,
+  **Fixed**, or **Removed**. Do not remove, reword, or replace existing Unreleased items.
 - Write concise outcome-focused entries; do not paste commit titles or include
   routine refactors, tests, dependency bumps, or internal chores unless they
   materially affect users or operators.

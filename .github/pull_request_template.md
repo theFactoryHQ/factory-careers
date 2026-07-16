@@ -21,15 +21,17 @@
 
 ## Changelog
 
-Choose exactly one. Release and version-changing pull requests cannot use the skip exception.
+For an ordinary (non-release) pull request, choose exactly one:
 
-- [ ] Changelog updated: I added a genuinely new item under `## Unreleased` in **Added**, **Changed**, **Fixed**, or **Removed**
-- [ ] Skip justified: a maintainer applied the exact `skip-changelog` label because this change is genuinely internal. Justification: <!-- explain -->
+- [ ] `CHANGELOG.md` updated: I preserved every distinct existing Unreleased item and added a genuinely new item in **Added**, **Changed**, **Fixed**, or **Removed**
+- [ ] Maintainer `skip-changelog` justified: a maintainer applied the exact `skip-changelog` label because this change is genuinely internal. Justification: <!-- explain -->
+
+For a release or version-changing pull request, use the release mode:
+
+- [ ] Release PR finalized: I ran `npm run changelog:finalize -- <version> <YYYY-MM-DD>`, committed the result, and verified the matching version section is nonempty and `## Unreleased` has no entries
 
 ## Release/version notes
 
-- [ ] This is not a release or version-changing PR
-- [ ] Release PR finalized: I ran `npm run changelog:finalize -- <version> <YYYY-MM-DD>`, committed the result, and verified the matching version section is nonempty and `## Unreleased` has no entries
 - [ ] Risks recorded: I documented known release and operational risks below, or explicitly recorded that there are none
 
 Known risks: <!-- list risks, skipped checks, or "None" -->

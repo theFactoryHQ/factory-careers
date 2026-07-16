@@ -95,6 +95,13 @@ export function validateChangelogPolicy({
 
   const baseItems = getUnreleasedItems(baseChangelog)
   const currentItems = getUnreleasedItems(currentChangelog)
+  const currentItemValues = new Set(currentItems)
+  if ([...new Set(baseItems)].some(item => !currentItemValues.has(item))) {
+    throw new Error(
+      'Preserve every existing distinct CHANGELOG.md item under ## Unreleased; do not remove, reword, or replace existing items',
+    )
+  }
+
   if (!hasNewItem(baseItems, currentItems))
     throw new Error('Add a new CHANGELOG.md item under ## Unreleased or apply the skip-changelog label')
 
