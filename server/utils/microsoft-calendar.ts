@@ -5,7 +5,7 @@
  * calendar APIs to create, update, and cancel interview events on Factory's
  * shared Microsoft 365 group calendar.
  */
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { env } from './env'
 import { encrypt, decrypt } from './encryption'
 import { calendarIntegration, orgSettings } from '../database/schema'
@@ -543,20 +543,74 @@ export async function saveMicrosoftCalendarIntegration(userId: string, organizat
 }): Promise<void> {
   const secret = env.BETTER_AUTH_SECRET
   const group = await resolveMicrosoftCalendarGroup(params.accessToken)
-
-  await db.delete(calendarIntegration)
-    .where(and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, 'microsoft')))
-  await db.delete(calendarIntegration)
-    .where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'microsoft')))
-  await db.insert(calendarIntegration).values({
+  const values = {
     userId,
     organizationId,
-    provider: 'microsoft',
+    provider: 'microsoft' as const,
     accessTokenEncrypted: encrypt(params.accessToken, secret),
     refreshTokenEncrypted: encrypt(params.refreshToken, secret),
     calendarId: group.id,
     accountEmail: normalizeEmail(params.email) || params.email,
+    updatedAt: new Date(),
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      const existingForUser = await tx.query.calendarIntegration.findFirst({
+        where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'microsoft')),
+      })
+      const existingForOrganization = await tx.query.calendarIntegration.findFirst({
+        where: and(
+          eq(calendarIntegration.organizationId, organizationId),
+          eq(calendarIntegration.provider, 'microsoft'),
+        ),
+      })
+
+      if (existingForUser?.organizationId && existingForUser.organizationId !== organizationId) {
+        throw microsoftCalendarIntegrationConflict()
+      }
+      if (existingForOrganization && existingForOrganization.id !== existingForUser?.id) {
+        throw microsoftCalendarIntegrationConflict()
+      }
+
+      if (existingForUser) {
+        const updated = await tx.update(calendarIntegration)
+          .set(values)
+          .where(and(
+            eq(calendarIntegration.id, existingForUser.id),
+            eq(calendarIntegration.userId, userId),
+            eq(calendarIntegration.provider, 'microsoft'),
+            existingForUser.organizationId === null
+              ? isNull(calendarIntegration.organizationId)
+              : eq(calendarIntegration.organizationId, existingForUser.organizationId),
+          ))
+          .returning({ id: calendarIntegration.id })
+        if (!updated[0]) throw microsoftCalendarIntegrationConflict()
+        return
+      }
+
+      await tx.insert(calendarIntegration).values(values)
+    })
+  }
+  catch (error) {
+    if (isMicrosoftCalendarUniqueViolation(error)) {
+      throw microsoftCalendarIntegrationConflict()
+    }
+    throw error
+  }
+}
+
+function microsoftCalendarIntegrationConflict() {
+  return createError({
+    statusCode: 409,
+    statusMessage: 'Microsoft Calendar is already connected to a different organization or account',
   })
+}
+
+function isMicrosoftCalendarUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  if ('code' in error && error.code === '23505') return true
+  return 'cause' in error && isMicrosoftCalendarUniqueViolation(error.cause)
 }
 
 export async function removeMicrosoftCalendarIntegration(userId: string, organizationId?: string | null): Promise<void> {

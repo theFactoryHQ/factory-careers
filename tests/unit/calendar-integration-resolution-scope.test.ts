@@ -98,4 +98,30 @@ describe('calendar integration organization resolution', () => {
 
     expect(findFirst).toHaveBeenCalledTimes(2)
   })
+
+  it('passes the exact resolved Google identity through event operations', async () => {
+    const integration = {
+      id: 'integration-org-exact',
+      userId: 'user-1',
+      organizationId: 'org-exact',
+      provider: 'google',
+    }
+    const findFirst = vi.fn().mockResolvedValueOnce(integration)
+    vi.stubGlobal('db', { query: { calendarIntegration: { findFirst } } })
+    providerMocks.updateGoogleCalendarEvent.mockResolvedValue('https://calendar/event-1')
+
+    await expect(calendar.updateConnectedCalendarEvent(
+      'user-1',
+      'org-exact',
+      'event-1',
+      {},
+      'google',
+    )).resolves.toBe('https://calendar/event-1')
+
+    expect(providerMocks.updateGoogleCalendarEvent).toHaveBeenCalledWith({
+      integrationId: 'integration-org-exact',
+      userId: 'user-1',
+      organizationId: 'org-exact',
+    }, 'event-1', {})
+  })
 })

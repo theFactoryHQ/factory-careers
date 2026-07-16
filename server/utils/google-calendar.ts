@@ -363,9 +363,10 @@ interface InterviewEventData {
  * Returns the created event ID and HTML link, or null if creation failed.
  */
 export async function createCalendarEvent(
-  userId: string,
+  owner: string | GoogleCalendarIntegrationIdentity,
   data: InterviewEventData,
 ): Promise<{ id: string; htmlLink: string } | null> {
+  const userId = typeof owner === 'string' ? owner : owner.userId
   if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') {
     const eventId = `mock-google-event-${data.startTime.getTime()}`
     return {
@@ -374,11 +375,13 @@ export async function createCalendarEvent(
     }
   }
 
-  const calendar = await getCalendarClient(userId)
+  const calendar = await getCalendarClient(owner)
   if (!calendar) return null
 
   const integration = await db.query.calendarIntegration.findFirst({
-    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
+    where: typeof owner === 'string'
+      ? and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google'))
+      : googleIntegrationWhere(owner),
     columns: { calendarId: true },
   })
 
@@ -455,19 +458,22 @@ export async function createCalendarEvent(
  * Returns the htmlLink if the update succeeded, or null on failure.
  */
 export async function updateCalendarEvent(
-  userId: string,
+  owner: string | GoogleCalendarIntegrationIdentity,
   eventId: string,
   data: Partial<InterviewEventData>,
 ): Promise<string | null> {
+  const userId = typeof owner === 'string' ? owner : owner.userId
   if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') {
     return `https://calendar.test.local/events/${encodeURIComponent(eventId)}`
   }
 
-  const calendar = await getCalendarClient(userId)
+  const calendar = await getCalendarClient(owner)
   if (!calendar) return null
 
   const integration = await db.query.calendarIntegration.findFirst({
-    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
+    where: typeof owner === 'string'
+      ? and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google'))
+      : googleIntegrationWhere(owner),
     columns: { calendarId: true },
   })
 
@@ -537,16 +543,19 @@ export async function updateCalendarEvent(
  * Sends cancellation notifications to all attendees.
  */
 export async function cancelCalendarEvent(
-  userId: string,
+  owner: string | GoogleCalendarIntegrationIdentity,
   eventId: string,
 ): Promise<boolean> {
+  const userId = typeof owner === 'string' ? owner : owner.userId
   if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') return true
 
-  const calendar = await getCalendarClient(userId)
+  const calendar = await getCalendarClient(owner)
   if (!calendar) return false
 
   const integration = await db.query.calendarIntegration.findFirst({
-    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
+    where: typeof owner === 'string'
+      ? and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google'))
+      : googleIntegrationWhere(owner),
     columns: { calendarId: true },
   })
 
@@ -740,7 +749,9 @@ export async function performIncrementalSync(identity: GoogleCalendarIntegration
 
       for (const event of events) {
         if (!event.id) continue
-        await syncEventAttendeeStatus(event, identity.organizationId)
+        if (identity.organizationId !== null) {
+          await syncEventAttendeeStatus(event, identity.organizationId)
+        }
       }
 
       pageToken = data.nextPageToken ?? undefined
@@ -782,18 +793,16 @@ function mapAttendeeStatus(
  */
 async function syncEventAttendeeStatus(
   event: calendar_v3.Schema$Event,
-  organizationId: string | null,
+  organizationId: string,
 ): Promise<void> {
   if (!event.id) return
 
   // Find the interview linked to this Google Calendar event
   const interviewRecord = await db.query.interview.findFirst({
-    where: organizationId === null
-      ? eq(interview.googleCalendarEventId, event.id)
-      : and(
-          eq(interview.googleCalendarEventId, event.id),
-          eq(interview.organizationId, organizationId),
-        ),
+    where: and(
+      eq(interview.googleCalendarEventId, event.id),
+      eq(interview.organizationId, organizationId),
+    ),
     with: {
       application: {
         with: {
@@ -825,7 +834,10 @@ async function syncEventAttendeeStatus(
       candidateRespondedAt: new Date(),
       updatedAt: new Date(),
     })
-    .where(eq(interview.id, interviewRecord.id))
+    .where(and(
+      eq(interview.id, interviewRecord.id),
+      eq(interview.organizationId, organizationId),
+    ))
 
   console.info(
     `[Calendar] Synced candidate response for interview ${interviewRecord.id}: ` +

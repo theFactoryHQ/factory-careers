@@ -20,6 +20,9 @@ const calendarClient = vi.hoisted(() => ({
   events: {
     watch: vi.fn(),
     list: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+    insert: vi.fn(),
   },
 }))
 
@@ -130,6 +133,8 @@ describe('Google Calendar integration identity scope', () => {
       data: { resourceId: 'resource-exact', expiration: '1780000000000' },
     })
     calendarClient.events.list.mockResolvedValue({ data: { items: [] } })
+    calendarClient.events.patch.mockResolvedValue({ data: { htmlLink: 'https://calendar/event' } })
+    calendarClient.events.delete.mockResolvedValue({})
   })
 
   it('binds an existing Google integration to the active organization and returns its exact id', async () => {
@@ -337,6 +342,30 @@ describe('Google Calendar integration identity scope', () => {
     })
   })
 
+  it('uses exact integration identity for ordinary event operations', async () => {
+    const identity = {
+      integrationId: 'integration-event',
+      userId: 'user-event',
+      organizationId: 'org-event',
+    }
+    findFirstMock.mockResolvedValue({
+      id: identity.integrationId,
+      userId: identity.userId,
+      organizationId: identity.organizationId,
+      provider: 'google',
+      accessTokenEncrypted: 'stored-access',
+      refreshTokenEncrypted: 'stored-refresh',
+      calendarId: 'primary',
+    })
+
+    await expect(googleCalendar.updateCalendarEvent(identity, 'event-1', {}))
+      .resolves.toBe('https://calendar/event')
+
+    for (const [{ where }] of findFirstMock.mock.calls) {
+      expectExactGoogleScope(where, identity)
+    }
+  })
+
   it('scopes attendee synchronization to the integration organization', async () => {
     const identity = {
       integrationId: 'integration-sync',
@@ -354,9 +383,18 @@ describe('Google Calendar integration identity scope', () => {
       syncToken: null,
     })
     calendarClient.events.list.mockResolvedValue({
-      data: { items: [{ id: 'event-shared-provider-id' }] },
+      data: {
+        items: [{
+          id: 'event-shared-provider-id',
+          attendees: [{ email: 'candidate@example.com', responseStatus: 'accepted' }],
+        }],
+      },
     })
-    interviewFindFirstMock.mockResolvedValue(null)
+    interviewFindFirstMock.mockResolvedValue({
+      id: 'interview-exact',
+      candidateResponse: 'pending',
+      application: { candidate: { email: 'candidate@example.com' } },
+    })
 
     await performIncrementalSync(identity)
 
@@ -369,5 +407,37 @@ describe('Google Calendar integration identity scope', () => {
         ]),
       }),
     }))
+    expect(updateWhereMock).toHaveBeenCalledWith(expect.objectContaining({
+      operator: 'and',
+      conditions: expect.arrayContaining([
+        { operator: 'eq', column: interview.id, value: 'interview-exact' },
+        { operator: 'eq', column: interview.organizationId, value: 'org-sync' },
+      ]),
+    }))
+  })
+
+  it('does not mutate attendee state for an unowned legacy integration', async () => {
+    const identity = {
+      integrationId: 'integration-legacy-sync',
+      userId: 'user-legacy-sync',
+      organizationId: null,
+    }
+    findFirstMock.mockResolvedValue({
+      id: identity.integrationId,
+      userId: identity.userId,
+      organizationId: null,
+      provider: 'google',
+      accessTokenEncrypted: 'stored-access',
+      refreshTokenEncrypted: 'stored-refresh',
+      calendarId: 'primary',
+      syncToken: null,
+    })
+    calendarClient.events.list.mockResolvedValue({
+      data: { items: [{ id: 'event-unowned', attendees: [] }] },
+    })
+
+    await performIncrementalSync(identity)
+
+    expect(interviewFindFirstMock).not.toHaveBeenCalled()
   })
 })

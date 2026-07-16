@@ -7,6 +7,7 @@ import {
   removeCalendarIntegration as removeGoogleCalendarIntegration,
   setupCalendarWebhook as setupGoogleCalendarWebhook,
   isGoogleCalendarConfigured,
+  type GoogleCalendarIntegrationIdentity,
 } from './google-calendar'
 import {
   createMicrosoftCalendarEvents,
@@ -46,6 +47,17 @@ export interface CalendarEventRecord {
   destinationEmail: string | null
   eventId: string | null
   isPrimary: boolean
+}
+
+function googleIntegrationIdentity(
+  integration: { id: string, userId: string | null, organizationId: string | null },
+  fallbackUserId: string,
+): GoogleCalendarIntegrationIdentity {
+  return {
+    integrationId: integration.id,
+    userId: integration.userId ?? fallbackUserId,
+    organizationId: integration.organizationId,
+  }
 }
 
 export function getPreferredCalendarProvider(): CalendarProvider | null {
@@ -130,7 +142,10 @@ export async function createConnectedCalendarEvents(
     return results.map(result => ({ ...result, provider: 'microsoft' }))
   }
   if (integration?.provider === 'google') {
-    const result = await createGoogleCalendarEvent(integration.userId ?? userId, data)
+    const result = await createGoogleCalendarEvent(
+      googleIntegrationIdentity(integration, userId),
+      data,
+    )
     return result
       ? [{
           provider: 'google',
@@ -155,7 +170,13 @@ export async function updateConnectedCalendarEvent(
 ): Promise<string | null> {
   const integration = await resolveCalendarIntegration(userId, organizationId, provider)
   if (integration?.provider === 'microsoft') return await updateMicrosoftCalendarEvent(integration.userId ?? userId, integration.organizationId, eventId, data)
-  if (integration?.provider === 'google') return await updateGoogleCalendarEvent(integration.userId ?? userId, eventId, data)
+  if (integration?.provider === 'google') {
+    return await updateGoogleCalendarEvent(
+      googleIntegrationIdentity(integration, userId),
+      eventId,
+      data,
+    )
+  }
   return null
 }
 
@@ -167,7 +188,12 @@ export async function cancelConnectedCalendarEvent(
 ): Promise<boolean> {
   const integration = await resolveCalendarIntegration(userId, organizationId, provider)
   if (integration?.provider === 'microsoft') return await cancelMicrosoftCalendarEvent(integration.userId ?? userId, integration.organizationId, eventId)
-  if (integration?.provider === 'google') return await cancelGoogleCalendarEvent(integration.userId ?? userId, eventId)
+  if (integration?.provider === 'google') {
+    return await cancelGoogleCalendarEvent(
+      googleIntegrationIdentity(integration, userId),
+      eventId,
+    )
+  }
   return false
 }
 

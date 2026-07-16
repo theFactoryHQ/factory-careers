@@ -47,6 +47,12 @@ const disconnect = (await import('../../server/api/calendar/disconnect.post')).d
 describe('organization-wide calendar mutation authorization', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    providerMocks.exchangeMicrosoftCodeForTokens.mockResolvedValue({
+      accessToken: 'access',
+      refreshToken: 'refresh',
+      email: 'calendar@example.com',
+    })
+    providerMocks.saveMicrosoftCalendarIntegration.mockResolvedValue(undefined)
   })
 
   for (const [name, handler] of [
@@ -70,4 +76,47 @@ describe('organization-wide calendar mutation authorization', () => {
       expect(providerMocks.removeConnectedCalendarIntegration).not.toHaveBeenCalled()
     })
   }
+
+  it.each([
+    ['missing', undefined],
+    ['mismatched', 'org-other'],
+  ])('rejects a %s Microsoft OAuth organization cookie before provider work', async (_label, cookieOrg) => {
+    requirePermissionMock.mockResolvedValue({
+      user: { id: 'user-1' },
+      session: { activeOrganizationId: 'org-active' },
+    })
+    providerMocks.handleCalendarOAuthCallback.mockImplementation(async (_event, options) => {
+      await options.onSuccess({
+        code: 'authorization-code',
+        extraCookies: { mscal_oauth_org: cookieOrg },
+      })
+    })
+
+    await expect(microsoftCallback({})).rejects.toThrow(
+      'Microsoft Calendar organization changed during authorization',
+    )
+    expect(providerMocks.exchangeMicrosoftCodeForTokens).not.toHaveBeenCalled()
+    expect(providerMocks.saveMicrosoftCalendarIntegration).not.toHaveBeenCalled()
+  })
+
+  it('saves Microsoft OAuth credentials only for the matching authorized organization', async () => {
+    requirePermissionMock.mockResolvedValue({
+      user: { id: 'user-1' },
+      session: { activeOrganizationId: 'org-active' },
+    })
+    providerMocks.handleCalendarOAuthCallback.mockImplementation(async (_event, options) => {
+      await options.onSuccess({
+        code: 'authorization-code',
+        extraCookies: { mscal_oauth_org: 'org-active' },
+      })
+    })
+
+    await microsoftCallback({})
+
+    expect(providerMocks.saveMicrosoftCalendarIntegration).toHaveBeenCalledWith(
+      'user-1',
+      'org-active',
+      expect.objectContaining({ accessToken: 'access' }),
+    )
+  })
 })
