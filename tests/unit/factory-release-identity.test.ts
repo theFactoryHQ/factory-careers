@@ -72,6 +72,103 @@ describe('Factory Careers release identity', () => {
     ])
   })
 
+  it('fails release automation clearly when RELEASE_PLEASE_TOKEN is missing', () => {
+    const releaseWorkflow = readProjectFile('.github/workflows/release-please.yml')
+    const missingTokenStep = `      - name: Release automation token required
+        if: \${{ env.HAS_RELEASE_PLEASE_TOKEN != 'true' }}
+        run: |
+          echo "Release Please cannot run because RELEASE_PLEASE_TOKEN is not configured."
+          echo "Tracking issue: https://github.com/theFactoryHQ/factory-careers/issues/27"
+          {
+            echo "## Release Please blocked"
+            echo ""
+            echo "The workflow needs RELEASE_PLEASE_TOKEN before it can create or update release PRs."
+            echo ""
+            echo "Tracking issue: https://github.com/theFactoryHQ/factory-careers/issues/27"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1`
+
+    expect(releaseWorkflow).toContain(missingTokenStep)
+    expect(releaseWorkflow).not.toContain('Release Please is skipped')
+    expect(releaseWorkflow).not.toContain('## Release Please skipped')
+  })
+
+  it('publishes curated changelog notes after release-please creates a release', () => {
+    const releaseWorkflow = readProjectFile('.github/workflows/release-please.yml')
+    const releaseAction = `      - uses: googleapis/release-please-action@v5
+        id: release
+        if: \${{ env.HAS_RELEASE_PLEASE_TOKEN == 'true' }}`
+    const checkoutStep = `      - name: Checkout published release
+        if: \${{ steps.release.outputs.release_created == 'true' }}
+        uses: actions/checkout@v6
+        with:
+          ref: \${{ steps.release.outputs.tag_name }}`
+    const setupNodeStep = `      - name: Setup Node.js
+        if: \${{ steps.release.outputs.release_created == 'true' }}
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc`
+    const extractStep = `      - name: Extract curated release notes
+        if: \${{ steps.release.outputs.release_created == 'true' }}
+        run: npm run --silent changelog:extract -- "\${{ steps.release.outputs.version }}" > release-notes.md`
+    const publishStep = `      - name: Publish curated release notes
+        if: \${{ steps.release.outputs.release_created == 'true' }}
+        env:
+          GH_TOKEN: \${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: gh release edit "\${{ steps.release.outputs.tag_name }}" --notes-file release-notes.md`
+
+    expect(releaseWorkflow).toContain(releaseAction)
+    expect(releaseWorkflow).toContain(checkoutStep)
+    expect(releaseWorkflow).toContain(setupNodeStep)
+    expect(releaseWorkflow).toContain(extractStep)
+    expect(releaseWorkflow).toContain(publishStep)
+    expect(releaseWorkflow.indexOf(releaseAction)).toBeLessThan(releaseWorkflow.indexOf(checkoutStep))
+    expect(releaseWorkflow.indexOf(checkoutStep)).toBeLessThan(releaseWorkflow.indexOf(setupNodeStep))
+    expect(releaseWorkflow.indexOf(setupNodeStep)).toBeLessThan(releaseWorkflow.indexOf(extractStep))
+    expect(releaseWorkflow.indexOf(extractStep)).toBeLessThan(releaseWorkflow.indexOf(publishStep))
+  })
+
+  it('publishes and validates curated notes before release smoke tests', () => {
+    const releaseVerification = readProjectFile('.github/workflows/release-verification.yml')
+    const releaseNotesJobStart = releaseVerification.indexOf('  release-notes:')
+    const smokeTestJobStart = releaseVerification.indexOf('  smoke-test:')
+    const releaseNotesJob = releaseVerification.slice(releaseNotesJobStart, smokeTestJobStart)
+
+    expect(releaseNotesJobStart).toBeGreaterThan(-1)
+    expect(releaseNotesJobStart).toBeLessThan(smokeTestJobStart)
+    expect(releaseNotesJob).toContain(`      - name: Resolve release tag
+        id: tag
+        run: |
+          set -euo pipefail
+          tag="\${{ github.event.release.tag_name || inputs.tag }}"
+          version="\${tag#v}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"`)
+    expect(releaseNotesJob).toContain(`      - name: Checkout release tag
+        uses: actions/checkout@v6
+        with:
+          ref: \${{ steps.tag.outputs.tag }}`)
+    expect(releaseNotesJob).toContain(`      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc`)
+    expect(releaseNotesJob).toContain(
+      'run: npm run --silent changelog:extract -- "${{ steps.tag.outputs.version }}" > release-notes.md',
+    )
+    expect(releaseNotesJob).toContain('GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}')
+    expect(releaseNotesJob).toContain(
+      'run: gh release edit "${{ steps.tag.outputs.tag }}" --notes-file release-notes.md',
+    )
+    expect(releaseNotesJob).toContain("if: failure() && github.event_name == 'release'")
+    expect(releaseNotesJob).toContain(
+      'gh release edit "${{ steps.tag.outputs.tag }}" --prerelease --latest=false',
+    )
+    expect(releaseNotesJob).not.toContain('continue-on-error: true')
+    expect(releaseVerification).toContain(`  smoke-test:
+    name: Smoke-test published image
+    needs: release-notes`)
+  })
+
   it('uses the Factory cutover version in release verification examples', () => {
     const releaseVerification = readProjectFile('.github/workflows/release-verification.yml')
 
