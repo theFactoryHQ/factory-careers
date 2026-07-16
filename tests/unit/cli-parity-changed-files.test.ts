@@ -177,6 +177,17 @@ describe('CLI parity changed-file guard', () => {
     })
   })
 
+  it('accepts CLI parity evidence for the application list availability fix without contract changes', () => {
+    expect(evaluateCliParityEvidence([
+      'server/api/applications/index.get.ts',
+      'tests/unit/application-content-search.test.ts',
+      'tests/unit/cli-parity-changed-files.test.ts',
+    ])).toMatchObject({
+      ok: true,
+      message: 'CLI parity evidence found.',
+    })
+  })
+
   it('accepts CLI parity evidence for security/code-scanning route cleanups without contract changes', () => {
     expect(evaluateCliParityEvidence([
       'server/api/applications/[id]/analyze.post.ts',

@@ -52,7 +52,7 @@ const getCachedApplications = defineOrgScopedCachedFunction(
     }
 
     const where = and(...conditions)
-    const rows = await db
+    let rowsQuery = db
       .select({
         id: application.id,
         status: application.status,
@@ -78,10 +78,18 @@ const getCachedApplications = defineOrgScopedCachedFunction(
         eq(job.id, application.jobId),
         eq(job.organizationId, orgId),
       ))
-      .leftJoin(applicationSearchDocument, and(
+
+    // Normal list loads must not depend on the optional search index. Besides
+    // avoiding an unnecessary join, this keeps the recruiting pipeline
+    // available while a newly deployed search-index migration is converging.
+    if (query.search) {
+      rowsQuery = rowsQuery.innerJoin(applicationSearchDocument, and(
         eq(applicationSearchDocument.applicationId, application.id),
         eq(applicationSearchDocument.organizationId, orgId),
       ))
+    }
+
+    const rows = await rowsQuery
       .where(where)
       .orderBy(desc(application.createdAt))
       .limit(query.limit)
@@ -92,7 +100,7 @@ const getCachedApplications = defineOrgScopedCachedFunction(
     // fallback count query, a path the pipeline never uses.
     let total = rows[0]?.totalCount ?? 0
     if (rows.length === 0 && query.page > 1) {
-      const [fallbackTotal] = await db
+      let countQuery = db
         .select({ count: sql<number>`count(*)::int` })
         .from(application)
         .innerJoin(candidate, and(
@@ -103,10 +111,16 @@ const getCachedApplications = defineOrgScopedCachedFunction(
           eq(job.id, application.jobId),
           eq(job.organizationId, orgId),
         ))
-        .leftJoin(applicationSearchDocument, and(
+
+      if (query.search) {
+        countQuery = countQuery.innerJoin(applicationSearchDocument, and(
           eq(applicationSearchDocument.applicationId, application.id),
           eq(applicationSearchDocument.organizationId, orgId),
         ))
+
+      }
+
+      const [fallbackTotal] = await countQuery
         .where(where)
       total = fallbackTotal?.count ?? 0
     }

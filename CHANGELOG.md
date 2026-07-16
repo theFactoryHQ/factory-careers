@@ -12,6 +12,10 @@ self-hosters.
 
 ## Unreleased
 
+### Fixed
+
+- Kept ordinary application and job-pipeline lists available while the optional application search index is being migrated during a deployment.
+
 ## [1.0.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.0.0) (2026-07-16)
 
 This is the first independent Factory Careers release after the Reqcore fork.
