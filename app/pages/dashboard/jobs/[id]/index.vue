@@ -1056,9 +1056,6 @@ function closeDocPreview() {
           >
             {{ applicationTotal }} match{{ applicationTotal === 1 ? '' : 'es' }}
           </span>
-          <span class="hidden shrink-0 text-[10px] text-surface-400 dark:text-surface-500 xl:inline">
-            Searches profiles, resumes, answers, properties, interviews, comments, sources, and AI evidence
-          </span>
         </div>
       </div>
 

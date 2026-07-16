@@ -84,6 +84,7 @@ describe('application content search', () => {
     expect(page).toContain('search: debouncedApplicationSearch')
     expect(page).toContain('placeholder="Filter by name or email…"')
     expect(page).toContain('Type 3+ characters')
+    expect(page).not.toContain('Searches profiles, resumes, answers, properties, interviews, comments, sources, and AI evidence')
     expect(page).not.toContain('v-model="searchTerm"')
   })
 })
