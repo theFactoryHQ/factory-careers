@@ -83,6 +83,7 @@ function runCliSmokeTests() {
 
 export function getPrPreflightSteps() {
   return [
+    { name: 'Changelog policy', aliases: ['changelog'], run: () => run('npm', ['run', 'changelog:check']) },
     { name: 'CLI parity evidence', aliases: ['cli-parity'], run: runCliParityEvidence },
     { name: 'Unit tests', run: () => run('npm', ['run', 'test:unit']) },
     { name: 'Lint', run: runLint },

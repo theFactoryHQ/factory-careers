@@ -93,6 +93,22 @@ describe('Factory Careers release identity', () => {
     expect(vscodeTasks).not.toContain('--repo-url=https://github.com/reqcore-inc/reqcore')
   })
 
+  it('enforces changelog policy before broad pull-request validation', () => {
+    const workflow = readProjectFile('.github/workflows/pr-validation.yml')
+    const changelogStep = `      - name: Changelog policy
+        id: changelog
+        run: npm run changelog:check
+        env:
+          PR_PREFLIGHT_BASE_REF: origin/\${{ github.base_ref || 'main' }}
+          CHANGELOG_SKIP: \${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}`
+
+    expect(workflow).toContain(changelogStep)
+    expect(workflow.indexOf('- name: Setup Node.js')).toBeLessThan(workflow.indexOf('- name: Changelog policy'))
+    expect(workflow.indexOf('- name: Changelog policy')).toBeLessThan(workflow.indexOf('- name: Install dependencies'))
+    expect(workflow).toContain("CHANGELOG_SKIP: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}")
+    expect(workflow).toContain("| Changelog policy | $(status_icon '${{ steps.changelog.outcome }}') ${{ steps.changelog.outcome }} |")
+  })
+
   it('documents the Factory release policy and preserves the changelog entry point', () => {
     const changelog = readProjectFile('CHANGELOG.md')
     const readme = readProjectFile('README.md')

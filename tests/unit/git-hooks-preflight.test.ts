@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -53,6 +53,7 @@ describe('git hook preflight checks', () => {
 
   it('keeps local pre-push checks aligned with PR validation', () => {
     expect(getPrPreflightSteps().map((step) => step.name)).toEqual([
+      'Changelog policy',
       'CLI parity evidence',
       'Unit tests',
       'Lint',
@@ -61,6 +62,30 @@ describe('git hook preflight checks', () => {
       'Production environment contract',
       'Build',
     ])
+  })
+
+  it('runs the changelog policy through its local preflight alias', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'factory-careers-preflight-changelog-'))
+    const capturePath = join(cwd, 'npm-args.txt')
+    const fakeNpmPath = join(cwd, 'npm')
+    tempDirectories.push(cwd)
+
+    writeFileSync(fakeNpmPath, '#!/bin/sh\nprintf \'%s\\n\' "$@" > "$CAPTURE_FILE"\n')
+    chmodSync(fakeNpmPath, 0o755)
+
+    const result = spawnSync('node', ['scripts/run-pr-validation-preflight.mjs', '--step', 'changelog'], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        CAPTURE_FILE: capturePath,
+        PATH: `${cwd}:${process.env.PATH ?? ''}`,
+      },
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('==> Changelog policy')
+    expect(readFileSync(capturePath, 'utf8')).toBe('run\nchangelog:check\n')
+    expect(getPrPreflightSteps()[0]?.aliases).toEqual(['changelog'])
   })
 
   it('installs all local hooks from npm prepare', () => {
