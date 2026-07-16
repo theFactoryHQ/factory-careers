@@ -141,6 +141,19 @@ describe('CLI parity changed-file guard', () => {
     })
   })
 
+  it('accepts CLI parity evidence for application schema readiness repairs without contract changes', () => {
+    expect(evaluateCliParityEvidence([
+      'server/api/readyz.get.ts',
+      'server/database/migrations/0049_candidate_location_repair.sql',
+      'server/database/migrations/meta/_journal.json',
+      'tests/unit/application-location.test.ts',
+      'tests/unit/cli-parity-changed-files.test.ts',
+    ])).toMatchObject({
+      ok: true,
+      message: 'CLI parity evidence found.',
+    })
+  })
+
   it('accepts CLI parity evidence for security/code-scanning route cleanups without contract changes', () => {
     expect(evaluateCliParityEvidence([
       'server/api/applications/[id]/analyze.post.ts',
