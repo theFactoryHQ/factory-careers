@@ -36,6 +36,11 @@ describe('paginationQuerySchema', () => {
       limit: 20,
       status: 'screening',
     })
+    expect(applicationQuerySchema.parse({ search: '  portfolio  ' })).toMatchObject({
+      page: 1,
+      limit: 20,
+      search: 'portfolio',
+    })
     expect(jobQuerySchema.parse({ status: 'open', page: '3' })).toEqual({
       page: 3,
       limit: 20,

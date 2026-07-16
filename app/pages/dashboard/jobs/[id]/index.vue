@@ -49,12 +49,29 @@ const { job: jobData, status: jobFetchStatus, error: jobError } = useJob(jobId)
 // Applications data
 // ─────────────────────────────────────────────
 
+const applicationSearch = ref('')
+const normalizedApplicationSearch = computed(() => applicationSearch.value.trim())
+const isApplicationSearchTooShort = computed(() =>
+  normalizedApplicationSearch.value.length > 0
+  && normalizedApplicationSearch.value.length < 3,
+)
+const debouncedApplicationSearch = useDebouncedRef(applicationSearch, {
+  delay: 300,
+  transform: (value) => {
+    const normalized = value.trim()
+    return normalized.length >= 3 ? normalized : undefined
+  },
+  initial: undefined as string | undefined,
+})
+
 const {
+  data: applicationsData,
   applications,
+  total: applicationTotal,
   fetchStatus: appFetchStatus,
   error: appError,
   refresh: refreshApps,
-} = useApplications({ jobId, limit: 100 })
+} = useApplications({ jobId, limit: 100, search: debouncedApplicationSearch, allPages: true })
 
 const PIPELINE_STATUSES = ['new', 'screening', 'interview', 'offer', 'hired', 'rejected'] as const
 type PipelineStatus = typeof PIPELINE_STATUSES[number]
@@ -69,8 +86,8 @@ const focusedApplications = computed(() =>
   applications.value.filter((application) => application.status === focusStatus.value),
 )
 
-// Search within the focused list
-const searchTerm = ref('')
+// Narrow candidate-only search lives alongside the other focused-list filters.
+const candidateSearch = ref('')
 
 // ─────────────────────────────────────────────
 // Filters & Sorting
@@ -96,9 +113,15 @@ const { floatingStyle: sortPanelStyle } = useFloatingMenu({
   zIndex: 80,
 })
 
-const hasActiveFilters = computed(() => scoreFilter.value !== 'all' || interviewFilter.value !== 'all' || propertyFilters.value.length > 0)
+const hasActiveFilters = computed(() =>
+  candidateSearch.value.trim().length > 0
+  || scoreFilter.value !== 'all'
+  || interviewFilter.value !== 'all'
+  || propertyFilters.value.length > 0,
+)
 const activeFilterCount = computed(() => {
   let count = 0
+  if (candidateSearch.value.trim()) count++
   if (scoreFilter.value !== 'all') count++
   if (interviewFilter.value !== 'all') count++
   count += propertyFilters.value.length
@@ -106,6 +129,7 @@ const activeFilterCount = computed(() => {
 })
 
 function clearFilters() {
+  candidateSearch.value = ''
   scoreFilter.value = 'all'
   interviewFilter.value = 'all'
   propertyFilters.value = []
@@ -152,9 +176,9 @@ function closePanels() {
 const filteredApplications = computed(() => {
   let result = focusedApplications.value
 
-  // Text search
-  if (searchTerm.value.trim()) {
-    const term = searchTerm.value.toLowerCase()
+  // Candidate-only filter. The page-level application search is handled by the API.
+  if (candidateSearch.value.trim()) {
+    const term = candidateSearch.value.trim().toLowerCase()
     result = result.filter((app) => {
       const name = `${app.candidateFirstName} ${app.candidateLastName}`.toLowerCase()
       const email = (app.candidateEmail ?? '').toLowerCase()
@@ -278,7 +302,6 @@ watch(filteredApplications, (apps) => {
 
 watch(focusStatus, () => {
   currentIndex.value = 0
-  searchTerm.value = ''
   propertyFilters.value = []
   closePanels()
 })
@@ -905,8 +928,17 @@ onBeforeUnmount(() => {
 })
 
 const isLoading = computed(() => {
-  return jobFetchStatus.value === 'pending' || appFetchStatus.value === 'pending'
+  return jobFetchStatus.value === 'pending'
+    || (appFetchStatus.value === 'pending' && applicationsData.value == null && !debouncedApplicationSearch.value)
 })
+
+const isApplicationSearchPending = computed(() =>
+  !isApplicationSearchTooShort.value
+  && (
+    normalizedApplicationSearch.value !== (debouncedApplicationSearch.value ?? '')
+    || (appFetchStatus.value === 'pending' && !isMutating.value)
+  ),
+)
 
 // ─────────────────────────────────────────────
 // Document preview
@@ -1026,6 +1058,45 @@ function closeDocPreview() {
         </div>
       </div>
 
+      <!-- Application-wide content search -->
+      <div class="shrink-0 border-b border-white/10 bg-white/[0.015] px-3 py-2 sm:px-5">
+        <div class="flex min-w-0 items-center gap-3">
+          <GooeySearchInput
+            v-model="applicationSearch"
+            aria-label="Search application content"
+            class="w-full max-w-2xl"
+            placeholder="Search applications, resumes, notes, answers…"
+            reserve-expanded-space
+            size="sm"
+            @open-change="closePanels"
+          />
+          <span
+            v-if="isApplicationSearchTooShort"
+            class="shrink-0 text-[11px] text-surface-400 dark:text-surface-500"
+            role="status"
+          >
+            Type 3+ characters
+          </span>
+          <span
+            v-else-if="isApplicationSearchPending"
+            class="inline-flex shrink-0 items-center gap-1.5 text-[11px] text-surface-400 dark:text-surface-500"
+            role="status"
+          >
+            <span class="size-3 animate-spin rounded-full border border-current border-t-transparent" />
+            <span class="hidden sm:inline">Searching</span>
+          </span>
+          <span
+            v-else-if="debouncedApplicationSearch"
+            class="shrink-0 text-[11px] tabular-nums text-surface-400 dark:text-surface-500"
+          >
+            {{ applicationTotal }} match{{ applicationTotal === 1 ? '' : 'es' }}
+          </span>
+          <span class="hidden shrink-0 text-[10px] text-surface-400 dark:text-surface-500 xl:inline">
+            Searches profiles, resumes, answers, properties, interviews, comments, sources, and AI evidence
+          </span>
+        </div>
+      </div>
+
       <!-- ═══════════════════════════════════════ -->
       <!-- THREE-PANEL LAYOUT                       -->
       <!-- ═══════════════════════════════════════ -->
@@ -1035,19 +1106,8 @@ function closeDocPreview() {
         <div
           class="hidden md:flex md:w-72 md:shrink-0 flex-col border-r border-white/10 bg-white/[0.015] ui-dashboard-panel"
         >
-          <!-- Search + Sort + Filter controls -->
+          <!-- Sort + Filter controls -->
           <div class="shrink-0 px-3.5 pt-3 pb-2 space-y-2 dark:border-surface-800">
-            <!-- Search input -->
-            <GooeySearchInput
-              v-model="searchTerm"
-              aria-label="Search candidates"
-              class="w-full"
-              placeholder="Search candidates…"
-              reserve-expanded-space
-              size="sm"
-              @open-change="closePanels"
-            />
-
             <!-- Sort & Filter row -->
             <div class="flex items-center gap-1.5">
               <!-- Sort dropdown -->
@@ -1102,6 +1162,9 @@ function closeDocPreview() {
               <!-- Filter button -->
               <button
                 class="relative flex h-8 min-h-8 cursor-pointer items-center justify-center gap-1 rounded-md border px-2 py-0 transition-all duration-150"
+                :aria-expanded="showFilterPanel"
+                :aria-label="activeFilterCount > 0 ? `Filter candidates, ${activeFilterCount} active` : 'Filter candidates'"
+                :title="activeFilterCount > 0 ? `${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'}` : 'Filter candidates'"
                 :class="showFilterPanel || hasActiveFilters
                   ? 'border-brand-300 bg-brand-50/50 text-brand-700 dark:border-brand-600 dark:bg-brand-950/30 dark:text-brand-300'
                   : 'border-surface-200/80 bg-surface-50/50 text-surface-600 hover:border-surface-300 hover:bg-surface-50 dark:border-surface-700/80 dark:bg-surface-800/40 dark:text-surface-300 dark:hover:border-surface-600 dark:hover:bg-surface-800'"
@@ -1130,6 +1193,19 @@ function closeDocPreview() {
                 v-if="showFilterPanel"
                 class="rounded-lg border border-white/12 bg-white/[0.025] p-2.5 space-y-2.5"
               >
+                <!-- Candidate filter -->
+                <div>
+                  <p class="mb-1 text-[10px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500">Candidate</p>
+                  <GooeySearchInput
+                    v-model="candidateSearch"
+                    aria-label="Search candidates"
+                    class="w-full"
+                    placeholder="Filter by name or email…"
+                    reserve-expanded-space
+                    size="sm"
+                  />
+                </div>
+
                 <!-- Score filter -->
                 <div>
                   <p class="text-[10px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-1">Score</p>
@@ -1193,7 +1269,7 @@ function closeDocPreview() {
           <div class="shrink-0 px-3.5 pb-2 flex items-center justify-between">
             <span class="text-xs font-medium text-surface-500 dark:text-surface-400">
               {{ filteredApplications.length }} candidate{{ filteredApplications.length === 1 ? '' : 's' }}
-              <span v-if="searchTerm.trim() || hasActiveFilters" class="text-surface-400 dark:text-surface-500">
+              <span v-if="debouncedApplicationSearch || hasActiveFilters" class="text-surface-400 dark:text-surface-500">
                 {{ hasActiveFilters ? ' filtered' : ' matching' }}
               </span>
             </span>
@@ -1275,7 +1351,7 @@ function closeDocPreview() {
               <UserRound class="size-7 text-surface-400 dark:text-surface-500" />
             </div>
             <p class="flex flex-wrap items-center justify-center gap-2 text-base font-semibold text-surface-700 dark:text-surface-200">
-              <span>No candidates in</span>
+              <span>{{ debouncedApplicationSearch ? 'No matching applications in' : 'No candidates in' }}</span>
               <span
                 class="factory-pipeline-empty-status-chip ui-filter-chip factory-pipeline-status-chip inline-flex h-8 min-h-8 items-center gap-2 px-3 text-xs !font-light uppercase leading-none tracking-normal"
                 :class="[`factory-pipeline-status-chip-${focusStatus}`]"
@@ -1293,7 +1369,9 @@ function closeDocPreview() {
               </span>
             </p>
             <p class="mt-1.5 text-sm text-surface-500 dark:text-surface-400 max-w-xs">
-              Switch to another pipeline stage to review candidates.
+              {{ debouncedApplicationSearch
+                ? 'Try another search or select a pipeline stage with matches.'
+                : 'Switch to another pipeline stage to review candidates.' }}
             </p>
           </div>
 

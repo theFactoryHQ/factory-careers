@@ -379,6 +379,13 @@
       "when": 1784203200000,
       "tag": "0052_job_valid_through_end_of_day",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1784206800000,
+      "tag": "0053_application_search_document",
+      "breakpoints": true
     }
   ]
 }

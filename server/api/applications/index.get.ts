@@ -1,6 +1,6 @@
-import { eq, and, desc, inArray } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import type { z } from 'zod'
-import { application, candidate, job } from '../../database/schema'
+import { application, applicationSearchDocument, candidate, job } from '../../database/schema'
 import {
   paginatedListResponse,
   paginationOffset,
@@ -11,11 +11,12 @@ import {
   matchingEntityIdsForPropertyFilters,
   parsePropertyFiltersParam,
 } from '../../utils/propertyFilters'
+import { applicationContentSearchCondition } from '../../utils/applicationSearch'
 
 /**
  * GET /api/applications
  * List applications for the current organization.
- * Filterable by jobId, candidateId, status, and custom property filters. Paginated.
+ * Filterable by jobId, candidateId, status, full application content, and custom properties. Paginated.
  */
 const getCachedApplications = defineOrgScopedCachedFunction(
   'applications-list',
@@ -32,6 +33,10 @@ const getCachedApplications = defineOrgScopedCachedFunction(
     if (query.status) {
       conditions.push(eq(application.status, query.status))
     }
+    if (query.search) {
+      const searchCondition = applicationContentSearchCondition(query.search, orgId)
+      if (searchCondition) conditions.push(searchCondition)
+    }
 
     const propertyFilters = parsePropertyFiltersParam(query.propertyFilters)
     if (propertyFilters.length > 0) {
@@ -47,33 +52,66 @@ const getCachedApplications = defineOrgScopedCachedFunction(
     }
 
     const where = and(...conditions)
+    const rows = await db
+      .select({
+        id: application.id,
+        status: application.status,
+        score: application.score,
+        notes: application.notes,
+        createdAt: application.createdAt,
+        updatedAt: application.updatedAt,
+        candidateId: application.candidateId,
+        candidateFirstName: candidate.firstName,
+        candidateLastName: candidate.lastName,
+        candidateEmail: candidate.email,
+        jobId: application.jobId,
+        jobTitle: job.title,
+        jobStatus: job.status,
+        totalCount: sql<number>`count(*) over()::int`,
+      })
+      .from(application)
+      .innerJoin(candidate, and(
+        eq(candidate.id, application.candidateId),
+        eq(candidate.organizationId, orgId),
+      ))
+      .innerJoin(job, and(
+        eq(job.id, application.jobId),
+        eq(job.organizationId, orgId),
+      ))
+      .leftJoin(applicationSearchDocument, and(
+        eq(applicationSearchDocument.applicationId, application.id),
+        eq(applicationSearchDocument.organizationId, orgId),
+      ))
+      .where(where)
+      .orderBy(desc(application.createdAt))
+      .limit(query.limit)
+      .offset(offset)
 
-    const [data, total] = await Promise.all([
-      db
-        .select({
-          id: application.id,
-          status: application.status,
-          score: application.score,
-          notes: application.notes,
-          createdAt: application.createdAt,
-          updatedAt: application.updatedAt,
-          candidateId: application.candidateId,
-          candidateFirstName: candidate.firstName,
-          candidateLastName: candidate.lastName,
-          candidateEmail: candidate.email,
-          jobId: application.jobId,
-          jobTitle: job.title,
-          jobStatus: job.status,
-        })
+    // A window count avoids re-running the content search for every normal page.
+    // Preserve the paginated API contract for an out-of-range page with one
+    // fallback count query, a path the pipeline never uses.
+    let total = rows[0]?.totalCount ?? 0
+    if (rows.length === 0 && query.page > 1) {
+      const [fallbackTotal] = await db
+        .select({ count: sql<number>`count(*)::int` })
         .from(application)
-        .innerJoin(candidate, eq(candidate.id, application.candidateId))
-        .innerJoin(job, eq(job.id, application.jobId))
+        .innerJoin(candidate, and(
+          eq(candidate.id, application.candidateId),
+          eq(candidate.organizationId, orgId),
+        ))
+        .innerJoin(job, and(
+          eq(job.id, application.jobId),
+          eq(job.organizationId, orgId),
+        ))
+        .leftJoin(applicationSearchDocument, and(
+          eq(applicationSearchDocument.applicationId, application.id),
+          eq(applicationSearchDocument.organizationId, orgId),
+        ))
         .where(where)
-        .orderBy(desc(application.createdAt))
-        .limit(query.limit)
-        .offset(offset),
-      db.$count(application, where),
-    ])
+      total = fallbackTotal?.count ?? 0
+    }
+
+    const data = rows.map(({ totalCount: _totalCount, ...row }) => row)
 
     // Bulk-attach properties for the current page (org-global + per-job)
     const ids = data.map(a => a.id)

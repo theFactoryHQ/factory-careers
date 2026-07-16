@@ -37,7 +37,7 @@ describe('job pipeline lazy panels', () => {
     const source = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
 
     expect(source).toContain('useJob(jobId)')
-    expect(source).toContain('useApplications({ jobId, limit: 100 })')
+    expect(source).toContain('useApplications({ jobId, limit: 100, search: debouncedApplicationSearch, allPages: true })')
     expect(source).toContain('pipeline-application-${currentApplicationId.value}')
     expect(source).toContain('cachedApplication')
   })

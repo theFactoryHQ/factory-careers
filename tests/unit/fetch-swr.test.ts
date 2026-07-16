@@ -58,16 +58,23 @@ describe('applications cache contract', () => {
     expect(useApplications).toContain('getSwrCachedData')
     expect(useApplications).toContain('watchFetchSwrStamp')
     expect(useApplications).not.toContain("key: 'applications'")
-    expect(useApplications).toMatch(/key:\s*computed\(\(\)\s*=>\s*applicationsListKey/)
+    expect(useApplications).toContain('const dataKey = computed(() =>')
+    expect(useApplications).toContain('applicationsListKey(query.value)')
+    expect(useApplications).toContain('useAsyncData(dataKey')
   })
 
   it('routes application cache refreshes through the applications list helper', () => {
     const useApplication = readProjectFile('app/composables/useApplication.ts')
     const useApplicationScoring = readProjectFile('app/composables/useApplicationScoring.ts')
+    const useApplications = readProjectFile('app/composables/useApplications.ts')
 
     expect(useApplication).toContain('refreshApplicationsListCaches')
     expect(useApplicationScoring).toContain('refreshApplicationsListCaches')
     expect(useApplication).not.toContain("refreshNuxtData('applications')")
+    expect(useApplications).toContain("clearNuxtData(key =>")
+    expect(useApplications).toContain('key !== activeKeyToPreserve')
+    expect(useApplications).toContain('refreshApplicationsListCaches(dataKey.value)')
+    expect(useApplications).not.toContain('Promise.all(refreshKeys.map')
   })
 })
 
