@@ -62,7 +62,7 @@ export default defineEventHandler(async (event) => {
   return {
     jurisdiction: 'US',
     formVersion: 'US-SELF-ID-2026-05',
-    totalResponses,
+    totalResponses: protectedReporting.totalResponses,
     suppressed: protectedReporting.suppressed,
     minimumCohortSize: protectedReporting.minimumCohortSize,
     breakdowns: protectedReporting.breakdowns,

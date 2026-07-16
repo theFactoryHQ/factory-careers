@@ -18,12 +18,12 @@ const countQueryMock = vi.fn()
 const selectQueryMock = vi.fn()
 const aggregateWhereMocks: Array<ReturnType<typeof vi.fn>> = []
 
-function makeAggregateQuery() {
+function makeAggregateQuery(rows: Array<{ value: string | null, count: number }> = []) {
   const query = {
     from: vi.fn(),
     where: vi.fn(),
     groupBy: vi.fn(),
-    orderBy: vi.fn().mockResolvedValue([]),
+    orderBy: vi.fn().mockResolvedValue(rows),
   }
   query.from.mockReturnValue(query)
   query.where.mockReturnValue(query)
@@ -48,7 +48,7 @@ describe('compliance summary authorization boundary', () => {
     vi.clearAllMocks()
     aggregateWhereMocks.length = 0
     countQueryMock.mockResolvedValue(5)
-    selectQueryMock.mockImplementation(makeAggregateQuery)
+    selectQueryMock.mockImplementation(() => makeAggregateQuery())
   })
 
   it('requires organization update permission before starting any aggregate query', async () => {
@@ -87,5 +87,20 @@ describe('compliance summary authorization boundary', () => {
     aggregateWhereMocks.forEach((whereMock, index) => {
       expect(whereMock).toHaveBeenCalledWith(organizationPredicates[index + 1])
     })
+  })
+
+  it('returns the helper-protected total instead of a raw below-threshold count', async () => {
+    requirePermissionMock.mockResolvedValue({
+      session: { activeOrganizationId: 'org-private-cohort' },
+    })
+    countQueryMock.mockResolvedValue(4)
+    selectQueryMock.mockImplementation(() => makeAggregateQuery([
+      { value: null, count: 4 },
+    ]))
+
+    await expect(complianceSummaryHandler({})).resolves.toEqual(expect.objectContaining({
+      totalResponses: null,
+      suppressed: true,
+    }))
   })
 })

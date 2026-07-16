@@ -75,7 +75,7 @@ export const cliRouteCoverage: CliRouteCoverageEntry[] = [
   { route: 'server/api/comments/[id].patch.ts', status: 'supported', command: 'comments update' },
   { route: 'server/api/comments/index.get.ts', status: 'supported', command: 'comments list' },
   { route: 'server/api/comments/index.post.ts', status: 'supported', command: 'comments create' },
-  { route: 'server/api/compliance/applications/summary.get.ts', status: 'excluded', reason: 'Dashboard-only aggregate compliance report; no CLI workflow until exports/reporting are productized.' },
+  { route: 'server/api/compliance/applications/summary.get.ts', status: 'excluded', reason: 'Dashboard-only privacy-protected aggregate compliance report; no CLI workflow until exports/reporting are productized.' },
   { route: 'server/api/dashboard/stats.get.ts', status: 'supported', command: 'dashboard summary' },
   { route: 'server/api/documents/[id].delete.ts', status: 'supported', command: 'documents delete' },
   { route: 'server/api/documents/[id]/download.get.ts', status: 'supported', command: 'documents download' },

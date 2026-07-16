@@ -20,24 +20,24 @@ export type ComplianceReportingBreakdownsInput = Record<
   readonly ComplianceReportingInputBucket[]
 >
 
-export type ComplianceReportingBucket =
-  | {
-      value: string
-      count: number
-      suppressed: false
-    }
-  | {
-      value: 'suppressed'
-      count: null
-      suppressed: true
-    }
+export interface ComplianceReportingBucket {
+  value: string | null
+  count: number
+  suppressed: false
+}
+
+export interface ComplianceReportingDimension {
+  buckets: ComplianceReportingBucket[]
+  suppressed: boolean
+}
 
 export type ComplianceReportingBreakdowns = Record<
   ComplianceReportingBreakdownName,
-  ComplianceReportingBucket[]
+  ComplianceReportingDimension
 >
 
 export interface ProtectedComplianceReporting {
+  totalResponses: number | null
   suppressed: boolean
   minimumCohortSize: typeof MIN_COMPLIANCE_REPORTING_COHORT
   breakdowns: ComplianceReportingBreakdowns
@@ -49,90 +49,75 @@ export function protectComplianceReporting(
 ): ProtectedComplianceReporting {
   if (totalResponses < MIN_COMPLIANCE_REPORTING_COHORT) {
     return {
+      totalResponses: null,
       suppressed: true,
       minimumCohortSize: MIN_COMPLIANCE_REPORTING_COHORT,
-      breakdowns: emptyBreakdowns(),
+      breakdowns: suppressedBreakdowns(),
     }
   }
 
-  const sex = protectBreakdown(breakdowns.sex)
-  const raceEthnicity = protectBreakdown(breakdowns.raceEthnicity)
-  const veteranStatus = protectBreakdown(breakdowns.veteranStatus)
-  const disabilityStatus = protectBreakdown(breakdowns.disabilityStatus)
+  const sex = protectBreakdown(totalResponses, breakdowns.sex)
+  const raceEthnicity = protectBreakdown(totalResponses, breakdowns.raceEthnicity)
+  const veteranStatus = protectBreakdown(totalResponses, breakdowns.veteranStatus)
+  const disabilityStatus = protectBreakdown(totalResponses, breakdowns.disabilityStatus)
 
   return {
+    totalResponses,
     suppressed: sex.suppressed
       || raceEthnicity.suppressed
       || veteranStatus.suppressed
       || disabilityStatus.suppressed,
     minimumCohortSize: MIN_COMPLIANCE_REPORTING_COHORT,
     breakdowns: {
-      sex: sex.buckets,
-      raceEthnicity: raceEthnicity.buckets,
-      veteranStatus: veteranStatus.buckets,
-      disabilityStatus: disabilityStatus.buckets,
+      sex,
+      raceEthnicity,
+      veteranStatus,
+      disabilityStatus,
     },
   }
 }
 
-function emptyBreakdowns(): ComplianceReportingBreakdowns {
+function suppressedBreakdowns(): ComplianceReportingBreakdowns {
   return {
-    sex: [],
-    raceEthnicity: [],
-    veteranStatus: [],
-    disabilityStatus: [],
+    sex: suppressedDimension(),
+    raceEthnicity: suppressedDimension(),
+    veteranStatus: suppressedDimension(),
+    disabilityStatus: suppressedDimension(),
   }
 }
 
-function protectBreakdown(rows: readonly ComplianceReportingInputBucket[]): {
-  buckets: ComplianceReportingBucket[]
-  suppressed: boolean
-} {
-  const sortedRows = rows
-    .flatMap((row) => row.value === null ? [] : [{ value: row.value, count: row.count }])
-    .sort((left, right) => right.count - left.count || compareValues(left.value, right.value))
+function protectBreakdown(
+  totalResponses: number,
+  rows: readonly ComplianceReportingInputBucket[],
+): ComplianceReportingDimension {
+  const rowTotal = rows.reduce((sum, row) => sum + row.count, 0)
+  const hasSmallBucket = rows.some(row => row.count < MIN_COMPLIANCE_REPORTING_COHORT)
 
-  const suppressedIndexes = new Set(
-    sortedRows
-      .map((row, index) => ({ row, index }))
-      .filter(({ row }) => row.count < MIN_COMPLIANCE_REPORTING_COHORT)
-      .map(({ index }) => index),
-  )
+  if (rowTotal !== totalResponses || hasSmallBucket) {
+    return suppressedDimension()
+  }
 
-  if (suppressedIndexes.size === 1 && sortedRows.length > 1) {
-    const complementaryIndex = sortedRows
-      .map((row, index) => ({ row, index }))
-      .filter(({ index }) => !suppressedIndexes.has(index))
+  return {
+    suppressed: false,
+    buckets: rows
+      .map(row => ({ ...row, suppressed: false as const }))
       .sort((left, right) =>
-        left.row.count - right.row.count
-        || compareValues(left.row.value, right.row.value),
-      )[0]?.index
-
-    if (complementaryIndex !== undefined) {
-      suppressedIndexes.add(complementaryIndex)
-    }
-  }
-
-  return {
-    suppressed: suppressedIndexes.size > 0,
-    buckets: sortedRows.map((row, index) => {
-      if (suppressedIndexes.has(index)) {
-        return {
-          value: 'suppressed',
-          count: null,
-          suppressed: true,
-        }
-      }
-
-      return {
-        ...row,
-        suppressed: false,
-      }
-    }),
+        right.count - left.count || compareValues(left.value, right.value),
+      ),
   }
 }
 
-function compareValues(left: string, right: string): number {
+function suppressedDimension(): ComplianceReportingDimension {
+  return {
+    suppressed: true,
+    buckets: [],
+  }
+}
+
+function compareValues(left: string | null, right: string | null): number {
+  if (left === right) return 0
+  if (left === null) return 1
+  if (right === null) return -1
   if (left < right) return -1
   if (left > right) return 1
   return 0
