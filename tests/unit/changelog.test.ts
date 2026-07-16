@@ -17,7 +17,7 @@ describe('parseChangelog', () => {
 
 - Use Factory-owned release sources.
 
-## [1.5.0](https://github.com/theFactoryHQ/factory-careers/compare/v1.4.0...v1.5.0) (2026-07-20)
+## [1.1.0](https://github.com/theFactoryHQ/factory-careers/compare/v1.0.0...v1.1.0) (2026-07-20)
 
 ### Added
 
@@ -39,10 +39,10 @@ describe('parseChangelog', () => {
         sections: [{ heading: 'Changed', items: ['Use Factory-owned release sources.'] }],
       },
       {
-        title: 'v1.5.0',
+        title: 'v1.1.0',
         date: '2026-07-20',
-        version: '1.5.0',
-        link: 'https://github.com/theFactoryHQ/factory-careers/compare/v1.4.0...v1.5.0',
+        version: '1.1.0',
+        link: 'https://github.com/theFactoryHQ/factory-careers/compare/v1.0.0...v1.1.0',
         sections: [{ heading: 'Added', items: ['Add product release notes.'] }],
       },
       {

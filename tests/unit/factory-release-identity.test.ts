@@ -72,6 +72,27 @@ describe('Factory Careers release identity', () => {
     ])
   })
 
+  it('uses the Factory cutover version in release verification examples', () => {
+    const releaseVerification = readProjectFile('.github/workflows/release-verification.yml')
+
+    expect(releaseVerification).toContain('v1.0.0')
+    expect(releaseVerification).not.toContain('v1.4.0')
+  })
+
+  it('uses a clean Factory lineage in the changelog parser fixture', () => {
+    const changelogTest = readProjectFile('tests/unit/changelog.test.ts')
+
+    expect(changelogTest).toContain('/compare/v1.0.0...v1.1.0')
+    expect(changelogTest).not.toContain('/compare/v1.4.0...v1.5.0')
+  })
+
+  it('targets the Factory repository in the release-please dry run task', () => {
+    const vscodeTasks = readProjectFile('.vscode/tasks.json')
+
+    expect(vscodeTasks).toContain('--repo-url=https://github.com/theFactoryHQ/factory-careers')
+    expect(vscodeTasks).not.toContain('--repo-url=https://github.com/reqcore-inc/reqcore')
+  })
+
   it('documents the Factory release policy and preserves the changelog entry point', () => {
     const changelog = readProjectFile('CHANGELOG.md')
     const readme = readProjectFile('README.md')
