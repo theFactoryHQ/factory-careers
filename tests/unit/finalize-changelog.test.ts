@@ -73,6 +73,43 @@ describe('finalize-changelog', () => {
     expect(readdirSync(cwd)).toEqual(['CHANGELOG.md'])
   })
 
+  it('preserves continuation paragraphs, nested lists, and fenced examples during promotion', () => {
+    const original = `# Changelog
+
+## Unreleased
+
+### Changed
+
+- Document the operator workflow.
+
+  This continuation is part of the curated entry.
+
+  - Run the first step.
+  - Run the second step.
+
+  \`\`\`md
+- This fenced bullet is an example.
+  \`\`\`
+`
+    const cwd = createFixture(original)
+
+    const result = runFinalizer(cwd)
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')).toContain(`### Changed
+
+- Document the operator workflow.
+
+  This continuation is part of the curated entry.
+
+  - Run the first step.
+  - Run the second step.
+
+  \`\`\`md
+- This fenced bullet is an example.
+  \`\`\``)
+  })
+
   it('refuses to finalize an empty Unreleased section and leaves the file unchanged', () => {
     const original = `# Changelog
 
@@ -102,6 +139,37 @@ describe('finalize-changelog', () => {
 ### Security
 
 - This category is outside the curated changelog grammar.
+`
+    const cwd = createFixture(original)
+
+    const result = runFinalizer(cwd)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Unreleased must contain at least one changelog item')
+    expect(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')).toBe(original)
+  })
+
+  it.each([
+    {
+      source: 'a fenced code example',
+      content: `\`\`\`md
+- Example only.
+\`\`\``,
+    },
+    {
+      source: 'an HTML comment',
+      content: `<!--
+- Hidden example only.
+-->`,
+    },
+  ])('refuses to treat a bullet inside $source as a changelog item', ({ content }) => {
+    const original = `# Changelog
+
+## Unreleased
+
+### Added
+
+${content}
 `
     const cwd = createFixture(original)
 

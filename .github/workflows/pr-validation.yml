@@ -36,6 +36,7 @@ jobs:
         run: npm run changelog:check
         env:
           PR_PREFLIGHT_BASE_REF: origin/${{ github.base_ref || 'main' }}
+          PR_PREFLIGHT_HEAD_REF: ${{ github.event.pull_request.head.sha || github.sha }}
           CHANGELOG_SKIP: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
 
       - name: Install dependencies

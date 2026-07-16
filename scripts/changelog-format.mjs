@@ -14,18 +14,98 @@ function getBodyAfterHeading(raw, headingEnd) {
 export function getChangelogItems(body) {
   const items = []
   let inSupportedSection = false
+  let currentItem = null
+  let fence = null
+  let inHtmlComment = false
 
-  for (const line of body.split('\n')) {
+  function finishItem() {
+    if (!currentItem)
+      return
+
+    while (currentItem.length > 1 && currentItem.at(-1).trim() === '')
+      currentItem.pop()
+
+    items.push(currentItem.map(line => line.trimEnd()).join('\n'))
+    currentItem = null
+  }
+
+  function appendToItem(line) {
+    if (currentItem)
+      currentItem.push(line)
+  }
+
+  function updateHtmlCommentState(line) {
+    let offset = 0
+
+    while (offset < line.length) {
+      if (inHtmlComment) {
+        const commentEnd = line.indexOf('-->', offset)
+        if (commentEnd === -1)
+          return
+
+        inHtmlComment = false
+        offset = commentEnd + 3
+        continue
+      }
+
+      const commentStart = line.indexOf('<!--', offset)
+      if (commentStart === -1)
+        return
+
+      inHtmlComment = true
+      offset = commentStart + 4
+    }
+  }
+
+  function isFenceEnd(line) {
+    const trimmed = line.trim()
+    return trimmed.length >= fence.length && [...trimmed].every(character => character === fence.marker)
+  }
+
+  for (const line of normalizeNewlines(body).split('\n')) {
+    if (fence) {
+      appendToItem(line)
+      if (isFenceEnd(line))
+        fence = null
+      continue
+    }
+
+    if (inHtmlComment) {
+      appendToItem(line)
+      updateHtmlCommentState(line)
+      continue
+    }
+
     const section = line.match(/^###\s+(.+?)\s*$/)
     if (section) {
+      finishItem()
       inSupportedSection = changelogSections.has(section[1])
       continue
     }
 
-    const item = inSupportedSection ? line.match(/^\s*[-*]\s+(\S.*)$/) : null
-    if (item)
-      items.push(item[1].trim())
+    const item = inSupportedSection ? line.match(/^[-*][ \t]+(\S.*)$/) : null
+    if (item) {
+      finishItem()
+      currentItem = [item[1].trim()]
+      updateHtmlCommentState(line)
+      continue
+    }
+
+    const fenceStart = line.match(/^[ \t]*(`{3,}|~{3,}).*$/)
+    if (fenceStart) {
+      appendToItem(line)
+      fence = {
+        marker: fenceStart[1][0],
+        length: fenceStart[1].length,
+      }
+      continue
+    }
+
+    appendToItem(line)
+    updateHtmlCommentState(line)
   }
+
+  finishItem()
 
   return items
 }
@@ -59,16 +139,17 @@ export function getReleaseNotes(raw, version) {
   const escapedVersion = escapeRegExp(version)
   const heading = `## \\[${escapedVersion}\\]\\(https://github\\.com/theFactoryHQ/factory-careers/releases/tag/v${escapedVersion}\\) \\((\\d{4}-\\d{2}-\\d{2})\\)`
   const normalized = normalizeNewlines(raw)
+  const claims = [...normalized.matchAll(new RegExp(`^ {0,3}##[ \\t]+\\[${escapedVersion}\\].*$`, 'gm'))]
 
-  const matches = [...normalized.matchAll(new RegExp(`^${heading}$`, 'gm'))]
-    .filter(match => isRealDate(match[1]))
+  if (claims.length > 1)
+    throw new Error(`CHANGELOG.md must contain exactly one Factory release section claim for v${version}`)
 
-  if (matches.length > 1)
-    throw new Error(`CHANGELOG.md must contain exactly one matching Factory release section for v${version}`)
-
-  const match = matches[0]
-  if (match)
-    return getBodyAfterHeading(normalized, match.index + match[0].length)
+  const claim = claims[0]
+  if (claim) {
+    const match = new RegExp(`^${heading}$`).exec(claim[0])
+    if (match && isRealDate(match[1]))
+      return getBodyAfterHeading(normalized, claim.index + claim[0].length)
+  }
 
   throw new Error(`CHANGELOG.md must contain a matching Factory release section for v${version}`)
 }

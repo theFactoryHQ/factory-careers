@@ -247,6 +247,32 @@ describe('Factory Careers release identity', () => {
     expect(releaseNotesJob).not.toContain('continue-on-error: true')
   })
 
+  it('verifies release demotion with supported fields and the stable latest endpoint', () => {
+    const releaseVerification = readProjectFile('.github/workflows/release-verification.yml')
+    const releaseNotesJobStart = releaseVerification.indexOf('  release-notes:')
+    const smokeTestJobStart = releaseVerification.indexOf('  smoke-test:')
+    const bundleJobStart = releaseVerification.indexOf('  bundle:')
+    const demotionJobs = [
+      releaseVerification.slice(releaseNotesJobStart, smokeTestJobStart),
+      releaseVerification.slice(smokeTestJobStart, bundleJobStart),
+    ]
+
+    expect(releaseVerification).not.toMatch(/--json[^\n]*isLatest/)
+    expect(releaseVerification.match(/--json isPrerelease --jq \.isPrerelease/g)).toHaveLength(2)
+    expect(releaseVerification.match(/gh api "repos\/\$GITHUB_REPOSITORY\/releases\/latest" --jq \.tag_name/g)).toHaveLength(2)
+
+    for (const job of demotionJobs) {
+      expect(job).toContain('set -euo pipefail')
+      expect(job).toContain('gh release edit "$RELEASE_TAG" --prerelease --latest=false')
+      expect(job).toContain('gh release view "$RELEASE_TAG" --json isPrerelease --jq .isPrerelease')
+      expect(job).toContain('gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name')
+      expect(job).toContain('if [[ "$latest_tag" == "$RELEASE_TAG" ]]')
+      expect(job).toContain("grep -q 'HTTP 404'")
+      expect(job).not.toContain('gh release view $RELEASE_TAG')
+      expect(job).not.toContain('gh api repos/$GITHUB_REPOSITORY')
+    }
+  })
+
   it('uses the Factory cutover version in release verification examples', () => {
     const releaseVerification = readProjectFile('.github/workflows/release-verification.yml')
 
@@ -276,6 +302,7 @@ describe('Factory Careers release identity', () => {
         run: npm run changelog:check
         env:
           PR_PREFLIGHT_BASE_REF: origin/\${{ github.base_ref || 'main' }}
+          PR_PREFLIGHT_HEAD_REF: \${{ github.event.pull_request.head.sha || github.sha }}
           CHANGELOG_SKIP: \${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}`
 
     expect(pullRequestTypes).toEqual(expect.arrayContaining(['labeled', 'unlabeled']))

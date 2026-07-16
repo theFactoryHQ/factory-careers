@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { getReleaseNotes, getUnreleasedItems } from '../../scripts/changelog-format.mjs'
+import { getChangelogItems, getReleaseNotes, getUnreleasedItems } from '../../scripts/changelog-format.mjs'
 import { validateChangelogPolicy } from '../../scripts/validate-changelog.mjs'
 
 const validatorPath = join(process.cwd(), 'scripts/validate-changelog.mjs')
@@ -77,6 +77,7 @@ function commitChanges(cwd: string, files: Record<string, string>) {
 function runValidator(cwd: string, overrides: NodeJS.ProcessEnv = {}) {
   const env = { ...process.env }
   delete env.PR_PREFLIGHT_BASE_REF
+  delete env.PR_PREFLIGHT_HEAD_REF
   delete env.PR_PREFLIGHT_REMOTE
   delete env.CHANGELOG_SKIP
   Object.assign(env, overrides)
@@ -127,6 +128,74 @@ describe('changelog format', () => {
     expect(getUnreleasedItems(baseline)).toEqual(['Existing unreleased item.'])
   })
 
+  it('returns complete top-level item blocks with continuation paragraphs and nested lists', () => {
+    expect(getChangelogItems(`### Changed
+
+- Preserve the complete entry.
+
+  This continuation explains the operator impact.
+
+  - First nested step.
+    - Nested detail.
+
+* Keep one-line entries compatible.
+`)).toEqual([
+      `Preserve the complete entry.
+
+  This continuation explains the operator impact.
+
+  - First nested step.
+    - Nested detail.`,
+      'Keep one-line entries compatible.',
+    ])
+  })
+
+  it('keeps bullet-looking fenced examples inside their parent item', () => {
+    expect(getChangelogItems(`### Fixed
+
+- Document the changelog example.
+
+  \`\`\`md
+- Not another changelog item.
+  - Still part of the example.
+  \`\`\`
+
+- Actual second item.
+`)).toEqual([
+      `Document the changelog example.
+
+  \`\`\`md
+- Not another changelog item.
+  - Still part of the example.
+  \`\`\``,
+      'Actual second item.',
+    ])
+  })
+
+  it('ignores bullet-looking lines inside HTML comments as item boundaries', () => {
+    expect(getChangelogItems(`### Added
+
+<!--
+- Hidden example before an item.
+-->
+
+- Visible item.
+
+  <!--
+- Hidden example inside the item.
+  -->
+
+- Second visible item.
+`)).toEqual([
+      `Visible item.
+
+  <!--
+- Hidden example inside the item.
+  -->`,
+      'Second visible item.',
+    ])
+  })
+
   it('extracts the exact Factory-owned version section body', () => {
     expect(getReleaseNotes(baseline, '1.0.0')).toBe(`Factory release context.
 
@@ -147,8 +216,30 @@ describe('changelog format', () => {
     expect(() => getReleaseNotes(invalid, '1.0.0')).toThrow('matching Factory release section')
   })
 
-  it('extracts from the valid heading when an invalid same-version heading appears first', () => {
-    const invalidHeading = `## [1.0.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.0.0) (2026-02-30)
+  it('rejects a sole noncanonical version claim', () => {
+    const invalid = baseline.replace(
+      '## [1.0.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.0.0) (2026-07-16)',
+      '  ## [1.0.0] - 2026-07-16',
+    )
+
+    expect(() => getReleaseNotes(invalid, '1.0.0')).toThrow('matching Factory release section')
+  })
+
+  it.each([
+    {
+      form: 'an invalid date',
+      heading: '## [1.0.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.0.0) (2026-02-30)',
+    },
+    {
+      form: 'a malformed release URL',
+      heading: '## [1.0.0](https://github.com/theFactoryHQ/factory-careers/releases/v1.0.0) (2026-07-17)',
+    },
+    {
+      form: 'a noncanonical heading',
+      heading: '  ## [1.0.0] - 2026-07-17',
+    },
+  ])('rejects a duplicate version claim with $form', ({ heading }) => {
+    const invalidHeading = `${heading}
 
 ### Fixed
 
@@ -157,11 +248,9 @@ describe('changelog format', () => {
 `
     const withInvalidHeading = baseline.replace('## [1.0.0](', `${invalidHeading}## [1.0.0](`)
 
-    expect(getReleaseNotes(withInvalidHeading, '1.0.0')).toBe(`Factory release context.
-
-### Added
-
-- Establish the Factory baseline.`)
+    expect(() => getReleaseNotes(withInvalidHeading, '1.0.0')).toThrow(
+      'exactly one Factory release section claim for v1.0.0',
+    )
   })
 
   it('rejects duplicate exact Unreleased headings', () => {
@@ -189,13 +278,39 @@ describe('changelog format', () => {
 - Duplicate release section.
 `
 
-    expect(() => getReleaseNotes(duplicate, '1.0.0')).toThrow('exactly one matching Factory release section')
+    expect(() => getReleaseNotes(duplicate, '1.0.0')).toThrow(
+      'exactly one Factory release section claim for v1.0.0',
+    )
   })
 })
 
 describe('changelog policy', () => {
   it('accepts an ordinary pull request with a new Unreleased item', () => {
     expect(validate()).toBe('pull-request')
+  })
+
+  it.each([
+    {
+      change: 'rewrites',
+      currentContinuation: '  This continuation now promises different behavior.',
+    },
+    {
+      change: 'omits',
+      currentContinuation: '',
+    },
+  ])('rejects an ordinary pull request that $change an existing item continuation', ({ currentContinuation }) => {
+    const baseChangelog = baseline.replace(
+      '- Existing unreleased item.',
+      '- Keep recruiter reports.\n\n  This continuation is part of the release-note identity.',
+    )
+    const currentChangelog = baseChangelog.replace(
+      '  This continuation is part of the release-note identity.',
+      `${currentContinuation}\n\n- Add interview summaries.`,
+    )
+
+    expect(() => validate({ baseChangelog, currentChangelog })).toThrow(
+      'Preserve every existing distinct CHANGELOG.md item under ## Unreleased; do not remove, reword, or replace existing items',
+    )
   })
 
   it.each([
@@ -419,6 +534,49 @@ describe('changelog policy', () => {
     })).toThrow('promote every base Unreleased item')
   })
 
+  it.each([
+    {
+      change: 'rewrites',
+      releaseContinuation: '  This continuation now promises different behavior.',
+    },
+    {
+      change: 'omits',
+      releaseContinuation: '',
+    },
+  ])('rejects a release that $change a promoted item continuation', ({ releaseContinuation }) => {
+    const baseChangelog = baseline.replace(
+      '- Existing unreleased item.',
+      '- Keep recruiter reports.\n\n  This continuation is part of the release-note identity.',
+    )
+    const release = baseChangelog.replace(
+      `## Unreleased
+
+### Added
+
+- Keep recruiter reports.
+
+  This continuation is part of the release-note identity.
+
+### Security
+
+- Unsupported category item.`,
+      `## Unreleased
+
+## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-20)
+
+### Added
+
+- Keep recruiter reports.${releaseContinuation ? `\n\n${releaseContinuation}` : ''}`,
+    )
+
+    expect(() => validate({
+      baseChangelog,
+      currentChangelog: release,
+      baseVersion: '1.0.0',
+      currentVersion: '1.1.0',
+    })).toThrow('promote every base Unreleased item')
+  })
+
   it('returns no-changes when the pull request has no changed files', () => {
     expect(validate({ changedFiles: [] })).toBe('no-changes')
   })
@@ -564,6 +722,105 @@ describe('changelog commands', () => {
       'Release pull requests must rebase onto the current main before changelog finalization',
     )
     expect(result.stderr).not.toContain('promote every base Unreleased item')
+  })
+
+  it('uses the immutable pull request head to reject a stale release from a synthetic merge checkout', () => {
+    const cwd = createRepository()
+    const finalized = baseline.replace(
+      `## Unreleased
+
+### Added
+
+- Existing unreleased item.
+
+### Security
+
+- Unsupported category item.`,
+      `## Unreleased
+
+## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-20)
+
+### Added
+
+- Existing unreleased item.`,
+    )
+    commitChanges(cwd, {
+      'CHANGELOG.md': finalized,
+      'package.json': `${JSON.stringify({ name: 'fixture', version: '1.1.0' }, null, 2)}\n`,
+    })
+    const featureHead = runGit(cwd, ['rev-parse', 'HEAD'])
+
+    runGit(cwd, ['switch', 'main'])
+    const advancedBase = baseline.replace(
+      '- Existing unreleased item.',
+      '- Existing unreleased item.\n- Base item A.',
+    )
+    commitChanges(cwd, { 'CHANGELOG.md': advancedBase })
+    runGit(cwd, ['switch', '-c', 'synthetic-merge'])
+    runGit(cwd, ['merge', '--no-ff', '--no-commit', '-s', 'ours', 'feature'])
+    writeFileSync(join(cwd, 'CHANGELOG.md'), finalized.replace('## Unreleased', `## Unreleased
+
+### Added
+
+- Base item A.`))
+    writeFileSync(join(cwd, 'package.json'), `${JSON.stringify({ name: 'fixture', version: '1.1.0' }, null, 2)}\n`)
+    runGit(cwd, ['add', '.'])
+    runGit(cwd, ['commit', '-m', 'test: create synthetic pull request merge'])
+
+    const result = runValidator(cwd, {
+      PR_PREFLIGHT_BASE_REF: 'main',
+      PR_PREFLIGHT_HEAD_REF: featureHead,
+    })
+
+    expect(runGit(cwd, ['rev-list', '--parents', '-n', '1', 'HEAD']).split(' ')).toHaveLength(3)
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain(
+      'Release pull requests must rebase onto the current main before changelog finalization',
+    )
+    expect(result.stderr).not.toContain('promote every base Unreleased item')
+  })
+
+  it('does not inherit base-only release intent from a synthetic merge checkout', () => {
+    const cwd = createRepository()
+    const featureChangelog = baseline.replace(
+      '- Existing unreleased item.',
+      '- Existing unreleased item.\n- Feature item B.',
+    )
+    commitChanges(cwd, {
+      'CHANGELOG.md': featureChangelog,
+      'feature.txt': 'feature behavior\n',
+    })
+    const featureHead = runGit(cwd, ['rev-parse', 'HEAD'])
+
+    runGit(cwd, ['switch', 'main'])
+    const advancedBase = baseline.replace(
+      '- Existing unreleased item.',
+      '- Existing unreleased item.\n- Base item A.',
+    )
+    commitChanges(cwd, {
+      'CHANGELOG.md': advancedBase,
+      'package.json': `${JSON.stringify({ name: 'fixture', version: '1.0.1' }, null, 2)}\n`,
+    })
+    runGit(cwd, ['switch', '-c', 'synthetic-merge'])
+    runGit(cwd, ['merge', '--no-ff', '--no-commit', '-s', 'ours', 'feature'])
+    writeFileSync(
+      join(cwd, 'CHANGELOG.md'),
+      baseline.replace(
+        '- Existing unreleased item.',
+        '- Existing unreleased item.\n- Base item A.\n- Feature item B.',
+      ),
+    )
+    runGit(cwd, ['add', '.'])
+    runGit(cwd, ['commit', '-m', 'test: create synthetic pull request merge'])
+
+    const result = runValidator(cwd, {
+      PR_PREFLIGHT_BASE_REF: 'main',
+      PR_PREFLIGHT_HEAD_REF: featureHead,
+    })
+
+    expect(runGit(cwd, ['rev-list', '--parents', '-n', '1', 'HEAD']).split(' ')).toHaveLength(3)
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toBe('Changelog policy passed (pull-request).\n')
   })
 
   it('fetches a missing default remote base without fetching tags', () => {

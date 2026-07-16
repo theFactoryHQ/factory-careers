@@ -122,26 +122,26 @@ function runGit(args, message) {
   return result.stdout
 }
 
-function resolveCommit(ref, requestedBaseRef) {
+function resolveCommit(ref, requestedRef) {
   const commit = runGit(
     ['rev-parse', '--verify', `${ref}^{commit}`],
-    `Unable to resolve ${requestedBaseRef} to a commit`,
+    `Unable to resolve ${requestedRef} to a commit`,
   ).trim()
 
   if (!commit)
-    throw new Error(`Unable to resolve ${requestedBaseRef} to a commit`)
+    throw new Error(`Unable to resolve ${requestedRef} to a commit`)
 
   return commit
 }
 
-function resolveMergeBase(baseCommit, requestedBaseRef) {
+function resolveMergeBase(baseCommit, headCommit, requestedBaseRef, requestedHeadRef) {
   const mergeBase = runGit(
-    ['merge-base', baseCommit, 'HEAD'],
-    `Unable to find a merge base between HEAD and ${requestedBaseRef}`,
+    ['merge-base', baseCommit, headCommit],
+    `Unable to find a merge base between ${requestedHeadRef} and ${requestedBaseRef}`,
   ).trim()
 
   if (!mergeBase)
-    throw new Error(`Unable to find a merge base between HEAD and ${requestedBaseRef}`)
+    throw new Error(`Unable to find a merge base between ${requestedHeadRef} and ${requestedBaseRef}`)
 
   return mergeBase
 }
@@ -180,26 +180,26 @@ async function readCurrentFile(file) {
 
 export async function main(env = process.env) {
   const requestedBaseRef = env.PR_PREFLIGHT_BASE_REF || 'origin/main'
+  const requestedHeadRef = env.PR_PREFLIGHT_HEAD_REF || 'HEAD'
   const remote = env.PR_PREFLIGHT_REMOTE || 'origin'
   const baseRef = resolveBaseRef(requestedBaseRef, remote)
   const baseTip = resolveCommit(baseRef, requestedBaseRef)
-  const mergeBase = resolveMergeBase(baseTip, requestedBaseRef)
+  const headCommit = resolveCommit(requestedHeadRef, requestedHeadRef)
+  const mergeBase = resolveMergeBase(baseTip, headCommit, requestedBaseRef, requestedHeadRef)
 
   const changedFiles = runGit(
-    ['diff', '--name-only', `${baseRef}...HEAD`],
+    ['diff', '--name-only', `${baseTip}...${headCommit}`],
     `Unable to compute changed files against ${requestedBaseRef}`,
   ).split('\n').filter(Boolean)
 
-  const [currentChangelog, currentPackage] = await Promise.all([
-    readCurrentFile(changelogFile),
-    readCurrentFile(packageFile),
-  ])
+  const currentChangelog = await readCurrentFile(changelogFile)
   const baseChangelog = readBaseFile(mergeBase, changelogFile)
   const basePackage = readBaseFile(mergeBase, packageFile)
+  const headPackage = readBaseFile(headCommit, packageFile)
   const baseVersion = readPackageVersion(basePackage, `${mergeBase}:${packageFile}`)
-  const currentVersion = readPackageVersion(currentPackage, packageFile)
+  const headVersion = readPackageVersion(headPackage, `${headCommit}:${packageFile}`)
 
-  if (baseVersion !== currentVersion && mergeBase !== baseTip) {
+  if (baseVersion !== headVersion && mergeBase !== baseTip) {
     throw new Error(
       `Release pull requests must rebase onto the current ${requestedBaseRef} before changelog finalization`,
     )
@@ -210,7 +210,7 @@ export async function main(env = process.env) {
     baseChangelog,
     currentChangelog,
     baseVersion,
-    currentVersion,
+    currentVersion: headVersion,
     skip: env.CHANGELOG_SKIP === 'true',
   })
 
