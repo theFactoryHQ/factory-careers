@@ -6,7 +6,7 @@
       "changelog-path": "CHANGELOG.md",
       "skip-changelog": true,
       "bump-minor-pre-major": false,
-      "draft": false,
+      "draft": true,
       "prerelease": false,
       "include-component-in-tag": false,
       "include-v-in-tag": true,

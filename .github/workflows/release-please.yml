@@ -39,11 +39,12 @@ jobs:
           config-file: .github/release-please-config.json
           manifest-file: .release-please-manifest.json
 
-      - name: Checkout published release
+      - name: Checkout draft release
         if: ${{ steps.release.outputs.release_created == 'true' }}
         uses: actions/checkout@v6
         with:
           ref: ${{ steps.release.outputs.tag_name }}
+          persist-credentials: false
 
       - name: Setup Node.js
         if: ${{ steps.release.outputs.release_created == 'true' }}
@@ -59,4 +60,8 @@ jobs:
         if: ${{ steps.release.outputs.release_created == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-        run: gh release edit "${{ steps.release.outputs.tag_name }}" --notes-file release-notes.md
+        run: |
+          gh release edit "${{ steps.release.outputs.tag_name }}" \
+            --notes-file release-notes.md \
+            --draft=false \
+            --latest

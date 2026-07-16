@@ -25,6 +25,7 @@ interface ReleasePleaseConfig {
   packages: {
     '.': {
       'skip-changelog': boolean
+      'draft': boolean
       'extra-files': Array<Record<string, string>>
     }
   }
@@ -93,16 +94,18 @@ describe('Factory Careers release identity', () => {
     expect(releaseWorkflow).not.toContain('## Release Please skipped')
   })
 
-  it('publishes curated changelog notes after release-please creates a release', () => {
+  it('publishes a draft release atomically only after curated notes are ready', () => {
+    const releaseConfig = readProjectJson<ReleasePleaseConfig>('.github/release-please-config.json')
     const releaseWorkflow = readProjectFile('.github/workflows/release-please.yml')
     const releaseAction = `      - uses: googleapis/release-please-action@v5
         id: release
         if: \${{ env.HAS_RELEASE_PLEASE_TOKEN == 'true' }}`
-    const checkoutStep = `      - name: Checkout published release
+    const checkoutStep = `      - name: Checkout draft release
         if: \${{ steps.release.outputs.release_created == 'true' }}
         uses: actions/checkout@v6
         with:
-          ref: \${{ steps.release.outputs.tag_name }}`
+          ref: \${{ steps.release.outputs.tag_name }}
+          persist-credentials: false`
     const setupNodeStep = `      - name: Setup Node.js
         if: \${{ steps.release.outputs.release_created == 'true' }}
         uses: actions/setup-node@v6
@@ -115,58 +118,98 @@ describe('Factory Careers release identity', () => {
         if: \${{ steps.release.outputs.release_created == 'true' }}
         env:
           GH_TOKEN: \${{ secrets.RELEASE_PLEASE_TOKEN }}
-        run: gh release edit "\${{ steps.release.outputs.tag_name }}" --notes-file release-notes.md`
+        run: |
+          gh release edit "\${{ steps.release.outputs.tag_name }}" \\
+            --notes-file release-notes.md \\
+            --draft=false \\
+            --latest`
 
+    expect(releaseConfig.packages['.'].draft).toBe(true)
+    expect(releaseConfig.packages['.']['skip-changelog']).toBe(true)
     expect(releaseWorkflow).toContain(releaseAction)
     expect(releaseWorkflow).toContain(checkoutStep)
     expect(releaseWorkflow).toContain(setupNodeStep)
     expect(releaseWorkflow).toContain(extractStep)
     expect(releaseWorkflow).toContain(publishStep)
+    expect(releaseWorkflow.match(/gh release edit/g)).toHaveLength(1)
     expect(releaseWorkflow.indexOf(releaseAction)).toBeLessThan(releaseWorkflow.indexOf(checkoutStep))
     expect(releaseWorkflow.indexOf(checkoutStep)).toBeLessThan(releaseWorkflow.indexOf(setupNodeStep))
     expect(releaseWorkflow.indexOf(setupNodeStep)).toBeLessThan(releaseWorkflow.indexOf(extractStep))
     expect(releaseWorkflow.indexOf(extractStep)).toBeLessThan(releaseWorkflow.indexOf(publishStep))
   })
 
-  it('publishes and validates curated notes before release smoke tests', () => {
+  it('resolves one strictly validated tag for every release verification job', () => {
     const releaseVerification = readProjectFile('.github/workflows/release-verification.yml')
+    const resolveTagJobStart = releaseVerification.indexOf('  resolve-tag:')
     const releaseNotesJobStart = releaseVerification.indexOf('  release-notes:')
     const smokeTestJobStart = releaseVerification.indexOf('  smoke-test:')
-    const releaseNotesJob = releaseVerification.slice(releaseNotesJobStart, smokeTestJobStart)
+    const bundleJobStart = releaseVerification.indexOf('  bundle:')
+    const resolveTagJob = releaseVerification.slice(resolveTagJobStart, releaseNotesJobStart)
 
-    expect(releaseNotesJobStart).toBeGreaterThan(-1)
-    expect(releaseNotesJobStart).toBeLessThan(smokeTestJobStart)
-    expect(releaseNotesJob).toContain(`      - name: Resolve release tag
+    expect(resolveTagJobStart).toBeGreaterThan(-1)
+    expect(resolveTagJobStart).toBeLessThan(releaseNotesJobStart)
+    expect(resolveTagJob).toContain(`    outputs:
+      tag: \${{ steps.tag.outputs.tag }}
+      version: \${{ steps.tag.outputs.version }}`)
+    expect(resolveTagJob).toContain(`      - name: Resolve release tag
         id: tag
+        env:
+          RELEASE_EVENT_TAG: \${{ github.event.release.tag_name }}
+          DISPATCH_TAG: \${{ inputs.tag }}
         run: |
           set -euo pipefail
-          tag="\${{ github.event.release.tag_name || inputs.tag }}"
+          tag="\${RELEASE_EVENT_TAG:-$DISPATCH_TAG}"
+          if [[ ! "$tag" =~ ^v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Invalid release tag: $tag" >&2
+            exit 1
+          fi
           version="\${tag#v}"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"`)
+    expect(releaseVerification.match(/- name: Resolve release tag/g)).toHaveLength(1)
+    expect(releaseVerification).not.toContain('tag="${{ github.event.release.tag_name || inputs.tag }}"')
+    expect(releaseVerification.slice(releaseNotesJobStart, smokeTestJobStart)).toContain('needs: resolve-tag')
+    expect(releaseVerification.slice(smokeTestJobStart, bundleJobStart)).toContain('needs: [resolve-tag, release-notes]')
+    expect(releaseVerification.slice(bundleJobStart)).toContain('needs: [resolve-tag, smoke-test]')
+  })
+
+  it('validates published curated notes before smoke tests and demotes every failed verification', () => {
+    const releaseVerification = readProjectFile('.github/workflows/release-verification.yml')
+    const releaseNotesJobStart = releaseVerification.indexOf('  release-notes:')
+    const smokeTestJobStart = releaseVerification.indexOf('  smoke-test:')
+    const bundleJobStart = releaseVerification.indexOf('  bundle:')
+    const releaseNotesJob = releaseVerification.slice(releaseNotesJobStart, smokeTestJobStart)
+    const smokeTestJob = releaseVerification.slice(smokeTestJobStart, bundleJobStart)
+
+    expect(releaseNotesJobStart).toBeGreaterThan(-1)
+    expect(releaseNotesJobStart).toBeLessThan(smokeTestJobStart)
     expect(releaseNotesJob).toContain(`      - name: Checkout release tag
         uses: actions/checkout@v6
         with:
-          ref: \${{ steps.tag.outputs.tag }}`)
+          ref: \${{ needs.resolve-tag.outputs.tag }}
+          persist-credentials: false`)
     expect(releaseNotesJob).toContain(`      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc`)
     expect(releaseNotesJob).toContain(
-      'run: npm run --silent changelog:extract -- "${{ steps.tag.outputs.version }}" > release-notes.md',
+      'run: npm run --silent changelog:extract -- "${{ needs.resolve-tag.outputs.version }}" > release-notes.md',
+    )
+    expect(releaseNotesJob).toContain(
+      'run: gh release view "$RELEASE_TAG" --json body --jq .body > published-release-notes.md',
     )
     expect(releaseNotesJob).toContain('GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}')
-    expect(releaseNotesJob).toContain(
-      'run: gh release edit "${{ steps.tag.outputs.tag }}" --notes-file release-notes.md',
-    )
-    expect(releaseNotesJob).toContain("if: failure() && github.event_name == 'release'")
-    expect(releaseNotesJob).toContain(
-      'gh release edit "${{ steps.tag.outputs.tag }}" --prerelease --latest=false',
-    )
+    expect(releaseNotesJob).toContain("replace(/\\r\\n/g, '\\n').trimEnd()")
+    expect(releaseNotesJob).toContain("readFileSync('release-notes.md', 'utf8')")
+    expect(releaseNotesJob).toContain("readFileSync('published-release-notes.md', 'utf8')")
+    expect(releaseNotesJob).not.toContain('--notes-file')
+    expect(releaseNotesJob).toContain('if: failure()')
+    expect(releaseNotesJob).toContain('gh release edit "$RELEASE_TAG" --prerelease --latest=false')
+    expect(smokeTestJob).toContain('if: failure()')
+    expect(smokeTestJob).toContain('gh release edit "$RELEASE_TAG" --prerelease --latest=false')
+    expect(releaseVerification).not.toContain("if: failure() && github.event_name == 'release'")
+    expect(releaseVerification.match(/persist-credentials: false/g)).toHaveLength(3)
     expect(releaseNotesJob).not.toContain('continue-on-error: true')
-    expect(releaseVerification).toContain(`  smoke-test:
-    name: Smoke-test published image
-    needs: release-notes`)
   })
 
   it('uses the Factory cutover version in release verification examples', () => {
