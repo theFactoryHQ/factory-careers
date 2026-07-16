@@ -62,7 +62,12 @@ describe('AI usage chart defaults', () => {
       expect(serverSeries.at(-1)?.date).toBe('2031-01-02')
     }
     finally {
-      process.env.TZ = previousTimeZone
+      if (previousTimeZone === undefined) {
+        delete process.env.TZ
+      }
+      else {
+        process.env.TZ = previousTimeZone
+      }
     }
   })
 
@@ -89,6 +94,8 @@ describe('AI usage chart defaults', () => {
     expect(page).toContain('usageDays')
     expect(page).toContain('stats.value?.usagePeriod.endDate')
     expect(page).not.toContain('const usageWindowEnd = new Date()')
+    expect(page).toContain('const { locale } = useI18n()')
+    expect(page).toContain('return formatUsageDate(dateKey, locale.value)')
     expect(page).not.toContain('v-for="day in dailyRuns"')
   })
 

@@ -26,6 +26,8 @@ useSeoMeta({
   robots: 'noindex, nofollow',
 })
 
+const { locale } = useI18n()
+
 const { data: stats, status: fetchStatus, error, refresh } = useFetch('/api/ai-analysis/stats', {
   key: 'ai-analysis-stats',
   headers: useRequestHeaders(['cookie']),
@@ -100,11 +102,11 @@ const peakDailyTokens = computed(() => Math.max(
 ))
 const runsAxisMax = computed(() => getNiceUsageAxisMax(peakDailyRuns.value))
 const tokensAxisMax = computed(() => getNiceUsageAxisMax(peakDailyTokens.value))
-const chartStartDate = computed(() => formatUsageDate(usageDays.value[0]?.date ?? ''))
-const chartMiddleDate = computed(() => formatUsageDate(
+const chartStartDate = computed(() => formatChartDate(usageDays.value[0]?.date ?? ''))
+const chartMiddleDate = computed(() => formatChartDate(
   usageDays.value[Math.floor((usageDays.value.length - 1) / 2)]?.date ?? '',
 ))
-const chartEndDate = computed(() => formatUsageDate(usageDays.value.at(-1)?.date ?? ''))
+const chartEndDate = computed(() => formatChartDate(usageDays.value.at(-1)?.date ?? ''))
 const promptTokenShare = computed(() => {
   if (usageTotals.value.tokens === 0) return 0
   return Math.round((usageTotals.value.promptTokens / usageTotals.value.tokens) * 100)
@@ -119,6 +121,10 @@ function formatNumber(n: number): string {
 function formatAxisNumber(n: number): string {
   if (Number.isInteger(n)) return formatNumber(n)
   return n.toFixed(1).replace(/\.0$/, '')
+}
+
+function formatChartDate(dateKey: string): string {
+  return formatUsageDate(dateKey, locale.value)
 }
 
 function formatCost(cost: number | null): string {
@@ -146,9 +152,9 @@ function getPromptTokenPercentage(day: AiUsageDay): number {
 function getUsageDayLabel(day: AiUsageDay): string {
   const tokens = getDayTokenTotal(day)
   if (day.count === 0 && tokens === 0) {
-    return `${formatUsageDate(day.date)}: no usage`
+    return `${formatChartDate(day.date)}: no usage`
   }
-  return `${formatUsageDate(day.date)}: ${day.count} run${day.count === 1 ? '' : 's'}, ${formatNumber(tokens)} tokens`
+  return `${formatChartDate(day.date)}: ${day.count} run${day.count === 1 ? '' : 's'}, ${formatNumber(tokens)} tokens`
 }
 
 function getUsageTooltipPosition(index: number): string {
@@ -368,7 +374,7 @@ function formatDateTime(dateStr: string | Date): string {
                         :class="getUsageTooltipPosition(index)"
                       >
                         <div class="whitespace-nowrap rounded-lg border border-surface-200 bg-white px-2.5 py-2 text-[11px] shadow-lg dark:border-surface-700 dark:bg-surface-800">
-                          <p class="font-semibold text-surface-800 dark:text-surface-200">{{ formatUsageDate(day.date) }}</p>
+                          <p class="font-semibold text-surface-800 dark:text-surface-200">{{ formatChartDate(day.date) }}</p>
                           <p class="mt-0.5 text-surface-500 dark:text-surface-400">{{ day.count }} run{{ day.count === 1 ? '' : 's' }}</p>
                           <p class="text-surface-400 dark:text-surface-500">{{ formatNumber(getDayTokenTotal(day)) }} tokens</p>
                         </div>
@@ -437,7 +443,7 @@ function formatDateTime(dateStr: string | Date): string {
                         :class="getUsageTooltipPosition(index)"
                       >
                         <div class="whitespace-nowrap rounded-lg border border-surface-200 bg-white px-2.5 py-2 text-[11px] shadow-lg dark:border-surface-700 dark:bg-surface-800">
-                          <p class="font-semibold text-surface-800 dark:text-surface-200">{{ formatUsageDate(day.date) }}</p>
+                          <p class="font-semibold text-surface-800 dark:text-surface-200">{{ formatChartDate(day.date) }}</p>
                           <p class="mt-0.5 text-violet-600 dark:text-violet-400">Prompt: {{ formatNumber(day.promptTokens) }}</p>
                           <p class="text-amber-600 dark:text-amber-400">Completion: {{ formatNumber(day.completionTokens) }}</p>
                           <p v-if="pricing.configured" class="mt-1 border-t border-surface-100 pt-1 font-medium text-emerald-600 dark:border-surface-700 dark:text-emerald-400">{{ formatCostPrecise(calcCost(day.promptTokens, day.completionTokens)) }}</p>
