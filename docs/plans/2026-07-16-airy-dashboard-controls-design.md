@@ -23,8 +23,10 @@ The existing dark palette, square geometry, uppercase control typography, dimens
 - `.ui-button-secondary`
 - `.ui-tab`, `.ui-tab-active`, and tab hover
 - `.factory-toolbar-button` and `.factory-back-button`
+- `.factory-job-more-button` and `.factory-dashboard-quick-action`
 - `.factory-job-subnav-tab`
 - `.factory-candidate-detail-tab`
+- `.factory-job-stage-mini`
 - `.factory-view-toggle` and its buttons
 
 Inline Tailwind `border` utilities can remain in component markup because the dashboard recipes override them. This avoids a broad markup migration and keeps neutral/public rendering unchanged.

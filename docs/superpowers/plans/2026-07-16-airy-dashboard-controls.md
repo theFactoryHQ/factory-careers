@@ -49,7 +49,10 @@ describe('dashboard control borders', () => {
   it('uses tint and a bottom accent for tabs and segmented controls', () => {
     expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-tab {')).toContain('border: 0 !important;')
     expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-tab-active {')).toContain('box-shadow: inset 0 -2px 0 var(--color-brand-500) !important;')
+    expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-subnav-tab {')).toContain('border: 0 !important;')
+    expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-job-subnav-tab-active {')).toContain('box-shadow: inset 0 -2px 0 var(--color-brand-500) !important;')
     expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tab {')).toContain('border: 0;')
+    expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-candidate-detail-tab-active {')).toContain('box-shadow: inset 0 -2px 0 var(--color-brand-500);')
     expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-view-toggle {')).toContain('border-color: transparent !important;')
     expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-view-toggle button {')).toContain('border: 0 !important;')
     expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-view-toggle button.is-active {')).toContain('box-shadow: inset 0 -2px 0 var(--color-brand-500) !important;')
@@ -92,11 +95,11 @@ Add to the dashboard token scope:
 
 - [ ] **Step 2: Make routine actions borderless**
 
-Update dashboard-scoped secondary, toolbar, back, and active toolbar states so their resting and hover `border-color` is transparent. Use `var(--ui-control-fill)` for secondary buttons, `var(--ui-control-fill-hover)` for hover, and `var(--ui-control-active)` plus `inset 0 -2px 0 var(--color-brand-500)` for selected toolbar actions.
+Update dashboard-scoped secondary, toolbar, back, job-more, and quick-action states so their resting and hover borders are transparent. Use `var(--ui-control-fill)` for secondary buttons, `var(--ui-control-fill-hover)` for hover, and `var(--ui-control-active)` plus `inset 0 -2px 0 var(--color-brand-500)` for selected toolbar actions.
 
 - [ ] **Step 3: Convert tabs and detail tabs from boxes to accents**
 
-Set `.ui-tab`, `.factory-job-subnav-tab`, and `.factory-candidate-detail-tab` to `border: 0`. Keep inactive backgrounds transparent, use the shared neutral hover fill, and use the shared active tint plus a two-pixel inset bottom accent for selected states.
+Set `.ui-tab`, `.factory-job-subnav-tab`, `.factory-candidate-detail-tab`, and `.factory-job-stage-mini` to `border: 0`. Keep inactive backgrounds transparent, use the shared neutral hover fill, and use the shared active tint plus a two-pixel inset bottom accent for selected states.
 
 - [ ] **Step 4: Soften segmented view toggles**
 
