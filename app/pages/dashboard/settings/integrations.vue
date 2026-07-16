@@ -12,7 +12,17 @@ useSeoMeta({
 })
 
 const route = useRoute()
-const { calendarStatus, isConnected, isAvailable, connect, disconnect, refresh, status } = useCalendarIntegration()
+const {
+  calendarStatus,
+  isConnected,
+  isAvailable,
+  canManageCalendar,
+  isCalendarPermissionLoading,
+  connect,
+  disconnect,
+  refresh,
+  status,
+} = useCalendarIntegration()
 const toast = useToast()
 
 const isDisconnecting = ref(false)
@@ -60,6 +70,8 @@ onMounted(() => {
 })
 
 async function handleDisconnect() {
+  if (!canManageCalendar.value) return
+
   isDisconnecting.value = true
   try {
     await disconnect()
@@ -75,6 +87,8 @@ async function handleDisconnect() {
 }
 
 async function updateSyncInterviewers(enabled: boolean) {
+  if (!canManageCalendar.value) return
+
   try {
     await $fetch('/api/org-settings', {
       method: 'PATCH',
@@ -227,7 +241,7 @@ async function updateSyncInterviewers(enabled: boolean) {
               </div>
             </div>
             <!-- Sync Interviewers Toggle (only for Microsoft app mode) -->
-            <div v-if="isMicrosoftCalendar && isAdminManagedCalendar" class="flex items-center justify-between pt-2 border-t border-surface-200 dark:border-surface-700">
+            <div v-if="isMicrosoftCalendar && isAdminManagedCalendar && canManageCalendar" class="flex items-center justify-between pt-2 border-t border-surface-200 dark:border-surface-700">
               <div class="text-sm text-surface-600 dark:text-surface-400">
                 Also create events on interviewers' personal calendars
               </div>
@@ -275,7 +289,7 @@ async function updateSyncInterviewers(enabled: boolean) {
               {{ isAdminManagedCalendar ? 'App credentials managed by server configuration' : 'Tokens encrypted at rest' }}
             </div>
 
-            <div v-if="!isAdminManagedCalendar" class="flex items-center gap-2">
+            <div v-if="!isAdminManagedCalendar && !isCalendarPermissionLoading && canManageCalendar" class="flex items-center gap-2">
               <button
                 v-if="!showDisconnectConfirm"
                 class="ui-button ui-button-danger-outline px-3 py-1.5"
@@ -303,6 +317,12 @@ async function updateSyncInterviewers(enabled: boolean) {
                 </button>
               </template>
             </div>
+            <p
+              v-else-if="!isAdminManagedCalendar && !isCalendarPermissionLoading"
+              class="text-xs text-surface-500 dark:text-surface-400"
+            >
+              Only organization administrators can change the shared calendar connection.
+            </p>
           </div>
         </div>
 
@@ -369,13 +389,19 @@ async function updateSyncInterviewers(enabled: boolean) {
             </div>
 
             <button
-              v-if="!isMicrosoftAppMode"
+              v-if="!isMicrosoftAppMode && !isCalendarPermissionLoading && canManageCalendar"
               class="ui-button ui-button-primary py-2.5"
               @click="connect"
             >
               <Calendar class="size-4" />
               Connect shared calendar
             </button>
+            <div
+              v-else-if="!isMicrosoftAppMode && !isCalendarPermissionLoading"
+              class="ui-alert ui-alert-info"
+            >
+              Only organization administrators can change the shared calendar connection.
+            </div>
           </div>
         </div>
       </div>

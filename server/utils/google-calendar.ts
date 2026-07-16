@@ -160,21 +160,35 @@ export async function exchangeCodeForTokens(code: string): Promise<{
  */
 export async function getCalendarClient(
   owner: string | GoogleCalendarIntegrationIdentity,
+  expectedAccessTokenEncrypted?: string,
 ): Promise<calendar_v3.Calendar | null> {
   const userId = typeof owner === 'string' ? owner : owner.userId
   const integration = await db.query.calendarIntegration.findFirst({
     where: typeof owner === 'string'
-      ? and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google'))
-      : googleIntegrationWhere(owner),
+      ? and(
+          eq(calendarIntegration.userId, userId),
+          eq(calendarIntegration.provider, 'google'),
+          ...(expectedAccessTokenEncrypted
+            ? [eq(calendarIntegration.accessTokenEncrypted, expectedAccessTokenEncrypted)]
+            : []),
+        )
+      : and(
+          ...googleIntegrationConditions(owner),
+          ...(expectedAccessTokenEncrypted
+            ? [eq(calendarIntegration.accessTokenEncrypted, expectedAccessTokenEncrypted)]
+            : []),
+        ),
   })
 
   if (!integration) return null
 
   const secret = env.BETTER_AUTH_SECRET
-  const accessToken = integration.accessTokenEncrypted ? decrypt(integration.accessTokenEncrypted, secret) : null
-  const refreshToken = integration.refreshTokenEncrypted ? decrypt(integration.refreshTokenEncrypted, secret) : null
+  const loadedAccessTokenEncrypted = integration.accessTokenEncrypted
+  const loadedRefreshTokenEncrypted = integration.refreshTokenEncrypted
+  const accessToken = loadedAccessTokenEncrypted ? decrypt(loadedAccessTokenEncrypted, secret) : null
+  const refreshToken = loadedRefreshTokenEncrypted ? decrypt(loadedRefreshTokenEncrypted, secret) : null
 
-  if (!accessToken || !refreshToken) {
+  if (!loadedAccessTokenEncrypted || !loadedRefreshTokenEncrypted || !accessToken || !refreshToken) {
     logError('calendar.token_decrypt_failed', {
       posthog_distinct_id: userId,
     })
@@ -182,6 +196,7 @@ export async function getCalendarClient(
   }
 
   const oauth2Client = createOAuth2Client(getRedirectUri())
+  let credentialVersion = loadedAccessTokenEncrypted
   oauth2Client.setCredentials({
     access_token: accessToken,
     refresh_token: refreshToken,
@@ -192,14 +207,23 @@ export async function getCalendarClient(
     if (tokens.access_token) {
       try {
         const newAccessTokenEncrypted = encrypt(tokens.access_token, secret)
-        await db.update(calendarIntegration)
+        const persisted = await db.update(calendarIntegration)
           .set({
             accessTokenEncrypted: newAccessTokenEncrypted,
             updatedAt: new Date(),
           })
           .where(typeof owner === 'string'
-            ? and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google'))
-            : googleIntegrationWhere(owner))
+            ? and(
+                eq(calendarIntegration.userId, userId),
+                eq(calendarIntegration.provider, 'google'),
+                eq(calendarIntegration.accessTokenEncrypted, credentialVersion),
+              )
+            : and(
+                ...googleIntegrationConditions(owner),
+                eq(calendarIntegration.accessTokenEncrypted, credentialVersion),
+              ))
+          .returning({ id: calendarIntegration.id })
+        if (persisted[0]) credentialVersion = newAccessTokenEncrypted
       }
       catch (err) {
         logError('calendar.token_refresh_persist_failed', {
@@ -261,6 +285,10 @@ export async function saveCalendarIntegration(userId: string, organizationId: st
             accessTokenEncrypted,
             refreshTokenEncrypted,
             accountEmail: params.email,
+            webhookChannelId: null,
+            webhookResourceId: null,
+            webhookExpiration: null,
+            syncToken: null,
             updatedAt: new Date(),
           })
           .where(googleIntegrationWhere(previousIdentity))
@@ -375,15 +403,16 @@ export async function createCalendarEvent(
     }
   }
 
-  const calendar = await getCalendarClient(owner)
-  if (!calendar) return null
-
   const integration = await db.query.calendarIntegration.findFirst({
     where: typeof owner === 'string'
       ? and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google'))
       : googleIntegrationWhere(owner),
-    columns: { calendarId: true },
+    columns: { accessTokenEncrypted: true, calendarId: true },
   })
+
+  if (!integration?.accessTokenEncrypted) return null
+  const calendar = await getCalendarClient(owner, integration.accessTokenEncrypted)
+  if (!calendar) return null
 
   const calendarId = integration?.calendarId || 'primary'
 
@@ -467,15 +496,16 @@ export async function updateCalendarEvent(
     return `https://calendar.test.local/events/${encodeURIComponent(eventId)}`
   }
 
-  const calendar = await getCalendarClient(owner)
-  if (!calendar) return null
-
   const integration = await db.query.calendarIntegration.findFirst({
     where: typeof owner === 'string'
       ? and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google'))
       : googleIntegrationWhere(owner),
-    columns: { calendarId: true },
+    columns: { accessTokenEncrypted: true, calendarId: true },
   })
+
+  if (!integration?.accessTokenEncrypted) return null
+  const calendar = await getCalendarClient(owner, integration.accessTokenEncrypted)
+  if (!calendar) return null
 
   const calendarId = integration?.calendarId || 'primary'
 
@@ -549,15 +579,16 @@ export async function cancelCalendarEvent(
   const userId = typeof owner === 'string' ? owner : owner.userId
   if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') return true
 
-  const calendar = await getCalendarClient(owner)
-  if (!calendar) return false
-
   const integration = await db.query.calendarIntegration.findFirst({
     where: typeof owner === 'string'
       ? and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google'))
       : googleIntegrationWhere(owner),
-    columns: { calendarId: true },
+    columns: { accessTokenEncrypted: true, calendarId: true },
   })
+
+  if (!integration?.accessTokenEncrypted) return false
+  const calendar = await getCalendarClient(owner, integration.accessTokenEncrypted)
+  if (!calendar) return false
 
   const calendarId = integration?.calendarId || 'primary'
 
@@ -591,15 +622,20 @@ export async function setupCalendarWebhook(identity: GoogleCalendarIntegrationId
   if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') return false
 
   const { userId } = identity
-  const calendar = await getCalendarClient(identity)
-  if (!calendar) return false
-
   const integration = await db.query.calendarIntegration.findFirst({
     where: googleIntegrationWhere(identity),
-    columns: { calendarId: true, webhookChannelId: true, webhookResourceId: true },
+    columns: {
+      accessTokenEncrypted: true,
+      calendarId: true,
+      webhookChannelId: true,
+      webhookResourceId: true,
+    },
   })
 
-  if (!integration) return false
+  if (!integration?.accessTokenEncrypted) return false
+
+  const calendar = await getCalendarClient(identity, integration.accessTokenEncrypted)
+  if (!calendar) return false
 
   // Stop existing channel if any
   if (integration.webhookChannelId && integration.webhookResourceId) {
@@ -649,6 +685,7 @@ export async function setupCalendarWebhook(identity: GoogleCalendarIntegrationId
       })
       .where(and(
         ...googleIntegrationConditions(identity),
+        eq(calendarIntegration.accessTokenEncrypted, integration.accessTokenEncrypted),
         integration.webhookChannelId === null
           ? isNull(calendarIntegration.webhookChannelId)
           : eq(calendarIntegration.webhookChannelId, integration.webhookChannelId),

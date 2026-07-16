@@ -150,6 +150,10 @@ describe('Google Calendar integration identity scope', () => {
 
     expect(updateSetMock).toHaveBeenCalledWith(expect.objectContaining({
       organizationId: 'org-active',
+      webhookChannelId: null,
+      webhookResourceId: null,
+      webhookExpiration: null,
+      syncToken: null,
     }))
     expect(updateWhereMock).toHaveBeenCalledWith(expect.objectContaining({
       operator: 'and',
@@ -312,7 +316,7 @@ describe('Google Calendar integration identity scope', () => {
     }
   })
 
-  it('stops a newly-created channel when the compare-and-set update loses a race', async () => {
+  it('stops a stale-generation channel when OAuth reconnect wins before metadata CAS', async () => {
     const identity = {
       integrationId: 'integration-raced',
       userId: 'user-raced',
@@ -330,7 +334,15 @@ describe('Google Calendar integration identity scope', () => {
       webhookResourceId: 'previous-resource',
       syncToken: null,
     })
-    updateReturningMock.mockResolvedValueOnce([])
+    let reconnectCompleted = false
+    calendarClient.events.watch.mockImplementationOnce(async () => {
+      reconnectCompleted = true
+      return { data: { resourceId: 'resource-exact', expiration: '1780000000000' } }
+    })
+    updateReturningMock.mockImplementationOnce(async () => {
+      expect(reconnectCompleted).toBe(true)
+      return []
+    })
 
     await expect(setupCalendarWebhook(identity)).resolves.toBe(false)
 
@@ -340,6 +352,14 @@ describe('Google Calendar integration identity scope', () => {
         resourceId: 'resource-exact',
       },
     })
+    expect(updateWhereMock).toHaveBeenCalledWith(expect.objectContaining({
+      operator: 'and',
+      conditions: expect.arrayContaining([{
+        operator: 'eq',
+        column: calendarIntegration.accessTokenEncrypted,
+        value: 'stored-access',
+      }]),
+    }))
   })
 
   it('uses exact integration identity for ordinary event operations', async () => {
@@ -364,6 +384,40 @@ describe('Google Calendar integration identity scope', () => {
     for (const [{ where }] of findFirstMock.mock.calls) {
       expectExactGoogleScope(where, identity)
     }
+  })
+
+  it('does not let an old OAuth client overwrite credentials after reconnect', async () => {
+    const identity = {
+      integrationId: 'integration-refresh',
+      userId: 'user-refresh',
+      organizationId: 'org-refresh',
+    }
+    findFirstMock.mockResolvedValue({
+      id: identity.integrationId,
+      userId: identity.userId,
+      organizationId: identity.organizationId,
+      provider: 'google',
+      accessTokenEncrypted: 'stored-access-version',
+      refreshTokenEncrypted: 'stored-refresh',
+    })
+
+    await googleCalendar.getCalendarClient(identity)
+    const tokenListener = oauthClient.on.mock.calls.find(([event]) => event === 'tokens')?.[1]
+    expect(tokenListener).toBeTypeOf('function')
+    await tokenListener({ access_token: 'refreshed-from-old-client' })
+
+    expect(updateWhereMock).toHaveBeenCalledWith(expect.objectContaining({
+      operator: 'and',
+      conditions: expect.arrayContaining([
+        { operator: 'eq', column: calendarIntegration.id, value: identity.integrationId },
+        { operator: 'eq', column: calendarIntegration.organizationId, value: identity.organizationId },
+        {
+          operator: 'eq',
+          column: calendarIntegration.accessTokenEncrypted,
+          value: 'stored-access-version',
+        },
+      ]),
+    }))
   })
 
   it('scopes attendee synchronization to the integration organization', async () => {
