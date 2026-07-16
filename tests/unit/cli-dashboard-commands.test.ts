@@ -120,7 +120,11 @@ describe('CLI dashboard commands', () => {
       }
       if (url === 'https://careers.example.com/api/ai-analysis/stats') {
         expect(init?.method).toBe('GET')
-        return Response.json({ summary: { totalRuns: 4 }, dailyRuns: [] })
+        return Response.json({
+          usagePeriod: { startDate: '2026-06-17', endDate: '2026-07-16' },
+          summary: { totalRuns: 4 },
+          dailyRuns: [],
+        })
       }
       throw new Error(`Unexpected URL ${url}`)
     })
@@ -139,6 +143,10 @@ describe('CLI dashboard commands', () => {
     expect(candidateExit).toBe(0)
     expect(aiExit).toBe(0)
     expect(JSON.parse(candidateOut[0])).toEqual({ items: [], candidateId: 'cand_1', candidateName: 'Ada Lovelace' })
-    expect(JSON.parse(aiOut[0])).toEqual({ summary: { totalRuns: 4 }, dailyRuns: [] })
+    expect(JSON.parse(aiOut[0])).toEqual({
+      usagePeriod: { startDate: '2026-06-17', endDate: '2026-07-16' },
+      summary: { totalRuns: 4 },
+      dailyRuns: [],
+    })
   })
 })
