@@ -1,5 +1,74 @@
+import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
-import { db } from '../utils/db'
+import postgres from 'postgres'
+import * as schema from '../database/schema'
+
+const MIGRATION_LOCK_ID = 123456789
+
+interface MigrationSessionDependencies<Client, Database> {
+  databaseUrl: string
+  createClient: (databaseUrl: string, options: { max: 1 }) => Client
+  createDatabase: (client: Client) => Database
+  execute: (database: Database, statement: string) => Promise<unknown>
+  migrate: (database: Database) => Promise<void>
+  close: (client: Client) => Promise<void>
+}
+
+/**
+ * Run migrations while a single, dedicated PostgreSQL session owns the
+ * advisory lock. A blocking advisory lock makes concurrent instances wait for
+ * the active migrator instead of starting against an unverified schema.
+ */
+export async function runMigrationsOnSession<Client, Database>({
+  databaseUrl,
+  createClient,
+  createDatabase,
+  execute,
+  migrate: runMigrations,
+  close,
+}: MigrationSessionDependencies<Client, Database>): Promise<void> {
+  const client = createClient(databaseUrl, { max: 1 })
+  let database: Database | undefined
+  let lockAcquired = false
+  let failed = false
+  let failure: unknown
+
+  try {
+    database = createDatabase(client)
+
+    await execute(database, `SELECT pg_advisory_lock(${MIGRATION_LOCK_ID})`)
+    lockAcquired = true
+
+    await execute(database, 'SET client_min_messages TO warning')
+    await runMigrations(database)
+    await execute(database, 'SET client_min_messages TO notice')
+  } catch (error) {
+    failed = true
+    failure = error
+  } finally {
+    if (lockAcquired && database !== undefined) {
+      try {
+        await execute(database, `SELECT pg_advisory_unlock(${MIGRATION_LOCK_ID})`)
+      } catch (error) {
+        if (!failed) {
+          failed = true
+          failure = error
+        }
+      }
+    }
+
+    try {
+      await close(client)
+    } catch (error) {
+      if (!failed) {
+        failed = true
+        failure = error
+      }
+    }
+  }
+
+  if (failed) throw failure
+}
 
 export default defineNitroPlugin(async () => {
   // Skip during build-time prerendering — database isn't available
@@ -12,30 +81,27 @@ export default defineNitroPlugin(async () => {
     return
   }
 
-  // Advisory lock ID — prevents concurrent migration runs across instances.
-  // The lock is automatically released when the transaction/session ends.
-  const MIGRATION_LOCK_ID = 123456789
-
   try {
-    // pg_try_advisory_lock returns true if lock acquired, false if another process holds it
-    const lockResult = await db.execute<{ locked: boolean }>(
-      `SELECT pg_try_advisory_lock(${MIGRATION_LOCK_ID}) as locked`
-    )
-    const locked = lockResult[0]?.locked ?? false
+    console.log('[Factory Careers] Waiting for the database migration lock...')
 
-    if (!locked) {
-      console.log('[Factory Careers] Another instance is running migrations, skipping')
-      logInfo('migrations.skipped_locked')
-      return
-    }
-
-    console.log('[Factory Careers] Running database migrations...')
-    // Suppress harmless NOTICE messages (e.g. "schema already exists, skipping")
-    await db.execute(`SET client_min_messages TO warning`)
-    await migrate(db, {
-      migrationsFolder: './server/database/migrations',
+    await runMigrationsOnSession({
+      databaseUrl: env.DATABASE_URL,
+      createClient: (databaseUrl, options) => postgres(databaseUrl, options),
+      createDatabase: client => drizzle(client, { schema }),
+      execute: async (database, statement) => {
+        await database.execute(statement)
+      },
+      migrate: async (database) => {
+        console.log('[Factory Careers] Running database migrations...')
+        await migrate(database, {
+          migrationsFolder: './server/database/migrations',
+        })
+      },
+      close: async (client) => {
+        await client.end({ timeout: 5 })
+      },
     })
-    await db.execute(`SET client_min_messages TO notice`)
+
     console.log('[Factory Careers] Database migrations applied successfully')
     logInfo('migrations.completed')
   } catch (error) {
@@ -44,9 +110,5 @@ export default defineNitroPlugin(async () => {
       error_message: error instanceof Error ? error.message : String(error),
     })
     throw error
-  } finally {
-    await db.execute(
-      `SELECT pg_advisory_unlock(${MIGRATION_LOCK_ID})`
-    ).catch(() => {})
   }
 })
