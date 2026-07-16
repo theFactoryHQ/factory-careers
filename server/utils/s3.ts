@@ -118,9 +118,10 @@ export async function deleteFromS3(key: string): Promise<void> {
 /**
  * Check whether an object exists without downloading it.
  *
- * Only a confirmed S3 not-found response is treated as absence. Authorization,
- * provider, network, and unknown failures are rethrown so callers cannot mistake
- * an inaccessible object for one that is safe to delete or roll back.
+ * A HeadObject HTTP 404, NoSuchKey, or NotFound response is treated as object
+ * absence; NoSuchBucket is deliberately excluded. Authorization, provider,
+ * network, and unknown failures are rethrown so callers cannot mistake an
+ * inaccessible object for one that is safe to delete or roll back.
  */
 export async function objectExistsInS3(
   key: string,
