@@ -228,6 +228,8 @@ i18n/                        Locale files and i18n configuration
 - [`docs/reference/PRODUCT.md`](docs/reference/PRODUCT.md): Factory Careers
   product brief.
 - [`docs/reference/ROADMAP.md`](docs/reference/ROADMAP.md): Current roadmap.
+- [`docs/reference/VERSIONING.md`](docs/reference/VERSIONING.md): Factory release
+  identity and semantic versioning policy.
 - [`SELF-HOSTING.md`](SELF-HOSTING.md): Docker-based self-hosting guidance for
   Factory Careers.
 - [`SECURITY.md`](SECURITY.md): Security policy and supported reporting path.

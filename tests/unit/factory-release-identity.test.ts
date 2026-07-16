@@ -72,9 +72,11 @@ describe('Factory Careers release identity', () => {
 
   it('documents the Factory release policy and preserves the changelog entry point', () => {
     const changelog = readProjectFile('CHANGELOG.md')
+    const readme = readProjectFile('README.md')
     const versioningGuide = readProjectFile('docs/reference/VERSIONING.md')
 
     expect(changelog).toContain('## Unreleased')
+    expect(readme).toContain('[`docs/reference/VERSIONING.md`](docs/reference/VERSIONING.md)')
     expect(versioningGuide).toContain('v1.0.0')
     expect(versioningGuide).toMatch(/patch[\s\S]*compatible fixes/i)
     expect(versioningGuide).toMatch(/minor[\s\S]*compatible (?:product|API|CLI)[\s\S]*additions/i)
