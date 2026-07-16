@@ -6,13 +6,14 @@
 import { eq, and } from 'drizzle-orm'
 import {
   application, scoringCriterion, criterionScore,
-  analysisRun, analysisRunCriterionScore, document, orgSettings,
+  analysisRun, analysisRunCriterionScore, orgSettings,
 } from '../../database/schema'
 import { scoreApplication, computeCompositeScore } from './scoring'
 import type { CriterionDefinition } from './scoring'
 import type { SupportedProvider } from './provider'
 import { loadAiConfig } from './loadConfig'
 import { extractResumeText } from '../resume-parser'
+import { loadApplicationResume } from '../applicationResume'
 
 export async function autoScoreApplication(applicationId: string, orgId: string) {
   const app = await db.query.application.findFirst({
@@ -38,11 +39,7 @@ export async function autoScoreApplication(applicationId: string, orgId: string)
     ))
   if (criteria.length === 0) return
 
-  const docs = await db.select({ parsedContent: document.parsedContent, type: document.type })
-    .from(document)
-    .where(and(eq(document.candidateId, app.candidate.id), eq(document.organizationId, orgId)))
-
-  const resumeDoc = docs.find(d => d.type === 'resume')
+  const resumeDoc = await loadApplicationResume(orgId, applicationId, app.candidate.id)
   const resumeText = extractResumeText(resumeDoc?.parsedContent)
   if (!resumeText) return
 

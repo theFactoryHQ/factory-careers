@@ -24,6 +24,7 @@ describe('built-in applicant location', () => {
   it('validates and persists location fields during public application submission', () => {
     const schema = readProjectFile('server/utils/schemas/publicApplication.ts')
     const handler = readProjectFile('server/api/public/jobs/[slug]/apply.post.ts')
+    const transactionHelper = readProjectFile('server/utils/createPublicApplication.ts')
     const dbSchema = readProjectFile('server/database/schema/app.ts')
 
     expect(schema).toContain('COUNTRY_VALUES')
@@ -35,10 +36,10 @@ describe('built-in applicant location', () => {
     expect(handler).toContain('let state: string')
     expect(handler).toContain('country = validated.country')
     expect(handler).toContain('state = validated.state')
-    expect(handler).toContain('country: true')
-    expect(handler).toContain('state: true')
     expect(handler).toContain('country,')
     expect(handler).toContain('state,')
+    expect(transactionHelper).toContain('country: input.country')
+    expect(transactionHelper).toContain('state: input.state')
 
     expect(dbSchema).toContain("country: text('country')")
     expect(dbSchema).toContain("state: text('state')")

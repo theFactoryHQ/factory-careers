@@ -1,8 +1,9 @@
 import type { SQL } from 'drizzle-orm'
-import { eq, and, desc, ilike, lte, or, sql } from 'drizzle-orm'
+import { eq, and, desc, ilike, or, sql } from 'drizzle-orm'
 import { job } from '../../../database/schema'
 import { publicJobsQuerySchema } from '../../../utils/schemas/publicApplication'
 import { getPublicJobScopeCondition } from '../../../utils/publicJobScope'
+import { getPublicJobVisibilityCondition } from '../../../utils/publicJobVisibility'
 import type { FactoryDivision, JobDescriptionBlock } from '~~/shared/job-listing-structure'
 
 type PublicJobsQuery = Awaited<ReturnType<typeof publicJobsQuerySchema.parseAsync>>
@@ -44,12 +45,11 @@ function buildDivisionFilter(divisions?: FactoryDivision[]) {
 }
 
 function buildPublicJobsWhere(query: PublicJobsQuery, includeActiveFrom: boolean, organizationScope?: SQL) {
-  // Always filter to open jobs only. Older local databases may not have active_from yet.
-  const conditions = [eq(job.status, 'open')]
+  // Older local databases may not have active_from yet, but all other public
+  // visibility rules still apply in the compatibility path.
+  const conditions = [getPublicJobVisibilityCondition(new Date(), { includeActiveFrom })]
 
   if (organizationScope) conditions.push(organizationScope)
-
-  if (includeActiveFrom) conditions.push(lte(job.activeFrom, new Date()))
 
   // Optional search — matches title OR location
   if (query.search) {
