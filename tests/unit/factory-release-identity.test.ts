@@ -95,6 +95,7 @@ describe('Factory Careers release identity', () => {
 
   it('enforces changelog policy before broad pull-request validation', () => {
     const workflow = readProjectFile('.github/workflows/pr-validation.yml')
+    const pullRequestTypes = workflow.match(/pull_request:\n    types: \[([^\]]+)]/)?.[1].split(',').map(type => type.trim())
     const changelogStep = `      - name: Changelog policy
         id: changelog
         run: npm run changelog:check
@@ -102,6 +103,7 @@ describe('Factory Careers release identity', () => {
           PR_PREFLIGHT_BASE_REF: origin/\${{ github.base_ref || 'main' }}
           CHANGELOG_SKIP: \${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}`
 
+    expect(pullRequestTypes).toEqual(expect.arrayContaining(['labeled', 'unlabeled']))
     expect(workflow).toContain(changelogStep)
     expect(workflow.indexOf('- name: Setup Node.js')).toBeLessThan(workflow.indexOf('- name: Changelog policy'))
     expect(workflow.indexOf('- name: Changelog policy')).toBeLessThan(workflow.indexOf('- name: Install dependencies'))
