@@ -97,6 +97,37 @@ describe('git hook preflight checks', () => {
     expect(readFileSync('.githooks/pre-push', 'utf8')).toContain('preflight:pr')
   })
 
+  it('clears Git hook repository overrides before running preflight commands', () => {
+    const hook = readFileSync('.githooks/pre-push', 'utf8')
+    const unsetIndex = hook.indexOf('unset GIT_DIR GIT_WORK_TREE')
+
+    expect(unsetIndex).toBeGreaterThan(-1)
+    expect(unsetIndex).toBeLessThan(hook.indexOf('node scripts/validate-current-pr-title.mjs'))
+    expect(unsetIndex).toBeLessThan(hook.indexOf('npm run preflight:pr'))
+
+    const cwd = mkdtempSync(join(tmpdir(), 'factory-careers-pre-push-env-'))
+    tempDirectories.push(cwd)
+    const command = '#!/bin/sh\n[ "${GIT_DIR+x}" = x ] && exit 41\n[ "${GIT_WORK_TREE+x}" = x ] && exit 42\nexit 0\n'
+
+    for (const executable of ['node', 'npm']) {
+      const path = join(cwd, executable)
+      writeFileSync(path, command)
+      chmodSync(path, 0o755)
+    }
+
+    const result = spawnSync('.githooks/pre-push', [], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        GIT_DIR: '/tmp/leaked-git-dir',
+        GIT_WORK_TREE: '/tmp/leaked-work-tree',
+        PATH: `${cwd}:${process.env.PATH ?? ''}`,
+      },
+    })
+
+    expect(result.status).toBe(0)
+  })
+
   it('skips local PR title validation before a branch has an open PR', () => {
     expect(getPrTitleValidationStatus('', 'failed to find pull request')).toMatchObject({
       ok: true,
