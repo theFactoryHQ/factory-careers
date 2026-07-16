@@ -11,6 +11,7 @@ describe('scoring feedback and history', () => {
     const schema = readProjectFile('server/database/schema/app.ts')
     const analyzeRoute = readProjectFile('server/api/applications/[id]/analyze.post.ts')
     const autoScore = readProjectFile('server/utils/ai/autoScore.ts')
+    const analyzeApplication = readProjectFile('server/utils/analyzeApplication.ts')
     const migration = readProjectFile('server/database/migrations/0044_scoring_feedback_history.sql')
 
     expect(schema).toContain('export const analysisRunCriterionScore = pgTable')
@@ -19,11 +20,11 @@ describe('scoring feedback and history', () => {
     expect(migration).toContain('CREATE TABLE IF NOT EXISTS "analysis_run_criterion_score"')
     expect(migration).toContain('CREATE INDEX IF NOT EXISTS "analysis_run_criterion_score_run_idx"')
 
-    expect(analyzeRoute).toContain('analysisRunCriterionScore')
-    expect(analyzeRoute).toContain('runScoreValues')
-    expect(analyzeRoute).toContain('await tx.insert(analysisRunCriterionScore).values(runScoreValues)')
-    expect(autoScore).toContain('analysisRunCriterionScore')
-    expect(autoScore).toContain('await tx.insert(analysisRunCriterionScore).values(runScoreValues)')
+    expect(analyzeApplication).toContain('analysisRunCriterionScore')
+    expect(analyzeApplication).toContain('analysisRunId: run.id')
+    expect(analyzeApplication).toContain('await tx.insert(analysisRunCriterionScore).values')
+    expect(analyzeRoute).toContain('analyzeApplication({')
+    expect(autoScore).toContain('analyzeApplication({')
   })
 
   it('persists admin sentiment and comments against the latest scoring run', () => {

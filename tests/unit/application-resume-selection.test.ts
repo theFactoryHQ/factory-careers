@@ -161,12 +161,21 @@ describe('application resume selection', () => {
     ])
   })
 
-  it('uses the shared selector in manual and automatic scoring', () => {
+  it('uses the shared selector through the common manual and automatic analysis executor', () => {
     const analyzeRoute = readFileSync(join(process.cwd(), 'server/api/applications/[id]/analyze.post.ts'), 'utf8')
     const automaticScoring = readFileSync(join(process.cwd(), 'server/utils/ai/autoScore.ts'), 'utf8')
+    const analysisExecutor = readFileSync(join(process.cwd(), 'server/utils/analyzeApplication.ts'), 'utf8')
     const expectedCall = 'loadApplicationResume(orgId, applicationId, app.candidate.id)'
 
-    expect(analyzeRoute).toContain(expectedCall)
-    expect(automaticScoring).toContain(expectedCall)
+    expect(analysisExecutor).toContain('loadApplicationResume(')
+    expect(analysisExecutor).toContain('organizationId,')
+    expect(analysisExecutor).toContain('applicationId,')
+    expect(analysisExecutor).toContain('app.candidate.id,')
+    expect(analyzeRoute).toContain('analyzeApplication({')
+    expect(automaticScoring).toContain('analyzeApplication({')
+    expect(automaticScoring).toContain('error instanceof AnalyzeApplicationError')
+    expect(automaticScoring).toContain('throw error')
+    expect(analyzeRoute).not.toContain(expectedCall)
+    expect(automaticScoring).not.toContain(expectedCall)
   })
 })

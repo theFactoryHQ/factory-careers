@@ -16,7 +16,7 @@ function extractAnalysisSummary(rawResponse: unknown) {
 /**
  * GET /api/applications/:id/scores
  * Get the score breakdown for an application, including individual criterion scores
- * and the most recent analysis run details.
+ * and the most recent successful analysis run backing the persisted score.
  */
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { scoring: ['read'] })
@@ -55,7 +55,8 @@ export default defineEventHandler(async (event) => {
       eq(criterionScore.organizationId, orgId),
     ))
 
-  // Fetch latest analysis run
+  // The displayed metadata must describe the persisted score, not a newer
+  // failed attempt. Failed runs remain available in the analysis audit view.
   const [latestRun] = await db.select({
     id: analysisRun.id,
     status: analysisRun.status,
@@ -71,6 +72,7 @@ export default defineEventHandler(async (event) => {
     .where(and(
       eq(analysisRun.applicationId, applicationId),
       eq(analysisRun.organizationId, orgId),
+      eq(analysisRun.status, 'completed'),
     ))
     .orderBy(desc(analysisRun.createdAt))
     .limit(1)

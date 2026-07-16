@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const applicationFindFirst = vi.fn()
@@ -89,5 +91,20 @@ describe('application score band resolution', () => {
 
     expect(result.scoreBand).toEqual({ label: 'Global Low', minScore: 0, maxScore: 69, color: 'warning' })
     expect(result.latestRun).toBeNull()
+  })
+
+  it('presents the latest completed run for the persisted score while retaining failed attempts in audit history', () => {
+    const scoresSource = readFileSync(
+      join(process.cwd(), 'server/api/applications/[id]/scores.get.ts'),
+      'utf8',
+    )
+    const auditSource = readFileSync(
+      join(process.cwd(), 'server/api/ai-analysis/stats.get.ts'),
+      'utf8',
+    )
+
+    expect(scoresSource).toContain("eq(analysisRun.status, 'completed')")
+    expect(auditSource).toContain("eq(analysisRun.status, 'failed')")
+    expect(auditSource).toContain('recentRuns')
   })
 })

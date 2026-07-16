@@ -115,7 +115,7 @@ describe('P0 tenant-isolation route coverage', () => {
     'server/api/candidates/[id].delete.ts': ['eq(candidate.id, id)', 'eq(candidate.organizationId, orgId)'],
     'server/api/applications/[id].get.ts': ['eq(application.id, id)', 'eq(application.organizationId, orgId)'],
     'server/api/applications/[id].patch.ts': ['eq(application.id, id)', 'eq(application.organizationId, orgId)'],
-    'server/api/applications/[id]/analyze.post.ts': ['eq(application.id, applicationId)', 'eq(application.organizationId, orgId)'],
+    'server/utils/analyzeApplication.ts': ['eq(application.id, applicationId)', 'eq(application.organizationId, organizationId)'],
     'server/api/applications/[id]/scores.get.ts': ['eq(application.id, applicationId)', 'eq(application.organizationId, orgId)'],
     'server/api/documents/[id].delete.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, orgId)'],
     'server/api/documents/[id]/parse.post.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, orgId)'],
