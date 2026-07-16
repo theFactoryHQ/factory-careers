@@ -1225,20 +1225,20 @@ function closeDocPreview() {
             >
               <button
                 type="button"
-                class="absolute inset-0 z-0 cursor-pointer border-0 bg-transparent focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-500"
+                class="absolute inset-0 z-10 cursor-pointer border-0 bg-transparent focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-500"
                 :aria-label="`Open candidate ${formatPersonName(app.candidateFirstName, app.candidateLastName)}`"
                 :aria-current="currentIndex === idx ? 'true' : undefined"
                 @click="selectCandidate(idx)"
               ></button>
               <div
-                class="pointer-events-none relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-all duration-150"
+                class="pointer-events-none relative z-20 flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-all duration-150"
                 :class="currentIndex === idx
                   ? 'bg-brand-500 text-white shadow-sm shadow-brand-500/20 dark:bg-brand-600 dark:shadow-brand-500/10'
                   : 'bg-surface-100 text-surface-600 group-hover:bg-brand-100 group-hover:text-brand-700 dark:bg-surface-800 dark:text-surface-300 dark:group-hover:bg-brand-950 dark:group-hover:text-brand-300'"
               >
                 {{ getCandidateInitials(app.candidateFirstName, app.candidateLastName) }}
               </div>
-              <div class="pointer-events-none relative z-10 min-w-0">
+              <div class="pointer-events-none relative z-20 min-w-0">
                 <p class="truncate text-sm font-medium text-surface-900 dark:text-surface-100">
                   {{ formatPersonName(app.candidateFirstName, app.candidateLastName) }}
                 </p>
