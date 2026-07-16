@@ -66,12 +66,16 @@ describe('public application compliance self-identification', () => {
   it('persists compliance responses separately from custom question responses', () => {
     const schema = readProjectFile('server/database/schema/app.ts')
     const handler = readProjectFile('server/api/public/jobs/[slug]/apply.post.ts')
+    const transactionHelper = readProjectFile('server/utils/createPublicApplication.ts')
 
     expect(schema).toContain('applicationComplianceResponse')
     expect(schema).toContain("pgTable('application_compliance_response'")
-    expect(handler).toContain('applicationComplianceResponse')
+    expect(handler).toContain('createPublicApplication')
     expect(handler).toContain('hasComplianceResponse')
-    expect(handler).not.toContain('questionResponse).values(\\n      validResponses.map((r) => ({\\n        organizationId: orgId,\\n        applicationId: newApplication!.id,\\n        questionId: r.questionId,\\n        value: r.value,\\n        compliance')
+    expect(transactionHelper).toContain('applicationComplianceResponse')
+    expect(transactionHelper).toContain('insertComplianceResponse')
+    expect(transactionHelper).toContain('insertQuestionResponses')
+    expect(transactionHelper).not.toContain('value: input.compliance')
   })
 
   it('renders voluntary questions on the public form without exposing answers in hiring surfaces', () => {

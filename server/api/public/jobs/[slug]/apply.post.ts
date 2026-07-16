@@ -1,5 +1,5 @@
 import { eq, and, asc, sql } from 'drizzle-orm'
-import { job, candidate, application, jobQuestion, questionResponse, document, organization, applicationSource, trackingLink, applicationComplianceResponse, orgSettings } from '../../../../database/schema'
+import { job, application, jobQuestion, questionResponse, document, organization, applicationSource, trackingLink, orgSettings } from '../../../../database/schema'
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
 import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
 import { autoScoreApplication } from '../../../../utils/ai/autoScore'
@@ -13,6 +13,11 @@ import { getPublicJobVisibilityCondition } from '../../../../utils/publicJobVisi
 import { isBuiltInLocationQuestion } from '~~/shared/built-in-application-fields'
 import { isRequiredCustomQuestionAnswered } from '~~/shared/custom-question-validation'
 import { resolveFactoryCareersBaseUrl } from '../../../../utils/baseUrl'
+import {
+  createPublicApplication,
+  DuplicatePublicApplicationError,
+  PublicApplicationDocumentLimitError,
+} from '../../../../utils/createPublicApplication'
 import {
   MAX_FILE_SIZE,
   MAX_DOCUMENTS_PER_CANDIDATE,
@@ -328,6 +333,7 @@ export default defineEventHandler(async (event) => {
   const validQuestionIds = new Set(questions.map((q) => q.id))
   const fileQuestionIds = new Set(questions.filter((q) => q.type === 'file_upload').map((q) => q.id))
   const validResponses = responseArray.filter((r) => validQuestionIds.has(r.questionId))
+  const validNonFileResponses = validResponses.filter((r) => !fileQuestionIds.has(r.questionId))
 
   // ─────────────────────────────────────────────
   // 4. Validate uploaded files (MIME via magic bytes, size)
@@ -384,106 +390,11 @@ export default defineEventHandler(async (event) => {
   }
 
   // ─────────────────────────────────────────────
-  // 6. Upsert candidate — deduplicate by email within this org
-  // ─────────────────────────────────────────────
-
-  let existingCandidate = await db.query.candidate.findFirst({
-    where: and(
-      eq(candidate.organizationId, orgId),
-      eq(candidate.email, email.toLowerCase()),
-    ),
-    columns: { id: true, firstName: true, lastName: true, phone: true, country: true, state: true },
-  })
-
-  let candidateId: string
-
-  if (existingCandidate) {
-    const updates: Record<string, unknown> = { updatedAt: new Date() }
-    if (!existingCandidate.firstName) updates.firstName = firstName
-    if (!existingCandidate.lastName) updates.lastName = lastName
-    if (!existingCandidate.phone && phone) updates.phone = phone
-    if (existingCandidate.country !== country) updates.country = country
-    if (existingCandidate.state !== state) updates.state = state
-
-    const [updated] = await db.update(candidate)
-      .set(updates)
-      .where(eq(candidate.id, existingCandidate.id))
-      .returning({ id: candidate.id })
-
-    candidateId = updated!.id
-  } else {
-    const [created] = await db.insert(candidate).values({
-      organizationId: orgId,
-      firstName,
-      lastName,
-      email: email.toLowerCase(),
-      phone,
-      country,
-      state,
-    }).returning({ id: candidate.id })
-
-    candidateId = created!.id
-  }
-
-  // ─────────────────────────────────────────────
-  // 7. Check for duplicate application
-  // ─────────────────────────────────────────────
-
-  const existingApplication = await db.query.application.findFirst({
-    where: and(
-      eq(application.organizationId, orgId),
-      eq(application.candidateId, candidateId),
-      eq(application.jobId, jobId),
-    ),
-    columns: { id: true },
-  })
-
-  if (existingApplication) {
-    throw createError({
-      statusCode: 409,
-      statusMessage: 'You have already applied to this position',
-    })
-  }
-
-  // ─────────────────────────────────────────────
-  // 7a. Enforce document capacity before application side effects
+  // 6. Persist the relational application core in one transaction
   // ─────────────────────────────────────────────
 
   const builtInFileCount = resumeUpload ? 1 : 0
   const totalNewFiles = uploadedFiles.size + builtInFileCount
-  if (totalNewFiles > 0) {
-    const existingDocCount = await db.$count(
-      document,
-      and(
-        eq(document.candidateId, candidateId),
-        eq(document.organizationId, orgId),
-      ),
-    )
-
-    if (existingDocCount + totalNewFiles > MAX_DOCUMENTS_PER_CANDIDATE) {
-      throw createError({
-        statusCode: 409,
-        statusMessage: `Document limit reached. Maximum ${MAX_DOCUMENTS_PER_CANDIDATE} documents per candidate`,
-      })
-    }
-  }
-
-  // ─────────────────────────────────────────────
-  // 8. Create application
-  // ─────────────────────────────────────────────
-
-  const [newApplication] = await db.insert(application).values({
-    organizationId: orgId,
-    candidateId,
-    jobId,
-    status: 'new',
-    coverLetterText: coverLetterText || null,
-  }).returning({ id: application.id })
-
-  // ─────────────────────────────────────────────
-  // 8a. Store voluntary compliance self-identification
-  // ─────────────────────────────────────────────
-
   const normalizedCompliance = complianceConfig.enabled
     ? {
         sex: complianceConfig.includeEeo ? compliance?.sex : undefined,
@@ -493,20 +404,49 @@ export default defineEventHandler(async (event) => {
       }
     : undefined
 
-  if (newApplication && hasComplianceResponse(normalizedCompliance)) {
-    await db.insert(applicationComplianceResponse).values({
+  let createdApplication: { candidateId: string; applicationId: string }
+  try {
+    createdApplication = await createPublicApplication({
       organizationId: orgId,
-      applicationId: newApplication.id,
-      candidateId,
-      sex: normalizedCompliance.sex,
-      raceEthnicity: normalizedCompliance.raceEthnicity,
-      veteranStatus: normalizedCompliance.veteranStatus,
-      disabilityStatus: normalizedCompliance.disabilityStatus,
-      jurisdiction: 'US',
-      formVersion: 'US-SELF-ID-2026-05',
-      submittedAt: new Date(),
+      jobId,
+      candidate: {
+        firstName,
+        lastName,
+        email,
+        phone,
+        country,
+        state,
+      },
+      coverLetterText,
+      compliance: hasComplianceResponse(normalizedCompliance)
+        ? {
+            ...normalizedCompliance,
+            jurisdiction: 'US',
+            formVersion: 'US-SELF-ID-2026-05',
+          }
+        : undefined,
+      responses: validNonFileResponses,
+      newDocumentCount: totalNewFiles,
+      maxDocumentsPerCandidate: MAX_DOCUMENTS_PER_CANDIDATE,
     })
+  } catch (error) {
+    if (error instanceof DuplicatePublicApplicationError) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'You have already applied to this position',
+      })
+    }
+    if (error instanceof PublicApplicationDocumentLimitError) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: error.message,
+      })
+    }
+    throw error
   }
+
+  const { candidateId, applicationId } = createdApplication
+  const newApplication = { id: applicationId }
 
   // ─────────────────────────────────────────────
   // 8b. Record source attribution
@@ -559,22 +499,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // ─────────────────────────────────────────────
-  // 9. Store question responses
-  // ─────────────────────────────────────────────
-
-  if (validResponses.length > 0) {
-    await db.insert(questionResponse).values(
-      validResponses.map((r) => ({
-        organizationId: orgId,
-        applicationId: newApplication!.id,
-        questionId: r.questionId,
-        value: r.value,
-      })),
-    )
-  }
-
-  // ─────────────────────────────────────────────
-  // 10. Upload files to S3 and create document records
+  // 9. Upload files to S3 and create document records
   // ─────────────────────────────────────────────
 
   const uploadedDocuments: { id: string; storageKey: string }[] = []
@@ -786,7 +711,6 @@ export default defineEventHandler(async (event) => {
     question_count: validResponses.length,
     file_count: uploadedFiles.size,
     auto_score_enabled: !!existingJob.autoScoreOnApply,
-    is_returning_candidate: !!existingCandidate,
   })
 
   await invalidateOrgScopedDashboardCacheForOrg(orgId)
