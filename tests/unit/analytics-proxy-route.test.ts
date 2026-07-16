@@ -16,20 +16,29 @@ interface FakeEvent {
 
 interface FakeRequestStream extends AsyncIterable<Uint8Array> {
   destroy: ReturnType<typeof vi.fn>
+  resume: ReturnType<typeof vi.fn>
   consumedChunks: number
+  iterator: (options: { destroyOnReturn: boolean }) => AsyncIterator<Uint8Array>
 }
 
 function makeRequestStream(chunks: Uint8Array[]): FakeRequestStream {
-  const stream: FakeRequestStream = {
-    destroy: vi.fn(),
-    consumedChunks: 0,
-    async *[Symbol.asyncIterator]() {
-      for (const chunk of chunks) {
-        stream.consumedChunks += 1
-        yield chunk
-      }
-    },
+  async function* chunksIterator() {
+    for (const chunk of chunks) {
+      stream.consumedChunks += 1
+      yield chunk
+    }
   }
+
+  const stream = {
+    destroy: vi.fn(),
+    resume: vi.fn(),
+    consumedChunks: 0,
+    iterator: vi.fn((options: { destroyOnReturn: boolean }) => {
+      expect(options).toEqual({ destroyOnReturn: false })
+      return chunksIterator()
+    }),
+    [Symbol.asyncIterator]: chunksIterator,
+  } satisfies FakeRequestStream
   return stream
 }
 
@@ -103,7 +112,7 @@ describe('PostHog ingest route adapter', () => {
     expect(event.node.req.consumedChunks).toBe(0)
   })
 
-  it('destroys a chunked request stream as soon as its actual body crosses 1 MiB', async () => {
+  it('stops retaining and drains a chunked request stream as soon as its actual body crosses 1 MiB', async () => {
     const requestStream = makeRequestStream([
       new Uint8Array(700 * 1024),
       new Uint8Array(400 * 1024),
@@ -115,7 +124,8 @@ describe('PostHog ingest route adapter', () => {
     })
 
     await expect(handler(event)).rejects.toMatchObject({ statusCode: 413 })
-    expect(requestStream.destroy).toHaveBeenCalledTimes(1)
+    expect(requestStream.destroy).not.toHaveBeenCalled()
+    expect(requestStream.resume).toHaveBeenCalledTimes(1)
     expect(requestStream.consumedChunks).toBe(2)
     expect(fetchMock).not.toHaveBeenCalled()
   })

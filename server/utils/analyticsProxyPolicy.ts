@@ -197,30 +197,56 @@ async function readRequestBody(request: AnalyticsProxyRequest, declaredLength: n
   return body
 }
 
-interface DestroyableRequestStream extends AsyncIterable<Uint8Array | string> {
-  destroy?: () => void
+interface DrainableRequestStream extends AsyncIterable<Uint8Array | string> {
+  iterator: (options: { destroyOnReturn: boolean }) => AsyncIterator<Uint8Array | string>
+  resume: () => unknown
+}
+
+async function releaseIteratorAndDrain(
+  iterator: AsyncIterator<Uint8Array | string>,
+  stream: DrainableRequestStream,
+): Promise<void> {
+  try {
+    await iterator.return?.()
+  }
+  catch {
+    // Cleanup failures must not replace the policy response.
+  }
+  try {
+    stream.resume()
+  }
+  catch {
+    // A stream that already failed may reject resume; preserve the response.
+  }
 }
 
 /**
  * Read an inbound Node/Nitro request without first buffering an untrusted body.
- * The stream is destroyed immediately when its cumulative size crosses the
- * policy cap, so a false Content-Length cannot turn the proxy into a memory sink.
+ * Once cumulative size crosses the cap, retained chunks are released and the
+ * rest is drained without destroying the socket, so Nitro can still emit 413.
  */
 export async function readBoundedAnalyticsRequestBody(
-  stream: DestroyableRequestStream,
+  stream: DrainableRequestStream,
   maxBytes = MAX_ANALYTICS_REQUEST_BYTES,
 ): Promise<Uint8Array> {
   const chunks: Uint8Array[] = []
   let totalBytes = 0
+  const iterator = stream.iterator({ destroyOnReturn: false })
 
   try {
-    for await (const rawChunk of stream) {
+    while (true) {
+      const { done, value: rawChunk } = await iterator.next()
+      if (done) break
       const chunk = typeof rawChunk === 'string'
         ? new TextEncoder().encode(rawChunk)
         : rawChunk
       totalBytes += chunk.byteLength
       if (totalBytes > maxBytes) {
-        stream.destroy?.()
+        // Release every retained chunk immediately. Returning this iterator
+        // with destroyOnReturn:false detaches it without destroying the socket;
+        // resume then drains/discards the remaining request so Nitro can send 413.
+        chunks.length = 0
+        await releaseIteratorAndDrain(iterator, stream)
         throw new AnalyticsProxyError(413, 'Content Too Large')
       }
       chunks.push(chunk)
@@ -228,7 +254,8 @@ export async function readBoundedAnalyticsRequestBody(
   }
   catch (error) {
     if (error instanceof AnalyticsProxyError) throw error
-    stream.destroy?.()
+    chunks.length = 0
+    await releaseIteratorAndDrain(iterator, stream)
     throw new AnalyticsProxyError(400, 'Bad Request', 'Unable to read analytics request body')
   }
 
