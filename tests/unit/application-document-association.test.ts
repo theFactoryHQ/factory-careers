@@ -19,7 +19,9 @@ describe('application document association', () => {
     expect(existsSync(migrationPath)).toBe(true)
     const migration = existsSync(migrationPath) ? readFileSync(migrationPath, 'utf8') : ''
     expect(migration).toContain('ADD COLUMN "application_id" text')
-    expect(migration).toContain('ON DELETE SET NULL')
+    expect(migration).toContain('ON DELETE SET NULL ON UPDATE NO ACTION NOT VALID')
+    expect(migration).toContain('VALIDATE CONSTRAINT "document_application_id_application_id_fk"')
+    expect(migration).toContain("SET LOCAL lock_timeout = '5s'")
     expect(migration).toContain('CREATE INDEX "document_application_id_idx"')
     expect(journal).toContain('"tag": "0051_application_documents"')
   })

@@ -23,7 +23,32 @@ describe('public application upload compensation', () => {
     }, adapter)
 
     expect(result).toEqual({ relationalCleanupSucceeded: true })
-    expect(events).toEqual(['database', 'storage:one.pdf', 'storage:two.pdf'])
+    expect(events[0]).toBe('database')
+    expect(new Set(events.slice(1))).toEqual(new Set(['storage:one.pdf', 'storage:two.pdf']))
+  })
+
+  it('starts all unique storage deletions concurrently', async () => {
+    const started: string[] = []
+    const releases = new Map<string, () => void>()
+    const adapter: PublicApplicationRollbackAdapter = {
+      cleanupRelationalRecords: vi.fn(async () => {}),
+      deleteStorageObject: vi.fn(async (storageKey) => {
+        started.push(storageKey)
+        await new Promise<void>((resolve) => releases.set(storageKey, resolve))
+      }),
+    }
+
+    const rollback = rollbackPublicApplicationSubmission({
+      applicationId: 'application-1',
+      organizationId: 'org-1',
+      storageKeys: ['one.pdf', 'two.pdf', 'one.pdf'],
+    }, adapter)
+
+    await vi.waitFor(() => expect(started).toEqual(['one.pdf', 'two.pdf']))
+    for (const release of releases.values()) release()
+
+    await expect(rollback).resolves.toEqual({ relationalCleanupSucceeded: true })
+    expect(adapter.deleteStorageObject).toHaveBeenCalledTimes(2)
   })
 
   it('preserves storage objects when relational cleanup fails', async () => {

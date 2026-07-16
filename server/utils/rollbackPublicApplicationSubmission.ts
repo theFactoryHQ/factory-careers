@@ -55,17 +55,21 @@ export async function rollbackPublicApplicationSubmission(
     return { relationalCleanupSucceeded: false }
   }
 
-  for (const storageKey of new Set(input.storageKeys)) {
-    try {
-      await adapter.deleteStorageObject(storageKey)
-    } catch (cleanupError) {
+  const storageKeys = [...new Set(input.storageKeys)]
+  const cleanupResults = await Promise.allSettled(
+    storageKeys.map(storageKey => adapter.deleteStorageObject(storageKey)),
+  )
+
+  cleanupResults.forEach((result, index) => {
+    if (result.status === 'rejected') {
+      const storageKey = storageKeys[index]!
       logWarn('application.rollback_s3_cleanup_failed', {
         application_id: input.applicationId,
         storage_key: storageKey,
-        error_message: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+        error_message: result.reason instanceof Error ? result.reason.message : String(result.reason),
       })
     }
-  }
+  })
 
   return { relationalCleanupSucceeded: true }
 }

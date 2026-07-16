@@ -10,7 +10,11 @@ import {
 const originalTimezone = process.env.TZ
 
 afterEach(() => {
-  process.env.TZ = originalTimezone
+  if (originalTimezone === undefined) {
+    delete process.env.TZ
+  } else {
+    process.env.TZ = originalTimezone
+  }
 })
 
 describe('date-only job listing boundaries', () => {

@@ -1,4 +1,4 @@
-import { eq, and, asc, sql } from 'drizzle-orm'
+import { eq, and, asc, isNull, or, sql } from 'drizzle-orm'
 import { job, jobQuestion, document, organization, applicationSource, trackingLink, orgSettings } from '../../../../database/schema'
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
 import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
@@ -565,16 +565,16 @@ export default defineEventHandler(async (event) => {
     await db.transaction(async (tx) => {
       let resolvedLink: { id: string; channel: typeof trackingLink.$inferSelect['channel'] } | null = null
       if (sourceRef) {
-        const found = await tx.query.trackingLink.findFirst({
-          where: and(eq(trackingLink.code, sourceRef), eq(trackingLink.organizationId, orgId)),
-          columns: { id: true, channel: true },
-        })
-        if (found) {
-          resolvedLink = found
-          await tx.update(trackingLink)
-            .set({ applicationCount: sql`${trackingLink.applicationCount} + 1` })
-            .where(and(eq(trackingLink.id, found.id), eq(trackingLink.organizationId, orgId)))
-        }
+        const [found] = await tx.update(trackingLink)
+          .set({ applicationCount: sql`${trackingLink.applicationCount} + 1` })
+          .where(and(
+            eq(trackingLink.organizationId, orgId),
+            eq(trackingLink.code, sourceRef),
+            eq(trackingLink.isActive, true),
+            or(isNull(trackingLink.jobId), eq(trackingLink.jobId, jobId)),
+          ))
+          .returning({ id: trackingLink.id, channel: trackingLink.channel })
+        resolvedLink = found ?? null
       }
 
       const channel = resolvedLink?.channel

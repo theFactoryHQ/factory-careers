@@ -37,6 +37,10 @@ describe('public application document limit handling', () => {
     expect(route.indexOf('for (const plannedDocument of plannedDocumentUploads)')).toBeLessThan(route.indexOf('await db.transaction(async (tx) =>'))
     expect(route).toContain('await tx.insert(applicationSource).values')
     expect(route).toContain('await tx.update(trackingLink)')
+    expect(route).toContain('eq(trackingLink.isActive, true)')
+    expect(route).toContain('or(isNull(trackingLink.jobId), eq(trackingLink.jobId, jobId))')
+    expect(route).toContain('.returning({ id: trackingLink.id, channel: trackingLink.channel })')
+    expect(route).not.toContain('tx.query.trackingLink.findFirst')
 
     const dashboardUpload = readProjectFile('server/api/candidates/[id]/documents/index.post.ts')
     expect(dashboardUpload).toContain('reserveCandidateDocument')
