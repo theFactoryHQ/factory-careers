@@ -1215,28 +1215,34 @@ function closeDocPreview() {
               </button>
             </div>
 
-            <button
+            <div
               v-for="(app, idx) in filteredApplications"
               :key="app.id"
-              class="pipeline-candidate-card group flex w-full cursor-pointer items-start gap-3 px-3.5 py-3 text-left transition-all duration-150"
+              class="pipeline-candidate-card group relative grid w-full grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 px-3.5 py-3 text-left transition-all duration-150"
               :class="currentIndex === idx
                 ? 'bg-brand-50/70 dark:bg-brand-950/20 border-l-[3px] border-l-brand-500 dark:border-l-brand-400'
                 : 'border-l-[3px] border-l-transparent hover:bg-surface-50/80 dark:hover:bg-surface-800/40'"
-              @click="selectCandidate(idx)"
             >
+              <button
+                type="button"
+                class="absolute inset-0 z-0 cursor-pointer border-0 bg-transparent focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-500"
+                :aria-label="`Open candidate ${formatPersonName(app.candidateFirstName, app.candidateLastName)}`"
+                :aria-current="currentIndex === idx ? 'true' : undefined"
+                @click="selectCandidate(idx)"
+              ></button>
               <div
-                class="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-all duration-150"
+                class="pointer-events-none relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-all duration-150"
                 :class="currentIndex === idx
                   ? 'bg-brand-500 text-white shadow-sm shadow-brand-500/20 dark:bg-brand-600 dark:shadow-brand-500/10'
                   : 'bg-surface-100 text-surface-600 group-hover:bg-brand-100 group-hover:text-brand-700 dark:bg-surface-800 dark:text-surface-300 dark:group-hover:bg-brand-950 dark:group-hover:text-brand-300'"
               >
                 {{ getCandidateInitials(app.candidateFirstName, app.candidateLastName) }}
               </div>
-              <div class="min-w-0 flex-1">
+              <div class="pointer-events-none relative z-10 min-w-0">
                 <p class="truncate text-sm font-medium text-surface-900 dark:text-surface-100">
                   {{ formatPersonName(app.candidateFirstName, app.candidateLastName) }}
                 </p>
-                <CopyEmailButton :email="app.candidateEmail" class="mt-0.5 max-w-full text-xs text-surface-500 dark:text-surface-400" />
+                <CopyEmailButton :email="app.candidateEmail" class="pointer-events-auto mt-0.5 max-w-full text-xs text-surface-500 dark:text-surface-400" />
                 <div class="mt-1.5 flex items-center gap-2">
                   <span
                     v-if="app.score != null"
@@ -1251,7 +1257,7 @@ function closeDocPreview() {
                   </span>
                 </div>
               </div>
-            </button>
+            </div>
           </div>
         </div>
 
