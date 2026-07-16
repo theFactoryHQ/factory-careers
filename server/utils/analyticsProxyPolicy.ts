@@ -304,11 +304,11 @@ export async function executeAnalyticsProxyRequest(
   dependencies: AnalyticsProxyDependencies,
 ): Promise<AnalyticsProxyResult> {
   const policy = classifyAnalyticsProxyRequest(request.path, request.method)
+  await dependencies.enforceRateLimit(policy.rateLimitBucket)
+
   const declaredLength = policy.method === 'POST'
     ? parseRequestContentLength(request.headers)
     : undefined
-
-  await dependencies.enforceRateLimit(policy.rateLimitBucket)
 
   const body = declaredLength === undefined
     ? undefined

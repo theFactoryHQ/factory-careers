@@ -141,6 +141,7 @@ describe('analytics proxy execution', () => {
     const dependencies = makeDependencies()
 
     await expect(policy.executeAnalyticsProxyRequest(request, dependencies)).rejects.toMatchObject({ statusCode })
+    expect(dependencies.enforceRateLimit).toHaveBeenCalledWith('ingestion')
     expect(request.readBody).not.toHaveBeenCalled()
     expect(dependencies.fetch).not.toHaveBeenCalled()
   })

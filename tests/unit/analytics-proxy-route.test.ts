@@ -4,6 +4,7 @@ interface FakeEvent {
   method: string
   path: string
   url: string
+  socketIp: string
   requestHeaders: Record<string, string>
   responseHeaders: Record<string, string>
   responseStatus?: number
@@ -38,7 +39,7 @@ vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
 vi.stubGlobal('getRouterParam', (event: FakeEvent) => event.path)
 vi.stubGlobal('getRequestURL', (event: FakeEvent) => new URL(event.url))
 vi.stubGlobal('getRequestHeaders', (event: FakeEvent) => event.requestHeaders)
-vi.stubGlobal('getRequestIP', () => '198.51.100.10')
+vi.stubGlobal('getRequestIP', (event: FakeEvent) => event.socketIp)
 vi.stubGlobal('getHeader', (event: FakeEvent, name: string) => event.requestHeaders[name.toLowerCase()])
 vi.stubGlobal('setResponseHeaders', (event: FakeEvent, headers: Record<string, string | number>) => {
   for (const [name, value] of Object.entries(headers)) event.responseHeaders[name] = String(value)
@@ -65,6 +66,7 @@ function makeEvent(overrides: Partial<FakeEvent> = {}): FakeEvent {
     method: 'POST',
     path: 'e',
     url: 'https://careers.thefactoryhq.com/ingest/e',
+    socketIp: '198.51.100.10',
     requestHeaders: {
       'content-length': '2',
       'content-type': 'application/json',
@@ -77,7 +79,7 @@ function makeEvent(overrides: Partial<FakeEvent> = {}): FakeEvent {
 
 beforeEach(() => {
   fetchMock.mockReset()
-  fetchMock.mockResolvedValue(new Response('{}', {
+  fetchMock.mockImplementation(async () => new Response('{}', {
     status: 200,
     headers: { 'content-type': 'application/json' },
   }))
@@ -96,6 +98,7 @@ describe('PostHog ingest route adapter', () => {
     const event = makeEvent({ requestHeaders: {} })
 
     await expect(handler(event)).rejects.toMatchObject({ statusCode: 411 })
+    expect(event.responseHeaders['X-RateLimit-Limit']).toBe('120')
     expect(fetchMock).not.toHaveBeenCalled()
     expect(event.node.req.consumedChunks).toBe(0)
   })
@@ -140,6 +143,29 @@ describe('PostHog ingest route adapter', () => {
     expect(event.responseStatus).toBe(200)
     expect(event.responseHeaders['content-type']).toBe('application/json')
     expect(new TextDecoder().decode(body)).toBe('{}')
+  })
+
+  it('does not make honest Cloudflare clients on one Render socket share the per-client budget', async () => {
+    const socketIp = '10.0.0.9'
+    for (let requestNumber = 0; requestNumber < 120; requestNumber += 1) {
+      await handler(makeEvent({
+        socketIp,
+        requestHeaders: {
+          'content-length': '2',
+          'cf-connecting-ip': '203.0.113.20',
+        },
+      }))
+    }
+
+    const secondClient = makeEvent({
+      socketIp,
+      requestHeaders: {
+        'content-length': '2',
+        'cf-connecting-ip': '203.0.113.21',
+      },
+    })
+    await expect(handler(secondClient)).resolves.toBeInstanceOf(Buffer)
+    expect(secondClient.responseHeaders['X-RateLimit-Limit']).toBe('120')
   })
 
   it('routes static HEAD requests through the assets host and higher asset limiter without reading a body', async () => {

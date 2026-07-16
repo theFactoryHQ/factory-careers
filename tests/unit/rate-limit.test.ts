@@ -88,6 +88,33 @@ describe('createRateLimiter', () => {
     await expect(b(ip)).resolves.toBeUndefined()
   })
 
+  it('supports an explicit bounded key resolver without weakening the secure default', async () => {
+    const limiter = createRateLimiter({
+      windowMs: 60_000,
+      maxRequests: 1,
+      keyResolver: event => (event as unknown as FakeEvent).__headers['x-client-key'],
+    })
+    const sharedSocketA = makeEvent('10.0.0.5', { 'x-client-key': 'client-a' })
+    const sharedSocketB = makeEvent('10.0.0.5', { 'x-client-key': 'client-b' })
+
+    await expect(limiter(sharedSocketA)).resolves.toBeUndefined()
+    await expect(limiter(sharedSocketB)).resolves.toBeUndefined()
+    await expect(limiter(sharedSocketA)).rejects.toMatchObject({ statusCode: 429 })
+  })
+
+  it('collapses excess custom keys into a bounded overflow bucket', async () => {
+    const limiter = createRateLimiter({
+      windowMs: 60_000,
+      maxRequests: 1,
+      maxTrackedKeys: 1,
+      keyResolver: event => (event as unknown as FakeEvent).__headers['x-client-key'],
+    })
+
+    await expect(limiter(makeEvent('10.0.0.5', { 'x-client-key': 'client-a' }))).resolves.toBeUndefined()
+    await expect(limiter(makeEvent('10.0.0.5', { 'x-client-key': 'client-b' }))).resolves.toBeUndefined()
+    await expect(limiter(makeEvent('10.0.0.5', { 'x-client-key': 'client-c' }))).rejects.toMatchObject({ statusCode: 429 })
+  })
+
   it('emits standard rate-limit headers on every response', async () => {
     // Note: `remaining` is computed BEFORE recording the current request, so
     // the first call sees `maxRequests` remaining (the response describes the

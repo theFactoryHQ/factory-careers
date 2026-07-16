@@ -26,18 +26,27 @@ if (_replicaCount > 1) {
  * @param maxRequests - Maximum number of requests allowed within the window
  * @param message - Error message returned when the limit is exceeded
  */
-interface RateLimitConfig {
+export interface RateLimitConfig {
   windowMs: number
   maxRequests: number
   message?: string
+  /** Override the secure socket-IP key for routes with a stronger composite policy. */
+  keyResolver?: (event: H3Event) => string | undefined
+  /** Maximum distinct resolved keys retained before new keys share an overflow bucket. */
+  maxTrackedKeys?: number
 }
 
 interface RateLimitEntry {
   timestamps: number[]
 }
 
+const DEFAULT_MAX_TRACKED_KEYS = 10_000
+const MAX_RATE_LIMIT_KEY_LENGTH = 256
+const OVERFLOW_KEY = Symbol('rate-limit-overflow')
+
 /**
- * Create a reusable rate limiter scoped by client IP.
+ * Create a reusable rate limiter scoped by client IP by default, or by an
+ * explicit bounded key resolver for routes with a layered abuse policy.
  *
  * Uses a sliding window algorithm — each request records a timestamp,
  * and only timestamps within the current window are counted.
@@ -63,8 +72,16 @@ interface RateLimitEntry {
  * ```
  */
 export function createRateLimiter(config: RateLimitConfig) {
-  const { windowMs, maxRequests, message = 'Too many requests, please try again later' } = config
-  const store = new Map<string, RateLimitEntry>()
+  const {
+    windowMs,
+    maxRequests,
+    message = 'Too many requests, please try again later',
+    keyResolver,
+  } = config
+  const maxTrackedKeys = Number.isInteger(config.maxTrackedKeys) && config.maxTrackedKeys! > 0
+    ? config.maxTrackedKeys!
+    : DEFAULT_MAX_TRACKED_KEYS
+  const store = new Map<string | typeof OVERFLOW_KEY, RateLimitEntry>()
 
   // Periodically prune stale entries to prevent unbounded memory growth
   const PRUNE_INTERVAL = Math.max(windowMs * 2, 60_000)
@@ -85,13 +102,27 @@ export function createRateLimiter(config: RateLimitConfig) {
    * Sets standard rate limit headers on every response.
    */
   return async function rateLimit(event: H3Event): Promise<void> {
-    const ip = getClientIp(event)
+    let resolvedKey: string | undefined
+    if (keyResolver) {
+      try {
+        resolvedKey = keyResolver(event)?.trim()
+      }
+      catch {
+        // A route-specific resolver must never disable the secure default.
+      }
+    }
+    const boundedKey = resolvedKey
+      ? resolvedKey.slice(0, MAX_RATE_LIMIT_KEY_LENGTH)
+      : getClientIp(event)
+    const key = !store.has(boundedKey) && store.size >= maxTrackedKeys
+      ? OVERFLOW_KEY
+      : boundedKey
     const now = Date.now()
 
-    let entry = store.get(ip)
+    let entry = store.get(key)
     if (!entry) {
       entry = { timestamps: [] }
-      store.set(ip, entry)
+      store.set(key, entry)
     }
 
     // Remove timestamps outside the current window
