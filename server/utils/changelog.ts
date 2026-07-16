@@ -66,6 +66,8 @@ export function parseChangelog(raw: string): ChangelogEntry[] {
 
   const seen = new Set<string>()
   return entries.filter((entry) => {
+    if (!entry.sections.some(section => section.items.length > 0)) return false
+
     const key = `${entry.title}-${entry.date}`
     if (seen.has(key)) return false
     seen.add(key)

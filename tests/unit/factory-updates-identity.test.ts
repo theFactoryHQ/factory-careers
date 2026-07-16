@@ -90,12 +90,23 @@ describe('Factory Careers updates identity', () => {
     expect(updatesPage).not.toContain('caffeinebounce/factory-careers/releases')
   })
 
-  it('shows an unavailable state when GitHub returns no latest release', () => {
+  it('renders each release state from releaseStatus instead of inferring it from latestVersion', () => {
     const updatesPage = readProjectFile('app/pages/dashboard/updates.vue')
 
-    expect(updatesPage).toContain('!versionInfo?.latestVersion && !versionLoading')
-    expect(updatesPage).toContain('<template v-else-if="!versionInfo?.latestVersion">')
-    expect(updatesPage).not.toContain('!versionInfo && !versionLoading')
-    expect(updatesPage).not.toContain('<template v-else-if="!versionInfo">')
+    expect(updatesPage).toContain("versionInfo?.releaseStatus === 'update-available'")
+    expect(updatesPage).toContain("versionInfo?.releaseStatus === 'unpublished'")
+    expect(updatesPage).toContain("versionInfo?.releaseStatus === 'unavailable'")
+    expect(updatesPage).not.toContain('!versionInfo?.latestVersion && !versionLoading')
+    expect(updatesPage).not.toContain('<template v-else-if="!versionInfo?.latestVersion">')
+  })
+
+  it('distinguishes an unpublished first release from a failed release check', () => {
+    const updatesPage = readProjectFile('app/pages/dashboard/updates.vue')
+
+    expect(updatesPage).toContain('No Factory release published yet')
+    expect(updatesPage).toContain('Local v{{ versionInfo.currentVersion }} is the Factory baseline; its GitHub release is pending.')
+    expect(updatesPage).toContain('Unable to check')
+    expect(updatesPage).toContain('Could not check for updates. Verify your network connection and try again.')
+    expect(updatesPage).toContain('Not published')
   })
 })

@@ -2,7 +2,7 @@
 
 Notable Factory Careers product and operator changes are recorded here. The
 inherited Reqcore record is preserved separately in
-[`docs/reference/REQCORE_CHANGELOG.md`](docs/reference/REQCORE_CHANGELOG.md).
+`docs/reference/REQCORE_CHANGELOG.md`.
 
 Entries follow [Keep a Changelog](https://keepachangelog.com) and focus on
 outcomes visible to recruiters, administrators, operators, integrators, and
@@ -12,20 +12,10 @@ self-hosters.
 
 ## Unreleased
 
-### Changed
+## [1.0.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.0.0) (2026-07-16)
 
-- Re-established the changelog as a Factory Careers product record and corrected the update experience to use Factory-owned release sources.
-
-### Fixed
-
-- Corrected the updates page to report release checks as unavailable when the Factory GitHub repository does not expose a latest release.
-
----
-
-## 2026-07-16 — Factory Careers baseline
-
-This baseline summarizes the independent Factory Careers product built after
-the Reqcore fork. Earlier inherited history remains available in the archive.
+This is the first independent Factory Careers release after the Reqcore fork.
+Earlier inherited history remains available in the archive.
 
 ### Added
 
@@ -38,11 +28,14 @@ the Reqcore fork. Earlier inherited history remains available in the archive.
 
 ### Changed
 
+- Re-established the changelog as a Factory Careers product record, with future changes collected under Unreleased and versioned when published.
+- Corrected the update experience and release links to use Factory-owned GitHub sources.
 - Repositioned the product from a branded Reqcore fork to Factory's hiring and applicant-tracking system, with Factory-owned product, security, deployment, and automation decisions.
 - Improved dashboard responsiveness and navigation with shared caching, prefetching, keep-alive behavior, and lazy-loaded detail panels.
 - Unified Factory branding and transactional email behavior across public, authentication, dashboard, and candidate communication surfaces.
 
 ### Fixed
 
+- Distinguished a pending first Factory GitHub release from network or service failures in the Updates experience.
 - Hardened public application uploads, authorization boundaries, tenant isolation, dependency security, and production validation gates.
 - Bundled the PDF parsing worker required to process candidate resumes reliably in production.

@@ -231,32 +231,53 @@ function formatDate(dateString: string | null | undefined): string {
         <div class="flex items-center gap-3">
           <div
             class="flex items-center justify-center size-10 rounded-lg"
-            :class="versionInfo?.updateAvailable
+            :class="versionInfo?.releaseStatus === 'update-available'
               ? 'bg-warning-50 dark:bg-warning-950 text-warning-600 dark:text-warning-400'
-              : !versionInfo?.latestVersion && !versionLoading
-                ? 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'
-                : 'bg-success-50 dark:bg-success-950 text-success-600 dark:text-success-400'"
+              : versionInfo?.releaseStatus === 'current'
+                ? 'bg-success-50 dark:bg-success-950 text-success-600 dark:text-success-400'
+                : versionInfo?.releaseStatus === 'unpublished'
+                  ? 'bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400'
+                  : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'"
           >
-            <ArrowUpCircle v-if="versionInfo?.updateAvailable" class="size-5" />
-            <AlertTriangle v-else-if="!versionInfo?.latestVersion && !versionLoading" class="size-5" />
-            <CheckCircle2 v-else class="size-5" />
+            <Loader2 v-if="versionLoading" class="size-5 animate-spin" />
+            <ArrowUpCircle v-else-if="versionInfo?.releaseStatus === 'update-available'" class="size-5" />
+            <Info v-else-if="versionInfo?.releaseStatus === 'unpublished'" class="size-5" />
+            <AlertTriangle v-else-if="versionInfo?.releaseStatus === 'unavailable'" class="size-5" />
+            <CheckCircle2 v-else-if="versionInfo?.releaseStatus === 'current'" class="size-5" />
+            <AlertTriangle v-else class="size-5" />
           </div>
           <div>
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">
-              {{ versionInfo?.updateAvailable ? 'Update available' : !versionInfo?.latestVersion && !versionLoading ? 'Unable to check' : 'Up to date' }}
+              {{ versionLoading
+                ? 'Checking for updates'
+                : versionInfo?.releaseStatus === 'update-available'
+                  ? 'Update available'
+                  : versionInfo?.releaseStatus === 'unpublished'
+                    ? 'No Factory release published yet'
+                    : versionInfo?.releaseStatus === 'unavailable'
+                      ? 'Unable to check'
+                      : versionInfo?.releaseStatus === 'current'
+                        ? 'Up to date'
+                        : 'Unable to check' }}
             </h2>
             <p class="text-sm text-surface-500 dark:text-surface-400">
               <template v-if="versionLoading">
                 Checking for updates…
               </template>
-              <template v-else-if="!versionInfo?.latestVersion">
+              <template v-else-if="versionInfo?.releaseStatus === 'unpublished'">
+                Local v{{ versionInfo.currentVersion }} is the Factory baseline; its GitHub release is pending.
+              </template>
+              <template v-else-if="versionInfo?.releaseStatus === 'unavailable'">
                 Could not check for updates. Verify your network connection and try again.
               </template>
-              <template v-else-if="versionInfo.updateAvailable">
+              <template v-else-if="versionInfo?.releaseStatus === 'update-available'">
                 Version {{ versionInfo.latestVersion }} is available (you're on {{ versionInfo.currentVersion }})
               </template>
-              <template v-else>
+              <template v-else-if="versionInfo?.releaseStatus === 'current'">
                 You're running the latest version ({{ versionInfo.currentVersion }})
+              </template>
+              <template v-else>
+                Could not check for updates. Verify your network connection and try again.
               </template>
             </p>
           </div>
@@ -279,7 +300,13 @@ function formatDate(dateString: string | null | undefined): string {
               Latest version
             </p>
             <p class="text-sm font-semibold text-surface-900 dark:text-surface-100 mt-1">
-              <template v-if="versionInfo?.latestVersion">
+              <template v-if="versionInfo?.releaseStatus === 'unpublished'">
+                <span class="text-surface-500 dark:text-surface-400">Not published</span>
+              </template>
+              <template v-else-if="versionInfo?.releaseStatus === 'unavailable'">
+                <span class="text-surface-400">—</span>
+              </template>
+              <template v-else-if="versionInfo?.latestVersion">
                 v{{ versionInfo.latestVersion }}
               </template>
               <template v-else>
