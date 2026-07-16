@@ -26,6 +26,7 @@ interface ReleasePleaseConfig {
     '.': {
       'skip-changelog': boolean
       'draft': boolean
+      'force-tag-creation': boolean
       'extra-files': Array<Record<string, string>>
     }
   }
@@ -125,6 +126,7 @@ describe('Factory Careers release identity', () => {
             --latest`
 
     expect(releaseConfig.packages['.'].draft).toBe(true)
+    expect(releaseConfig.packages['.']['force-tag-creation']).toBe(true)
     expect(releaseConfig.packages['.']['skip-changelog']).toBe(true)
     expect(releaseWorkflow).toContain(releaseAction)
     expect(releaseWorkflow).toContain(checkoutStep)
@@ -173,6 +175,38 @@ describe('Factory Careers release identity', () => {
     expect(releaseVerification.slice(bundleJobStart)).toContain('needs: [resolve-tag, smoke-test]')
   })
 
+  it('demotes a release event by validated release ID when tag resolution fails', () => {
+    const releaseVerification = readProjectFile('.github/workflows/release-verification.yml')
+    const resolveTagJobStart = releaseVerification.indexOf('  resolve-tag:')
+    const releaseNotesJobStart = releaseVerification.indexOf('  release-notes:')
+    const resolveTagJob = releaseVerification.slice(resolveTagJobStart, releaseNotesJobStart)
+    const cleanupStepStart = resolveTagJob.indexOf('      - name: Demote event release when tag validation fails')
+    const cleanupStep = resolveTagJob.slice(cleanupStepStart)
+
+    expect(cleanupStepStart).toBeGreaterThan(-1)
+    expect(cleanupStep).toContain(`      - name: Demote event release when tag validation fails
+        if: failure() && github.event_name == 'release'
+        env:
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: \${{ github.repository }}
+          RELEASE_ID: \${{ github.event.release.id }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_ID" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Invalid release ID: $RELEASE_ID" >&2
+            exit 1
+          fi
+          gh api \\
+            --method PATCH \\
+            "repos/{owner}/{repo}/releases/\${RELEASE_ID}" \\
+            -F prerelease=true \\
+            -f make_latest=false`)
+    expect(cleanupStep).not.toContain('continue-on-error: true')
+    expect(cleanupStep).not.toContain('RELEASE_EVENT_TAG')
+    expect(cleanupStep).not.toContain('DISPATCH_TAG')
+    expect(cleanupStep).not.toContain('$tag')
+  })
+
   it('validates published curated notes before smoke tests and demotes every failed verification', () => {
     const releaseVerification = readProjectFile('.github/workflows/release-verification.yml')
     const releaseNotesJobStart = releaseVerification.indexOf('  release-notes:')
@@ -207,7 +241,8 @@ describe('Factory Careers release identity', () => {
     expect(releaseNotesJob).toContain('gh release edit "$RELEASE_TAG" --prerelease --latest=false')
     expect(smokeTestJob).toContain('if: failure()')
     expect(smokeTestJob).toContain('gh release edit "$RELEASE_TAG" --prerelease --latest=false')
-    expect(releaseVerification).not.toContain("if: failure() && github.event_name == 'release'")
+    expect(releaseNotesJob).not.toContain("if: failure() && github.event_name == 'release'")
+    expect(smokeTestJob).not.toContain("if: failure() && github.event_name == 'release'")
     expect(releaseVerification.match(/persist-credentials: false/g)).toHaveLength(3)
     expect(releaseNotesJob).not.toContain('continue-on-error: true')
   })
