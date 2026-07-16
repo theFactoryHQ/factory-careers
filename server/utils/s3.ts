@@ -3,10 +3,13 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   HeadBucketCommand,
   CreateBucketCommand,
   DeleteBucketPolicyCommand,
 } from '@aws-sdk/client-s3'
+
+type S3RequestOptions = { abortSignal?: AbortSignal }
 
 // ─────────────────────────────────────────────
 // S3-compatible client for document storage
@@ -58,6 +61,7 @@ export async function uploadToS3(
   key: string,
   body: Buffer | Uint8Array,
   contentType: string,
+  options: S3RequestOptions = {},
 ): Promise<void> {
   await getS3Client().send(
     new PutObjectCommand({
@@ -66,6 +70,7 @@ export async function uploadToS3(
       Body: body,
       ContentType: contentType,
     }),
+    { abortSignal: options.abortSignal },
   )
 }
 
@@ -75,16 +80,20 @@ export async function uploadToS3(
  * @param key - The storage key of the object to download
  * @returns File content as a Buffer
  */
-export async function downloadFromS3(key: string): Promise<Buffer> {
+export async function downloadFromS3(
+  key: string,
+  options: S3RequestOptions = {},
+): Promise<Buffer> {
   const response = await getS3Client().send(
     new GetObjectCommand({
       Bucket: env.S3_BUCKET,
       Key: key,
     }),
+    { abortSignal: options.abortSignal },
   )
 
   if (!response.Body) {
-    throw new Error(`S3 object body is empty: ${key}`)
+    throw new Error('S3 object body is empty')
   }
 
   const bytes = await response.Body.transformToByteArray()
@@ -103,6 +112,51 @@ export async function deleteFromS3(key: string): Promise<void> {
       Bucket: env.S3_BUCKET,
       Key: key,
     }),
+  )
+}
+
+/**
+ * Check whether an object exists without downloading it.
+ *
+ * A HeadObject HTTP 404, NoSuchKey, or NotFound response is treated as object
+ * absence; NoSuchBucket is deliberately excluded. Authorization, provider,
+ * network, and unknown failures are rethrown so callers cannot mistake an
+ * inaccessible object for one that is safe to delete or roll back.
+ */
+export async function objectExistsInS3(
+  key: string,
+  options: S3RequestOptions = {},
+): Promise<boolean> {
+  try {
+    await getS3Client().send(
+      new HeadObjectCommand({
+        Bucket: env.S3_BUCKET,
+        Key: key,
+      }),
+      { abortSignal: options.abortSignal },
+    )
+    return true
+  } catch (error: unknown) {
+    if (isS3ObjectNotFoundError(error)) {
+      return false
+    }
+    throw error
+  }
+}
+
+export function isS3ObjectNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+
+  const statusCode = (error as { $metadata?: { httpStatusCode?: number } })
+    .$metadata?.httpStatusCode
+  const name = (error as { name?: unknown }).name
+
+  if (name === 'NoSuchBucket') return false
+
+  return (
+    statusCode === 404 ||
+    name === 'NoSuchKey' ||
+    name === 'NotFound'
   )
 }
 

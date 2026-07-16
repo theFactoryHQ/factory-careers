@@ -810,7 +810,6 @@ export async function performIncrementalSync(identity: GoogleCalendarIntegration
       let data: { items?: { id?: string | null, attendees?: { email?: string | null, responseStatus?: string | null }[], status?: string | null }[], nextPageToken?: string | null, nextSyncToken?: string | null }
 
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- googleapis overloads resolve to void
         const response = await (calendar.events.list(params) as any)
         data = response.data
       }

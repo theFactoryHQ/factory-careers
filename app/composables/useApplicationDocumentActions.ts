@@ -1,10 +1,12 @@
 import type { MaybeRefOrGetter } from 'vue'
-import { computed, toValue } from 'vue'
+import { computed, toValue, watch } from 'vue'
 
 type PreviewableDocument = {
   id: string
   originalFilename?: string | null
   mimeType?: string | null
+  parseStatus?: 'pending' | 'parsed' | 'no_text' | 'failed'
+  parseResultCode?: string | null
 }
 
 type UseApplicationDocumentActionsOptions = {
@@ -26,6 +28,14 @@ export function useApplicationDocumentActions(options: UseApplicationDocumentAct
   const showDocDeleteConfirm = ref<string | null>(null)
   const isDeletingDoc = ref(false)
   const reparsingDocId = ref<string | null>(null)
+  const parseBatch = useProcessingBatch()
+  let activeReparseRun = 0
+
+  watch(() => toValue(options.candidateId), () => {
+    activeReparseRun++
+    parseBatch.stop()
+    reparsingDocId.value = null
+  })
 
   const documentPreview = useDocumentPreview({
     documents: options.documents ?? (() => []),
@@ -70,22 +80,50 @@ export function useApplicationDocumentActions(options: UseApplicationDocumentAct
   }
 
   async function handleReparse(docId: string) {
+    const run = ++activeReparseRun
+    const candidateId = toValue(options.candidateId)
+    if (!candidateId) return
     reparsingDocId.value = docId
     try {
-      await $fetch(`/api/documents/${docId}/parse`, {
-        method: 'POST',
-        headers: useRequestHeaders(['cookie']),
+      const result = await parseBatch.createAndDrain({
+        path: `/api/documents/${docId}/parse`,
       })
-      toast.add({ title: 'Resume parsed successfully', type: 'success' })
+      if (candidateId !== toValue(options.candidateId)) return
       await options.afterMutation?.()
+      if (
+        run !== activeReparseRun
+        || candidateId !== toValue(options.candidateId)
+        || reparsingDocId.value !== docId
+      ) return
+      const document = options.documents?.()?.find(document => document.id === docId)
+      const documentState = document?.parseStatus
+        ? {
+            id: document.id,
+            parseStatus: document.parseStatus,
+            parseResultCode: document.parseResultCode ?? null,
+          }
+        : null
+      toast.add(documentProcessingBatchNotice(result, documentState))
     } catch (err: any) {
+      if (
+        run !== activeReparseRun
+        || candidateId !== toValue(options.candidateId)
+        || reparsingDocId.value !== docId
+      ) return
+      if (isProcessingObservationAbort(err)) return
       toast.add({
         title: 'Parse failed',
-        message: err?.data?.statusMessage ?? 'Could not extract text from this document.',
+        message: err?.data?.statusMessage ?? 'Could not process this document.',
         type: 'error',
       })
     } finally {
-      reparsingDocId.value = null
+      if (
+        run === activeReparseRun
+        && candidateId === toValue(options.candidateId)
+        && reparsingDocId.value === docId
+      ) {
+        reparsingDocId.value = null
+      }
     }
   }
 

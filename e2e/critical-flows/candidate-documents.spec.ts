@@ -215,10 +215,22 @@ test.describe('Candidate document management', () => {
     )
 
     const parseResponse = await page.request.post(`/api/documents/${uploaded!.id}/parse`)
-    await expectResponseStatus(parseResponse, 200, 'Parse document API')
-    const parseBody = await parseResponse.json() as { parsed: boolean, wordCount: number, sourceFormat: string }
-    expect(parseBody).toMatchObject({ parsed: true, sourceFormat: 'pdf' })
-    expect(parseBody.wordCount).toBeGreaterThan(0)
+    await expectResponseStatus(parseResponse, 202, 'Parse document API')
+    let parseBatch = await parseResponse.json() as {
+      batchId: string
+      status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
+      counts: { succeeded: number, failed: number, total: number }
+    }
+    while (!['completed', 'failed', 'cancelled'].includes(parseBatch.status)) {
+      const drainResponse = await page.request.post(`/api/processing/${parseBatch.batchId}/drain`, {
+        data: { limit: 5 },
+      })
+      await expectResponseStatus(drainResponse, 200, 'Drain parse batch API')
+      parseBatch = await drainResponse.json()
+    }
+    expect(parseBatch).toMatchObject({ status: 'completed', counts: { succeeded: 1, failed: 0, total: 1 } })
+    const documentsAfterReparse = await loadCandidateDocuments(page.request, candidate.id)
+    expect(documentsAfterReparse.find(doc => doc.id === uploaded!.id)?.parsed).toBe(true)
 
     const rejectedResponse = await page.request.post(`/api/candidates/${candidate.id}/documents`, {
       multipart: {

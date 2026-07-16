@@ -1,18 +1,17 @@
-import { eq, and } from 'drizzle-orm'
 import { uuidParamSchema } from '../../utils/schemas/common'
-import { document } from '../../database/schema'
+import { deleteDocumentWithProcessingHistory } from '../../utils/documentDeletion'
 
 /**
  * DELETE /api/documents/:id
  *
- * Delete a document from both MinIO and the database.
+ * Cancel active processing, delete the database row, then remove storage.
  *
  * Security:
  *   - Auth required, org-scoped
  *   - Document must belong to the authenticated org (prevents IDOR)
  *   - Returns 404 for non-existent or cross-org documents
- *   - S3 deletion failure is logged but doesn't block DB cleanup
- *     (orphaned S3 objects are less harmful than orphaned DB records)
+ *   - Durable processing history is retained as cancelled
+ *   - S3 deletion happens only after the relational transaction commits
  */
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { document: ['delete'] })
@@ -20,39 +19,14 @@ export default defineEventHandler(async (event) => {
 
   const { id: documentId } = await getValidatedRouterParams(event, uuidParamSchema.parse)
 
-  // Query scoped by BOTH id AND organizationId — prevents IDOR
-  const doc = await db.query.document.findFirst({
-    where: and(
-      eq(document.id, documentId),
-      eq(document.organizationId, orgId),
-    ),
-    columns: {
-      id: true,
-      storageKey: true,
-    },
+  const doc = await deleteDocumentWithProcessingHistory({
+    organizationId: orgId,
+    documentId,
   })
 
   if (!doc) {
     throw createError({ statusCode: 404, statusMessage: 'Document not found' })
   }
-
-  // Delete from S3 first — log but don't block on failure
-  try {
-    await deleteFromS3(doc.storageKey)
-  } catch (s3Error) {
-    logWarn('document.s3_delete_failed', {
-      storage_key: doc.storageKey,
-      error_message: s3Error instanceof Error ? s3Error.message : String(s3Error),
-    })
-    // Continue with DB deletion — orphaned S3 objects can be cleaned up later
-  }
-
-  // Delete DB record
-  await db.delete(document)
-    .where(and(
-      eq(document.id, doc.id),
-      eq(document.organizationId, orgId),
-    ))
 
   recordActivity({
     organizationId: orgId,

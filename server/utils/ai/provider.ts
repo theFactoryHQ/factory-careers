@@ -220,6 +220,7 @@ export async function generateStructuredOutput<T>(
     schema: z.ZodType<T>
     schemaName: string
     schemaDescription?: string
+    abortSignal?: AbortSignal
   },
 ): Promise<{ object: T; usage: { promptTokens: number; completionTokens: number } }> {
   if (env.FACTORY_AI_TEST_MODE === 'mock') {
@@ -319,6 +320,7 @@ export async function generateStructuredOutput<T>(
     schemaDescription: options.schemaDescription,
     maxTokens: config.maxTokens,
     temperature: 0.1,
+    abortSignal: options.abortSignal,
   })
 
   return {

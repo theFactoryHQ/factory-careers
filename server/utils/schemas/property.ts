@@ -74,12 +74,9 @@ export const reorderPropertiesSchema = z.object({
 
 // ── Property filter validation (query-string filters) ──
 //
-// Accepted operators correspond to those evaluated by
-// `entityIdsMatchingFilters()` in server/utils/properties.ts.
-// Note: 'isEmpty' is intentionally excluded — the helper cannot evaluate
-// the complement set without a universe of entity ids, so allowing it
-// silently collapses results to an empty match set.
-export const propertyFilterOperators = ['equals', 'contains', 'in', 'isNotEmpty'] as const
+// Accepted operators correspond to the correlated predicates built by
+// `buildPropertyFiltersCondition()` in server/utils/properties.ts.
+export const propertyFilterOperators = ['equals', 'contains', 'in', 'isEmpty', 'isNotEmpty'] as const
 export type PropertyFilterOperator = (typeof propertyFilterOperators)[number]
 
 export const propertyFilterSchema = z.object({

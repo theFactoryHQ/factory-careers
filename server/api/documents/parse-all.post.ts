@@ -1,77 +1,44 @@
-import { eq, and, isNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { document } from '../../database/schema'
-import { parseDocument } from '../../utils/resume-parser'
+import {
+  enqueueProcessingBatch,
+  getProcessingBatchStatus,
+} from '../../utils/processingQueue'
+import { processingBatchResponse } from '../../utils/processingResponse'
+import { createRateLimiter } from '../../utils/rateLimit'
 
-/**
- * POST /api/documents/parse-all
- *
- * Re-parse all documents in the organization that have no parsedContent.
- * Processes documents sequentially to avoid memory spikes.
- * Returns a summary of successes and failures.
- *
- * Security:
- *   - Auth required (admin/owner)
- *   - Org-scoped — only processes documents belonging to the authenticated org
- */
+const limiter = createRateLimiter({
+  windowMs: 60_000,
+  maxRequests: 10,
+  message: 'Too many bulk parsing requests. Please wait before retrying.',
+})
+
+/** Queue every uploaded document whose parse state is currently retryable/pending. */
 export default defineEventHandler(async (event) => {
+  await limiter(event)
   const session = await requirePermission(event, { document: ['update'] })
-  const orgId = session.session.activeOrganizationId
-
-  // Fetch all documents without parsed content
-  const unparsedDocs = await db.select({
-    id: document.id,
-    storageKey: document.storageKey,
-    mimeType: document.mimeType,
-    originalFilename: document.originalFilename,
-  })
+  const organizationId = session.session.activeOrganizationId
+  const documentRows = await db.select({ id: document.id })
     .from(document)
     .where(and(
-      eq(document.organizationId, orgId),
-      isNull(document.parsedContent),
+      eq(document.organizationId, organizationId),
+      eq(document.uploadStatus, 'completed'),
+      eq(document.parseStatus, 'pending'),
     ))
 
-  if (unparsedDocs.length === 0) {
-    return { total: 0, parsed: 0, failed: 0, failures: [] }
+  const { batch } = await enqueueProcessingBatch({
+    organizationId,
+    type: 'document_parse',
+    resourceIds: documentRows.map(row => row.id),
+  })
+  const status = await getProcessingBatchStatus({ organizationId, batchId: batch.id })
+  if (!status) throw createError({ statusCode: 500, statusMessage: 'Processing batch was not created' })
+
+  setResponseStatus(event, 202)
+  setResponseHeader(event, 'Cache-Control', 'no-store')
+  setResponseHeader(event, 'Location', `/api/processing/${encodeURIComponent(batch.id)}`)
+  if (status.retryAfterMs !== null) {
+    setResponseHeader(event, 'Retry-After', Math.max(1, Math.ceil(status.retryAfterMs / 1_000)))
   }
-
-  let parsed = 0
-  const failures: { id: string; filename: string; error: string }[] = []
-
-  for (const doc of unparsedDocs) {
-    try {
-      const fileBuffer = await downloadFromS3(doc.storageKey)
-      const parsedContent = await parseDocument(fileBuffer, doc.mimeType)
-
-      if (parsedContent) {
-        await db.update(document)
-          .set({ parsedContent: parsedContent as any })
-          .where(and(
-            eq(document.id, doc.id),
-            eq(document.organizationId, orgId),
-          ))
-        parsed++
-      }
-      else {
-        failures.push({
-          id: doc.id,
-          filename: doc.originalFilename,
-          error: 'No text could be extracted',
-        })
-      }
-    }
-    catch (error: any) {
-      failures.push({
-        id: doc.id,
-        filename: doc.originalFilename,
-        error: error?.message ?? 'Unknown error',
-      })
-    }
-  }
-
-  return {
-    total: unparsedDocs.length,
-    parsed,
-    failed: failures.length,
-    failures,
-  }
+  return processingBatchResponse(status)
 })

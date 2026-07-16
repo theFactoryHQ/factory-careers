@@ -1,4 +1,7 @@
-import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
+import { createError } from 'h3'
+import type * as databaseSchema from '../database/schema'
 import { application, candidate, propertyDefinition, propertyValue } from '../database/schema'
 import {
   validateValueForType,
@@ -29,6 +32,29 @@ export type PropertyEntry = {
   value: unknown
 }
 
+type PropertyDatabase = PostgresJsDatabase<typeof databaseSchema>
+
+export function propertyDefinitionVisibilityCondition(opts: {
+  organizationId: string
+  entityType: PropertyEntityType
+  jobId?: string | null
+}) {
+  const { organizationId, entityType, jobId } = opts
+  return entityType === 'candidate'
+    ? and(
+        eq(propertyDefinition.organizationId, organizationId),
+        eq(propertyDefinition.entityType, 'candidate'),
+        isNull(propertyDefinition.jobId),
+      )
+    : and(
+        eq(propertyDefinition.organizationId, organizationId),
+        eq(propertyDefinition.entityType, 'application'),
+        jobId
+          ? or(isNull(propertyDefinition.jobId), eq(propertyDefinition.jobId, jobId))
+          : isNull(propertyDefinition.jobId),
+      )
+}
+
 /**
  * Load all property definitions visible in a given context.
  *  - Candidate context: org-global candidate definitions only.
@@ -42,22 +68,7 @@ export async function loadPropertyDefinitions(opts: {
   entityType: PropertyEntityType
   jobId?: string | null
 }): Promise<PropertyDefinitionRow[]> {
-  const { organizationId, entityType, jobId } = opts
-
-  const where =
-    entityType === 'candidate'
-      ? and(
-          eq(propertyDefinition.organizationId, organizationId),
-          eq(propertyDefinition.entityType, 'candidate'),
-          isNull(propertyDefinition.jobId),
-        )
-      : and(
-          eq(propertyDefinition.organizationId, organizationId),
-          eq(propertyDefinition.entityType, 'application'),
-          jobId
-            ? or(isNull(propertyDefinition.jobId), eq(propertyDefinition.jobId, jobId))
-            : isNull(propertyDefinition.jobId),
-        )
+  const where = propertyDefinitionVisibilityCondition(opts)
 
   const rows = await db
     .select()
@@ -130,26 +141,19 @@ export async function loadPropertyEntriesForEntities(opts: {
    * so mixed-job lists don't leak unrelated job properties across rows.
    */
   entityJobIds?: Map<string, string | null | undefined>
-}): Promise<Map<string, PropertyEntry[]>> {
+}, database: PropertyDatabase = db): Promise<Map<string, PropertyEntry[]>> {
   const { organizationId, entityType, entityIds, jobIds, entityJobIds } = opts
   if (entityIds.length === 0) return new Map()
 
-  const where =
-    entityType === 'candidate'
-      ? and(
-          eq(propertyDefinition.organizationId, organizationId),
-          eq(propertyDefinition.entityType, 'candidate'),
-          isNull(propertyDefinition.jobId),
-        )
-      : and(
-          eq(propertyDefinition.organizationId, organizationId),
-          eq(propertyDefinition.entityType, 'application'),
-          jobIds && jobIds.length > 0
-            ? or(isNull(propertyDefinition.jobId), inArray(propertyDefinition.jobId, jobIds))
-            : isNull(propertyDefinition.jobId),
-        )
+  const where = jobIds && jobIds.length > 0 && entityType === 'application'
+    ? and(
+        eq(propertyDefinition.organizationId, organizationId),
+        eq(propertyDefinition.entityType, 'application'),
+        or(isNull(propertyDefinition.jobId), inArray(propertyDefinition.jobId, jobIds)),
+      )
+    : propertyDefinitionVisibilityCondition({ organizationId, entityType })
 
-  const definitions = (await db
+  const definitions = (await database
     .select()
     .from(propertyDefinition)
     .where(where)
@@ -161,7 +165,7 @@ export async function loadPropertyEntriesForEntities(opts: {
 
   if (definitions.length === 0) return new Map(entityIds.map((id) => [id, []]))
 
-  const values = await db
+  const values = await database
     .select({
       propertyDefinitionId: propertyValue.propertyDefinitionId,
       entityId: propertyValue.entityId,
@@ -210,107 +214,140 @@ export async function loadPropertyEntriesForEntities(opts: {
   return map
 }
 
-/**
- * Find the entity ids matching a set of property filters (AND across filters).
- * Each filter is { propertyDefinitionId, op, value }.
- *  - op='equals' for select, checkbox, text-equals, number-equals
- *  - op='contains' for text/long_text/url/email substring match
- *  - op='in' for multi_select (any-of)
- *  - op='isEmpty' / 'isNotEmpty' for null checks
- *
- * Returns a Set<entityId>. Caller intersects with their other WHERE conditions.
- */
 export type PropertyFilter = {
   propertyDefinitionId: string
   op: 'equals' | 'contains' | 'in' | 'isEmpty' | 'isNotEmpty'
   value?: unknown
 }
 
-export async function entityIdsMatchingFilters(opts: {
+type PropertyDefinitionVisibilityInput = {
   organizationId: string
   entityType: PropertyEntityType
+  jobId?: string | null
+  definitionIds: string[]
+}
+
+export async function loadVisiblePropertyDefinitionIds(
+  opts: PropertyDefinitionVisibilityInput,
+  database: PropertyDatabase = db,
+): Promise<string[]> {
+  const definitionIds = [...new Set(opts.definitionIds)]
+  if (definitionIds.length === 0) return []
+
+  const rows = await database
+    .select({ id: propertyDefinition.id })
+    .from(propertyDefinition)
+    .where(and(
+      propertyDefinitionVisibilityCondition(opts),
+      inArray(propertyDefinition.id, definitionIds),
+    ))
+
+  return rows.map(row => row.id)
+}
+
+export type PropertyDefinitionIdLoader = (
+  opts: PropertyDefinitionVisibilityInput,
+) => Promise<string[]>
+
+export async function validatePropertyFilterDefinitions(opts: {
+  organizationId: string
+  entityType: PropertyEntityType
+  jobId?: string | null
   filters: PropertyFilter[]
-}): Promise<Set<string> | null> {
-  const { organizationId, entityType, filters } = opts
-  if (filters.length === 0) return null
+}, loadDefinitionIds: PropertyDefinitionIdLoader = loadVisiblePropertyDefinitionIds): Promise<void> {
+  const definitionIds = [...new Set(opts.filters.map(filter => filter.propertyDefinitionId))]
+  if (definitionIds.length === 0) return
 
-  // Each filter narrows the candidate set; intersect.
-  let working: Set<string> | null = null
+  const visibleIds = await loadDefinitionIds({
+    organizationId: opts.organizationId,
+    entityType: opts.entityType,
+    jobId: opts.jobId,
+    definitionIds,
+  })
+  if (new Set(visibleIds).size !== definitionIds.length) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid propertyFilters' })
+  }
+}
 
-  for (const f of filters) {
+function nonEmptyPropertyValueCondition(): SQL {
+  return sql`${propertyValue.value} is not null
+    and jsonb_typeof(${propertyValue.value}) <> 'null'
+    and not (
+      jsonb_typeof(${propertyValue.value}) = 'string'
+      and ${propertyValue.value} = '""'::jsonb
+    )
+    and not (
+      jsonb_typeof(${propertyValue.value}) = 'array'
+      and jsonb_array_length(${propertyValue.value}) = 0
+    )`
+}
+
+function escapeLikePattern(value: string): string {
+  return value.replace(/[%_\\]/g, '\\$&')
+}
+
+export function buildPropertyFiltersCondition(opts: {
+  organizationId: string
+  entityType: PropertyEntityType
+  entityIdColumn: typeof application.id | typeof candidate.id
+  filters: PropertyFilter[]
+}): SQL | undefined {
+  const predicates = opts.filters.map((filter) => {
     const baseWhere = and(
-      eq(propertyValue.organizationId, organizationId),
-      eq(propertyValue.entityType, entityType),
-      eq(propertyValue.propertyDefinitionId, f.propertyDefinitionId),
+      eq(propertyValue.organizationId, opts.organizationId),
+      eq(propertyValue.entityType, opts.entityType),
+      eq(propertyValue.propertyDefinitionId, filter.propertyDefinitionId),
+      eq(propertyValue.entityId, opts.entityIdColumn),
     )
 
-    let matchingRows: { entityId: string }[] = []
-
-    if (f.op === 'isEmpty') {
-      // Computing the complement requires a universe of entity ids that this
-      // helper doesn't have. Reject the operator at the API boundary instead
-      // of silently collapsing the match set to empty.
-      throw createError({
-        statusCode: 400,
-        statusMessage: "Filter operator 'isEmpty' is not supported in list queries",
-      })
+    if (filter.op === 'isEmpty') {
+      return sql`not exists (
+        select 1 from ${propertyValue}
+        where ${baseWhere} and ${nonEmptyPropertyValueCondition()}
+      )`
     }
 
-    if (f.op === 'isNotEmpty') {
-      matchingRows = await db
-        .select({ entityId: propertyValue.entityId })
-        .from(propertyValue)
-        .where(and(baseWhere, sql`${propertyValue.value} IS NOT NULL`))
+    let valueCondition: SQL
+    if (filter.op === 'isNotEmpty') {
+      valueCondition = nonEmptyPropertyValueCondition()
     }
-    else if (f.op === 'equals') {
-      matchingRows = await db
-        .select({ entityId: propertyValue.entityId })
-        .from(propertyValue)
-        .where(and(baseWhere, sql`${propertyValue.value} = ${JSON.stringify(f.value)}::jsonb`))
+    else if (filter.op === 'equals') {
+      const serializedValue = JSON.stringify(filter.value)
+      valueCondition = serializedValue === undefined
+        ? sql`false`
+        : sql`${propertyValue.value} = ${serializedValue}::jsonb`
     }
-    else if (f.op === 'contains') {
-      const needle = String(f.value ?? '').toLowerCase()
-      matchingRows = await db
-        .select({ entityId: propertyValue.entityId })
-        .from(propertyValue)
-        .where(
-          and(
-            baseWhere,
-            sql`lower(${propertyValue.value}::text) LIKE ${'%' + needle.replace(/[%_\\]/g, '\\$&') + '%'}`,
-          ),
-        )
+    else if (filter.op === 'contains') {
+      const pattern = `%${escapeLikePattern(String(filter.value ?? '').toLowerCase())}%`
+      valueCondition = sql`jsonb_typeof(${propertyValue.value}) in ('string', 'number', 'boolean')
+        and lower(${propertyValue.value} #>> '{}') like ${pattern} escape '\\'`
     }
-    else if (f.op === 'in') {
-      const needles = Array.isArray(f.value) ? f.value.map(String) : []
-      if (needles.length === 0) {
-        working = new Set()
-        break
-      }
-      // Match where the jsonb value array contains any of the needles
-      matchingRows = await db
-        .select({ entityId: propertyValue.entityId })
-        .from(propertyValue)
-        .where(
-          and(
-            baseWhere,
-            sql`${propertyValue.value} ?| ${needles}::text[]`,
-          ),
-        )
+    else {
+      const values = Array.isArray(filter.value) ? filter.value.map(String) : []
+      valueCondition = values.length > 0
+        ? sql`jsonb_typeof(${propertyValue.value}) = 'array'
+          and ${propertyValue.value} ?| array[${sql.join(values.map(value => sql`${value}`), sql`, `)}]::text[]`
+        : sql`false`
     }
 
-    const next = new Set(matchingRows.map((r) => r.entityId))
-    if (working === null) {
-      working = next
-    } else {
-      // intersect
-      const intersected = new Set<string>()
-      for (const id of working) if (next.has(id)) intersected.add(id)
-      working = intersected
-    }
-    if (working.size === 0) break
-  }
+    return sql`exists (
+      select 1 from ${propertyValue}
+      where ${baseWhere} and ${valueCondition}
+    )`
+  })
 
-  return working
+  return and(...predicates)
+}
+
+export async function validatedPropertyFiltersCondition(opts: {
+  organizationId: string
+  entityType: PropertyEntityType
+  jobId?: string | null
+  entityIdColumn: typeof application.id | typeof candidate.id
+  filters: PropertyFilter[]
+}): Promise<SQL | undefined> {
+  await validatePropertyFilterDefinitions(opts)
+  return buildPropertyFiltersCondition(opts)
 }
 
 export async function setEntityPropertyValue(opts: {

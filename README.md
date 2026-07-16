@@ -79,13 +79,17 @@ Docker, and access to Factory's package registry when installing private
 export NODE_AUTH_TOKEN=ghp_your_github_packages_read_token
 npm ci
 ./setup.sh
+docker compose up -d db minio
+npm run db:migrate
 npm run dev
 ```
 
 Open [http://localhost:3001](http://localhost:3001).
 
-`./setup.sh` generates `.env` and exits if one already exists. If you need to
-regenerate local secrets, remove `.env` first.
+`./setup.sh` generates host-development values in `.env` and exits if one
+already exists. If you need to regenerate local secrets, remove `.env` first.
+The host Nuxt process uses port `3001`; the supporting Postgres and MinIO
+containers expose their services only on localhost.
 
 For a local Docker stack with Postgres, MinIO, and the Nuxt app instead:
 
@@ -95,7 +99,8 @@ export NODE_AUTH_TOKEN=ghp_your_github_packages_read_token
 docker compose up --build
 ```
 
-The Docker build reads `NODE_AUTH_TOKEN` as a BuildKit secret so npm can install
+The Compose file overrides the public app URLs to port `3000`. The Docker build
+reads `NODE_AUTH_TOKEN` as a BuildKit secret so npm can install
 private `@caffeinebounce/*` packages. The first Docker build can take a few
 minutes. The app listens on port `3000`, MinIO's console is available at port
 `9001`, and Adminer can be enabled with:

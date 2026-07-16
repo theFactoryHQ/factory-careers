@@ -199,7 +199,7 @@ useSeoMeta({
           surface="page"
           :application-id="applicationId"
           :score="application.score"
-          :analysis-run-id="scoringData?.latestRun?.id ?? null"
+          :analysis-run-id="scoringData?.latestSuccessfulRun?.id ?? null"
           :scoring-summary="scoringSummary"
           :scoring-summary-fallback="scoringSummaryFallback"
           :is-scoring="isScoringApplication"

@@ -188,7 +188,7 @@ const {
         surface="drawer"
         :application-id="applicationId"
         :score="application.score"
-        :analysis-run-id="scoringData?.latestRun?.id ?? null"
+        :analysis-run-id="scoringData?.latestSuccessfulRun?.id ?? null"
         :score-band="scoreBand"
         :scoring-summary="scoringSummary"
         :scoring-summary-fallback="scoringSummaryFallback"

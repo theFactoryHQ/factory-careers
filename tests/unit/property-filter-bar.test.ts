@@ -16,4 +16,12 @@ describe('property filter picker', () => {
     expect(source).toContain('useFloatingMenu')
     expect(source).toContain('factory-dashboard-portal')
   })
+
+  it('offers is-empty for every property type, including checkbox', () => {
+    const source = readProjectFile('app/components/PropertyFilterBar.vue')
+
+    expect(source).toContain("case 'checkbox':")
+    expect(source.match(/'isEmpty'/g)?.length).toBeGreaterThanOrEqual(8)
+    expect(source).toMatch(/case 'checkbox':[\s\S]*?return \['equals', 'isEmpty', 'isNotEmpty'\]/)
+  })
 })

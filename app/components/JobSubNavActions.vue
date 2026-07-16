@@ -93,41 +93,47 @@ function handleCandidateApplied() {
 // ─── Bulk AI scoring ──────────────────────────────────────────────────────────
 
 const isScoringAll = ref(false)
-const scoringProgress = ref({ done: 0, total: 0 })
+const scoring = useProcessingBatch()
+const scoringBatch = scoring.batch
+let activeScoringRun = 0
+const scoringProgress = computed(() => ({
+  done: (scoringBatch.value?.counts.succeeded ?? 0)
+    + (scoringBatch.value?.counts.failed ?? 0)
+    + (scoringBatch.value?.counts.cancelled ?? 0),
+  total: scoringBatch.value?.counts.total ?? 0,
+}))
+
+watch(() => props.jobId, () => {
+  activeScoringRun++
+  scoring.reset()
+  isScoringAll.value = false
+})
 
 async function scoreAllCandidates() {
+  const run = ++activeScoringRun
+  const jobId = props.jobId
   isScoringAll.value = true
-  scoringProgress.value = { done: 0, total: 0 }
+  scoring.reset()
   showMoreMenu.value = false
   try {
-    const { applicationIds } = await $fetch(`/api/jobs/${props.jobId}/analyze-all`, {
-      method: 'POST',
-    })
-    scoringProgress.value.total = applicationIds.length
-    track('bulk_scoring_started', { job_id: props.jobId, candidate_count: applicationIds.length })
-    if (applicationIds.length === 0) {
-      toast.info('All candidates scored', 'Every candidate already has a score.')
-      return
-    }
-
-    let failed = 0
-    for (const appId of applicationIds) {
-      try {
-        await $fetch(`/api/applications/${appId}/analyze`, {
-          method: 'POST',
+    const result = await scoring.createAndDrain({
+      path: `/api/jobs/${jobId}/analyze-all`,
+      onCreated: (created) => {
+        if (jobId !== props.jobId) return
+        track('bulk_scoring_started', {
+          job_id: jobId,
+          candidate_count: created.counts.total,
+          batch_id: created.batchId,
         })
-      } catch {
-        failed++
-      }
-      scoringProgress.value.done++
-    }
+      },
+    })
+    if (run !== activeScoringRun || jobId !== props.jobId) return
     await refreshApplicationsListCaches()
-    if (failed === 0) {
-      toast.success('Scoring complete', `${applicationIds.length} candidate${applicationIds.length === 1 ? '' : 's'} scored successfully.`)
-    } else {
-      toast.warning('Scoring partially complete', `${applicationIds.length - failed} scored, ${failed} failed (missing resume or criteria).`)
-    }
+    if (run !== activeScoringRun || jobId !== props.jobId) return
+    toast.add(jobScoringBatchNotice(result))
   } catch (err: any) {
+    if (run !== activeScoringRun || jobId !== props.jobId) return
+    if (isProcessingObservationAbort(err)) return
     const statusMessage = err?.data?.statusMessage ?? ''
     if (statusMessage.includes('AI provider not configured') || statusMessage.includes('No scoring criteria')) {
       toast.add({
@@ -143,7 +149,7 @@ async function scoreAllCandidates() {
       toast.error('Scoring failed', { message: statusMessage || 'An unexpected error occurred.', statusCode: err?.data?.statusCode })
     }
   } finally {
-    isScoringAll.value = false
+    if (run === activeScoringRun) isScoringAll.value = false
   }
 }
 
@@ -221,6 +227,16 @@ function openPropertyEditor(scope: 'org' | 'job') {
       </button>
 
       <!-- More menu -->
+      <span
+        v-if="isScoringAll && scoringBatch"
+        role="status"
+        aria-live="polite"
+        class="hidden text-[11px] tabular-nums text-white/60 lg:inline"
+        :title="`Processing batch ${scoringBatch.batchId}`"
+      >
+        Scoring {{ scoringBatch.counts.succeeded + scoringBatch.counts.failed + scoringBatch.counts.cancelled }}/{{ scoringBatch.counts.total }}
+        · {{ scoringBatch.batchId.slice(0, 8) }}
+      </span>
       <div ref="moreMenuRef">
         <button
           class="factory-job-more-button inline-flex h-8 min-h-8 w-8 cursor-pointer items-center justify-center border p-1 transition-all duration-150"
@@ -263,12 +279,13 @@ function openPropertyEditor(scope: 'org' | 'job') {
                 Add Candidate
               </button>
               <button
+                type="button"
                 :disabled="isScoringAll"
                 class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors disabled:opacity-50"
                 @click="scoreAllCandidates()"
               >
                 <Brain class="size-3.5" />
-                {{ isScoringAll ? `Scoring ${scoringProgress.done}/${scoringProgress.total}…` : 'Score All Candidates' }}
+                {{ isScoringAll ? `Scoring ${scoringProgress.done}/${scoringProgress.total}…` : 'Score Unscored Candidates' }}
               </button>
               <button
                 class="factory-job-more-menu-item flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-sm text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors"

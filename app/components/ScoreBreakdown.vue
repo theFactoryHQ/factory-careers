@@ -27,6 +27,8 @@ const analyzeError = ref<string | null>(null)
 const parseFailedDocId = ref<string | null>(null)
 const isRetryingParse = ref(false)
 const expandedCriterion = ref<string | null>(null)
+const parseBatch = useProcessingBatch()
+let activeRetryRun = 0
 
 const { data: scoreData, status, refresh } = useFetch(
   () => `/api/applications/${props.applicationId}/scores`,
@@ -56,17 +58,53 @@ const aiConfigSelectOptions = computed(() => [
   ...aiConfigOptions.value.map((c) => ({ value: c.id, label: c.name })),
 ])
 
-// Cache last successful data so switching candidates doesn't flash "Loading scores…"
-const cachedScoreData = ref(scoreData.value)
+type ScoreData = NonNullable<typeof scoreData.value>
+type CachedScoreData = {
+  applicationId: string
+  data: ScoreData
+}
+
+// Cache only data whose response identity matches the selected application.
+const cachedScoreData = shallowRef<CachedScoreData | null>(scoreData.value
+  ? { applicationId: scoreData.value.applicationId, data: scoreData.value }
+  : null)
 watch(scoreData, (val) => {
-  if (val) cachedScoreData.value = val
+  if (val) {
+    cachedScoreData.value = { applicationId: val.applicationId, data: val }
+  }
+})
+watch(() => props.applicationId, (applicationId) => {
+  activeRetryRun++
+  parseBatch.stop()
+  if (scoreData.value?.applicationId === applicationId) {
+    cachedScoreData.value = { applicationId, data: scoreData.value }
+  } else {
+    cachedScoreData.value = null
+  }
+  expandedCriterion.value = null
+  analyzeError.value = null
+  parseFailedDocId.value = null
+  isAnalyzing.value = false
+  isRetryingParse.value = false
 })
 
-const resolvedScoreData = computed(() => scoreData.value ?? cachedScoreData.value)
+const resolvedScoreData = computed(() => (
+  cachedScoreData.value?.applicationId === props.applicationId
+    ? cachedScoreData.value.data
+    : null
+))
 const hasScores = computed(() => (resolvedScoreData.value?.scores?.length ?? 0) > 0)
-const isInitialLoad = computed(() => status.value === 'pending' && !cachedScoreData.value)
+const isInitialLoad = computed(() => status.value === 'pending' && !resolvedScoreData.value)
+const latestSuccessfulRun = computed(() => resolvedScoreData.value?.latestSuccessfulRun ?? null)
+const latestFailureAttempt = computed(() => {
+  const attempt = resolvedScoreData.value?.latestAttempt
+  return attempt?.status === 'failed' ? attempt : null
+})
+const successfulCompositeScore = computed(() => (
+  resolvedScoreData.value?.compositeScore ?? latestSuccessfulRun.value?.compositeScore ?? null
+))
 const scoringSummary = computed(() => {
-  const summary = resolvedScoreData.value?.latestRun?.summary
+  const summary = latestSuccessfulRun.value?.summary
   return typeof summary === 'string' ? summary.trim() : ''
 })
 const scoreBand = computed<ScoringBand | null>(() => resolvedScoreData.value?.scoreBand ?? null)
@@ -93,19 +131,25 @@ function toggleCriterion(key: string) {
 }
 
 async function runAnalysis() {
+  const applicationId = props.applicationId
   isAnalyzing.value = true
   analyzeError.value = null
   parseFailedDocId.value = null
   try {
-    await $fetch(`/api/applications/${props.applicationId}/analyze`, {
+    await $fetch(`/api/applications/${applicationId}/analyze`, {
       method: 'POST',
       headers: useRequestHeaders(['cookie']),
       body: { aiConfigId: selectedAiConfigId.value },
     })
+    if (applicationId !== props.applicationId) return
     await refresh()
-    track('ai_analysis_run', { application_id: props.applicationId, ai_config_id: selectedAiConfigId.value })
+    if (applicationId !== props.applicationId) return
+    track('ai_analysis_run', { application_id: applicationId, ai_config_id: selectedAiConfigId.value })
     emit('scored')
   } catch (err: any) {
+    if (applicationId !== props.applicationId) return
+    await refresh()
+    if (applicationId !== props.applicationId) return
     const data = err?.data?.data
     if (data?.code === 'PARSE_FAILED' && data?.documentId) {
       parseFailedDocId.value = data.documentId
@@ -114,27 +158,49 @@ async function runAnalysis() {
       toast.error('Analysis failed', { message: err?.data?.statusMessage ?? 'Make sure AI is configured in settings.', statusCode: err?.data?.statusCode })
     }
   } finally {
-    isAnalyzing.value = false
+    if (applicationId === props.applicationId) {
+      isAnalyzing.value = false
+    }
   }
 }
 
 async function retryParse() {
-  if (!parseFailedDocId.value) return
+  const run = ++activeRetryRun
+  const applicationId = props.applicationId
+  const documentId = parseFailedDocId.value
+  if (!documentId) return
   isRetryingParse.value = true
   analyzeError.value = null
   try {
-    await $fetch(`/api/documents/${parseFailedDocId.value}/parse`, {
-      method: 'POST',
-      headers: useRequestHeaders(['cookie']),
+    const result = await parseBatch.createAndDrain({
+      path: `/api/documents/${documentId}/parse`,
     })
+    if (run !== activeRetryRun || applicationId !== props.applicationId) return
+    if (result.status !== 'completed') {
+      toast.error('Failed to re-parse resume', {
+        message: result.status === 'cancelled'
+          ? 'Document parsing was cancelled.'
+          : 'The resume did not contain extractable text.',
+      })
+      return
+    }
+    const documentState = await loadApplicationDocumentParseState(applicationId, documentId)
+    if (run !== activeRetryRun || applicationId !== props.applicationId) return
+    if (documentState?.parseStatus !== 'parsed') {
+      toast.add(documentProcessingBatchNotice(result, documentState))
+      return
+    }
     parseFailedDocId.value = null
     // Automatically re-run analysis after successful parse
     await runAnalysis()
   } catch (err: any) {
+    if (run !== activeRetryRun || applicationId !== props.applicationId) return
+    if (isProcessingObservationAbort(err)) return
     toast.error('Failed to re-parse resume', { message: err?.data?.statusMessage ?? 'The file may be corrupted or image-based.', statusCode: err?.data?.statusCode })
-    parseFailedDocId.value = null
   } finally {
-    isRetryingParse.value = false
+    if (run === activeRetryRun && applicationId === props.applicationId) {
+      isRetryingParse.value = false
+    }
   }
 }
 </script>
@@ -215,9 +281,9 @@ async function retryParse() {
           <div class="flex items-baseline gap-2">
             <span
               class="text-3xl font-bold tabular-nums"
-              :class="getScoreTextClass(resolvedScoreData!.latestRun?.compositeScore ?? 0)"
+              :class="getScoreTextClass(successfulCompositeScore ?? 0)"
             >
-              {{ resolvedScoreData!.latestRun?.compositeScore ?? '—' }}
+              {{ successfulCompositeScore ?? '—' }}
             </span>
             <span class="text-sm text-surface-400">/ 100</span>
           </div>
@@ -243,20 +309,20 @@ async function retryParse() {
         </div>
 
         <!-- Run metadata -->
-        <div v-if="resolvedScoreData!.latestRun" class="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-surface-100 pt-3 text-[11px] text-surface-400 dark:border-surface-800">
+        <div v-if="latestSuccessfulRun" class="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-surface-100 pt-3 text-[11px] text-surface-400 dark:border-surface-800">
           <span
             class="inline-flex items-center gap-1.5"
-            :title="`${resolvedScoreData!.latestRun.provider} · ${resolvedScoreData!.latestRun.model}`"
+            :title="`${latestSuccessfulRun.provider} · ${latestSuccessfulRun.model}`"
           >
-            <AiProviderLogo :provider="resolvedScoreData!.latestRun.provider" class="size-3.5 shrink-0" />
-            <span>{{ resolvedScoreData!.latestRun.model }}</span>
+            <AiProviderLogo :provider="latestSuccessfulRun.provider" class="size-3.5 shrink-0" />
+            <span>{{ latestSuccessfulRun.model }}</span>
           </span>
           <TimelineDateLink
-            :date="resolvedScoreData!.latestRun.createdAt"
+            :date="latestSuccessfulRun.createdAt"
             class="factory-application-timestamp-link ml-auto inline-flex items-center justify-end gap-1.5 text-right"
           >
             <span class="factory-application-timestamp-label">Updated</span>
-            <span class="factory-application-timestamp-value">{{ formatScoreRunDate(resolvedScoreData!.latestRun.createdAt) }}</span>
+            <span class="factory-application-timestamp-value">{{ formatScoreRunDate(latestSuccessfulRun.createdAt) }}</span>
           </TimelineDateLink>
         </div>
       </div>
@@ -352,6 +418,27 @@ async function retryParse() {
         </div>
       </div>
     </template>
+
+    <div
+      v-if="latestFailureAttempt"
+      role="status"
+      class="flex items-start gap-2 rounded-lg border border-warning-200 bg-warning-50 p-3 text-xs text-warning-800 dark:border-warning-800 dark:bg-warning-950 dark:text-warning-300"
+    >
+      <AlertTriangle class="mt-0.5 size-4 shrink-0" />
+      <div class="min-w-0 flex-1">
+        <p class="font-semibold">
+          {{ latestSuccessfulRun ? 'Latest re-score failed' : 'Latest analysis failed' }}
+        </p>
+        <p v-if="latestSuccessfulRun" class="mt-0.5">The last successful score is still shown.</p>
+        <p v-else class="mt-0.5">No score was saved. Try running the analysis again.</p>
+      </div>
+      <TimelineDateLink
+        :date="latestFailureAttempt.createdAt"
+        class="factory-application-timestamp-link ml-auto shrink-0 text-right"
+      >
+        <span class="factory-application-timestamp-value">{{ formatScoreRunDate(latestFailureAttempt.createdAt) }}</span>
+      </TimelineDateLink>
+    </div>
 
     <!-- Error -->
     <div

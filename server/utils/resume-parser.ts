@@ -37,7 +37,48 @@ function ensurePdfjsPolyfills() {
   }
 }
 
-const PARSER_VERSION = '1.0'
+const PARSER_VERSION = '1.1'
+export const DEFAULT_DOCUMENT_PARSE_TIMEOUT_MS = 60_000
+
+export type DocumentParseErrorCode
+  = | 'empty_file'
+    | 'unsupported_mime'
+    | 'password_required'
+    | 'invalid_pdf'
+    | 'malformed_pdf'
+    | 'parser_aborted'
+    | 'parser_timeout'
+    | 'parser_runtime_error'
+
+const PARSE_ERROR_MESSAGES: Record<DocumentParseErrorCode, string> = {
+  empty_file: 'The uploaded document is empty',
+  unsupported_mime: 'The uploaded document type is not supported',
+  password_required: 'The PDF requires a password',
+  invalid_pdf: 'The uploaded PDF is invalid',
+  malformed_pdf: 'The uploaded PDF is malformed',
+  parser_aborted: 'Document parsing was aborted',
+  parser_timeout: 'Document parsing timed out',
+  parser_runtime_error: 'The document parser encountered a runtime error',
+}
+
+export class DocumentParseError extends Error {
+  readonly code: DocumentParseErrorCode
+  readonly retryable: boolean
+  override readonly cause: unknown
+
+  constructor(code: DocumentParseErrorCode, retryable: boolean, cause: unknown) {
+    super(PARSE_ERROR_MESSAGES[code], { cause })
+    this.name = 'DocumentParseError'
+    this.code = code
+    this.retryable = retryable
+    Object.defineProperty(this, 'cause', {
+      value: cause,
+      enumerable: false,
+      configurable: false,
+      writable: false,
+    })
+  }
+}
 
 export interface ParsedResume {
   /** Full extracted text content */
@@ -60,6 +101,162 @@ export interface ResumeSection {
   content: string
 }
 
+export type DocumentParseResult =
+  | { kind: 'parsed'; content: ParsedResume }
+  | { kind: 'no_text'; code: 'no_extractable_text'; pageCount: number | null }
+
+interface PdfTextParser {
+  getText: (options?: { pageJoiner?: string }) => Promise<{ text: string; total: number }>
+  destroy: () => Promise<void>
+}
+
+export interface DocumentParseDependencies {
+  createPdfParser?: (buffer: Buffer) => Promise<PdfTextParser>
+  abortSignal?: AbortSignal
+  timeoutMs?: number
+}
+
+function namedControlError(name: 'AbortError' | 'TimeoutError', message: string): Error {
+  const error = new Error(message)
+  error.name = name
+  return error
+}
+
+async function withParseControls<T>(
+  operation: Promise<T>,
+  options: Pick<DocumentParseDependencies, 'abortSignal' | 'timeoutMs'>,
+): Promise<T> {
+  const controls: Promise<never>[] = []
+  let abortHandler: (() => void) | undefined
+  let timeout: ReturnType<typeof setTimeout> | undefined
+
+  if (options.abortSignal) {
+    controls.push(new Promise((_, reject) => {
+      abortHandler = () => reject(namedControlError('AbortError', 'Document parsing was aborted'))
+      if (options.abortSignal!.aborted) abortHandler()
+      else options.abortSignal!.addEventListener('abort', abortHandler, { once: true })
+    }))
+  }
+  if (options.timeoutMs && Number.isFinite(options.timeoutMs) && options.timeoutMs > 0) {
+    controls.push(new Promise((_, reject) => {
+      timeout = setTimeout(
+        () => reject(namedControlError('TimeoutError', 'Document parsing timed out')),
+        Math.floor(options.timeoutMs!),
+      )
+    }))
+  }
+
+  try {
+    return controls.length > 0 ? await Promise.race([operation, ...controls]) : await operation
+  } finally {
+    if (timeout) clearTimeout(timeout)
+    if (abortHandler) options.abortSignal?.removeEventListener('abort', abortHandler)
+  }
+}
+
+const SUPPORTED_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+])
+
+function errorName(error: unknown): string {
+  if (typeof error !== 'object' || error === null || !('name' in error)) return ''
+  return String(error.name)
+}
+
+function errorCode(error: unknown): string {
+  if (typeof error !== 'object' || error === null || !('code' in error)) return ''
+  return String(error.code)
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+function classifyParseError(error: unknown, mimeType: string): DocumentParseError {
+  if (error instanceof DocumentParseError) return error
+
+  const name = errorName(error)
+  const code = errorCode(error)
+  const message = errorMessage(error)
+
+  if (name === 'AbortException' || name === 'AbortError' || code === 'ABORT_ERR') {
+    return new DocumentParseError('parser_aborted', true, error)
+  }
+  if (
+    name === 'TimeoutError'
+    || code === 'ETIMEDOUT'
+    || /(?:timed?\s*out|timeout)/i.test(message)
+  ) {
+    return new DocumentParseError('parser_timeout', true, error)
+  }
+
+  if (mimeType === 'application/pdf') {
+    if (name === 'PasswordException' || /password (?:is )?(?:required|needed)/i.test(message)) {
+      return new DocumentParseError('password_required', false, error)
+    }
+    if (name === 'InvalidPDFException') {
+      return new DocumentParseError('invalid_pdf', false, error)
+    }
+    if (name === 'FormatError') {
+      return new DocumentParseError('malformed_pdf', false, error)
+    }
+  }
+
+  return new DocumentParseError('parser_runtime_error', true, error)
+}
+
+async function createDefaultPdfParser(buffer: Buffer): Promise<PdfTextParser> {
+  // Polyfill browser globals before pdfjs-dist evaluates its module-level code.
+  ensurePdfjsPolyfills()
+  const { PDFParse } = await import('pdf-parse')
+  return new PDFParse({ data: buffer })
+}
+
+/**
+ * Parse a document while preserving the distinction between usable text,
+ * legitimately text-free content, and a typed operational failure.
+ */
+export async function parseDocumentDetailed(
+  buffer: Buffer,
+  mimeType: string,
+  dependencies: DocumentParseDependencies = {},
+): Promise<DocumentParseResult> {
+  if (buffer.length === 0) {
+    throw new DocumentParseError('empty_file', false, new Error('Document buffer is empty'))
+  }
+  if (!SUPPORTED_MIME_TYPES.has(mimeType)) {
+    throw new DocumentParseError(
+      'unsupported_mime',
+      false,
+      new Error(`Unsupported document MIME type: ${mimeType}`),
+    )
+  }
+
+  try {
+    switch (mimeType) {
+      case 'application/pdf':
+        return await parsePdf(
+          buffer,
+          dependencies.createPdfParser ?? createDefaultPdfParser,
+          dependencies,
+        )
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        return await withParseControls(parseDocx(buffer), dependencies)
+      case 'application/msword':
+        return await withParseControls(parseDoc(buffer), dependencies)
+      default:
+        // The supported MIME precondition above makes this unreachable, while
+        // keeping the switch exhaustive if another format is added later.
+        throw new DocumentParseError('unsupported_mime', false, new Error(mimeType))
+    }
+  }
+  catch (error) {
+    throw classifyParseError(error, mimeType)
+  }
+}
+
 /**
  * Parse a document buffer and extract text content.
  * Routes to the appropriate parser based on MIME type.
@@ -73,24 +270,21 @@ export async function parseDocument(
   mimeType: string,
 ): Promise<ParsedResume | null> {
   try {
-    switch (mimeType) {
-      case 'application/pdf':
-        return await parsePdf(buffer)
-      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        return await parseDocx(buffer)
-      case 'application/msword':
-        return await parseDoc(buffer)
-      default:
-        logWarn('resume_parser.unsupported_mime_type', {
-          mime_type: mimeType,
-        })
-        return null
-    }
+    const result = await parseDocumentDetailed(buffer, mimeType)
+    return result.kind === 'parsed' ? result.content : null
   }
   catch (error) {
+    const parseError = classifyParseError(error, mimeType)
+    if (parseError.code === 'unsupported_mime') {
+      logWarn('resume_parser.unsupported_mime_type', {
+        mime_type: mimeType,
+      })
+      return null
+    }
     logError('resume_parser.parse_failed', {
       mime_type: mimeType,
-      error_message: error instanceof Error ? error.message : String(error),
+      error_code: parseError.code,
+      retryable: parseError.retryable,
     })
     return null
   }
@@ -98,64 +292,107 @@ export async function parseDocument(
 
 // ─── PDF Parser ───────────────────────────────────────────────────
 
-async function parsePdf(buffer: Buffer): Promise<ParsedResume | null> {
-  if (buffer.length === 0) return null
-
-  // Polyfill browser globals before pdfjs-dist evaluates its module-level code
-  ensurePdfjsPolyfills()
-  const { PDFParse } = await import('pdf-parse')
-
-  const parser = new PDFParse({ data: buffer })
-  const result = await parser.getText()
-
-  const text = normalizeText(result.text)
-  if (!text) {
-    await parser.destroy()
-    return null
+async function parsePdf(
+  buffer: Buffer,
+  createPdfParser: (buffer: Buffer) => Promise<PdfTextParser>,
+  controls: Pick<DocumentParseDependencies, 'abortSignal' | 'timeoutMs'>,
+): Promise<DocumentParseResult> {
+  let parser: PdfTextParser | undefined
+  let cleanupStarted = false
+  const destroyParser = async (target: PdfTextParser): Promise<void> => {
+    if (cleanupStarted) return
+    cleanupStarted = true
+    try {
+      await target.destroy()
+    }
+    catch (cleanupError) {
+      // Cleanup must never replace a successful parse/no-text classification
+      // or the primary extraction error thrown from the try block.
+      logError('resume_parser.cleanup_failed', {
+        source_format: 'pdf',
+        error_name: errorName(cleanupError),
+      })
+    }
   }
+  const parserPromise = Promise.resolve().then(() => createPdfParser(buffer))
+  const extractionPromise = parserPromise.then(async (createdParser) => {
+    parser = createdParser
+    // pdf-parse's default page joiner includes synthetic `-- N of N --`
+    // markers. Disable it so an image-only PDF is not mistaken for text.
+    return createdParser.getText({ pageJoiner: '' })
+  })
 
-  const parsed: ParsedResume = {
-    text,
-    sections: extractSections(text),
-    metadata: {
-      pageCount: result.total,
-      wordCount: countWords(text),
-      characterCount: text.length,
-      extractedAt: new Date().toISOString(),
-      parserVersion: PARSER_VERSION,
-      sourceFormat: 'pdf',
-    },
+  try {
+    // One control window covers both parser construction and text extraction.
+    const result = await withParseControls(extractionPromise, controls)
+    const text = normalizeText(result.text)
+
+    if (!text) {
+      return {
+        kind: 'no_text',
+        code: 'no_extractable_text',
+        pageCount: result.total,
+      }
+    }
+
+    return {
+      kind: 'parsed',
+      content: {
+        text,
+        sections: extractSections(text),
+        metadata: {
+          pageCount: result.total,
+          wordCount: countWords(text),
+          characterCount: text.length,
+          extractedAt: new Date().toISOString(),
+          parserVersion: PARSER_VERSION,
+          sourceFormat: 'pdf',
+        },
+      },
+    }
   }
-
-  await parser.destroy()
-  return parsed
+  finally {
+    if (parser) {
+      await destroyParser(parser)
+    }
+    else {
+      // A parser factory may ignore cancellation and resolve after the caller
+      // has timed out. Dispose that late instance without delaying the caller.
+      void parserPromise.then(destroyParser, () => undefined)
+    }
+  }
 }
 
 // ─── DOCX Parser ──────────────────────────────────────────────────
 
-async function parseDocx(buffer: Buffer): Promise<ParsedResume | null> {
+async function parseDocx(buffer: Buffer): Promise<DocumentParseResult> {
   const result = await mammoth.extractRawText({ buffer })
 
   const text = normalizeText(result.value)
-  if (!text) return null
+  if (!text) {
+    return { kind: 'no_text', code: 'no_extractable_text', pageCount: null }
+  }
 
   return {
-    text,
-    sections: extractSections(text),
-    metadata: {
-      pageCount: null, // DOCX doesn't have pages
-      wordCount: countWords(text),
-      characterCount: text.length,
-      extractedAt: new Date().toISOString(),
-      parserVersion: PARSER_VERSION,
-      sourceFormat: 'docx',
+    kind: 'parsed',
+    content: {
+      text,
+      sections: extractSections(text),
+      metadata: {
+        pageCount: null, // DOCX doesn't have pages
+        wordCount: countWords(text),
+        characterCount: text.length,
+        extractedAt: new Date().toISOString(),
+        parserVersion: PARSER_VERSION,
+        sourceFormat: 'docx',
+      },
     },
   }
 }
 
 // ─── DOC Parser (Legacy) ──────────────────────────────────────────
 
-async function parseDoc(buffer: Buffer): Promise<ParsedResume | null> {
+async function parseDoc(buffer: Buffer): Promise<DocumentParseResult> {
   const extractor = new WordExtractor()
   const doc = await extractor.extract(buffer)
 
@@ -168,18 +405,23 @@ async function parseDoc(buffer: Buffer): Promise<ParsedResume | null> {
 
   const rawText = parts.join('\n')
   const text = normalizeText(rawText)
-  if (!text) return null
+  if (!text) {
+    return { kind: 'no_text', code: 'no_extractable_text', pageCount: null }
+  }
 
   return {
-    text,
-    sections: extractSections(text),
-    metadata: {
-      pageCount: null,
-      wordCount: countWords(text),
-      characterCount: text.length,
-      extractedAt: new Date().toISOString(),
-      parserVersion: PARSER_VERSION,
-      sourceFormat: 'doc',
+    kind: 'parsed',
+    content: {
+      text,
+      sections: extractSections(text),
+      metadata: {
+        pageCount: null,
+        wordCount: countWords(text),
+        characterCount: text.length,
+        extractedAt: new Date().toISOString(),
+        parserVersion: PARSER_VERSION,
+        sourceFormat: 'doc',
+      },
     },
   }
 }

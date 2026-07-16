@@ -551,6 +551,7 @@ const selectedApplicationId = ref<string | null>(null)
   <!-- Application detail drawer -->
   <ApplicationDetailDrawer
     v-if="selectedApplicationId"
+    :key="selectedApplicationId"
     :application-id="selectedApplicationId"
     @close="selectedApplicationId = null"
   />

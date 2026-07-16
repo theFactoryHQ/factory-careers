@@ -93,17 +93,7 @@ function runCliParityEvidence() {
   })
 }
 
-function runOptionalLint() {
-  const hasLint = commandSucceeds('node', [
-    '-e',
-    "const { scripts = {} } = require('./package.json'); process.exit(typeof scripts.lint === 'string' && scripts.lint.trim() ? 0 : 1)",
-  ])
-
-  if (!hasLint) {
-    console.log('No lint script configured; skipping.')
-    return 0
-  }
-
+function runLint() {
   return run('npm', ['run', 'lint'])
 }
 
@@ -129,7 +119,7 @@ export function getPrPreflightSteps() {
   return [
     { name: 'CLI parity evidence', aliases: ['cli-parity'], run: runCliParityEvidence },
     { name: 'Unit tests', run: () => run('npm', ['run', 'test:unit']) },
-    { name: 'Lint', run: runOptionalLint },
+    { name: 'Lint', run: runLint },
     { name: 'Typecheck', run: () => run('npm', ['run', 'typecheck']) },
     { name: 'CLI smoke tests', run: runCliSmokeTests },
     {

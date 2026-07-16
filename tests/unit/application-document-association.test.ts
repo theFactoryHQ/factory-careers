@@ -38,7 +38,7 @@ describe('application document association', () => {
     expect(transaction).toContain('...reservedDocument')
   })
 
-  it('returns application documents through the existing candidate.documents contract with a legacy-only fallback', () => {
+  it('returns application documents through the existing candidate.documents contract with the analysis resume fallback', () => {
     const route = readProjectFile('server/api/applications/[id].get.ts')
 
     expect(route).toContain('applicationDocuments')
@@ -47,7 +47,7 @@ describe('application document association', () => {
     expect(route).toContain('eq(legacyDocument.organizationId, orgId)')
     expect(route).toContain('isNull(legacyDocument.applicationId)')
     expect(route).toContain('desc(document.createdAt)')
-    expect(route).toContain('applicationDocuments.length > 0')
+    expect(route).toContain('selectApplicationDocumentsWithResumeFallback(')
     expect(route).toContain('documents: selectedDocuments')
   })
 })

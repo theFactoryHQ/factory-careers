@@ -49,17 +49,7 @@ jobs:
 
       - name: Lint
         id: lint
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! node -e "const { scripts = {} } = require('./package.json'); process.exit(typeof scripts.lint === 'string' && scripts.lint.trim() ? 0 : 1)"; then
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "No lint script configured; skipping."
-            exit 0
-          fi
-
-          echo "configured=true" >> "$GITHUB_OUTPUT"
-          npm run lint
+        run: npm run lint
 
       - name: Typecheck
         id: typecheck
@@ -125,11 +115,7 @@ jobs:
           echo "| Install dependencies | $(status_icon '${{ steps.install.outcome }}') ${{ steps.install.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| CLI parity evidence | $(status_icon '${{ steps.cli_parity.outcome }}') ${{ steps.cli_parity.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Tests | $(status_icon '${{ steps.tests.outcome }}') ${{ steps.tests.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
-          if [ "${{ steps.lint.outputs.configured }}" = "false" ]; then
-            echo "| Lint | ⚪ not configured |" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "| Lint | $(status_icon '${{ steps.lint.outcome }}') ${{ steps.lint.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          echo "| Lint | $(status_icon '${{ steps.lint.outcome }}') ${{ steps.lint.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Typecheck | $(status_icon '${{ steps.typecheck.outcome }}') ${{ steps.typecheck.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| CLI smoke tests | $(status_icon '${{ steps.cli_smoke.outcome }}') ${{ steps.cli_smoke.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Dependency audit | $(status_icon '${{ steps.audit.outcome }}') ${{ steps.audit.outcome }} |" >> "$GITHUB_STEP_SUMMARY"

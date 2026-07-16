@@ -47,10 +47,14 @@ Use the README for full setup details. The short version:
 export NODE_AUTH_TOKEN=ghp_your_github_packages_read_token
 npm ci
 ./setup.sh
+docker compose up -d db minio
+npm run db:migrate
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3001](http://localhost:3001) when running `npm run dev`.
+The Docker Compose stack continues to publish the app on
+[http://localhost:3000](http://localhost:3000).
 
 In Codex worktrees, a sibling or primary checkout may be the source of truth for
 local `.env` and `.env.local` files. Do not commit machine-specific paths or
@@ -107,7 +111,7 @@ npm run test:e2e:smoke
 ```
 
 Run `npm run preflight:pr` before pushing broad changes. It mirrors the required
-PR validation path: CLI parity evidence, unit tests, optional lint, typecheck,
+PR validation path: CLI parity evidence, unit tests, lint, typecheck,
 CLI smoke tests, production env contract validation, and build.
 
 Browser QA matters for public job flows, application forms, dashboard controls,

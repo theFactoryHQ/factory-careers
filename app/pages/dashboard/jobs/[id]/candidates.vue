@@ -534,6 +534,7 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
     <!-- Detail sidebar -->
     <CandidateDetailSidebar
       v-if="selectedAppId"
+      :key="selectedAppId"
       :application-id="selectedAppId"
       :open="sidebarOpen"
       @close="closeSidebar"

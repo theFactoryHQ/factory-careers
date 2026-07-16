@@ -115,11 +115,15 @@ describe('P0 tenant-isolation route coverage', () => {
     'server/api/candidates/[id].delete.ts': ['eq(candidate.id, id)', 'eq(candidate.organizationId, orgId)'],
     'server/api/applications/[id].get.ts': ['eq(application.id, id)', 'eq(application.organizationId, orgId)'],
     'server/api/applications/[id].patch.ts': ['eq(application.id, id)', 'eq(application.organizationId, orgId)'],
-    'server/api/applications/[id]/analyze.post.ts': ['eq(application.id, applicationId)', 'eq(application.organizationId, orgId)'],
+    'server/utils/analyzeApplication.ts': ['eq(application.id, applicationId)', 'eq(application.organizationId, organizationId)'],
     'server/api/applications/[id]/scores.get.ts': ['eq(application.id, applicationId)', 'eq(application.organizationId, orgId)'],
-    'server/api/documents/[id].delete.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, orgId)'],
-    'server/api/documents/[id]/parse.post.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, orgId)'],
-    'server/api/documents/parse-all.post.ts': ['eq(document.id, doc.id)', 'eq(document.organizationId, orgId)'],
+    'server/api/documents/[id].delete.ts': [
+      'deleteDocumentWithProcessingHistory',
+      'organizationId: orgId',
+      'documentId',
+    ],
+    'server/api/documents/[id]/parse.post.ts': ['eq(document.id, documentId)', 'eq(document.organizationId, organizationId)'],
+    'server/api/documents/parse-all.post.ts': ['eq(document.organizationId, organizationId)', "eq(document.uploadStatus, 'completed')"],
     'server/api/comments/[id].patch.ts': ['eq(comment.id, id)', 'eq(comment.organizationId, orgId)'],
     'server/api/comments/[id].delete.ts': ['eq(comment.id, id)', 'eq(comment.organizationId, orgId)'],
     'server/api/interviews/[id]/index.get.ts': ['eq(interview.id, id)', 'eq(interview.organizationId, orgId)'],
@@ -236,11 +240,10 @@ describe('P0 tenant-isolation route coverage', () => {
   it('cleans up candidate-owned document objects when deleting a candidate', () => {
     const source = read('server/api/candidates/[id].delete.ts')
 
-    expect(source).toContain('db.query.document.findMany')
-    expect(source).toContain('eq(document.candidateId, id)')
-    expect(source).toContain('eq(document.organizationId, orgId)')
-    expect(source).toContain('deleteFromS3(doc.storageKey)')
+    expect(source).toContain('prepareCandidateProcessingCascadeInTransaction')
+    expect(source).toContain('deletion.cascade.documents.map(doc => deleteFromS3(doc.storageKey))')
     expect(source).toContain('candidate.document_s3_delete_failed')
+    expect(source).toContain("result_code: 'storage_cleanup_failed'")
   })
 
   it('cleans up organization-owned document objects when deleting an organization', () => {

@@ -4,15 +4,20 @@ import { z } from 'zod'
 import { getSourceChannelLabel } from '~/utils/status-display'
 import { CURRENCY_OPTIONS, CURRENCY_VALUES } from '~~/shared/currency-options'
 import {
-  dateInputToEndOfLocalDay,
-  dateInputToStartOfLocalDay,
   todayDateInputValue,
   toDateInputValue,
 } from '~~/shared/date-input'
-import { buildJobLocation, parseJobLocation, type UsStateValue } from '~~/shared/job-location'
+import {
+  jobPostingSelectValuesFromJob,
+  jobPostingPatchFromForm,
+  type JobCurrency,
+  type JobExperienceLevel,
+  type JobRemoteStatus,
+  type JobType,
+} from '~~/shared/job-contract'
+import { parseJobLocation, type UsStateValue } from '~~/shared/job-location'
 import {
   factoryDivisionSchema,
-  jobDescriptionBlocksToMarkdown,
   jobDescriptionBlocksSchema,
   legacyDescriptionToBlocks,
   normalizeJobDescriptionBlocks,
@@ -20,7 +25,7 @@ import {
   type JobDescriptionBlock,
 } from '~~/shared/job-listing-structure'
 import { US_STATE_OPTIONS, US_STATE_VALUES } from '~~/shared/location-options'
-import { SALARY_UNIT_OPTIONS, SALARY_UNIT_VALUES } from '~~/shared/salary-options'
+import { SALARY_UNIT_OPTIONS, SALARY_UNIT_VALUES, type SalaryUnitValue } from '~~/shared/salary-options'
 
 definePageMeta({
   layout: 'dashboard',
@@ -69,16 +74,16 @@ const form = ref({
   descriptionBlocks: [{ type: 'paragraph', body: '' }] as JobDescriptionBlock[],
   city: '',
   state: '' as UsStateValue | '',
-  type: 'full_time' as string,
+  type: 'full_time' as JobType,
   slug: '',
   salaryMin: null as number | null,
   salaryMax: null as number | null,
-  salaryCurrency: 'USD',
-  salaryUnit: 'YEAR',
+  salaryCurrency: 'USD' as JobCurrency,
+  salaryUnit: 'YEAR' as SalaryUnitValue,
   salaryNegotiable: false,
   salaryDisplayOnListing: false,
-  remoteStatus: '' as string,
-  experienceLevel: '' as string,
+  remoteStatus: '' as JobRemoteStatus | '',
+  experienceLevel: '' as JobExperienceLevel | '',
   activeFrom: todayDateInputValue(),
   validThrough: '',
 })
@@ -155,6 +160,9 @@ watch([job, defaultSalaryUnit], ([j]) => {
   const autoSlug = generateTitleSlug(title)
   const shouldUseAutoSlug = !loadedSlug || looksLikeGeneratedSlug(loadedSlug, title)
   const parsedLocation = parseJobLocation(j.location)
+  const postingSelectValues = jobPostingSelectValuesFromJob(j, {
+    defaultSalaryUnit: defaultSalaryUnit.value,
+  })
 
   slugManuallyEdited.value = !shouldUseAutoSlug
   lastAutoSlug.value = autoSlug
@@ -170,12 +178,12 @@ watch([job, defaultSalaryUnit], ([j]) => {
     slug: shouldUseAutoSlug ? autoSlug : loadedSlug,
     salaryMin: j.salaryMin ?? null,
     salaryMax: j.salaryMax ?? null,
-    salaryCurrency: j.salaryCurrency ?? 'USD',
-    salaryUnit: j.salaryUnit ?? defaultSalaryUnit.value,
+    salaryCurrency: postingSelectValues.salaryCurrency,
+    salaryUnit: postingSelectValues.salaryUnit,
     salaryNegotiable: j.salaryNegotiable ?? false,
     salaryDisplayOnListing: j.salaryDisplayOnListing ?? false,
-    remoteStatus: j.remoteStatus ?? '',
-    experienceLevel: j.experienceLevel ?? '',
+    remoteStatus: postingSelectValues.remoteStatus,
+    experienceLevel: postingSelectValues.experienceLevel,
     activeFrom: j.activeFrom ? toDateInputValue(j.activeFrom) : todayDateInputValue(),
     validThrough: j.validThrough ? toDateInputValue(j.validThrough) : '',
   }
@@ -259,26 +267,13 @@ async function savePostingDetails() {
   postingErrors.value = {}
   isSavingPosting.value = true
   try {
-    const descriptionBlocks = normalizeJobDescriptionBlocks(form.value.descriptionBlocks)
-    await updateJob({
-      title: form.value.title,
-      description: jobDescriptionBlocksToMarkdown(descriptionBlocks) || null,
-      divisions: form.value.divisions,
-      descriptionBlocks,
-      location: buildJobLocation({ city: form.value.city, state: form.value.state }) || null,
-      type: form.value.type,
-      slug: form.value.slug || undefined,
-      salaryNegotiable: form.value.salaryNegotiable,
-      salaryDisplayOnListing: form.value.salaryDisplayOnListing,
-      salaryMin: form.value.salaryMin ?? null,
-      salaryMax: form.value.salaryMax ?? null,
-      salaryCurrency: form.value.salaryCurrency || 'USD',
-      salaryUnit: form.value.salaryUnit || defaultSalaryUnit.value,
-      remoteStatus: form.value.remoteStatus || null,
-      experienceLevel: (form.value.experienceLevel as 'junior' | 'mid' | 'senior' | 'lead' | null) || null,
-      activeFrom: dateInputToStartOfLocalDay(form.value.activeFrom || todayDateInputValue()),
-      validThrough: form.value.validThrough ? dateInputToEndOfLocalDay(form.value.validThrough) : null,
-    } as any)
+    await updateJob(jobPostingPatchFromForm({
+      ...form.value,
+      activeFrom: form.value.activeFrom || todayDateInputValue(),
+    }, {
+      defaultSalaryUnit: SALARY_UNIT_VALUES.find(unit => unit === defaultSalaryUnit.value) ?? 'YEAR',
+      defaultCurrency: 'USD',
+    }))
     toast.success('Application details saved')
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return

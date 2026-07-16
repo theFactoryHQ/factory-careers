@@ -8,6 +8,11 @@ import {
 } from '../database/schema'
 import { db } from './db'
 import { CandidateDocumentLimitError, lockCandidateDocumentCapacity } from './candidateDocumentReservation'
+import {
+  documentUploadReconciliationAvailableAt,
+  enqueueProcessingTaskInTransaction,
+  type ProcessingQueueDatabaseExecutor,
+} from './processingQueue'
 
 type ResponseValue = string | string[] | number | boolean
 
@@ -78,6 +83,11 @@ export type PublicApplicationTransaction = {
     mimeType: string
     sizeBytes: number
   }>): Promise<void>
+  enqueueUploadReconciliation(input: {
+    organizationId: string
+    documentId: string
+    availableAt: Date
+  }): Promise<{ id: string; batchId: string }>
   insertComplianceResponse(input: ComplianceResponseInput & {
     organizationId: string
     applicationId: string
@@ -177,6 +187,19 @@ const drizzleTransactionAdapter: PublicApplicationTransactionAdapter = {
         await tx.insert(document).values(inputs)
       },
 
+      async enqueueUploadReconciliation(input) {
+        const { task, batchId } = await enqueueProcessingTaskInTransaction(
+          tx as unknown as ProcessingQueueDatabaseExecutor,
+          {
+            organizationId: input.organizationId,
+            type: 'document_upload_reconciliation',
+            resourceId: input.documentId,
+            availableAt: input.availableAt,
+          },
+        )
+        return { id: task.id, batchId }
+      },
+
       async insertComplianceResponse(input) {
         await tx.insert(applicationComplianceResponse).values(input)
       },
@@ -195,7 +218,11 @@ const drizzleTransactionAdapter: PublicApplicationTransactionAdapter = {
 export async function createPublicApplication(
   input: PublicApplicationTransactionInput,
   adapter: PublicApplicationTransactionAdapter = drizzleTransactionAdapter,
-): Promise<{ candidateId: string; applicationId: string }> {
+): Promise<{
+  candidateId: string
+  applicationId: string
+  documentProcessingTasks: Record<string, string>
+}> {
   return adapter.transaction(async (tx) => {
     const candidateId = await tx.upsertCandidate({
       organizationId: input.organizationId,
@@ -227,6 +254,7 @@ export async function createPublicApplication(
       throw new DuplicatePublicApplicationError()
     }
 
+    const documentProcessingTasks: Record<string, string> = {}
     if (input.documents.length > 0) {
       await tx.insertDocuments(input.documents.map(({ questionId: _questionId, ...reservedDocument }) => ({
         organizationId: input.organizationId,
@@ -234,6 +262,15 @@ export async function createPublicApplication(
         applicationId,
         ...reservedDocument,
       })))
+      const reconciliationAvailableAt = documentUploadReconciliationAvailableAt()
+      for (const reservedDocument of input.documents) {
+        const task = await tx.enqueueUploadReconciliation({
+          organizationId: input.organizationId,
+          documentId: reservedDocument.id,
+          availableAt: reconciliationAvailableAt,
+        })
+        documentProcessingTasks[reservedDocument.id] = task.id
+      }
     }
 
     if (input.compliance) {
@@ -259,6 +296,6 @@ export async function createPublicApplication(
       })))
     }
 
-    return { candidateId, applicationId }
+    return { candidateId, applicationId, documentProcessingTasks }
   })
 }

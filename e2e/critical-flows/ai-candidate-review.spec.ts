@@ -134,11 +134,11 @@ test.describe('AI candidate review', () => {
     expect(scoresResponse.status(), `Scores API returned ${scoresResponse.status()}`).toBe(200)
     const scores = await scoresResponse.json() as {
       compositeScore: number
-      latestRun: { id: string, summary: string | null } | null
+      latestSuccessfulRun: { id: string, summary: string | null } | null
       scores: Array<{ criterionKey: string, score: number, evidence: string }>
     }
     expect(scores.compositeScore).toBe(90)
-    expect(scores.latestRun).toMatchObject({
+    expect(scores.latestSuccessfulRun).toMatchObject({
       id: analysis.analysisRunId,
       summary: 'Deterministic E2E review: strong Factory-domain alignment for this candidate.',
     })

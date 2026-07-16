@@ -1,13 +1,15 @@
 import { eq, and } from 'drizzle-orm'
+import type { ApplicationDetailResponse } from '~~/shared/application-detail'
 import { application } from '../../database/schema'
 import { applicationIdParamSchema } from '../../utils/schemas/application'
+import { selectApplicationDocumentsWithResumeFallback } from '../../utils/applicationResume'
 import { loadPropertyEntriesForEntity } from '../../utils/properties'
 
 /**
  * GET /api/applications/:id
  * Single application detail with related candidate, job, and question responses.
  */
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event): Promise<ApplicationDetailResponse<Date>> => {
   const session = await requirePermission(event, { application: ['read'] })
   const orgId = session.session.activeOrganizationId
 
@@ -22,6 +24,8 @@ export default defineEventHandler(async (event) => {
           type: true,
           originalFilename: true,
           mimeType: true,
+          parseStatus: true,
+          parseResultCode: true,
           createdAt: true,
         },
         where: (associatedDocument, { eq }) => eq(associatedDocument.organizationId, orgId),
@@ -36,6 +40,8 @@ export default defineEventHandler(async (event) => {
               type: true,
               originalFilename: true,
               mimeType: true,
+              parseStatus: true,
+              parseResultCode: true,
               createdAt: true,
             },
             where: (legacyDocument, { and, eq, isNull }) => and(
@@ -69,9 +75,10 @@ export default defineEventHandler(async (event) => {
     candidate: { documents: legacyCandidateDocuments, ...applicationCandidate },
     ...applicationResult
   } = result
-  const selectedDocuments = applicationDocuments.length > 0
-    ? applicationDocuments
-    : legacyCandidateDocuments
+  const selectedDocuments = selectApplicationDocumentsWithResumeFallback(
+    applicationDocuments,
+    legacyCandidateDocuments,
+  )
 
   const properties = await loadPropertyEntriesForEntity({
     organizationId: orgId,

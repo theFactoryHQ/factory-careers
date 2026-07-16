@@ -36,7 +36,8 @@ import {
   AlertTriangle,
 } from 'lucide-vue-next'
 import { z } from 'zod'
-import { dateInputToStartOfLocalDay, todayDateInputValue } from '~~/shared/date-input'
+import { todayDateInputValue } from '~~/shared/date-input'
+import { createJobRequestFromForm } from '~~/shared/job-contract'
 import {
   factoryDivisionSchema,
   jobDescriptionBlocksToMarkdown,
@@ -644,20 +645,20 @@ async function handleSubmit(mode: 'publish' | 'draft' = publishChoice.value) {
 
   isSubmitting.value = true
   try {
-    const created = await createJob({
+    const created = await createJob(createJobRequestFromForm({
       title: form.value.title,
-      description: jobDescriptionMarkdown.value || undefined,
+      description: jobDescriptionMarkdown.value,
       divisions: form.value.divisions,
       descriptionBlocks: form.value.descriptionBlocks,
-      location: form.value.location || undefined,
+      location: form.value.location,
       type: form.value.type,
-      experienceLevel: form.value.experienceLevel || undefined,
-      remoteStatus: form.value.remoteStatus || undefined,
-      activeFrom: dateInputToStartOfLocalDay(form.value.activeFrom || todayDateInputValue()),
+      experienceLevel: form.value.experienceLevel,
+      remoteStatus: form.value.remoteStatus,
+      activeFrom: form.value.activeFrom || todayDateInputValue(),
       requireResume: applicationForm.value.requireResume,
       requireCoverLetter: applicationForm.value.requireCoverLetter,
       autoScoreOnApply: autoScoreOnApply.value,
-    })
+    }))
 
     track('job_created')
 

@@ -15,11 +15,16 @@ Thanks for contributing to Factory Careers.
 ```bash
 git clone https://github.com/theFactoryHQ/factory-careers.git
 cd factory-careers
-cp .env.example .env
-docker compose up -d
 npm ci
+./setup.sh
+docker compose up -d db minio
+npm run db:migrate
 npm run dev
 ```
+
+Open the host development server at [http://localhost:3001](http://localhost:3001).
+To run the Nuxt app inside Docker instead, use `docker compose up --build` and
+open [http://localhost:3000](http://localhost:3000).
 
 ## Branch and Commit Workflow
 
@@ -37,7 +42,7 @@ relevant checks manually before pushing.
 
 - `commit-msg` validates Conventional Commit syntax with the same allowed types as the PR title lint workflow.
 - `pre-commit` keeps `AGENTS.md` and `CLAUDE.md` identical for agent/tool compatibility.
-- `pre-push` runs `npm run preflight:pr`, which mirrors the required PR validation job: CLI parity evidence, unit tests, optional lint, typecheck, CLI smoke tests, production env contract validation, and build.
+- `pre-push` runs `npm run preflight:pr`, which mirrors the required PR validation job: CLI parity evidence, unit tests, lint, typecheck, CLI smoke tests, production env contract validation, and build.
 
 Run `npm run prepare` if you need to reinstall the hooks in an existing checkout.
 

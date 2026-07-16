@@ -1,15 +1,18 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createPublicApplication,
   type PublicApplicationTransaction,
   type PublicApplicationTransactionAdapter,
   type PublicApplicationTransactionInput,
 } from '../../server/utils/createPublicApplication'
+import { DOCUMENT_UPLOAD_RECONCILIATION_GRACE_MS } from '../../server/utils/processingQueue'
 
 type State = {
   candidates: Map<string, string>
   applications: Map<string, string>
   documents: Map<string, string>
+  processingTasks: Map<string, string>
+  processingAvailability: Map<string, Date>
   complianceResponses: string[]
   questionResponses: string[]
 }
@@ -19,6 +22,10 @@ function cloneState(state: State): State {
     candidates: new Map(state.candidates),
     applications: new Map(state.applications),
     documents: new Map(state.documents),
+    processingTasks: new Map(state.processingTasks),
+    processingAvailability: new Map(
+      [...state.processingAvailability].map(([id, date]) => [id, new Date(date)]),
+    ),
     complianceResponses: [...state.complianceResponses],
     questionResponses: [...state.questionResponses],
   }
@@ -32,6 +39,8 @@ function createTestAdapter(options: {
     candidates: new Map(),
     applications: new Map(),
     documents: new Map(),
+    processingTasks: new Map(),
+    processingAvailability: new Map(),
     complianceResponses: [],
     questionResponses: [],
   }
@@ -70,6 +79,12 @@ function createTestAdapter(options: {
             working.documents.set(input.id, input.candidateId)
           }
         },
+        async enqueueUploadReconciliation(input) {
+          const taskId = `task-${input.documentId}`
+          working.processingTasks.set(input.documentId, taskId)
+          working.processingAvailability.set(input.documentId, input.availableAt)
+          return { id: taskId, batchId: `batch-${input.documentId}` }
+        },
         async insertComplianceResponse(input) {
           if (options.failCompliance) throw new Error('compliance write failed')
           working.complianceResponses.push(input.applicationId)
@@ -85,6 +100,8 @@ function createTestAdapter(options: {
         state.candidates = working.candidates
         state.applications = working.applications
         state.documents = working.documents
+        state.processingTasks = working.processingTasks
+        state.processingAvailability = working.processingAvailability
         state.complianceResponses = working.complianceResponses
         state.questionResponses = working.questionResponses
         return result
@@ -198,6 +215,34 @@ describe('createPublicApplication transaction', () => {
       }),
     })
     expect(state.documents.size).toBe(6)
+    expect(state.processingTasks.size).toBe(6)
     expect(state.applications.size).toBe(1)
+  })
+
+  it('returns the reconciliation task for every pending public upload', async () => {
+    const { adapter, state } = createTestAdapter()
+    const input: PublicApplicationTransactionInput = {
+      ...applicationInput,
+      documents: [{
+        id: 'document-1',
+        type: 'resume',
+        storageKey: 'org-1/applications/document-1.pdf',
+        originalFilename: 'resume.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 100,
+      }],
+    }
+
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-16T12:00:00.000Z'))
+    const result = await createPublicApplication(input, adapter)
+    vi.useRealTimers()
+
+    expect(result.documentProcessingTasks).toEqual({
+      'document-1': 'task-document-1',
+    })
+    expect(state.processingAvailability.get('document-1')?.toISOString()).toBe(
+      new Date(Date.parse('2026-07-16T12:00:00.000Z') + DOCUMENT_UPLOAD_RECONCILIATION_GRACE_MS).toISOString(),
+    )
   })
 })

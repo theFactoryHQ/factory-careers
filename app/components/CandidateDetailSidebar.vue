@@ -53,7 +53,7 @@ const { application, status: fetchStatus, refresh, updateApplication } = useAppl
 
 const candidateId = computed(() => application.value?.candidate?.id ?? null)
 
-const { data: candidateData, refresh: refreshCandidate } = useFetch(
+const { data: fetchedCandidateData, refresh: refreshCandidate } = useFetch(
   () => candidateId.value ? `/api/candidates/${candidateId.value}` : null!,
   {
     key: computed(() => `sidebar-candidate-${candidateId.value}`),
@@ -63,12 +63,18 @@ const { data: candidateData, refresh: refreshCandidate } = useFetch(
   },
 )
 
+const resolvedCandidateData = computed(() => (
+  fetchedCandidateData.value?.id === candidateId.value
+    ? fetchedCandidateData.value
+    : null
+))
+
 // Fetch candidate data when application loads
 watch(candidateId, (id) => {
   if (id) refreshCandidate()
 }, { immediate: true })
 
-const documents = computed(() => candidateData.value?.documents ?? [])
+const documents = computed(() => resolvedCandidateData.value?.documents ?? [])
 
 const { allowedTransitions, isTransitioning, transitionToStatus } = useApplicationStatusActions({
   application,

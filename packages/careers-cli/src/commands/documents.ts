@@ -1,9 +1,16 @@
 import type { Command } from 'commander'
 import { basename } from 'node:path'
 import { readFileSync } from 'node:fs'
-import { requestFormJson } from '../api'
+import { requestFormJson, requestJson } from '../api'
 import { registerBinaryDownload, registerJsonCommand } from '../commandFactories'
 import type { CliRuntime } from '../cliRuntime'
+import {
+  addProcessingWaitOptions,
+  executeProcessingBatch,
+  exitForUnsuccessfulBatch,
+  resolveProcessingWaitOptions,
+  type ProcessingWaitCommandOptions,
+} from '../processing'
 
 type CandidateDocumentsResponse = {
   documents?: unknown[]
@@ -83,21 +90,64 @@ export function registerDocumentsCommands(program: Command, runtime: CliRuntime)
     deleteAck: true,
   })
 
-  registerJsonCommand(runtime, documents, {
-    name: 'parse',
-    description: 'Re-parse an existing document',
-    method: 'POST',
-    path: (id) => `/api/documents/${encodeURIComponent(id)}/parse`,
-    args: [{ name: 'id', description: 'Document ID' }],
-    mutation: true,
+  const parse = documents
+    .command('parse')
+    .description('Re-process an existing document')
+    .argument('<id>', 'Document ID')
+  addProcessingWaitOptions(parse)
+  runtime.addGlobalOptions(parse).action(async (
+    id: string,
+    options: ProcessingWaitCommandOptions,
+    command: Command,
+  ) => {
+    const { globals, profile } = runtime.getContext(command, options)
+    runtime.requireMutationConfirmation(globals)
+    const token = runtime.requireAuthenticatedProfile(profile)
+    const fetchImpl = runtime.getFetch(runtime.io)
+    const result = await executeProcessingBatch(signal => requestJson<unknown>({
+      fetch: fetchImpl,
+      url: `${profile.baseUrl}/api/documents/${encodeURIComponent(id)}/parse`,
+      method: 'POST',
+      token,
+      signal,
+    }), {
+      fetch: fetchImpl,
+      baseUrl: profile.baseUrl,
+      token,
+      sleep: runtime.getSleep(runtime.io),
+      options: resolveProcessingWaitOptions(options),
+    })
+    runtime.outputResult(runtime.io, globals, result)
+    exitForUnsuccessfulBatch(result)
   })
 
-  registerJsonCommand(runtime, documents, {
-    name: 'parse-all',
-    description: 'Re-parse all unparsed documents in the active organization',
-    method: 'POST',
-    path: '/api/documents/parse-all',
-    mutation: true,
+  const parseAll = documents
+    .command('parse-all')
+    .description('Re-process all pending documents in the active organization')
+  addProcessingWaitOptions(parseAll)
+  runtime.addGlobalOptions(parseAll).action(async (
+    options: ProcessingWaitCommandOptions,
+    command: Command,
+  ) => {
+    const { globals, profile } = runtime.getContext(command, options)
+    runtime.requireMutationConfirmation(globals)
+    const token = runtime.requireAuthenticatedProfile(profile)
+    const fetchImpl = runtime.getFetch(runtime.io)
+    const result = await executeProcessingBatch(signal => requestJson<unknown>({
+      fetch: fetchImpl,
+      url: `${profile.baseUrl}/api/documents/parse-all`,
+      method: 'POST',
+      token,
+      signal,
+    }), {
+      fetch: fetchImpl,
+      baseUrl: profile.baseUrl,
+      token,
+      sleep: runtime.getSleep(runtime.io),
+      options: resolveProcessingWaitOptions(options),
+    })
+    runtime.outputResult(runtime.io, globals, result)
+    exitForUnsuccessfulBatch(result)
   })
 
   return documents

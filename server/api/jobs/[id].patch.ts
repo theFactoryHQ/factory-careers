@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
 
   // Regenerate slug when title or custom slug changes
   const updates: Record<string, unknown> = { ...body, updatedAt: new Date() }
-  delete (updates as any).slug // remove raw slug from spread — we set it explicitly below
+  delete updates.slug // remove raw slug from spread — we set it explicitly below
   const shouldRegenerateSlug = body.title !== undefined || body.slug !== undefined
   if (body.descriptionBlocks !== undefined) {
     const descriptionBlocks = normalizeJobDescriptionBlocks(body.descriptionBlocks)

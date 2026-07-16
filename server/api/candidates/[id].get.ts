@@ -35,7 +35,17 @@ export default defineEventHandler(async (event) => {
         orderBy: (application, { desc }) => [desc(application.createdAt)],
       },
       documents: {
-        columns: { id: true, type: true, originalFilename: true, mimeType: true, parsedContent: true, createdAt: true },
+        columns: {
+          id: true,
+          type: true,
+          originalFilename: true,
+          mimeType: true,
+          parsedContent: true,
+          parseStatus: true,
+          parseResultCode: true,
+          createdAt: true,
+        },
+        where: (candidateDocument, { eq }) => eq(candidateDocument.organizationId, orgId),
         orderBy: (document, { desc }) => [desc(document.createdAt)],
       },
     },

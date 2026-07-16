@@ -88,11 +88,15 @@ describe('org settings SWR', () => {
 })
 
 describe('job pipeline applications fetch', () => {
-  it('routes pipeline applications through useApplications instead of pipeline-apps keys', () => {
+  it('routes pipeline applications through the bounded pipeline loader', () => {
     const pipelinePage = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+    const pipelineComposable = readProjectFile('app/composables/useJobPipeline.ts')
 
-    expect(pipelinePage).toContain('useApplications')
+    expect(pipelinePage).toContain('useJobPipeline({')
+    expect(pipelinePage).not.toContain('allPages: true')
     expect(pipelinePage).not.toContain('pipeline-apps-')
+    expect(pipelineComposable).toContain('/pipeline`')
+    expect(pipelineComposable).toContain('loadMore')
   })
 })
 

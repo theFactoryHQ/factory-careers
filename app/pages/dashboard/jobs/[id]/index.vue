@@ -8,6 +8,12 @@ import {
   Maximize2, Minimize2, Brain, History, SlidersHorizontal,
 } from 'lucide-vue-next'
 import type { PropertyEntry, PropertyFilter } from '~~/shared/properties'
+import type { ApplicationStatus } from '~~/shared/application-status'
+import type {
+  JobPipelineInterviewFilter,
+  JobPipelineScoreFilter,
+  JobPipelineSort,
+} from '~~/shared/job-pipeline'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 import { APPLICATION_STATUS_TRANSITIONS, INTERVIEW_STATUS_TRANSITIONS } from '~~/shared/status-transitions'
 import {
@@ -20,6 +26,12 @@ import {
 } from '~/utils/status-display'
 import { formatPhoneNumber } from '~/utils/phone-format'
 import { jobPipelineLazyPanels } from '~/utils/job-pipeline-lazy-panels'
+import { cacheApplicationDetail, resolveApplicationDetail } from '~/utils/application-detail-cache'
+import {
+  capturePipelineRemovalSelection,
+  followApplicationInPipelineStage,
+  restorePipelineSelectionAfterRemoval,
+} from '~/utils/job-pipeline-selection'
 
 const JobPipelineAiScorePanel = jobPipelineLazyPanels.aiScore
 const JobPipelineDocumentsPanel = jobPipelineLazyPanels.documents
@@ -64,43 +76,60 @@ const debouncedApplicationSearch = useDebouncedRef(applicationSearch, {
   initial: undefined as string | undefined,
 })
 
-const {
-  data: applicationsData,
-  applications,
-  total: applicationTotal,
-  fetchStatus: appFetchStatus,
-  error: appError,
-  refresh: refreshApps,
-} = useApplications({ jobId, limit: 100, search: debouncedApplicationSearch, allPages: true })
-
 const PIPELINE_STATUSES = ['new', 'screening', 'interview', 'offer', 'hired', 'rejected'] as const
-type PipelineStatus = typeof PIPELINE_STATUSES[number]
+type PipelineStatus = ApplicationStatus
 
 // Read initial pipeline stage from URL query param (?stage=screening)
-const initialStage = PIPELINE_STATUSES.includes(route.query.stage as any)
-  ? (route.query.stage as PipelineStatus)
-  : 'new'
+const initialStage = PIPELINE_STATUSES.find(status => status === route.query.stage) ?? 'new'
 const focusStatus = ref<PipelineStatus>(initialStage)
-
-const focusedApplications = computed(() =>
-  applications.value.filter((application) => application.status === focusStatus.value),
-)
 
 // Narrow candidate-only search lives alongside the other focused-list filters.
 const candidateSearch = ref('')
+const debouncedCandidateSearch = useDebouncedRef(candidateSearch, {
+  delay: 250,
+  transform: value => value.trim() || undefined,
+  initial: undefined as string | undefined,
+})
 
 // ─────────────────────────────────────────────
 // Filters & Sorting
 // ─────────────────────────────────────────────
 
-type SortOption = 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc' | 'score-desc' | 'score-asc' | 'updated-desc'
-type ScoreFilter = 'all' | 'high' | 'medium' | 'low' | 'none'
-type InterviewFilter = 'all' | 'has-interview' | 'no-interview'
+type SortOption = JobPipelineSort
+type ScoreFilter = JobPipelineScoreFilter
+type InterviewFilter = JobPipelineInterviewFilter
 
 const sortBy = ref<SortOption>('score-desc')
 const scoreFilter = ref<ScoreFilter>('all')
 const interviewFilter = ref<InterviewFilter>('all')
 const propertyFilters = ref<PropertyFilter[]>([])
+
+const {
+  data: applicationsData,
+  applications,
+  total: applicationTotal,
+  stageCounts: statusCounts,
+  hasMore: hasMoreApplications,
+  fetchStatus: appFetchStatus,
+  error: appError,
+  appendError,
+  isLoadingMore,
+  refresh: refreshApps,
+  loadMore,
+} = useJobPipeline({
+  jobId,
+  stage: focusStatus,
+  search: debouncedApplicationSearch,
+  candidateSearch: debouncedCandidateSearch,
+  score: scoreFilter,
+  interviews: interviewFilter,
+  sort: sortBy,
+  propertyFilters,
+  limit: 25,
+})
+
+const focusedApplications = computed(() => applications.value)
+const filteredApplications = computed(() => applications.value)
 const showSortPanel = ref(false)
 const showFilterPanel = ref(false)
 const sortTriggerRef = ref<HTMLElement | null>(null)
@@ -173,136 +202,29 @@ function closePanels() {
   showFilterPanel.value = false
 }
 
-const filteredApplications = computed(() => {
-  let result = focusedApplications.value
-
-  // Candidate-only filter. The page-level application search is handled by the API.
-  if (candidateSearch.value.trim()) {
-    const term = candidateSearch.value.trim().toLowerCase()
-    result = result.filter((app) => {
-      const name = `${app.candidateFirstName} ${app.candidateLastName}`.toLowerCase()
-      const email = (app.candidateEmail ?? '').toLowerCase()
-      return name.includes(term) || email.includes(term)
-    })
-  }
-
-  // Score filter
-  if (scoreFilter.value !== 'all') {
-    result = result.filter((app) => {
-      switch (scoreFilter.value) {
-        case 'high': return app.score != null && app.score >= 75
-        case 'medium': return app.score != null && app.score >= 40 && app.score < 75
-        case 'low': return app.score != null && app.score < 40
-        case 'none': return app.score == null
-        default: return true
-      }
-    })
-  }
-
-  // Interview filter
-  if (interviewFilter.value !== 'all') {
-    result = result.filter((app) => {
-      const hasInterview = applicationsWithInterviews.value.has(app.id)
-      return interviewFilter.value === 'has-interview' ? hasInterview : !hasInterview
-    })
-  }
-
-  // Property filters
-  if (propertyFilters.value.length > 0) {
-    result = result.filter((app) => {
-      const props = (app as any).properties as PropertyEntry[] | undefined ?? []
-      return propertyFilters.value.every((pf) => {
-        const entry = props.find((e) => e.definition.id === pf.propertyDefinitionId)
-        const val = entry?.value ?? null
-        switch (pf.op) {
-          case 'isEmpty': return val === null || val === '' || (Array.isArray(val) && val.length === 0)
-          case 'isNotEmpty': return val !== null && val !== '' && !(Array.isArray(val) && val.length === 0)
-          case 'equals': return String(val ?? '') === String(pf.value ?? '')
-          case 'contains': return String(val ?? '').toLowerCase().includes(String(pf.value ?? '').toLowerCase())
-          case 'in': return Array.isArray(pf.value) && Array.isArray(val)
-            ? (pf.value as string[]).some((v) => (val as string[]).includes(v))
-            : Array.isArray(pf.value) && (pf.value as string[]).includes(String(val ?? ''))
-          default: return true
-        }
-      })
-    })
-  }
-  return [...result].sort((a, b) => {
-    switch (sortBy.value) {
-      case 'date-desc':
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      case 'date-asc':
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      case 'name-asc': {
-        const nameA = `${a.candidateFirstName} ${a.candidateLastName}`.toLowerCase()
-        const nameB = `${b.candidateFirstName} ${b.candidateLastName}`.toLowerCase()
-        return nameA.localeCompare(nameB)
-      }
-      case 'name-desc': {
-        const nameA = `${a.candidateFirstName} ${a.candidateLastName}`.toLowerCase()
-        const nameB = `${b.candidateFirstName} ${b.candidateLastName}`.toLowerCase()
-        return nameB.localeCompare(nameA)
-      }
-      case 'score-desc':
-        return (b.score ?? -1) - (a.score ?? -1)
-      case 'score-asc':
-        return (a.score ?? -1) - (b.score ?? -1)
-      case 'updated-desc':
-        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      default:
-        return 0
-    }
-  })
+const selectedApplicationId = ref<string | null>(null)
+const currentIndex = computed({
+  get: () => Math.max(0, filteredApplications.value.findIndex(app => app.id === selectedApplicationId.value)),
+  set: (index: number) => {
+    selectedApplicationId.value = filteredApplications.value[index]?.id ?? null
+  },
 })
-
-type StatusCountMap = {
-  new: number
-  screening: number
-  interview: number
-  offer: number
-  hired: number
-  rejected: number
-}
-
-const statusCounts = computed(() => {
-  const counts: StatusCountMap = { new: 0, screening: 0, interview: 0, offer: 0, hired: 0, rejected: 0 }
-  for (const application of applications.value) {
-    if (application.status in counts) {
-      counts[application.status as PipelineStatus] += 1
-    }
-  }
-  return counts
-})
-
-const currentIndex = ref(0)
 
 // Mobile: toggle between candidate list and detail view
 const showMobileDetail = ref(false)
 
-watch(focusedApplications, () => {
-  if (focusedApplications.value.length === 0) {
-    currentIndex.value = 0
+watch(filteredApplications, (apps) => {
+  if (apps.length === 0) {
+    selectedApplicationId.value = null
     return
   }
-  if (currentIndex.value >= focusedApplications.value.length) {
-    currentIndex.value = focusedApplications.value.length - 1
+  if (!apps.some(app => app.id === selectedApplicationId.value)) {
+    selectedApplicationId.value = apps[0]!.id
   }
 }, { immediate: true })
 
-// Also clamp when property/score/interview filters change and shrink filteredApplications
-watch(filteredApplications, (apps) => {
-  if (apps.length === 0) {
-    currentIndex.value = 0
-    return
-  }
-  if (currentIndex.value >= apps.length) {
-    currentIndex.value = apps.length - 1
-  }
-})
-
 watch(focusStatus, () => {
-  currentIndex.value = 0
-  propertyFilters.value = []
+  selectedApplicationId.value = null
   closePanels()
 })
 
@@ -316,7 +238,9 @@ watch(currentIndex, () => {
   })
 })
 
-const currentSummary = computed(() => filteredApplications.value[currentIndex.value] ?? null)
+const currentSummary = computed(() =>
+  filteredApplications.value.find(app => app.id === selectedApplicationId.value) ?? null,
+)
 
 // Detail tab for center panel
 type DetailTab = 'overview' | 'interviews' | 'documents' | 'responses' | 'ai-analysis' | 'timeline' | 'properties'
@@ -409,16 +333,19 @@ type SwipeApplicationDetail = {
   properties: PropertyEntry[]
 }
 
+type CachedApplicationDetail = {
+  applicationId: string
+  data: SwipeApplicationDetail
+}
+
 const currentApplicationId = ref('')
 
 watch(currentSummary, (summary) => {
-  if (!summary?.id) return
-  currentApplicationId.value = summary.id
+  currentApplicationId.value = summary?.id ?? ''
 }, { immediate: true })
 
 const {
   data: currentApplication,
-  status: detailFetchStatus,
   execute: executeDetailFetch,
 } = useFetch<SwipeApplicationDetail | null>(
   () => `/api/applications/${currentApplicationId.value}`,
@@ -430,24 +357,23 @@ const {
   },
 )
 
-// Cache the last successfully loaded detail so switching candidates doesn't flash a loading spinner
-const cachedApplication = ref<SwipeApplicationDetail | null>(null)
+const cachedApplication = ref<CachedApplicationDetail | null>(null)
 
-const resolvedCurrentApplication = computed(() => {
-  if (currentApplication.value && currentApplication.value.id === currentApplicationId.value) {
-    return currentApplication.value
-  }
-  // Show cached (previous) data while the new detail is loading
-  return cachedApplication.value
-})
+const resolvedCurrentApplication = computed(() => resolveApplicationDetail(
+  currentApplicationId.value,
+  currentApplication.value,
+  cachedApplication.value,
+))
 
 watch(currentApplication, (val) => {
-  if (val && val.id === currentApplicationId.value) {
-    cachedApplication.value = val
-  }
+  if (!val) return
+  cachedApplication.value = cacheApplicationDetail(currentApplicationId.value, val)
 })
 
 watch(currentApplicationId, async (id) => {
+  if (cachedApplication.value?.applicationId !== currentApplicationId.value) {
+    cachedApplication.value = null
+  }
   if (!id) return
   await executeDetailFetch()
 }, { immediate: true })
@@ -470,7 +396,8 @@ function getCandidateInitials(firstName?: string, lastName?: string) {
 }
 
 const allowedTransitions = computed(() => {
-  if (!currentSummary.value) return []
+  if (!resolvedCurrentApplication.value) return []
+  if (!currentSummary.value || currentSummary.value.id !== resolvedCurrentApplication.value.id) return []
   return APPLICATION_STATUS_TRANSITIONS[currentSummary.value.status] ?? []
 })
 
@@ -504,89 +431,106 @@ const isMutating = ref(false)
 // ─────────────────────────────────────────────
 
 const showInterviewSidebar = ref(false)
-const interviewTargetApplication = ref<{ id: string; name: string } | null>(null)
+const interviewTargetApplication = ref<{ id: string; name: string; status: string } | null>(null)
 
 function openInterviewScheduler() {
-  if (!currentSummary.value) return
+  if (!resolvedCurrentApplication.value || !currentSummary.value) return
+  if (resolvedCurrentApplication.value.id !== currentSummary.value.id) return
   interviewTargetApplication.value = {
     id: currentSummary.value.id,
     name: `${currentSummary.value.candidateFirstName} ${currentSummary.value.candidateLastName}`,
+    status: currentSummary.value.status,
   }
   showInterviewSidebar.value = true
 }
 
 async function handleInterviewScheduled() {
+  const scheduledTarget = interviewTargetApplication.value
   showInterviewSidebar.value = false
-  const scheduledApplicationId = interviewTargetApplication.value?.id ?? currentSummary.value?.id
   interviewTargetApplication.value = null
 
   track('interview_scheduled')
 
-  // Refresh the interviews list
-  await refreshJobInterviews()
+  // Keep both the selected history and the paginated row projection current.
+  await Promise.all([refreshJobInterviews(), refreshApps()])
 
   // Transition the application status to 'interview' after scheduling
-  if (currentSummary.value && currentSummary.value.status !== 'interview') {
-    const allowed = APPLICATION_STATUS_TRANSITIONS[currentSummary.value.status] ?? []
+  if (scheduledTarget && scheduledTarget.status !== 'interview') {
+    const allowed = APPLICATION_STATUS_TRANSITIONS[scheduledTarget.status] ?? []
     if (allowed.includes('interview')) {
-      await changeStatus('interview')
+      await changeApplicationStatus(scheduledTarget.id, 'interview', scheduledTarget.status)
 
-      // Follow the candidate to the interview column so the user sees the scheduled interview
-      if (scheduledApplicationId) {
-        focusStatus.value = 'interview'
-        await nextTick()
-        const idx = filteredApplications.value.findIndex(a => a.id === scheduledApplicationId)
-        if (idx !== -1) currentIndex.value = idx
-      }
+      // Follow only after the authoritative interview-stage page has loaded.
+      await followApplicationInPipelineStage({
+        applicationId: scheduledTarget.id,
+        targetStage: 'interview',
+        stage: focusStatus,
+        applications: applications,
+        selectedApplicationId,
+        refresh: refreshApps,
+        loadMore,
+        hasMore: hasMoreApplications,
+        flushStageWatchers: nextTick,
+      })
     }
   }
 }
 
 // ─────────────────────────────────────────────
-// Interviews for this job
+// Interview history for the selected application
 // ─────────────────────────────────────────────
 
-const jobInterviewsFetchStarted = ref(false)
+const loadedInterviewsForApplicationId = ref<string | null>(null)
+const interviewsDataApplicationId = ref<string | null>(null)
+const jobInterviewsData = shallowRef<{ data: Interview[] } | null>(null)
+const jobInterviewsError = shallowRef<unknown | null>(null)
+const interviewRequestFetch = useRequestFetch()
+let interviewRequestGeneration = 0
+let interviewRequestController: AbortController | null = null
 
-const {
-  data: jobInterviewsData,
-  error: jobInterviewsError,
-  refresh: refreshJobInterviews,
-  execute: executeJobInterviewsFetch,
-} = useFetch<{ data: Interview[] }>('/api/interviews', {
-  key: `pipeline-job-interviews-${jobId}`,
-  query: { jobId, limit: 100 },
-  headers: useRequestHeaders(['cookie']),
-  immediate: false,
-  watch: false,
-})
-
-async function ensureJobInterviewsLoaded() {
-  if (jobInterviewsFetchStarted.value) return
-  jobInterviewsFetchStarted.value = true
-  await executeJobInterviewsFetch()
-  if (jobInterviewsError.value) {
-    jobInterviewsFetchStarted.value = false
+async function ensureJobInterviewsLoaded(force = false) {
+  const applicationId = currentApplicationId.value
+  if (!applicationId || (!force && loadedInterviewsForApplicationId.value === applicationId)) return
+  const generation = ++interviewRequestGeneration
+  interviewRequestController?.abort()
+  const controller = new AbortController()
+  interviewRequestController = controller
+  loadedInterviewsForApplicationId.value = applicationId
+  jobInterviewsError.value = null
+  try {
+    const result = await interviewRequestFetch<{ data: Interview[] }>('/api/interviews', {
+      query: { applicationId, limit: 100 },
+      signal: controller.signal,
+    })
+    if (controller.signal.aborted || generation !== interviewRequestGeneration || applicationId !== currentApplicationId.value) return
+    jobInterviewsData.value = result
+    interviewsDataApplicationId.value = applicationId
+  } catch (error) {
+    if (controller.signal.aborted || generation !== interviewRequestGeneration) return
+    loadedInterviewsForApplicationId.value = null
+    jobInterviewsError.value = error
   }
+}
+
+async function refreshJobInterviews() {
+  await ensureJobInterviewsLoaded(true)
 }
 
 watch(() => showSection.value.interviews, (show) => {
   if (show) void ensureJobInterviewsLoaded()
 }, { immediate: true })
 
-watch(interviewFilter, (filter) => {
-  if (filter !== 'all') void ensureJobInterviewsLoaded()
+watch(currentApplicationId, () => {
+  if (showSection.value.interviews) void ensureJobInterviewsLoaded()
 })
 
-const jobInterviews = computed(() => jobInterviewsData.value?.data ?? [])
-
 const currentApplicationInterviews = computed(() =>
-  jobInterviews.value.filter(i => i.applicationId === currentApplicationId.value),
+  interviewsDataApplicationId.value === currentApplicationId.value
+    ? jobInterviewsData.value?.data ?? []
+    : [],
 )
 
-const applicationsWithInterviews = computed(() =>
-  new Set(jobInterviews.value.map(i => i.applicationId)),
-)
+onBeforeUnmount(() => interviewRequestController?.abort())
 
 const interviewTypeIcons: Record<string, any> = {
   video: Video,
@@ -738,7 +682,7 @@ async function saveInterviewEdit() {
       },
     })
     editingInterviewId.value = null
-    await refreshJobInterviews()
+    await Promise.all([refreshJobInterviews(), refreshApps()])
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
     toast.error('Failed to save changes', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
@@ -754,7 +698,7 @@ async function handleInterviewTransition(interviewId: string, newStatus: Intervi
       method: 'PATCH',
       body: { status: newStatus },
     })
-    await refreshJobInterviews()
+    await Promise.all([refreshJobInterviews(), refreshApps()])
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
     toast.error('Failed to update status', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
@@ -793,7 +737,7 @@ async function handleReschedule() {
       },
     })
     rescheduleInterviewId.value = null
-    await refreshJobInterviews()
+    await Promise.all([refreshJobInterviews(), refreshApps()])
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
     toast.error('Failed to reschedule', { message: err?.data?.statusMessage, statusCode: err?.data?.statusCode })
@@ -802,11 +746,16 @@ async function handleReschedule() {
   }
 }
 
-async function changeStatus(status: string) {
-  if (!currentSummary.value || isMutating.value) return
-  const applicationId = currentSummary.value.id
-
+async function changeApplicationStatus(applicationId: string, status: string, fromStatus: string) {
+  if (isMutating.value) return
   isMutating.value = true
+
+  const removalSelection = selectedApplicationId.value === applicationId
+    ? capturePipelineRemovalSelection(filteredApplications.value, applicationId, {
+        total: applicationTotal.value,
+        hasMore: hasMoreApplications.value,
+      })
+    : null
 
   try {
     await $fetch(`/api/applications/${applicationId}`, {
@@ -815,19 +764,17 @@ async function changeStatus(status: string) {
     })
 
     track('pipeline_stage_changed', {
-      from_stage: currentSummary.value.status,
+      from_stage: fromStatus,
       to_stage: status,
     })
 
-    await refreshApps()
+    await Promise.all([refreshApps(), refreshJobInterviews()])
 
-    // After the moved candidate disappears from the list, the items that came after
-    // it shift up by one index. currentIndex now naturally points to the next
-    // candidate — no change needed. We only clamp if currentIndex is now out of
-    // bounds (i.e. the moved candidate was the last item in the filtered list).
-    const newLen = filteredApplications.value.length
-    if (newLen > 0 && currentIndex.value >= newLen) {
-      currentIndex.value = newLen - 1
+    if (removalSelection) {
+      selectedApplicationId.value = restorePipelineSelectionAfterRemoval(
+        filteredApplications.value,
+        removalSelection,
+      )
     }
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
@@ -837,13 +784,25 @@ async function changeStatus(status: string) {
   }
 }
 
+async function changeStatus(status: string) {
+  const detail = resolvedCurrentApplication.value
+  const summary = currentSummary.value
+  if (!detail || !summary || detail.id !== summary.id) return
+  await changeApplicationStatus(detail.id, status, summary.status)
+}
+
 function goToPreviousCard() {
   if (currentIndex.value === 0) return
   currentIndex.value -= 1
 }
 
-function goToNextCard() {
-  if (currentIndex.value >= filteredApplications.value.length - 1) return
+async function goToNextCard() {
+  if (currentIndex.value >= filteredApplications.value.length - 1) {
+    if (!hasMoreApplications.value) return
+    const previousLength = filteredApplications.value.length
+    await loadMore()
+    if (filteredApplications.value.length <= previousLength) return
+  }
   currentIndex.value += 1
 }
 
@@ -857,6 +816,7 @@ const teleportTarget = computed(() => isFullscreen.value && pipelineContainer.va
 async function toggleFullscreen() {
   isFullscreen.value = !isFullscreen.value
   await nextTick()
+  pipelineContainer.value?.focus({ preventScroll: true })
 }
 
 function goToPreviousStage() {
@@ -883,6 +843,10 @@ function handleKeyNavigation(event: KeyboardEvent) {
     isFullscreen.value = false
     return
   }
+
+  const hasPipelineFocus = isFullscreen.value
+    || pipelineContainer.value?.contains(document.activeElement)
+  if (!hasPipelineFocus) return
 
   if ((event.target as HTMLElement)?.tagName === 'INPUT' || (event.target as HTMLElement)?.tagName === 'TEXTAREA' || (event.target as HTMLElement)?.tagName === 'SELECT') return
 
@@ -980,6 +944,7 @@ function closeDocPreview() {
 <template>
   <div
     ref="pipelineContainer"
+    tabindex="-1"
     :class="isFullscreen
       ? 'fixed inset-0 z-50 flex h-screen flex-col overflow-hidden bg-surface-50 dark:bg-surface-950 factory-dashboard-portal'
       : 'absolute inset-0 flex flex-col overflow-hidden'"
@@ -1268,13 +1233,13 @@ function closeDocPreview() {
           <!-- Count bar -->
           <div class="shrink-0 px-3.5 pb-2 flex items-center justify-between">
             <span class="text-xs font-medium text-surface-500 dark:text-surface-400">
-              {{ filteredApplications.length }} candidate{{ filteredApplications.length === 1 ? '' : 's' }}
+              {{ applicationTotal }} candidate{{ applicationTotal === 1 ? '' : 's' }}
               <span v-if="debouncedApplicationSearch || hasActiveFilters" class="text-surface-400 dark:text-surface-500">
                 {{ hasActiveFilters ? ' filtered' : ' matching' }}
               </span>
             </span>
-            <span v-if="hasActiveFilters && filteredApplications.length !== focusedApplications.length" class="text-[10px] text-surface-400 dark:text-surface-500">
-              of {{ focusedApplications.length }}
+            <span v-if="hasMoreApplications" class="text-[10px] text-surface-400 dark:text-surface-500">
+              {{ filteredApplications.length }} loaded
             </span>
           </div>
 
@@ -1328,11 +1293,38 @@ function closeDocPreview() {
                     {{ app.score }} pts
                   </span>
                   <span class="text-[11px] text-surface-400 dark:text-surface-500">{{ formatRelativeTime(app.createdAt) }}</span>
-                  <span v-if="applicationsWithInterviews.has(app.id)" class="inline-flex items-center text-warning-500 dark:text-warning-400" title="Interview scheduled">
+                  <span v-if="app.hasScheduledInterview" class="inline-flex items-center text-warning-500 dark:text-warning-400" title="Interview scheduled">
                     <Calendar class="size-3" />
                   </span>
                 </div>
               </div>
+            </div>
+            <div
+              v-if="appendError && hasMoreApplications"
+              class="space-y-2 p-3 text-center"
+              role="alert"
+            >
+              <p class="text-xs text-danger-600 dark:text-danger-300">
+                Couldn’t load more candidates. Loaded candidates are still available.
+              </p>
+              <button
+                type="button"
+                class="factory-toolbar-button flex w-full cursor-pointer items-center justify-center rounded-lg border px-3 py-2 text-xs font-medium disabled:cursor-wait disabled:opacity-60"
+                :disabled="isLoadingMore"
+                @click="loadMore"
+              >
+                {{ isLoadingMore ? 'Retrying…' : 'Retry loading more candidates' }}
+              </button>
+            </div>
+            <div v-else-if="hasMoreApplications" class="p-3">
+              <button
+                type="button"
+                class="factory-toolbar-button flex w-full cursor-pointer items-center justify-center rounded-lg border px-3 py-2 text-xs font-medium disabled:cursor-wait disabled:opacity-60"
+                :disabled="isLoadingMore"
+                @click="loadMore"
+              >
+                {{ isLoadingMore ? 'Loading…' : 'Load more candidates' }}
+              </button>
             </div>
           </div>
         </div>
@@ -1450,10 +1442,10 @@ function closeDocPreview() {
                       <ArrowLeft class="size-4" />
                     </button>
                     <span class="text-xs font-medium text-surface-500 dark:text-surface-400 tabular-nums px-0.5">
-                      {{ currentIndex + 1 }}/{{ filteredApplications.length }}
+                      {{ currentIndex + 1 }}/{{ applicationTotal }}
                     </span>
                     <button
-                      :disabled="currentIndex >= filteredApplications.length - 1"
+                      :disabled="currentIndex >= filteredApplications.length - 1 && !hasMoreApplications"
                       class="flex cursor-pointer items-center justify-center rounded-lg border border-surface-200 p-1.5 text-surface-500 transition-all duration-150 hover:bg-white hover:border-surface-300 hover:text-surface-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:border-surface-600 dark:hover:text-surface-300"
                       @click="goToNextCard"
                     >
@@ -1591,7 +1583,7 @@ function closeDocPreview() {
 
             <!-- Detail content -->
             <div class="bg-surface-50/80 dark:bg-surface-950/80 px-4 sm:px-6 py-5 sm:py-8">
-              <div v-if="detailFetchStatus === 'pending' && !resolvedCurrentApplication" class="flex flex-col items-center justify-center py-12">
+              <div v-if="!resolvedCurrentApplication" class="flex flex-col items-center justify-center py-12">
                 <div class="size-8 rounded-full border-2 border-brand-200 border-t-brand-600 dark:border-brand-800 dark:border-t-brand-400 animate-spin" />
                 <p class="mt-3 text-sm text-surface-400">Loading details…</p>
               </div>
@@ -1611,10 +1603,10 @@ function closeDocPreview() {
                     </div>
                   </div>
                   <p
-                    v-if="currentSummary.notes"
+                    v-if="resolvedCurrentApplication.notes"
                     class="text-sm text-surface-600 dark:text-surface-300 whitespace-pre-wrap"
                   >
-                    {{ currentSummary.notes }}
+                    {{ resolvedCurrentApplication.notes }}
                   </p>
                   <NuxtLink
                     v-else
@@ -1631,6 +1623,7 @@ function closeDocPreview() {
               <div v-if="showSection.aiAnalysis" class="w-full" :class="detailTab === 'overview' ? 'mt-5' : ''">
                 <Suspense v-if="currentSummary">
                   <JobPipelineAiScorePanel
+                    :key="currentSummary.id"
                     :application-id="currentSummary.id"
                     @scored="refreshApps()"
                   />
@@ -2035,6 +2028,7 @@ function closeDocPreview() {
                     <h3 class="text-sm font-semibold text-surface-800 dark:text-surface-200">Properties</h3>
                   </div>
                   <PropertyBlock
+                    :key="resolvedCurrentApplication.id"
                     entity-type="application"
                     :entity-id="resolvedCurrentApplication.id"
                     :job-id="jobId"
@@ -2118,11 +2112,35 @@ function closeDocPreview() {
               </div>
             </div>
           </button>
+          <div
+            v-if="appendError && hasMoreApplications"
+            class="shrink-0 space-y-1 rounded-xl border border-danger-300 px-3 py-2 text-center dark:border-danger-700"
+            role="alert"
+          >
+            <p class="text-[10px] text-danger-600 dark:text-danger-300">Couldn’t load more.</p>
+            <button
+              type="button"
+              class="text-xs font-medium underline"
+              :disabled="isLoadingMore"
+              @click="loadMore"
+            >
+              {{ isLoadingMore ? 'Retrying…' : 'Retry' }}
+            </button>
+          </div>
+          <button
+            v-else-if="hasMoreApplications"
+            type="button"
+            class="factory-mobile-candidate-card shrink-0 rounded-xl border border-surface-200 px-4 py-2 text-xs font-medium dark:border-surface-700"
+            :disabled="isLoadingMore"
+            @click="loadMore"
+          >
+            {{ isLoadingMore ? 'Loading…' : 'Load more' }}
+          </button>
         </div>
         <!-- Position indicator -->
         <div class="flex items-center justify-center pb-1.5">
           <span class="text-[10px] font-medium text-surface-400 dark:text-surface-500 tabular-nums">
-            {{ currentIndex + 1 }} / {{ filteredApplications.length }}
+            {{ currentIndex + 1 }} / {{ applicationTotal }}
           </span>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   loadApplicationResume,
+  selectApplicationDocumentsWithResumeFallback,
   type ApplicationResumeDocument,
   type ApplicationResumeQuery,
   type ApplicationResumeQueryAdapter,
@@ -37,6 +38,17 @@ function createAdapter(rows: StoredResume[]) {
 }
 
 describe('application resume selection', () => {
+  it('adds the same legacy resume to detail projection when only an associated cover letter exists', () => {
+    const associatedCoverLetter = { id: 'cover-associated', type: 'cover_letter' as const }
+    const newestLegacyResume = { id: 'resume-legacy-newest', type: 'resume' as const }
+    const olderLegacyResume = { id: 'resume-legacy-older', type: 'resume' as const }
+
+    expect(selectApplicationDocumentsWithResumeFallback(
+      [associatedCoverLetter],
+      [newestLegacyResume, olderLegacyResume],
+    )).toEqual([associatedCoverLetter, newestLegacyResume])
+  })
+
   it('selects the resume associated with this application before a newer legacy resume', async () => {
     const associated = {
       id: 'resume-associated',
@@ -161,12 +173,21 @@ describe('application resume selection', () => {
     ])
   })
 
-  it('uses the shared selector in manual and automatic scoring', () => {
+  it('uses the shared selector through the common manual and automatic analysis executor', () => {
     const analyzeRoute = readFileSync(join(process.cwd(), 'server/api/applications/[id]/analyze.post.ts'), 'utf8')
     const automaticScoring = readFileSync(join(process.cwd(), 'server/utils/ai/autoScore.ts'), 'utf8')
+    const analysisExecutor = readFileSync(join(process.cwd(), 'server/utils/analyzeApplication.ts'), 'utf8')
     const expectedCall = 'loadApplicationResume(orgId, applicationId, app.candidate.id)'
 
-    expect(analyzeRoute).toContain(expectedCall)
-    expect(automaticScoring).toContain(expectedCall)
+    expect(analysisExecutor).toContain('loadApplicationResume(')
+    expect(analysisExecutor).toContain('organizationId,')
+    expect(analysisExecutor).toContain('applicationId,')
+    expect(analysisExecutor).toContain('app.candidate.id,')
+    expect(analyzeRoute).toContain('analyzeApplication({')
+    expect(automaticScoring).toContain('analyzeApplication({')
+    expect(automaticScoring).toContain('error instanceof AnalyzeApplicationError')
+    expect(automaticScoring).toContain('throw error')
+    expect(analyzeRoute).not.toContain(expectedCall)
+    expect(automaticScoring).not.toContain(expectedCall)
   })
 })

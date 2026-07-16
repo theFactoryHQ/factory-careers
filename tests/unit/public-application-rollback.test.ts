@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import {
   rollbackPublicApplicationSubmission,
@@ -5,6 +7,26 @@ import {
 } from '../../server/utils/rollbackPublicApplicationSubmission'
 
 describe('public application upload compensation', () => {
+  it('cancels document and application work before deletion without sensitive recovery logs', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'server/utils/rollbackPublicApplicationSubmission.ts'),
+      'utf8',
+    )
+    const defaultAdapter = source.slice(source.indexOf('const defaultAdapter'))
+    expect(defaultAdapter).toContain('cancelProcessingTasksInTransaction')
+    expect(defaultAdapter.indexOf('cancelProcessingTasksInTransaction'))
+      .toBeLessThan(defaultAdapter.indexOf('const [lockedApplication] = await tx.select'))
+    expect(source).toContain("type: 'application_analysis'")
+    expect(source.indexOf('cancelProcessingTasksInTransaction'))
+      .toBeLessThan(source.indexOf('await tx.delete(document)'))
+    expect(source.indexOf('cancelProcessingTasksInTransaction'))
+      .toBeLessThan(source.indexOf('await tx.delete(application)'))
+    expect(source).not.toContain('storage_key:')
+    expect(source).not.toContain('error_message:')
+    expect(source).not.toContain('application_id:')
+    expect(source).toContain("result_code: 'storage_cleanup_failed'")
+  })
+
   it('commits relational cleanup before deleting uploaded objects', async () => {
     const events: string[] = []
     const adapter: PublicApplicationRollbackAdapter = {

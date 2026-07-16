@@ -40,7 +40,7 @@ DATABASE_URL=postgresql://factory_careers:${DB_PASS}@localhost:5432/factory_care
 
 # ─── Authentication ──────────────────────────────────────────────────────────
 BETTER_AUTH_SECRET=${AUTH_SECRET}
-BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_URL=http://localhost:3001
 FACTORY_DISABLE_PUBLIC_SIGNUP=false
 FACTORY_ADMIN_SSO_ONLY=false
 FACTORY_DISABLE_PUBLIC_ORG_CREATION=false
@@ -59,16 +59,22 @@ S3_REGION=us-east-1
 S3_FORCE_PATH_STYLE=true
 
 # ─── SEO ─────────────────────────────────────────────────────────────────────
-NUXT_PUBLIC_SITE_URL=http://localhost:3000
+NUXT_PUBLIC_SITE_URL=http://localhost:3001
 EOF
 
 echo ""
 echo "✅  .env generated with random secrets."
 echo ""
-echo "Start the stack:"
+echo "Start host development (Nuxt on port 3001):"
+echo "  docker compose up -d db minio"
+echo "  npm run db:migrate"
+echo "  npm run dev"
+echo ""
+echo "Or start the full Docker stack (app on port 3000):"
 echo "  NODE_AUTH_TOKEN=your-github-packages-read-token docker compose up"
 echo ""
-echo "App → http://localhost:3000"
+echo "Host app → http://localhost:3001"
+echo "Docker app → http://localhost:3000"
 echo ""
 echo "Optional — seed demo account (after the app is running):"
 echo "  docker compose exec app npm run db:seed"

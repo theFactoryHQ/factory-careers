@@ -270,14 +270,23 @@ test.describe('Security — tenant isolation and document access', () => {
       await expectStatus(await orgAApi.get(`/api/documents/${fixture.docxDocument.id}/preview`), [415])
 
       const ownerParse = await orgAApi.post(`/api/documents/${fixture.docxDocument.id}/parse`)
-      expect(ownerParse.status()).toBe(200)
-      const ownerParseBody = await ownerParse.json()
+      expect(ownerParse.status()).toBe(202)
+      let ownerParseBody = await ownerParse.json() as {
+        batchId: string
+        status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
+        counts: { succeeded: number, failed: number, total: number }
+      }
+      while (!['completed', 'failed', 'cancelled'].includes(ownerParseBody.status)) {
+        const drain = await orgAApi.post(`/api/processing/${ownerParseBody.batchId}/drain`, {
+          data: { limit: 5 },
+        })
+        expect(drain.status()).toBe(200)
+        ownerParseBody = await drain.json()
+      }
       expect(ownerParseBody).toMatchObject({
-        id: fixture.docxDocument.id,
-        parsed: true,
-        sourceFormat: 'docx',
+        status: 'completed',
+        counts: { succeeded: 1, failed: 0, total: 1 },
       })
-      expect(ownerParseBody.wordCount).toBeGreaterThan(0)
 
       await expectStatus(await orgAApi.delete(`/api/documents/${fixture.docxDocument.id}`), [204])
       await expectStatus(await orgAApi.get(`/api/documents/${fixture.docxDocument.id}/download`), [404])

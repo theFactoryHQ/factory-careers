@@ -676,6 +676,7 @@ async function handleSidebarUpdated() {
     <!-- Detail sidebar -->
     <CandidateDetailSidebar
       v-if="selectedAppId"
+      :key="selectedAppId"
       :application-id="selectedAppId"
       :open="sidebarOpen"
       @close="closeSidebar"

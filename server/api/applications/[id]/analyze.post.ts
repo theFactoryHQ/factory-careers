@@ -1,225 +1,66 @@
-import { eq, and } from 'drizzle-orm'
-import { resourceIdParamSchema } from '../../../utils/schemas/common'
-import {
-  application, scoringCriterion, criterionScore,
-  analysisRun, analysisRunCriterionScore, orgSettings,
-} from '../../../database/schema'
-import { scoreApplication, computeCompositeScore } from '../../../utils/ai/scoring'
-import type { CriterionDefinition } from '../../../utils/ai/scoring'
-import type { SupportedProvider } from '../../../utils/ai/provider'
-import { loadAiConfig } from '../../../utils/ai/loadConfig'
-import { extractResumeText } from '../../../utils/resume-parser'
-import { loadApplicationResume } from '../../../utils/applicationResume'
-import { createRateLimiter } from '../../../utils/rateLimit'
 import { z } from 'zod'
+import {
+  AnalyzeApplicationError,
+  analyzeApplication,
+} from '../../../utils/analyzeApplication'
+import { createRateLimiter } from '../../../utils/rateLimit'
+import { resourceIdParamSchema } from '../../../utils/schemas/common'
 
 const bodySchema = z.object({
   /** Optional override; falls back to the org's analysis default. */
   aiConfigId: z.string().min(1).nullable().optional(),
 }).partial().optional()
-const limiter = createRateLimiter({ windowMs: 60_000, maxRequests: 20, message: 'Too many AI analysis requests. Please wait before retrying.' })
+const limiter = createRateLimiter({
+  windowMs: 60_000,
+  maxRequests: 20,
+  message: 'Too many AI analysis requests. Please wait before retrying.',
+})
+
+function mapAnalyzeApplicationError(error: AnalyzeApplicationError) {
+  if (error.code === 'APPLICATION_NOT_FOUND') {
+    return createError({ statusCode: 404, statusMessage: error.message })
+  }
+
+  if (error.code === 'PROVIDER_FAILURE') {
+    return createError({
+      statusCode: 502,
+      statusMessage: `AI analysis failed: ${error.message}`,
+    })
+  }
+
+  return createError({
+    statusCode: 422,
+    statusMessage: error.message,
+    data: error.code === 'RESUME_PARSE_FAILED'
+      ? { code: 'PARSE_FAILED', documentId: error.documentId }
+      : undefined,
+  })
+}
 
 /**
  * POST /api/applications/:id/analyze
  * Run AI analysis on a single application. Scores the candidate against job criteria.
- * Stores individual criterion scores + composite score + audit trail.
  */
 export default defineEventHandler(async (event) => {
   await limiter(event)
   const session = await requirePermission(event, { scoring: ['create'] })
-  const orgId = session.session.activeOrganizationId
+  const organizationId = session.session.activeOrganizationId
   const { id: applicationId } = await getValidatedRouterParams(event, resourceIdParamSchema.parse)
-  // Body is optional — GET-style "just run with defaults" stays valid.
   const body = await readBody(event).catch(() => null)
   const parsedBody = body ? bodySchema.parse(body) : null
 
-  // Fetch application with candidate, job, and documents
-  const app = await db.query.application.findFirst({
-    where: and(eq(application.id, applicationId), eq(application.organizationId, orgId)),
-    with: {
-      candidate: {
-        columns: { id: true, firstName: true, lastName: true },
-      },
-      job: {
-        columns: { id: true, title: true, description: true },
-      },
-    },
-  })
-
-  if (!app) {
-    throw createError({ statusCode: 404, statusMessage: 'Application not found' })
-  }
-
-  // Fetch AI config (override → analysis default → 422)
-  const config = await loadAiConfig(orgId, {
-    purpose: 'analysis',
-    preferId: parsedBody?.aiConfigId ?? null,
-  })
-
-  // Fetch scoring criteria for this job
-  const criteria = await db.select().from(scoringCriterion)
-    .where(and(
-      eq(scoringCriterion.jobId, app.job.id),
-      eq(scoringCriterion.organizationId, orgId),
-    ))
-
-  if (criteria.length === 0) {
-    throw createError({
-      statusCode: 422,
-      statusMessage: 'No scoring criteria defined for this job. Add criteria first.',
-    })
-  }
-
-  const resumeDoc = await loadApplicationResume(orgId, applicationId, app.candidate.id)
-  const resumeText = extractResumeText(resumeDoc?.parsedContent)
-
-  if (!resumeText) {
-    // Resume document exists but parsing failed or was incomplete
-    if (resumeDoc) {
-      throw createError({
-        statusCode: 422,
-        statusMessage: 'Resume was uploaded but text extraction failed. Try re-parsing the document.',
-        data: { code: 'PARSE_FAILED', documentId: resumeDoc.id },
-      })
-    }
-    throw createError({
-      statusCode: 422,
-      statusMessage: 'No resume found for this candidate. Upload a resume first.',
-    })
-  }
-
-  if (!app.job.description) {
-    throw createError({
-      statusCode: 422,
-      statusMessage: 'Job description is required for AI analysis.',
-    })
-  }
-
-  const criteriaDefinitions: CriterionDefinition[] = criteria.map(c => ({
-    key: c.key,
-    name: c.name,
-    description: c.description,
-    category: c.category,
-    maxScore: c.maxScore,
-    weight: c.weight,
-  }))
-
-  const providerConfig = {
-    provider: config.provider as SupportedProvider,
-    model: config.model,
-    apiKeyEncrypted: config.apiKeyEncrypted,
-    baseUrl: config.baseUrl,
-    maxTokens: config.maxTokens,
-  }
-  const settings = await db.query.orgSettings.findFirst({
-    where: eq(orgSettings.organizationId, orgId),
-    columns: { analysisContext: true },
-  })
-
-  let result
   try {
-    result = await scoreApplication(providerConfig, {
-      jobTitle: app.job.title,
-      jobDescription: app.job.description,
-      criteria: criteriaDefinitions,
-      resumeText,
-      coverLetterText: app.coverLetterText,
-      applicationNotes: app.notes,
-      organizationAnalysisContext: settings?.analysisContext ?? null,
-    })
-  } catch (err: any) {
-    // Record failed analysis run
-    await db.insert(analysisRun).values({
-      organizationId: orgId,
+    return await analyzeApplication({
+      organizationId,
       applicationId,
-      status: 'failed',
-      provider: config.provider,
-      model: config.model,
-      criteriaSnapshot: criteriaDefinitions as any,
-      errorMessage: err?.message ?? 'Unknown error',
+      aiConfigId: parsedBody?.aiConfigId ?? null,
       scoredById: session.user.id,
-    })
-
-    throw createError({
-      statusCode: 502,
-      statusMessage: `AI analysis failed: ${err?.message ?? 'Unknown error'}`,
     })
   }
-
-  // Compute composite score
-  const compositeScore = computeCompositeScore(criteriaDefinitions, result.scoring.evaluations)
-
-  // Insert scores, update application, and record run atomically
-  const scoreValues = result.scoring.evaluations.map(evaluation => ({
-    organizationId: orgId,
-    applicationId,
-    criterionKey: evaluation.criterionKey,
-    maxScore: evaluation.maxScore,
-    applicantScore: evaluation.applicantScore,
-    confidence: evaluation.confidence,
-    evidence: evaluation.evidence,
-    strengths: evaluation.strengths,
-    gaps: evaluation.gaps,
-  }))
-
-  const [run] = await db.transaction(async (tx) => {
-    const [createdRun] = await tx.insert(analysisRun).values({
-      organizationId: orgId,
-      applicationId,
-      status: 'completed',
-      provider: config.provider,
-      model: config.model,
-      criteriaSnapshot: criteriaDefinitions as any,
-      rawResponse: result.scoring as any,
-      compositeScore,
-      promptTokens: result.usage.promptTokens,
-      completionTokens: result.usage.completionTokens,
-      scoredById: session.user.id,
-    }).returning()
-
-    const runScoreValues = scoreValues.map(score => ({
-      ...score,
-      analysisRunId: createdRun!.id,
-    }))
-
-    // Delete previous scores for this application (replace strategy)
-    await tx.delete(criterionScore)
-      .where(and(
-        eq(criterionScore.applicationId, applicationId),
-        eq(criterionScore.organizationId, orgId),
-      ))
-
-    if (scoreValues.length > 0) {
-      await tx.insert(criterionScore).values(scoreValues)
-      await tx.insert(analysisRunCriterionScore).values(runScoreValues)
+  catch (error) {
+    if (error instanceof AnalyzeApplicationError) {
+      throw mapAnalyzeApplicationError(error)
     }
-
-    // Update application composite score
-    await tx.update(application)
-      .set({ score: compositeScore, updatedAt: new Date() })
-      .where(eq(application.id, applicationId))
-
-    return [createdRun]
-  })
-
-  recordActivity({
-    organizationId: orgId,
-    actorId: session.user.id,
-    action: 'scored',
-    resourceType: 'application',
-    resourceId: applicationId,
-    metadata: {
-      compositeScore,
-      model: config.model,
-      criterionCount: result.scoring.evaluations.length,
-    },
-  })
-
-  return {
-    compositeScore,
-    evaluations: result.scoring.evaluations,
-    summary: result.scoring.summary,
-    analysisRunId: run!.id,
-    usage: result.usage,
+    throw error
   }
 })

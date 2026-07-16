@@ -1,5 +1,5 @@
 import type { MaybeRefOrGetter } from 'vue'
-import { nextTick, onBeforeUnmount, ref, toValue } from 'vue'
+import { nextTick, onScopeDispose, ref, toValue } from 'vue'
 
 type ApplicationWithNotes = {
   notes?: string | null
@@ -113,9 +113,15 @@ export function useEditableApplicationNotes(options: UseEditableApplicationNotes
     if (saved) isEditingNotes.value = false
   }
 
-  onBeforeUnmount(() => {
+  onScopeDispose(() => {
+    const hasPendingAutosave = autosaveTimer !== null
     clearAutosaveTimer()
     clearSavedStatusTimer()
+
+    // A keyed drawer is disposed immediately when the selected application
+    // changes. Flush its debounced edit through the old application's save
+    // closure so those notes can never be applied to the newly selected row.
+    if (hasPendingAutosave) void saveNotes()
   })
 
   return {

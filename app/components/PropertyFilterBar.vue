@@ -103,22 +103,22 @@ function defaultOpFor(def: PropertyDefinition): PropertyOperator {
 function operatorsFor(def: PropertyDefinition): PropertyOperator[] {
   switch (def.type) {
     case 'select':
-      return ['equals', 'isNotEmpty']
+      return ['equals', 'isEmpty', 'isNotEmpty']
     case 'multi_select':
-      return ['in', 'isNotEmpty']
+      return ['in', 'isEmpty', 'isNotEmpty']
     case 'checkbox':
-      return ['equals']
+      return ['equals', 'isEmpty', 'isNotEmpty']
     case 'text':
     case 'long_text':
     case 'url':
     case 'email':
     case 'person':
-      return ['contains', 'equals', 'isNotEmpty']
+      return ['contains', 'equals', 'isEmpty', 'isNotEmpty']
     case 'number':
     case 'date':
-      return ['equals', 'isNotEmpty']
+      return ['equals', 'isEmpty', 'isNotEmpty']
     case 'file':
-      return ['isNotEmpty']
+      return ['isEmpty', 'isNotEmpty']
   }
 }
 

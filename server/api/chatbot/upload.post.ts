@@ -58,7 +58,6 @@ export default defineEventHandler(async (event) => {
   // Plain text fallback: detect by lack of magic bytes + ASCII content.
   if (!detected) {
     const sample = buf.subarray(0, Math.min(buf.length, 512)).toString('utf8')
-    // eslint-disable-next-line no-control-regex
     const looksTextual = /^[\x09\x0A\x0D\x20-\x7E\u00A0-\uFFFF]*$/.test(sample)
     if (looksTextual) mime = 'text/plain'
   }

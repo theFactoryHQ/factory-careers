@@ -7,6 +7,9 @@ const RESUME_ORDER = ['createdAtDesc', 'idDesc'] as const
 export type ApplicationResumeDocument = {
   id: string
   parsedContent: unknown
+  uploadStatus?: 'pending' | 'completed'
+  parseStatus?: 'pending' | 'parsed' | 'no_text' | 'failed'
+  parseRetryable?: boolean | null
 }
 
 export type ApplicationResumeQuery = {
@@ -20,11 +23,32 @@ export type ApplicationResumeQueryAdapter = {
   findResume(query: ApplicationResumeQuery): Promise<ApplicationResumeDocument | null>
 }
 
+/**
+ * Keep application-bound documents, but project the same newest legacy resume
+ * that analysis selects when the application has no associated resume.
+ * Both inputs must already use the shared createdAt/id descending order.
+ */
+export function selectApplicationDocumentsWithResumeFallback<
+  T extends { type: 'resume' | 'cover_letter' | 'other' },
+>(associatedDocuments: T[], legacyDocuments: T[]): T[] {
+  if (associatedDocuments.some(document => document.type === 'resume')) {
+    return associatedDocuments
+  }
+
+  if (associatedDocuments.length === 0) return legacyDocuments
+
+  const legacyResume = legacyDocuments.find(document => document.type === 'resume')
+  return legacyResume ? [...associatedDocuments, legacyResume] : associatedDocuments
+}
+
 const drizzleResumeQueryAdapter: ApplicationResumeQueryAdapter = {
   async findResume(query) {
     const [resume] = await db.select({
       id: document.id,
       parsedContent: document.parsedContent,
+      uploadStatus: document.uploadStatus,
+      parseStatus: document.parseStatus,
+      parseRetryable: document.parseRetryable,
     })
       .from(document)
       .where(and(

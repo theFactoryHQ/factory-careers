@@ -8,6 +8,7 @@ export async function requestJson<T>(options: {
   method?: string
   body?: unknown
   token?: string
+  signal?: AbortSignal
 }): Promise<T> {
   const headers: Record<string, string> = {
     accept: 'application/json',
@@ -25,6 +26,7 @@ export async function requestJson<T>(options: {
     method: options.method ?? (options.body === undefined ? 'GET' : 'POST'),
     headers,
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    signal: options.signal,
   })
   const data = await response.json().catch(() => null) as unknown
 

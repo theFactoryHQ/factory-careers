@@ -4,7 +4,7 @@
 
 **Goal:** Make scoring rubric-safe, resumable, observable, and identical across automatic, browser, CLI, and reparsing paths.
 
-**Architecture:** Model output is reconciled against canonical criteria before persistence. A PostgreSQL-backed processing queue atomically claims bounded tasks and records retry state; a Nitro worker and explicit drain endpoint use the same processor.
+**Architecture:** Model output is reconciled against canonical criteria before persistence. A PostgreSQL-backed processing queue atomically claims bounded tasks and records retry state; a Nitro worker and explicit drain endpoint use the same processor. Document upload reservations carry an explicit pending/completed state and enqueue reconciliation transactionally, so both public-application and authenticated dashboard uploads can recover after a process crash without permanently consuming capacity.
 
 **Tech Stack:** Nuxt 4, Drizzle/PostgreSQL, structured AI output, CLI, Vitest.
 
@@ -27,14 +27,21 @@
 
 **Files:**
 - Modify: `server/database/schema/app.ts`
-- Create: `server/database/migrations/0053_processing_queue.sql`
+- Create: `server/database/migrations/0054_processing_queue.sql`
 - Modify: `server/database/migrations/meta/_journal.json`
 - Create: `server/utils/processingQueue.ts`
+- Modify: `server/utils/candidateDocumentReservation.ts`
+- Modify: `server/utils/createPublicApplication.ts`
+- Modify: `server/api/candidates/[id]/documents/index.post.ts`
+- Modify: `server/api/public/jobs/[slug]/apply.post.ts`
 - Test: `tests/unit/processing-queue.test.ts`
+- Test: `tests/unit/candidate-document-reservation.test.ts`
 
 - [ ] Write failing state-transition tests for enqueue idempotency, bounded claims, completion, retry backoff, and terminal failure.
 - [ ] Add processing batch/task tables with organization, type, resource ID, status, attempt count, availability, lease, error, and timestamps.
 - [ ] Implement claim SQL with `FOR UPDATE SKIP LOCKED`, finite leases, and a maximum attempt count.
+- [ ] Add explicit pending/completed upload state; reserve both dashboard and public-application documents with a reconciliation task in the same transaction, then mark the task/document complete atomically after upload and parsing.
+- [ ] Backfill pre-queue documents safely: parsed documents are complete; unparsed documents receive bounded reconciliation work so storage existence distinguishes legitimate parsed-empty uploads from crash-stale rows.
 - [ ] Run focused tests; expect pass.
 - [ ] Commit with `feat: add durable recruiting processing queue`.
 
@@ -68,6 +75,8 @@
 
 - [ ] Write failing tests that prove bulk endpoints enqueue rather than loop, reparsing enqueues affected scoring, and a restarted worker can reclaim an expired lease.
 - [ ] Implement bounded queue draining for `application_analysis` and `document_parse` task types.
+- [ ] Reconcile upload reservations for both dashboard and public-application paths: finalize and parse when the object exists; otherwise remove a stale dashboard reservation or roll back the incomplete public application so it can be resubmitted.
+- [ ] Prove tasks/reservations created before and during deployment are recoverable and that a parsed-empty but successfully uploaded document is preserved as completed.
 - [ ] Start a small unref’d polling worker outside prerender/test contexts; all correctness remains in persisted queue state.
 - [ ] Return batch IDs and structured progress.
 - [ ] Run focused tests; expect pass.

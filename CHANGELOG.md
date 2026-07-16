@@ -12,9 +12,25 @@ self-hosters.
 
 ## Unreleased
 
+### Added
+
+- Added CLI batch inspection and resumption plus organization-wide missing-only scoring, finite wait controls, and stable nonzero outcomes for failed, cancelled, or timed-out processing.
+
+### Changed
+
+- Shared typed job create and update contracts across the dashboard and API while preserving deliberate null-versus-omitted field behavior.
+- Made the generated Nuxt ESLint configuration a required local and pull-request gate, and clarified that host development runs on port 3001 while the full Docker stack remains on port 3000.
+
 ### Fixed
 
+- Kept large job pipelines stable with bounded server pagination, accurate filtered stage counts, identity-safe selection, and application-scoped interview history.
 - Kept ordinary application and job-pipeline lists available while the optional application search index is being migrated during a deployment.
+- Bound score details and reviewer feedback to the exact persisted analysis run, kept the last successful result visible after a failed re-score, and isolated candidate and scoring state when switching applications.
+- Preserved pending upload reconciliation work across restarts and retained cancelled processing history when documents or parent records are removed.
+- Classified parsed, text-free, retryable, and permanently failed PDF, DOCX, and DOC parsing outcomes with stable result codes.
+- Made bulk missing-score analysis and document reprocessing resumable through tenant-scoped batches with bounded retries, sanitized status, and an opt-in background worker.
+- Kept recruiter scoring and document-reparse actions accurate while durable work is running, with visible progress, safe application/job switching, and terminal-only refreshes.
+- Restored `is empty` property filtering and applied property filters within the active organization and job at the database layer.
 
 ## [1.0.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.0.0) (2026-07-16)
 

@@ -1,5 +1,5 @@
 import type { MaybeRefOrGetter } from 'vue'
-import type { FactoryDivision, JobDescriptionBlock } from '~~/shared/job-listing-structure'
+import type { UpdateJobRequest } from '~~/shared/job-contract'
 
 /**
  * Composable for a single job detail with update and delete mutations.
@@ -26,32 +26,7 @@ export function useJob(id: MaybeRefOrGetter<string>) {
   }
 
   /** Update job fields (partial) and refresh both detail and list caches */
-  async function updateJob(payload: Partial<{
-    title: string
-    description: string | null
-    divisions?: FactoryDivision[]
-    descriptionBlocks?: JobDescriptionBlock[]
-    location: string | null
-    type: 'full_time' | 'part_time' | 'contract' | 'internship'
-    status: 'draft' | 'open' | 'closed' | 'archived'
-    salaryMin: number | null
-    salaryMax: number | null
-    salaryCurrency: string | null
-    salaryUnit: 'YEAR' | 'MONTH' | 'HOUR' | null
-    salaryNegotiable: boolean
-    salaryDisplayOnListing: boolean
-    remoteStatus: 'remote' | 'hybrid' | 'onsite' | null
-    activeFrom: Date
-    validThrough: Date | null
-    requireResume: boolean
-    requireCoverLetter: boolean
-    applicationComplianceEnabled: boolean
-    includeEeo: boolean
-    includeVeteran: boolean
-    includeDisability: boolean
-    autoScoreOnApply: boolean
-    experienceLevel: 'junior' | 'mid' | 'senior' | 'lead' | null
-  }>) {
+  async function updateJob(payload: UpdateJobRequest) {
     try {
       const updated = await $fetch(`/api/jobs/${jobId.value}`, {
         method: 'PATCH',

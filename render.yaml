@@ -2,15 +2,19 @@ services:
   - type: web
     name: factory-careers
     runtime: docker
-    repo: https://github.com/caffeinebounce/factory-careers
+    repo: https://github.com/theFactoryHQ/factory-careers
     plan: free
     region: oregon
     branch: main
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /api/public/jobs?limit=1
+    healthCheckPath: /api/readyz
     envVars:
       - key: NODE_ENV
         value: production
+      - key: SKIP_RUNTIME_MIGRATIONS
+        value: "false"
+      - key: RECRUITING_WORKER_ENABLED
+        value: "false"
       - key: BETTER_AUTH_URL
         value: https://careers.thefactoryhq.com
       - key: NUXT_PUBLIC_SITE_URL

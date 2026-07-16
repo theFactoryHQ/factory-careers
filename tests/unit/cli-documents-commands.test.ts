@@ -203,10 +203,21 @@ describe('CLI document commands', () => {
     const dir = tempDir()
     const configPath = join(dir, 'config.json')
     writeAuthedConfig(configPath)
+    const completed = {
+      batchId: 'batch_doc_1',
+      type: 'document_parse',
+      status: 'completed',
+      counts: { pending: 0, processing: 0, succeeded: 1, failed: 0, cancelled: 0, attempted: 1, total: 1 },
+      errorsByCode: {},
+      createdAt: '2026-07-16T12:00:00.000Z',
+      startedAt: '2026-07-16T12:00:01.000Z',
+      completedAt: '2026-07-16T12:00:02.000Z',
+      retryAfterMs: null,
+    }
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       expect(url).toBe('https://careers.example.com/api/documents/doc_1/parse')
       expect(init?.method).toBe('POST')
-      return Response.json({ id: 'doc_1', parsed: true, wordCount: 250, sectionCount: 4 })
+      return Response.json(completed, { status: 202 })
     })
     const stdout: string[] = []
 
@@ -216,33 +227,55 @@ describe('CLI document commands', () => {
     )
 
     expect(exitCode).toBe(0)
-    expect(JSON.parse(stdout[0])).toEqual({ id: 'doc_1', parsed: true, wordCount: 250, sectionCount: 4 })
+    expect(JSON.parse(stdout[0])).toEqual(completed)
   })
 
-  it('re-parses all unparsed organization documents with confirmation', async () => {
+  it('returns nonzero when some organization document reparses fail', async () => {
     const dir = tempDir()
     const configPath = join(dir, 'config.json')
     writeAuthedConfig(configPath)
+    const pending = {
+      batchId: 'batch_docs',
+      type: 'document_parse',
+      status: 'pending',
+      counts: { pending: 2, processing: 0, succeeded: 0, failed: 0, cancelled: 0, attempted: 0, total: 2 },
+      errorsByCode: {},
+      createdAt: '2026-07-16T12:00:00.000Z',
+      startedAt: null,
+      completedAt: null,
+      retryAfterMs: 1_000,
+    }
+    const failed = {
+      ...pending,
+      status: 'failed',
+      counts: { pending: 0, processing: 0, succeeded: 1, failed: 1, cancelled: 0, attempted: 2, total: 2 },
+      errorsByCode: { no_text: 1 },
+      startedAt: '2026-07-16T12:00:01.000Z',
+      completedAt: '2026-07-16T12:00:02.000Z',
+      retryAfterMs: null,
+    }
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      expect(url).toBe('https://careers.example.com/api/documents/parse-all')
-      expect(init?.method).toBe('POST')
-      expect(init?.headers).toMatchObject({ Authorization: 'Bearer secret-token' })
-      return Response.json({ total: 2, parsed: 1, failed: 1, failures: [{ id: 'doc_2', error: 'No text' }] })
+      if (url === 'https://careers.example.com/api/documents/parse-all') {
+        expect(init?.method).toBe('POST')
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer secret-token' })
+        return Response.json(pending, { status: 202 })
+      }
+      if (url === 'https://careers.example.com/api/processing/batch_docs/drain') {
+        expect(init?.method).toBe('POST')
+        return Response.json(failed)
+      }
+      throw new Error(`Unexpected request ${init?.method} ${url}`)
     })
     const stdout: string[] = []
 
     const exitCode = await runCli(
       ['documents', 'parse-all', '--yes', '--config', configPath, '--json'],
-      { stdout: (value) => stdout.push(value), stderr: () => {}, fetch: fetchMock as typeof fetch },
+      { stdout: (value) => stdout.push(value), stderr: () => {}, fetch: fetchMock as typeof fetch, sleep: async () => {} },
     )
 
-    expect(exitCode).toBe(0)
-    expect(JSON.parse(stdout[0])).toEqual({
-      total: 2,
-      parsed: 1,
-      failed: 1,
-      failures: [{ id: 'doc_2', error: 'No text' }],
-    })
+    expect(exitCode).toBe(1)
+    expect(stdout).toHaveLength(1)
+    expect(JSON.parse(stdout[0])).toEqual(failed)
   })
 
   it('does not create an output file when download fails', async () => {

@@ -1,6 +1,14 @@
 import type { Command } from 'commander'
+import { requestJson } from '../api'
 import { registerJsonCommand } from '../commandFactories'
 import type { CliRuntime } from '../cliRuntime'
+import {
+  addProcessingWaitOptions,
+  executeProcessingBatch,
+  exitForUnsuccessfulBatch,
+  resolveProcessingWaitOptions,
+  type ProcessingWaitCommandOptions,
+} from '../processing'
 import { cliApplicationCreateSchema } from '../schemas'
 
 export function registerApplicationsCommands(program: Command, runtime: CliRuntime): Command {
@@ -29,6 +37,35 @@ export function registerApplicationsCommands(program: Command, runtime: CliRunti
       status: options.status as string | undefined,
       search: options.search as string | undefined,
     }),
+  })
+
+  const analyzeMissing = applications
+    .command('analyze-missing')
+    .description('Score every currently unscored application in the active organization')
+  addProcessingWaitOptions(analyzeMissing)
+  runtime.addGlobalOptions(analyzeMissing).action(async (
+    options: ProcessingWaitCommandOptions,
+    command: Command,
+  ) => {
+    const { globals, profile } = runtime.getContext(command, options)
+    runtime.requireMutationConfirmation(globals)
+    const token = runtime.requireAuthenticatedProfile(profile)
+    const fetchImpl = runtime.getFetch(runtime.io)
+    const result = await executeProcessingBatch(signal => requestJson<unknown>({
+      fetch: fetchImpl,
+      url: `${profile.baseUrl}/api/applications/analyze-missing`,
+      method: 'POST',
+      token,
+      signal,
+    }), {
+      fetch: fetchImpl,
+      baseUrl: profile.baseUrl,
+      token,
+      sleep: runtime.getSleep(runtime.io),
+      options: resolveProcessingWaitOptions(options),
+    })
+    runtime.outputResult(runtime.io, globals, result)
+    exitForUnsuccessfulBatch(result)
   })
 
   registerJsonCommand(runtime, applications, {
