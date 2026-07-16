@@ -63,15 +63,25 @@ describe('calendar webhook renewal scope', () => {
     })
 
     expect(requirePermissionMock).not.toHaveBeenCalled()
-    expect(drizzleMocks.eq).not.toHaveBeenCalled()
+    expect(drizzleMocks.eq).toHaveBeenCalledWith(calendarIntegration.provider, 'google')
+    expect(drizzleMocks.eq).not.toHaveBeenCalledWith(
+      calendarIntegration.organizationId,
+      expect.anything(),
+    )
     expect(findManyMock).toHaveBeenCalledWith(expect.objectContaining({
       where: {
         operator: 'and',
         conditions: [
+          {
+            operator: 'eq',
+            column: calendarIntegration.provider,
+            value: 'google',
+          },
           expect.objectContaining({ operator: 'isNotNull' }),
           expect.objectContaining({ operator: 'lt' }),
         ],
       },
+      columns: { id: true, userId: true, organizationId: true },
     }))
   })
 
@@ -81,6 +91,11 @@ describe('calendar webhook renewal scope', () => {
     requirePermissionMock.mockResolvedValue({
       session: { activeOrganizationId },
     })
+    findManyMock.mockResolvedValue([{
+      id: 'integration-interactive',
+      userId: 'user-interactive',
+      organizationId: activeOrganizationId,
+    }])
 
     await renewWebhooksHandler(event)
 
@@ -91,6 +106,7 @@ describe('calendar webhook renewal scope', () => {
       calendarIntegration.organizationId,
       activeOrganizationId,
     )
+    expect(drizzleMocks.eq).toHaveBeenCalledWith(calendarIntegration.provider, 'google')
     expect(findManyMock).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({
         operator: 'and',
@@ -102,6 +118,11 @@ describe('calendar webhook renewal scope', () => {
         ]),
       }),
     }))
+    expect(setupCalendarWebhookMock).toHaveBeenCalledWith({
+      integrationId: 'integration-interactive',
+      userId: 'user-interactive',
+      organizationId: activeOrganizationId,
+    })
   })
 
   it('does no database or provider work when interactive permission is denied', async () => {
@@ -147,10 +168,10 @@ describe('calendar webhook renewal scope', () => {
     vi.setSystemTime(new Date('2026-07-16T12:00:00.000Z'))
     envStub.CRON_SECRET = 'configured-cron-secret'
     findManyMock.mockResolvedValue([
-      { userId: 'user-renewed' },
-      { userId: 'user-provider-failed' },
-      { userId: 'user-provider-threw' },
-      { userId: null },
+      { id: 'integration-renewed', userId: 'user-renewed', organizationId: 'org-a' },
+      { id: 'integration-provider-failed', userId: 'user-provider-failed', organizationId: 'org-b' },
+      { id: 'integration-provider-threw', userId: 'user-provider-threw', organizationId: null },
+      { id: 'integration-without-user', userId: null, organizationId: 'org-c' },
     ])
     setupCalendarWebhookMock
       .mockResolvedValueOnce(true)
@@ -165,10 +186,22 @@ describe('calendar webhook renewal scope', () => {
       expect.anything(),
       new Date('2026-07-17T12:00:00.000Z'),
     )
-    expect(setupCalendarWebhookMock.mock.calls.map(([userId]) => userId)).toEqual([
-      'user-renewed',
-      'user-provider-failed',
-      'user-provider-threw',
+    expect(setupCalendarWebhookMock.mock.calls.map(([identity]) => identity)).toEqual([
+      {
+        integrationId: 'integration-renewed',
+        userId: 'user-renewed',
+        organizationId: 'org-a',
+      },
+      {
+        integrationId: 'integration-provider-failed',
+        userId: 'user-provider-failed',
+        organizationId: 'org-b',
+      },
+      {
+        integrationId: 'integration-provider-threw',
+        userId: 'user-provider-threw',
+        organizationId: null,
+      },
     ])
     expect(result).toEqual({ total: 4, renewed: 1, failed: 3 })
   })

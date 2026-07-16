@@ -15,7 +15,7 @@ import { initiateCalendarOAuth } from '../../../utils/calendarOAuth'
 const MICROSOFT_CALLBACK_PATH = '/api/calendar/microsoft/callback'
 
 export default defineEventHandler(async (event) => {
-  const session = await requireAuth(event)
+  const session = await requirePermission(event, { organization: ['update'] })
   const orgId = session.session.activeOrganizationId
 
   if (!isMicrosoftCalendarConfigured()) {

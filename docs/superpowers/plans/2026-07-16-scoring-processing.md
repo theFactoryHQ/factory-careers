@@ -27,7 +27,7 @@
 
 **Files:**
 - Modify: `server/database/schema/app.ts`
-- Create: `server/database/migrations/0050_processing_queue.sql`
+- Create: `server/database/migrations/0051_processing_queue.sql`
 - Modify: `server/database/migrations/meta/_journal.json`
 - Create: `server/utils/processingQueue.ts`
 - Test: `tests/unit/processing-queue.test.ts`

@@ -29,7 +29,7 @@
 
 **Files:**
 - Modify: `server/database/schema/app.ts`
-- Create: `server/database/migrations/0049_application_documents.sql`
+- Create: `server/database/migrations/0050_application_documents.sql`
 - Modify: `server/database/migrations/meta/_journal.json`
 - Modify: `server/api/public/jobs/[slug]/apply.post.ts`
 - Modify: `server/api/applications/[id].get.ts`

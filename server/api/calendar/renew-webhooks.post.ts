@@ -34,14 +34,16 @@ export default defineEventHandler(async (event) => {
     where: orgId
       ? and(
           eq(calendarIntegration.organizationId, orgId),
+          eq(calendarIntegration.provider, 'google'),
           isNotNull(calendarIntegration.webhookChannelId),
           lt(calendarIntegration.webhookExpiration, expirationThreshold),
         )
       : and(
+          eq(calendarIntegration.provider, 'google'),
           isNotNull(calendarIntegration.webhookChannelId),
           lt(calendarIntegration.webhookExpiration, expirationThreshold),
         ),
-    columns: { userId: true },
+    columns: { id: true, userId: true, organizationId: true },
   })
 
   let renewed = 0
@@ -53,7 +55,11 @@ export default defineEventHandler(async (event) => {
       continue
     }
     try {
-      const success = await setupCalendarWebhook(integration.userId)
+      const success = await setupCalendarWebhook({
+        integrationId: integration.id,
+        userId: integration.userId,
+        organizationId: integration.organizationId,
+      })
       if (success) renewed++
       else failed++
     }

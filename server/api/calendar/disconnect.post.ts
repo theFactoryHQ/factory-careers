@@ -8,7 +8,7 @@ import { isCalendarConfigured, removeConnectedCalendarIntegration } from '../../
 import { isMicrosoftCalendarApplicationMode } from '../../utils/microsoft-calendar'
 
 export default defineEventHandler(async (event) => {
-  const session = await requireAuth(event)
+  const session = await requirePermission(event, { organization: ['update'] })
   const orgId = session.session.activeOrganizationId
 
   if (!isCalendarConfigured()) {

@@ -9,7 +9,7 @@
  * Security is ensured by validating the X-Goog-Channel-ID header against
  * stored webhook channel IDs in the database.
  */
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { calendarIntegration } from '../../database/schema'
 import { performIncrementalSync } from '../../utils/google-calendar'
 
@@ -38,8 +38,11 @@ export default defineEventHandler(async (event) => {
 
   // Find the integration associated with this webhook channel
   const integration = await db.query.calendarIntegration.findFirst({
-    where: eq(calendarIntegration.webhookChannelId, channelId),
-    columns: { userId: true, webhookResourceId: true },
+    where: and(
+      eq(calendarIntegration.webhookChannelId, channelId),
+      eq(calendarIntegration.provider, 'google'),
+    ),
+    columns: { id: true, userId: true, organizationId: true, webhookResourceId: true },
   })
 
   if (!integration) {
@@ -61,7 +64,11 @@ export default defineEventHandler(async (event) => {
     return { ok: true }
   }
 
-  performIncrementalSync(userId).catch(err => {
+  performIncrementalSync({
+    integrationId: integration.id,
+    userId,
+    organizationId: integration.organizationId,
+  }).catch(err => {
     logError('calendar.webhook_sync_failed', {
       posthog_distinct_id: userId,
       error_message: err instanceof Error ? err.message : String(err),

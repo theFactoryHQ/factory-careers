@@ -65,19 +65,16 @@ export function isCalendarProviderConfigured(provider: CalendarProvider): boolea
 }
 
 export async function getConnectedCalendarIntegration(userId: string, organizationId?: string | null) {
-  const microsoft = organizationId
-    ? await db.query.calendarIntegration.findFirst({
-        where: and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, 'microsoft')),
-      })
-    : null
-  if (microsoft) return microsoft
+  if (organizationId) {
+    const microsoft = await db.query.calendarIntegration.findFirst({
+      where: and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, 'microsoft')),
+    })
+    if (microsoft) return microsoft
 
-  const google = organizationId
-    ? await db.query.calendarIntegration.findFirst({
-        where: and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, 'google')),
-      })
-    : null
-  if (google) return google
+    return await db.query.calendarIntegration.findFirst({
+      where: and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, 'google')),
+    }) ?? null
+  }
 
   const userMicrosoft = await db.query.calendarIntegration.findFirst({
     where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'microsoft')),
@@ -92,12 +89,11 @@ export async function getConnectedCalendarIntegration(userId: string, organizati
 async function resolveCalendarIntegration(userId: string, organizationId?: string | null, provider?: CalendarProvider | null) {
   if (!provider) return await getConnectedCalendarIntegration(userId, organizationId)
 
-  const orgIntegration = organizationId
-    ? await db.query.calendarIntegration.findFirst({
-        where: and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, provider)),
-      })
-    : null
-  if (orgIntegration) return orgIntegration
+  if (organizationId) {
+    return await db.query.calendarIntegration.findFirst({
+      where: and(eq(calendarIntegration.organizationId, organizationId), eq(calendarIntegration.provider, provider)),
+    }) ?? null
+  }
 
   return await db.query.calendarIntegration.findFirst({
     where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, provider)),
@@ -239,12 +235,23 @@ export async function removeConnectedCalendarIntegration(userId: string, organiz
     return
   }
 
-  await removeGoogleCalendarIntegration(integration.userId ?? userId)
+  const googleUserId = integration.userId ?? userId
+  await removeGoogleCalendarIntegration({
+    integrationId: integration.id,
+    userId: googleUserId,
+    organizationId: integration.organizationId,
+  })
 }
 
 export async function setupConnectedCalendarWebhook(userId: string, organizationId?: string | null, provider?: CalendarProvider | null): Promise<boolean> {
   const integration = await resolveCalendarIntegration(userId, organizationId, provider)
-  if (integration?.provider === 'google') return await setupGoogleCalendarWebhook(integration.userId ?? userId)
+  if (integration?.provider === 'google') {
+    return await setupGoogleCalendarWebhook({
+      integrationId: integration.id,
+      userId: integration.userId ?? userId,
+      organizationId: integration.organizationId,
+    })
+  }
 
   // Microsoft Graph event creation/update/delete works without a webhook.
   // RSVP/back-sync via Graph change subscriptions can be added later without

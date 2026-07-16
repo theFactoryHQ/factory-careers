@@ -73,7 +73,7 @@ describe('calendar disconnect', () => {
     expect(calendarProviderMocks.removeGoogleCalendarIntegration).not.toHaveBeenCalled()
   })
 
-  it('removes a user Microsoft integration when no org integration is connected', async () => {
+  it('does not fall back to a user Microsoft integration when an org context is present', async () => {
     const findFirst = vi.fn()
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
@@ -93,11 +93,11 @@ describe('calendar disconnect', () => {
 
     await removeConnectedCalendarIntegration('user-1', 'org-1')
 
-    expect(calendarProviderMocks.removeMicrosoftCalendarIntegration).toHaveBeenCalledWith('user-1', undefined)
+    expect(calendarProviderMocks.removeMicrosoftCalendarIntegration).not.toHaveBeenCalled()
     expect(calendarProviderMocks.removeGoogleCalendarIntegration).not.toHaveBeenCalled()
   })
 
-  it('removes a user Google integration when no org integration is connected', async () => {
+  it('does not fall back to a user Google integration when an org context is present', async () => {
     const findFirst = vi.fn()
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
@@ -118,7 +118,42 @@ describe('calendar disconnect', () => {
 
     await removeConnectedCalendarIntegration('user-1', 'org-1')
 
-    expect(calendarProviderMocks.removeGoogleCalendarIntegration).toHaveBeenCalledWith('user-1')
+    expect(calendarProviderMocks.removeGoogleCalendarIntegration).not.toHaveBeenCalled()
     expect(calendarProviderMocks.removeMicrosoftCalendarIntegration).not.toHaveBeenCalled()
+  })
+
+  it('retains user Microsoft fallback only without an organization context', async () => {
+    const findFirst = vi.fn().mockResolvedValueOnce({
+      provider: 'microsoft',
+      userId: 'user-1',
+      organizationId: null,
+    })
+    vi.stubGlobal('db', { query: { calendarIntegration: { findFirst } } })
+
+    const { removeConnectedCalendarIntegration } = await import('../../server/utils/calendar')
+    await removeConnectedCalendarIntegration('user-1')
+
+    expect(calendarProviderMocks.removeMicrosoftCalendarIntegration).toHaveBeenCalledWith('user-1', undefined)
+  })
+
+  it('retains exact user Google fallback only without an organization context', async () => {
+    const findFirst = vi.fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: 'google-user-row',
+        provider: 'google',
+        userId: 'user-1',
+        organizationId: null,
+      })
+    vi.stubGlobal('db', { query: { calendarIntegration: { findFirst } } })
+
+    const { removeConnectedCalendarIntegration } = await import('../../server/utils/calendar')
+    await removeConnectedCalendarIntegration('user-1')
+
+    expect(calendarProviderMocks.removeGoogleCalendarIntegration).toHaveBeenCalledWith({
+      integrationId: 'google-user-row',
+      userId: 'user-1',
+      organizationId: null,
+    })
   })
 })

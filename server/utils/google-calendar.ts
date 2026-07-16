@@ -5,9 +5,43 @@
  * for two-way interview scheduling sync.
  */
 import { google, type calendar_v3 } from 'googleapis'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, isNull } from 'drizzle-orm'
 import { encrypt, decrypt } from './encryption'
 import { calendarIntegration, interview } from '../database/schema'
+
+export type GoogleCalendarIntegrationIdentity = Readonly<{
+  integrationId: string
+  userId: string
+  organizationId: string | null
+}>
+
+function googleIntegrationConditions(identity: GoogleCalendarIntegrationIdentity) {
+  return [
+    eq(calendarIntegration.id, identity.integrationId),
+    eq(calendarIntegration.userId, identity.userId),
+    eq(calendarIntegration.provider, 'google'),
+    identity.organizationId === null
+      ? isNull(calendarIntegration.organizationId)
+      : eq(calendarIntegration.organizationId, identity.organizationId),
+  ] as const
+}
+
+function googleIntegrationWhere(identity: GoogleCalendarIntegrationIdentity) {
+  return and(...googleIntegrationConditions(identity))
+}
+
+function calendarIntegrationConflict() {
+  return createError({
+    statusCode: 409,
+    statusMessage: 'Google Calendar is already connected to a different organization or account',
+  })
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  if ('code' in error && error.code === '23505') return true
+  return 'cause' in error && isUniqueViolation(error.cause)
+}
 
 // ─────────────────────────────────────────────
 // OAuth2 Client
@@ -124,9 +158,14 @@ export async function exchangeCodeForTokens(code: string): Promise<{
  * Get an authenticated Google Calendar client for a user.
  * Decrypts stored tokens and handles automatic refresh.
  */
-export async function getCalendarClient(userId: string): Promise<calendar_v3.Calendar | null> {
+export async function getCalendarClient(
+  owner: string | GoogleCalendarIntegrationIdentity,
+): Promise<calendar_v3.Calendar | null> {
+  const userId = typeof owner === 'string' ? owner : owner.userId
   const integration = await db.query.calendarIntegration.findFirst({
-    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
+    where: typeof owner === 'string'
+      ? and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google'))
+      : googleIntegrationWhere(owner),
   })
 
   if (!integration) return null
@@ -158,7 +197,9 @@ export async function getCalendarClient(userId: string): Promise<calendar_v3.Cal
             accessTokenEncrypted: newAccessTokenEncrypted,
             updatedAt: new Date(),
           })
-          .where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
+          .where(typeof owner === 'string'
+            ? and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google'))
+            : googleIntegrationWhere(owner))
       }
       catch (err) {
         logError('calendar.token_refresh_persist_failed', {
@@ -175,39 +216,79 @@ export async function getCalendarClient(userId: string): Promise<calendar_v3.Cal
 /**
  * Save or update calendar integration credentials for a user.
  */
-export async function saveCalendarIntegration(userId: string, params: {
+export async function saveCalendarIntegration(userId: string, organizationId: string, params: {
   accessToken: string
   refreshToken: string
   email: string | null
-}): Promise<void> {
+}): Promise<GoogleCalendarIntegrationIdentity> {
   const secret = env.BETTER_AUTH_SECRET
   const accessTokenEncrypted = encrypt(params.accessToken, secret)
   const refreshTokenEncrypted = encrypt(params.refreshToken, secret)
 
-  // Upsert: update if exists, insert if not
-  const existing = await db.query.calendarIntegration.findFirst({
-    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
-  })
-
-  if (existing) {
-    await db.update(calendarIntegration)
-      .set({
-        accessTokenEncrypted,
-        refreshTokenEncrypted,
-        accountEmail: params.email,
-        updatedAt: new Date(),
+  try {
+    return await db.transaction(async (tx) => {
+      const existingForUser = await tx.query.calendarIntegration.findFirst({
+        where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
       })
-      .where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
-  }
-  else {
-    await db.delete(calendarIntegration).where(eq(calendarIntegration.userId, userId))
-    await db.insert(calendarIntegration).values({
-      userId,
-      provider: 'google',
-      accessTokenEncrypted,
-      refreshTokenEncrypted,
-      accountEmail: params.email,
+      const existingForOrganization = await tx.query.calendarIntegration.findFirst({
+        where: and(
+          eq(calendarIntegration.organizationId, organizationId),
+          eq(calendarIntegration.provider, 'google'),
+        ),
+      })
+
+      if (existingForUser?.organizationId && existingForUser.organizationId !== organizationId) {
+        throw calendarIntegrationConflict()
+      }
+      if (existingForOrganization && existingForOrganization.id !== existingForUser?.id) {
+        throw calendarIntegrationConflict()
+      }
+
+      if (existingForUser) {
+        const previousIdentity: GoogleCalendarIntegrationIdentity = {
+          integrationId: existingForUser.id,
+          userId,
+          organizationId: existingForUser.organizationId,
+        }
+        const identity: GoogleCalendarIntegrationIdentity = {
+          integrationId: existingForUser.id,
+          userId,
+          organizationId,
+        }
+        const updated = await tx.update(calendarIntegration)
+          .set({
+            organizationId,
+            accessTokenEncrypted,
+            refreshTokenEncrypted,
+            accountEmail: params.email,
+            updatedAt: new Date(),
+          })
+          .where(googleIntegrationWhere(previousIdentity))
+          .returning({ id: calendarIntegration.id })
+
+        if (!updated[0]) throw calendarIntegrationConflict()
+        return identity
+      }
+
+      const inserted = await tx.insert(calendarIntegration)
+        .values({
+          userId,
+          organizationId,
+          provider: 'google',
+          accessTokenEncrypted,
+          refreshTokenEncrypted,
+          accountEmail: params.email,
+        })
+        .returning({ id: calendarIntegration.id })
+      const integrationId = inserted[0]?.id
+      if (!integrationId) throw new Error('Failed to save Google Calendar integration')
+
+      return { integrationId, userId, organizationId }
     })
+  }
+  catch (error) {
+    if (isUniqueViolation(error)) throw calendarIntegrationConflict()
+    throw error
   }
 }
 
@@ -215,14 +296,15 @@ export async function saveCalendarIntegration(userId: string, params: {
  * Remove calendar integration for a user.
  * Stops the webhook channel and deletes stored credentials.
  */
-export async function removeCalendarIntegration(userId: string): Promise<void> {
+export async function removeCalendarIntegration(identity: GoogleCalendarIntegrationIdentity): Promise<void> {
+  const { userId } = identity
   if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') {
-    await db.delete(calendarIntegration).where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
+    await db.delete(calendarIntegration).where(googleIntegrationWhere(identity))
     return
   }
 
   const integration = await db.query.calendarIntegration.findFirst({
-    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
+    where: googleIntegrationWhere(identity),
   })
 
   if (!integration) return
@@ -230,7 +312,7 @@ export async function removeCalendarIntegration(userId: string): Promise<void> {
   // Stop the webhook channel if active
   if (integration.webhookChannelId && integration.webhookResourceId) {
     try {
-      const calendar = await getCalendarClient(userId)
+      const calendar = await getCalendarClient(identity)
       if (calendar) {
         await calendar.channels.stop({
           requestBody: {
@@ -249,7 +331,7 @@ export async function removeCalendarIntegration(userId: string): Promise<void> {
     }
   }
 
-  await db.delete(calendarIntegration).where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
+  await db.delete(calendarIntegration).where(googleIntegrationWhere(identity))
 }
 
 // ─────────────────────────────────────────────
@@ -496,14 +578,15 @@ export async function cancelCalendarEvent(
  * Set up a Google Calendar webhook to receive push notifications
  * when events change (e.g., candidate accepts/declines via Google Calendar).
  */
-export async function setupCalendarWebhook(userId: string): Promise<boolean> {
+export async function setupCalendarWebhook(identity: GoogleCalendarIntegrationIdentity): Promise<boolean> {
   if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') return false
 
-  const calendar = await getCalendarClient(userId)
+  const { userId } = identity
+  const calendar = await getCalendarClient(identity)
   if (!calendar) return false
 
   const integration = await db.query.calendarIntegration.findFirst({
-    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
+    where: googleIntegrationWhere(identity),
     columns: { calendarId: true, webhookChannelId: true, webhookResourceId: true },
   })
 
@@ -546,7 +629,7 @@ export async function setupCalendarWebhook(userId: string): Promise<boolean> {
     })
 
     // Store the channel info for later stop/renewal
-    await db.update(calendarIntegration)
+    const updated = await db.update(calendarIntegration)
       .set({
         webhookChannelId: channelId,
         webhookResourceId: response.data.resourceId ?? null,
@@ -555,10 +638,25 @@ export async function setupCalendarWebhook(userId: string): Promise<boolean> {
           : null,
         updatedAt: new Date(),
       })
-      .where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
+      .where(and(
+        ...googleIntegrationConditions(identity),
+        integration.webhookChannelId === null
+          ? isNull(calendarIntegration.webhookChannelId)
+          : eq(calendarIntegration.webhookChannelId, integration.webhookChannelId),
+      ))
+      .returning({ id: calendarIntegration.id })
+
+    if (!updated[0]) {
+      if (response.data.resourceId) {
+        await calendar.channels.stop({
+          requestBody: { id: channelId, resourceId: response.data.resourceId },
+        }).catch(() => undefined)
+      }
+      return false
+    }
 
     // Do an initial sync to get the syncToken
-    await performIncrementalSync(userId)
+    await performIncrementalSync(identity)
 
     return true
   }
@@ -575,14 +673,15 @@ export async function setupCalendarWebhook(userId: string): Promise<boolean> {
  * Perform an incremental sync to process changes from Google Calendar.
  * Updates interview candidateResponse based on attendee RSVP status.
  */
-export async function performIncrementalSync(userId: string): Promise<void> {
+export async function performIncrementalSync(identity: GoogleCalendarIntegrationIdentity): Promise<void> {
   if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') return
 
-  const calendar = await getCalendarClient(userId)
+  const { userId } = identity
+  const calendar = await getCalendarClient(identity)
   if (!calendar) return
 
   const integration = await db.query.calendarIntegration.findFirst({
-    where: and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')),
+    where: googleIntegrationWhere(identity),
   })
 
   if (!integration) return
@@ -625,8 +724,8 @@ export async function performIncrementalSync(userId: string): Promise<void> {
           if (integration.syncToken) {
             await db.update(calendarIntegration)
               .set({ syncToken: null, updatedAt: new Date() })
-              .where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
-            return performIncrementalSync(userId)
+              .where(googleIntegrationWhere(identity))
+            return performIncrementalSync(identity)
           }
           // Already cleared syncToken but still getting 410 — bail out
           logError('calendar.persistent_410_error', {
@@ -641,7 +740,7 @@ export async function performIncrementalSync(userId: string): Promise<void> {
 
       for (const event of events) {
         if (!event.id) continue
-        await syncEventAttendeeStatus(event)
+        await syncEventAttendeeStatus(event, identity.organizationId)
       }
 
       pageToken = data.nextPageToken ?? undefined
@@ -652,7 +751,7 @@ export async function performIncrementalSync(userId: string): Promise<void> {
     if (nextSyncToken) {
       await db.update(calendarIntegration)
         .set({ syncToken: nextSyncToken, updatedAt: new Date() })
-        .where(and(eq(calendarIntegration.userId, userId), eq(calendarIntegration.provider, 'google')))
+        .where(googleIntegrationWhere(identity))
     }
   }
   catch (err) {
@@ -681,12 +780,20 @@ function mapAttendeeStatus(
 /**
  * Sync a single Google Calendar event's attendee status back to the interview.
  */
-async function syncEventAttendeeStatus(event: calendar_v3.Schema$Event): Promise<void> {
+async function syncEventAttendeeStatus(
+  event: calendar_v3.Schema$Event,
+  organizationId: string | null,
+): Promise<void> {
   if (!event.id) return
 
   // Find the interview linked to this Google Calendar event
   const interviewRecord = await db.query.interview.findFirst({
-    where: eq(interview.googleCalendarEventId, event.id),
+    where: organizationId === null
+      ? eq(interview.googleCalendarEventId, event.id)
+      : and(
+          eq(interview.googleCalendarEventId, event.id),
+          eq(interview.organizationId, organizationId),
+        ),
     with: {
       application: {
         with: {

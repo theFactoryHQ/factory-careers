@@ -10,7 +10,12 @@ import { initiateCalendarOAuth } from '../../../utils/calendarOAuth'
 const GOOGLE_CALLBACK_PATH = '/api/calendar/google/callback'
 
 export default defineEventHandler(async (event) => {
-  await requireAuth(event)
+  const session = await requirePermission(event, { organization: ['update'] })
+  const orgId = session.session.activeOrganizationId
+
+  if (!orgId) {
+    throw createError({ statusCode: 403, statusMessage: 'No active organization' })
+  }
 
   if (!isGoogleCalendarConfigured()) {
     throw createError({
@@ -22,6 +27,7 @@ export default defineEventHandler(async (event) => {
   return initiateCalendarOAuth(event, {
     stateCookieName: 'gcal_oauth_state',
     callbackPath: GOOGLE_CALLBACK_PATH,
+    extraCookies: [{ name: 'gcal_oauth_org', value: orgId }],
     getAuthUrl: getGoogleAuthUrl,
   })
 })
