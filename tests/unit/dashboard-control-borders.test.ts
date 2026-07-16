@@ -3,6 +3,8 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const css = readFileSync(join(process.cwd(), 'app/assets/css/main.css'), 'utf8')
+const candidatePage = readFileSync(join(process.cwd(), 'app/pages/dashboard/candidates/[id].vue'), 'utf8')
+const documentsPanel = readFileSync(join(process.cwd(), 'app/components/CandidateDocumentsPanel.vue'), 'utf8')
 
 function cssBlock(selector: string) {
   const start = css.indexOf(selector)
@@ -44,11 +46,24 @@ describe('dashboard control borders', () => {
   })
 
   it('preserves focus and high-signal boundaries', () => {
-    expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) :is(\n    .ui-button,')).toContain('outline: 2px solid color-mix(in srgb, var(--color-brand-500) 70%, white);')
+    expect(css).not.toContain(':where(.factory-dashboard-shell, .factory-dashboard-portal) :is(\n    .ui-button,')
+    expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) :is(button:not(.gooey-search-trigger):not(.gooey-search-clear), a):focus-visible {')).toContain('outline: 2px solid color-mix(in srgb, var(--color-brand-500) 62%, transparent) !important;')
     expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-primary {')).toContain('border-color: var(--color-brand-500) !important;')
     expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-button-danger-outline {')).toContain('border-color: var(--factory-tone-danger-outline-border) !important;')
     expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-field {')).toContain('border-color: var(--ui-border-strong) !important;')
     expect(cssBlock('.factory-back-button:hover {')).toContain('background-color: #ffffff !important;')
     expect(cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-back-button:hover {')).toContain('background-color: var(--ui-control-fill-hover) !important;')
+  })
+
+  it('keeps destructive toolbar actions visibly bounded', () => {
+    expect(candidatePage).toContain('factory-toolbar-button factory-toolbar-button-danger')
+    expect(documentsPanel).toContain('factory-toolbar-button factory-toolbar-button-danger')
+
+    const dangerToolbar = cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button-danger {')
+    expect(dangerToolbar).toContain('border-color: var(--factory-tone-danger-action-border) !important;')
+    expect(dangerToolbar).toContain('color: var(--factory-tone-danger-text) !important;')
+
+    const dangerToolbarHover = cssBlock(':where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button-danger:hover {')
+    expect(dangerToolbarHover).toContain('border-color: var(--factory-tone-danger-action-hover-bg) !important;')
   })
 })

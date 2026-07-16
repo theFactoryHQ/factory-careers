@@ -1870,18 +1870,6 @@
     color: rgb(255 255 255 / 0.62) !important;
   }
 
-  :where(.factory-dashboard-shell, .factory-dashboard-portal) :is(
-    .ui-button,
-    .ui-tab,
-    .factory-toolbar-button,
-    .factory-job-subnav-tab,
-    .factory-candidate-detail-tab,
-    .factory-view-toggle button
-  ):focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--color-brand-500) 70%, white);
-    outline-offset: 2px;
-  }
-
   :where(.factory-dashboard-shell, .factory-dashboard-portal) .ui-pill {
     border: 1px solid var(--ui-border) !important;
     border-radius: 0 !important;
@@ -3064,6 +3052,18 @@
     border-color: transparent !important;
     background-color: var(--ui-control-fill-hover) !important;
     color: #ffffff !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button-danger {
+    border-color: var(--factory-tone-danger-action-border) !important;
+    background-color: var(--factory-tone-danger-bg-soft) !important;
+    color: var(--factory-tone-danger-text) !important;
+  }
+
+  :where(.factory-dashboard-shell, .factory-dashboard-portal) .factory-toolbar-button-danger:hover {
+    border-color: var(--factory-tone-danger-action-hover-bg) !important;
+    background-color: var(--factory-tone-danger-action-hover-bg) !important;
+    color: #080808 !important;
   }
 
   .factory-back-button,

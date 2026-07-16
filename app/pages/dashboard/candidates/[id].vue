@@ -274,7 +274,7 @@ const {
                 Edit
               </button>
               <button
-                class="factory-toolbar-button inline-flex h-10 min-h-10 cursor-pointer items-center gap-1.5 border border-danger-500/45 px-3 py-0 text-xs font-medium text-danger-200 transition-colors hover:border-danger-400 hover:bg-danger-500/12 hover:text-white"
+                class="factory-toolbar-button factory-toolbar-button-danger inline-flex h-10 min-h-10 cursor-pointer items-center gap-1.5 border px-3 py-0 text-xs font-medium transition-colors"
                 @click="showDeleteConfirm = true"
               >
                 <Trash2 class="size-3.5" />
