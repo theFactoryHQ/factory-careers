@@ -1,6 +1,15 @@
 /** Build bounded-concurrency batches for every API page after page one. */
 export function remainingPageBatches(total: number, limit: number, concurrency = 4): number[][] {
-  if (total <= limit || limit <= 0 || concurrency <= 0) return []
+  const batchSize = Math.floor(concurrency)
+  if (
+    !Number.isFinite(total)
+    || !Number.isFinite(limit)
+    || !Number.isFinite(concurrency)
+    || total <= 0
+    || limit <= 0
+    || batchSize <= 0
+    || total <= limit
+  ) return []
 
   const remainingPages = Array.from(
     { length: Math.ceil(total / limit) - 1 },
@@ -8,8 +17,8 @@ export function remainingPageBatches(total: number, limit: number, concurrency =
   )
   const batches: number[][] = []
 
-  for (let index = 0; index < remainingPages.length; index += concurrency) {
-    batches.push(remainingPages.slice(index, index + concurrency))
+  for (let index = 0; index < remainingPages.length; index += batchSize) {
+    batches.push(remainingPages.slice(index, index + batchSize))
   }
 
   return batches

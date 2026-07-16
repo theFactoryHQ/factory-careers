@@ -16,6 +16,15 @@ CREATE INDEX "application_search_document_job_idx"
 CREATE INDEX "application_search_document_candidate_idx"
   ON "application_search_document" USING btree ("candidate_id");
 
+-- Queue refreshes by transaction so bulk writes rebuild each affected search
+-- document once at commit instead of once per changed source row.
+CREATE TABLE "application_search_refresh_queue" (
+  "transaction_id" bigint NOT NULL,
+  "application_id" text NOT NULL,
+  CONSTRAINT "application_search_refresh_queue_pk"
+    PRIMARY KEY ("transaction_id", "application_id")
+);
+
 -- Rebuild one application's denormalized recruiter-search document. Voluntary
 -- compliance/self-identification responses are deliberately not included.
 CREATE OR REPLACE FUNCTION refresh_application_search_document(target_application_id text)
@@ -51,6 +60,18 @@ BEGIN
         FROM document d
         WHERE d.organization_id = a.organization_id
           AND d.candidate_id = a.candidate_id
+          AND (
+            d.application_id = a.id
+            OR (
+              d.application_id IS NULL
+              AND NOT EXISTS (
+                SELECT 1
+                FROM document associated_document
+                WHERE associated_document.organization_id = a.organization_id
+                  AND associated_document.application_id = a.id
+              )
+            )
+          )
       ),
       (
         SELECT string_agg(concat_ws(' ',
@@ -75,6 +96,7 @@ BEGIN
           ON pd.id = pv.property_definition_id
           AND pd.organization_id = a.organization_id
         WHERE pv.organization_id = a.organization_id
+          AND (pd.job_id IS NULL OR pd.job_id = a.job_id)
           AND (
             (pv.entity_type = 'application' AND pv.entity_id = a.id)
             OR (pv.entity_type = 'candidate' AND pv.entity_id = a.candidate_id)
@@ -177,37 +199,70 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION refresh_application_search_for_candidate(target_candidate_id text)
+CREATE OR REPLACE FUNCTION queue_application_search_document(target_application_id text)
 RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF target_application_id IS NOT NULL THEN
+    INSERT INTO application_search_refresh_queue (transaction_id, application_id)
+    VALUES (txid_current(), target_application_id)
+    ON CONFLICT DO NOTHING;
+  END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION flush_application_search_document_queue()
+RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 DECLARE
   target_id text;
 BEGIN
   FOR target_id IN
-    SELECT id FROM application WHERE candidate_id = target_candidate_id
+    DELETE FROM application_search_refresh_queue
+    WHERE transaction_id = NEW.transaction_id
+    RETURNING application_id
   LOOP
     PERFORM refresh_application_search_document(target_id);
   END LOOP;
+
+  RETURN NULL;
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION refresh_application_search_for_job(target_job_id text)
+CREATE CONSTRAINT TRIGGER application_search_refresh_queue_flush
+  AFTER INSERT ON application_search_refresh_queue
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION flush_application_search_document_queue();
+
+CREATE OR REPLACE FUNCTION queue_application_search_for_candidate(target_candidate_id text)
 RETURNS void
 LANGUAGE plpgsql
 AS $$
-DECLARE
-  target_id text;
 BEGIN
-  FOR target_id IN
-    SELECT id FROM application WHERE job_id = target_job_id
-  LOOP
-    PERFORM refresh_application_search_document(target_id);
-  END LOOP;
+  INSERT INTO application_search_refresh_queue (transaction_id, application_id)
+  SELECT txid_current(), id
+  FROM application
+  WHERE candidate_id = target_candidate_id
+  ON CONFLICT DO NOTHING;
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION refresh_application_search_for_entity(
+CREATE OR REPLACE FUNCTION queue_application_search_for_job(target_job_id text)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  INSERT INTO application_search_refresh_queue (transaction_id, application_id)
+  SELECT txid_current(), id
+  FROM application
+  WHERE job_id = target_job_id
+  ON CONFLICT DO NOTHING;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION queue_application_search_for_entity(
   target_entity_type text,
   target_entity_id text
 )
@@ -216,44 +271,42 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   IF target_entity_type = 'application' THEN
-    PERFORM refresh_application_search_document(target_entity_id);
+    PERFORM queue_application_search_document(target_entity_id);
   ELSIF target_entity_type = 'candidate' THEN
-    PERFORM refresh_application_search_for_candidate(target_entity_id);
+    PERFORM queue_application_search_for_candidate(target_entity_id);
   END IF;
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION refresh_application_search_for_property_definition(target_definition_id text)
+CREATE OR REPLACE FUNCTION queue_application_search_for_property_definition(target_definition_id text)
 RETURNS void
 LANGUAGE plpgsql
 AS $$
-DECLARE
-  property_record record;
 BEGIN
-  FOR property_record IN
-    SELECT DISTINCT entity_type::text AS entity_type, entity_id
-    FROM property_value
-    WHERE property_definition_id = target_definition_id
-  LOOP
-    PERFORM refresh_application_search_for_entity(property_record.entity_type, property_record.entity_id);
-  END LOOP;
+  INSERT INTO application_search_refresh_queue (transaction_id, application_id)
+  SELECT DISTINCT txid_current(), a.id
+  FROM property_value pv
+  INNER JOIN application a
+    ON a.organization_id = pv.organization_id
+    AND (
+      (pv.entity_type = 'application' AND pv.entity_id = a.id)
+      OR (pv.entity_type = 'candidate' AND pv.entity_id = a.candidate_id)
+    )
+  WHERE pv.property_definition_id = target_definition_id
+  ON CONFLICT DO NOTHING;
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION refresh_application_search_for_tracking_link(target_tracking_link_id text)
+CREATE OR REPLACE FUNCTION queue_application_search_for_tracking_link(target_tracking_link_id text)
 RETURNS void
 LANGUAGE plpgsql
 AS $$
-DECLARE
-  target_id text;
 BEGIN
-  FOR target_id IN
-    SELECT application_id
-    FROM application_source
-    WHERE tracking_link_id = target_tracking_link_id
-  LOOP
-    PERFORM refresh_application_search_document(target_id);
-  END LOOP;
+  INSERT INTO application_search_refresh_queue (transaction_id, application_id)
+  SELECT txid_current(), application_id
+  FROM application_source
+  WHERE tracking_link_id = target_tracking_link_id
+  ON CONFLICT DO NOTHING;
 END;
 $$;
 
@@ -264,38 +317,38 @@ AS $$
 BEGIN
   IF TG_TABLE_NAME = 'application' THEN
     IF TG_OP <> 'DELETE' THEN
-      PERFORM refresh_application_search_document(NEW.id);
+      PERFORM queue_application_search_document(NEW.id);
     END IF;
   ELSIF TG_TABLE_NAME = 'candidate' THEN
     IF TG_OP <> 'INSERT' THEN
-      PERFORM refresh_application_search_for_candidate(OLD.id);
+      PERFORM queue_application_search_for_candidate(OLD.id);
     END IF;
     IF TG_OP <> 'DELETE' AND (TG_OP <> 'UPDATE' OR NEW.id IS DISTINCT FROM OLD.id) THEN
-      PERFORM refresh_application_search_for_candidate(NEW.id);
+      PERFORM queue_application_search_for_candidate(NEW.id);
     END IF;
   ELSIF TG_TABLE_NAME = 'document' THEN
     IF TG_OP <> 'INSERT' THEN
-      PERFORM refresh_application_search_for_candidate(OLD.candidate_id);
+      PERFORM queue_application_search_for_candidate(OLD.candidate_id);
     END IF;
     IF TG_OP <> 'DELETE' AND (TG_OP <> 'UPDATE' OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id) THEN
-      PERFORM refresh_application_search_for_candidate(NEW.candidate_id);
+      PERFORM queue_application_search_for_candidate(NEW.candidate_id);
     END IF;
   ELSIF TG_TABLE_NAME = 'job' THEN
     IF TG_OP = 'DELETE' THEN
-      PERFORM refresh_application_search_for_job(OLD.id);
+      PERFORM queue_application_search_for_job(OLD.id);
     ELSE
-      PERFORM refresh_application_search_for_job(NEW.id);
+      PERFORM queue_application_search_for_job(NEW.id);
       IF TG_OP = 'UPDATE' AND NEW.id IS DISTINCT FROM OLD.id THEN
-        PERFORM refresh_application_search_for_job(OLD.id);
+        PERFORM queue_application_search_for_job(OLD.id);
       END IF;
     END IF;
   ELSIF TG_TABLE_NAME IN ('job_question', 'scoring_criterion') THEN
     IF TG_OP = 'DELETE' THEN
-      PERFORM refresh_application_search_for_job(OLD.job_id);
+      PERFORM queue_application_search_for_job(OLD.job_id);
     ELSE
-      PERFORM refresh_application_search_for_job(NEW.job_id);
+      PERFORM queue_application_search_for_job(NEW.job_id);
       IF TG_OP = 'UPDATE' AND NEW.job_id IS DISTINCT FROM OLD.job_id THEN
-        PERFORM refresh_application_search_for_job(OLD.job_id);
+        PERFORM queue_application_search_for_job(OLD.job_id);
       END IF;
     END IF;
   ELSIF TG_TABLE_NAME IN (
@@ -304,46 +357,46 @@ BEGIN
     'application_source'
   ) THEN
     IF TG_OP <> 'INSERT' THEN
-      PERFORM refresh_application_search_document(OLD.application_id);
+      PERFORM queue_application_search_document(OLD.application_id);
     END IF;
     IF TG_OP <> 'DELETE' AND (TG_OP <> 'UPDATE' OR NEW.application_id IS DISTINCT FROM OLD.application_id) THEN
-      PERFORM refresh_application_search_document(NEW.application_id);
+      PERFORM queue_application_search_document(NEW.application_id);
     END IF;
   ELSIF TG_TABLE_NAME = 'comment' THEN
     IF TG_OP <> 'INSERT' THEN
-      PERFORM refresh_application_search_for_entity(OLD.target_type::text, OLD.target_id);
+      PERFORM queue_application_search_for_entity(OLD.target_type::text, OLD.target_id);
     END IF;
     IF TG_OP <> 'DELETE' AND (
       TG_OP <> 'UPDATE'
       OR NEW.target_type IS DISTINCT FROM OLD.target_type
       OR NEW.target_id IS DISTINCT FROM OLD.target_id
     ) THEN
-      PERFORM refresh_application_search_for_entity(NEW.target_type::text, NEW.target_id);
+      PERFORM queue_application_search_for_entity(NEW.target_type::text, NEW.target_id);
     END IF;
   ELSIF TG_TABLE_NAME = 'property_value' THEN
     IF TG_OP <> 'INSERT' THEN
-      PERFORM refresh_application_search_for_entity(OLD.entity_type::text, OLD.entity_id);
+      PERFORM queue_application_search_for_entity(OLD.entity_type::text, OLD.entity_id);
     END IF;
     IF TG_OP <> 'DELETE' AND (
       TG_OP <> 'UPDATE'
       OR NEW.entity_type IS DISTINCT FROM OLD.entity_type
       OR NEW.entity_id IS DISTINCT FROM OLD.entity_id
     ) THEN
-      PERFORM refresh_application_search_for_entity(NEW.entity_type::text, NEW.entity_id);
+      PERFORM queue_application_search_for_entity(NEW.entity_type::text, NEW.entity_id);
     END IF;
   ELSIF TG_TABLE_NAME = 'property_definition' THEN
     IF TG_OP <> 'INSERT' THEN
-      PERFORM refresh_application_search_for_property_definition(OLD.id);
+      PERFORM queue_application_search_for_property_definition(OLD.id);
     END IF;
     IF TG_OP <> 'DELETE' AND (TG_OP <> 'UPDATE' OR NEW.id IS DISTINCT FROM OLD.id) THEN
-      PERFORM refresh_application_search_for_property_definition(NEW.id);
+      PERFORM queue_application_search_for_property_definition(NEW.id);
     END IF;
   ELSIF TG_TABLE_NAME = 'tracking_link' THEN
     IF TG_OP <> 'INSERT' THEN
-      PERFORM refresh_application_search_for_tracking_link(OLD.id);
+      PERFORM queue_application_search_for_tracking_link(OLD.id);
     END IF;
     IF TG_OP <> 'DELETE' AND (TG_OP <> 'UPDATE' OR NEW.id IS DISTINCT FROM OLD.id) THEN
-      PERFORM refresh_application_search_for_tracking_link(NEW.id);
+      PERFORM queue_application_search_for_tracking_link(NEW.id);
     END IF;
   END IF;
 

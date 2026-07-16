@@ -1,10 +1,10 @@
-import { sql, type SQL } from 'drizzle-orm'
+import { and, eq, ilike, type SQL } from 'drizzle-orm'
 import { applicationSearchDocument } from '../database/schema'
 
 /** Escape PostgreSQL LIKE metacharacters before wrapping a search term in `%`. */
 export function applicationSearchPattern(search: string): string | null {
   const normalized = search.trim()
-  if (!normalized) return null
+  if (normalized.length < 3) return null
   return `%${normalized.replace(/[%_\\]/g, '\\$&')}%`
 }
 
@@ -13,8 +13,8 @@ export function applicationContentSearchCondition(search: string, organizationId
   const pattern = applicationSearchPattern(search)
   if (!pattern) return undefined
 
-  return sql`(
-    ${applicationSearchDocument.organizationId} = ${organizationId}
-    AND ${applicationSearchDocument.searchText} ILIKE ${pattern} ESCAPE '\\'
-  )`
+  return and(
+    eq(applicationSearchDocument.organizationId, organizationId),
+    ilike(applicationSearchDocument.searchText, pattern),
+  )
 }

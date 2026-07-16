@@ -8,6 +8,8 @@ import {
   pgEnum,
   index,
   uniqueIndex,
+  bigint,
+  primaryKey,
   numeric,
 } from 'drizzle-orm/pg-core'
 import { relations, sql } from 'drizzle-orm'
@@ -208,6 +210,14 @@ export const applicationSearchDocument = pgTable('application_search_document', 
   index('application_search_document_org_idx').on(t.organizationId),
   index('application_search_document_job_idx').on(t.jobId),
   index('application_search_document_candidate_idx').on(t.candidateId),
+]))
+
+/** Transaction-local work queue used to deduplicate search-document refreshes. */
+export const applicationSearchRefreshQueue = pgTable('application_search_refresh_queue', {
+  transactionId: bigint('transaction_id', { mode: 'bigint' }).notNull(),
+  applicationId: text('application_id').notNull(),
+}, (t) => ([
+  primaryKey({ columns: [t.transactionId, t.applicationId] }),
 ]))
 
 // ─────────────────────────────────────────────

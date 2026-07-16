@@ -26,16 +26,11 @@ export function applicationsListKey(query: ApplicationsListQuery): string {
   return `applications-${JSON.stringify(normalized)}`
 }
 
-/** Refresh every cached /api/applications list payload. */
-export async function refreshApplicationsListCaches() {
-  const nuxtApp = useNuxtApp()
-  const keys = new Set<string>([
-    ...Object.keys(nuxtApp.payload.data),
-    ...Object.keys(nuxtApp.static.data),
-  ])
-
-  const refreshKeys = [...keys].filter(key => key.startsWith('applications-'))
-  await Promise.all(refreshKeys.map(key => refreshNuxtData(key)))
+/** Invalidate inactive application-list payloads without refetching historical searches. */
+export function refreshApplicationsListCaches(activeKeyToPreserve?: string) {
+  clearNuxtData(key =>
+    key.startsWith('applications-') && key !== activeKeyToPreserve,
+  )
 }
 
 /**
@@ -115,7 +110,7 @@ export function useApplications(options?: {
         body: payload,
       })
       await refresh()
-      await refreshApplicationsListCaches()
+      refreshApplicationsListCaches(dataKey.value)
       return created
     } catch (error) {
       handlePreviewReadOnlyError(error)

@@ -16,13 +16,15 @@ describe('application content search', () => {
     expect(applicationQuerySchema.parse({ search: '  product designer  ' }).search).toBe('product designer')
     expect(applicationSearchPattern('  100%_remote\\role  ')).toBe('%100\\%\\_remote\\\\role%')
     expect(applicationSearchPattern('   ')).toBeNull()
+    expect(applicationSearchPattern('ab')).toBeNull()
+    expect(() => applicationQuerySchema.parse({ search: 'ab' })).toThrow('Search must be at least 3 characters')
     expect(() => applicationQuerySchema.parse({ search: 'x'.repeat(201) })).toThrow()
   })
 
   it('compiles an indexed, tenant-scoped application search predicate', () => {
     const source = readProjectFile('server/utils/applicationSearch.ts')
     const route = readProjectFile('server/api/applications/index.get.ts')
-    const migration = readProjectFile('server/database/migrations/0049_application_search_document.sql')
+    const migration = readProjectFile('server/database/migrations/0053_application_search_document.sql')
     const condition = applicationContentSearchCondition('quantum upholstery', 'org_search')
     const compiled = new PgDialect().sqlToQuery(condition!)
 
@@ -30,11 +32,15 @@ describe('application content search', () => {
     expect(route).toContain('eq(candidate.organizationId, orgId)')
     expect(route).toContain('eq(job.organizationId, orgId)')
     expect(route).toContain('count(*) over()::int')
-    expect(source).toContain('${applicationSearchDocument.searchText} ILIKE')
-    expect(compiled.sql).toContain('"application_search_document"."search_text" ILIKE')
+    expect(source).toContain('ilike(applicationSearchDocument.searchText')
+    expect(compiled.sql).toMatch(/"application_search_document"\."search_text" ilike/i)
     expect(compiled.params).toEqual(['org_search', '%quantum upholstery%'])
     expect(migration).toContain('gin_trgm_ops')
     expect(migration).toContain('d.parsed_content::text')
+    expect(migration).toContain('d.application_id = a.id')
+    expect(migration).toContain('pd.job_id IS NULL OR pd.job_id = a.job_id')
+    expect(migration).toContain('CREATE CONSTRAINT TRIGGER application_search_refresh_queue_flush')
+    expect(migration).toContain('ON CONFLICT DO NOTHING')
     expect(migration).toContain('CREATE TRIGGER application_search_document_changed')
     expect(migration).toContain('CREATE TRIGGER application_search_analysis_feedback_changed')
     expect(migration).not.toContain('application_compliance_response')
@@ -42,6 +48,10 @@ describe('application content search', () => {
 
   it('loads every page in bounded batches instead of stopping at 100 applications', () => {
     expect(remainingPageBatches(100, 100)).toEqual([])
+    expect(remainingPageBatches(Number.NaN, 100)).toEqual([])
+    expect(remainingPageBatches(250, Number.NaN)).toEqual([])
+    expect(remainingPageBatches(250, 100, Number.NaN)).toEqual([])
+    expect(remainingPageBatches(250, 100, 0.5)).toEqual([])
     expect(remainingPageBatches(250, 100)).toEqual([[2, 3]])
     expect(remainingPageBatches(1_001, 100)).toEqual([
       [2, 3, 4, 5],
@@ -67,6 +77,7 @@ describe('application content search', () => {
     expect(candidateSearch).toBeGreaterThan(filterPanel)
     expect(page).toContain('search: debouncedApplicationSearch')
     expect(page).toContain('placeholder="Filter by name or email…"')
+    expect(page).toContain('Type 3+ characters')
     expect(page).not.toContain('v-model="searchTerm"')
   })
 })

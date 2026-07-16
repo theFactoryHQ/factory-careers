@@ -50,9 +50,17 @@ const { job: jobData, status: jobFetchStatus, error: jobError } = useJob(jobId)
 // ─────────────────────────────────────────────
 
 const applicationSearch = ref('')
+const normalizedApplicationSearch = computed(() => applicationSearch.value.trim())
+const isApplicationSearchTooShort = computed(() =>
+  normalizedApplicationSearch.value.length > 0
+  && normalizedApplicationSearch.value.length < 3,
+)
 const debouncedApplicationSearch = useDebouncedRef(applicationSearch, {
   delay: 300,
-  transform: value => value.trim() || undefined,
+  transform: (value) => {
+    const normalized = value.trim()
+    return normalized.length >= 3 ? normalized : undefined
+  },
   initial: undefined as string | undefined,
 })
 
@@ -925,8 +933,11 @@ const isLoading = computed(() => {
 })
 
 const isApplicationSearchPending = computed(() =>
-  applicationSearch.value.trim() !== (debouncedApplicationSearch.value ?? '')
-  || (Boolean(debouncedApplicationSearch.value) && appFetchStatus.value === 'pending'),
+  !isApplicationSearchTooShort.value
+  && (
+    normalizedApplicationSearch.value !== (debouncedApplicationSearch.value ?? '')
+    || (appFetchStatus.value === 'pending' && !isMutating.value)
+  ),
 )
 
 // ─────────────────────────────────────────────
@@ -1060,7 +1071,14 @@ function closeDocPreview() {
             @open-change="closePanels"
           />
           <span
-            v-if="isApplicationSearchPending"
+            v-if="isApplicationSearchTooShort"
+            class="shrink-0 text-[11px] text-surface-400 dark:text-surface-500"
+            role="status"
+          >
+            Type 3+ characters
+          </span>
+          <span
+            v-else-if="isApplicationSearchPending"
             class="inline-flex shrink-0 items-center gap-1.5 text-[11px] text-surface-400 dark:text-surface-500"
             role="status"
           >
