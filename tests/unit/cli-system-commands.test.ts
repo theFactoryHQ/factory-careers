@@ -38,22 +38,23 @@ describe('CLI system commands', () => {
 
       if (url === 'https://careers.example.com/api/updates/system' && init?.method === 'GET') {
         return Response.json({
-          version: '1.4.0',
+          version: '1.0.0',
           database: { connected: true },
           storage: { connected: true },
         })
       }
       if (url === 'https://careers.example.com/api/updates/version' && init?.method === 'GET') {
         return Response.json({
-          currentVersion: '1.4.0',
-          latestVersion: '1.4.1',
+          currentVersion: '1.0.0',
+          latestVersion: '1.1.0',
           updateAvailable: true,
+          releaseStatus: 'update-available',
         })
       }
       if (url === 'https://careers.example.com/api/updates/changelog' && init?.method === 'GET') {
         return Response.json({
-          currentVersion: '1.4.0',
-          entries: [{ title: 'v1.4.0', sections: [] }],
+          currentVersion: '1.0.0',
+          entries: [{ title: 'v1.0.0', sections: [] }],
         })
       }
       throw new Error(`Unexpected URL ${url}`)
@@ -69,9 +70,9 @@ describe('CLI system commands', () => {
     }
 
     expect(outputs.map(value => JSON.parse(value))).toEqual([
-      { version: '1.4.0', database: { connected: true }, storage: { connected: true } },
-      { currentVersion: '1.4.0', latestVersion: '1.4.1', updateAvailable: true },
-      { currentVersion: '1.4.0', entries: [{ title: 'v1.4.0', sections: [] }] },
+      { version: '1.0.0', database: { connected: true }, storage: { connected: true } },
+      { currentVersion: '1.0.0', latestVersion: '1.1.0', updateAvailable: true, releaseStatus: 'update-available' },
+      { currentVersion: '1.0.0', entries: [{ title: 'v1.0.0', sections: [] }] },
     ])
   })
 })

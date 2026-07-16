@@ -124,6 +124,25 @@ parity guard wiring, merge-conflict hygiene, theme rules, and agent-facing docs.
 This is a focused rules bundle, not a replacement for typecheck, build, e2e, or
 runtime browser checks when behavior changes.
 
+## Changelog Maintenance
+
+Treat the in-product changelog as part of the product.
+Update `CHANGELOG.md` in the same change whenever work adds, changes, fixes, or
+removes behavior that a recruiter, administrator, operator, integrator, or
+self-hoster would notice.
+
+- Add entries under `## Unreleased` using **Added**, **Changed**, **Fixed**, or
+  **Removed**.
+- Write concise outcome-focused entries; do not paste commit titles or include
+  routine refactors, tests, dependency bumps, or internal chores unless they
+  materially affect users or operators.
+- Keep release and commit links scoped to `theFactoryHQ/factory-careers`.
+- Preserve inherited Reqcore history in its archive; do not mix new Factory
+  Careers changes into the archived upstream record.
+- Release-please does not write the curated changelog. For a release PR, run
+  `npm run changelog:finalize -- <version> <YYYY-MM-DD>` after reviewing the
+  populated Unreleased sections, then commit the generated promotion.
+
 ## DRY And Reuse
 
 Search for an existing component, composable, helper, or server utility before creating a new one.

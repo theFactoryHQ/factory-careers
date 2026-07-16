@@ -1,14 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { getAppVersion } from '../../utils/appVersion'
-
-interface ChangelogEntry {
-  title: string
-  date: string | null
-  version: string | null
-  link: string | null
-  sections: { heading: string; items: string[] }[]
-}
+import { parseChangelog } from '../../utils/changelog'
 
 /**
  * GET /api/updates/changelog
@@ -29,62 +22,5 @@ export default defineEventHandler(async (event) => {
   }
 
   const currentVersion = await getAppVersion()
-
-  const entries: ChangelogEntry[] = []
-  let current: ChangelogEntry | null = null
-  let currentSection: { heading: string; items: string[] } | null = null
-
-  for (const line of raw.split('\n')) {
-    const h2 = line.match(/^## \[(.+?)]\((.+?)\)\s*\((.+?)\)/)
-    const h2Unreleased = line.match(/^## Unreleased/)
-    const h2Date = line.match(/^## (\d{4}-\d{2}-\d{2})/)
-
-    if (h2 || h2Unreleased || h2Date) {
-      if (current) entries.push(current)
-
-      if (h2) {
-        current = {
-          title: `v${h2[1]}`,
-          version: h2[1] ?? null,
-          date: h2[3] ?? null,
-          link: h2[2] ?? null,
-          sections: [],
-        }
-      }
-      else if (h2Unreleased) {
-        current = { title: 'Unreleased', version: null, date: null, link: null, sections: [] }
-      }
-      else if (h2Date) {
-        current = { title: h2Date[1] ?? '', version: null, date: h2Date[1] ?? null, link: null, sections: [] }
-      }
-      currentSection = null
-      continue
-    }
-
-    const h3 = line.match(/^### (.+)/)
-    if (h3 && current) {
-      currentSection = { heading: h3[1] ?? '', items: [] }
-      current.sections.push(currentSection)
-      continue
-    }
-
-    const item = line.match(/^\s*[*-]\s+(.+)/)
-    if (item && currentSection) {
-      currentSection.items.push(item[1] ?? '')
-    }
-  }
-
-  if (current) entries.push(current)
-
-  const releases = entries.filter(e => e.version !== null || e.title === 'Unreleased')
-
-  const seen = new Set<string>()
-  const unique = releases.filter((e) => {
-    const key = `${e.title}-${e.date}`
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
-
-  return { entries: unique, currentVersion }
+  return { entries: parseChangelog(raw), currentVersion }
 })

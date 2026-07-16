@@ -11,7 +11,7 @@ name: Release Verification
 #
 #   2. bundle: attach a self-hoster bundle (docker-compose.production.yml
 #      with the image tag pinned + setup.sh) to the GitHub Release so users
-#      can `curl -L .../releases/download/v1.4.0/factory-careers-1.4.0.tar.gz` and
+#      can `curl -L .../releases/download/v1.0.0/factory-careers-1.0.0.tar.gz` and
 #      get a deterministic, version-locked install.
 
 on:
@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to verify (e.g. v1.4.0)"
+        description: "Release tag to verify (e.g. v1.0.0)"
         required: true
         type: string
 

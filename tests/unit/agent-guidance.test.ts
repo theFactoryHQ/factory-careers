@@ -32,6 +32,13 @@ describe('agent guidance', () => {
       'npm run preflight:pr',
       'docs/reference/THEME.md',
       'Browser QA matters',
+      '## Changelog Maintenance',
+      'Update `CHANGELOG.md` in the same change',
+      '**Added**',
+      '**Changed**',
+      '**Fixed**',
+      '**Removed**',
+      'npm run changelog:finalize -- <version> <YYYY-MM-DD>',
     ]) {
       expect(agents, `AGENTS.md missing ${snippet}`).toContain(snippet)
     }

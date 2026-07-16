@@ -1,4 +1,5 @@
 import { getAppVersion, isNewerVersion } from '../../utils/appVersion'
+import { fetchLatestFactoryRelease } from '../../utils/factoryRelease'
 
 /**
  * GET /api/updates/version
@@ -11,60 +12,30 @@ export default defineEventHandler(async (event) => {
   await requireAuth(event)
 
   const currentVersion = await getAppVersion()
+  const lookup = await fetchLatestFactoryRelease(currentVersion)
 
-  const owner = 'reqcore-inc'
-  const repo = 'reqcore'
-
-  try {
-    const response = await fetch(
-      `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/releases/latest`,
-      {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': `Reqcore/${currentVersion}`,
-        },
-        signal: AbortSignal.timeout(10_000),
-      },
-    )
-
-    if (!response.ok) {
-      return {
-        currentVersion,
-        latestVersion: null as string | null,
-        updateAvailable: false,
-        releaseUrl: null as string | null,
-        releaseNotes: null as string | null,
-        publishedAt: null as string | null,
-      }
-    }
-
-    const release = await response.json() as {
-      tag_name: string
-      html_url: string
-      body: string
-      published_at: string
-    }
-
-    const latestVersion = release.tag_name.replace(/^v/, '')
-    const updateAvailable = isNewerVersion(currentVersion, latestVersion)
-
-    return {
-      currentVersion,
-      latestVersion,
-      updateAvailable,
-      releaseUrl: release.html_url,
-      releaseNotes: release.body,
-      publishedAt: release.published_at,
-    }
-  }
-  catch {
+  if (lookup.status !== 'published') {
     return {
       currentVersion,
       latestVersion: null as string | null,
       updateAvailable: false,
+      releaseStatus: lookup.status,
       releaseUrl: null as string | null,
       releaseNotes: null as string | null,
       publishedAt: null as string | null,
     }
+  }
+
+  const latestVersion = lookup.release.tag_name.replace(/^v/, '')
+  const updateAvailable = isNewerVersion(currentVersion, latestVersion)
+
+  return {
+    currentVersion,
+    latestVersion,
+    updateAvailable,
+    releaseStatus: updateAvailable ? 'update-available' as const : 'current' as const,
+    releaseUrl: lookup.release.html_url,
+    releaseNotes: lookup.release.body,
+    publishedAt: lookup.release.published_at,
   }
 })

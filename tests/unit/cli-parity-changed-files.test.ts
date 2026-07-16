@@ -130,6 +130,18 @@ describe('CLI parity changed-file guard', () => {
     })
   })
 
+  it('accepts CLI parity evidence for the Factory changelog parser refactor', () => {
+    expect(evaluateCliParityEvidence([
+      'server/api/updates/changelog.get.ts',
+      'server/utils/changelog.ts',
+      'tests/unit/changelog.test.ts',
+      'tests/unit/cli-parity-changed-files.test.ts',
+    ])).toMatchObject({
+      ok: true,
+      message: 'CLI parity evidence found.',
+    })
+  })
+
   it('accepts CLI parity evidence for public application validation ordering without contract changes', () => {
     expect(evaluateCliParityEvidence([
       'server/api/public/jobs/[slug]/apply.post.ts',
