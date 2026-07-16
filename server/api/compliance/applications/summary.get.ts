@@ -1,14 +1,15 @@
 import { count, eq, sql } from 'drizzle-orm'
 import { applicationComplianceResponse } from '../../../database/schema'
+import { protectComplianceReporting } from '../../../utils/complianceReporting'
 
 /**
  * GET /api/compliance/applications/summary
- * Dashboard-only aggregate compliance reporting for the active organization.
+ * Owner/admin-only aggregate compliance reporting for the active organization.
  * Returns grouped counts only; individual self-identification answers are not
  * exposed to ordinary candidate/application evaluation surfaces.
  */
 export default defineEventHandler(async (event) => {
-  const session = await requirePermission(event, { application: ['read'] })
+  const session = await requirePermission(event, { organization: ['update'] })
   const orgId = session.session.activeOrganizationId
 
   const [totalResponses, sex, raceEthnicity, veteranStatus, disabilityStatus] = await Promise.all([
@@ -51,19 +52,19 @@ export default defineEventHandler(async (event) => {
       .orderBy(sql`count(*) desc`),
   ])
 
+  const protectedReporting = protectComplianceReporting(totalResponses, {
+    sex,
+    raceEthnicity,
+    veteranStatus,
+    disabilityStatus,
+  })
+
   return {
     jurisdiction: 'US',
     formVersion: 'US-SELF-ID-2026-05',
     totalResponses,
-    breakdowns: {
-      sex: omitNullBuckets(sex),
-      raceEthnicity: omitNullBuckets(raceEthnicity),
-      veteranStatus: omitNullBuckets(veteranStatus),
-      disabilityStatus: omitNullBuckets(disabilityStatus),
-    },
+    suppressed: protectedReporting.suppressed,
+    minimumCohortSize: protectedReporting.minimumCohortSize,
+    breakdowns: protectedReporting.breakdowns,
   }
 })
-
-function omitNullBuckets(rows: Array<{ value: string | null; count: number }>) {
-  return rows.filter((row) => row.value !== null)
-}
