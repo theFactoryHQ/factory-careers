@@ -188,6 +188,25 @@ describe('CLI parity changed-file guard', () => {
     })
   })
 
+  it('accepts CLI parity evidence for shared scoring execution and durable upload reservations', () => {
+    expect(evaluateCliParityEvidence([
+      'server/api/applications/[id]/analyze.post.ts',
+      'server/api/applications/[id]/scores.get.ts',
+      'server/api/candidates/[id]/documents/index.post.ts',
+      'server/api/public/jobs/[slug]/apply.post.ts',
+      'server/utils/analyzeApplication.ts',
+      'server/utils/candidateDocumentReservation.ts',
+      'server/utils/createPublicApplication.ts',
+      'server/utils/processingQueue.ts',
+      'tests/unit/analyze-application.test.ts',
+      'tests/unit/processing-queue.test.ts',
+      'tests/unit/cli-parity-changed-files.test.ts',
+    ])).toMatchObject({
+      ok: true,
+      message: 'CLI parity evidence found.',
+    })
+  })
+
   it('accepts CLI parity evidence for security/code-scanning route cleanups without contract changes', () => {
     expect(evaluateCliParityEvidence([
       'server/api/applications/[id]/analyze.post.ts',
