@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  Brain, Sparkles, TrendingUp, AlertTriangle, CheckCircle2,
+  Brain, Sparkles, TrendingUp, CheckCircle2,
   XCircle, Zap, Clock, BarChart3, Activity, AlertCircle, DollarSign,
 } from 'lucide-vue-next'
 import {
@@ -8,6 +8,13 @@ import {
   getAnalysisRunStatusDotClass,
   getScoreBadgeClass,
 } from '~/utils/status-display'
+import type { AiUsageDay } from '~/utils/ai-usage-chart'
+import {
+  buildAiUsageSeries,
+  formatUsageDate,
+  getNiceUsageAxisMax,
+  getUsageBarHeight,
+} from '~/utils/ai-usage-chart'
 
 definePageMeta({
   layout: 'dashboard',
@@ -59,23 +66,54 @@ function calcCost(promptTokens: number, completionTokens: number): number | null
 
 const totalCost = computed(() => calcCost(summary.value.totalPromptTokens, summary.value.totalCompletionTokens))
 
-// Chart bar heights (simple bar chart)
-const maxDailyCount = computed(() => Math.max(...dailyRuns.value.map((d: any) => d.count), 1))
-const maxDailyTokens = computed(() => Math.max(...dailyRuns.value.map((d: any) => d.promptTokens + d.completionTokens), 1))
+// Keep sparse API rows sparse at the contract boundary, then normalize the
+// presentation to a real rolling calendar window for predictable chart sizing.
+const usageWindowEnd = new Date()
+usageWindowEnd.setHours(12, 0, 0, 0)
 
-const chartStartDate = computed(() => {
-  const first = dailyRuns.value[0]
-  return first ? formatDate(first.date) : ''
-})
-const chartEndDate = computed(() => {
-  const last = dailyRuns.value.at(-1)
-  return last ? formatDate(last.date) : ''
+const usageDays = computed(() => buildAiUsageSeries(
+  dailyRuns.value as AiUsageDay[],
+  { endDate: usageWindowEnd },
+))
+
+const usageTotals = computed(() => usageDays.value.reduce((totals, day) => ({
+  runs: totals.runs + day.count,
+  promptTokens: totals.promptTokens + day.promptTokens,
+  completionTokens: totals.completionTokens + day.completionTokens,
+  tokens: totals.tokens + day.promptTokens + day.completionTokens,
+}), {
+  runs: 0,
+  promptTokens: 0,
+  completionTokens: 0,
+  tokens: 0,
+}))
+
+const peakDailyRuns = computed(() => Math.max(...usageDays.value.map(day => day.count), 0))
+const peakDailyTokens = computed(() => Math.max(
+  ...usageDays.value.map(day => day.promptTokens + day.completionTokens),
+  0,
+))
+const runsAxisMax = computed(() => getNiceUsageAxisMax(peakDailyRuns.value))
+const tokensAxisMax = computed(() => getNiceUsageAxisMax(peakDailyTokens.value))
+const chartStartDate = computed(() => formatUsageDate(usageDays.value[0]?.date ?? ''))
+const chartMiddleDate = computed(() => formatUsageDate(
+  usageDays.value[Math.floor((usageDays.value.length - 1) / 2)]?.date ?? '',
+))
+const chartEndDate = computed(() => formatUsageDate(usageDays.value.at(-1)?.date ?? ''))
+const promptTokenShare = computed(() => {
+  if (usageTotals.value.tokens === 0) return 0
+  return Math.round((usageTotals.value.promptTokens / usageTotals.value.tokens) * 100)
 })
 
 function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
   return n.toString()
+}
+
+function formatAxisNumber(n: number): string {
+  if (Number.isInteger(n)) return formatNumber(n)
+  return n.toFixed(1).replace(/\.0$/, '')
 }
 
 function formatCost(cost: number | null): string {
@@ -91,9 +129,27 @@ function formatCostPrecise(cost: number | null): string {
   return `$${cost.toFixed(2)}`
 }
 
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+function getDayTokenTotal(day: AiUsageDay): number {
+  return day.promptTokens + day.completionTokens
+}
+
+function getPromptTokenPercentage(day: AiUsageDay): number {
+  const total = getDayTokenTotal(day)
+  return total === 0 ? 0 : (day.promptTokens / total) * 100
+}
+
+function getUsageDayLabel(day: AiUsageDay): string {
+  const tokens = getDayTokenTotal(day)
+  if (day.count === 0 && tokens === 0) {
+    return `${formatUsageDate(day.date)}: no usage`
+  }
+  return `${formatUsageDate(day.date)}: ${day.count} run${day.count === 1 ? '' : 's'}, ${formatNumber(tokens)} tokens`
+}
+
+function getUsageTooltipPosition(index: number): string {
+  if (index < 3) return 'left-0'
+  if (index >= usageDays.value.length - 3) return 'right-0'
+  return 'left-1/2 -translate-x-1/2'
 }
 
 function formatDateTime(dateStr: string | Date): string {
@@ -233,92 +289,166 @@ function formatDateTime(dateStr: string | Date): string {
         </DashboardStatCard>
       </div>
 
-      <!-- ─── Usage chart (last 30 days) ─── -->
-      <div v-if="dailyRuns.length > 0" class="ui-panel ui-dashboard-panel overflow-hidden mb-6">
-        <div class="px-6 py-5 border-b border-surface-200 dark:border-surface-800">
+      <!-- ─── Usage chart (rolling 30 days) ─── -->
+      <div class="ui-panel ui-dashboard-panel mb-6">
+        <div class="flex flex-col gap-4 border-b border-surface-200 px-5 py-5 dark:border-surface-800 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div class="flex items-center gap-3">
-            <div class="flex items-center justify-center size-10 rounded-lg bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-950 dark:text-brand-400">
               <BarChart3 class="size-5" />
             </div>
             <div>
-              <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Usage — Last 30 Days</h2>
-              <p class="text-sm text-surface-500 dark:text-surface-400">Daily run counts and token consumption</p>
+              <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">Usage</h2>
+              <p class="text-sm text-surface-500 dark:text-surface-400">
+                Rolling 30 days · {{ chartStartDate }}–{{ chartEndDate }}
+              </p>
             </div>
           </div>
+
+          <dl class="grid grid-cols-2 gap-x-6 rounded-lg border border-surface-200 bg-surface-50 px-4 py-2.5 dark:border-surface-800 dark:bg-surface-900/60 sm:min-w-64">
+            <div>
+              <dt class="text-[10px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500">Runs</dt>
+              <dd class="mt-0.5 text-sm font-semibold tabular-nums text-surface-900 dark:text-surface-100">{{ formatNumber(usageTotals.runs) }}</dd>
+            </div>
+            <div>
+              <dt class="text-[10px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500">Tokens</dt>
+              <dd class="mt-0.5 text-sm font-semibold tabular-nums text-surface-900 dark:text-surface-100">{{ formatNumber(usageTotals.tokens) }}</dd>
+            </div>
+          </dl>
         </div>
 
-        <div class="px-6 py-5 space-y-6">
-          <!-- Runs per day bar chart -->
-          <div>
-            <h3 class="text-xs font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-3">Runs per Day</h3>
-            <div class="flex items-end gap-1 h-24">
-              <div
-                v-for="day in dailyRuns"
-                :key="day.date"
-                class="group relative flex-1 min-w-0 h-full flex items-end"
-              >
-                <div
-                  class="w-full rounded-t bg-brand-500 dark:bg-brand-400 transition-all duration-200 hover:bg-brand-600 dark:hover:bg-brand-300"
-                  :style="{ height: `${Math.max((day.count / maxDailyCount) * 100, 4)}%` }"
-                />
-                <!-- Tooltip -->
-                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-10">
-                  <div class="rounded-lg border border-surface-200 bg-white px-2.5 py-1.5 shadow-lg dark:border-surface-700 dark:bg-surface-800 whitespace-nowrap text-[11px]">
-                    <p class="font-semibold text-surface-800 dark:text-surface-200">{{ formatDate(day.date) }}</p>
-                    <p class="text-surface-500">{{ day.count }} run{{ day.count !== 1 ? 's' : '' }}</p>
-                    <p class="text-surface-400">{{ formatNumber(day.promptTokens + day.completionTokens) }} tokens</p>
-                    <p v-if="pricing.configured" class="text-emerald-600 dark:text-emerald-400 font-medium">{{ formatCostPrecise(calcCost(day.promptTokens, day.completionTokens)) }}</p>
-                  </div>
-                </div>
+        <div class="grid divide-y divide-surface-200 dark:divide-surface-800 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+          <section class="p-5 sm:p-6" aria-labelledby="usage-runs-title">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h3 id="usage-runs-title" class="text-sm font-semibold text-surface-800 dark:text-surface-200">Runs per day</h3>
+                <p class="mt-0.5 text-xs text-surface-500 dark:text-surface-400">Completed and failed scoring runs</p>
               </div>
+              <span class="shrink-0 rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-medium tabular-nums text-brand-700 dark:bg-brand-950 dark:text-brand-300">
+                Peak {{ formatNumber(peakDailyRuns) }}
+              </span>
             </div>
-            <div class="flex justify-between mt-1.5 text-[10px] text-surface-400">
-              <span>{{ chartStartDate }}</span>
-              <span>{{ chartEndDate }}</span>
-            </div>
-          </div>
 
-          <!-- Tokens per day bar chart -->
-          <div>
-            <h3 class="text-xs font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-3">Tokens per Day</h3>
-            <div class="flex items-end gap-1 h-24">
-              <div
-                v-for="day in dailyRuns"
-                :key="`tokens-${day.date}`"
-                class="group relative flex-1 min-w-0 h-full flex items-end"
-              >
-                <div class="w-full flex flex-col-reverse rounded-t overflow-hidden" :style="{ height: `${Math.max(((day.promptTokens + day.completionTokens) / maxDailyTokens) * 100, 4)}%` }">
-                  <div
-                    class="w-full bg-violet-500 dark:bg-violet-400"
-                    :style="{ height: `${(day.promptTokens / (day.promptTokens + day.completionTokens || 1)) * 100}%` }"
-                  />
-                  <div
-                    class="w-full bg-amber-400 dark:bg-amber-300"
-                    :style="{ height: `${(day.completionTokens / (day.promptTokens + day.completionTokens || 1)) * 100}%` }"
-                  />
+            <div class="mt-5">
+              <div class="flex h-36 gap-3">
+                <div class="flex w-9 shrink-0 flex-col justify-between py-0.5 text-right text-[10px] tabular-nums text-surface-400 dark:text-surface-500" aria-hidden="true">
+                  <span>{{ formatAxisNumber(runsAxisMax) }}</span>
+                  <span>{{ formatAxisNumber(runsAxisMax / 2) }}</span>
+                  <span>0</span>
                 </div>
-                <!-- Tooltip -->
-                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-10">
-                  <div class="rounded-lg border border-surface-200 bg-white px-2.5 py-1.5 shadow-lg dark:border-surface-700 dark:bg-surface-800 whitespace-nowrap text-[11px]">
-                    <p class="font-semibold text-surface-800 dark:text-surface-200">{{ formatDate(day.date) }}</p>
-                    <p class="text-violet-600 dark:text-violet-400">Prompt: {{ formatNumber(day.promptTokens) }}</p>
-                    <p class="text-amber-600 dark:text-amber-400">Completion: {{ formatNumber(day.completionTokens) }}</p>
-                    <p v-if="pricing.configured" class="text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 pt-0.5 border-t border-surface-100 dark:border-surface-700">{{ formatCostPrecise(calcCost(day.promptTokens, day.completionTokens)) }}</p>
+                <div class="relative min-w-0 flex-1">
+                  <div class="pointer-events-none absolute inset-0 flex flex-col justify-between py-1" aria-hidden="true">
+                    <span v-for="line in 3" :key="`runs-grid-${line}`" class="border-t border-dashed border-surface-200 dark:border-surface-800" />
+                  </div>
+                  <p v-if="usageTotals.runs === 0" class="absolute inset-0 flex items-center justify-center text-xs text-surface-400 dark:text-surface-500">
+                    No runs in this window
+                  </p>
+                  <div class="absolute inset-0 flex items-end gap-px pt-1 sm:gap-0.5" role="list" aria-label="Daily AI scoring runs over the last 30 days">
+                    <div
+                      v-for="(day, index) in usageDays"
+                      :key="day.date"
+                      class="group relative flex h-full min-w-0 flex-1 items-end justify-center focus:outline-none"
+                      role="listitem"
+                      :aria-label="getUsageDayLabel(day)"
+                      :tabindex="day.count > 0 ? 0 : undefined"
+                      :title="getUsageDayLabel(day)"
+                    >
+                      <div
+                        v-if="day.count > 0"
+                        class="w-full max-w-3 rounded-t-[3px] bg-brand-500 transition-colors group-hover:bg-brand-600 group-focus-visible:ring-2 group-focus-visible:ring-brand-500 group-focus-visible:ring-offset-2 dark:bg-brand-400 dark:group-hover:bg-brand-300 dark:group-focus-visible:ring-offset-surface-900"
+                        :style="{ height: `${getUsageBarHeight(day.count, runsAxisMax)}%` }"
+                      />
+                      <div
+                        v-if="day.count > 0"
+                        class="pointer-events-none absolute top-2 z-20 opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100"
+                        :class="getUsageTooltipPosition(index)"
+                      >
+                        <div class="whitespace-nowrap rounded-lg border border-surface-200 bg-white px-2.5 py-2 text-[11px] shadow-lg dark:border-surface-700 dark:bg-surface-800">
+                          <p class="font-semibold text-surface-800 dark:text-surface-200">{{ formatUsageDate(day.date) }}</p>
+                          <p class="mt-0.5 text-surface-500 dark:text-surface-400">{{ day.count }} run{{ day.count === 1 ? '' : 's' }}</p>
+                          <p class="text-surface-400 dark:text-surface-500">{{ formatNumber(getDayTokenTotal(day)) }} tokens</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div class="flex items-center justify-between mt-1.5">
-              <div class="flex items-center gap-3 text-[10px] text-surface-400">
-                <span class="flex items-center gap-1"><span class="inline-block size-2 rounded-sm bg-violet-500 dark:bg-violet-400" /> Prompt</span>
-                <span class="flex items-center gap-1"><span class="inline-block size-2 rounded-sm bg-amber-400 dark:bg-amber-300" /> Completion</span>
-              </div>
-              <div class="flex gap-4 text-[10px] text-surface-400">
+              <div class="ml-12 mt-2 flex justify-between text-[10px] text-surface-400 dark:text-surface-500" aria-hidden="true">
                 <span>{{ chartStartDate }}</span>
+                <span>{{ chartMiddleDate }}</span>
                 <span>{{ chartEndDate }}</span>
               </div>
             </div>
-          </div>
+          </section>
+
+          <section class="p-5 sm:p-6" aria-labelledby="usage-tokens-title">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h3 id="usage-tokens-title" class="text-sm font-semibold text-surface-800 dark:text-surface-200">Tokens per day</h3>
+                <div class="mt-1 flex items-center gap-3 text-[10px] text-surface-400 dark:text-surface-500">
+                  <span class="flex items-center gap-1"><span class="size-2 rounded-sm bg-violet-500 dark:bg-violet-400" /> Prompt</span>
+                  <span class="flex items-center gap-1"><span class="size-2 rounded-sm bg-amber-400 dark:bg-amber-300" /> Completion</span>
+                </div>
+              </div>
+              <span class="shrink-0 rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-medium tabular-nums text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+                {{ promptTokenShare }}% prompt
+              </span>
+            </div>
+
+            <div class="mt-5">
+              <div class="flex h-36 gap-3">
+                <div class="flex w-9 shrink-0 flex-col justify-between py-0.5 text-right text-[10px] tabular-nums text-surface-400 dark:text-surface-500" aria-hidden="true">
+                  <span>{{ formatAxisNumber(tokensAxisMax) }}</span>
+                  <span>{{ formatAxisNumber(tokensAxisMax / 2) }}</span>
+                  <span>0</span>
+                </div>
+                <div class="relative min-w-0 flex-1">
+                  <div class="pointer-events-none absolute inset-0 flex flex-col justify-between py-1" aria-hidden="true">
+                    <span v-for="line in 3" :key="`tokens-grid-${line}`" class="border-t border-dashed border-surface-200 dark:border-surface-800" />
+                  </div>
+                  <p v-if="usageTotals.tokens === 0" class="absolute inset-0 flex items-center justify-center text-xs text-surface-400 dark:text-surface-500">
+                    No tokens used in this window
+                  </p>
+                  <div class="absolute inset-0 flex items-end gap-px pt-1 sm:gap-0.5" role="list" aria-label="Daily AI token usage over the last 30 days">
+                    <div
+                      v-for="(day, index) in usageDays"
+                      :key="`tokens-${day.date}`"
+                      class="group relative flex h-full min-w-0 flex-1 items-end justify-center focus:outline-none"
+                      role="listitem"
+                      :aria-label="getUsageDayLabel(day)"
+                      :tabindex="getDayTokenTotal(day) > 0 ? 0 : undefined"
+                      :title="getUsageDayLabel(day)"
+                    >
+                      <div
+                        v-if="getDayTokenTotal(day) > 0"
+                        class="flex w-full max-w-3 flex-col-reverse overflow-hidden rounded-t-[3px] group-focus-visible:ring-2 group-focus-visible:ring-violet-500 group-focus-visible:ring-offset-2 dark:group-focus-visible:ring-offset-surface-900"
+                        :style="{ height: `${getUsageBarHeight(getDayTokenTotal(day), tokensAxisMax)}%` }"
+                      >
+                        <div class="w-full bg-violet-500 transition-colors group-hover:bg-violet-600 dark:bg-violet-400 dark:group-hover:bg-violet-300" :style="{ height: `${getPromptTokenPercentage(day)}%` }" />
+                        <div class="w-full bg-amber-400 transition-colors group-hover:bg-amber-500 dark:bg-amber-300 dark:group-hover:bg-amber-200" :style="{ height: `${100 - getPromptTokenPercentage(day)}%` }" />
+                      </div>
+                      <div
+                        v-if="getDayTokenTotal(day) > 0"
+                        class="pointer-events-none absolute top-2 z-20 opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100"
+                        :class="getUsageTooltipPosition(index)"
+                      >
+                        <div class="whitespace-nowrap rounded-lg border border-surface-200 bg-white px-2.5 py-2 text-[11px] shadow-lg dark:border-surface-700 dark:bg-surface-800">
+                          <p class="font-semibold text-surface-800 dark:text-surface-200">{{ formatUsageDate(day.date) }}</p>
+                          <p class="mt-0.5 text-violet-600 dark:text-violet-400">Prompt: {{ formatNumber(day.promptTokens) }}</p>
+                          <p class="text-amber-600 dark:text-amber-400">Completion: {{ formatNumber(day.completionTokens) }}</p>
+                          <p v-if="pricing.configured" class="mt-1 border-t border-surface-100 pt-1 font-medium text-emerald-600 dark:border-surface-700 dark:text-emerald-400">{{ formatCostPrecise(calcCost(day.promptTokens, day.completionTokens)) }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="ml-12 mt-2 flex justify-between text-[10px] text-surface-400 dark:text-surface-500" aria-hidden="true">
+                <span>{{ chartStartDate }}</span>
+                <span>{{ chartMiddleDate }}</span>
+                <span>{{ chartEndDate }}</span>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
 
