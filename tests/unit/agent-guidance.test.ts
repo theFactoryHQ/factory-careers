@@ -53,6 +53,21 @@ describe('agent guidance', () => {
     expect(read('scripts/check-conventions.sh')).toContain('npm run preflight:cli-parity')
   })
 
+  it('documents the enforced changelog workflow for agents', () => {
+    const agents = read('AGENTS.md')
+
+    expect(read('CLAUDE.md')).toBe(agents)
+    expect(agents).toContain('Every ordinary user- or operator-visible pull request must add a genuinely new item')
+    expect(agents).toContain('under `## Unreleased`')
+    expect(agents).toContain('The maintainer-applied exact `skip-changelog` label is only for genuinely internal changes')
+    expect(agents).toContain('CHANGELOG_SKIP=true npm run preflight:pr')
+    expect(agents).toContain('Release or version-changing pull requests cannot use this exception')
+    expect(agents).toContain('npm run changelog:finalize -- <version> <YYYY-MM-DD>')
+    expect(agents).toContain('matching version section must be nonempty')
+    expect(agents).toContain('`## Unreleased` must contain no entries')
+    expect(agents).toContain('`skip-changelog: true` only to avoid overwriting curated notes')
+  })
+
   it('points contributors to agent guidance and convention checks', () => {
     const contributing = read('CONTRIBUTING.md')
 
