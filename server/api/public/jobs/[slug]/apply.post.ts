@@ -1,4 +1,4 @@
-import { eq, and, asc, lte, sql } from 'drizzle-orm'
+import { eq, and, asc, sql } from 'drizzle-orm'
 import { job, candidate, application, jobQuestion, questionResponse, document, organization, applicationSource, trackingLink, applicationComplianceResponse, orgSettings } from '../../../../database/schema'
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
 import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
@@ -9,6 +9,7 @@ import { assertUploadContentLength } from '../../../../utils/uploadLimits'
 import { readPositiveIntegerEnv } from '../../../../utils/rateLimitConfig'
 import { detectAllowedDocumentMimeType } from '../../../../utils/documentMime'
 import { getPublicJobScopeCondition } from '../../../../utils/publicJobScope'
+import { getPublicJobVisibilityCondition } from '../../../../utils/publicJobVisibility'
 import { isBuiltInLocationQuestion } from '~~/shared/built-in-application-fields'
 import { isRequiredCustomQuestionAnswered } from '~~/shared/custom-question-validation'
 import { resolveFactoryCareersBaseUrl } from '../../../../utils/baseUrl'
@@ -226,7 +227,7 @@ export default defineEventHandler(async (event) => {
   // ─────────────────────────────────────────────
 
   const organizationScope = await getPublicJobScopeCondition()
-  const jobConditions = [eq(job.slug, slug), eq(job.status, 'open'), lte(job.activeFrom, new Date())]
+  const jobConditions = [eq(job.slug, slug), getPublicJobVisibilityCondition()]
   if (organizationScope) jobConditions.push(organizationScope)
 
   const existingJob = await db.query.job.findFirst({
