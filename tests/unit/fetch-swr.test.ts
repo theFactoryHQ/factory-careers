@@ -58,7 +58,9 @@ describe('applications cache contract', () => {
     expect(useApplications).toContain('getSwrCachedData')
     expect(useApplications).toContain('watchFetchSwrStamp')
     expect(useApplications).not.toContain("key: 'applications'")
-    expect(useApplications).toMatch(/key:\s*computed\(\(\)\s*=>\s*applicationsListKey/)
+    expect(useApplications).toContain('const dataKey = computed(() =>')
+    expect(useApplications).toContain('applicationsListKey(query.value)')
+    expect(useApplications).toContain('useAsyncData(dataKey')
   })
 
   it('routes application cache refreshes through the applications list helper', () => {

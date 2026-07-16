@@ -13,6 +13,22 @@ export function registerApplicationsCommands(program: Command, runtime: CliRunti
     description: 'List applications',
     method: 'GET',
     path: '/api/applications',
+    options: [
+      { flags: '--page <number>', description: 'Page number' },
+      { flags: '--limit <number>', description: 'Page size' },
+      { flags: '--job-id <id>', description: 'Filter by job ID' },
+      { flags: '--candidate-id <id>', description: 'Filter by candidate ID' },
+      { flags: '--status <status>', description: 'Filter by pipeline status' },
+      { flags: '--search <query>', description: 'Search application content, including resumes' },
+    ],
+    query: (options) => ({
+      page: options.page as string | undefined,
+      limit: options.limit as string | undefined,
+      jobId: options.jobId as string | undefined,
+      candidateId: options.candidateId as string | undefined,
+      status: options.status as string | undefined,
+      search: options.search as string | undefined,
+    }),
   })
 
   registerJsonCommand(runtime, applications, {

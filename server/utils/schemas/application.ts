@@ -27,6 +27,8 @@ export const applicationQuerySchema = paginationQuerySchema().extend({
   jobId: z.string().min(1).optional(),
   candidateId: z.string().min(1).optional(),
   status: z.enum(APPLICATION_STATUSES).optional(),
+  /** Full application-content search, including parsed candidate documents. */
+  search: z.string().trim().max(200).optional(),
   /** JSON-encoded array of { propertyDefinitionId, op, value } filters */
   propertyFilters: z.string().optional(),
 })

@@ -193,6 +193,23 @@ export const document = pgTable('document', {
   index('document_application_id_idx').on(t.applicationId),
 ]))
 
+/**
+ * Denormalized, trigger-maintained application content used by recruiter search.
+ * The database migration owns the refresh functions and trigram index.
+ */
+export const applicationSearchDocument = pgTable('application_search_document', {
+  applicationId: text('application_id').primaryKey().references(() => application.id, { onDelete: 'cascade' }),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  jobId: text('job_id').notNull().references(() => job.id, { onDelete: 'cascade' }),
+  candidateId: text('candidate_id').notNull().references(() => candidate.id, { onDelete: 'cascade' }),
+  searchText: text('search_text').notNull(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  index('application_search_document_org_idx').on(t.organizationId),
+  index('application_search_document_job_idx').on(t.jobId),
+  index('application_search_document_candidate_idx').on(t.candidateId),
+]))
+
 // ─────────────────────────────────────────────
 // Custom Application Form Questions
 // ─────────────────────────────────────────────

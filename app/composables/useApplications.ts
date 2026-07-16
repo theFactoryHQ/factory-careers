@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
+import { remainingPageBatches } from '~~/shared/pagination'
 import type { PropertyFilter } from '~~/shared/properties'
 
 export type ApplicationsListQuery = {
@@ -8,6 +9,7 @@ export type ApplicationsListQuery = {
   jobId?: string
   candidateId?: string
   status?: string
+  search?: string
   propertyFilters?: string
 }
 
@@ -19,6 +21,7 @@ export function applicationsListKey(query: ApplicationsListQuery): string {
   if (query.jobId) normalized.jobId = query.jobId
   if (query.candidateId) normalized.candidateId = query.candidateId
   if (query.status) normalized.status = query.status
+  if (query.search) normalized.search = query.search
   if (query.propertyFilters) normalized.propertyFilters = query.propertyFilters
   return `applications-${JSON.stringify(normalized)}`
 }
@@ -37,7 +40,8 @@ export async function refreshApplicationsListCaches() {
 
 /**
  * Composable for managing the applications list with filtering, pagination, and mutations.
- * Wraps `useFetch('/api/applications')` with canonical cache keys and client SWR.
+ * Uses canonical cache keys and client SWR. Pipeline callers can request every
+ * page while the ordinary list contract remains paginated.
  */
 export function useApplications(options?: {
   page?: Ref<number | undefined> | number
@@ -45,7 +49,9 @@ export function useApplications(options?: {
   jobId?: Ref<string | undefined> | string
   candidateId?: Ref<string | undefined> | string
   status?: Ref<string | undefined> | string
+  search?: Ref<string | undefined> | string
   propertyFilters?: Ref<PropertyFilter[] | undefined> | PropertyFilter[]
+  allPages?: boolean
 }) {
   const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 
@@ -57,14 +63,38 @@ export function useApplications(options?: {
       ...(toValue(options?.jobId) && { jobId: toValue(options?.jobId) }),
       ...(toValue(options?.candidateId) && { candidateId: toValue(options?.candidateId) }),
       ...(toValue(options?.status) && { status: toValue(options?.status) }),
+      ...(toValue(options?.search) && { search: toValue(options?.search) }),
       ...(pf && pf.length > 0 && { propertyFilters: JSON.stringify(pf) }),
     }
   })
 
-  const { data, status: fetchStatus, error, refresh } = useFetch('/api/applications', {
-    key: computed(() => applicationsListKey(query.value)),
-    query,
-    headers: useRequestHeaders(['cookie']),
+  const requestFetch = useRequestFetch()
+  const dataKey = computed(() => {
+    const baseKey = applicationsListKey(query.value)
+    return options?.allPages ? `${baseKey}-all-pages` : baseKey
+  })
+
+  const { data, status: fetchStatus, error, refresh } = useAsyncData(dataKey, async () => {
+    const firstQuery = options?.allPages
+      ? { ...query.value, page: 1 }
+      : query.value
+    const firstPage = await requestFetch('/api/applications', { query: firstQuery })
+
+    if (!options?.allPages || firstPage.data.length >= firstPage.total) {
+      return firstPage
+    }
+
+    const allApplications = [...firstPage.data]
+
+    for (const pageNumbers of remainingPageBatches(firstPage.total, firstPage.limit)) {
+      const pages = await Promise.all(pageNumbers.map(page => requestFetch('/api/applications', {
+        query: { ...query.value, page, limit: firstPage.limit },
+      })))
+      allApplications.push(...pages.flatMap(page => page.data))
+    }
+
+    return { ...firstPage, data: allApplications }
+  }, {
     getCachedData: getSwrCachedData,
   })
 
