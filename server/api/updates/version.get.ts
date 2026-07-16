@@ -12,8 +12,8 @@ export default defineEventHandler(async (event) => {
 
   const currentVersion = await getAppVersion()
 
-  const owner = 'reqcore-inc'
-  const repo = 'reqcore'
+  const owner = 'theFactoryHQ'
+  const repo = 'factory-careers'
 
   try {
     const response = await fetch(
@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
       {
         headers: {
           'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': `Reqcore/${currentVersion}`,
+          'User-Agent': `Factory-Careers/${currentVersion}`,
         },
         signal: AbortSignal.timeout(10_000),
       },

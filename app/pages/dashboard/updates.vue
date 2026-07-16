@@ -16,7 +16,7 @@ definePageMeta({
 
 useSeoMeta({
   title: 'Updates — Factory Careers',
-  description: 'Check for updates and manage your self-hosted instance',
+  description: 'Review Factory Careers releases and product changes',
 })
 
 const { allowed: isOwner } = usePermission({ organization: ['delete'] })
@@ -233,23 +233,23 @@ function formatDate(dateString: string | null | undefined): string {
             class="flex items-center justify-center size-10 rounded-lg"
             :class="versionInfo?.updateAvailable
               ? 'bg-warning-50 dark:bg-warning-950 text-warning-600 dark:text-warning-400'
-              : !versionInfo && !versionLoading
+              : !versionInfo?.latestVersion && !versionLoading
                 ? 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'
                 : 'bg-success-50 dark:bg-success-950 text-success-600 dark:text-success-400'"
           >
             <ArrowUpCircle v-if="versionInfo?.updateAvailable" class="size-5" />
-            <AlertTriangle v-else-if="!versionInfo && !versionLoading" class="size-5" />
+            <AlertTriangle v-else-if="!versionInfo?.latestVersion && !versionLoading" class="size-5" />
             <CheckCircle2 v-else class="size-5" />
           </div>
           <div>
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">
-              {{ versionInfo?.updateAvailable ? 'Update available' : !versionInfo && !versionLoading ? 'Unable to check' : 'Up to date' }}
+              {{ versionInfo?.updateAvailable ? 'Update available' : !versionInfo?.latestVersion && !versionLoading ? 'Unable to check' : 'Up to date' }}
             </h2>
             <p class="text-sm text-surface-500 dark:text-surface-400">
               <template v-if="versionLoading">
                 Checking for updates…
               </template>
-              <template v-else-if="!versionInfo">
+              <template v-else-if="!versionInfo?.latestVersion">
                 Could not check for updates. Verify your network connection and try again.
               </template>
               <template v-else-if="versionInfo.updateAvailable">
@@ -797,7 +797,7 @@ function formatDate(dateString: string | null | undefined): string {
             <h4 class="text-sm font-semibold text-surface-800 dark:text-surface-200 mb-2">Manual / Git deployment</h4>
             <div class="ui-command-block px-4 py-3 font-mono text-sm space-y-1 overflow-x-auto">
               <p class="text-surface-500"># Navigate to your Factory Careers directory</p>
-              <p>cd /path/to/reqcore</p>
+              <p>cd /path/to/factory-careers</p>
               <p class="text-surface-500 mt-3"># Pull the latest version</p>
               <p>git pull origin main</p>
               <p class="text-surface-500 mt-3"># Rebuild and restart</p>
@@ -814,7 +814,7 @@ function formatDate(dateString: string | null | undefined): string {
     <!-- Footer link -->
     <div class="mt-8 mb-4 text-center">
       <a
-        href="https://github.com/caffeinebounce/factory-careers/releases"
+        href="https://github.com/theFactoryHQ/factory-careers/releases"
         target="_blank"
         rel="noopener noreferrer"
         class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1.5 text-xs font-medium"
