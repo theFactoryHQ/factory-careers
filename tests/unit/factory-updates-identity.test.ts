@@ -103,10 +103,10 @@ describe('Factory Careers updates identity', () => {
   it('distinguishes an unpublished first release from a failed release check', () => {
     const updatesPage = readProjectFile('app/pages/dashboard/updates.vue')
 
-    expect(updatesPage).toContain('No Factory release published yet')
-    expect(updatesPage).toContain('Local v{{ versionInfo.currentVersion }} is the Factory baseline; its GitHub release is pending.')
-    expect(updatesPage).toContain('Unable to check')
-    expect(updatesPage).toContain('Could not check for updates. Verify your network connection and try again.')
-    expect(updatesPage).toContain('Not published')
+    expect(updatesPage).toContain("import { getReleaseStatusPresentation } from '~/utils/releaseStatusPresentation'")
+    expect(updatesPage).toContain('const releasePresentation = computed')
+    expect(updatesPage).toContain('{{ releasePresentation.heading }}')
+    expect(updatesPage).toContain('{{ releasePresentation.description }}')
+    expect(updatesPage).toContain('{{ releasePresentation.latestLabel }}')
   })
 })

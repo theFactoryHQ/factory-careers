@@ -8,6 +8,7 @@ import {
   HardDrive, Database, Shield, Loader2,
   Cpu, MemoryStick, Info,
 } from 'lucide-vue-next'
+import { getReleaseStatusPresentation } from '~/utils/releaseStatusPresentation'
 
 definePageMeta({
   layout: 'dashboard',
@@ -29,6 +30,13 @@ const { data: versionInfo, pending: versionLoading, refresh: recheckVersion } = 
 })
 
 const isChecking = ref(false)
+const releasePresentation = computed(() => getReleaseStatusPresentation({
+  loading: versionLoading.value || isChecking.value,
+  releaseStatus: versionInfo.value?.releaseStatus,
+  currentVersion: versionInfo.value?.currentVersion,
+  latestVersion: versionInfo.value?.latestVersion,
+}))
+
 async function handleCheckUpdate() {
   isChecking.value = true
   try {
@@ -248,37 +256,10 @@ function formatDate(dateString: string | null | undefined): string {
           </div>
           <div>
             <h2 class="text-base font-semibold text-surface-900 dark:text-surface-100">
-              {{ versionLoading
-                ? 'Checking for updates'
-                : versionInfo?.releaseStatus === 'update-available'
-                  ? 'Update available'
-                  : versionInfo?.releaseStatus === 'unpublished'
-                    ? 'No Factory release published yet'
-                    : versionInfo?.releaseStatus === 'unavailable'
-                      ? 'Unable to check'
-                      : versionInfo?.releaseStatus === 'current'
-                        ? 'Up to date'
-                        : 'Unable to check' }}
+              {{ releasePresentation.heading }}
             </h2>
             <p class="text-sm text-surface-500 dark:text-surface-400">
-              <template v-if="versionLoading">
-                Checking for updates…
-              </template>
-              <template v-else-if="versionInfo?.releaseStatus === 'unpublished'">
-                Local v{{ versionInfo.currentVersion }} is the Factory baseline; its GitHub release is pending.
-              </template>
-              <template v-else-if="versionInfo?.releaseStatus === 'unavailable'">
-                Could not check for updates. Verify your network connection and try again.
-              </template>
-              <template v-else-if="versionInfo?.releaseStatus === 'update-available'">
-                Version {{ versionInfo.latestVersion }} is available (you're on {{ versionInfo.currentVersion }})
-              </template>
-              <template v-else-if="versionInfo?.releaseStatus === 'current'">
-                You're running the latest version ({{ versionInfo.currentVersion }})
-              </template>
-              <template v-else>
-                Could not check for updates. Verify your network connection and try again.
-              </template>
+              {{ releasePresentation.description }}
             </p>
           </div>
         </div>
@@ -300,18 +281,13 @@ function formatDate(dateString: string | null | undefined): string {
               Latest version
             </p>
             <p class="text-sm font-semibold text-surface-900 dark:text-surface-100 mt-1">
-              <template v-if="versionInfo?.releaseStatus === 'unpublished'">
-                <span class="text-surface-500 dark:text-surface-400">Not published</span>
-              </template>
-              <template v-else-if="versionInfo?.releaseStatus === 'unavailable'">
-                <span class="text-surface-400">—</span>
-              </template>
-              <template v-else-if="versionInfo?.latestVersion">
-                v{{ versionInfo.latestVersion }}
-              </template>
-              <template v-else>
-                <span class="text-surface-400">—</span>
-              </template>
+              <span
+                :class="versionInfo?.releaseStatus === 'unpublished'
+                  ? 'text-surface-500 dark:text-surface-400'
+                  : versionInfo?.releaseStatus === 'unavailable'
+                    ? 'text-surface-400'
+                    : ''"
+              >{{ releasePresentation.latestLabel }}</span>
             </p>
           </div>
         </div>

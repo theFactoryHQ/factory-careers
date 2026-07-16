@@ -2,7 +2,7 @@
 
 Notable Factory Careers product and operator changes are recorded here. The
 inherited Reqcore record is preserved separately in
-`docs/reference/REQCORE_CHANGELOG.md`.
+[`docs/reference/REQCORE_CHANGELOG.md`](docs/reference/REQCORE_CHANGELOG.md).
 
 Entries follow [Keep a Changelog](https://keepachangelog.com) and focus on
 outcomes visible to recruiters, administrators, operators, integrators, and
@@ -29,6 +29,7 @@ Earlier inherited history remains available in the archive.
 ### Changed
 
 - Re-established the changelog as a Factory Careers product record, with future changes collected under Unreleased and versioned when published.
+- Kept the curated changelog independent from release-please generation, with an explicit finalization command for future release pull requests.
 - Corrected the update experience and release links to use Factory-owned GitHub sources.
 - Repositioned the product from a branded Reqcore fork to Factory's hiring and applicant-tracking system, with Factory-owned product, security, deployment, and automation decisions.
 - Improved dashboard responsiveness and navigation with shared caching, prefetching, keep-alive behavior, and lazy-loaded detail panels.

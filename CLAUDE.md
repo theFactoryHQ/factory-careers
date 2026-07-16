@@ -139,6 +139,9 @@ self-hoster would notice.
 - Keep release and commit links scoped to `theFactoryHQ/factory-careers`.
 - Preserve inherited Reqcore history in its archive; do not mix new Factory
   Careers changes into the archived upstream record.
+- Release-please does not write the curated changelog. For a release PR, run
+  `npm run changelog:finalize -- <version> <YYYY-MM-DD>` after reviewing the
+  populated Unreleased sections, then commit the generated promotion.
 
 ## DRY And Reuse
 

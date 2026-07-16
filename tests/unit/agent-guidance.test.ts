@@ -38,6 +38,7 @@ describe('agent guidance', () => {
       '**Changed**',
       '**Fixed**',
       '**Removed**',
+      'npm run changelog:finalize -- <version> <YYYY-MM-DD>',
     ]) {
       expect(agents, `AGENTS.md missing ${snippet}`).toContain(snippet)
     }

@@ -118,6 +118,7 @@ describe('parseChangelog', () => {
 
     expect(changelog).toMatch(/## Unreleased\s+## \[1\.0\.0]\(https:\/\/github\.com\/theFactoryHQ\/factory-careers\/releases\/tag\/v1\.0\.0\) \(2026-07-16\)/)
     expect(changelog).toContain('first independent Factory Careers release')
+    expect(changelog).toContain('[`docs/reference/REQCORE_CHANGELOG.md`](docs/reference/REQCORE_CHANGELOG.md)')
     expect(changelog).not.toContain('https://github.com/reqcore-inc/reqcore')
     expect(changelog).not.toContain('## [1.4.0]')
     expect(entries[0]).toMatchObject({ title: 'v1.0.0', version: '1.0.0', date: '2026-07-16' })

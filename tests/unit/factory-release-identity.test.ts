@@ -24,6 +24,7 @@ interface PackageLock {
 interface ReleasePleaseConfig {
   packages: {
     '.': {
+      'skip-changelog': boolean
       'extra-files': Array<Record<string, string>>
     }
   }
@@ -56,6 +57,7 @@ describe('Factory Careers release identity', () => {
   it('keeps CLI package and lockfile metadata synchronized through release-please', () => {
     const releaseConfig = readProjectJson<ReleasePleaseConfig>('.github/release-please-config.json')
 
+    expect(releaseConfig.packages['.']['skip-changelog']).toBe(true)
     expect(releaseConfig.packages['.']['extra-files']).toEqual([
       {
         type: 'json',
@@ -74,8 +76,13 @@ describe('Factory Careers release identity', () => {
     const changelog = readProjectFile('CHANGELOG.md')
     const readme = readProjectFile('README.md')
     const versioningGuide = readProjectFile('docs/reference/VERSIONING.md')
+    const packageJson = readProjectJson<{ scripts: Record<string, string> }>('package.json')
+    const agents = readProjectFile('AGENTS.md')
+    const pullRequestTemplate = readProjectFile('.github/pull_request_template.md')
 
     expect(changelog).toContain('## Unreleased')
+    expect(changelog).toContain('[`docs/reference/REQCORE_CHANGELOG.md`](docs/reference/REQCORE_CHANGELOG.md)')
+    expect(changelog).not.toContain('https://github.com/reqcore-inc/reqcore')
     expect(readme).toContain('[`docs/reference/VERSIONING.md`](docs/reference/VERSIONING.md)')
     expect(versioningGuide).toContain('v1.0.0')
     expect(versioningGuide).toMatch(/patch[\s\S]*compatible fixes/i)
@@ -87,5 +94,12 @@ describe('Factory Careers release identity', () => {
     expect(versioningGuide).toMatch(/first v1\.0\.0 release[\s\S]*manually/i)
     expect(versioningGuide).toMatch(/legacy Reqcore persisted identifiers[\s\S]*compatibility concerns/i)
     expect(versioningGuide).toMatch(/should not be blindly renamed/i)
+    expect(versioningGuide).toContain('skip-changelog')
+    expect(versioningGuide).toContain('npm run changelog:finalize -- <version> <YYYY-MM-DD>')
+    expect(versioningGuide).toMatch(/release PR[\s\S]*changelog:finalize/i)
+    expect(packageJson.scripts['changelog:finalize']).toBe('node scripts/finalize-changelog.mjs')
+    expect(agents).toContain('npm run changelog:finalize -- <version> <YYYY-MM-DD>')
+    expect(pullRequestTemplate).toContain('npm run changelog:finalize -- <version> <YYYY-MM-DD>')
+    expect(pullRequestTemplate).not.toContain('release-please uses to generate the changelog')
   })
 })

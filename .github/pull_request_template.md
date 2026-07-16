@@ -3,7 +3,7 @@
 - What does this PR change?
 - Why is this needed?
 
-> **PR title must follow [Conventional Commits](https://www.conventionalcommits.org/)** — e.g. `feat(jobs): add bulk import` or `fix: handle null salary`. The squash-merged title is what release-please uses to generate the changelog and pick the next version. PRs with non-conventional titles are blocked by CI.
+> **PR title must follow [Conventional Commits](https://www.conventionalcommits.org/)** — e.g. `feat(jobs): add bulk import` or `fix: handle null salary`. The squash-merged title is what release-please uses to determine the next version and GitHub release notes. PRs with non-conventional titles are blocked by CI.
 
 ## Type of change
 
@@ -18,6 +18,12 @@
 - [ ] I tested locally
 - [ ] I added/updated relevant documentation
 - [ ] I verified multi-tenant scoping and auth behavior for affected API paths
+
+## Release/version notes
+
+- [ ] This is not a release PR
+- [ ] For a release PR, I ran `npm run changelog:finalize -- <version> <YYYY-MM-DD>` with the intended version and UTC publication date, then committed the result
+- [ ] I documented known release risks or explicitly confirmed there are none
 
 ## CLI parity
 

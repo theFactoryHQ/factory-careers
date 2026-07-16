@@ -36,6 +36,23 @@ merged. Automated release-please publishing requires the
 #27. After the prerequisite is complete, release-please will keep the app, CLI,
 lockfile, and release manifest synchronized.
 
+Factory Careers deliberately keeps `CHANGELOG.md` curated. The release-please
+package uses `skip-changelog: true`: it still determines the next version and
+GitHub release notes, but it does not generate or duplicate changelog entries.
+
+For every later release PR, confirm that `## Unreleased` contains the reviewed
+user- and operator-facing entries, then promote them with the release version
+and UTC publication date:
+
+```bash
+npm run changelog:finalize -- <version> <YYYY-MM-DD>
+```
+
+Commit the resulting `CHANGELOG.md` to the release PR. The finalizer rejects an
+empty Unreleased section, invalid version or date arguments, and duplicate
+version headings. It writes the completed changelog atomically and restores an
+empty `## Unreleased` entry for the next development cycle.
+
 ## Legacy Reqcore identifiers
 
 Legacy Reqcore persisted identifiers are compatibility concerns, not Factory
