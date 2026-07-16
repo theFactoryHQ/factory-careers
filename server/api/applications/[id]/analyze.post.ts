@@ -2,13 +2,14 @@ import { eq, and } from 'drizzle-orm'
 import { resourceIdParamSchema } from '../../../utils/schemas/common'
 import {
   application, scoringCriterion, criterionScore,
-  analysisRun, analysisRunCriterionScore, document, orgSettings,
+  analysisRun, analysisRunCriterionScore, orgSettings,
 } from '../../../database/schema'
 import { scoreApplication, computeCompositeScore } from '../../../utils/ai/scoring'
 import type { CriterionDefinition } from '../../../utils/ai/scoring'
 import type { SupportedProvider } from '../../../utils/ai/provider'
 import { loadAiConfig } from '../../../utils/ai/loadConfig'
 import { extractResumeText } from '../../../utils/resume-parser'
+import { loadApplicationResume } from '../../../utils/applicationResume'
 import { createRateLimiter } from '../../../utils/rateLimit'
 import { z } from 'zod'
 
@@ -69,19 +70,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Fetch candidate documents (resume text)
-  const docs = await db.select({
-    id: document.id,
-    parsedContent: document.parsedContent,
-    type: document.type,
-  })
-    .from(document)
-    .where(and(
-      eq(document.candidateId, app.candidate.id),
-      eq(document.organizationId, orgId),
-    ))
-
-  const resumeDoc = docs.find(d => d.type === 'resume')
+  const resumeDoc = await loadApplicationResume(orgId, applicationId, app.candidate.id)
   const resumeText = extractResumeText(resumeDoc?.parsedContent)
 
   if (!resumeText) {

@@ -19,6 +19,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com). Categories: **Add
 * **calendar:** bind delegated integrations to organizations, require organization administrators for shared-calendar changes, protect reconnect races, and retry pending Google webhook setup
 * **compliance:** require organization settings permission and suppress protected-dimension results for cohorts smaller than five
 * **operations:** keep database connection credentials out of Drizzle configuration diagnostics
+* **scoring:** score each application from its submitted resume, with a deterministic fallback for legacy uploads
 
 ---
 
