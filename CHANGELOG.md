@@ -24,6 +24,10 @@ self-hosters.
 
 ### Fixed
 
+- Removed the verbose search-scope helper from the job pipeline.
+- Made AI usage charts render a true rolling 30-day window with readable scales, quiet-day gaps, compact bars, period totals, and accessible daily details.
+- Pinned recruiter-search database functions to trusted schemas, protected device authorization with row-level security, and indexed durable-processing relationships used during cleanup.
+- Protected internal recruiter-search and durable-processing tables with the same server-role-only row-level security boundary used by existing production data.
 - Kept large job pipelines stable with bounded server pagination, accurate filtered stage counts, identity-safe selection, and application-scoped interview history.
 - Kept ordinary application and job-pipeline lists available while the optional application search index is being migrated during a deployment.
 - Bound score details and reviewer feedback to the exact persisted analysis run, kept the last successful result visible after a failed re-score, and isolated candidate and scoring state when switching applications.
