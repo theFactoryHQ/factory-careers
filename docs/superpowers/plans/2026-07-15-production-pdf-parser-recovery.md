@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Prove the bundle regression gate is incomplete
+## Task 1: Prove the bundle regression gate is incomplete
 
 **Files:**
 - Modify: `tests/unit/resume-parser-bundle.test.ts`
@@ -26,7 +26,7 @@ Run: `npm test -- tests/unit/resume-parser-bundle.test.ts`
 
 Expected: FAIL because the current verifier checks only the worker file's existence and size.
 
-### Task 2: Execute a real bundled parse after every build
+## Task 2: Execute a real bundled parse after every build
 
 **Files:**
 - Modify: `scripts/verify-resume-parser-bundle.mjs`
@@ -50,7 +50,7 @@ Run: `npm test -- tests/unit/resume-parser-bundle.test.ts tests/unit/resume-pars
 
 Expected: PASS for both parser test files.
 
-### Task 3: Verify, publish, and repair affected records
+## Task 3: Verify, publish, and repair affected records
 
 **Files:**
 - Modify: `docs/superpowers/plans/2026-07-15-production-pdf-parser-recovery.md` only to check completed steps
