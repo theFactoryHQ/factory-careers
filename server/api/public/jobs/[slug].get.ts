@@ -1,7 +1,8 @@
-import { eq, and, lte } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { job, orgSettings } from '../../../database/schema'
 import { publicJobSlugSchema } from '../../../utils/schemas/publicApplication'
 import { getPublicJobScopeCondition } from '../../../utils/publicJobScope'
+import { getPublicJobVisibilityCondition } from '../../../utils/publicJobVisibility'
 import { isBuiltInLocationQuestion } from '~~/shared/built-in-application-fields'
 
 /**
@@ -13,7 +14,7 @@ import { isBuiltInLocationQuestion } from '~~/shared/built-in-application-fields
 export default defineEventHandler(async (event) => {
   const { slug } = await getValidatedRouterParams(event, publicJobSlugSchema.parse)
   const organizationScope = await getPublicJobScopeCondition()
-  const conditions = [eq(job.slug, slug), eq(job.status, 'open'), lte(job.activeFrom, new Date())]
+  const conditions = [eq(job.slug, slug), getPublicJobVisibilityCondition()]
   if (organizationScope) conditions.push(organizationScope)
 
   const result = await db.query.job.findFirst({

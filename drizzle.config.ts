@@ -27,9 +27,9 @@ function resolveDatabaseUrl(): string {
   }
 
   throw new Error(
-    `DATABASE_URL is missing a hostname and no PGHOST fallback is available.\n`
-    + `Raw DATABASE_URL: "${raw}"\n`
-    + `In Railway PR environments, ensure the Postgres service variables are linked to this service.`,
+    'Database configuration is incomplete: expected a DATABASE_URL hostname '
+    + 'or a PGHOST/RAILWAY_TCP_PROXY_DOMAIN fallback.\n'
+    + 'In Railway PR environments, ensure the Postgres service variables are linked to this service.',
   )
 }
 

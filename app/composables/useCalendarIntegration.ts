@@ -25,6 +25,10 @@ export interface CalendarStatus {
 }
 
 export function useCalendarIntegration() {
+  const {
+    allowed: canManageCalendar,
+    isLoading: isCalendarPermissionLoading,
+  } = usePermission({ organization: ['update'] })
   const { data, status, error, refresh } = useFetch<CalendarStatus>('/api/calendar/status', {
     key: 'calendar-status',
     headers: useRequestHeaders(['cookie']),
@@ -51,6 +55,8 @@ export function useCalendarIntegration() {
   const isAvailable = computed(() => calendarStatus.value.available)
 
   function connect() {
+    if (!canManageCalendar.value) return
+
     // In application / admin-managed mode, connection is handled purely via server configuration
     // (MICROSOFT_CALENDAR_AUTH_MODE=application). No per-user OAuth flow is needed or allowed.
     if (calendarStatus.value.managedByAdmin || calendarStatus.value.authMode === 'application') return
@@ -61,6 +67,8 @@ export function useCalendarIntegration() {
   }
 
   async function disconnect() {
+    if (!canManageCalendar.value) return
+
     await $fetch('/api/calendar/disconnect', { method: 'POST' })
     await refresh()
   }
@@ -69,6 +77,8 @@ export function useCalendarIntegration() {
     calendarStatus,
     isConnected,
     isAvailable,
+    canManageCalendar,
+    isCalendarPermissionLoading,
     status,
     error,
     refresh,

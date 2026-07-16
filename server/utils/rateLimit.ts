@@ -26,18 +26,38 @@ if (_replicaCount > 1) {
  * @param maxRequests - Maximum number of requests allowed within the window
  * @param message - Error message returned when the limit is exceeded
  */
-interface RateLimitConfig {
+export interface RateLimitConfig {
   windowMs: number
   maxRequests: number
   message?: string
+  /** Override the secure socket-IP key for routes with a stronger composite policy. */
+  keyResolver?: (event: H3Event) => string | undefined
+  /** Maximum distinct resolved keys retained before new keys share an overflow bucket. */
+  maxTrackedKeys?: number
+  /** Emit headers on every request (default) or only when this limiter rejects. */
+  headerMode?: 'always' | 'on-limit'
 }
 
 interface RateLimitEntry {
   timestamps: number[]
 }
 
+export interface RateLimitReservation {
+  commit: () => void
+}
+
+export interface RateLimiter {
+  (event: H3Event): Promise<void>
+  reserve: (event: H3Event) => RateLimitReservation
+}
+
+const DEFAULT_MAX_TRACKED_KEYS = 10_000
+const MAX_RATE_LIMIT_KEY_LENGTH = 256
+const OVERFLOW_KEY = Symbol('rate-limit-overflow')
+
 /**
- * Create a reusable rate limiter scoped by client IP.
+ * Create a reusable rate limiter scoped by client IP by default, or by an
+ * explicit bounded key resolver for routes with a layered abuse policy.
  *
  * Uses a sliding window algorithm — each request records a timestamp,
  * and only timestamps within the current window are counted.
@@ -62,21 +82,42 @@ interface RateLimitEntry {
  * })
  * ```
  */
-export function createRateLimiter(config: RateLimitConfig) {
-  const { windowMs, maxRequests, message = 'Too many requests, please try again later' } = config
-  const store = new Map<string, RateLimitEntry>()
+export function createRateLimiter(config: RateLimitConfig): RateLimiter {
+  const {
+    windowMs,
+    maxRequests,
+    message = 'Too many requests, please try again later',
+    keyResolver,
+    headerMode = 'always',
+  } = config
+  const maxTrackedKeys = Number.isInteger(config.maxTrackedKeys) && config.maxTrackedKeys! > 0
+    ? config.maxTrackedKeys!
+    : DEFAULT_MAX_TRACKED_KEYS
+  const store = new Map<string | typeof OVERFLOW_KEY, RateLimitEntry>()
+  let nextExpiryAt = Number.POSITIVE_INFINITY
+
+  function pruneExpired(now: number): void {
+    if (now < nextExpiryAt) return
+
+    let earliestRemainingExpiry = Number.POSITIVE_INFINITY
+    for (const [key, entry] of store) {
+      entry.timestamps = entry.timestamps.filter(timestamp => now - timestamp < windowMs)
+      if (entry.timestamps.length === 0) {
+        store.delete(key)
+        continue
+      }
+      earliestRemainingExpiry = Math.min(
+        earliestRemainingExpiry,
+        entry.timestamps[0]! + windowMs,
+      )
+    }
+    nextExpiryAt = earliestRemainingExpiry
+  }
 
   // Periodically prune stale entries to prevent unbounded memory growth
   const PRUNE_INTERVAL = Math.max(windowMs * 2, 60_000)
   setInterval(() => {
-    const now = Date.now()
-    for (const [key, entry] of store) {
-      // Remove entries with no timestamps within the window
-      entry.timestamps = entry.timestamps.filter((t) => now - t < windowMs)
-      if (entry.timestamps.length === 0) {
-        store.delete(key)
-      }
-    }
+    pruneExpired(Date.now())
   }, PRUNE_INTERVAL).unref() // .unref() prevents the timer from keeping the process alive
 
   /**
@@ -84,32 +125,44 @@ export function createRateLimiter(config: RateLimitConfig) {
    * Throws a 429 error if the limit is exceeded.
    * Sets standard rate limit headers on every response.
    */
-  return async function rateLimit(event: H3Event): Promise<void> {
-    const ip = getClientIp(event)
-    const now = Date.now()
-
-    let entry = store.get(ip)
-    if (!entry) {
-      entry = { timestamps: [] }
-      store.set(ip, entry)
+  function reserve(event: H3Event): RateLimitReservation {
+    let resolvedKey: string | undefined
+    if (keyResolver) {
+      try {
+        resolvedKey = keyResolver(event)?.trim()
+      }
+      catch {
+        // A route-specific resolver must never disable the secure default.
+      }
     }
+    const boundedKey = resolvedKey
+      ? resolvedKey.slice(0, MAX_RATE_LIMIT_KEY_LENGTH)
+      : getClientIp(event)
+    const now = Date.now()
+    pruneExpired(now)
 
-    // Remove timestamps outside the current window
-    entry.timestamps = entry.timestamps.filter((t) => now - t < windowMs)
+    const trackedKeyCount = store.size - (store.has(OVERFLOW_KEY) ? 1 : 0)
+    const key = !store.has(boundedKey) && trackedKeyCount >= maxTrackedKeys
+      ? OVERFLOW_KEY
+      : boundedKey
+    const timestamps = store.get(key)?.timestamps ?? []
 
     // Set rate limit headers (draft RFC 7.2 / common convention)
-    const remaining = Math.max(0, maxRequests - entry.timestamps.length)
-    const resetSeconds = entry.timestamps.length > 0
-      ? Math.ceil((entry.timestamps[0]! + windowMs - now) / 1000)
+    const remaining = Math.max(0, maxRequests - timestamps.length)
+    const resetSeconds = timestamps.length > 0
+      ? Math.ceil((timestamps[0]! + windowMs - now) / 1000)
       : Math.ceil(windowMs / 1000)
 
-    setResponseHeaders(event, {
-      'X-RateLimit-Limit': String(maxRequests),
-      'X-RateLimit-Remaining': String(remaining),
-      'X-RateLimit-Reset': String(resetSeconds),
-    })
+    const isLimited = timestamps.length >= maxRequests
+    if (headerMode === 'always' || isLimited) {
+      setResponseHeaders(event, {
+        'X-RateLimit-Limit': String(maxRequests),
+        'X-RateLimit-Remaining': String(remaining),
+        'X-RateLimit-Reset': String(resetSeconds),
+      })
+    }
 
-    if (entry.timestamps.length >= maxRequests) {
+    if (isLimited) {
       setResponseHeader(event, 'Retry-After', resetSeconds)
       throw createError({
         statusCode: 429,
@@ -117,9 +170,24 @@ export function createRateLimiter(config: RateLimitConfig) {
       })
     }
 
-    // Record this request
-    entry.timestamps.push(now)
+    return {
+      commit() {
+        let entry = store.get(key)
+        if (!entry) {
+          entry = { timestamps: [] }
+          store.set(key, entry)
+        }
+        entry.timestamps.push(now)
+        nextExpiryAt = Math.min(nextExpiryAt, now + windowMs)
+      },
+    }
   }
+
+  const rateLimit = (async (event: H3Event): Promise<void> => {
+    reserve(event).commit()
+  }) as RateLimiter
+  rateLimit.reserve = reserve
+  return rateLimit
 }
 
 /**

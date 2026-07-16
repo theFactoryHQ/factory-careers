@@ -25,6 +25,7 @@ Earlier inherited history remains available in the archive.
 - AI-assisted recruiting workflows for resume parsing, candidate analysis, scoring criteria, provider configuration, model discovery, and recruiter chatbot experiences.
 - Microsoft and Google calendar integration paths for interview scheduling, invitations, responses, and synchronization.
 - Operational validation for Render, Supabase Postgres, S3-compatible private storage, backups, release verification, and production environment contracts.
+- Cluster 8 career-page guidance covering conversion, search optimization, Google for Jobs structured data, ATS selection, and self-hosted deployment.
 
 ### Changed
 
@@ -40,3 +41,9 @@ Earlier inherited history remains available in the archive.
 - Distinguished a pending first Factory GitHub release from network or service failures in the Updates experience.
 - Hardened public application uploads, authorization boundaries, tenant isolation, dependency security, and production validation gates.
 - Bundled the PDF parsing worker required to process candidate resumes reliably in production.
+- Restricted the PostHog browser proxy to required SDK routes with bounded streaming, safe headers, and separate ingestion and asset rate limits.
+- Bound delegated calendar integrations to organizations, enforced administrator-only shared-calendar changes, protected reconnect races, and retried pending Google webhook setup.
+- Required organization settings permission for compliance reporting and suppressed protected-dimension results for cohorts smaller than five.
+- Kept database connection credentials out of Drizzle configuration diagnostics.
+- Enforced inclusive public job closing dates with a legacy deadline backfill, atomic submissions, application-bound uploads, and serialized document-cap reservations.
+- Scored each application from its submitted resume, with a deterministic fallback for legacy uploads.

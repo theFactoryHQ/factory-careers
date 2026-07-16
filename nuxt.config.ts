@@ -103,7 +103,9 @@ export default defineNuxtConfig({
     host: process.env.POSTHOG_HOST || "https://eu.i.posthog.com",
     clientConfig: {
       // ── Reverse proxy: route PostHog through the app domain to bypass ad blockers ──
-      // Requests to /ingest/** are proxied by Nitro to eu.i.posthog.com
+      // Nitro allowlists POST /ingest/e[/] and /ingest/flags[/] on the EU
+      // ingestion host, plus GET/HEAD /ingest/static/** and the two
+      // /ingest/array/{token}/config[.js] asset endpoints. All other paths fail closed.
       api_host: "/ingest",
       ui_host: "https://eu.posthog.com",
       // ── Privacy: disable invasive features ──
@@ -287,8 +289,9 @@ export default defineNuxtConfig({
   // ─────────────────────────────────────────────
   routeRules: {
     // ── PostHog reverse proxy ──
-    // Handled by server/routes/ingest/[...path].ts (which routes /ingest/static/**
-    // to eu-assets.i.posthog.com and everything else to eu.i.posthog.com).
+    // Handled by server/routes/ingest/[...path].ts with an explicit SDK allowlist:
+    // POST e/flags use eu.i.posthog.com; GET/HEAD static and array config assets
+    // use eu-assets.i.posthog.com. Unknown paths and methods are rejected.
     // Defining routeRules here would be shadowed by the server route, so we
     // intentionally do not declare them.
     ...localizedRootRedirectRules,

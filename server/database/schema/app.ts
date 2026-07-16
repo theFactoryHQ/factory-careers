@@ -179,6 +179,7 @@ export const document = pgTable('document', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
   candidateId: text('candidate_id').notNull().references(() => candidate.id, { onDelete: 'cascade' }),
+  applicationId: text('application_id').references(() => application.id, { onDelete: 'set null' }),
   type: documentTypeEnum('type').notNull().default('resume'),
   storageKey: text('storage_key').notNull().unique(),
   originalFilename: text('original_filename').notNull(),
@@ -189,6 +190,7 @@ export const document = pgTable('document', {
 }, (t) => ([
   index('document_organization_id_idx').on(t.organizationId),
   index('document_candidate_id_idx').on(t.candidateId),
+  index('document_application_id_idx').on(t.applicationId),
 ]))
 
 // ─────────────────────────────────────────────
@@ -456,6 +458,8 @@ export const calendarIntegration = pgTable('calendar_integration', {
   userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
   organizationId: text('organization_id').references(() => organization.id, { onDelete: 'cascade' }),
   provider: calendarProviderEnum('provider').notNull().default('google'),
+  /** Stable connection generation; changes only when OAuth reconnects, not when tokens refresh */
+  connectionGeneration: text('connection_generation').notNull().$defaultFn(() => crypto.randomUUID()),
   /** AES-256-GCM encrypted provider OAuth2 access token (null for app-only integrations) */
   accessTokenEncrypted: text('access_token_encrypted'),
   /** AES-256-GCM encrypted provider OAuth2 refresh token (null for app-only integrations) */
@@ -967,11 +971,13 @@ export const applicationRelations = relations(application, ({ one, many }) => ({
   analysisRunCriterionScores: many(analysisRunCriterionScore),
   analysisRunFeedback: many(analysisRunFeedback),
   source: one(applicationSource),
+  documents: many(document),
 }))
 
 export const documentRelations = relations(document, ({ one }) => ({
   organization: one(organization, { fields: [document.organizationId], references: [organization.id] }),
   candidate: one(candidate, { fields: [document.candidateId], references: [candidate.id] }),
+  application: one(application, { fields: [document.applicationId], references: [application.id] }),
 }))
 
 export const jobQuestionRelations = relations(jobQuestion, ({ one }) => ({

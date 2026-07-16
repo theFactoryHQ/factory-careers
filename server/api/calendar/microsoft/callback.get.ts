@@ -14,8 +14,12 @@ import { handleCalendarOAuthCallback } from '../../../utils/calendarOAuth'
 const MICROSOFT_CALLBACK_PATH = '/api/calendar/microsoft/callback'
 
 export default defineEventHandler(async (event) => {
-  const session = await requireAuth(event)
+  const session = await requirePermission(event, { organization: ['update'] })
   const activeOrgId = session.session.activeOrganizationId
+
+  if (!activeOrgId) {
+    throw createError({ statusCode: 403, statusMessage: 'No active organization' })
+  }
 
   return handleCalendarOAuthCallback(event, {
     stateCookieName: 'mscal_oauth_state',
@@ -33,13 +37,12 @@ export default defineEventHandler(async (event) => {
       return null
     },
     onSuccess: async ({ code, extraCookies }) => {
-      const orgId = extraCookies.mscal_oauth_org || activeOrgId
-      if (!orgId) {
-        throw new Error('Missing active organization for Microsoft Calendar connection')
+      if (extraCookies.mscal_oauth_org !== activeOrgId) {
+        throw new Error('Microsoft Calendar organization changed during authorization')
       }
 
       const tokens = await exchangeMicrosoftCodeForTokens(code)
-      await saveMicrosoftCalendarIntegration(session.user.id, orgId, tokens)
+      await saveMicrosoftCalendarIntegration(session.user.id, activeOrgId, tokens)
     },
   })
 })
