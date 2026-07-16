@@ -34,6 +34,8 @@ export interface RateLimitConfig {
   keyResolver?: (event: H3Event) => string | undefined
   /** Maximum distinct resolved keys retained before new keys share an overflow bucket. */
   maxTrackedKeys?: number
+  /** Emit headers on every request (default) or only when this limiter rejects. */
+  headerMode?: 'always' | 'on-limit'
 }
 
 interface RateLimitEntry {
@@ -77,6 +79,7 @@ export function createRateLimiter(config: RateLimitConfig) {
     maxRequests,
     message = 'Too many requests, please try again later',
     keyResolver,
+    headerMode = 'always',
   } = config
   const maxTrackedKeys = Number.isInteger(config.maxTrackedKeys) && config.maxTrackedKeys! > 0
     ? config.maxTrackedKeys!
@@ -134,13 +137,16 @@ export function createRateLimiter(config: RateLimitConfig) {
       ? Math.ceil((entry.timestamps[0]! + windowMs - now) / 1000)
       : Math.ceil(windowMs / 1000)
 
-    setResponseHeaders(event, {
-      'X-RateLimit-Limit': String(maxRequests),
-      'X-RateLimit-Remaining': String(remaining),
-      'X-RateLimit-Reset': String(resetSeconds),
-    })
+    const isLimited = entry.timestamps.length >= maxRequests
+    if (headerMode === 'always' || isLimited) {
+      setResponseHeaders(event, {
+        'X-RateLimit-Limit': String(maxRequests),
+        'X-RateLimit-Remaining': String(remaining),
+        'X-RateLimit-Reset': String(resetSeconds),
+      })
+    }
 
-    if (entry.timestamps.length >= maxRequests) {
+    if (isLimited) {
       setResponseHeader(event, 'Retry-After', resetSeconds)
       throw createError({
         statusCode: 429,

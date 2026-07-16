@@ -77,6 +77,20 @@ describe('analytics proxy rate limits', () => {
     await expect(guard(makeEvent('203.0.113.3'), 'ingestion')).rejects.toMatchObject({ statusCode: 429 })
   })
 
+  it('does not spend global allowance on requests already rejected by one client budget', async () => {
+    const guard = await setup({ ingestionPerClient: 1, ingestionGlobal: 3 })
+    const noisyClient = makeEvent('203.0.113.1')
+
+    await expect(guard(noisyClient, 'ingestion')).resolves.toBeUndefined()
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await expect(guard(noisyClient, 'ingestion')).rejects.toMatchObject({ statusCode: 429 })
+    }
+
+    await expect(guard(makeEvent('203.0.113.2'), 'ingestion')).resolves.toBeUndefined()
+    await expect(guard(makeEvent('203.0.113.3'), 'ingestion')).resolves.toBeUndefined()
+    await expect(guard(makeEvent('203.0.113.4'), 'ingestion')).rejects.toMatchObject({ statusCode: 429 })
+  })
+
   it('keeps ingestion and asset global backstops independent', async () => {
     const guard = await setup({
       ingestionPerClient: 10,

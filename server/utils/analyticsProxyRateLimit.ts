@@ -71,6 +71,7 @@ export function createAnalyticsProxyRateLimitGuard(options: AnalyticsProxyRateLi
     message: 'Analytics ingestion is temporarily busy. Please retry shortly.',
     keyResolver: () => 'analytics-ingestion-global',
     maxTrackedKeys: 1,
+    headerMode: 'on-limit',
   })
   const ingestionPerClient = createRateLimiter({
     windowMs,
@@ -85,6 +86,7 @@ export function createAnalyticsProxyRateLimitGuard(options: AnalyticsProxyRateLi
     message: 'Analytics assets are temporarily busy. Please retry shortly.',
     keyResolver: () => 'analytics-assets-global',
     maxTrackedKeys: 1,
+    headerMode: 'on-limit',
   })
   const assetsPerClient = createRateLimiter({
     windowMs,
@@ -99,12 +101,12 @@ export function createAnalyticsProxyRateLimitGuard(options: AnalyticsProxyRateLi
     bucket: AnalyticsRateLimitBucket,
   ): Promise<void> {
     if (bucket === 'assets') {
-      await assetsGlobal(event)
       await assetsPerClient(event)
+      await assetsGlobal(event)
       return
     }
 
-    await ingestionGlobal(event)
     await ingestionPerClient(event)
+    await ingestionGlobal(event)
   }
 }
