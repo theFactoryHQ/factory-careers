@@ -74,6 +74,13 @@ describe('public application compliance self-identification', () => {
     expect(handler).not.toContain('questionResponse).values(\\n      validResponses.map((r) => ({\\n        organizationId: orgId,\\n        applicationId: newApplication!.id,\\n        questionId: r.questionId,\\n        value: r.value,\\n        compliance')
   })
 
+  it('creates compliance responses with an explicit id for production tables without database defaults', () => {
+    const handler = readProjectFile('server/api/public/jobs/[slug]/apply.post.ts')
+    const complianceInsert = handler.match(/db\.insert\(applicationComplianceResponse\)\.values\(\{[\s\S]*?\n      \}\)/)?.[0] ?? ''
+
+    expect(complianceInsert).toContain('id: crypto.randomUUID()')
+  })
+
   it('renders voluntary questions on the public form without exposing answers in hiring surfaces', () => {
     const publicApply = readProjectFile('app/pages/jobs/[slug]/apply.vue')
     const applicationDetail = readProjectFile('app/pages/dashboard/applications/[id].vue')
