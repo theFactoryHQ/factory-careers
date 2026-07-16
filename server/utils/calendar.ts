@@ -8,6 +8,7 @@ import {
   setupCalendarWebhook as setupGoogleCalendarWebhook,
   isGoogleCalendarConfigured,
   type GoogleCalendarIntegrationIdentity,
+  type GoogleCalendarIntegrationSnapshot,
 } from './google-calendar'
 import {
   createMicrosoftCalendarEvents,
@@ -19,6 +20,7 @@ import {
   isMicrosoftCalendarConfigured,
   isMicrosoftCalendarApplicationMode,
   type MicrosoftCalendarSyncResult,
+  type MicrosoftCalendarIntegrationIdentity,
 } from './microsoft-calendar'
 
 export type CalendarProvider = 'google' | 'microsoft'
@@ -257,16 +259,26 @@ export async function removeConnectedCalendarIntegration(userId: string, organiz
   if (!integration) return
 
   if (integration.provider === 'microsoft') {
-    await removeMicrosoftCalendarIntegration(integration.userId ?? userId, integration.organizationId ?? undefined)
+    const identity: MicrosoftCalendarIntegrationIdentity = {
+      integrationId: integration.id,
+      userId: integration.userId,
+      organizationId: integration.organizationId,
+      connectionGeneration: integration.connectionGeneration,
+    }
+    const removed = await removeMicrosoftCalendarIntegration(identity)
+    if (!removed) throw createError({ statusCode: 409, statusMessage: 'Calendar connection changed; retry disconnect' })
     return
   }
 
   const googleUserId = integration.userId ?? userId
-  await removeGoogleCalendarIntegration({
+  const snapshot: GoogleCalendarIntegrationSnapshot = {
     integrationId: integration.id,
     userId: googleUserId,
     organizationId: integration.organizationId,
-  })
+    connectionGeneration: integration.connectionGeneration,
+  }
+  const removed = await removeGoogleCalendarIntegration(snapshot)
+  if (!removed) throw createError({ statusCode: 409, statusMessage: 'Calendar connection changed; retry disconnect' })
 }
 
 export async function setupConnectedCalendarWebhook(userId: string, organizationId?: string | null, provider?: CalendarProvider | null): Promise<boolean> {

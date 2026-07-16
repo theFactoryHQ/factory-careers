@@ -15,6 +15,10 @@ export type GoogleCalendarIntegrationIdentity = Readonly<{
   organizationId: string | null
 }>
 
+export type GoogleCalendarIntegrationSnapshot = GoogleCalendarIntegrationIdentity & Readonly<{
+  connectionGeneration: string
+}>
+
 function googleIntegrationConditions(identity: GoogleCalendarIntegrationIdentity) {
   return [
     eq(calendarIntegration.id, identity.integrationId),
@@ -37,6 +41,13 @@ function googleCredentialGenerationWhere(
   return and(
     ...googleIntegrationConditions(identity),
     eq(calendarIntegration.refreshTokenEncrypted, refreshTokenEncrypted),
+  )
+}
+
+function googleConnectionGenerationWhere(identity: GoogleCalendarIntegrationSnapshot) {
+  return and(
+    ...googleIntegrationConditions(identity),
+    eq(calendarIntegration.connectionGeneration, identity.connectionGeneration),
   )
 }
 
@@ -164,6 +175,24 @@ export async function exchangeCodeForTokens(code: string): Promise<{
 // Token Management
 // ─────────────────────────────────────────────
 
+function calendarClientFromEncryptedTokens(
+  userId: string,
+  accessTokenEncrypted: string | null,
+  refreshTokenEncrypted: string | null,
+): calendar_v3.Calendar | null {
+  const secret = env.BETTER_AUTH_SECRET
+  const accessToken = accessTokenEncrypted ? decrypt(accessTokenEncrypted, secret) : null
+  const refreshToken = refreshTokenEncrypted ? decrypt(refreshTokenEncrypted, secret) : null
+  if (!accessToken || !refreshToken) {
+    logError('calendar.token_decrypt_failed', { posthog_distinct_id: userId })
+    return null
+  }
+
+  const oauth2Client = createOAuth2Client(getRedirectUri())
+  oauth2Client.setCredentials({ access_token: accessToken, refresh_token: refreshToken })
+  return google.calendar({ version: 'v3', auth: oauth2Client })
+}
+
 /**
  * Get an authenticated Google Calendar client for a user.
  * Decrypts stored tokens and handles automatic refresh.
@@ -258,6 +287,7 @@ export async function saveCalendarIntegration(userId: string, organizationId: st
   const secret = env.BETTER_AUTH_SECRET
   const accessTokenEncrypted = encrypt(params.accessToken, secret)
   const refreshTokenEncrypted = encrypt(params.refreshToken, secret)
+  const connectionGeneration = crypto.randomUUID()
 
   try {
     return await db.transaction(async (tx) => {
@@ -292,6 +322,7 @@ export async function saveCalendarIntegration(userId: string, organizationId: st
         const updated = await tx.update(calendarIntegration)
           .set({
             organizationId,
+            connectionGeneration,
             accessTokenEncrypted,
             refreshTokenEncrypted,
             accountEmail: params.email,
@@ -313,6 +344,7 @@ export async function saveCalendarIntegration(userId: string, organizationId: st
           userId,
           organizationId,
           provider: 'google',
+          connectionGeneration,
           accessTokenEncrypted,
           refreshTokenEncrypted,
           accountEmail: params.email,
@@ -334,23 +366,30 @@ export async function saveCalendarIntegration(userId: string, organizationId: st
  * Remove calendar integration for a user.
  * Stops the webhook channel and deletes stored credentials.
  */
-export async function removeCalendarIntegration(identity: GoogleCalendarIntegrationIdentity): Promise<void> {
+export async function removeCalendarIntegration(identity: GoogleCalendarIntegrationSnapshot): Promise<boolean> {
   const { userId } = identity
-  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') {
-    await db.delete(calendarIntegration).where(googleIntegrationWhere(identity))
-    return
-  }
-
-  const integration = await db.query.calendarIntegration.findFirst({
-    where: googleIntegrationWhere(identity),
-  })
-
-  if (!integration) return
+  const selectedWhere = googleConnectionGenerationWhere(identity)
+  const deleted = await db.delete(calendarIntegration)
+    .where(selectedWhere)
+    .returning({
+      id: calendarIntegration.id,
+      accessTokenEncrypted: calendarIntegration.accessTokenEncrypted,
+      refreshTokenEncrypted: calendarIntegration.refreshTokenEncrypted,
+      webhookChannelId: calendarIntegration.webhookChannelId,
+      webhookResourceId: calendarIntegration.webhookResourceId,
+    })
+  const integration = deleted[0]
+  if (!integration) return false
+  if (env.FACTORY_CALENDAR_TEST_MODE === 'mock') return true
 
   // Stop the webhook channel if active
   if (integration.webhookChannelId && integration.webhookResourceId) {
     try {
-      const calendar = await getCalendarClient(identity)
+      const calendar = calendarClientFromEncryptedTokens(
+        userId,
+        integration.accessTokenEncrypted,
+        integration.refreshTokenEncrypted,
+      )
       if (calendar) {
         await calendar.channels.stop({
           requestBody: {
@@ -369,7 +408,7 @@ export async function removeCalendarIntegration(identity: GoogleCalendarIntegrat
     }
   }
 
-  await db.delete(calendarIntegration).where(googleIntegrationWhere(identity))
+  return true
 }
 
 // ─────────────────────────────────────────────

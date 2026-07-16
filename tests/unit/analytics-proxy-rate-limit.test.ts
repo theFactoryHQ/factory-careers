@@ -34,13 +34,14 @@ function makeEvent(clientIp: string, socketIp = '10.0.0.5', headerName = 'cf-con
 }
 
 async function setup(options: {
+  windowMs?: number
   ingestionPerClient?: number
   ingestionGlobal?: number
   assetsPerClient?: number
   assetsGlobal?: number
 } = {}) {
   return createAnalyticsProxyRateLimitGuard({
-    windowMs: 60_000,
+    windowMs: options.windowMs ?? 60_000,
     ingestionPerClient: options.ingestionPerClient ?? 1,
     ingestionGlobal: options.ingestionGlobal ?? 100,
     assetsPerClient: options.assetsPerClient ?? 1,
@@ -89,6 +90,30 @@ describe('analytics proxy rate limits', () => {
     await expect(guard(makeEvent('203.0.113.2'), 'ingestion')).resolves.toBeUndefined()
     await expect(guard(makeEvent('203.0.113.3'), 'ingestion')).resolves.toBeUndefined()
     await expect(guard(makeEvent('203.0.113.4'), 'ingestion')).rejects.toMatchObject({ statusCode: 429 })
+  })
+
+  it('does not spend client allowance on a request rejected by the global budget', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-07-16T12:00:00.000Z'))
+      const guard = await setup({
+        windowMs: 1_000,
+        ingestionPerClient: 1,
+        ingestionGlobal: 1,
+      })
+      const firstClient = makeEvent('203.0.113.1')
+      const globallyRejectedClient = makeEvent('203.0.113.2')
+
+      await expect(guard(firstClient, 'ingestion')).resolves.toBeUndefined()
+      vi.setSystemTime(new Date('2026-07-16T12:00:00.500Z'))
+      await expect(guard(globallyRejectedClient, 'ingestion')).rejects.toMatchObject({ statusCode: 429 })
+
+      vi.setSystemTime(new Date('2026-07-16T12:00:01.001Z'))
+      await expect(guard(globallyRejectedClient, 'ingestion')).resolves.toBeUndefined()
+    }
+    finally {
+      vi.useRealTimers()
+    }
   })
 
   it('keeps ingestion and asset global backstops independent', async () => {

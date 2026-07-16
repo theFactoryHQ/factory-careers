@@ -101,12 +101,16 @@ export function createAnalyticsProxyRateLimitGuard(options: AnalyticsProxyRateLi
     bucket: AnalyticsRateLimitBucket,
   ): Promise<void> {
     if (bucket === 'assets') {
-      await assetsPerClient(event)
-      await assetsGlobal(event)
+      const clientReservation = assetsPerClient.reserve(event)
+      const globalReservation = assetsGlobal.reserve(event)
+      clientReservation.commit()
+      globalReservation.commit()
       return
     }
 
-    await ingestionPerClient(event)
-    await ingestionGlobal(event)
+    const clientReservation = ingestionPerClient.reserve(event)
+    const globalReservation = ingestionGlobal.reserve(event)
+    clientReservation.commit()
+    globalReservation.commit()
   }
 }

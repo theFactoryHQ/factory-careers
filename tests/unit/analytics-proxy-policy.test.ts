@@ -78,7 +78,7 @@ describe('analytics proxy policy', () => {
       'accept-language': 'en-US',
       'content-type': 'application/json',
       origin: 'https://careers.thefactoryhq.com',
-      referer: 'https://careers.thefactoryhq.com/dashboard',
+      referer: 'https://careers.thefactoryhq.com/dashboard/candidates/candidate-secret?token=private',
       'user-agent': 'browser',
       cookie: 'session=secret',
       authorization: 'Bearer secret',
@@ -92,9 +92,19 @@ describe('analytics proxy policy', () => {
       'accept-language': 'en-US',
       'content-type': 'application/json',
       origin: 'https://careers.thefactoryhq.com',
-      referer: 'https://careers.thefactoryhq.com/dashboard',
       'user-agent': 'browser',
     })
+  })
+
+  it('never forwards same-origin dashboard paths or query secrets through Referer', async () => {
+    const policy = await loadPolicy()
+    const headers = policy?.filterAnalyticsProxyRequestHeaders({
+      origin: 'https://careers.thefactoryhq.com',
+      referer: 'https://careers.thefactoryhq.com/dashboard/applications/application-id?token=secret#candidate-id',
+    })
+
+    expect(headers?.get('origin')).toBe('https://careers.thefactoryhq.com')
+    expect(headers?.has('referer')).toBe(false)
   })
 })
 
@@ -112,6 +122,7 @@ describe('analytics proxy execution', () => {
       query: new URLSearchParams(),
       headers: { 'content-length': '2', 'content-type': 'application/json' },
       readBody: vi.fn(async () => new Uint8Array([123, 125])),
+      drainBody: vi.fn(),
       ...overrides,
     }
   }
@@ -132,7 +143,6 @@ describe('analytics proxy execution', () => {
     ['wat', 411],
     ['-1', 411],
     ['1.5', 411],
-    [String(1024 * 1024 + 1), 413],
   ])('rejects POST Content-Length %j before reading or fetching', async (contentLength, statusCode) => {
     const policy = await setup()
     const request = makeRequest({
@@ -143,6 +153,49 @@ describe('analytics proxy execution', () => {
     await expect(policy.executeAnalyticsProxyRequest(request, dependencies)).rejects.toMatchObject({ statusCode })
     expect(dependencies.enforceRateLimit).toHaveBeenCalledWith('ingestion')
     expect(request.readBody).not.toHaveBeenCalled()
+    expect(request.drainBody).toHaveBeenCalledTimes(1)
+    expect(dependencies.fetch).not.toHaveBeenCalled()
+  })
+
+  it('bounded-reads a declared oversized POST before returning 413', async () => {
+    const policy = await setup()
+    const request = makeRequest({
+      headers: { 'content-length': String(1024 * 1024 + 1) },
+    })
+    const dependencies = makeDependencies()
+
+    await expect(policy.executeAnalyticsProxyRequest(request, dependencies))
+      .rejects.toMatchObject({ statusCode: 413 })
+    expect(request.readBody).toHaveBeenCalledTimes(1)
+    expect(dependencies.fetch).not.toHaveBeenCalled()
+  })
+
+  it.each(['GET', 'HEAD'])('drains and rejects a body on an allowed %s asset request', async (method) => {
+    const policy = await setup()
+    const request = makeRequest({
+      path: 'static/exception-autocapture.js',
+      method,
+      headers: { 'content-length': '2' },
+    })
+    const dependencies = makeDependencies()
+
+    await expect(policy.executeAnalyticsProxyRequest(request, dependencies)).rejects.toMatchObject({ statusCode: 400 })
+    expect(request.drainBody).toHaveBeenCalledTimes(1)
+    expect(request.readBody).not.toHaveBeenCalled()
+    expect(dependencies.fetch).not.toHaveBeenCalled()
+  })
+
+  it('drains and returns 413 for a declared oversized asset request body', async () => {
+    const policy = await setup()
+    const request = makeRequest({
+      path: 'array/phc_project/config.js',
+      method: 'GET',
+      headers: { 'content-length': String(1024 * 1024 + 1) },
+    })
+    const dependencies = makeDependencies()
+
+    await expect(policy.executeAnalyticsProxyRequest(request, dependencies)).rejects.toMatchObject({ statusCode: 413 })
+    expect(request.drainBody).toHaveBeenCalledTimes(1)
     expect(dependencies.fetch).not.toHaveBeenCalled()
   })
 
@@ -155,6 +208,29 @@ describe('analytics proxy execution', () => {
     const dependencies = makeDependencies()
 
     await expect(policy.executeAnalyticsProxyRequest(request, dependencies)).rejects.toMatchObject({ statusCode: 413 })
+    expect(dependencies.fetch).not.toHaveBeenCalled()
+  })
+
+  it('times out and drains an inbound body that never finishes', async () => {
+    const policy = await setup()
+    const timeout = new AbortController()
+    const request = makeRequest({
+      readBody: vi.fn(async () => await new Promise<Uint8Array>(() => {})),
+    })
+    const dependencies = makeDependencies()
+
+    const execution = policy.executeAnalyticsProxyRequest(request, {
+      ...dependencies,
+      timeoutSignal: timeout.signal,
+    })
+    timeout.abort(new Error('private client detail'))
+
+    await expect(execution).rejects.toMatchObject({
+      statusCode: 408,
+      statusMessage: 'Request Timeout',
+      message: 'Analytics request body timed out',
+    })
+    expect(request.drainBody).toHaveBeenCalledTimes(1)
     expect(dependencies.fetch).not.toHaveBeenCalled()
   })
 
@@ -179,6 +255,8 @@ describe('analytics proxy execution', () => {
     expect(dependencies.enforceRateLimit).not.toHaveBeenCalled()
     expect(unknown.readBody).not.toHaveBeenCalled()
     expect(wrongMethod.readBody).not.toHaveBeenCalled()
+    expect(unknown.drainBody).toHaveBeenCalledTimes(1)
+    expect(wrongMethod.drainBody).toHaveBeenCalledTimes(1)
     expect(dependencies.fetch).not.toHaveBeenCalled()
   })
 
@@ -237,6 +315,54 @@ describe('analytics proxy execution', () => {
       statusMessage: 'Bad Gateway',
       message: 'Analytics upstream request failed',
     })
+  })
+
+  it('times out a fetch that never returns headers without leaking upstream details', async () => {
+    const policy = await setup()
+    const timeout = new AbortController()
+    const dependencies = makeDependencies()
+    dependencies.fetch.mockImplementationOnce(async () => await new Promise<Response>(() => {}))
+
+    const execution = policy.executeAnalyticsProxyRequest(makeRequest(), {
+      ...dependencies,
+      timeoutSignal: timeout.signal,
+    })
+    await vi.waitFor(() => expect(dependencies.fetch).toHaveBeenCalledTimes(1))
+    timeout.abort(new Error('private upstream timeout detail'))
+
+    await expect(execution).rejects.toMatchObject({
+      statusCode: 502,
+      statusMessage: 'Bad Gateway',
+      message: 'Analytics upstream request timed out',
+    })
+  })
+
+  it('times out and cancels an upstream body that stalls after headers', async () => {
+    const policy = await setup()
+    const timeout = new AbortController()
+    const cancel = vi.fn(async () => undefined)
+    const read = vi.fn()
+      .mockResolvedValueOnce({ done: false, value: new Uint8Array([1]) })
+      .mockImplementationOnce(async () => await new Promise(() => {}))
+    const response = {
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers(),
+      body: { getReader: () => ({ read, cancel }) },
+    } as unknown as Response
+    const execution = policy.executeAnalyticsProxyRequest(makeRequest(), {
+      ...makeDependencies(response),
+      timeoutSignal: timeout.signal,
+    })
+
+    await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(2))
+    timeout.abort(new Error('private body timeout detail'))
+
+    await expect(execution).rejects.toMatchObject({
+      statusCode: 502,
+      message: 'Analytics upstream response timed out',
+    })
+    expect(cancel).toHaveBeenCalledTimes(1)
   })
 
   it('does not relay an upstream redirect or its Location header', async () => {

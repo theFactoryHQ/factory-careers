@@ -36,6 +36,8 @@ vi.stubGlobal('requirePermission', requirePermissionMock)
 vi.stubGlobal('createError', (options: { statusCode: number, statusMessage?: string }) =>
   Object.assign(new Error(options.statusMessage), options),
 )
+const sendRedirectMock = vi.fn(async (_event, location: string) => ({ location }))
+vi.stubGlobal('sendRedirect', sendRedirectMock)
 
 const microsoftConnect = (await import('../../server/api/calendar/microsoft/connect.get')).default as
   (event: unknown) => Promise<unknown>
@@ -117,6 +119,23 @@ describe('organization-wide calendar mutation authorization', () => {
       'user-1',
       'org-active',
       expect.objectContaining({ accessToken: 'access' }),
+    )
+  })
+
+  it('keeps Microsoft application-mode GET connection handling read-only', async () => {
+    requirePermissionMock.mockResolvedValue({
+      user: { id: 'user-1', email: 'admin@example.com' },
+      session: { activeOrganizationId: 'org-active' },
+    })
+    providerMocks.isMicrosoftCalendarApplicationMode.mockReturnValueOnce(true)
+
+    await microsoftConnect({})
+
+    expect(providerMocks.enableMicrosoftCalendarAppIntegration).not.toHaveBeenCalled()
+    expect(providerMocks.initiateCalendarOAuth).not.toHaveBeenCalled()
+    expect(sendRedirectMock).toHaveBeenCalledWith(
+      {},
+      '/dashboard/settings/integrations?success=connected&provider=microsoft',
     )
   })
 })

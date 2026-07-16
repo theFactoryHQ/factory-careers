@@ -11,6 +11,9 @@ interface FakeEvent {
   responseStatusText?: string
   node: {
     req: FakeRequestStream
+    res?: {
+      once: (event: 'finish' | 'close', listener: () => void) => unknown
+    }
   }
 }
 
@@ -42,6 +45,21 @@ function makeRequestStream(chunks: Uint8Array[]): FakeRequestStream {
   return stream
 }
 
+function makeResponseLifecycle() {
+  const listeners = new Map<'finish' | 'close', Array<() => void>>()
+  return {
+    response: {
+      once(event: 'finish' | 'close', listener: () => void) {
+        listeners.set(event, [...(listeners.get(event) ?? []), listener])
+      },
+    },
+    emit(event: 'finish' | 'close') {
+      for (const listener of listeners.get(event) ?? []) listener()
+      listeners.delete(event)
+    },
+  }
+}
+
 const fetchMock = vi.fn()
 
 vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
@@ -69,9 +87,10 @@ vi.stubGlobal('fetch', fetchMock)
 const { default: handler } = await import('../../server/routes/ingest/[...path]') as {
   default: (event: FakeEvent) => Promise<Uint8Array>
 }
+const { holdAnalyticsProxyLeaseUntilResponse } = await import('../../server/utils/analyticsProxyConcurrency')
 
 function makeEvent(overrides: Partial<FakeEvent> = {}): FakeEvent {
-  return {
+  const base: FakeEvent = {
     method: 'POST',
     path: 'e',
     url: 'https://careers.thefactoryhq.com/ingest/e',
@@ -81,8 +100,19 @@ function makeEvent(overrides: Partial<FakeEvent> = {}): FakeEvent {
       'content-type': 'application/json',
     },
     responseHeaders: {},
-    node: { req: makeRequestStream([new Uint8Array([123, 125])]) },
+    node: {
+      req: makeRequestStream([new Uint8Array([123, 125])]),
+      res: {
+        once(event, listener) {
+          if (event === 'finish') queueMicrotask(listener)
+        },
+      },
+    },
+  }
+  return {
+    ...base,
     ...overrides,
+    node: { ...base.node, ...overrides.node },
   }
 }
 
@@ -95,12 +125,33 @@ beforeEach(() => {
 })
 
 describe('PostHog ingest route adapter', () => {
+  it('destroys a stalled downstream response and releases its lease at the request deadline', () => {
+    const timeout = new AbortController()
+    const release = vi.fn()
+    const destroy = vi.fn()
+    const listeners = new Map<string, () => void>()
+    const response = {
+      once: (event: string, listener: () => void) => listeners.set(event, listener),
+      removeListener: (event: string) => listeners.delete(event),
+      destroy,
+    }
+
+    holdAnalyticsProxyLeaseUntilResponse(response, timeout.signal, release)
+    timeout.abort()
+
+    expect(destroy).toHaveBeenCalledTimes(1)
+    expect(release).toHaveBeenCalledTimes(1)
+    listeners.get('close')?.()
+    expect(release).toHaveBeenCalledTimes(1)
+  })
+
   it('rejects an unknown path without calling upstream', async () => {
     const event = makeEvent({ path: 'api/projects', url: 'https://careers.thefactoryhq.com/ingest/api/projects' })
 
     await expect(handler(event)).rejects.toMatchObject({ statusCode: 404 })
     expect(fetchMock).not.toHaveBeenCalled()
     expect(event.node.req.consumedChunks).toBe(0)
+    expect(event.node.req.resume).toHaveBeenCalledTimes(1)
   })
 
   it('rejects a capture request without Content-Length before calling upstream', async () => {
@@ -110,6 +161,7 @@ describe('PostHog ingest route adapter', () => {
     expect(event.responseHeaders['X-RateLimit-Limit']).toBe('120')
     expect(fetchMock).not.toHaveBeenCalled()
     expect(event.node.req.consumedChunks).toBe(0)
+    expect(event.node.req.resume).toHaveBeenCalledTimes(1)
   })
 
   it('stops retaining and drains a chunked request stream as soon as its actual body crosses 1 MiB', async () => {
@@ -176,6 +228,20 @@ describe('PostHog ingest route adapter', () => {
     })
     await expect(handler(secondClient)).resolves.toBeInstanceOf(Buffer)
     expect(secondClient.responseHeaders['X-RateLimit-Limit']).toBe('120')
+
+    const rejectedStream = makeRequestStream([new Uint8Array([123, 125])])
+    const rejected = makeEvent({
+      socketIp,
+      requestHeaders: {
+        'content-length': '2',
+        'cf-connecting-ip': '203.0.113.20',
+      },
+      node: { req: rejectedStream },
+    })
+    const fetchCountBeforeRejection = fetchMock.mock.calls.length
+    await expect(handler(rejected)).rejects.toMatchObject({ statusCode: 429 })
+    expect(rejectedStream.resume).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledTimes(fetchCountBeforeRejection)
   })
 
   it('routes static HEAD requests through the assets host and higher asset limiter without reading a body', async () => {
@@ -194,5 +260,83 @@ describe('PostHog ingest route adapter', () => {
     )
     expect(event.responseHeaders['X-RateLimit-Limit']).toBe('600')
     expect(event.node.req.consumedChunks).toBe(0)
+  })
+
+  it('drains and rejects bodies on GET asset requests before upstream fetch', async () => {
+    const requestStream = makeRequestStream([new Uint8Array([1])])
+    const event = makeEvent({
+      method: 'GET',
+      path: 'static/exception-autocapture.js',
+      url: 'https://careers.thefactoryhq.com/ingest/static/exception-autocapture.js',
+      requestHeaders: { 'content-length': '1' },
+      node: { req: requestStream },
+    })
+
+    await expect(handler(event)).rejects.toMatchObject({ statusCode: 400 })
+    expect(requestStream.resume).toHaveBeenCalledTimes(1)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('caps buffered proxy responses until slow downstream responses finish', async () => {
+    const lifecycles = Array.from({ length: 33 }, () => makeResponseLifecycle())
+
+    for (let index = 0; index < 32; index += 1) {
+      const event = makeEvent({
+        socketIp: `198.51.100.${index + 1}`,
+        node: {
+          req: makeRequestStream([new Uint8Array([123, 125])]),
+          res: lifecycles[index]!.response,
+        },
+      })
+      await expect(handler(event)).resolves.toBeInstanceOf(Buffer)
+    }
+
+    const saturated = makeEvent({
+      socketIp: '203.0.113.250',
+      node: {
+        req: makeRequestStream([new Uint8Array([123, 125])]),
+        res: lifecycles[32]!.response,
+      },
+    })
+    await expect(handler(saturated)).rejects.toMatchObject({ statusCode: 503 })
+    expect(fetchMock).toHaveBeenCalledTimes(32)
+    expect(saturated.node.req.resume).toHaveBeenCalledTimes(1)
+
+    lifecycles[0]!.emit('finish')
+    await expect(handler(saturated)).resolves.toBeInstanceOf(Buffer)
+
+    for (const lifecycle of lifecycles) lifecycle.emit('finish')
+  })
+
+  it('releases buffered-response capacity when downstream closes early', async () => {
+    const lifecycles = Array.from({ length: 33 }, () => makeResponseLifecycle())
+    for (let index = 0; index < 32; index += 1) {
+      await handler(makeEvent({
+        socketIp: `192.0.2.${index + 1}`,
+        node: {
+          req: makeRequestStream([new Uint8Array([123, 125])]),
+          res: lifecycles[index]!.response,
+        },
+      }))
+    }
+
+    lifecycles[0]!.emit('close')
+    await expect(handler(makeEvent({
+      socketIp: '192.0.2.200',
+      node: {
+        req: makeRequestStream([new Uint8Array([123, 125])]),
+        res: lifecycles[32]!.response,
+      },
+    }))).resolves.toBeInstanceOf(Buffer)
+
+    for (const lifecycle of lifecycles) lifecycle.emit('close')
+  })
+
+  it('releases concurrency capacity after an execution error', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('upstream private detail'))
+    await expect(handler(makeEvent({ socketIp: '198.18.0.1' })))
+      .rejects.toMatchObject({ statusCode: 502, message: 'Analytics upstream request failed' })
+
+    await expect(handler(makeEvent({ socketIp: '198.18.0.2' }))).resolves.toBeInstanceOf(Buffer)
   })
 })

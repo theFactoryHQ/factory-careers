@@ -16,6 +16,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com). Categories: **Add
 ### Fixed
 
 * **analytics:** restrict the PostHog browser proxy to required SDK routes with bounded request and response streaming, safe headers, and separate ingestion and asset rate limits
+* **calendar:** bind delegated integrations to organizations, require organization administrators for shared-calendar changes, protect reconnect races, and retry pending Google webhook setup
+* **compliance:** require organization settings permission and suppress protected-dimension results for cohorts smaller than five
+* **operations:** keep database connection credentials out of Drizzle configuration diagnostics
 
 ---
 

@@ -5,7 +5,6 @@
  * access. Generates a CSRF state token stored in a secure, httpOnly cookie.
  */
 import {
-  enableMicrosoftCalendarAppIntegration,
   getMicrosoftAuthUrl,
   isMicrosoftCalendarApplicationMode,
   isMicrosoftCalendarConfigured,
@@ -33,7 +32,8 @@ export default defineEventHandler(async (event) => {
   }
 
   if (isMicrosoftCalendarApplicationMode()) {
-    await enableMicrosoftCalendarAppIntegration(orgId)
+    // Application credentials are authoritative server configuration. This
+    // safe GET must never mutate organization integration state.
     return sendRedirect(event, '/dashboard/settings/integrations?success=connected&provider=microsoft')
   }
 

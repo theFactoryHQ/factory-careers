@@ -25,17 +25,25 @@ vi.mock('../../server/utils/microsoft-calendar', () => ({
   isMicrosoftCalendarApplicationMode: vi.fn(() => false),
 }))
 
+vi.stubGlobal('createError', (options: { statusCode: number, statusMessage?: string }) =>
+  Object.assign(new Error(options.statusMessage), options),
+)
+
 describe('calendar disconnect', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    calendarProviderMocks.removeGoogleCalendarIntegration.mockResolvedValue(true)
+    calendarProviderMocks.removeMicrosoftCalendarIntegration.mockResolvedValue(true)
   })
 
   it('removes only the connected org Microsoft integration when one exists', async () => {
     const findFirst = vi.fn()
       .mockResolvedValueOnce({
+        id: 'microsoft-org-row',
         provider: 'microsoft',
         userId: null,
         organizationId: 'org-1',
+        connectionGeneration: 'microsoft-generation',
       })
 
     vi.stubGlobal('db', {
@@ -48,16 +56,23 @@ describe('calendar disconnect', () => {
 
     await removeConnectedCalendarIntegration('user-1', 'org-1')
 
-    expect(calendarProviderMocks.removeMicrosoftCalendarIntegration).toHaveBeenCalledWith('user-1', 'org-1')
+    expect(calendarProviderMocks.removeMicrosoftCalendarIntegration).toHaveBeenCalledWith({
+      integrationId: 'microsoft-org-row',
+      userId: null,
+      organizationId: 'org-1',
+      connectionGeneration: 'microsoft-generation',
+    })
     expect(calendarProviderMocks.removeGoogleCalendarIntegration).not.toHaveBeenCalled()
   })
 
   it('does not remove a user Google integration when the connected org integration is Microsoft', async () => {
     const findFirst = vi.fn()
       .mockResolvedValueOnce({
+        id: 'microsoft-org-row',
         provider: 'microsoft',
         userId: null,
         organizationId: 'org-1',
+        connectionGeneration: 'microsoft-generation',
       })
 
     vi.stubGlobal('db', {
@@ -124,16 +139,23 @@ describe('calendar disconnect', () => {
 
   it('retains user Microsoft fallback only without an organization context', async () => {
     const findFirst = vi.fn().mockResolvedValueOnce({
+      id: 'microsoft-user-row',
       provider: 'microsoft',
       userId: 'user-1',
       organizationId: null,
+      connectionGeneration: 'user-generation',
     })
     vi.stubGlobal('db', { query: { calendarIntegration: { findFirst } } })
 
     const { removeConnectedCalendarIntegration } = await import('../../server/utils/calendar')
     await removeConnectedCalendarIntegration('user-1')
 
-    expect(calendarProviderMocks.removeMicrosoftCalendarIntegration).toHaveBeenCalledWith('user-1', undefined)
+    expect(calendarProviderMocks.removeMicrosoftCalendarIntegration).toHaveBeenCalledWith({
+      integrationId: 'microsoft-user-row',
+      userId: 'user-1',
+      organizationId: null,
+      connectionGeneration: 'user-generation',
+    })
   })
 
   it('retains exact user Google fallback only without an organization context', async () => {
@@ -144,6 +166,7 @@ describe('calendar disconnect', () => {
         provider: 'google',
         userId: 'user-1',
         organizationId: null,
+        connectionGeneration: 'google-generation',
       })
     vi.stubGlobal('db', { query: { calendarIntegration: { findFirst } } })
 
@@ -154,6 +177,23 @@ describe('calendar disconnect', () => {
       integrationId: 'google-user-row',
       userId: 'user-1',
       organizationId: null,
+      connectionGeneration: 'google-generation',
     })
+  })
+
+  it('returns a conflict instead of false success when reconnect wins the disconnect CAS', async () => {
+    const findFirst = vi.fn().mockResolvedValueOnce({
+      id: 'google-raced-row',
+      provider: 'google',
+      userId: 'user-1',
+      organizationId: 'org-1',
+      connectionGeneration: 'connection-before-reconnect',
+    })
+    vi.stubGlobal('db', { query: { calendarIntegration: { findFirst } } })
+    calendarProviderMocks.removeGoogleCalendarIntegration.mockResolvedValueOnce(false)
+
+    const { removeConnectedCalendarIntegration } = await import('../../server/utils/calendar')
+    await expect(removeConnectedCalendarIntegration('user-1', 'org-1'))
+      .rejects.toMatchObject({ statusCode: 409 })
   })
 })

@@ -115,6 +115,33 @@ describe('createRateLimiter', () => {
     await expect(limiter(makeEvent('10.0.0.5', { 'x-client-key': 'client-c' }))).rejects.toMatchObject({ statusCode: 429 })
   })
 
+  it('reclaims expired dedicated keys before assigning new clients to overflow', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-07-16T12:00:00.000Z'))
+      const limiter = createRateLimiter({
+        windowMs: 1_000,
+        maxRequests: 1,
+        maxTrackedKeys: 1,
+        keyResolver: event => (event as unknown as FakeEvent).__headers['x-client-key'],
+      })
+
+      await limiter(makeEvent('10.0.0.5', { 'x-client-key': 'client-a' }))
+      await limiter(makeEvent('10.0.0.5', { 'x-client-key': 'client-b' }))
+      await expect(limiter(makeEvent('10.0.0.5', { 'x-client-key': 'client-c' })))
+        .rejects.toMatchObject({ statusCode: 429 })
+
+      vi.setSystemTime(new Date('2026-07-16T12:00:01.001Z'))
+      await expect(limiter(makeEvent('10.0.0.5', { 'x-client-key': 'client-c' }))).resolves.toBeUndefined()
+      await expect(limiter(makeEvent('10.0.0.5', { 'x-client-key': 'client-d' }))).resolves.toBeUndefined()
+      await expect(limiter(makeEvent('10.0.0.5', { 'x-client-key': 'client-e' })))
+        .rejects.toMatchObject({ statusCode: 429 })
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('emits standard rate-limit headers on every response', async () => {
     // Note: `remaining` is computed BEFORE recording the current request, so
     // the first call sees `maxRequests` remaining (the response describes the

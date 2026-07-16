@@ -7,7 +7,7 @@
  *
  * This is an internal endpoint — only callable by authenticated admins/owners.
  */
-import { lt, and, eq, isNotNull } from 'drizzle-orm'
+import { lt, and, eq, isNull, or } from 'drizzle-orm'
 import { calendarIntegration } from '../../database/schema'
 import { setupCalendarWebhook } from '../../utils/google-calendar'
 import { timingSafeStringEqual } from '../../utils/secureCompare'
@@ -35,13 +35,19 @@ export default defineEventHandler(async (event) => {
       ? and(
           eq(calendarIntegration.organizationId, orgId),
           eq(calendarIntegration.provider, 'google'),
-          isNotNull(calendarIntegration.webhookChannelId),
-          lt(calendarIntegration.webhookExpiration, expirationThreshold),
+          or(
+            isNull(calendarIntegration.webhookChannelId),
+            isNull(calendarIntegration.webhookExpiration),
+            lt(calendarIntegration.webhookExpiration, expirationThreshold),
+          ),
         )
       : and(
           eq(calendarIntegration.provider, 'google'),
-          isNotNull(calendarIntegration.webhookChannelId),
-          lt(calendarIntegration.webhookExpiration, expirationThreshold),
+          or(
+            isNull(calendarIntegration.webhookChannelId),
+            isNull(calendarIntegration.webhookExpiration),
+            lt(calendarIntegration.webhookExpiration, expirationThreshold),
+          ),
         ),
     columns: { id: true, userId: true, organizationId: true },
   })

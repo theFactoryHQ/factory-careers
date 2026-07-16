@@ -3,6 +3,7 @@ const ASSETS_ORIGIN = 'https://eu-assets.i.posthog.com'
 
 export const MAX_ANALYTICS_REQUEST_BYTES = 1024 * 1024
 export const MAX_ANALYTICS_RESPONSE_BYTES = 2 * 1024 * 1024
+export const ANALYTICS_PROXY_TIMEOUT_MS = 10_000
 
 const SAFE_STATIC_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._~-]*$/
 const SAFE_PROJECT_TOKEN = /^[A-Za-z0-9_-]+$/
@@ -12,7 +13,6 @@ const FORWARDABLE_REQUEST_HEADERS = new Set([
   'accept-language',
   'content-type',
   'origin',
-  'referer',
   'user-agent',
 ])
 
@@ -43,12 +43,14 @@ export interface AnalyticsProxyRequest {
   method: string
   query: URLSearchParams
   headers: HeaderSource
-  readBody: (maxBytes: number) => Promise<Uint8Array | undefined>
+  readBody: (maxBytes: number, signal: AbortSignal) => Promise<Uint8Array | undefined>
+  drainBody: () => void
 }
 
 export interface AnalyticsProxyDependencies {
   fetch: (input: string, init: RequestInit) => Promise<Response>
   enforceRateLimit: (bucket: AnalyticsRateLimitBucket) => Promise<void>
+  timeoutSignal?: AbortSignal
 }
 
 export interface AnalyticsProxyResult {
@@ -186,8 +188,62 @@ function parseRequestContentLength(headers: HeaderSource): number {
   return length
 }
 
-async function readRequestBody(request: AnalyticsProxyRequest, declaredLength: number): Promise<Uint8Array> {
-  const body = await request.readBody(MAX_ANALYTICS_REQUEST_BYTES) ?? new Uint8Array()
+function rejectBodyOnBodylessMethod(request: AnalyticsProxyRequest): void {
+  const rawLength = getHeader(request.headers, 'content-length')
+  const transferEncoding = getHeader(request.headers, 'transfer-encoding')
+  const hasDeclaredBody = rawLength !== undefined && rawLength !== '0'
+  const hasTransferBody = transferEncoding !== undefined
+
+  if (!hasDeclaredBody && !hasTransferBody) return
+
+  request.drainBody()
+  if (rawLength && /^(0|[1-9]\d*)$/.test(rawLength)) {
+    const length = Number(rawLength)
+    if (!Number.isSafeInteger(length) || length > MAX_ANALYTICS_REQUEST_BYTES) {
+      throw new AnalyticsProxyError(413, 'Content Too Large')
+    }
+  }
+  throw new AnalyticsProxyError(400, 'Bad Request', 'Request body is not allowed for this method')
+}
+
+async function withAbort<T>(
+  promise: Promise<T>,
+  signal: AbortSignal,
+  timeoutMessage: string,
+  statusCode = 502,
+  statusMessage = 'Bad Gateway',
+): Promise<T> {
+  if (signal.aborted) {
+    throw new AnalyticsProxyError(statusCode, statusMessage, timeoutMessage)
+  }
+
+  return await new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(new AnalyticsProxyError(statusCode, statusMessage, timeoutMessage))
+    signal.addEventListener('abort', onAbort, { once: true })
+    promise.then(resolve, reject).finally(() => signal.removeEventListener('abort', onAbort))
+  })
+}
+
+async function readRequestBody(
+  request: AnalyticsProxyRequest,
+  declaredLength: number,
+  signal: AbortSignal,
+): Promise<Uint8Array> {
+  let body: Uint8Array | undefined
+  try {
+    body = await withAbort(
+      request.readBody(MAX_ANALYTICS_REQUEST_BYTES, signal),
+      signal,
+      'Analytics request body timed out',
+      408,
+      'Request Timeout',
+    )
+  }
+  catch (error) {
+    if (error instanceof AnalyticsProxyError && error.statusCode === 408) request.drainBody()
+    throw error
+  }
+  body ??= new Uint8Array()
   if (body.byteLength > MAX_ANALYTICS_REQUEST_BYTES) {
     throw new AnalyticsProxyError(413, 'Content Too Large')
   }
@@ -202,17 +258,20 @@ interface DrainableRequestStream extends AsyncIterable<Uint8Array | string> {
   resume: () => unknown
 }
 
-async function releaseIteratorAndDrain(
+function releaseIteratorAndDrain(
   iterator: AsyncIterator<Uint8Array | string>,
   stream: DrainableRequestStream,
-): Promise<void> {
+): void {
   try {
-    await iterator.return?.()
+    // Initiate iterator detachment without awaiting it: Node can keep this
+    // promise pending until a slow client finishes its declared body.
+    void iterator.return?.().catch(() => undefined)
   }
   catch {
     // Cleanup failures must not replace the policy response.
   }
   try {
+    // Resuming discards any later request bytes without retaining them.
     stream.resume()
   }
   catch {
@@ -228,44 +287,54 @@ async function releaseIteratorAndDrain(
 export async function readBoundedAnalyticsRequestBody(
   stream: DrainableRequestStream,
   maxBytes = MAX_ANALYTICS_REQUEST_BYTES,
+  signal?: AbortSignal,
+  onDrain?: () => void,
 ): Promise<Uint8Array> {
-  const chunks: Uint8Array[] = []
+  const body = new Uint8Array(maxBytes)
   let totalBytes = 0
   const iterator = stream.iterator({ destroyOnReturn: false })
 
   try {
     while (true) {
-      const { done, value: rawChunk } = await iterator.next()
+      const { done, value: rawChunk } = signal
+        ? await withAbort(
+            iterator.next(),
+            signal,
+            'Analytics request body timed out',
+            408,
+            'Request Timeout',
+          )
+        : await iterator.next()
       if (done) break
       const chunk = typeof rawChunk === 'string'
         ? new TextEncoder().encode(rawChunk)
         : rawChunk
       totalBytes += chunk.byteLength
       if (totalBytes > maxBytes) {
-        // Release every retained chunk immediately. Returning this iterator
-        // with destroyOnReturn:false detaches it without destroying the socket;
-        // resume then drains/discards the remaining request so Nitro can send 413.
-        chunks.length = 0
-        await releaseIteratorAndDrain(iterator, stream)
+        // Returning this iterator with destroyOnReturn:false detaches it
+        // without destroying the socket; resume then drains/discards the
+        // remaining request so Nitro can send 413.
+        onDrain?.()
+        releaseIteratorAndDrain(iterator, stream)
         throw new AnalyticsProxyError(413, 'Content Too Large')
       }
-      chunks.push(chunk)
+      body.set(chunk, totalBytes - chunk.byteLength)
     }
   }
   catch (error) {
-    if (error instanceof AnalyticsProxyError) throw error
-    chunks.length = 0
-    await releaseIteratorAndDrain(iterator, stream)
+    if (error instanceof AnalyticsProxyError) {
+      if (error.statusCode === 408) {
+        onDrain?.()
+        releaseIteratorAndDrain(iterator, stream)
+      }
+      throw error
+    }
+    onDrain?.()
+    releaseIteratorAndDrain(iterator, stream)
     throw new AnalyticsProxyError(400, 'Bad Request', 'Unable to read analytics request body')
   }
 
-  const body = new Uint8Array(totalBytes)
-  let offset = 0
-  for (const chunk of chunks) {
-    body.set(chunk, offset)
-    offset += chunk.byteLength
-  }
-  return body
+  return body.subarray(0, totalBytes)
 }
 
 async function cancelBody(body: ReadableStream<Uint8Array> | null): Promise<void> {
@@ -278,7 +347,7 @@ async function cancelBody(body: ReadableStream<Uint8Array> | null): Promise<void
   }
 }
 
-async function readBoundedResponseBody(response: Response): Promise<Uint8Array> {
+async function readBoundedResponseBody(response: Response, signal: AbortSignal): Promise<Uint8Array> {
   const rawContentLength = response.headers.get('content-length')
   if (rawContentLength && /^\d+$/.test(rawContentLength)) {
     const declaredLength = Number(rawContentLength)
@@ -291,34 +360,41 @@ async function readBoundedResponseBody(response: Response): Promise<Uint8Array> 
   if (!response.body) return new Uint8Array()
 
   const reader = response.body.getReader()
-  const chunks: Uint8Array[] = []
+  const body = new Uint8Array(MAX_ANALYTICS_RESPONSE_BYTES)
   let totalBytes = 0
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    if (!value) continue
+  try {
+    while (true) {
+      const { done, value } = await withAbort(
+        reader.read(),
+        signal,
+        'Analytics upstream response timed out',
+      )
+      if (done) break
+      if (!value) continue
 
-    totalBytes += value.byteLength
-    if (totalBytes > MAX_ANALYTICS_RESPONSE_BYTES) {
-      try {
-        await reader.cancel()
+      const nextTotalBytes = totalBytes + value.byteLength
+      if (nextTotalBytes > MAX_ANALYTICS_RESPONSE_BYTES) {
+        try {
+          await reader.cancel()
+        }
+        catch {
+          // The bounded failure is still returned if the peer already closed.
+        }
+        throw new AnalyticsProxyError(502, 'Bad Gateway', 'Analytics upstream response exceeded the size limit')
       }
-      catch {
-        // The bounded failure is still returned if the peer already closed.
-      }
-      throw new AnalyticsProxyError(502, 'Bad Gateway', 'Analytics upstream response exceeded the size limit')
+      body.set(value, totalBytes)
+      totalBytes = nextTotalBytes
     }
-    chunks.push(value)
+  }
+  catch (error) {
+    if (error instanceof AnalyticsProxyError && error.message.includes('timed out')) {
+      await reader.cancel().catch(() => undefined)
+    }
+    throw error
   }
 
-  const body = new Uint8Array(totalBytes)
-  let offset = 0
-  for (const chunk of chunks) {
-    body.set(chunk, offset)
-    offset += chunk.byteLength
-  }
-  return body
+  return body.subarray(0, totalBytes)
 }
 
 function asUpstreamFailure(error: unknown): AnalyticsProxyError {
@@ -330,16 +406,52 @@ export async function executeAnalyticsProxyRequest(
   request: AnalyticsProxyRequest,
   dependencies: AnalyticsProxyDependencies,
 ): Promise<AnalyticsProxyResult> {
-  const policy = classifyAnalyticsProxyRequest(request.path, request.method)
-  await dependencies.enforceRateLimit(policy.rateLimitBucket)
+  const timeoutSignal = dependencies.timeoutSignal
+    ?? AbortSignal.timeout(ANALYTICS_PROXY_TIMEOUT_MS)
+  let policy: AnalyticsProxyPolicy
+  try {
+    policy = classifyAnalyticsProxyRequest(request.path, request.method)
+  }
+  catch (error) {
+    request.drainBody()
+    throw error
+  }
+  try {
+    await dependencies.enforceRateLimit(policy.rateLimitBucket)
+  }
+  catch (error) {
+    request.drainBody()
+    throw error
+  }
 
-  const declaredLength = policy.method === 'POST'
-    ? parseRequestContentLength(request.headers)
-    : undefined
+  let declaredLength: number | undefined
+  if (policy.method === 'POST') {
+    try {
+      declaredLength = parseRequestContentLength(request.headers)
+    }
+    catch (error) {
+      if (error instanceof AnalyticsProxyError && error.statusCode === 413) {
+        try {
+          await request.readBody(MAX_ANALYTICS_REQUEST_BYTES, timeoutSignal)
+        }
+        catch (readError) {
+          if (readError instanceof AnalyticsProxyError && readError.statusCode === 408) throw readError
+          // The bounded reader already drained an oversized body. Preserve the
+          // declared-size 413 instead of exposing stream/parser details.
+        }
+        throw error
+      }
+      request.drainBody()
+      throw error
+    }
+  }
+  else {
+    rejectBodyOnBodylessMethod(request)
+  }
 
   const body = declaredLength === undefined
     ? undefined
-    : await readRequestBody(request, declaredLength)
+    : await readRequestBody(request, declaredLength, timeoutSignal)
 
   let upstream: Response
   try {
@@ -348,12 +460,17 @@ export async function executeAnalyticsProxyRequest(
     const fetchBody = body
       ? body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength) as ArrayBuffer
       : undefined
-    upstream = await dependencies.fetch(buildAnalyticsProxyTarget(policy, request.query), {
-      method: policy.method,
-      headers: filterAnalyticsProxyRequestHeaders(request.headers),
-      body: fetchBody,
-      redirect: 'manual',
-    })
+    upstream = await withAbort(
+      dependencies.fetch(buildAnalyticsProxyTarget(policy, request.query), {
+        method: policy.method,
+        headers: filterAnalyticsProxyRequestHeaders(request.headers),
+        body: fetchBody,
+        redirect: 'manual',
+        signal: timeoutSignal,
+      }),
+      timeoutSignal,
+      'Analytics upstream request timed out',
+    )
   }
   catch (error) {
     throw asUpstreamFailure(error)
@@ -370,7 +487,7 @@ export async function executeAnalyticsProxyRequest(
 
   let responseBody: Uint8Array
   try {
-    responseBody = await readBoundedResponseBody(upstream)
+    responseBody = await readBoundedResponseBody(upstream, timeoutSignal)
   }
   catch (error) {
     throw asUpstreamFailure(error)

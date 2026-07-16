@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const drizzleMocks = vi.hoisted(() => ({
   and: vi.fn((...conditions: unknown[]) => ({ operator: 'and', conditions })),
   eq: vi.fn((column: unknown, value: unknown) => ({ operator: 'eq', column, value })),
-  isNotNull: vi.fn((column: unknown) => ({ operator: 'isNotNull', column })),
+  isNull: vi.fn((column: unknown) => ({ operator: 'isNull', column })),
   lt: vi.fn((column: unknown, value: unknown) => ({ operator: 'lt', column, value })),
+  or: vi.fn((...conditions: unknown[]) => ({ operator: 'or', conditions })),
 }))
 
 vi.mock('drizzle-orm', async (importOriginal) => {
@@ -77,8 +78,14 @@ describe('calendar webhook renewal scope', () => {
             column: calendarIntegration.provider,
             value: 'google',
           },
-          expect.objectContaining({ operator: 'isNotNull' }),
-          expect.objectContaining({ operator: 'lt' }),
+          expect.objectContaining({
+            operator: 'or',
+            conditions: expect.arrayContaining([
+              { operator: 'isNull', column: calendarIntegration.webhookChannelId },
+              { operator: 'isNull', column: calendarIntegration.webhookExpiration },
+              expect.objectContaining({ operator: 'lt' }),
+            ]),
+          }),
         ],
       },
       columns: { id: true, userId: true, organizationId: true },
@@ -122,6 +129,30 @@ describe('calendar webhook renewal scope', () => {
       integrationId: 'integration-interactive',
       userId: 'user-interactive',
       organizationId: activeOrganizationId,
+    })
+  })
+
+  it('retries a connected Google integration whose initial webhook setup is still pending', async () => {
+    requirePermissionMock.mockResolvedValue({
+      session: { activeOrganizationId: 'org-pending' },
+    })
+    findManyMock.mockResolvedValue([{
+      id: 'integration-pending',
+      userId: 'user-pending',
+      organizationId: 'org-pending',
+    }])
+
+    await expect(renewWebhooksHandler({})).resolves.toEqual({
+      total: 1,
+      renewed: 1,
+      failed: 0,
+    })
+
+    expect(drizzleMocks.isNull).toHaveBeenCalledWith(calendarIntegration.webhookChannelId)
+    expect(setupCalendarWebhookMock).toHaveBeenCalledWith({
+      integrationId: 'integration-pending',
+      userId: 'user-pending',
+      organizationId: 'org-pending',
     })
   })
 

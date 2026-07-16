@@ -48,7 +48,8 @@ updateWhereMock.mockImplementation(() => ({ returning: updateReturningMock }))
 const updateSetMock = vi.fn(() => ({ where: updateWhereMock }))
 const insertReturningMock = vi.fn()
 const insertValuesMock = vi.fn(() => ({ returning: insertReturningMock }))
-const deleteWhereMock = vi.fn()
+const deleteReturningMock = vi.fn()
+const deleteWhereMock = vi.fn(() => ({ returning: deleteReturningMock }))
 const selectWhereMock = vi.fn(() => ({ query: 'credential-generation' }))
 const selectFromMock = vi.fn(() => ({ where: selectWhereMock }))
 const selectMock = vi.fn(() => ({ from: selectFromMock }))
@@ -108,6 +109,7 @@ type PerformIncrementalSync = (identity: {
 const saveCalendarIntegration = googleCalendar.saveCalendarIntegration as unknown as SaveCalendarIntegration
 const setupCalendarWebhook = googleCalendar.setupCalendarWebhook as unknown as SetupCalendarWebhook
 const performIncrementalSync = googleCalendar.performIncrementalSync as unknown as PerformIncrementalSync
+const removeCalendarIntegration = googleCalendar.removeCalendarIntegration
 const { interview } = await import('../../server/database/schema')
 
 function expectExactGoogleScope(
@@ -132,7 +134,7 @@ describe('Google Calendar integration identity scope', () => {
     vi.clearAllMocks()
     updateReturningMock.mockResolvedValue([{ id: 'integration-existing' }])
     insertReturningMock.mockResolvedValue([{ id: 'integration-inserted' }])
-    deleteWhereMock.mockResolvedValue([])
+    deleteReturningMock.mockResolvedValue([{ id: 'integration-deleted' }])
     calendarClient.channels.stop.mockResolvedValue({})
     calendarClient.events.watch.mockResolvedValue({
       data: { resourceId: 'resource-exact', expiration: '1780000000000' },
@@ -459,6 +461,82 @@ describe('Google Calendar integration identity scope', () => {
         },
       ]),
     }))
+  })
+
+  it('does not delete reconnected Google credentials after stale provider cleanup finishes', async () => {
+    const identity = {
+      integrationId: 'integration-disconnect-race',
+      userId: 'user-disconnect-race',
+      organizationId: 'org-disconnect-race',
+      connectionGeneration: 'connection-old',
+    }
+    deleteReturningMock.mockResolvedValueOnce([])
+
+    await expect(removeCalendarIntegration(identity)).resolves.toBe(false)
+
+    expect(calendarClient.channels.stop).not.toHaveBeenCalled()
+    expect(deleteWhereMock).toHaveBeenCalledWith(expect.objectContaining({
+      operator: 'and',
+      conditions: expect.arrayContaining([{
+        operator: 'eq',
+        column: calendarIntegration.connectionGeneration,
+        value: 'connection-old',
+      }]),
+    }))
+  })
+
+  it('allows a legacy null-token Google row to disconnect with a null-generation CAS', async () => {
+    const snapshot = {
+      integrationId: 'integration-null-token',
+      userId: 'user-null-token',
+      organizationId: 'org-null-token',
+      connectionGeneration: 'connection-null-token',
+    }
+    deleteReturningMock.mockResolvedValueOnce([{
+      id: snapshot.integrationId,
+      accessTokenEncrypted: null,
+      refreshTokenEncrypted: null,
+      webhookChannelId: null,
+      webhookResourceId: null,
+    }])
+
+    await removeCalendarIntegration(snapshot)
+
+    expect(deleteWhereMock).toHaveBeenCalledWith(expect.objectContaining({
+      operator: 'and',
+      conditions: expect.arrayContaining([{
+        operator: 'eq',
+        column: calendarIntegration.connectionGeneration,
+        value: 'connection-null-token',
+      }]),
+    }))
+    expect(calendarClient.channels.stop).not.toHaveBeenCalled()
+  })
+
+  it('claims the Google row before stopping its previous webhook channel', async () => {
+    const snapshot = {
+      integrationId: 'integration-claim-first',
+      userId: 'user-claim-first',
+      organizationId: 'org-claim-first',
+      connectionGeneration: 'connection-claim-first',
+    }
+    deleteReturningMock.mockResolvedValueOnce([{
+      id: snapshot.integrationId,
+      accessTokenEncrypted: 'stored-access',
+      refreshTokenEncrypted: 'stored-refresh',
+      webhookChannelId: 'channel-old',
+      webhookResourceId: 'resource-old',
+    }])
+    calendarClient.channels.stop.mockImplementationOnce(async () => {
+      expect(deleteReturningMock).toHaveBeenCalledTimes(1)
+      return {}
+    })
+
+    await expect(removeCalendarIntegration(snapshot)).resolves.toBe(true)
+
+    expect(calendarClient.channels.stop).toHaveBeenCalledWith({
+      requestBody: { id: 'channel-old', resourceId: 'resource-old' },
+    })
   })
 
   it('scopes attendee synchronization to the integration organization', async () => {
