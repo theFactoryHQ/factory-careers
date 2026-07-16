@@ -9,9 +9,9 @@ const { fetchLatestFactoryRelease, getAppVersion, requireAuth } = vi.hoisted(() 
 }))
 
 vi.mock('../../server/utils/factoryRelease', () => ({ fetchLatestFactoryRelease }))
-vi.mock('../../server/utils/appVersion', () => ({
+vi.mock('../../server/utils/appVersion', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../../server/utils/appVersion')>(),
   getAppVersion,
-  isNewerVersion: (current: string, latest: string) => current !== latest,
 }))
 vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
 vi.stubGlobal('requireAuth', requireAuth)
@@ -55,6 +55,7 @@ describe('Factory Careers updates identity', () => {
   })
 
   it.each([
+    ['v0.9.0', 'current', false],
     ['v1.0.0', 'current', false],
     ['v1.1.0', 'update-available', true],
   ] as const)('maps published release %s to %s', async (tagName, releaseStatus, updateAvailable) => {
