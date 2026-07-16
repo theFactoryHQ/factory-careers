@@ -23,7 +23,7 @@ export function useApplication(id: MaybeRefOrGetter<string>) {
   const { handlePreviewReadOnlyError } = usePreviewReadOnly()
   const applicationId = computed(() => toValue(id))
 
-  const { data: application, status, error, refresh } = useFetch(
+  const { data: fetchedApplication, status, error, refresh } = useFetch(
     () => `/api/applications/${applicationId.value}`,
     {
       key: computed(() => `application-${applicationId.value}`),
@@ -32,13 +32,20 @@ export function useApplication(id: MaybeRefOrGetter<string>) {
     },
   )
 
-  watchFetchSwrStamp(application)
+  watchFetchSwrStamp(fetchedApplication)
+
+  const application = computed(() => (
+    fetchedApplication.value?.id === applicationId.value
+      ? fetchedApplication.value
+      : null
+  ))
 
   /** Update application fields (status, notes, score) and refresh caches */
   async function updateApplication(payload: ApplicationUpdatePayload) {
+    const targetApplicationId = applicationId.value
     try {
-      const updated = await patchApplication(applicationId.value, payload)
-      await refresh()
+      const updated = await patchApplication(targetApplicationId, payload)
+      await refreshNuxtData(`application-${targetApplicationId}`)
       await refreshApplicationsListCaches()
       return updated
     } catch (error) {

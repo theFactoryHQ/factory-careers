@@ -29,7 +29,7 @@ describe('public application document limit handling', () => {
     expect(limitCheckIndex).toBeLessThan(complianceInsertIndex)
     expect(limitCheckIndex).toBeLessThan(questionResponseInsertIndex)
     expect(limitCheckIndex).toBeLessThan(documentInsertIndex)
-    expect(documentInsertIndex).toBeLessThan(transactionBody.indexOf('return { candidateId, applicationId }'))
+    expect(documentInsertIndex).toBeLessThan(transactionBody.indexOf('return { candidateId, applicationId, documentProcessingTasks }'))
     expect(route).toContain('documents: plannedDocumentUploads.map')
     expect(route).toContain('maxDocumentsPerCandidate: MAX_DOCUMENTS_PER_CANDIDATE')
     expect(route.indexOf('createPublicApplication')).toBeLessThan(route.indexOf('tx.insert(applicationSource).values'))

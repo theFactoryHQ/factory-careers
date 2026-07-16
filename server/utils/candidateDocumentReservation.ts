@@ -2,6 +2,14 @@ import { and, eq, sql, type SQL } from 'drizzle-orm'
 import { document } from '../database/schema'
 import { db } from './db'
 import { logError, logWarn } from './logger'
+import {
+  cancelDocumentProcessingTasksInTransaction,
+  completePendingUploadReconciliationTaskWithDomainWriteInTransaction,
+  documentUploadReconciliationAvailableAt,
+  enqueueProcessingTaskInTransaction,
+  type PendingUploadReconciliationCompletionOutcome,
+  type ProcessingQueueDatabaseExecutor,
+} from './processingQueue'
 import { deleteFromS3 } from './s3'
 
 export type CandidateDocumentReservationInput = {
@@ -22,13 +30,20 @@ export type ReservedCandidateDocument = {
   originalFilename: string
   mimeType: string
   sizeBytes: number | null
+  uploadStatus: 'pending' | 'completed'
+  processingTaskId: string
   createdAt: Date
 }
 
 export type CandidateDocumentReservationTransaction = {
   lockCandidateDocuments(input: { organizationId: string; candidateId: string }): Promise<void>
   countCandidateDocuments(input: { organizationId: string; candidateId: string }): Promise<number>
-  insertDocument(input: Omit<CandidateDocumentReservationInput, 'maxDocumentsPerCandidate'>): Promise<ReservedCandidateDocument>
+  insertDocument(input: Omit<CandidateDocumentReservationInput, 'maxDocumentsPerCandidate'>): Promise<Omit<ReservedCandidateDocument, 'processingTaskId'>>
+  enqueueUploadReconciliation(input: {
+    organizationId: string
+    documentId: string
+    availableAt: Date
+  }): Promise<{ id: string; batchId: string }>
 }
 
 export type CandidateDocumentReservationAdapter = {
@@ -45,6 +60,23 @@ export type CandidateDocumentRollbackInput = {
 export type CandidateDocumentRollbackAdapter = {
   deleteReservedDocument(input: Omit<CandidateDocumentRollbackInput, 'storageKey'>): Promise<void>
   deleteStorageObject(storageKey: string): Promise<void>
+}
+
+export type CandidateDocumentFinalizationInput = {
+  documentId: string
+  organizationId: string
+  candidateId: string
+  processingTaskId: string
+  parsedContent: unknown
+}
+
+type FinalizedCandidateDocument = Omit<ReservedCandidateDocument, 'processingTaskId'>
+
+export type CandidateDocumentFinalizationAdapter = {
+  finalizeDocument(input: CandidateDocumentFinalizationInput): Promise<{
+    document: FinalizedCandidateDocument
+    taskOutcome: PendingUploadReconciliationCompletionOutcome
+  }>
 }
 
 export class CandidateDocumentLimitError extends Error {
@@ -89,22 +121,141 @@ const reservationAdapter: CandidateDocumentReservationAdapter = {
             originalFilename: document.originalFilename,
             mimeType: document.mimeType,
             sizeBytes: document.sizeBytes,
+            uploadStatus: document.uploadStatus,
             createdAt: document.createdAt,
           })
         if (!created) throw new Error('Failed to reserve candidate document')
         return created
       },
+      async enqueueUploadReconciliation(input) {
+        const { task, batchId } = await enqueueProcessingTaskInTransaction(
+          tx as unknown as ProcessingQueueDatabaseExecutor,
+          {
+            organizationId: input.organizationId,
+            type: 'document_upload_reconciliation',
+            resourceId: input.documentId,
+            availableAt: input.availableAt,
+          },
+        )
+        return { id: task.id, batchId }
+      },
     }))
+  },
+}
+
+const finalizationAdapter: CandidateDocumentFinalizationAdapter = {
+  async finalizeDocument(input) {
+    return db.transaction(async (tx) => {
+      const finalized = await completePendingUploadReconciliationTaskWithDomainWriteInTransaction(
+        tx as unknown as ProcessingQueueDatabaseExecutor,
+        {
+          organizationId: input.organizationId,
+          taskId: input.processingTaskId,
+          documentId: input.documentId,
+        },
+        async (executor) => {
+          const [completed] = await executor.update(document)
+            .set({
+              parsedContent: input.parsedContent as any,
+              uploadStatus: 'completed',
+            })
+            .where(and(
+              eq(document.id, input.documentId),
+              eq(document.organizationId, input.organizationId),
+              eq(document.candidateId, input.candidateId),
+              eq(document.uploadStatus, 'pending'),
+            ))
+            .returning({
+              id: document.id,
+              type: document.type,
+              originalFilename: document.originalFilename,
+              mimeType: document.mimeType,
+              sizeBytes: document.sizeBytes,
+              uploadStatus: document.uploadStatus,
+              createdAt: document.createdAt,
+            })
+          if (!completed) {
+            // A slow uploader can finish after reconciliation has already moved
+            // the task to processing and completed the reserved row. Treat that
+            // repeated finalization as idempotent while preserving tenant and
+            // candidate scoping.
+            const [existingCompleted] = await executor.select({
+              id: document.id,
+              type: document.type,
+              originalFilename: document.originalFilename,
+              mimeType: document.mimeType,
+              sizeBytes: document.sizeBytes,
+              uploadStatus: document.uploadStatus,
+              createdAt: document.createdAt,
+            })
+              .from(document)
+              .where(and(
+                eq(document.id, input.documentId),
+                eq(document.organizationId, input.organizationId),
+                eq(document.candidateId, input.candidateId),
+                eq(document.uploadStatus, 'completed'),
+              ))
+              .limit(1)
+            if (!existingCompleted) {
+              throw new Error('Candidate document finalization target was not found')
+            }
+            return existingCompleted
+          }
+          return completed
+        },
+      )
+      if (finalized.operationRan) {
+        return { document: finalized.result!, taskOutcome: finalized.outcome }
+      }
+      const [completedDocument] = await tx.select({
+        id: document.id,
+        type: document.type,
+        originalFilename: document.originalFilename,
+        mimeType: document.mimeType,
+        sizeBytes: document.sizeBytes,
+        uploadStatus: document.uploadStatus,
+        createdAt: document.createdAt,
+      })
+        .from(document)
+        .where(and(
+          eq(document.id, input.documentId),
+          eq(document.organizationId, input.organizationId),
+          eq(document.candidateId, input.candidateId),
+          eq(document.uploadStatus, 'completed'),
+        ))
+        .limit(1)
+      if (!completedDocument) throw new Error('Completed candidate document was not found')
+      return { document: completedDocument, taskOutcome: finalized.outcome }
+    })
   },
 }
 
 const rollbackAdapter: CandidateDocumentRollbackAdapter = {
   async deleteReservedDocument(input) {
-    await db.delete(document).where(and(
-      eq(document.id, input.documentId),
-      eq(document.organizationId, input.organizationId),
-      eq(document.candidateId, input.candidateId),
-    ))
+    await db.transaction(async (tx) => {
+      await cancelDocumentProcessingTasksInTransaction(
+        tx as unknown as ProcessingQueueDatabaseExecutor,
+        {
+          organizationId: input.organizationId,
+          documentIds: [input.documentId],
+        },
+      )
+      const [reservedDocument] = await tx.select({ id: document.id })
+        .from(document)
+        .where(and(
+          eq(document.id, input.documentId),
+          eq(document.organizationId, input.organizationId),
+          eq(document.candidateId, input.candidateId),
+        ))
+        .limit(1)
+        .for('update')
+      if (!reservedDocument) return
+      await tx.delete(document).where(and(
+        eq(document.id, input.documentId),
+        eq(document.organizationId, input.organizationId),
+        eq(document.candidateId, input.candidateId),
+      ))
+    })
   },
   deleteStorageObject: deleteFromS3,
 }
@@ -121,8 +272,25 @@ export async function reserveCandidateDocument(
     }
 
     const { maxDocumentsPerCandidate: _maximum, ...documentInput } = input
-    return tx.insertDocument(documentInput)
+    const reservedDocument = await tx.insertDocument(documentInput)
+    const reconciliationTask = await tx.enqueueUploadReconciliation({
+      organizationId: input.organizationId,
+      documentId: input.id,
+      availableAt: documentUploadReconciliationAvailableAt(),
+    })
+    return {
+      ...reservedDocument,
+      processingTaskId: reconciliationTask.id,
+    }
   })
+}
+
+export async function finalizeCandidateDocumentUpload(
+  input: CandidateDocumentFinalizationInput,
+  adapter: CandidateDocumentFinalizationAdapter = finalizationAdapter,
+): Promise<FinalizedCandidateDocument> {
+  const finalized = await adapter.finalizeDocument(input)
+  return finalized.document
 }
 
 export async function rollbackCandidateDocumentUpload(
@@ -135,23 +303,18 @@ export async function rollbackCandidateDocumentUpload(
       organizationId: input.organizationId,
       candidateId: input.candidateId,
     })
-  } catch (rollbackError) {
+  } catch {
     logError('document.reservation_rollback_failed', {
-      document_id: input.documentId,
-      organization_id: input.organizationId,
-      candidate_id: input.candidateId,
-      error_message: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
+      result_code: 'relational_cleanup_failed',
     })
     return { relationalCleanupSucceeded: false }
   }
 
   try {
     await adapter.deleteStorageObject(input.storageKey)
-  } catch (cleanupError) {
+  } catch {
     logWarn('document.s3_orphan_cleanup_failed', {
-      document_id: input.documentId,
-      storage_key: input.storageKey,
-      error_message: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+      result_code: 'storage_cleanup_failed',
     })
   }
 

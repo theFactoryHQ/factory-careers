@@ -1,5 +1,7 @@
 import { eq, and } from 'drizzle-orm'
 import { job } from '../../database/schema'
+import { prepareJobProcessingCascadeInTransaction } from '../../utils/processingCascadeCleanup'
+import type { ProcessingQueueDatabaseExecutor } from '../../utils/processingQueue'
 import { idParamSchema } from '../../utils/schemas/job'
 
 export default defineEventHandler(async (event) => {
@@ -8,9 +10,17 @@ export default defineEventHandler(async (event) => {
 
   const { id } = await getValidatedRouterParams(event, idParamSchema.parse)
 
-  const [deleted] = await db.delete(job)
-    .where(and(eq(job.id, id), eq(job.organizationId, orgId)))
-    .returning({ id: job.id })
+  const deleted = await db.transaction(async (tx) => {
+    const cascade = await prepareJobProcessingCascadeInTransaction(
+      tx as unknown as ProcessingQueueDatabaseExecutor,
+      { organizationId: orgId, jobId: id },
+    )
+    if (!cascade) return null
+    const [row] = await tx.delete(job)
+      .where(and(eq(job.id, id), eq(job.organizationId, orgId)))
+      .returning({ id: job.id })
+    return row ?? null
+  })
 
   if (!deleted) {
     throw createError({ statusCode: 404, statusMessage: 'Not found' })

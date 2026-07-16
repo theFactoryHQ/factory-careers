@@ -1,5 +1,5 @@
 import { eq, and, asc, isNull, or, sql } from 'drizzle-orm'
-import { job, jobQuestion, document, organization, applicationSource, trackingLink, orgSettings } from '../../../../database/schema'
+import { job, jobQuestion, organization, applicationSource, trackingLink, orgSettings } from '../../../../database/schema'
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
 import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
 import { autoScoreApplication } from '../../../../utils/ai/autoScore'
@@ -19,6 +19,7 @@ import {
   PublicApplicationDocumentLimitError,
 } from '../../../../utils/createPublicApplication'
 import { rollbackPublicApplicationSubmission } from '../../../../utils/rollbackPublicApplicationSubmission'
+import { finalizeCandidateDocumentUpload } from '../../../../utils/candidateDocumentReservation'
 import {
   MAX_FILE_SIZE,
   MAX_DOCUMENTS_PER_CANDIDATE,
@@ -457,7 +458,7 @@ export default defineEventHandler(async (event) => {
       }
     : undefined
 
-  let createdApplication: { candidateId: string; applicationId: string }
+  let createdApplication: Awaited<ReturnType<typeof createPublicApplication>>
   try {
     createdApplication = await createPublicApplication({
       organizationId: orgId,
@@ -498,7 +499,7 @@ export default defineEventHandler(async (event) => {
     throw error
   }
 
-  const { applicationId } = createdApplication
+  const { applicationId, candidateId, documentProcessingTasks } = createdApplication
   const newApplication = { id: applicationId }
 
   // ─────────────────────────────────────────────
@@ -514,15 +515,15 @@ export default defineEventHandler(async (event) => {
 
       // Parsing is best-effort and returns null when extraction is unavailable.
       const parsedContent = await parseDocument(plannedDocument.data, plannedDocument.mimeType)
-      const [updated] = await db.update(document)
-        .set({ parsedContent: parsedContent as any })
-        .where(and(
-          eq(document.id, plannedDocument.id),
-          eq(document.organizationId, orgId),
-          eq(document.applicationId, applicationId),
-        ))
-        .returning({ id: document.id })
-      if (!updated) throw new Error('Reserved application document was not found')
+      const processingTaskId = documentProcessingTasks[plannedDocument.id]
+      if (!processingTaskId) throw new Error('Reserved application document task was not found')
+      await finalizeCandidateDocumentUpload({
+        documentId: plannedDocument.id,
+        organizationId: orgId,
+        candidateId,
+        processingTaskId,
+        parsedContent,
+      })
     }
   } catch (uploadError) {
     const isResume = failedDocument?.kind === 'resume'

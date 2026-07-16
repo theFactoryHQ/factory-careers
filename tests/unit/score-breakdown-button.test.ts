@@ -26,9 +26,9 @@ describe('score breakdown actions', () => {
   it('uses the AI provider logo in score run metadata', () => {
     const source = readProjectFile('app/components/ScoreBreakdown.vue')
 
-    expect(source).toContain('<AiProviderLogo :provider="resolvedScoreData!.latestRun.provider"')
-    expect(source).toContain(':title="`${resolvedScoreData!.latestRun.provider} · ${resolvedScoreData!.latestRun.model}`"')
-    expect(source).not.toContain('{{ resolvedScoreData!.latestRun.provider }} · {{ resolvedScoreData!.latestRun.model }}')
+    expect(source).toContain('<AiProviderLogo :provider="latestSuccessfulRun.provider"')
+    expect(source).toContain(':title="`${latestSuccessfulRun.provider} · ${latestSuccessfulRun.model}`"')
+    expect(source).not.toContain('{{ latestSuccessfulRun.provider }} · {{ latestSuccessfulRun.model }}')
   })
 
   it('formats score run timestamps like application timestamps', () => {
@@ -37,8 +37,8 @@ describe('score breakdown actions', () => {
     expect(source).toContain('function formatScoreRunDate')
     expect(source).toContain('factory-application-timestamp-link ml-auto')
     expect(source).toContain('<span class="factory-application-timestamp-label">Updated</span>')
-    expect(source).toContain('{{ formatScoreRunDate(resolvedScoreData!.latestRun.createdAt) }}')
-    expect(source).not.toContain('new Date(resolvedScoreData!.latestRun.createdAt).toLocaleString()')
+    expect(source).toContain('{{ formatScoreRunDate(latestSuccessfulRun.createdAt) }}')
+    expect(source).not.toContain('new Date(latestSuccessfulRun.createdAt).toLocaleString()')
   })
 
   it('keeps re-score actions inside the lazy-loaded score breakdown panel', () => {

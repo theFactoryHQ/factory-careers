@@ -27,7 +27,7 @@ describe('scoring feedback and history', () => {
     expect(autoScore).toContain('analyzeApplication({')
   })
 
-  it('persists admin sentiment and comments against the latest scoring run', () => {
+  it('persists admin sentiment and comments against the application current scoring run', () => {
     const schema = readProjectFile('server/database/schema/app.ts')
     const scoringSchemas = readProjectFile('server/utils/schemas/scoring.ts')
     const route = readProjectFile('server/api/applications/[id]/scoring-feedback.post.ts')
@@ -45,7 +45,7 @@ describe('scoring feedback and history', () => {
     expect(route).toContain("requirePermission(event, { scoring: ['update'] })")
     expect(route).toContain('createScoringFeedbackSchema.parse')
     expect(route).toContain('analysisRunFeedback')
-    expect(route).toContain('latestRun.id')
+    expect(route).toContain('analysisRunId: app.currentAnalysisRunId')
   })
 
   it('renders the scoring feedback control next to scoring actions on both application detail surfaces', () => {
@@ -68,7 +68,7 @@ describe('scoring feedback and history', () => {
     for (const source of [drawer, fullPage]) {
       expect(source).toContain('<ApplicationScoringPanel')
       expect(source).toContain(':application-id="applicationId"')
-      expect(source).toContain(':analysis-run-id="scoringData?.latestRun?.id ?? null"')
+      expect(source).toContain(':analysis-run-id="scoringData?.latestSuccessfulRun?.id ?? null"')
     }
   })
 })

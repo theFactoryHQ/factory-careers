@@ -232,7 +232,11 @@ export async function analyzeApplication({
     }
 
     await tx.update(application)
-      .set({ score: compositeScore, updatedAt: new Date() })
+      .set({
+        score: compositeScore,
+        currentAnalysisRunId: run.id,
+        updatedAt: new Date(),
+      })
       .where(and(
         eq(application.id, applicationId),
         eq(application.organizationId, organizationId),

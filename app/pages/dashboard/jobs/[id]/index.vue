@@ -20,6 +20,7 @@ import {
 } from '~/utils/status-display'
 import { formatPhoneNumber } from '~/utils/phone-format'
 import { jobPipelineLazyPanels } from '~/utils/job-pipeline-lazy-panels'
+import { cacheApplicationDetail, resolveApplicationDetail } from '~/utils/application-detail-cache'
 
 const JobPipelineAiScorePanel = jobPipelineLazyPanels.aiScore
 const JobPipelineDocumentsPanel = jobPipelineLazyPanels.documents
@@ -409,6 +410,11 @@ type SwipeApplicationDetail = {
   properties: PropertyEntry[]
 }
 
+type CachedApplicationDetail = {
+  applicationId: string
+  data: SwipeApplicationDetail
+}
+
 const currentApplicationId = ref('')
 
 watch(currentSummary, (summary) => {
@@ -418,7 +424,6 @@ watch(currentSummary, (summary) => {
 
 const {
   data: currentApplication,
-  status: detailFetchStatus,
   execute: executeDetailFetch,
 } = useFetch<SwipeApplicationDetail | null>(
   () => `/api/applications/${currentApplicationId.value}`,
@@ -430,24 +435,23 @@ const {
   },
 )
 
-// Cache the last successfully loaded detail so switching candidates doesn't flash a loading spinner
-const cachedApplication = ref<SwipeApplicationDetail | null>(null)
+const cachedApplication = ref<CachedApplicationDetail | null>(null)
 
-const resolvedCurrentApplication = computed(() => {
-  if (currentApplication.value && currentApplication.value.id === currentApplicationId.value) {
-    return currentApplication.value
-  }
-  // Show cached (previous) data while the new detail is loading
-  return cachedApplication.value
-})
+const resolvedCurrentApplication = computed(() => resolveApplicationDetail(
+  currentApplicationId.value,
+  currentApplication.value,
+  cachedApplication.value,
+))
 
 watch(currentApplication, (val) => {
-  if (val && val.id === currentApplicationId.value) {
-    cachedApplication.value = val
-  }
+  if (!val) return
+  cachedApplication.value = cacheApplicationDetail(currentApplicationId.value, val)
 })
 
 watch(currentApplicationId, async (id) => {
+  if (cachedApplication.value?.applicationId !== currentApplicationId.value) {
+    cachedApplication.value = null
+  }
   if (!id) return
   await executeDetailFetch()
 }, { immediate: true })
@@ -470,7 +474,8 @@ function getCandidateInitials(firstName?: string, lastName?: string) {
 }
 
 const allowedTransitions = computed(() => {
-  if (!currentSummary.value) return []
+  if (!resolvedCurrentApplication.value) return []
+  if (!currentSummary.value || currentSummary.value.id !== resolvedCurrentApplication.value.id) return []
   return APPLICATION_STATUS_TRANSITIONS[currentSummary.value.status] ?? []
 })
 
@@ -504,20 +509,22 @@ const isMutating = ref(false)
 // ─────────────────────────────────────────────
 
 const showInterviewSidebar = ref(false)
-const interviewTargetApplication = ref<{ id: string; name: string } | null>(null)
+const interviewTargetApplication = ref<{ id: string; name: string; status: string } | null>(null)
 
 function openInterviewScheduler() {
-  if (!currentSummary.value) return
+  if (!resolvedCurrentApplication.value || !currentSummary.value) return
+  if (resolvedCurrentApplication.value.id !== currentSummary.value.id) return
   interviewTargetApplication.value = {
     id: currentSummary.value.id,
     name: `${currentSummary.value.candidateFirstName} ${currentSummary.value.candidateLastName}`,
+    status: currentSummary.value.status,
   }
   showInterviewSidebar.value = true
 }
 
 async function handleInterviewScheduled() {
+  const scheduledTarget = interviewTargetApplication.value
   showInterviewSidebar.value = false
-  const scheduledApplicationId = interviewTargetApplication.value?.id ?? currentSummary.value?.id
   interviewTargetApplication.value = null
 
   track('interview_scheduled')
@@ -526,18 +533,16 @@ async function handleInterviewScheduled() {
   await refreshJobInterviews()
 
   // Transition the application status to 'interview' after scheduling
-  if (currentSummary.value && currentSummary.value.status !== 'interview') {
-    const allowed = APPLICATION_STATUS_TRANSITIONS[currentSummary.value.status] ?? []
+  if (scheduledTarget && scheduledTarget.status !== 'interview') {
+    const allowed = APPLICATION_STATUS_TRANSITIONS[scheduledTarget.status] ?? []
     if (allowed.includes('interview')) {
-      await changeStatus('interview')
+      await changeApplicationStatus(scheduledTarget.id, 'interview', scheduledTarget.status)
 
       // Follow the candidate to the interview column so the user sees the scheduled interview
-      if (scheduledApplicationId) {
-        focusStatus.value = 'interview'
-        await nextTick()
-        const idx = filteredApplications.value.findIndex(a => a.id === scheduledApplicationId)
-        if (idx !== -1) currentIndex.value = idx
-      }
+      focusStatus.value = 'interview'
+      await nextTick()
+      const idx = filteredApplications.value.findIndex(a => a.id === scheduledTarget.id)
+      if (idx !== -1) currentIndex.value = idx
     }
   }
 }
@@ -802,10 +807,8 @@ async function handleReschedule() {
   }
 }
 
-async function changeStatus(status: string) {
-  if (!currentSummary.value || isMutating.value) return
-  const applicationId = currentSummary.value.id
-
+async function changeApplicationStatus(applicationId: string, status: string, fromStatus: string) {
+  if (isMutating.value) return
   isMutating.value = true
 
   try {
@@ -815,7 +818,7 @@ async function changeStatus(status: string) {
     })
 
     track('pipeline_stage_changed', {
-      from_stage: currentSummary.value.status,
+      from_stage: fromStatus,
       to_stage: status,
     })
 
@@ -835,6 +838,13 @@ async function changeStatus(status: string) {
   } finally {
     isMutating.value = false
   }
+}
+
+async function changeStatus(status: string) {
+  const detail = resolvedCurrentApplication.value
+  const summary = currentSummary.value
+  if (!detail || !summary || detail.id !== summary.id) return
+  await changeApplicationStatus(detail.id, status, summary.status)
 }
 
 function goToPreviousCard() {
@@ -1591,7 +1601,7 @@ function closeDocPreview() {
 
             <!-- Detail content -->
             <div class="bg-surface-50/80 dark:bg-surface-950/80 px-4 sm:px-6 py-5 sm:py-8">
-              <div v-if="detailFetchStatus === 'pending' && !resolvedCurrentApplication" class="flex flex-col items-center justify-center py-12">
+              <div v-if="!resolvedCurrentApplication" class="flex flex-col items-center justify-center py-12">
                 <div class="size-8 rounded-full border-2 border-brand-200 border-t-brand-600 dark:border-brand-800 dark:border-t-brand-400 animate-spin" />
                 <p class="mt-3 text-sm text-surface-400">Loading details…</p>
               </div>
@@ -1631,6 +1641,7 @@ function closeDocPreview() {
               <div v-if="showSection.aiAnalysis" class="w-full" :class="detailTab === 'overview' ? 'mt-5' : ''">
                 <Suspense v-if="currentSummary">
                   <JobPipelineAiScorePanel
+                    :key="currentSummary.id"
                     :application-id="currentSummary.id"
                     @scored="refreshApps()"
                   />
@@ -2035,6 +2046,7 @@ function closeDocPreview() {
                     <h3 class="text-sm font-semibold text-surface-800 dark:text-surface-200">Properties</h3>
                   </div>
                   <PropertyBlock
+                    :key="resolvedCurrentApplication.id"
                     entity-type="application"
                     :entity-id="resolvedCurrentApplication.id"
                     :job-id="jobId"

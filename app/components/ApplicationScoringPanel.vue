@@ -48,6 +48,7 @@ const panelClass = useApplicationPanelClass(() => props.surface)
       </div>
       <div class="flex items-center gap-2">
         <ScoringFeedbackControl
+          :key="`${applicationId}:${analysisRunId ?? 'none'}`"
           :application-id="applicationId"
           :analysis-run-id="analysisRunId"
         />

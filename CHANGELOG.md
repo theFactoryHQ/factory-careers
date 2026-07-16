@@ -15,6 +15,9 @@ self-hosters.
 ### Fixed
 
 - Kept ordinary application and job-pipeline lists available while the optional application search index is being migrated during a deployment.
+- Bound score details and reviewer feedback to the exact persisted analysis run, kept the last successful result visible after a failed re-score, and isolated candidate and scoring state when switching applications.
+- Preserved pending upload reconciliation work across restarts and retained cancelled processing history when documents or parent records are removed.
+- Classified parsed, text-free, retryable, and permanently failed PDF, DOCX, and DOC parsing outcomes with stable result codes.
 
 ## [1.0.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.0.0) (2026-07-16)
 

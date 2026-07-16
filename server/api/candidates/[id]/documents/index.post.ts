@@ -1,6 +1,6 @@
 import { eq, and } from 'drizzle-orm'
 import { uuidParamSchema } from '../../../../utils/schemas/common'
-import { candidate, document } from '../../../../database/schema'
+import { candidate } from '../../../../database/schema'
 import {
   MAX_FILE_SIZE,
   MAX_DOCUMENTS_PER_CANDIDATE,
@@ -13,6 +13,7 @@ import { assertUploadContentLength } from '../../../../utils/uploadLimits'
 import { detectAllowedDocumentMimeType } from '../../../../utils/documentMime'
 import {
   CandidateDocumentLimitError,
+  finalizeCandidateDocumentUpload,
   reserveCandidateDocument,
   rollbackCandidateDocumentUpload,
   type ReservedCandidateDocument,
@@ -148,25 +149,13 @@ export default defineEventHandler(async (event) => {
   try {
     await uploadToS3(storageKey, fileBuffer, mimeType)
     const parsedContent = await parseDocument(fileBuffer, mimeType)
-    const [created] = await db.update(document)
-      .set({ parsedContent: parsedContent as any })
-      .where(and(
-        eq(document.id, reservedDocument.id),
-        eq(document.organizationId, orgId),
-        eq(document.candidateId, candidateId),
-      ))
-      .returning({
-        id: document.id,
-        type: document.type,
-        originalFilename: document.originalFilename,
-        mimeType: document.mimeType,
-        sizeBytes: document.sizeBytes,
-        createdAt: document.createdAt,
-      })
-
-    if (!created) {
-      throw new Error('Reserved candidate document was not found')
-    }
+    const created = await finalizeCandidateDocumentUpload({
+      documentId: reservedDocument.id,
+      organizationId: orgId,
+      candidateId,
+      processingTaskId: reservedDocument.processingTaskId,
+      parsedContent,
+    })
 
     recordActivity({
       organizationId: orgId,

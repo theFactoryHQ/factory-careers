@@ -1,5 +1,14 @@
-import { describe, it, expect } from 'vitest'
-import { parseDocument, extractResumeText, type ParsedResume } from '../../server/utils/resume-parser'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { describe, it, expect, vi } from 'vitest'
+import {
+  DocumentParseError,
+  parseDocument,
+  parseDocumentDetailed,
+  extractResumeText,
+  type DocumentParseDependencies,
+  type ParsedResume,
+} from '../../server/utils/resume-parser'
 
 /**
  * Create a minimal valid PDF containing the given text.
@@ -46,9 +55,158 @@ function createTestPdf(text: string): Buffer {
   return Buffer.from(content)
 }
 
+function pdfDependencies(options: {
+  text?: string
+  total?: number
+  getTextError?: Error
+  destroyError?: Error
+}) {
+  const destroy = vi.fn(async () => {
+    if (options.destroyError) throw options.destroyError
+  })
+  const getText = vi.fn(async () => {
+    if (options.getTextError) throw options.getTextError
+    return { text: options.text ?? '', total: options.total ?? 1 }
+  })
+  const dependencies: DocumentParseDependencies = {
+    createPdfParser: vi.fn(async () => ({ getText, destroy })),
+  }
+
+  return { dependencies, destroy, getText }
+}
+
+function namedError(name: string, message = name) {
+  const error = new Error(message)
+  error.name = name
+  return error
+}
+
 // ─── Tests ───────────────────────────────────────────────────────
 
 describe('resume-parser', () => {
+  describe('parseDocumentDetailed', () => {
+    it('distinguishes parsed content from a document with no extractable text', async () => {
+      const parsedHarness = pdfDependencies({ text: 'Ada Lovelace', total: 2 })
+      const parsed = await parseDocumentDetailed(
+        Buffer.from('pdf bytes'),
+        'application/pdf',
+        parsedHarness.dependencies,
+      )
+
+      expect(parsed).toMatchObject({
+        kind: 'parsed',
+        content: {
+          text: 'Ada Lovelace',
+          metadata: { pageCount: 2 },
+        },
+      })
+      expect(parsedHarness.destroy).toHaveBeenCalledTimes(1)
+
+      const noTextHarness = pdfDependencies({ text: ' \n\t ', total: 3 })
+      const noText = await parseDocumentDetailed(
+        Buffer.from('pdf bytes'),
+        'application/pdf',
+        noTextHarness.dependencies,
+      )
+
+      expect(noText).toEqual({
+        kind: 'no_text',
+        code: 'no_extractable_text',
+        pageCount: 3,
+      })
+      expect(noTextHarness.destroy).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([
+      { label: 'empty bytes', buffer: Buffer.alloc(0), mimeType: 'application/pdf', code: 'empty_file', retryable: false },
+      { label: 'unsupported MIME', buffer: Buffer.from('text'), mimeType: 'text/plain', code: 'unsupported_mime', retryable: false },
+    ])('throws a stable typed failure for $label', async ({ buffer, mimeType, code, retryable }) => {
+      await expect(parseDocumentDetailed(buffer, mimeType)).rejects.toMatchObject({
+        name: 'DocumentParseError',
+        code,
+        retryable,
+      })
+    })
+
+    it.each([
+      { error: namedError('PasswordException'), code: 'password_required', retryable: false },
+      { error: namedError('InvalidPDFException'), code: 'invalid_pdf', retryable: false },
+      { error: namedError('FormatError'), code: 'malformed_pdf', retryable: false },
+      { error: namedError('SyntaxError'), code: 'parser_runtime_error', retryable: true },
+      { error: namedError('AbortException'), code: 'parser_aborted', retryable: true },
+      { error: namedError('TimeoutError'), code: 'parser_timeout', retryable: true },
+      { error: namedError('Error'), code: 'parser_runtime_error', retryable: true },
+    ])('classifies $error.name as $code and destroys once', async ({ error, code, retryable }) => {
+      const harness = pdfDependencies({ getTextError: error })
+
+      await expect(parseDocumentDetailed(
+        Buffer.from('pdf bytes'),
+        'application/pdf',
+        harness.dependencies,
+      )).rejects.toMatchObject({
+        name: 'DocumentParseError',
+        code,
+        retryable,
+        cause: error,
+      })
+      expect(harness.destroy).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the primary parse failure when cleanup also fails', async () => {
+      const primaryError = namedError('InvalidPDFException', 'primary extraction failure')
+      const harness = pdfDependencies({
+        getTextError: primaryError,
+        destroyError: new Error('cleanup failure'),
+      })
+
+      await expect(parseDocumentDetailed(
+        Buffer.from('pdf bytes'),
+        'application/pdf',
+        harness.dependencies,
+      )).rejects.toMatchObject({
+        code: 'invalid_pdf',
+        retryable: false,
+        cause: primaryError,
+      })
+      expect(harness.destroy).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not discard parsed content when cleanup fails', async () => {
+      const harness = pdfDependencies({
+        text: 'Grace Hopper',
+        destroyError: new Error('cleanup failure'),
+      })
+
+      await expect(parseDocumentDetailed(
+        Buffer.from('pdf bytes'),
+        'application/pdf',
+        harness.dependencies,
+      )).resolves.toMatchObject({ kind: 'parsed', content: { text: 'Grace Hopper' } })
+      expect(harness.destroy).toHaveBeenCalledTimes(1)
+    })
+
+    it('exposes failures as DocumentParseError instances', async () => {
+      try {
+        await parseDocumentDetailed(Buffer.alloc(0), 'application/pdf')
+        throw new Error('Expected parseDocumentDetailed to throw')
+      }
+      catch (error) {
+        expect(error).toBeInstanceOf(DocumentParseError)
+      }
+    })
+
+    it('keeps the dependency cause available internally but out of serialization', () => {
+      const error = new DocumentParseError(
+        'parser_runtime_error',
+        true,
+        { message: 'raw dependency failure' },
+      )
+
+      expect(error.cause).toEqual({ message: 'raw dependency failure' })
+      expect(JSON.stringify(error)).not.toContain('raw dependency failure')
+    })
+  })
+
   describe('parseDocument', () => {
     it('returns null for unsupported MIME types', async () => {
       const buffer = Buffer.from('test content')
@@ -75,7 +233,7 @@ describe('resume-parser', () => {
       expect(result).not.toBeNull()
       expect(result!.text).toContain('John Doe')
       expect(result!.metadata.sourceFormat).toBe('pdf')
-      expect(result!.metadata.parserVersion).toBe('1.0')
+      expect(result!.metadata.parserVersion).toBe('1.1')
       expect(result!.metadata.wordCount).toBeGreaterThan(0)
       expect(result!.metadata.extractedAt).toBeTruthy()
       expect(result!.metadata.pageCount).toBe(1)
@@ -152,6 +310,36 @@ describe('resume-parser', () => {
       const result = extractResumeText(parsed)
       // Empty text should return null (falls through to stringify)
       expect(result).toBeNull()
+    })
+  })
+
+  describe('document parse persistence contract', () => {
+    it('stores stable outcomes without persisting raw parser messages', () => {
+      const parserSource = readFileSync(join(process.cwd(), 'server/utils/resume-parser.ts'), 'utf8')
+      const schema = readFileSync(join(process.cwd(), 'server/database/schema/app.ts'), 'utf8')
+      const migrationPath = join(process.cwd(), 'server/database/migrations/0055_document_parse_outcomes.sql')
+      const migration = existsSync(migrationPath) ? readFileSync(migrationPath, 'utf8') : ''
+      const journal = readFileSync(join(
+        process.cwd(),
+        'server/database/migrations/meta/_journal.json',
+      ), 'utf8')
+
+      expect(schema).toContain("export const documentParseStatusEnum = pgEnum('document_parse_status', [")
+      expect(schema).toContain("'pending', 'parsed', 'no_text', 'failed'")
+      expect(schema).toContain("parseStatus: documentParseStatusEnum('parse_status').notNull().default('pending')")
+      expect(schema).toContain("parseResultCode: text('parse_result_code')")
+      expect(schema).toContain("parseRetryable: boolean('parse_retryable')")
+      expect(schema).toContain("parseAttemptedAt: timestamp('parse_attempted_at')")
+
+      expect(migration).toContain('CREATE TYPE "public"."document_parse_status" AS ENUM')
+      expect(migration).toContain('ADD COLUMN "parse_status"')
+      expect(migration).toContain('ADD COLUMN "parse_result_code" text')
+      expect(migration).toContain('ADD COLUMN "parse_retryable" boolean')
+      expect(migration).toContain('ADD COLUMN "parse_attempted_at" timestamp')
+      expect(migration).toContain('WHERE "parsed_content" IS NOT NULL')
+      expect(migration).not.toContain('failure_message')
+      expect(parserSource).not.toContain('error_message: errorMessage(')
+      expect(journal).toContain('"tag": "0055_document_parse_outcomes"')
     })
   })
 })

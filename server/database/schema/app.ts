@@ -9,6 +9,8 @@ import {
   index,
   uniqueIndex,
   bigint,
+  unique,
+  foreignKey,
   primaryKey,
   numeric,
 } from 'drizzle-orm/pg-core'
@@ -27,6 +29,22 @@ export const applicationStatusEnum = pgEnum('application_status', [
   'new', 'screening', 'interview', 'offer', 'hired', 'rejected',
 ])
 export const documentTypeEnum = pgEnum('document_type', ['resume', 'cover_letter', 'other'])
+export const documentUploadStatusEnum = pgEnum('document_upload_status', ['pending', 'completed'])
+export const documentParseStatusEnum = pgEnum('document_parse_status', [
+  'pending', 'parsed', 'no_text', 'failed',
+])
+export const processingTaskTypeEnum = pgEnum('processing_task_type', [
+  'application_analysis',
+  'document_parse',
+  'document_upload_reconciliation',
+])
+export const processingTaskStatusEnum = pgEnum('processing_task_status', [
+  'pending',
+  'processing',
+  'completed',
+  'failed',
+  'cancelled',
+])
 export const questionTypeEnum = pgEnum('question_type', [
   'short_text', 'long_text', 'single_select', 'multi_select',
   'number', 'date', 'url', 'checkbox', 'file_upload',
@@ -161,6 +179,12 @@ export const application = pgTable('application', {
   jobId: text('job_id').notNull().references(() => job.id, { onDelete: 'cascade' }),
   status: applicationStatusEnum('status').notNull().default('new'),
   score: integer('score'),
+  /**
+   * The immutable completed run backing `score`. The database migration
+   * enforces this as a composite organization/application/run FK with subset SET NULL.
+   * Drizzle cannot currently express that PostgreSQL referential action.
+   */
+  currentAnalysisRunId: text('current_analysis_run_id'),
   notes: text('notes'),
   coverLetterText: text('cover_letter_text'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -169,6 +193,7 @@ export const application = pgTable('application', {
   index('application_organization_id_idx').on(t.organizationId),
   index('application_candidate_id_idx').on(t.candidateId),
   index('application_job_id_idx').on(t.jobId),
+  index('application_current_analysis_run_id_idx').on(t.currentAnalysisRunId),
   uniqueIndex('application_org_candidate_job_idx').on(t.organizationId, t.candidateId, t.jobId),
 ]))
 
@@ -188,6 +213,11 @@ export const document = pgTable('document', {
   mimeType: text('mime_type').notNull(),
   sizeBytes: integer('size_bytes'),
   parsedContent: jsonb('parsed_content'),
+  uploadStatus: documentUploadStatusEnum('upload_status').notNull().default('pending'),
+  parseStatus: documentParseStatusEnum('parse_status').notNull().default('pending'),
+  parseResultCode: text('parse_result_code'),
+  parseRetryable: boolean('parse_retryable'),
+  parseAttemptedAt: timestamp('parse_attempted_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (t) => ([
   index('document_organization_id_idx').on(t.organizationId),
@@ -218,6 +248,88 @@ export const applicationSearchRefreshQueue = pgTable('application_search_refresh
   applicationId: text('application_id').notNull(),
 }, (t) => ([
   primaryKey({ columns: [t.transactionId, t.applicationId] }),
+]))
+
+/**
+ * A tenant-scoped group of bounded background work.
+ */
+export const processingBatch = pgTable('processing_batch', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  type: processingTaskTypeEnum('type').notNull(),
+  status: processingTaskStatusEnum('status').notNull().default('pending'),
+  totalTasks: integer('total_tasks').notNull().default(0),
+  completedTasks: integer('completed_tasks').notNull().default(0),
+  failedTasks: integer('failed_tasks').notNull().default(0),
+  cancelledTasks: integer('cancelled_tasks').notNull().default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  startedAt: timestamp('started_at'),
+  sealedAt: timestamp('sealed_at'),
+  completedAt: timestamp('completed_at'),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  unique('processing_batch_id_organization_unique').on(t.id, t.organizationId),
+  index('processing_batch_organization_id_idx').on(t.organizationId),
+  index('processing_batch_org_status_idx').on(t.organizationId, t.status),
+]))
+
+/**
+ * A resumable unit of recruiting work with a finite lease and bounded retries.
+ */
+export const processingTask = pgTable('processing_task', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  type: processingTaskTypeEnum('type').notNull(),
+  resourceId: text('resource_id').notNull(),
+  status: processingTaskStatusEnum('status').notNull().default('pending'),
+  attemptCount: integer('attempt_count').notNull().default(0),
+  maxAttempts: integer('max_attempts').notNull().default(5),
+  availableAt: timestamp('available_at').notNull().defaultNow(),
+  leaseExpiresAt: timestamp('lease_expires_at'),
+  resultCode: text('result_code'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  completedAt: timestamp('completed_at'),
+}, (t) => ([
+  unique('processing_task_id_organization_unique').on(t.id, t.organizationId),
+  index('processing_task_organization_id_idx').on(t.organizationId),
+  index('processing_task_claim_idx').on(t.organizationId, t.status, t.availableAt),
+  index('processing_task_lease_idx').on(t.organizationId, t.status, t.leaseExpiresAt),
+  index('processing_task_runnable_idx').on(t.status, t.availableAt, t.organizationId),
+  index('processing_task_expired_lease_idx').on(t.status, t.leaseExpiresAt, t.organizationId),
+  uniqueIndex('processing_task_active_resource_idx')
+    .on(t.organizationId, t.type, t.resourceId)
+    .where(sql`${t.status} IN ('pending', 'processing')`),
+]))
+
+/**
+ * Durable membership from every requested batch resource to its canonical
+ * active task. Multiple batches may follow the same task without treating it
+ * as already successful.
+ */
+export const processingBatchItem = pgTable('processing_batch_item', {
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  batchId: text('batch_id').notNull(),
+  resourceId: text('resource_id').notNull(),
+  taskId: text('task_id').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => ([
+  primaryKey({
+    columns: [t.organizationId, t.batchId, t.resourceId],
+    name: 'processing_batch_item_org_batch_resource_pk',
+  }),
+  foreignKey({
+    columns: [t.batchId, t.organizationId],
+    foreignColumns: [processingBatch.id, processingBatch.organizationId],
+    name: 'processing_batch_item_batch_org_fk',
+  }).onDelete('cascade'),
+  foreignKey({
+    columns: [t.taskId, t.organizationId],
+    foreignColumns: [processingTask.id, processingTask.organizationId],
+    name: 'processing_batch_item_task_org_fk',
+  }).onDelete('restrict'),
+  index('processing_batch_item_task_idx').on(t.organizationId, t.taskId),
+  index('processing_batch_item_batch_idx').on(t.organizationId, t.batchId),
 ]))
 
 // ─────────────────────────────────────────────
@@ -909,6 +1021,7 @@ export const analysisRun = pgTable('analysis_run', {
   index('analysis_run_organization_id_idx').on(t.organizationId),
   index('analysis_run_application_id_idx').on(t.applicationId),
   index('analysis_run_created_at_idx').on(t.createdAt),
+  unique('analysis_run_org_application_id_unique').on(t.organizationId, t.applicationId, t.id),
 ]))
 
 /**
@@ -1005,6 +1118,28 @@ export const documentRelations = relations(document, ({ one }) => ({
   organization: one(organization, { fields: [document.organizationId], references: [organization.id] }),
   candidate: one(candidate, { fields: [document.candidateId], references: [candidate.id] }),
   application: one(application, { fields: [document.applicationId], references: [application.id] }),
+}))
+
+export const processingBatchRelations = relations(processingBatch, ({ one, many }) => ({
+  organization: one(organization, { fields: [processingBatch.organizationId], references: [organization.id] }),
+  items: many(processingBatchItem),
+}))
+
+export const processingTaskRelations = relations(processingTask, ({ one, many }) => ({
+  organization: one(organization, { fields: [processingTask.organizationId], references: [organization.id] }),
+  batchItems: many(processingBatchItem),
+}))
+
+export const processingBatchItemRelations = relations(processingBatchItem, ({ one }) => ({
+  organization: one(organization, { fields: [processingBatchItem.organizationId], references: [organization.id] }),
+  batch: one(processingBatch, {
+    fields: [processingBatchItem.batchId, processingBatchItem.organizationId],
+    references: [processingBatch.id, processingBatch.organizationId],
+  }),
+  task: one(processingTask, {
+    fields: [processingBatchItem.taskId, processingBatchItem.organizationId],
+    references: [processingTask.id, processingTask.organizationId],
+  }),
 }))
 
 export const jobQuestionRelations = relations(jobQuestion, ({ one }) => ({

@@ -1,6 +1,13 @@
 import { eq, and, desc } from 'drizzle-orm'
+import { z } from 'zod'
 import { resourceIdParamSchema } from '../../../utils/schemas/common'
-import { application, criterionScore, analysisRun, scoringCriterion, job, orgSettings } from '../../../database/schema'
+import {
+  analysisRun,
+  analysisRunCriterionScore,
+  application,
+  job,
+  orgSettings,
+} from '../../../database/schema'
 import { DEFAULT_SCORING_BANDS, findScoringBand, resolveScoringBands } from '~~/shared/scoring-bands'
 
 
@@ -13,10 +20,28 @@ function extractAnalysisSummary(rawResponse: unknown) {
   return typeof summary === 'string' && summary.trim() ? summary.trim() : null
 }
 
+const criterionSnapshotSchema = z.object({
+  key: z.string().min(1),
+  name: z.string().min(1),
+  category: z.string().min(1),
+  weight: z.number().finite(),
+})
+
+function parseCriteriaSnapshot(rawSnapshot: unknown) {
+  const criteria = new Map<string, z.infer<typeof criterionSnapshotSchema>>()
+  if (!Array.isArray(rawSnapshot)) return criteria
+
+  for (const entry of rawSnapshot) {
+    const parsed = criterionSnapshotSchema.safeParse(entry)
+    if (parsed.success) criteria.set(parsed.data.key, parsed.data)
+  }
+  return criteria
+}
+
 /**
  * GET /api/applications/:id/scores
  * Get the score breakdown for an application, including individual criterion scores
- * and the most recent successful analysis run backing the persisted score.
+ * and the exact successful analysis run backing the persisted score.
  */
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { scoring: ['read'] })
@@ -26,38 +51,58 @@ export default defineEventHandler(async (event) => {
   // Verify application belongs to org
   const app = await db.query.application.findFirst({
     where: and(eq(application.id, applicationId), eq(application.organizationId, orgId)),
-    columns: { id: true, score: true, jobId: true },
+    columns: { id: true, score: true, jobId: true, currentAnalysisRunId: true },
   })
   if (!app) {
     throw createError({ statusCode: 404, statusMessage: 'Application not found' })
   }
 
-  // Fetch criterion scores with joined criterion metadata
-  const rawScores = await db.select({
-    criterionKey: criterionScore.criterionKey,
-    maxScore: criterionScore.maxScore,
-    score: criterionScore.applicantScore,
-    confidence: criterionScore.confidence,
-    evidence: criterionScore.evidence,
-    strengths: criterionScore.strengths,
-    gaps: criterionScore.gaps,
-    criterionName: scoringCriterion.name,
-    weight: scoringCriterion.weight,
-    category: scoringCriterion.category,
-  })
-    .from(criterionScore)
-    .leftJoin(scoringCriterion, and(
-      eq(scoringCriterion.jobId, app.jobId),
-      eq(scoringCriterion.key, criterionScore.criterionKey),
-    ))
-    .where(and(
-      eq(criterionScore.applicationId, applicationId),
-      eq(criterionScore.organizationId, orgId),
-    ))
+  // Criterion rows and run metadata are both read through the same persisted
+  // pointer so a concurrent re-score cannot mix generations in this response.
+  const rawScores = app.currentAnalysisRunId
+    ? await db.select({
+        criterionKey: analysisRunCriterionScore.criterionKey,
+        maxScore: analysisRunCriterionScore.maxScore,
+        score: analysisRunCriterionScore.applicantScore,
+        confidence: analysisRunCriterionScore.confidence,
+        evidence: analysisRunCriterionScore.evidence,
+        strengths: analysisRunCriterionScore.strengths,
+        gaps: analysisRunCriterionScore.gaps,
+      })
+        .from(analysisRunCriterionScore)
+        .where(and(
+          eq(analysisRunCriterionScore.analysisRunId, app.currentAnalysisRunId),
+          eq(analysisRunCriterionScore.applicationId, applicationId),
+          eq(analysisRunCriterionScore.organizationId, orgId),
+        ))
+    : []
 
-  // The displayed metadata must describe the persisted score, not a newer
-  // failed attempt. Failed runs remain available in the analysis audit view.
-  const [latestRun] = await db.select({
+  // The successful run backs the persisted score while the latest attempt
+  // independently surfaces retry failures without replacing valid metadata.
+  const [latestSuccessfulRun] = app.currentAnalysisRunId
+    ? await db.select({
+        id: analysisRun.id,
+        status: analysisRun.status,
+        provider: analysisRun.provider,
+        model: analysisRun.model,
+        compositeScore: analysisRun.compositeScore,
+        promptTokens: analysisRun.promptTokens,
+        completionTokens: analysisRun.completionTokens,
+        criteriaSnapshot: analysisRun.criteriaSnapshot,
+        rawResponse: analysisRun.rawResponse,
+        createdAt: analysisRun.createdAt,
+      })
+        .from(analysisRun)
+        .where(and(
+          eq(analysisRun.id, app.currentAnalysisRunId),
+          eq(analysisRun.applicationId, applicationId),
+          eq(analysisRun.organizationId, orgId),
+          eq(analysisRun.status, 'completed'),
+        ))
+        .limit(1)
+    : []
+
+  const [latestAttempt] = await db.select({
     id: analysisRun.id,
     status: analysisRun.status,
     provider: analysisRun.provider,
@@ -65,17 +110,26 @@ export default defineEventHandler(async (event) => {
     compositeScore: analysisRun.compositeScore,
     promptTokens: analysisRun.promptTokens,
     completionTokens: analysisRun.completionTokens,
-    rawResponse: analysisRun.rawResponse,
     createdAt: analysisRun.createdAt,
   })
     .from(analysisRun)
     .where(and(
       eq(analysisRun.applicationId, applicationId),
       eq(analysisRun.organizationId, orgId),
-      eq(analysisRun.status, 'completed'),
     ))
     .orderBy(desc(analysisRun.createdAt))
     .limit(1)
+
+  const criteriaSnapshot = parseCriteriaSnapshot(latestSuccessfulRun?.criteriaSnapshot)
+  const scores = rawScores.map((score) => {
+    const criterion = criteriaSnapshot.get(score.criterionKey)
+    return {
+      ...score,
+      criterionName: criterion?.name ?? score.criterionKey,
+      weight: criterion?.weight ?? 0,
+      category: criterion?.category ?? null,
+    }
+  })
 
   const [bandSettings] = await db.select({
     jobBands: job.scoringBands,
@@ -96,21 +150,34 @@ export default defineEventHandler(async (event) => {
   const scoreBand = findScoringBand(app.score, scoringBands)
 
   return {
+    applicationId,
     compositeScore: app.score,
     scoringBands,
     scoreBand,
-    scores: rawScores,
-    latestRun: latestRun
+    scores,
+    latestSuccessfulRun: latestSuccessfulRun
       ? {
-          id: latestRun.id,
-          status: latestRun.status,
-          provider: latestRun.provider,
-          model: latestRun.model,
-          compositeScore: latestRun.compositeScore,
-          promptTokens: latestRun.promptTokens,
-          completionTokens: latestRun.completionTokens,
-          createdAt: latestRun.createdAt,
-          summary: extractAnalysisSummary(latestRun.rawResponse),
+          id: latestSuccessfulRun.id,
+          status: latestSuccessfulRun.status,
+          provider: latestSuccessfulRun.provider,
+          model: latestSuccessfulRun.model,
+          compositeScore: latestSuccessfulRun.compositeScore,
+          promptTokens: latestSuccessfulRun.promptTokens,
+          completionTokens: latestSuccessfulRun.completionTokens,
+          createdAt: latestSuccessfulRun.createdAt,
+          summary: extractAnalysisSummary(latestSuccessfulRun.rawResponse),
+        }
+      : null,
+    latestAttempt: latestAttempt
+      ? {
+          id: latestAttempt.id,
+          status: latestAttempt.status,
+          provider: latestAttempt.provider,
+          model: latestAttempt.model,
+          compositeScore: latestAttempt.compositeScore,
+          promptTokens: latestAttempt.promptTokens,
+          completionTokens: latestAttempt.completionTokens,
+          createdAt: latestAttempt.createdAt,
         }
       : null,
   }

@@ -3,11 +3,16 @@ import { computed, toValue } from 'vue'
 import type { ScoringBand } from '~~/shared/scoring-bands'
 
 export type ApplicationScoresResponse = {
+  applicationId: string
   scoreBand?: ScoringBand | null
   compositeScore?: number | null
-  latestRun?: {
+  latestSuccessfulRun?: {
     id: string
     summary: string | null
+  } | null
+  latestAttempt?: {
+    id: string
+    status: 'completed' | 'failed' | 'partial'
   } | null
 }
 
@@ -19,7 +24,7 @@ type UseApplicationScoringDataOptions = {
 export function useApplicationScoringData(options: UseApplicationScoringDataOptions) {
   const applicationId = computed(() => toValue(options.applicationId))
 
-  const { data: scoringData, refresh: refreshScoring } = useFetch<ApplicationScoresResponse>(
+  const { data: fetchedScoringData, refresh: refreshScoring } = useFetch<ApplicationScoresResponse>(
     () => `/api/applications/${applicationId.value}/scores`,
     {
       key: computed(() => `application-scores-${applicationId.value}`),
@@ -28,8 +33,14 @@ export function useApplicationScoringData(options: UseApplicationScoringDataOpti
     },
   )
 
+  const scoringData = computed(() => (
+    fetchedScoringData.value?.applicationId === applicationId.value
+      ? fetchedScoringData.value
+      : null
+  ))
+
   const scoringSummary = computed(() => {
-    const summary = scoringData.value?.latestRun?.summary
+    const summary = scoringData.value?.latestSuccessfulRun?.summary
     return typeof summary === 'string' ? summary.trim() : ''
   })
 

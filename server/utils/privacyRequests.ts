@@ -4,7 +4,6 @@ import {
   application,
   candidate,
   comment,
-  document,
   job,
   privacyRequest,
   propertyValue,
@@ -13,6 +12,8 @@ import { logWarn } from './logger'
 import { recordActivity } from './recordActivity'
 import { deleteFromS3 } from './s3'
 import { env } from './env'
+import { prepareCandidateProcessingCascadeInTransaction } from './processingCascadeCleanup'
+import type { ProcessingQueueDatabaseExecutor } from './processingQueue'
 
 export function buildPrivacyRequestPublicResponse() {
   return {
@@ -125,26 +126,14 @@ export async function deleteCandidatePersonalDataForPrivacyRequest(params: {
   actorId: string
   privacyRequestId: string
 }) {
-  const uniqueCandidateIds = Array.from(new Set(params.candidateIds))
+  const uniqueCandidateIds = Array.from(new Set(params.candidateIds)).sort()
 
-  const documentsToDelete = await db.query.document.findMany({
-    where: and(
-      eq(document.organizationId, params.organizationId),
-      inArray(document.candidateId, uniqueCandidateIds),
-    ),
-    columns: { id: true, storageKey: true },
-  })
-
-  const applicationsToDelete = await db.query.application.findMany({
-    where: and(
-      eq(application.organizationId, params.organizationId),
-      inArray(application.candidateId, uniqueCandidateIds),
-    ),
-    columns: { id: true },
-  })
-  const applicationIds = applicationsToDelete.map((app) => app.id)
-
-  const deletedCandidateIds = await db.transaction(async (tx) => {
+  const deletion = await db.transaction(async (tx) => {
+    const cascade = await prepareCandidateProcessingCascadeInTransaction(
+      tx as unknown as ProcessingQueueDatabaseExecutor,
+      { organizationId: params.organizationId, candidateIds: uniqueCandidateIds },
+    )
+    const { applicationIds, candidateIds } = cascade
     if (applicationIds.length > 0) {
       await tx.delete(comment).where(and(
         eq(comment.organizationId, params.organizationId),
@@ -158,38 +147,40 @@ export async function deleteCandidatePersonalDataForPrivacyRequest(params: {
       ))
     }
 
-    await tx.delete(comment).where(and(
-      eq(comment.organizationId, params.organizationId),
-      eq(comment.targetType, 'candidate'),
-      inArray(comment.targetId, uniqueCandidateIds),
-    ))
-    await tx.delete(propertyValue).where(and(
-      eq(propertyValue.organizationId, params.organizationId),
-      eq(propertyValue.entityType, 'candidate'),
-      inArray(propertyValue.entityId, uniqueCandidateIds),
-    ))
-
-    const deleted = await tx.delete(candidate)
-      .where(and(
-        eq(candidate.organizationId, params.organizationId),
-        inArray(candidate.id, uniqueCandidateIds),
+    if (candidateIds.length > 0) {
+      await tx.delete(comment).where(and(
+        eq(comment.organizationId, params.organizationId),
+        eq(comment.targetType, 'candidate'),
+        inArray(comment.targetId, candidateIds),
       ))
-      .returning({ id: candidate.id })
+      await tx.delete(propertyValue).where(and(
+        eq(propertyValue.organizationId, params.organizationId),
+        eq(propertyValue.entityType, 'candidate'),
+        inArray(propertyValue.entityId, candidateIds),
+      ))
+    }
 
-    return deleted.map((row) => row.id)
+    const deleted = candidateIds.length > 0
+      ? await tx.delete(candidate)
+          .where(and(
+            eq(candidate.organizationId, params.organizationId),
+            inArray(candidate.id, candidateIds),
+          ))
+          .returning({ id: candidate.id })
+      : []
+
+    return { cascade, deletedCandidateIds: deleted.map(row => row.id) }
   })
 
-  for (const doc of documentsToDelete) {
-    try {
-      await deleteFromS3(doc.storageKey)
-    } catch (s3Error) {
-      logWarn('privacy_request.document_s3_delete_failed', {
-        privacy_request_id: params.privacyRequestId,
-        document_id: doc.id,
-        storage_key: doc.storageKey,
-        error_message: s3Error instanceof Error ? s3Error.message : String(s3Error),
-      })
-    }
+  const storageResults = await Promise.allSettled(
+    deletion.cascade.documents.map(doc => deleteFromS3(doc.storageKey)),
+  )
+  const failedStorageDeletes = storageResults.filter(result => result.status === 'rejected').length
+  if (failedStorageDeletes > 0) {
+    logWarn('privacy_request.document_s3_delete_failed', {
+      result_code: 'storage_cleanup_failed',
+      failed_count: failedStorageDeletes,
+    })
   }
 
   recordActivity({
@@ -199,15 +190,15 @@ export async function deleteCandidatePersonalDataForPrivacyRequest(params: {
     resourceType: 'privacy_request',
     resourceId: params.privacyRequestId,
     metadata: {
-      deletedCandidateIds,
-      deletedApplicationCount: applicationIds.length,
-      deletedDocumentCount: documentsToDelete.length,
+      deletedCandidateIds: deletion.deletedCandidateIds,
+      deletedApplicationCount: deletion.cascade.applicationIds.length,
+      deletedDocumentCount: deletion.cascade.documents.length,
     },
   })
 
   return {
-    deletedCandidateIds,
-    deletedApplicationCount: applicationIds.length,
-    deletedDocumentCount: documentsToDelete.length,
+    deletedCandidateIds: deletion.deletedCandidateIds,
+    deletedApplicationCount: deletion.cascade.applicationIds.length,
+    deletedDocumentCount: deletion.cascade.documents.length,
   }
 }

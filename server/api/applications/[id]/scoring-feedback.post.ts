@@ -1,6 +1,6 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { resourceIdParamSchema } from '../../../utils/schemas/common'
-import { application, analysisRun, analysisRunFeedback } from '../../../database/schema'
+import { application, analysisRunFeedback } from '../../../database/schema'
 import { createScoringFeedbackSchema } from '../../../utils/schemas/scoring'
 
 
@@ -10,48 +10,44 @@ export default defineEventHandler(async (event) => {
   const { id: applicationId } = await getValidatedRouterParams(event, resourceIdParamSchema.parse)
   const body = await readValidatedBody(event, createScoringFeedbackSchema.parse)
 
-  const app = await db.query.application.findFirst({
-    where: and(eq(application.id, applicationId), eq(application.organizationId, orgId)),
-    columns: { id: true },
-  })
+  const feedback = await db.transaction(async (tx) => {
+    const [app] = await tx.select({
+      id: application.id,
+      currentAnalysisRunId: application.currentAnalysisRunId,
+    })
+      .from(application)
+      .where(and(eq(application.id, applicationId), eq(application.organizationId, orgId)))
+      .limit(1)
+      .for('update')
 
-  if (!app) {
-    throw createError({ statusCode: 404, statusMessage: 'Application not found' })
-  }
+    if (!app) {
+      throw createError({ statusCode: 404, statusMessage: 'Application not found' })
+    }
 
-  const [latestRun] = await db.select({
-    id: analysisRun.id,
-  })
-    .from(analysisRun)
-    .where(and(
-      eq(analysisRun.applicationId, applicationId),
-      eq(analysisRun.organizationId, orgId),
-      eq(analysisRun.status, 'completed'),
-    ))
-    .orderBy(desc(analysisRun.createdAt))
-    .limit(1)
+    if (!app.currentAnalysisRunId) {
+      throw createError({ statusCode: 422, statusMessage: 'Run scoring before leaving feedback.' })
+    }
 
-  if (!latestRun) {
-    throw createError({ statusCode: 422, statusMessage: 'Run scoring before leaving feedback.' })
-  }
+    if (body.analysisRunId && body.analysisRunId !== app.currentAnalysisRunId) {
+      throw createError({ statusCode: 409, statusMessage: 'Scoring feedback target is stale. Refresh and try again.' })
+    }
 
-  if (body.analysisRunId && body.analysisRunId !== latestRun.id) {
-    throw createError({ statusCode: 409, statusMessage: 'Scoring feedback target is stale. Refresh and try again.' })
-  }
+    const [createdFeedback] = await tx.insert(analysisRunFeedback).values({
+      organizationId: orgId,
+      applicationId,
+      analysisRunId: app.currentAnalysisRunId,
+      sentiment: body.sentiment,
+      comment: body.comment?.trim() || null,
+      createdById: session.user.id,
+    }).returning({
+      id: analysisRunFeedback.id,
+      sentiment: analysisRunFeedback.sentiment,
+      comment: analysisRunFeedback.comment,
+      analysisRunId: analysisRunFeedback.analysisRunId,
+      createdAt: analysisRunFeedback.createdAt,
+    })
 
-  const [feedback] = await db.insert(analysisRunFeedback).values({
-    organizationId: orgId,
-    applicationId,
-    analysisRunId: latestRun.id,
-    sentiment: body.sentiment,
-    comment: body.comment?.trim() || null,
-    createdById: session.user.id,
-  }).returning({
-    id: analysisRunFeedback.id,
-    sentiment: analysisRunFeedback.sentiment,
-    comment: analysisRunFeedback.comment,
-    analysisRunId: analysisRunFeedback.analysisRunId,
-    createdAt: analysisRunFeedback.createdAt,
+    return createdFeedback
   })
 
   return { feedback }

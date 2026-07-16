@@ -200,6 +200,10 @@ describe('analyzeApplication', () => {
         criterionKey: 'reliability',
       }),
     ])
+    expect(harness.txUpdateSet).toHaveBeenCalledWith(expect.objectContaining({
+      score: 80,
+      currentAnalysisRunId: 'run-1',
+    }))
     expect(harness.recordActivity).toHaveBeenCalledWith(expect.objectContaining({
       organizationId: 'org-1',
       actorId: 'user-1',
