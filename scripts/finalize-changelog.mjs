@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { chmod, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { getUnreleasedItems, hasChangelogItem } from './changelog-format.mjs'
+import { getUnreleasedItems, hasChangelogItem, hasReleaseVersionClaim } from './changelog-format.mjs'
 
 function assertVersion(version) {
   if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version))
@@ -24,7 +24,7 @@ export function finalizeChangelog(raw, version, date) {
   assertVersion(version)
   assertDate(date)
 
-  if (raw.includes(`## [${version}](`))
+  if (hasReleaseVersionClaim(raw, version))
     throw new Error(`CHANGELOG.md already contains v${version}`)
 
   getUnreleasedItems(raw)

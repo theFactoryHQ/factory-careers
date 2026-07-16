@@ -205,6 +205,39 @@ ${content}
   })
 
   it.each([
+    {
+      claim: 'a canonical release heading',
+      heading: '## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-19)',
+    },
+    {
+      claim: 'a reserved malformed claim',
+      heading: '## [1.1.0] - reserved malformed claim',
+    },
+  ])('refuses to finalize when $claim already claims the version', ({ heading }) => {
+    const original = `# Changelog
+
+## Unreleased
+
+### Changed
+
+- Improve release validation.
+
+${heading}
+
+### Added
+
+- Reserved release notes.
+`
+    const cwd = createFixture(original)
+
+    const result = runFinalizer(cwd)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('CHANGELOG.md already contains v1.1.0')
+    expect(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')).toBe(original)
+  })
+
+  it.each([
     ['v1.1.0', '2026-07-20', 'version must use MAJOR.MINOR.PATCH'],
     ['1.1.0', '2026-02-30', 'date must be a real YYYY-MM-DD date'],
   ])('rejects invalid release arguments without changing the file', (version, date, message) => {

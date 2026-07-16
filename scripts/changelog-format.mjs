@@ -122,6 +122,16 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+function findReleaseVersionClaims(raw, version) {
+  const escapedVersion = escapeRegExp(version)
+  const normalized = normalizeNewlines(raw)
+  return [...normalized.matchAll(new RegExp(`^ {0,3}##[ \\t]+\\[${escapedVersion}\\].*$`, 'gm'))]
+}
+
+export function hasReleaseVersionClaim(raw, version) {
+  return findReleaseVersionClaims(raw, version).length > 0
+}
+
 export function getUnreleasedItems(raw) {
   const normalized = normalizeNewlines(raw)
   const headings = [...normalized.matchAll(/^## Unreleased$/gm)]
@@ -139,7 +149,7 @@ export function getReleaseNotes(raw, version) {
   const escapedVersion = escapeRegExp(version)
   const heading = `## \\[${escapedVersion}\\]\\(https://github\\.com/theFactoryHQ/factory-careers/releases/tag/v${escapedVersion}\\) \\((\\d{4}-\\d{2}-\\d{2})\\)`
   const normalized = normalizeNewlines(raw)
-  const claims = [...normalized.matchAll(new RegExp(`^ {0,3}##[ \\t]+\\[${escapedVersion}\\].*$`, 'gm'))]
+  const claims = findReleaseVersionClaims(normalized, version)
 
   if (claims.length > 1)
     throw new Error(`CHANGELOG.md must contain exactly one Factory release section claim for v${version}`)
