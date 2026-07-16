@@ -94,6 +94,48 @@ describe('finalize-changelog', () => {
     expect(readdirSync(cwd)).toEqual(['CHANGELOG.md'])
   })
 
+  it('refuses to finalize Unreleased content under unsupported-only categories', () => {
+    const original = `# Changelog
+
+## Unreleased
+
+### Security
+
+- This category is outside the curated changelog grammar.
+`
+    const cwd = createFixture(original)
+
+    const result = runFinalizer(cwd)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Unreleased must contain at least one changelog item')
+    expect(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')).toBe(original)
+  })
+
+  it('refuses to finalize duplicate exact Unreleased headings', () => {
+    const original = `# Changelog
+
+## Unreleased
+
+### Added
+
+- Visible item.
+
+## Unreleased
+
+### Fixed
+
+- Hidden item.
+`
+    const cwd = createFixture(original)
+
+    const result = runFinalizer(cwd)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('exactly one ## Unreleased heading')
+    expect(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')).toBe(original)
+  })
+
   it.each([
     ['v1.1.0', '2026-07-20', 'version must use MAJOR.MINOR.PATCH'],
     ['1.1.0', '2026-02-30', 'date must be a real YYYY-MM-DD date'],

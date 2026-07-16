@@ -11,17 +11,7 @@ function getBodyAfterHeading(raw, headingEnd) {
   return remaining.slice(0, nextSection?.index ?? remaining.length).trim()
 }
 
-function getSectionBody(raw, heading) {
-  const normalized = normalizeNewlines(raw)
-  const match = new RegExp(`^${heading}$`, 'm').exec(normalized)
-
-  if (!match)
-    return null
-
-  return getBodyAfterHeading(normalized, match.index + match[0].length)
-}
-
-function getChangelogItems(body) {
+export function getChangelogItems(body) {
   const items = []
   let inSupportedSection = false
 
@@ -53,11 +43,16 @@ function escapeRegExp(value) {
 }
 
 export function getUnreleasedItems(raw) {
-  const body = getSectionBody(raw, '## Unreleased')
-  if (body === null)
-    throw new Error('CHANGELOG.md must contain an exact ## Unreleased heading')
+  const normalized = normalizeNewlines(raw)
+  const headings = [...normalized.matchAll(/^## Unreleased$/gm)]
 
-  return getChangelogItems(body)
+  if (headings.length === 0)
+    throw new Error('CHANGELOG.md must contain an exact ## Unreleased heading')
+  if (headings.length > 1)
+    throw new Error('CHANGELOG.md must contain exactly one ## Unreleased heading')
+
+  const heading = headings[0]
+  return getChangelogItems(getBodyAfterHeading(normalized, heading.index + heading[0].length))
 }
 
 export function getReleaseNotes(raw, version) {
@@ -65,12 +60,15 @@ export function getReleaseNotes(raw, version) {
   const heading = `## \\[${escapedVersion}\\]\\(https://github\\.com/theFactoryHQ/factory-careers/releases/tag/v${escapedVersion}\\) \\((\\d{4}-\\d{2}-\\d{2})\\)`
   const normalized = normalizeNewlines(raw)
 
-  for (const match of normalized.matchAll(new RegExp(`^${heading}$`, 'gm'))) {
-    if (!isRealDate(match[1]))
-      continue
+  const matches = [...normalized.matchAll(new RegExp(`^${heading}$`, 'gm'))]
+    .filter(match => isRealDate(match[1]))
 
+  if (matches.length > 1)
+    throw new Error(`CHANGELOG.md must contain exactly one matching Factory release section for v${version}`)
+
+  const match = matches[0]
+  if (match)
     return getBodyAfterHeading(normalized, match.index + match[0].length)
-  }
 
   throw new Error(`CHANGELOG.md must contain a matching Factory release section for v${version}`)
 }

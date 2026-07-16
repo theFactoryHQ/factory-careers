@@ -79,6 +79,34 @@ describe('changelog format', () => {
 
 - Establish the Factory baseline.`)
   })
+
+  it('rejects duplicate exact Unreleased headings', () => {
+    const duplicate = baseline.replace(
+      '## [1.0.0](',
+      `## Unreleased
+
+### Fixed
+
+- Hidden by the first Unreleased section.
+
+## [1.0.0](`,
+    )
+
+    expect(() => getUnreleasedItems(duplicate)).toThrow('exactly one ## Unreleased heading')
+  })
+
+  it('rejects duplicate valid headings for the requested version', () => {
+    const duplicate = `${baseline}
+
+## [1.0.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.0.0) (2026-07-17)
+
+### Fixed
+
+- Duplicate release section.
+`
+
+    expect(() => getReleaseNotes(duplicate, '1.0.0')).toThrow('exactly one matching Factory release section')
+  })
 })
 
 describe('changelog policy', () => {
@@ -90,6 +118,22 @@ describe('changelog policy', () => {
     expect(() => validate({
       changedFiles: ['app/pages/dashboard/index.vue'],
       currentChangelog: baseline,
+    })).toThrow('Add a new CHANGELOG.md item under ## Unreleased')
+  })
+
+  it('rejects a duplicate-only Unreleased bullet addition', () => {
+    expect(() => validate({
+      currentChangelog: baseline.replace(
+        '- Existing unreleased item.',
+        '- Existing unreleased item.\n- Existing unreleased item.',
+      ),
+    })).toThrow('Add a new CHANGELOG.md item under ## Unreleased')
+  })
+
+  it('rejects a changelog-only edit outside Unreleased', () => {
+    expect(() => validate({
+      changedFiles: ['CHANGELOG.md'],
+      currentChangelog: baseline.replace('# Changelog', '# Factory Careers changelog'),
     })).toThrow('Add a new CHANGELOG.md item under ## Unreleased')
   })
 
@@ -166,6 +210,88 @@ describe('changelog policy', () => {
       currentVersion: '1.1.0',
       currentChangelog: emptyUnreleased,
     })).toThrow('matching Factory release section')
+  })
+
+  it('rejects a release pull request that reuses a version section from the base', () => {
+    const reusedSection = baseline.replace(
+      `## Unreleased
+
+### Added
+
+- Existing unreleased item.
+
+### Security
+
+- Unsupported category item.`,
+      `## Unreleased
+
+## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-20)
+
+### Added
+
+- Existing release note.`,
+    )
+
+    expect(() => validate({
+      baseChangelog: reusedSection,
+      currentChangelog: reusedSection.replace('# Changelog', '# Factory Careers changelog'),
+      baseVersion: '1.0.0',
+      currentVersion: '1.1.0',
+    })).toThrow('newly introduce')
+  })
+
+  it('rejects a release version downgrade', () => {
+    const downgrade = baseline.replace(
+      `## Unreleased
+
+### Added
+
+- Existing unreleased item.
+
+### Security
+
+- Unsupported category item.`,
+      `## Unreleased
+
+## [0.9.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v0.9.0) (2026-07-20)
+
+### Added
+
+- Existing unreleased item.`,
+    )
+
+    expect(() => validate({
+      baseVersion: '1.0.0',
+      currentVersion: '0.9.0',
+      currentChangelog: downgrade,
+    })).toThrow('greater than base version')
+  })
+
+  it('rejects a release that does not promote the base Unreleased items', () => {
+    const unrelatedRelease = baseline.replace(
+      `## Unreleased
+
+### Added
+
+- Existing unreleased item.
+
+### Security
+
+- Unsupported category item.`,
+      `## Unreleased
+
+## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-20)
+
+### Added
+
+- Unrelated release note.`,
+    )
+
+    expect(() => validate({
+      baseVersion: '1.0.0',
+      currentVersion: '1.1.0',
+      currentChangelog: unrelatedRelease,
+    })).toThrow('promote every base Unreleased item')
   })
 
   it('returns no-changes when the pull request has no changed files', () => {
