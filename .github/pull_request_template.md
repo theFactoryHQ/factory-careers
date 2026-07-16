@@ -23,12 +23,12 @@
 
 For an ordinary (non-release) pull request, choose exactly one:
 
-- [ ] `CHANGELOG.md` updated: I preserved every distinct existing Unreleased item and added a genuinely new item in **Added**, **Changed**, **Fixed**, or **Removed**
+- [ ] `CHANGELOG.md` updated: I preserved every distinct Unreleased item from this pull request's merge base and added a genuinely new item in **Added**, **Changed**, **Fixed**, or **Removed**
 - [ ] Maintainer `skip-changelog` justified: a maintainer applied the exact `skip-changelog` label because this change is genuinely internal. Justification: <!-- explain -->
 
 For a release or version-changing pull request, use the release mode:
 
-- [ ] Release PR finalized: I ran `npm run changelog:finalize -- <version> <YYYY-MM-DD>`, committed the result, and verified the matching version section is nonempty and `## Unreleased` has no entries
+- [ ] Release PR finalized: I rebased onto the current base branch before finalizing, ran `npm run changelog:finalize -- <version> <YYYY-MM-DD>`, committed the result, and verified the matching version section is nonempty and `## Unreleased` has no entries
 
 ## Release/version notes
 

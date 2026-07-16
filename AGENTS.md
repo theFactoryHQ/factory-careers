@@ -135,16 +135,17 @@ Update `CHANGELOG.md` in the same change whenever work adds, changes, fixes, or
 removes behavior that a recruiter, administrator, operator, integrator, or
 self-hoster would notice.
 
-- Every ordinary user- or operator-visible pull request must preserve every distinct existing item
-  under `## Unreleased` and add a genuinely new item using **Added**, **Changed**,
-  **Fixed**, or **Removed**. Do not remove, reword, or replace existing Unreleased items.
+- Every ordinary user- or operator-visible pull request must preserve every distinct Unreleased item
+  from the pull request's merge base and add a genuinely new item using **Added**,
+  **Changed**, **Fixed**, or **Removed**.
+  Do not remove, reword, or replace existing Unreleased items.
 - Write concise outcome-focused entries; do not paste commit titles or include
   routine refactors, tests, dependency bumps, or internal chores unless they
   materially affect users or operators.
 - The maintainer-applied exact `skip-changelog` label is only for genuinely internal changes.
   Use `CHANGELOG_SKIP=true npm run preflight:pr` as the local equivalent and
   record the justification in the pull request.
-- Release or version-changing pull requests cannot use this exception. Run
+- Release or version-changing pull requests cannot use this exception and must first rebase onto the current base branch. Run
   `npm run changelog:finalize -- <version> <YYYY-MM-DD>` in the release pull
   request; the matching version section must be nonempty afterward.
   `## Unreleased` must contain no entries after finalization.

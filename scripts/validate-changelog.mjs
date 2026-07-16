@@ -122,6 +122,30 @@ function runGit(args, message) {
   return result.stdout
 }
 
+function resolveCommit(ref, requestedBaseRef) {
+  const commit = runGit(
+    ['rev-parse', '--verify', `${ref}^{commit}`],
+    `Unable to resolve ${requestedBaseRef} to a commit`,
+  ).trim()
+
+  if (!commit)
+    throw new Error(`Unable to resolve ${requestedBaseRef} to a commit`)
+
+  return commit
+}
+
+function resolveMergeBase(baseCommit, requestedBaseRef) {
+  const mergeBase = runGit(
+    ['merge-base', baseCommit, 'HEAD'],
+    `Unable to find a merge base between HEAD and ${requestedBaseRef}`,
+  ).trim()
+
+  if (!mergeBase)
+    throw new Error(`Unable to find a merge base between HEAD and ${requestedBaseRef}`)
+
+  return mergeBase
+}
+
 function readBaseFile(baseRef, file) {
   return runGit(
     ['show', `${baseRef}:${file}`],
@@ -158,6 +182,8 @@ export async function main(env = process.env) {
   const requestedBaseRef = env.PR_PREFLIGHT_BASE_REF || 'origin/main'
   const remote = env.PR_PREFLIGHT_REMOTE || 'origin'
   const baseRef = resolveBaseRef(requestedBaseRef, remote)
+  const baseTip = resolveCommit(baseRef, requestedBaseRef)
+  const mergeBase = resolveMergeBase(baseTip, requestedBaseRef)
 
   const changedFiles = runGit(
     ['diff', '--name-only', `${baseRef}...HEAD`],
@@ -168,15 +194,23 @@ export async function main(env = process.env) {
     readCurrentFile(changelogFile),
     readCurrentFile(packageFile),
   ])
-  const baseChangelog = readBaseFile(baseRef, changelogFile)
-  const basePackage = readBaseFile(baseRef, packageFile)
+  const baseChangelog = readBaseFile(mergeBase, changelogFile)
+  const basePackage = readBaseFile(mergeBase, packageFile)
+  const baseVersion = readPackageVersion(basePackage, `${mergeBase}:${packageFile}`)
+  const currentVersion = readPackageVersion(currentPackage, packageFile)
+
+  if (baseVersion !== currentVersion && mergeBase !== baseTip) {
+    throw new Error(
+      `Release pull requests must rebase onto the current ${requestedBaseRef} before changelog finalization`,
+    )
+  }
 
   const mode = validateChangelogPolicy({
     changedFiles,
     baseChangelog,
     currentChangelog,
-    baseVersion: readPackageVersion(basePackage, `${baseRef}:${packageFile}`),
-    currentVersion: readPackageVersion(currentPackage, packageFile),
+    baseVersion,
+    currentVersion,
     skip: env.CHANGELOG_SKIP === 'true',
   })
 

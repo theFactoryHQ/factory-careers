@@ -30,18 +30,18 @@ changes. Migration guidance must accompany any such change.
 
 ## Pull-request changelog gate
 
-Every ordinary user- or operator-visible pull request must preserve every distinct existing item
-under `## Unreleased` and add a genuinely new item in one supported category:
-**Added**, **Changed**, **Fixed**, or **Removed**.
+Every ordinary user- or operator-visible pull request must preserve every distinct Unreleased item
+from the pull request's merge base and add a genuinely new item in one supported
+category: **Added**, **Changed**, **Fixed**, or **Removed**.
+Tip-only base entries arrive through rebasing and do not need to be copied by hand.
 Do not remove, reword, or replace existing Unreleased items.
 
 The maintainer-applied exact `skip-changelog` label is only for genuinely internal changes.
 Use the same exception locally with `CHANGELOG_SKIP=true npm run preflight:pr`,
 and record the justification in the pull request.
 
-Release and version-changing pull requests cannot use the exception. In the
-release PR, promote the reviewed Unreleased entries with the intended semantic
-version and UTC publication date:
+Release and version-changing pull requests cannot use the exception and must first rebase onto the current base branch. In the release PR, promote the reviewed
+Unreleased entries with the intended semantic version and UTC publication date:
 
 ```bash
 npm run changelog:finalize -- <version> <YYYY-MM-DD>

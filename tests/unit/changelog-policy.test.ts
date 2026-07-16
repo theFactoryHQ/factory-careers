@@ -449,6 +449,123 @@ describe('changelog commands', () => {
     expect(result.stderr).toBe('')
   })
 
+  it('accepts a moving-base ordinary pull request without copying tip-only Unreleased items', () => {
+    const cwd = createRepository()
+    commitChanges(cwd, {
+      'CHANGELOG.md': baseline.replace(
+        '- Existing unreleased item.',
+        '- Existing unreleased item.\n- Feature item B.',
+      ),
+      'feature.txt': 'feature behavior\n',
+    })
+    runGit(cwd, ['switch', 'main'])
+    commitChanges(cwd, {
+      'CHANGELOG.md': baseline.replace(
+        '- Existing unreleased item.',
+        '- Existing unreleased item.\n- Base item A.',
+      ),
+    })
+    runGit(cwd, ['switch', 'feature'])
+
+    const result = runValidator(cwd, { PR_PREFLIGHT_BASE_REF: 'main' })
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toBe('Changelog policy passed (pull-request).\n')
+  })
+
+  it('reads the ordinary pull request package version from the merge base', () => {
+    const cwd = createRepository()
+    commitChanges(cwd, {
+      'CHANGELOG.md': baseline.replace(
+        '- Existing unreleased item.',
+        '- Existing unreleased item.\n- Feature item B.',
+      ),
+    })
+    runGit(cwd, ['switch', 'main'])
+    commitChanges(cwd, {
+      'package.json': `${JSON.stringify({ name: 'fixture', version: '1.0.1' }, null, 2)}\n`,
+    })
+    runGit(cwd, ['switch', 'feature'])
+
+    const result = runValidator(cwd, { PR_PREFLIGHT_BASE_REF: 'main' })
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toBe('Changelog policy passed (pull-request).\n')
+  })
+
+  it.each([
+    {
+      change: 'removes',
+      featureItems: '- Feature item B.',
+    },
+    {
+      change: 'rewords',
+      featureItems: '- Reworded existing item.\n- Feature item B.',
+    },
+  ])('$change a merge-base item even when the base branch moves', ({ featureItems }) => {
+    const cwd = createRepository()
+    commitChanges(cwd, {
+      'CHANGELOG.md': baseline.replace('- Existing unreleased item.', featureItems),
+    })
+    runGit(cwd, ['switch', 'main'])
+    commitChanges(cwd, {
+      'CHANGELOG.md': baseline.replace(
+        '- Existing unreleased item.',
+        '- Existing unreleased item.\n- Base item A.',
+      ),
+    })
+    runGit(cwd, ['switch', 'feature'])
+
+    const result = runValidator(cwd, { PR_PREFLIGHT_BASE_REF: 'main' })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain(
+      'Preserve every existing distinct CHANGELOG.md item under ## Unreleased; do not remove, reword, or replace existing items',
+    )
+  })
+
+  it('requires a stale release pull request to rebase before release policy runs', () => {
+    const cwd = createRepository()
+    const finalized = baseline.replace(
+      `## Unreleased
+
+### Added
+
+- Existing unreleased item.
+
+### Security
+
+- Unsupported category item.`,
+      `## Unreleased
+
+## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-20)
+
+### Added
+
+- Existing unreleased item.`,
+    )
+    commitChanges(cwd, {
+      'CHANGELOG.md': finalized,
+      'package.json': `${JSON.stringify({ name: 'fixture', version: '1.1.0' }, null, 2)}\n`,
+    })
+    runGit(cwd, ['switch', 'main'])
+    commitChanges(cwd, {
+      'CHANGELOG.md': baseline.replace(
+        '- Existing unreleased item.',
+        '- Existing unreleased item.\n- Base item A.',
+      ),
+    })
+    runGit(cwd, ['switch', 'feature'])
+
+    const result = runValidator(cwd, { PR_PREFLIGHT_BASE_REF: 'main' })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain(
+      'Release pull requests must rebase onto the current main before changelog finalization',
+    )
+    expect(result.stderr).not.toContain('promote every base Unreleased item')
+  })
+
   it('fetches a missing default remote base without fetching tags', () => {
     const cwd = createRepository({ withRemote: true })
     commitChanges(cwd, {

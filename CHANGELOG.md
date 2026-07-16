@@ -18,16 +18,12 @@ self-hosters.
 
 ### Changed
 
-- Made CI require ordinary user- and operator-visible pull requests to preserve existing Unreleased entries and add a genuinely new curated item, and block unfinalized release PRs, with GitHub Releases published and validated from the exact versioned changelog section.
+- Made CI compare ordinary changelog additions with the pull request merge base, preserve its existing Unreleased entries, and reject stale or unfinalized release PRs before publishing and validating the exact versioned GitHub Release body.
 - Shared typed job create and update contracts across the dashboard and API while preserving deliberate null-versus-omitted field behavior.
 - Made the generated Nuxt ESLint configuration a required local and pull-request gate, and clarified that host development runs on port 3001 while the full Docker stack remains on port 3000.
 
 ### Fixed
 
-- Removed the verbose search-scope helper from the job pipeline.
-- Made AI usage charts render a true rolling 30-day window with readable scales, quiet-day gaps, compact bars, period totals, and accessible daily details.
-- Pinned recruiter-search database functions to trusted schemas, protected device authorization with row-level security, and indexed durable-processing relationships used during cleanup.
-- Protected internal recruiter-search and durable-processing tables with the same server-role-only row-level security boundary used by existing production data.
 - Kept large job pipelines stable with bounded server pagination, accurate filtered stage counts, identity-safe selection, and application-scoped interview history.
 - Kept ordinary application and job-pipeline lists available while the optional application search index is being migrated during a deployment.
 - Bound score details and reviewer feedback to the exact persisted analysis run, kept the last successful result visible after a failed re-score, and isolated candidate and scoring state when switching applications.
