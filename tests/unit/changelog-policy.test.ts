@@ -1,6 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
 import { getReleaseNotes, getUnreleasedItems } from '../../scripts/changelog-format.mjs'
 import { validateChangelogPolicy } from '../../scripts/validate-changelog.mjs'
+
+const validatorPath = join(process.cwd(), 'scripts/validate-changelog.mjs')
+const extractorPath = join(process.cwd(), 'scripts/extract-release-notes.mjs')
+const tempDirectories: string[] = []
 
 const baseline = `# Changelog
 
@@ -22,6 +30,80 @@ Factory release context.
 
 - Establish the Factory baseline.
 `
+
+function runGit(cwd: string, args: string[]) {
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8' })
+  if (result.status !== 0)
+    throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`)
+
+  return result.stdout.trim()
+}
+
+function createRepository(options: { withRemote?: boolean } = {}) {
+  const cwd = mkdtempSync(join(tmpdir(), 'factory-careers-changelog-policy-'))
+  tempDirectories.push(cwd)
+
+  runGit(cwd, ['init', '--initial-branch=main'])
+  runGit(cwd, ['config', 'user.email', 'changelog-policy@example.com'])
+  runGit(cwd, ['config', 'user.name', 'Changelog Policy'])
+  writeFileSync(join(cwd, 'CHANGELOG.md'), baseline)
+  writeFileSync(join(cwd, 'package.json'), `${JSON.stringify({ name: 'fixture', version: '1.0.0' }, null, 2)}\n`)
+  runGit(cwd, ['add', '.'])
+  runGit(cwd, ['commit', '-m', 'chore: establish fixture baseline'])
+
+  if (options.withRemote) {
+    const remote = mkdtempSync(join(tmpdir(), 'factory-careers-changelog-policy-remote-'))
+    tempDirectories.push(remote)
+    runGit(remote, ['init', '--bare', '--initial-branch=main'])
+    runGit(cwd, ['remote', 'add', 'origin', remote])
+    runGit(cwd, ['tag', 'unrelated-tag'])
+    runGit(cwd, ['push', '--set-upstream', 'origin', 'main'])
+    runGit(cwd, ['push', 'origin', 'unrelated-tag'])
+  }
+
+  runGit(cwd, ['switch', '-c', 'feature'])
+  return cwd
+}
+
+function commitChanges(cwd: string, files: Record<string, string>) {
+  for (const [file, contents] of Object.entries(files))
+    writeFileSync(join(cwd, file), contents)
+
+  runGit(cwd, ['add', '.'])
+  runGit(cwd, ['commit', '-m', 'feat: update fixture'])
+}
+
+function runValidator(cwd: string, overrides: NodeJS.ProcessEnv = {}) {
+  const env = { ...process.env }
+  delete env.PR_PREFLIGHT_BASE_REF
+  delete env.CHANGELOG_SKIP
+  Object.assign(env, overrides)
+
+  return spawnSync(process.execPath, [validatorPath], {
+    cwd,
+    encoding: 'utf8',
+    env,
+  })
+}
+
+function createExtractorFixture() {
+  const cwd = mkdtempSync(join(tmpdir(), 'factory-careers-release-notes-'))
+  tempDirectories.push(cwd)
+  writeFileSync(join(cwd, 'CHANGELOG.md'), baseline)
+  return cwd
+}
+
+function runExtractor(cwd: string, args: string[]) {
+  return spawnSync(process.execPath, [extractorPath, ...args], {
+    cwd,
+    encoding: 'utf8',
+  })
+}
+
+afterEach(() => {
+  for (const directory of tempDirectories.splice(0))
+    rmSync(directory, { recursive: true, force: true })
+})
 
 function validate(overrides: Partial<Parameters<typeof validateChangelogPolicy>[0]> = {}) {
   return validateChangelogPolicy({
@@ -296,5 +378,128 @@ describe('changelog policy', () => {
 
   it('returns no-changes when the pull request has no changed files', () => {
     expect(validate({ changedFiles: [] })).toBe('no-changes')
+  })
+})
+
+describe('changelog commands', () => {
+  it('exposes package scripts for validation and release-note extraction', () => {
+    const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
+
+    expect(packageJson.scripts['changelog:check']).toBe('node scripts/validate-changelog.mjs')
+    expect(packageJson.scripts['changelog:extract']).toBe('node scripts/extract-release-notes.mjs')
+  })
+
+  it('compares against the configured base ref and accepts a genuinely new Unreleased item', () => {
+    const cwd = createRepository()
+    commitChanges(cwd, {
+      'CHANGELOG.md': baseline.replace(
+        '- Existing unreleased item.',
+        '- Existing unreleased item.\n- Add recruiter reports.',
+      ),
+      'feature.txt': 'new behavior\n',
+    })
+
+    const result = runValidator(cwd, { PR_PREFLIGHT_BASE_REF: 'main' })
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toBe('Changelog policy passed (pull-request).\n')
+    expect(result.stderr).toBe('')
+  })
+
+  it('fetches a missing default remote base without fetching tags', () => {
+    const cwd = createRepository({ withRemote: true })
+    commitChanges(cwd, {
+      'CHANGELOG.md': baseline.replace(
+        '- Existing unreleased item.',
+        '- Existing unreleased item.\n- Add candidate exports.',
+      ),
+    })
+    runGit(cwd, ['branch', '--delete', '--force', 'main'])
+    runGit(cwd, ['update-ref', '-d', 'refs/remotes/origin/main'])
+    runGit(cwd, ['tag', '--delete', 'unrelated-tag'])
+
+    const result = runValidator(cwd)
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(spawnSync('git', ['rev-parse', '--verify', 'origin/main'], { cwd }).status).toBe(0)
+    expect(spawnSync('git', ['rev-parse', '--verify', 'refs/tags/unrelated-tag'], { cwd }).status).not.toBe(0)
+  })
+
+  it('reports a missing Unreleased entry with an actionable error', () => {
+    const cwd = createRepository()
+    commitChanges(cwd, { 'feature.txt': 'new behavior\n' })
+
+    const result = runValidator(cwd, { PR_PREFLIGHT_BASE_REF: 'main' })
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain('changelog:check: Add a new CHANGELOG.md item under ## Unreleased')
+  })
+
+  it('honors CHANGELOG_SKIP=true for an ordinary pull request', () => {
+    const cwd = createRepository()
+    commitChanges(cwd, { 'feature.txt': 'new behavior\n' })
+
+    const result = runValidator(cwd, {
+      PR_PREFLIGHT_BASE_REF: 'main',
+      CHANGELOG_SKIP: 'true',
+    })
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toBe('Changelog policy passed (skipped).\n')
+  })
+
+  it('does not let CHANGELOG_SKIP=true bypass a release pull request', () => {
+    const cwd = createRepository()
+    commitChanges(cwd, {
+      'package.json': `${JSON.stringify({ name: 'fixture', version: '1.1.0' }, null, 2)}\n`,
+    })
+
+    const result = runValidator(cwd, {
+      PR_PREFLIGHT_BASE_REF: 'main',
+      CHANGELOG_SKIP: 'true',
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('changelog:check: Release pull requests must update CHANGELOG.md')
+  })
+
+  it('writes only the matching release body to stdout', () => {
+    const cwd = createExtractorFixture()
+
+    const result = runExtractor(cwd, ['1.0.0'])
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toBe(`Factory release context.
+
+### Added
+
+- Establish the Factory baseline.\n`)
+    expect(result.stderr).toBe('')
+  })
+
+  it('rejects an unknown release version', () => {
+    const cwd = createExtractorFixture()
+
+    const result = runExtractor(cwd, ['2.0.0'])
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain('changelog:extract: CHANGELOG.md must contain a matching Factory release section for v2.0.0')
+  })
+
+  it.each([
+    { args: [] },
+    { args: ['v1.0.0'] },
+    { args: ['1.0'] },
+    { args: ['1.0.0', 'extra'] },
+  ])('rejects invalid release arguments: $args', ({ args }) => {
+    const cwd = createExtractorFixture()
+
+    const result = runExtractor(cwd, args)
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain('changelog:extract: usage: npm run changelog:extract -- <MAJOR.MINOR.PATCH>')
   })
 })
