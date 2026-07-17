@@ -32,6 +32,8 @@
     "lint:fix": "eslint . --fix",
     "test:smoke:ai-candidate-review": "vitest run --config vitest.smoke.config.ts tests/smoke/ai-candidate-review-context-smoke.smoke.ts",
     "check:conventions": "bash scripts/check-conventions.sh",
+    "changelog:check": "node scripts/validate-changelog.mjs",
+    "changelog:extract": "node scripts/extract-release-notes.mjs",
     "changelog:finalize": "node scripts/finalize-changelog.mjs",
     "preflight:pr-title": "node scripts/validate-current-pr-title.mjs",
     "preflight:pr": "node scripts/run-pr-validation-preflight.mjs",

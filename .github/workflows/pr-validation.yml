@@ -2,7 +2,7 @@ name: PR Validation
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
   workflow_dispatch:
 
 permissions:
@@ -15,7 +15,14 @@ concurrency:
 jobs:
   validate:
     name: Build, typecheck, and test
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    if: >-
+      ${{
+        (github.event_name != 'pull_request' || !github.event.pull_request.draft) &&
+        (
+          (github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+          github.event.label.name == 'skip-changelog'
+        )
+      }}
     runs-on: ubuntu-latest
 
     steps:
@@ -30,6 +37,14 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
           registry-url: 'https://npm.pkg.github.com'
+
+      - name: Changelog policy
+        id: changelog
+        run: npm run changelog:check
+        env:
+          PR_PREFLIGHT_BASE_REF: origin/${{ github.base_ref || 'main' }}
+          PR_PREFLIGHT_HEAD_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+          CHANGELOG_SKIP: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
 
       - name: Install dependencies
         id: install
@@ -112,6 +127,7 @@ jobs:
 
           status_icon() { [ "$1" = "success" ] && echo "✅" || echo "❌"; }
 
+          echo "| Changelog policy | $(status_icon '${{ steps.changelog.outcome }}') ${{ steps.changelog.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Install dependencies | $(status_icon '${{ steps.install.outcome }}') ${{ steps.install.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| CLI parity evidence | $(status_icon '${{ steps.cli_parity.outcome }}') ${{ steps.cli_parity.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Tests | $(status_icon '${{ steps.tests.outcome }}') ${{ steps.tests.outcome }} |" >> "$GITHUB_STEP_SUMMARY"

@@ -73,6 +73,75 @@ describe('finalize-changelog', () => {
     expect(readdirSync(cwd)).toEqual(['CHANGELOG.md'])
   })
 
+  it('normalizes CRLF input while finalizing through the shared section parser', () => {
+    const original = `# Changelog
+
+## Unreleased
+
+### Fixed
+
+- Preserve release formatting.
+
+## [1.0.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.0.0) (2026-07-16)
+
+### Added
+
+- Establish the Factory baseline.
+`.replaceAll('\n', '\r\n')
+    const cwd = createFixture(original)
+
+    const result = runFinalizer(cwd)
+    const finalized = readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(finalized).not.toContain('\r')
+    expect(finalized).toContain('## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-20)')
+    expect(finalized).toContain('- Preserve release formatting.')
+  })
+
+  it('preserves continuation paragraphs, nested lists, and fenced examples during promotion', () => {
+    const original = `# Changelog
+
+## Unreleased
+
+### Changed
+
+- Document the operator workflow.
+
+  This continuation is part of the curated entry.
+
+  - Run the first step.
+  - Run the second step.
+
+  \`\`\`md
+- This fenced bullet is an example.
+## This fenced heading is not a release boundary.
+  \`\`\`
+
+- Preserve the item after the fenced example.
+`
+    const cwd = createFixture(original)
+
+    const result = runFinalizer(cwd)
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')).toContain(`### Changed
+
+- Document the operator workflow.
+
+  This continuation is part of the curated entry.
+
+  - Run the first step.
+  - Run the second step.
+
+  \`\`\`md
+- This fenced bullet is an example.
+## This fenced heading is not a release boundary.
+  \`\`\`
+
+- Preserve the item after the fenced example.`)
+  })
+
   it('refuses to finalize an empty Unreleased section and leaves the file unchanged', () => {
     const original = `# Changelog
 
@@ -92,6 +161,134 @@ describe('finalize-changelog', () => {
     expect(result.stderr).toContain('Unreleased must contain at least one changelog item')
     expect(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')).toBe(original)
     expect(readdirSync(cwd)).toEqual(['CHANGELOG.md'])
+  })
+
+  it('refuses to finalize Unreleased content under unsupported-only categories', () => {
+    const original = `# Changelog
+
+## Unreleased
+
+### Security
+
+- This category is outside the curated changelog grammar.
+`
+    const cwd = createFixture(original)
+
+    const result = runFinalizer(cwd)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('unsupported category "Security"')
+    expect(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')).toBe(original)
+  })
+
+  it('refuses to finalize mixed supported and unsupported Unreleased categories', () => {
+    const original = `# Changelog
+
+## Unreleased
+
+### Added
+
+- Supported user outcome.
+
+### Security
+
+- Unsupported category outcome.
+`
+    const cwd = createFixture(original)
+
+    const result = runFinalizer(cwd)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('unsupported category "Security"')
+    expect(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')).toBe(original)
+  })
+
+  it.each([
+    {
+      source: 'a fenced code example',
+      content: `\`\`\`md
+- Example only.
+\`\`\``,
+    },
+    {
+      source: 'an HTML comment',
+      content: `<!--
+- Hidden example only.
+-->`,
+    },
+  ])('refuses to treat a bullet inside $source as a changelog item', ({ content }) => {
+    const original = `# Changelog
+
+## Unreleased
+
+### Added
+
+${content}
+`
+    const cwd = createFixture(original)
+
+    const result = runFinalizer(cwd)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Unreleased must contain at least one changelog item')
+    expect(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')).toBe(original)
+  })
+
+  it('refuses to finalize duplicate exact Unreleased headings', () => {
+    const original = `# Changelog
+
+## Unreleased
+
+### Added
+
+- Visible item.
+
+## Unreleased
+
+### Fixed
+
+- Hidden item.
+`
+    const cwd = createFixture(original)
+
+    const result = runFinalizer(cwd)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('exactly one ## Unreleased heading')
+    expect(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')).toBe(original)
+  })
+
+  it.each([
+    {
+      claim: 'a canonical release heading',
+      heading: '## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-19)',
+    },
+    {
+      claim: 'a reserved malformed claim',
+      heading: '## [1.1.0] - reserved malformed claim',
+    },
+  ])('refuses to finalize when $claim already claims the version', ({ heading }) => {
+    const original = `# Changelog
+
+## Unreleased
+
+### Changed
+
+- Improve release validation.
+
+${heading}
+
+### Added
+
+- Reserved release notes.
+`
+    const cwd = createFixture(original)
+
+    const result = runFinalizer(cwd)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('CHANGELOG.md already contains v1.1.0')
+    expect(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')).toBe(original)
   })
 
   it.each([

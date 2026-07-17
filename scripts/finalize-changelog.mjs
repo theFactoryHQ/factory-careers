@@ -4,8 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { chmod, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-
-const changelogSections = new Set(['Added', 'Changed', 'Fixed', 'Removed'])
+import { getStrictChangelogItems, getUnreleasedSection, hasReleaseVersionClaim } from './changelog-format.mjs'
 
 function assertVersion(version) {
   if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version))
@@ -21,48 +20,25 @@ function assertDate(date) {
     throw new Error('date must be a real YYYY-MM-DD date')
 }
 
-function hasChangelogItem(body) {
-  let inSupportedSection = false
-
-  for (const line of body.split(/\r?\n/)) {
-    const section = line.match(/^###\s+(.+?)\s*$/)
-    if (section) {
-      inSupportedSection = changelogSections.has(section[1])
-      continue
-    }
-
-    if (inSupportedSection && /^\s*[-*]\s+\S/.test(line))
-      return true
-  }
-
-  return false
-}
-
 export function finalizeChangelog(raw, version, date) {
   assertVersion(version)
   assertDate(date)
 
-  if (raw.includes(`## [${version}](`))
+  if (hasReleaseVersionClaim(raw, version))
     throw new Error(`CHANGELOG.md already contains v${version}`)
 
-  const unreleasedHeading = /^## Unreleased[ \t]*$/m.exec(raw)
-  if (!unreleasedHeading)
-    throw new Error('CHANGELOG.md must contain an exact ## Unreleased heading')
+  const {
+    normalized,
+    headingStart,
+    bodyEnd,
+    body: unreleasedBody,
+  } = getUnreleasedSection(raw)
 
-  const headingStart = unreleasedHeading.index
-  const headingEnd = headingStart + unreleasedHeading[0].length
-  const newlineAfterHeading = raw.indexOf('\n', headingEnd)
-  const bodyStart = newlineAfterHeading === -1 ? raw.length : newlineAfterHeading + 1
-  const remaining = raw.slice(bodyStart)
-  const nextEntry = /^##\s+.+$/m.exec(remaining)
-  const bodyEnd = bodyStart + (nextEntry?.index ?? remaining.length)
-  const unreleasedBody = raw.slice(bodyStart, bodyEnd).trim()
-
-  if (!hasChangelogItem(unreleasedBody))
+  if (getStrictChangelogItems(unreleasedBody, 'Unreleased').length === 0)
     throw new Error('Unreleased must contain at least one changelog item under Added, Changed, Fixed, or Removed')
 
-  const before = raw.slice(0, headingStart)
-  const after = raw.slice(bodyEnd)
+  const before = normalized.slice(0, headingStart)
+  const after = normalized.slice(bodyEnd)
   const releaseHeading = `## [${version}](https://github.com/theFactoryHQ/factory-careers/releases/tag/v${version}) (${date})`
   const finalized = `${before}## Unreleased\n\n${releaseHeading}\n\n${unreleasedBody}\n\n${after}`
 

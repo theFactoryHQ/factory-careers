@@ -32,30 +32,117 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  smoke-test:
-    name: Smoke-test published image
+  resolve-tag:
+    name: Resolve and validate release tag
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
     steps:
       - name: Resolve release tag
         id: tag
+        env:
+          RELEASE_EVENT_TAG: ${{ github.event.release.tag_name }}
+          DISPATCH_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          tag="${{ github.event.release.tag_name || inputs.tag }}"
+          tag="${RELEASE_EVENT_TAG:-$DISPATCH_TAG}"
+          if [[ ! "$tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Invalid release tag: $tag" >&2
+            exit 1
+          fi
           version="${tag#v}"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
+      - name: Demote event release when tag validation fails
+        if: failure() && github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_ID: ${{ github.event.release.id }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_ID" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Invalid release ID: $RELEASE_ID" >&2
+            exit 1
+          fi
+          gh api \
+            --method PATCH \
+            "repos/{owner}/{repo}/releases/${RELEASE_ID}" \
+            -F prerelease=true \
+            -f make_latest=false
+
+  release-notes:
+    name: Validate curated changelog release notes
+    needs: resolve-tag
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ needs.resolve-tag.outputs.tag }}
+      RELEASE_VERSION: ${{ needs.resolve-tag.outputs.version }}
+    steps:
       - name: Checkout release tag
         uses: actions/checkout@v6
         with:
-          ref: ${{ steps.tag.outputs.tag }}
+          ref: ${{ needs.resolve-tag.outputs.tag }}
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Extract curated release notes
+        run: npm run --silent changelog:extract -- "$RELEASE_VERSION" > release-notes.md
+
+      - name: Fetch published release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release view "$RELEASE_TAG" --json body --jq .body > published-release-notes.md
+
+      - name: Verify published release notes
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs'
+
+          const normalize = value => value.replace(/\r\n/g, '\n').trimEnd()
+          const expected = normalize(readFileSync('release-notes.md', 'utf8'))
+          const actual = normalize(readFileSync('published-release-notes.md', 'utf8'))
+
+          if (actual !== expected) {
+            console.error('Published release notes do not match the curated CHANGELOG.md section.')
+            process.exit(1)
+          }
+          NODE
+
+  release-notes-demotion:
+    name: Demote release after release-note failure
+    needs: [resolve-tag, release-notes]
+    if: ${{ always() && needs.release-notes.result == 'failure' }}
+    uses: ./.github/workflows/demote-release.yml
+    with:
+      release-tag: ${{ needs.resolve-tag.outputs.tag }}
+
+  smoke-test:
+    name: Smoke-test published image
+    needs: [resolve-tag, release-notes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      RELEASE_TAG: ${{ needs.resolve-tag.outputs.tag }}
+      RELEASE_VERSION: ${{ needs.resolve-tag.outputs.version }}
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.resolve-tag.outputs.tag }}
+          persist-credentials: false
 
       - name: Pin compose file to the released image tag
         run: |
           set -euo pipefail
           sed -i \
-            "s|ghcr.io/thefactoryhq/factory-careers:latest|ghcr.io/thefactoryhq/factory-careers:${{ steps.tag.outputs.version }}|" \
+            "s|ghcr.io/thefactoryhq/factory-careers:latest|ghcr.io/thefactoryhq/factory-careers:${RELEASE_VERSION}|" \
             docker-compose.production.yml
           grep "ghcr.io/thefactoryhq/factory-careers" docker-compose.production.yml
 
@@ -65,14 +152,14 @@ jobs:
           # docker-publish.yml is triggered by the same tag push, so it may
           # still be running when this job starts. Poll for up to 20 minutes.
           for i in $(seq 60); do
-            if docker manifest inspect "ghcr.io/thefactoryhq/factory-careers:${{ steps.tag.outputs.version }}" > /dev/null 2>&1; then
+            if docker manifest inspect "ghcr.io/thefactoryhq/factory-careers:${RELEASE_VERSION}" > /dev/null 2>&1; then
               echo "✅ Image is available"
               exit 0
             fi
             echo "  attempt $i/60 — image not yet published, waiting 20s..."
             sleep 20
           done
-          echo "❌ Image ghcr.io/thefactoryhq/factory-careers:${{ steps.tag.outputs.version }} never appeared"
+          echo "❌ Image ghcr.io/thefactoryhq/factory-careers:${RELEASE_VERSION} never appeared"
           exit 1
 
       - name: Generate .env via setup.sh
@@ -115,68 +202,63 @@ jobs:
           docker compose -f docker-compose.production.yml logs app
           exit 1
 
-      - name: Demote release to pre-release on failure
-        if: failure() && github.event_name == 'release'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release edit "${{ steps.tag.outputs.tag }}" --prerelease --latest=false
-          gh release view "${{ steps.tag.outputs.tag }}" --json isPrerelease,isLatest
+  smoke-test-demotion:
+    name: Demote release after smoke-test failure
+    needs: [resolve-tag, smoke-test]
+    if: ${{ always() && needs.smoke-test.result == 'failure' }}
+    uses: ./.github/workflows/demote-release.yml
+    with:
+      release-tag: ${{ needs.resolve-tag.outputs.tag }}
 
   bundle:
     name: Attach self-hoster bundle
-    needs: smoke-test
+    needs: [resolve-tag, smoke-test]
     runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ needs.resolve-tag.outputs.tag }}
+      RELEASE_VERSION: ${{ needs.resolve-tag.outputs.version }}
     steps:
-      - name: Resolve release tag
-        id: tag
-        run: |
-          set -euo pipefail
-          tag="${{ github.event.release.tag_name || inputs.tag }}"
-          version="${tag#v}"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
       - name: Checkout release tag
         uses: actions/checkout@v6
         with:
-          ref: ${{ steps.tag.outputs.tag }}
+          ref: ${{ needs.resolve-tag.outputs.tag }}
+          persist-credentials: false
 
       - name: Build version-pinned bundle
         run: |
           set -euo pipefail
-          mkdir -p "bundle/factory-careers-${{ steps.tag.outputs.version }}"
-          cp setup.sh "bundle/factory-careers-${{ steps.tag.outputs.version }}/"
-          cp SELF-HOSTING.md "bundle/factory-careers-${{ steps.tag.outputs.version }}/"
+          mkdir -p "bundle/factory-careers-${RELEASE_VERSION}"
+          cp setup.sh "bundle/factory-careers-${RELEASE_VERSION}/"
+          cp SELF-HOSTING.md "bundle/factory-careers-${RELEASE_VERSION}/"
           # Pin the compose file to the exact released image tag so users
           # who download the bundle get a deterministic install.
           sed \
-            "s|ghcr.io/thefactoryhq/factory-careers:latest|ghcr.io/thefactoryhq/factory-careers:${{ steps.tag.outputs.version }}|" \
+            "s|ghcr.io/thefactoryhq/factory-careers:latest|ghcr.io/thefactoryhq/factory-careers:${RELEASE_VERSION}|" \
             docker-compose.production.yml \
-            > "bundle/factory-careers-${{ steps.tag.outputs.version }}/docker-compose.production.yml"
+            > "bundle/factory-careers-${RELEASE_VERSION}/docker-compose.production.yml"
 
-          cat > "bundle/factory-careers-${{ steps.tag.outputs.version }}/INSTALL.txt" <<EOF
-          Factory Careers ${{ steps.tag.outputs.tag }} — Self-Hoster Bundle
+          cat > "bundle/factory-careers-${RELEASE_VERSION}/INSTALL.txt" <<EOF
+          Factory Careers $RELEASE_TAG — Self-Hoster Bundle
 
           1. ./setup.sh
           2. docker compose -f docker-compose.production.yml up -d
           3. Open http://localhost:3000
 
           The image tag in docker-compose.production.yml is pinned to
-          ${{ steps.tag.outputs.version }}. To upgrade later, download the
+          $RELEASE_VERSION. To upgrade later, download the
           newer release bundle and re-run docker compose up -d.
 
           Full guide: SELF-HOSTING.md
           EOF
 
-          tar -czf "factory-careers-${{ steps.tag.outputs.version }}.tar.gz" -C bundle "factory-careers-${{ steps.tag.outputs.version }}"
-          sha256sum "factory-careers-${{ steps.tag.outputs.version }}.tar.gz" > "factory-careers-${{ steps.tag.outputs.version }}.tar.gz.sha256"
+          tar -czf "factory-careers-${RELEASE_VERSION}.tar.gz" -C bundle "factory-careers-${RELEASE_VERSION}"
+          sha256sum "factory-careers-${RELEASE_VERSION}.tar.gz" > "factory-careers-${RELEASE_VERSION}.tar.gz.sha256"
 
       - name: Attach bundle to the GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ steps.tag.outputs.tag }}" \
-            "factory-careers-${{ steps.tag.outputs.version }}.tar.gz" \
-            "factory-careers-${{ steps.tag.outputs.version }}.tar.gz.sha256" \
+          gh release upload "$RELEASE_TAG" \
+            "factory-careers-${RELEASE_VERSION}.tar.gz" \
+            "factory-careers-${RELEASE_VERSION}.tar.gz.sha256" \
             --clobber

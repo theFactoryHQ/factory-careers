@@ -1,9 +1,38 @@
-import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
-import { describe, expect, it } from 'vitest'
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
 import { getFetchArgsForBaseRef, getPrPreflightSteps } from '../../scripts/run-pr-validation-preflight.mjs'
 import { validateConventionalTitle } from '../../scripts/validate-conventional-title.mjs'
 import { getPrTitleValidationStatus } from '../../scripts/validate-current-pr-title.mjs'
+
+const tempDirectories: string[] = []
+
+function createGitRepository(remotes: string[]) {
+  const cwd = mkdtempSync(join(tmpdir(), 'factory-careers-preflight-remotes-'))
+  tempDirectories.push(cwd)
+
+  const init = spawnSync('git', ['init', '--quiet'], { cwd, encoding: 'utf8' })
+  if (init.status !== 0)
+    throw new Error(`git init failed: ${init.stderr}`)
+
+  for (const remote of remotes) {
+    const result = spawnSync('git', ['remote', 'add', remote, join(cwd, `${remote}.git`)], {
+      cwd,
+      encoding: 'utf8',
+    })
+    if (result.status !== 0)
+      throw new Error(`git remote add ${remote} failed: ${result.stderr}`)
+  }
+
+  return cwd
+}
+
+afterEach(() => {
+  for (const directory of tempDirectories.splice(0))
+    rmSync(directory, { recursive: true, force: true })
+})
 
 describe('git hook preflight checks', () => {
   it('accepts PR-title-compatible conventional commit subjects', () => {
@@ -24,6 +53,7 @@ describe('git hook preflight checks', () => {
 
   it('keeps local pre-push checks aligned with PR validation', () => {
     expect(getPrPreflightSteps().map((step) => step.name)).toEqual([
+      'Changelog policy',
       'CLI parity evidence',
       'Unit tests',
       'Lint',
@@ -34,6 +64,30 @@ describe('git hook preflight checks', () => {
     ])
   })
 
+  it('runs the changelog policy through its local preflight alias', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'factory-careers-preflight-changelog-'))
+    const capturePath = join(cwd, 'npm-args.txt')
+    const fakeNpmPath = join(cwd, 'npm')
+    tempDirectories.push(cwd)
+
+    writeFileSync(fakeNpmPath, '#!/bin/sh\nprintf \'%s\\n\' "$@" > "$CAPTURE_FILE"\n')
+    chmodSync(fakeNpmPath, 0o755)
+
+    const result = spawnSync('node', ['scripts/run-pr-validation-preflight.mjs', '--step', 'changelog'], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        CAPTURE_FILE: capturePath,
+        PATH: `${cwd}:${process.env.PATH ?? ''}`,
+      },
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('==> Changelog policy')
+    expect(readFileSync(capturePath, 'utf8')).toBe('run\nchangelog:check\n')
+    expect(getPrPreflightSteps()[0]?.aliases).toEqual(['changelog'])
+  })
+
   it('installs all local hooks from npm prepare', () => {
     const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
 
@@ -41,6 +95,40 @@ describe('git hook preflight checks', () => {
     expect(readFileSync('.githooks/commit-msg', 'utf8')).toContain('validate-conventional-title.mjs')
     expect(readFileSync('.githooks/pre-push', 'utf8')).toContain('validate-current-pr-title.mjs')
     expect(readFileSync('.githooks/pre-push', 'utf8')).toContain('preflight:pr')
+  })
+
+  it('clears Git hook repository overrides before running preflight commands', () => {
+    const hook = readFileSync('.githooks/pre-push', 'utf8')
+    const unsetIndex = hook.indexOf('git rev-parse --local-env-vars')
+
+    expect(unsetIndex).toBeGreaterThan(-1)
+    expect(unsetIndex).toBeLessThan(hook.indexOf('node scripts/validate-current-pr-title.mjs'))
+    expect(unsetIndex).toBeLessThan(hook.indexOf('npm run preflight:pr'))
+
+    const cwd = mkdtempSync(join(tmpdir(), 'factory-careers-pre-push-env-'))
+    tempDirectories.push(cwd)
+    const command = '#!/bin/sh\n[ "${GIT_DIR+x}" = x ] && exit 41\n[ "${GIT_WORK_TREE+x}" = x ] && exit 42\n[ "${GIT_INDEX_FILE+x}" = x ] && exit 43\nexit 0\n'
+
+    for (const executable of ['node', 'npm']) {
+      const path = join(cwd, executable)
+      writeFileSync(path, command)
+      chmodSync(path, 0o755)
+    }
+
+    const gitDirectory = spawnSync('git', ['rev-parse', '--absolute-git-dir'], { encoding: 'utf8' }).stdout.trim()
+
+    const result = spawnSync('.githooks/pre-push', [], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        GIT_DIR: gitDirectory,
+        GIT_WORK_TREE: process.cwd(),
+        GIT_INDEX_FILE: '/tmp/leaked-git-index',
+        PATH: `${cwd}:${process.env.PATH ?? ''}`,
+      },
+    })
+
+    expect(result.status).toBe(0)
   })
 
   it('skips local PR title validation before a branch has an open PR', () => {
@@ -65,15 +153,48 @@ describe('git hook preflight checks', () => {
   })
 
   it('fetches the configured base ref instead of hard-coding main', () => {
-    expect(getFetchArgsForBaseRef('origin/release/1.4')).toEqual([
+    const originOnly = createGitRepository(['origin'])
+    const originAndUpstream = createGitRepository(['origin', 'upstream'])
+
+    expect(getFetchArgsForBaseRef('main', 'origin', { cwd: originOnly })).toEqual([
+      '--no-tags',
+      'origin',
+      '+refs/heads/main:refs/remotes/origin/main',
+    ])
+    expect(getFetchArgsForBaseRef('release/1.x', 'origin', { cwd: originOnly })).toEqual([
+      '--no-tags',
+      'origin',
+      '+refs/heads/release/1.x:refs/remotes/origin/release/1.x',
+    ])
+    expect(getFetchArgsForBaseRef('refs/heads/release/1.x', 'origin', { cwd: originOnly })).toEqual([
+      '--no-tags',
+      'origin',
+      '+refs/heads/release/1.x:refs/remotes/origin/release/1.x',
+    ])
+    expect(getFetchArgsForBaseRef('origin/release/1.4', 'origin', { cwd: originOnly })).toEqual([
       '--no-tags',
       'origin',
       '+refs/heads/release/1.4:refs/remotes/origin/release/1.4',
     ])
-    expect(getFetchArgsForBaseRef('upstream/main')).toEqual([
+    expect(getFetchArgsForBaseRef('upstream/main', 'origin', { cwd: originAndUpstream })).toEqual([
       '--no-tags',
       'upstream',
       '+refs/heads/main:refs/remotes/upstream/main',
+    ])
+    expect(getFetchArgsForBaseRef('release/1.x', 'upstream', { cwd: originAndUpstream })).toEqual([
+      '--no-tags',
+      'upstream',
+      '+refs/heads/release/1.x:refs/remotes/upstream/release/1.x',
+    ])
+  })
+
+  it('treats an unconfigured remote-like prefix as a branch on origin', () => {
+    const originOnly = createGitRepository(['origin'])
+
+    expect(getFetchArgsForBaseRef('upstream/main', 'origin', { cwd: originOnly })).toEqual([
+      '--no-tags',
+      'origin',
+      '+refs/heads/upstream/main:refs/remotes/origin/upstream/main',
     ])
   })
 

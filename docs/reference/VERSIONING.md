@@ -28,30 +28,57 @@ changes.
 Major releases contain incompatible API, CLI, configuration, or data-contract
 changes. Migration guidance must accompany any such change.
 
-## First release and automation
+## Pull-request changelog gate
 
-The first v1.0.0 release will be created manually after the metadata cutover is
-merged. Automated release-please publishing requires the
-`RELEASE_PLEASE_TOKEN` repository secret; that prerequisite is tracked by issue
-#27. After the prerequisite is complete, release-please will keep the app, CLI,
-lockfile, and release manifest synchronized.
+Every ordinary user- or operator-visible pull request must preserve every distinct Unreleased item
+from the pull request's merge base and add a genuinely new item in one supported
+category: **Added**, **Changed**, **Fixed**, or **Removed**.
+Tip-only base entries arrive through rebasing and do not need to be copied by hand.
+Do not remove, reword, or replace existing Unreleased items.
 
-Factory Careers deliberately keeps `CHANGELOG.md` curated. The release-please
-package uses `skip-changelog: true`: it still determines the next version and
-GitHub release notes, but it does not generate or duplicate changelog entries.
+The maintainer-applied exact `skip-changelog` label is only for genuinely internal changes.
+Use the same exception locally with `CHANGELOG_SKIP=true npm run preflight:pr`,
+and record the justification in the pull request.
 
-For every later release PR, confirm that `## Unreleased` contains the reviewed
-user- and operator-facing entries, then promote them with the release version
-and UTC publication date:
+Release and version-changing pull requests cannot use the exception and must first rebase onto the current base branch. In the release PR, promote the reviewed
+Unreleased entries with the intended semantic version and UTC publication date:
 
 ```bash
 npm run changelog:finalize -- <version> <YYYY-MM-DD>
 ```
 
-Commit the resulting `CHANGELOG.md` to the release PR. The finalizer rejects an
-empty Unreleased section, invalid version or date arguments, and duplicate
-version headings. It writes the completed changelog atomically and restores an
-empty `## Unreleased` entry for the next development cycle.
+Commit the resulting `CHANGELOG.md`. The matching version section must be nonempty,
+and `## Unreleased` must contain no entries. The finalizer rejects empty release
+notes, invalid version or date arguments, and duplicate version headings. It
+writes the completed changelog atomically and restores an empty Unreleased
+structure for the next development cycle.
+
+## Release automation
+
+v1.0.0 has already been published. Automated release-please publishing is not
+active until its repository secret is configured: `RELEASE_PLEASE_TOKEN` remains required,
+and issue #27 remains the current prerequisite. Until then, the Release workflow
+fails clearly instead of silently skipping automation.
+
+Factory Careers deliberately keeps `CHANGELOG.md` curated. Release-please retains
+`skip-changelog: true` only to avoid overwriting curated notes; it still determines
+the next version and keeps the app, CLI, lockfile, and release manifest synchronized.
+
+After a finalized release PR merges, publication is atomic:
+
+1. Release-please creates a draft GitHub Release with forced tag creation.
+2. The workflow extracts only the matching curated version section without npm
+   lifecycle noise:
+
+   ```bash
+   npm run --silent changelog:extract -- "<version>" > release-notes.md
+   ```
+
+   It installs that exact curated version body and then publishes the release as
+   the latest release.
+3. Release Verification validates the published body before smoke-testing the
+   released image. It demotes a failed release to a pre-release and removes its
+   latest designation; successful verification attaches the self-hoster bundle.
 
 ## Legacy Reqcore identifiers
 

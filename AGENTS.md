@@ -135,17 +135,25 @@ Update `CHANGELOG.md` in the same change whenever work adds, changes, fixes, or
 removes behavior that a recruiter, administrator, operator, integrator, or
 self-hoster would notice.
 
-- Add entries under `## Unreleased` using **Added**, **Changed**, **Fixed**, or
-  **Removed**.
+- Every ordinary user- or operator-visible pull request must preserve every distinct Unreleased item
+  from the pull request's merge base and add a genuinely new item using **Added**,
+  **Changed**, **Fixed**, or **Removed**.
+  Do not remove, reword, or replace existing Unreleased items.
 - Write concise outcome-focused entries; do not paste commit titles or include
   routine refactors, tests, dependency bumps, or internal chores unless they
   materially affect users or operators.
+- The maintainer-applied exact `skip-changelog` label is only for genuinely internal changes.
+  Use `CHANGELOG_SKIP=true npm run preflight:pr` as the local equivalent and
+  record the justification in the pull request.
+- Release or version-changing pull requests cannot use this exception and must first rebase onto the current base branch. Run
+  `npm run changelog:finalize -- <version> <YYYY-MM-DD>` in the release pull
+  request; the matching version section must be nonempty afterward.
+  `## Unreleased` must contain no entries after finalization.
+- Release-please retains `skip-changelog: true` only to avoid overwriting curated notes.
+- The exact curated changelog section for that version becomes the GitHub Release body.
 - Keep release and commit links scoped to `theFactoryHQ/factory-careers`.
 - Preserve inherited Reqcore history in its archive; do not mix new Factory
   Careers changes into the archived upstream record.
-- Release-please does not write the curated changelog. For a release PR, run
-  `npm run changelog:finalize -- <version> <YYYY-MM-DD>` after reviewing the
-  populated Unreleased sections, then commit the generated promotion.
 
 ## DRY And Reuse
 

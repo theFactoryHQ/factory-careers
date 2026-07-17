@@ -1,5 +1,11 @@
 #!/usr/bin/env sh
 set -eu
 
+# Clear repository-local overrides before creating isolated fixture repositories.
+git_local_vars=$(git rev-parse --local-env-vars)
+for git_var in $git_local_vars; do
+  unset "$git_var"
+done
+
 node scripts/validate-current-pr-title.mjs
 npm run preflight:pr

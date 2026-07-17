@@ -20,19 +20,51 @@ jobs:
       - name: Release automation token required
         if: ${{ env.HAS_RELEASE_PLEASE_TOKEN != 'true' }}
         run: |
-          echo "Release Please is skipped until RELEASE_PLEASE_TOKEN is configured."
+          echo "Release Please cannot run because RELEASE_PLEASE_TOKEN is not configured."
           echo "Tracking issue: https://github.com/theFactoryHQ/factory-careers/issues/27"
           {
-            echo "## Release Please skipped"
+            echo "## Release Please blocked"
             echo ""
             echo "The workflow needs RELEASE_PLEASE_TOKEN before it can create or update release PRs."
             echo ""
             echo "Tracking issue: https://github.com/theFactoryHQ/factory-careers/issues/27"
           } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
 
       - uses: googleapis/release-please-action@v5
+        id: release
         if: ${{ env.HAS_RELEASE_PLEASE_TOKEN == 'true' }}
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: .github/release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      - name: Checkout draft release
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.release.outputs.tag_name }}
+          persist-credentials: false
+
+      - name: Setup Node.js
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Extract curated release notes
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: npm run --silent changelog:extract -- "$RELEASE_VERSION" > release-notes.md
+
+      - name: Publish curated release notes
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
+        run: |
+          gh release edit "$RELEASE_TAG" \
+            --notes-file release-notes.md \
+            --draft=false \
+            --latest
