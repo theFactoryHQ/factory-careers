@@ -54,14 +54,17 @@ jobs:
 
       - name: Extract curated release notes
         if: ${{ steps.release.outputs.release_created == 'true' }}
-        run: npm run --silent changelog:extract -- "${{ steps.release.outputs.version }}" > release-notes.md
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: npm run --silent changelog:extract -- "$RELEASE_VERSION" > release-notes.md
 
       - name: Publish curated release notes
         if: ${{ steps.release.outputs.release_created == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
         run: |
-          gh release edit "${{ steps.release.outputs.tag_name }}" \
+          gh release edit "$RELEASE_TAG" \
             --notes-file release-notes.md \
             --draft=false \
             --latest

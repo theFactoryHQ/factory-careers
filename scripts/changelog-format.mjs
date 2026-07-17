@@ -4,16 +4,103 @@ function normalizeNewlines(raw) {
   return raw.replace(/\r\n/g, '\n')
 }
 
-function getBodyAfterHeading(raw, headingEnd) {
-  const bodyStart = raw[headingEnd] === '\n' ? headingEnd + 1 : headingEnd
-  const remaining = raw.slice(bodyStart)
-  const nextSection = /^##\s+\S.*$/m.exec(remaining)
-  return remaining.slice(0, nextSection?.index ?? remaining.length).trim()
+function updateHtmlCommentState(inHtmlComment, line) {
+  let offset = 0
+
+  while (offset < line.length) {
+    if (inHtmlComment) {
+      const commentEnd = line.indexOf('-->', offset)
+      if (commentEnd === -1)
+        return true
+
+      inHtmlComment = false
+      offset = commentEnd + 3
+      continue
+    }
+
+    const commentStart = line.indexOf('<!--', offset)
+    if (commentStart === -1)
+      return false
+
+    inHtmlComment = true
+    offset = commentStart + 4
+  }
+
+  return inHtmlComment
 }
 
-export function getChangelogItems(body) {
+function getFenceStart(line) {
+  const match = line.match(/^[ \t]*(`{3,}|~{3,}).*$/)
+  if (!match)
+    return null
+
+  return {
+    marker: match[1][0],
+    length: match[1].length,
+  }
+}
+
+function isFenceEnd(line, fence) {
+  const trimmed = line.trim()
+  return trimmed.length >= fence.length && [...trimmed].every(character => character === fence.marker)
+}
+
+function findLevelTwoHeadings(raw) {
+  const normalized = normalizeNewlines(raw)
+  const headings = []
+  let fence = null
+  let inHtmlComment = false
+  let offset = 0
+
+  for (const line of normalized.split('\n')) {
+    if (fence) {
+      if (isFenceEnd(line, fence))
+        fence = null
+    }
+    else if (inHtmlComment) {
+      inHtmlComment = updateHtmlCommentState(inHtmlComment, line)
+    }
+    else {
+      const fenceStart = getFenceStart(line)
+      if (fenceStart) {
+        fence = fenceStart
+      }
+      else {
+        if (/^ {0,3}##[ \t]+\S.*$/.test(line)) {
+          headings.push({
+            text: line,
+            index: offset,
+            end: offset + line.length,
+          })
+        }
+        inHtmlComment = updateHtmlCommentState(inHtmlComment, line)
+      }
+    }
+
+    offset += line.length + 1
+  }
+
+  return { normalized, headings }
+}
+
+function getSection(raw, heading) {
+  const { normalized, headings } = findLevelTwoHeadings(raw)
+  const bodyStart = normalized[heading.end] === '\n' ? heading.end + 1 : heading.end
+  const nextHeading = headings.find(candidate => candidate.index > heading.index)
+  const bodyEnd = nextHeading?.index ?? normalized.length
+
+  return {
+    normalized,
+    headingStart: heading.index,
+    bodyStart,
+    bodyEnd,
+    body: normalized.slice(bodyStart, bodyEnd).trim(),
+  }
+}
+
+function parseChangelogItems(body) {
   const items = []
-  let inSupportedSection = false
+  let currentSection = null
   let currentItem = null
   let fence = null
   let inHtmlComment = false
@@ -25,7 +112,10 @@ export function getChangelogItems(body) {
     while (currentItem.length > 1 && currentItem.at(-1).trim() === '')
       currentItem.pop()
 
-    items.push(currentItem.map(line => line.trimEnd()).join('\n'))
+    items.push({
+      category: currentSection,
+      value: currentItem.map(line => line.trimEnd()).join('\n'),
+    })
     currentItem = null
   }
 
@@ -34,80 +124,68 @@ export function getChangelogItems(body) {
       currentItem.push(line)
   }
 
-  function updateHtmlCommentState(line) {
-    let offset = 0
-
-    while (offset < line.length) {
-      if (inHtmlComment) {
-        const commentEnd = line.indexOf('-->', offset)
-        if (commentEnd === -1)
-          return
-
-        inHtmlComment = false
-        offset = commentEnd + 3
-        continue
-      }
-
-      const commentStart = line.indexOf('<!--', offset)
-      if (commentStart === -1)
-        return
-
-      inHtmlComment = true
-      offset = commentStart + 4
-    }
-  }
-
-  function isFenceEnd(line) {
-    const trimmed = line.trim()
-    return trimmed.length >= fence.length && [...trimmed].every(character => character === fence.marker)
-  }
-
   for (const line of normalizeNewlines(body).split('\n')) {
     if (fence) {
       appendToItem(line)
-      if (isFenceEnd(line))
+      if (isFenceEnd(line, fence))
         fence = null
       continue
     }
 
     if (inHtmlComment) {
       appendToItem(line)
-      updateHtmlCommentState(line)
+      inHtmlComment = updateHtmlCommentState(inHtmlComment, line)
       continue
     }
 
     const section = line.match(/^###\s+(.+?)\s*$/)
     if (section) {
       finishItem()
-      inSupportedSection = changelogSections.has(section[1])
+      currentSection = section[1]
       continue
     }
 
-    const item = inSupportedSection ? line.match(/^[-*][ \t]+(\S.*)$/) : null
+    const item = currentSection ? line.match(/^[-*][ \t]+(\S.*)$/) : null
     if (item) {
       finishItem()
       currentItem = [item[1].trim()]
-      updateHtmlCommentState(line)
+      inHtmlComment = updateHtmlCommentState(inHtmlComment, line)
       continue
     }
 
-    const fenceStart = line.match(/^[ \t]*(`{3,}|~{3,}).*$/)
+    const fenceStart = getFenceStart(line)
     if (fenceStart) {
       appendToItem(line)
-      fence = {
-        marker: fenceStart[1][0],
-        length: fenceStart[1].length,
-      }
+      fence = fenceStart
       continue
     }
 
     appendToItem(line)
-    updateHtmlCommentState(line)
+    inHtmlComment = updateHtmlCommentState(inHtmlComment, line)
   }
 
   finishItem()
 
   return items
+}
+
+export function getChangelogItems(body) {
+  return parseChangelogItems(body)
+    .filter(item => changelogSections.has(item.category))
+    .map(item => item.value)
+}
+
+export function getStrictChangelogItems(body, context = 'Changelog section') {
+  const items = parseChangelogItems(body)
+  const unsupportedCategory = items.find(item => !changelogSections.has(item.category))?.category
+
+  if (unsupportedCategory) {
+    throw new Error(
+      `${context} contains changelog items under unsupported category "${unsupportedCategory}"; use Added, Changed, Fixed, or Removed`,
+    )
+  }
+
+  return items.map(item => item.value)
 }
 
 function isRealDate(date) {
@@ -124,25 +202,29 @@ function escapeRegExp(value) {
 
 function findReleaseVersionClaims(raw, version) {
   const escapedVersion = escapeRegExp(version)
-  const normalized = normalizeNewlines(raw)
-  return [...normalized.matchAll(new RegExp(`^ {0,3}##[ \\t]+\\[${escapedVersion}\\].*$`, 'gm'))]
+  const { headings } = findLevelTwoHeadings(raw)
+  const claim = new RegExp(`^ {0,3}##[ \\t]+\\[${escapedVersion}\\].*$`)
+  return headings.filter(heading => claim.test(heading.text))
 }
 
 export function hasReleaseVersionClaim(raw, version) {
   return findReleaseVersionClaims(raw, version).length > 0
 }
 
-export function getUnreleasedItems(raw) {
-  const normalized = normalizeNewlines(raw)
-  const headings = [...normalized.matchAll(/^## Unreleased$/gm)]
+export function getUnreleasedSection(raw) {
+  const { normalized, headings } = findLevelTwoHeadings(raw)
+  const claims = headings.filter(heading => heading.text.trim() === '## Unreleased')
 
-  if (headings.length === 0)
+  if (claims.length === 0 || claims[0].text !== '## Unreleased')
     throw new Error('CHANGELOG.md must contain an exact ## Unreleased heading')
-  if (headings.length > 1)
+  if (claims.length > 1)
     throw new Error('CHANGELOG.md must contain exactly one ## Unreleased heading')
 
-  const heading = headings[0]
-  return getChangelogItems(getBodyAfterHeading(normalized, heading.index + heading[0].length))
+  return getSection(normalized, claims[0])
+}
+
+export function getUnreleasedItems(raw) {
+  return getStrictChangelogItems(getUnreleasedSection(raw).body, 'Unreleased')
 }
 
 export function getReleaseNotes(raw, version) {
@@ -156,9 +238,9 @@ export function getReleaseNotes(raw, version) {
 
   const claim = claims[0]
   if (claim) {
-    const match = new RegExp(`^${heading}$`).exec(claim[0])
+    const match = new RegExp(`^${heading}$`).exec(claim.text)
     if (match && isRealDate(match[1]))
-      return getBodyAfterHeading(normalized, claim.index + claim[0].length)
+      return getSection(normalized, claim).body
   }
 
   throw new Error(`CHANGELOG.md must contain a matching Factory release section for v${version}`)

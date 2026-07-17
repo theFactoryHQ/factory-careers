@@ -79,6 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RELEASE_TAG: ${{ needs.resolve-tag.outputs.tag }}
+      RELEASE_VERSION: ${{ needs.resolve-tag.outputs.version }}
     steps:
       - name: Checkout release tag
         uses: actions/checkout@v6
@@ -92,7 +93,7 @@ jobs:
           node-version-file: .nvmrc
 
       - name: Extract curated release notes
-        run: npm run --silent changelog:extract -- "${{ needs.resolve-tag.outputs.version }}" > release-notes.md
+        run: npm run --silent changelog:extract -- "$RELEASE_VERSION" > release-notes.md
 
       - name: Fetch published release notes
         env:
@@ -114,31 +115,13 @@ jobs:
           }
           NODE
 
-      - name: Demote release to pre-release on failure
-        if: failure()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          gh release edit "$RELEASE_TAG" --prerelease --latest=false
-          if [[ "$(gh release view "$RELEASE_TAG" --json isPrerelease --jq .isPrerelease)" != "true" ]]; then
-            echo "Release $RELEASE_TAG was not demoted to a pre-release" >&2
-            exit 1
-          fi
-
-          latest_release_error="$(mktemp)"
-          trap 'rm -f "$latest_release_error"' EXIT
-          if latest_tag="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>"$latest_release_error")"; then
-            if [[ "$latest_tag" == "$RELEASE_TAG" ]]; then
-              echo "Release $RELEASE_TAG is still advertised as latest" >&2
-              exit 1
-            fi
-          elif grep -q 'HTTP 404' "$latest_release_error"; then
-            echo "No stable latest release remains after demoting $RELEASE_TAG."
-          else
-            cat "$latest_release_error" >&2
-            exit 1
-          fi
+  release-notes-demotion:
+    name: Demote release after release-note failure
+    needs: [resolve-tag, release-notes]
+    if: ${{ always() && needs.release-notes.result == 'failure' }}
+    uses: ./.github/workflows/demote-release.yml
+    with:
+      release-tag: ${{ needs.resolve-tag.outputs.tag }}
 
   smoke-test:
     name: Smoke-test published image
@@ -219,31 +202,13 @@ jobs:
           docker compose -f docker-compose.production.yml logs app
           exit 1
 
-      - name: Demote release to pre-release on failure
-        if: failure()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          gh release edit "$RELEASE_TAG" --prerelease --latest=false
-          if [[ "$(gh release view "$RELEASE_TAG" --json isPrerelease --jq .isPrerelease)" != "true" ]]; then
-            echo "Release $RELEASE_TAG was not demoted to a pre-release" >&2
-            exit 1
-          fi
-
-          latest_release_error="$(mktemp)"
-          trap 'rm -f "$latest_release_error"' EXIT
-          if latest_tag="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>"$latest_release_error")"; then
-            if [[ "$latest_tag" == "$RELEASE_TAG" ]]; then
-              echo "Release $RELEASE_TAG is still advertised as latest" >&2
-              exit 1
-            fi
-          elif grep -q 'HTTP 404' "$latest_release_error"; then
-            echo "No stable latest release remains after demoting $RELEASE_TAG."
-          else
-            cat "$latest_release_error" >&2
-            exit 1
-          fi
+  smoke-test-demotion:
+    name: Demote release after smoke-test failure
+    needs: [resolve-tag, smoke-test]
+    if: ${{ always() && needs.smoke-test.result == 'failure' }}
+    uses: ./.github/workflows/demote-release.yml
+    with:
+      release-tag: ${{ needs.resolve-tag.outputs.tag }}
 
   bundle:
     name: Attach self-hoster bundle

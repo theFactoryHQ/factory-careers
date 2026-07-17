@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Define the changelog parser and policy
+## Task 1: Define the changelog parser and policy
 
 **Files:**
 - Create: `tests/unit/changelog-policy.test.ts`
@@ -70,7 +70,7 @@ npm run test:unit -- tests/unit/changelog-policy.test.ts tests/unit/finalize-cha
 
 Expected: both test files pass.
 
-### Task 2: Add executable PR and release-note commands
+## Task 2: Add executable PR and release-note commands
 
 **Files:**
 - Modify: `tests/unit/changelog-policy.test.ts`
@@ -117,7 +117,7 @@ npm run test:unit -- tests/unit/changelog-policy.test.ts tests/unit/finalize-cha
 
 Expected: both test files pass.
 
-### Task 3: Wire blocking pull-request validation
+## Task 3: Wire blocking pull-request validation
 
 **Files:**
 - Modify: `tests/unit/git-hooks-preflight.test.ts`
@@ -151,7 +151,7 @@ the pull request labels, and include its outcome in the job summary.
 
 Run the same two-file Vitest command. Expected: both files pass.
 
-### Task 4: Publish curated notes and fail closed
+## Task 4: Publish curated notes and fail closed
 
 **Files:**
 - Modify: `tests/unit/factory-release-identity.test.ts`
@@ -188,7 +188,7 @@ testing and demote published releases when extraction or publication fails.
 
 Run the same one-file Vitest command. Expected: the file passes.
 
-### Task 5: Document the enforced workflow and record the change
+## Task 5: Document the enforced workflow and record the change
 
 **Files:**
 - Modify: `tests/unit/agent-guidance.test.ts`
@@ -232,7 +232,7 @@ npm run check:conventions
 
 Expected: all checks pass.
 
-### Task 6: Full validation and review
+## Task 6: Full validation and review
 
 **Files:**
 - Review all files changed by Tasks 1-5.

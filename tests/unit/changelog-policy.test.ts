@@ -18,10 +18,6 @@ const baseline = `# Changelog
 
 - Existing unreleased item.
 
-### Security
-
-- Unsupported category item.
-
 ## [1.0.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.0.0) (2026-07-16)
 
 Factory release context.
@@ -126,6 +122,50 @@ function validate(overrides: Partial<Parameters<typeof validateChangelogPolicy>[
 describe('changelog format', () => {
   it('returns only Unreleased bullets beneath supported categories', () => {
     expect(getUnreleasedItems(baseline)).toEqual(['Existing unreleased item.'])
+  })
+
+  it('rejects item-bearing unsupported Unreleased categories', () => {
+    const mixed = baseline.replace(
+      '- Existing unreleased item.',
+      `- Existing unreleased item.
+
+### Security
+
+- Do not silently drop this entry.`,
+    )
+
+    expect(() => getUnreleasedItems(mixed)).toThrow('unsupported category "Security"')
+  })
+
+  it('ignores level-two headings inside fenced examples when finding section boundaries', () => {
+    const fencedUnreleased = baseline.replace(
+      '- Existing unreleased item.',
+      `- Existing unreleased item.
+
+  \`\`\`md
+## Example heading, not a changelog section
+  \`\`\`
+
+- Item after the fenced example.`,
+    )
+    const fencedRelease = baseline.replace(
+      'Factory release context.',
+      `Factory release context.
+
+\`\`\`md
+## [1.0.0] - example claim, not a release boundary
+\`\`\``,
+    )
+
+    expect(getUnreleasedItems(fencedUnreleased)).toEqual([
+      `Existing unreleased item.
+
+  \`\`\`md
+## Example heading, not a changelog section
+  \`\`\``,
+      'Item after the fenced example.',
+    ])
+    expect(getReleaseNotes(fencedRelease, '1.0.0')).toContain('### Added')
   })
 
   it('returns complete top-level item blocks with continuation paragraphs and nested lists', () => {
@@ -385,17 +425,55 @@ describe('changelog policy', () => {
     })).toBe('skipped')
   })
 
+  it('does not let a skipped pull request rewrite an inherited Unreleased item', () => {
+    expect(() => validate({
+      currentChangelog: baseline.replace(
+        '- Existing unreleased item.',
+        '- Rewritten inherited item.',
+      ),
+      skip: true,
+    })).toThrow('Preserve every existing distinct CHANGELOG.md item')
+  })
+
+  it('rejects unsupported inherited Unreleased categories before release promotion', () => {
+    const baseChangelog = baseline.replace(
+      '- Existing unreleased item.',
+      `- Existing unreleased item.
+
+### Security
+
+- Inherited security outcome.`,
+    )
+    const finalized = baseline.replace(
+      `## Unreleased
+
+### Added
+
+- Existing unreleased item.`,
+      `## Unreleased
+
+## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-20)
+
+### Added
+
+- Existing unreleased item.`,
+    )
+
+    expect(() => validate({
+      baseChangelog,
+      currentChangelog: finalized,
+      baseVersion: '1.0.0',
+      currentVersion: '1.1.0',
+    })).toThrow('unsupported category "Security"')
+  })
+
   it('accepts a finalized version bump even when skip is requested', () => {
     const finalized = baseline.replace(
       `## Unreleased
 
 ### Added
 
-- Existing unreleased item.
-
-### Security
-
-- Unsupported category item.`,
+- Existing unreleased item.`,
       `## Unreleased
 
 ## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-20)
@@ -437,11 +515,7 @@ describe('changelog policy', () => {
 
 ### Added
 
-- Existing unreleased item.
-
-### Security
-
-- Unsupported category item.`,
+- Existing unreleased item.`,
       '## Unreleased',
     )
 
@@ -458,11 +532,7 @@ describe('changelog policy', () => {
 
 ### Added
 
-- Existing unreleased item.
-
-### Security
-
-- Unsupported category item.`,
+- Existing unreleased item.`,
       `## Unreleased
 
 ## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-20)
@@ -486,11 +556,7 @@ describe('changelog policy', () => {
 
 ### Added
 
-- Existing unreleased item.
-
-### Security
-
-- Unsupported category item.`,
+- Existing unreleased item.`,
       `## Unreleased
 
 ## [0.9.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v0.9.0) (2026-07-20)
@@ -513,11 +579,7 @@ describe('changelog policy', () => {
 
 ### Added
 
-- Existing unreleased item.
-
-### Security
-
-- Unsupported category item.`,
+- Existing unreleased item.`,
       `## Unreleased
 
 ## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-20)
@@ -556,10 +618,7 @@ describe('changelog policy', () => {
 - Keep recruiter reports.
 
   This continuation is part of the release-note identity.
-
-### Security
-
-- Unsupported category item.`,
+`,
       `## Unreleased
 
 ## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-20)
@@ -689,11 +748,7 @@ describe('changelog commands', () => {
 
 ### Added
 
-- Existing unreleased item.
-
-### Security
-
-- Unsupported category item.`,
+- Existing unreleased item.`,
       `## Unreleased
 
 ## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-20)
@@ -731,11 +786,7 @@ describe('changelog commands', () => {
 
 ### Added
 
-- Existing unreleased item.
-
-### Security
-
-- Unsupported category item.`,
+- Existing unreleased item.`,
       `## Unreleased
 
 ## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-20)

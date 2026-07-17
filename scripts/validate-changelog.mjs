@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { getChangelogItems, getReleaseNotes, getUnreleasedItems } from './changelog-format.mjs'
+import { getReleaseNotes, getStrictChangelogItems, getUnreleasedItems } from './changelog-format.mjs'
 import { resolveBaseRef } from './git-base-ref.mjs'
 
 const changelogFile = 'CHANGELOG.md'
@@ -73,7 +73,7 @@ export function validateChangelogPolicy({
     if (baseContainsReleaseSection(baseChangelog, currentVersion))
       throw new Error(`Release pull requests must newly introduce the Factory release section for v${currentVersion}`)
 
-    const releaseItems = getChangelogItems(releaseNotes)
+    const releaseItems = getStrictChangelogItems(releaseNotes, `Release v${currentVersion}`)
     if (releaseItems.length === 0)
       throw new Error(`The Factory release section for v${currentVersion} must contain at least one changelog item`)
 
@@ -87,11 +87,12 @@ export function validateChangelogPolicy({
     return 'release'
   }
 
-  if (skip)
-    return 'skipped'
+  if (!changelogChanged) {
+    if (skip)
+      return 'skipped'
 
-  if (!changelogChanged)
     throw new Error('Add a new CHANGELOG.md item under ## Unreleased or apply the skip-changelog label')
+  }
 
   const baseItems = getUnreleasedItems(baseChangelog)
   const currentItems = getUnreleasedItems(currentChangelog)
@@ -101,6 +102,9 @@ export function validateChangelogPolicy({
       'Preserve every existing distinct CHANGELOG.md item under ## Unreleased; do not remove, reword, or replace existing items',
     )
   }
+
+  if (skip)
+    return 'skipped'
 
   if (!hasNewItem(baseItems, currentItems))
     throw new Error('Add a new CHANGELOG.md item under ## Unreleased or apply the skip-changelog label')

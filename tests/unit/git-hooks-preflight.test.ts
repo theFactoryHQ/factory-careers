@@ -99,7 +99,7 @@ describe('git hook preflight checks', () => {
 
   it('clears Git hook repository overrides before running preflight commands', () => {
     const hook = readFileSync('.githooks/pre-push', 'utf8')
-    const unsetIndex = hook.indexOf('unset GIT_DIR GIT_WORK_TREE')
+    const unsetIndex = hook.indexOf('git rev-parse --local-env-vars')
 
     expect(unsetIndex).toBeGreaterThan(-1)
     expect(unsetIndex).toBeLessThan(hook.indexOf('node scripts/validate-current-pr-title.mjs'))
@@ -107,7 +107,7 @@ describe('git hook preflight checks', () => {
 
     const cwd = mkdtempSync(join(tmpdir(), 'factory-careers-pre-push-env-'))
     tempDirectories.push(cwd)
-    const command = '#!/bin/sh\n[ "${GIT_DIR+x}" = x ] && exit 41\n[ "${GIT_WORK_TREE+x}" = x ] && exit 42\nexit 0\n'
+    const command = '#!/bin/sh\n[ "${GIT_DIR+x}" = x ] && exit 41\n[ "${GIT_WORK_TREE+x}" = x ] && exit 42\n[ "${GIT_INDEX_FILE+x}" = x ] && exit 43\nexit 0\n'
 
     for (const executable of ['node', 'npm']) {
       const path = join(cwd, executable)
@@ -115,12 +115,15 @@ describe('git hook preflight checks', () => {
       chmodSync(path, 0o755)
     }
 
+    const gitDirectory = spawnSync('git', ['rev-parse', '--absolute-git-dir'], { encoding: 'utf8' }).stdout.trim()
+
     const result = spawnSync('.githooks/pre-push', [], {
       encoding: 'utf8',
       env: {
         ...process.env,
-        GIT_DIR: '/tmp/leaked-git-dir',
-        GIT_WORK_TREE: '/tmp/leaked-work-tree',
+        GIT_DIR: gitDirectory,
+        GIT_WORK_TREE: process.cwd(),
+        GIT_INDEX_FILE: '/tmp/leaked-git-index',
         PATH: `${cwd}:${process.env.PATH ?? ''}`,
       },
     })

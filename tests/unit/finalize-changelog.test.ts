@@ -73,6 +73,32 @@ describe('finalize-changelog', () => {
     expect(readdirSync(cwd)).toEqual(['CHANGELOG.md'])
   })
 
+  it('normalizes CRLF input while finalizing through the shared section parser', () => {
+    const original = `# Changelog
+
+## Unreleased
+
+### Fixed
+
+- Preserve release formatting.
+
+## [1.0.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.0.0) (2026-07-16)
+
+### Added
+
+- Establish the Factory baseline.
+`.replaceAll('\n', '\r\n')
+    const cwd = createFixture(original)
+
+    const result = runFinalizer(cwd)
+    const finalized = readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(finalized).not.toContain('\r')
+    expect(finalized).toContain('## [1.1.0](https://github.com/theFactoryHQ/factory-careers/releases/tag/v1.1.0) (2026-07-20)')
+    expect(finalized).toContain('- Preserve release formatting.')
+  })
+
   it('preserves continuation paragraphs, nested lists, and fenced examples during promotion', () => {
     const original = `# Changelog
 
@@ -89,7 +115,10 @@ describe('finalize-changelog', () => {
 
   \`\`\`md
 - This fenced bullet is an example.
+## This fenced heading is not a release boundary.
   \`\`\`
+
+- Preserve the item after the fenced example.
 `
     const cwd = createFixture(original)
 
@@ -107,7 +136,10 @@ describe('finalize-changelog', () => {
 
   \`\`\`md
 - This fenced bullet is an example.
-  \`\`\``)
+## This fenced heading is not a release boundary.
+  \`\`\`
+
+- Preserve the item after the fenced example.`)
   })
 
   it('refuses to finalize an empty Unreleased section and leaves the file unchanged', () => {
@@ -145,7 +177,29 @@ describe('finalize-changelog', () => {
     const result = runFinalizer(cwd)
 
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain('Unreleased must contain at least one changelog item')
+    expect(result.stderr).toContain('unsupported category "Security"')
+    expect(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')).toBe(original)
+  })
+
+  it('refuses to finalize mixed supported and unsupported Unreleased categories', () => {
+    const original = `# Changelog
+
+## Unreleased
+
+### Added
+
+- Supported user outcome.
+
+### Security
+
+- Unsupported category outcome.
+`
+    const cwd = createFixture(original)
+
+    const result = runFinalizer(cwd)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('unsupported category "Security"')
     expect(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8')).toBe(original)
   })
 

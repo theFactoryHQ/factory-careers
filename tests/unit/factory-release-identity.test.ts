@@ -114,13 +114,16 @@ describe('Factory Careers release identity', () => {
           node-version-file: .nvmrc`
     const extractStep = `      - name: Extract curated release notes
         if: \${{ steps.release.outputs.release_created == 'true' }}
-        run: npm run --silent changelog:extract -- "\${{ steps.release.outputs.version }}" > release-notes.md`
+        env:
+          RELEASE_VERSION: \${{ steps.release.outputs.version }}
+        run: npm run --silent changelog:extract -- "$RELEASE_VERSION" > release-notes.md`
     const publishStep = `      - name: Publish curated release notes
         if: \${{ steps.release.outputs.release_created == 'true' }}
         env:
           GH_TOKEN: \${{ secrets.RELEASE_PLEASE_TOKEN }}
+          RELEASE_TAG: \${{ steps.release.outputs.tag_name }}
         run: |
-          gh release edit "\${{ steps.release.outputs.tag_name }}" \\
+          gh release edit "$RELEASE_TAG" \\
             --notes-file release-notes.md \\
             --draft=false \\
             --latest`
@@ -138,6 +141,7 @@ describe('Factory Careers release identity', () => {
     expect(releaseWorkflow.indexOf(checkoutStep)).toBeLessThan(releaseWorkflow.indexOf(setupNodeStep))
     expect(releaseWorkflow.indexOf(setupNodeStep)).toBeLessThan(releaseWorkflow.indexOf(extractStep))
     expect(releaseWorkflow.indexOf(extractStep)).toBeLessThan(releaseWorkflow.indexOf(publishStep))
+    expect(releaseWorkflow).not.toMatch(/run:[^\n]*\$\{\{ steps\.release\.outputs\.(?:version|tag_name) }}/)
   })
 
   it('resolves one strictly validated tag for every release verification job', () => {
@@ -210,10 +214,14 @@ describe('Factory Careers release identity', () => {
   it('validates published curated notes before smoke tests and demotes every failed verification', () => {
     const releaseVerification = readProjectFile('.github/workflows/release-verification.yml')
     const releaseNotesJobStart = releaseVerification.indexOf('  release-notes:')
+    const releaseNotesDemotionStart = releaseVerification.indexOf('  release-notes-demotion:')
     const smokeTestJobStart = releaseVerification.indexOf('  smoke-test:')
+    const smokeTestDemotionStart = releaseVerification.indexOf('  smoke-test-demotion:')
     const bundleJobStart = releaseVerification.indexOf('  bundle:')
-    const releaseNotesJob = releaseVerification.slice(releaseNotesJobStart, smokeTestJobStart)
-    const smokeTestJob = releaseVerification.slice(smokeTestJobStart, bundleJobStart)
+    const releaseNotesJob = releaseVerification.slice(releaseNotesJobStart, releaseNotesDemotionStart)
+    const releaseNotesDemotion = releaseVerification.slice(releaseNotesDemotionStart, smokeTestJobStart)
+    const smokeTestJob = releaseVerification.slice(smokeTestJobStart, smokeTestDemotionStart)
+    const smokeTestDemotion = releaseVerification.slice(smokeTestDemotionStart, bundleJobStart)
 
     expect(releaseNotesJobStart).toBeGreaterThan(-1)
     expect(releaseNotesJobStart).toBeLessThan(smokeTestJobStart)
@@ -227,8 +235,9 @@ describe('Factory Careers release identity', () => {
         with:
           node-version-file: .nvmrc`)
     expect(releaseNotesJob).toContain(
-      'run: npm run --silent changelog:extract -- "${{ needs.resolve-tag.outputs.version }}" > release-notes.md',
+      'run: npm run --silent changelog:extract -- "$RELEASE_VERSION" > release-notes.md',
     )
+    expect(releaseNotesJob).toContain('RELEASE_VERSION: ${{ needs.resolve-tag.outputs.version }}')
     expect(releaseNotesJob).toContain(
       'run: gh release view "$RELEASE_TAG" --json body --jq .body > published-release-notes.md',
     )
@@ -237,40 +246,33 @@ describe('Factory Careers release identity', () => {
     expect(releaseNotesJob).toContain("readFileSync('release-notes.md', 'utf8')")
     expect(releaseNotesJob).toContain("readFileSync('published-release-notes.md', 'utf8')")
     expect(releaseNotesJob).not.toContain('--notes-file')
-    expect(releaseNotesJob).toContain('if: failure()')
-    expect(releaseNotesJob).toContain('gh release edit "$RELEASE_TAG" --prerelease --latest=false')
-    expect(smokeTestJob).toContain('if: failure()')
-    expect(smokeTestJob).toContain('gh release edit "$RELEASE_TAG" --prerelease --latest=false')
-    expect(releaseNotesJob).not.toContain("if: failure() && github.event_name == 'release'")
-    expect(smokeTestJob).not.toContain("if: failure() && github.event_name == 'release'")
+    expect(releaseNotesDemotion).toContain("if: ${{ always() && needs.release-notes.result == 'failure' }}")
+    expect(releaseNotesDemotion).toContain('uses: ./.github/workflows/demote-release.yml')
+    expect(smokeTestDemotion).toContain("if: ${{ always() && needs.smoke-test.result == 'failure' }}")
+    expect(smokeTestDemotion).toContain('uses: ./.github/workflows/demote-release.yml')
+    expect(releaseNotesJob).not.toContain('Demote release')
+    expect(smokeTestJob).not.toContain('Demote release')
     expect(releaseVerification.match(/persist-credentials: false/g)).toHaveLength(3)
     expect(releaseNotesJob).not.toContain('continue-on-error: true')
   })
 
   it('verifies release demotion with supported fields and the stable latest endpoint', () => {
     const releaseVerification = readProjectFile('.github/workflows/release-verification.yml')
-    const releaseNotesJobStart = releaseVerification.indexOf('  release-notes:')
-    const smokeTestJobStart = releaseVerification.indexOf('  smoke-test:')
-    const bundleJobStart = releaseVerification.indexOf('  bundle:')
-    const demotionJobs = [
-      releaseVerification.slice(releaseNotesJobStart, smokeTestJobStart),
-      releaseVerification.slice(smokeTestJobStart, bundleJobStart),
-    ]
+    const demotionWorkflow = readProjectFile('.github/workflows/demote-release.yml')
 
-    expect(releaseVerification).not.toMatch(/--json[^\n]*isLatest/)
-    expect(releaseVerification.match(/--json isPrerelease --jq \.isPrerelease/g)).toHaveLength(2)
-    expect(releaseVerification.match(/gh api "repos\/\$GITHUB_REPOSITORY\/releases\/latest" --jq \.tag_name/g)).toHaveLength(2)
-
-    for (const job of demotionJobs) {
-      expect(job).toContain('set -euo pipefail')
-      expect(job).toContain('gh release edit "$RELEASE_TAG" --prerelease --latest=false')
-      expect(job).toContain('gh release view "$RELEASE_TAG" --json isPrerelease --jq .isPrerelease')
-      expect(job).toContain('gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name')
-      expect(job).toContain('if [[ "$latest_tag" == "$RELEASE_TAG" ]]')
-      expect(job).toContain("grep -q 'HTTP 404'")
-      expect(job).not.toContain('gh release view $RELEASE_TAG')
-      expect(job).not.toContain('gh api repos/$GITHUB_REPOSITORY')
-    }
+    expect(releaseVerification.match(/uses: \.\/\.github\/workflows\/demote-release\.yml/g)).toHaveLength(2)
+    expect(releaseVerification).not.toContain('gh release edit "$RELEASE_TAG" --prerelease --latest=false')
+    expect(demotionWorkflow).toContain('workflow_call:')
+    expect(demotionWorkflow).not.toMatch(/--json[^\n]*isLatest/)
+    expect(demotionWorkflow).toContain('set -euo pipefail')
+    expect(demotionWorkflow).toContain('RELEASE_TAG: ${{ inputs.release-tag }}')
+    expect(demotionWorkflow).toContain('gh release edit "$RELEASE_TAG" --prerelease --latest=false')
+    expect(demotionWorkflow).toContain('gh release view "$RELEASE_TAG" --json isPrerelease --jq .isPrerelease')
+    expect(demotionWorkflow).toContain('gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name')
+    expect(demotionWorkflow).toContain('if [[ "$latest_tag" == "$RELEASE_TAG" ]]')
+    expect(demotionWorkflow).toContain("grep -q 'HTTP 404'")
+    expect(demotionWorkflow).not.toContain('gh release view $RELEASE_TAG')
+    expect(demotionWorkflow).not.toContain('gh api repos/$GITHUB_REPOSITORY')
   })
 
   it('uses the Factory cutover version in release verification examples', () => {
@@ -306,6 +308,7 @@ describe('Factory Careers release identity', () => {
           CHANGELOG_SKIP: \${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}`
 
     expect(pullRequestTypes).toEqual(expect.arrayContaining(['labeled', 'unlabeled']))
+    expect(workflow).toContain("github.event.label.name == 'skip-changelog'")
     expect(workflow).toContain(changelogStep)
     expect(workflow.indexOf('- name: Setup Node.js')).toBeLessThan(workflow.indexOf('- name: Changelog policy'))
     expect(workflow.indexOf('- name: Changelog policy')).toBeLessThan(workflow.indexOf('- name: Install dependencies'))
