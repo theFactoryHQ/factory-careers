@@ -2,7 +2,7 @@ import { eq, and, asc, isNull, or, sql } from 'drizzle-orm'
 import { job, jobQuestion, organization, applicationSource, trackingLink, orgSettings } from '../../../../database/schema'
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
 import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
-import { sendApplicationTeamAlertEmail, sendConfiguredApplicationAcknowledgementEmail } from '../../../../utils/email'
+import { sendConfiguredApplicationAcknowledgementEmail } from '../../../../utils/email'
 import {
   DEFAULT_DOCUMENT_PARSE_TIMEOUT_MS,
   DocumentParseError,
@@ -629,12 +629,12 @@ export default defineEventHandler(async (event) => {
   }
 
   // ─────────────────────────────────────────────
-  // 12. Send application emails
+  // 12. Send the candidate acknowledgement. Internal application notifications
+  // are enqueued by the database trigger and delivered by the durable worker.
   // ─────────────────────────────────────────────
 
   if (newApplication) {
     const candidateName = `${firstName} ${lastName}`.trim()
-    const applicationUrl = `${resolveFactoryCareersBaseUrl()}/dashboard/applications/${newApplication.id}`
 
     const receiptEmail = sendConfiguredApplicationAcknowledgementEmail({
       organizationId: orgId,
@@ -657,25 +657,8 @@ export default defineEventHandler(async (event) => {
       }
     })
 
-    const teamAlertEmail = sendApplicationTeamAlertEmail({
-      candidateEmail: email.toLowerCase(),
-      candidateName,
-      jobTitle: existingJob.title,
-      applicationUrl,
-      hasResume: !!resumeUpload,
-    }).catch((err) => {
-      logError('application.team_alert_email_failed', {
-        application_id: newApplication.id,
-        job_id: jobId,
-        error_message: err instanceof Error ? err.message : String(err),
-      })
-      if (env.FACTORY_EMAIL_TEST_MODE === 'capture') {
-        throw err
-      }
-    })
-
     if (env.FACTORY_EMAIL_TEST_MODE === 'capture') {
-      await Promise.all([receiptEmail, teamAlertEmail])
+      await receiptEmail
     }
   }
 

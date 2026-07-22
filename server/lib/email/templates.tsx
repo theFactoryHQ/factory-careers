@@ -304,6 +304,87 @@ export function ApplicationTeamAlertEmail({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Application Digest (hiring inbox and personal subscriptions)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type ApplicationDigestItem = {
+  candidateName: string;
+  candidateEmail?: string;
+  receivedAt: string;
+  status: string;
+  score: number | null;
+  dashboardUrl: string;
+};
+
+export type ApplicationDigestGroup = {
+  jobTitle: string;
+  applications: ApplicationDigestItem[];
+};
+
+type ApplicationDigestEmailProps = {
+  cadence: "daily" | "weekly" | "monthly";
+  organizationName: string;
+  totalApplications: number;
+  overflowCount: number;
+  dashboardUrl: string;
+  groups: ApplicationDigestGroup[];
+  config?: EmailThemeConfig;
+};
+
+export function ApplicationDigestEmail({
+  cadence,
+  organizationName,
+  totalApplications,
+  overflowCount,
+  dashboardUrl,
+  groups,
+  config,
+}: ApplicationDigestEmailProps) {
+  const cadenceLabel = `${cadence.charAt(0).toUpperCase()}${cadence.slice(1)}`;
+  const applicationLabel = totalApplications === 1 ? "application" : "applications";
+
+  return (
+    <CareersEmailShell
+      preview={`${cadenceLabel} application summary — ${totalApplications} ${applicationLabel}`}
+      heading={`${cadenceLabel} application summary`}
+      body={`${organizationName} received ${totalApplications} ${applicationLabel} in this summary period.`}
+      config={config}
+    >
+      {groups.map((group) => (
+        <Section key={group.jobTitle} style={styles.detailPanel}>
+          <Text style={styles.detailSectionLabel}>
+            {group.jobTitle} · {group.applications.length}
+          </Text>
+          {group.applications.map((application) => (
+            <Section key={application.dashboardUrl} style={{ marginBottom: 16 }}>
+              <Text style={styles.detailItem}>
+                <a href={application.dashboardUrl} style={{ color: "#FFFFFF", textDecoration: "underline" }}>
+                  {application.candidateName}
+                </a>
+              </Text>
+              <Text style={styles.subtext}>
+                Received {application.receivedAt} · {application.status}
+                {application.score === null ? "" : ` · Score ${application.score}`}
+              </Text>
+            </Section>
+          ))}
+        </Section>
+      ))}
+      {overflowCount > 0 && (
+        <Text style={styles.subtext}>
+          {`${overflowCount} additional ${overflowCount === 1 ? "application" : "applications"} are not shown here.`}
+        </Text>
+      )}
+      <Section style={styles.ctaWrap}>
+        <Button href={dashboardUrl} style={styles.cta}>
+          View Applications
+        </Button>
+      </Section>
+    </CareersEmailShell>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Privacy Requests
 // ─────────────────────────────────────────────────────────────────────────────
 

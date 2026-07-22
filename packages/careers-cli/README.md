@@ -5,6 +5,8 @@ Install the CLI from npm:
 ```bash
 npm install -g @thefactory/careers-cli
 factory-careers --help
+factory-careers notifications personal get --json
+factory-careers notifications personal set --stdin --yes --json < notification.json
 ```
 
 Authenticate with OAuth 2.0 Device Authorization:

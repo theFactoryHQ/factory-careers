@@ -62,3 +62,29 @@ export const cliInterviewScheduleSchema = z.object({
   scheduledAt: z.iso.datetime({ offset: true }),
   durationMinutes: z.number().int().positive().optional(),
 }).passthrough()
+
+const cliNotificationCadenceSchema = z.enum(['immediate', 'daily', 'weekly', 'monthly', 'off'])
+const cliNotificationPreferenceFields = {
+  cadence: cliNotificationCadenceSchema,
+  timeZone: z.string().trim().min(1).max(100).refine((timeZone) => {
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone }).format()
+      return true
+    }
+    catch {
+      return false
+    }
+  }, 'Invalid timezone'),
+  deliveryTime: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, 'Delivery time must use HH:mm'),
+  weeklyDay: z.number().int().min(1).max(7),
+  monthlyDay: z.number().int().min(1).max(28),
+}
+
+export const cliApplicationNotificationPreferenceSchema = z.object({
+  ...cliNotificationPreferenceFields,
+})
+
+export const cliHiringInboxNotificationSettingsSchema = z.object({
+  ...cliNotificationPreferenceFields,
+  recipientEmail: z.email().trim().toLowerCase().nullable(),
+})

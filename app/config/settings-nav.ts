@@ -1,6 +1,6 @@
 import type { Component } from 'vue'
 import {
-  Building2, Users, UserCircle, Plug, Brain, ShieldCheck, Globe, FileCheck2,
+  Building2, Users, UserCircle, Plug, Brain, ShieldCheck, Globe, FileCheck2, BellRing,
 } from 'lucide-vue-next'
 
 export type SettingsNavItem = {
@@ -34,6 +34,13 @@ export const settingsNavItems: SettingsNavItem[] = [
     description: 'Team & invitations',
     to: '/dashboard/settings/members',
     icon: Users,
+    exact: true,
+  },
+  {
+    label: 'Notifications',
+    description: 'Application emails',
+    to: '/dashboard/settings/notifications',
+    icon: BellRing,
     exact: true,
   },
   {

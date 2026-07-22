@@ -92,7 +92,8 @@ describe('email workflow templates', () => {
     const systemTemplates = readProjectFile('shared/system-templates.ts')
 
     expect(publicApply).toContain('sendConfiguredApplicationAcknowledgementEmail')
-    expect(publicApply).toContain('sendApplicationTeamAlertEmail')
+    expect(publicApply).not.toContain('sendApplicationTeamAlertEmail')
+    expect(publicApply).toContain('database trigger')
     expect(applicationPatch).toContain('sendConfiguredApplicationRejectionEmail')
     expect(applicationPatch).toContain("body.status === 'rejected'")
     expect(emailUtils).toContain('renderCandidateWorkflowTemplate')

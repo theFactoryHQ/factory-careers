@@ -13,6 +13,7 @@ import { registerEmailTemplatesCommands } from './commands/email-templates'
 import { registerFeedbackCommands } from './commands/feedback'
 import { registerInterviewsCommands } from './commands/interviews'
 import { registerJobsCommands } from './commands/jobs'
+import { registerNotificationCommands } from './commands/notifications'
 import { registerOrgCommands } from './commands/org'
 import { registerPropertiesCommands } from './commands/properties'
 import { registerPublicCommands } from './commands/public'
@@ -51,6 +52,7 @@ export function createProgram(io: CliIo = {}): Command {
   registerPublicCommands(program, runtime)
   registerProcessingCommands(program, runtime)
   registerApplicationsCommands(program, runtime)
+  registerNotificationCommands(program, runtime)
 
   return program
 }

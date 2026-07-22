@@ -135,6 +135,7 @@ include:
 - `MICROSOFT_CALENDAR_CLIENT_SECRET`
 - `MICROSOFT_CALENDAR_TENANT_ID`
 - `FACTORY_CAREERS_HIRING_INBOX`
+- `APPLICATION_NOTIFICATION_WORKER_ENABLED` (off by default; enabled in the production Render blueprint)
 - `FACTORY_CAREERS_CALENDAR_EMAIL`
 
 Production-oriented Render and Supabase values are summarized in
