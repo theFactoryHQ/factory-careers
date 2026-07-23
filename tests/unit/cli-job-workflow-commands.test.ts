@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { runCli } from '../../packages/careers-cli/src/program'
+import { PREMADE_CRITERIA } from '../../shared/scoring-criteria'
 
 const tempDirs: string[] = []
 
@@ -251,7 +252,7 @@ describe('CLI job workflow commands', () => {
       }
       if (url === 'https://careers.example.com/api/jobs/job_1/criteria/generate' && init?.method === 'POST') {
         expect(JSON.parse(String(init.body))).toEqual({ template: 'technical' })
-        return Response.json({ criteria: [{ key: 'technical_depth' }], source: 'template' })
+        return Response.json({ criteria: PREMADE_CRITERIA.technical, source: 'template' })
       }
       if (url === 'https://careers.example.com/api/jobs/job_1/analyze-all' && init?.method === 'POST') {
         return Response.json({
@@ -318,7 +319,7 @@ describe('CLI job workflow commands', () => {
     expect(JSON.parse(listOut[0])).toEqual({ criteria: [{ key: 'typescript' }] })
     expect(JSON.parse(replaceOut[0])).toEqual({ criteria: [{ key: 'typescript', name: 'TypeScript' }] })
     expect(JSON.parse(weightsOut[0])).toEqual({ criteria: [{ key: 'typescript', weight: 80 }] })
-    expect(JSON.parse(generateOut[0])).toEqual({ criteria: [{ key: 'technical_depth' }], source: 'template' })
+    expect(JSON.parse(generateOut[0])).toEqual({ criteria: PREMADE_CRITERIA.technical, source: 'template' })
     expect(JSON.parse(analyzeOut[0])).toMatchObject({
       batchId: 'batch_job_1',
       status: 'completed',
