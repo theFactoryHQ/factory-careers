@@ -8,7 +8,6 @@ import {
   refreshProviderModels,
 } from '../../../utils/ai/modelCatalog'
 import type { SupportedProvider } from '../../../utils/ai/provider'
-import { assertSafeServerSideUrl } from '../../../utils/serverSideUrl'
 
 const providerSchema = z.enum(['openai', 'anthropic', 'google', 'xai', 'openai_compatible'])
 const refreshSchema = z.object({
@@ -71,10 +70,6 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-      if (config.baseUrl) {
-        await assertSafeServerSideUrl(config.baseUrl)
-      }
-
       const discovered = await refreshProviderModels(provider, {
         apiKey,
         baseUrl: config.baseUrl,

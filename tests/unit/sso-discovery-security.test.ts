@@ -10,6 +10,7 @@ vi.mock('node:dns/promises', () => ({
 
 import {
   buildOidcRegistrationConfigFromDiscovery,
+  discoverOidcRegistrationConfig,
   validateSsoIssuerUrlShape,
 } from '../../server/utils/ssoSecurity'
 
@@ -48,6 +49,34 @@ describe('SSO issuer URL validation', () => {
 })
 
 describe('SSO OIDC discovery hardening', () => {
+  it('fetches discovery through the injected safe outbound fetch', async () => {
+    const safeFetch = vi.fn(async () => Response.json({
+      issuer: 'https://auth.example.com',
+      authorization_endpoint: 'https://auth.example.com/authorize',
+      token_endpoint: 'https://auth.example.com/token',
+      userinfo_endpoint: 'https://auth.example.com/userinfo',
+      jwks_uri: 'https://auth.example.com/certs',
+    }))
+    vi.stubGlobal('$fetch', vi.fn(async () => {
+      throw new Error('ordinary fetch must not be used')
+    }))
+
+    await expect(discoverOidcRegistrationConfig(
+      'https://auth.example.com',
+      {},
+      { safeFetch },
+    )).resolves.toMatchObject({
+      authorizationEndpoint: 'https://auth.example.com/authorize',
+      tokenEndpoint: 'https://auth.example.com/token',
+      jwksEndpoint: 'https://auth.example.com/certs',
+    })
+
+    expect(safeFetch).toHaveBeenCalledWith(
+      'https://auth.example.com/.well-known/openid-configuration',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
+  })
+
   it('builds explicit OIDC endpoints so registration can skip Better Auth runtime discovery', async () => {
     const config = await buildOidcRegistrationConfigFromDiscovery('https://accounts.google.com', {
       issuer: 'https://accounts.google.com',

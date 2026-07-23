@@ -13,7 +13,8 @@ import { createXai } from '@ai-sdk/xai'
 import { generateObject } from 'ai'
 import type { z } from 'zod'
 import { decrypt } from '../encryption'
-import { assertSafeServerSideUrl, validateServerSideUrlShape } from '../serverSideUrl'
+import { validateServerSideUrlShape } from '../serverSideUrl'
+import { safeOutboundFetch } from '../safeOutboundFetch'
 
 export type SupportedProvider = 'openai' | 'anthropic' | 'google' | 'xai' | 'openai_compatible'
 
@@ -176,6 +177,7 @@ export function createLanguageModel(config: ProviderConfig) {
       const openai = createOpenAI({
         apiKey,
         ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
+        ...(config.baseUrl ? { fetch: safeOutboundFetch } : {}),
       })
       return openai(config.model)
     }
@@ -183,6 +185,7 @@ export function createLanguageModel(config: ProviderConfig) {
       const anthropic = createAnthropic({
         apiKey,
         ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
+        ...(config.baseUrl ? { fetch: safeOutboundFetch } : {}),
       })
       return anthropic(config.model)
     }
@@ -190,6 +193,7 @@ export function createLanguageModel(config: ProviderConfig) {
       const google = createGoogleGenerativeAI({
         apiKey,
         ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
+        ...(config.baseUrl ? { fetch: safeOutboundFetch } : {}),
       })
       return google(config.model)
     }
@@ -197,6 +201,7 @@ export function createLanguageModel(config: ProviderConfig) {
       const xai = createXai({
         apiKey,
         ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
+        ...(config.baseUrl ? { fetch: safeOutboundFetch } : {}),
       })
       return xai(config.model)
     }
@@ -303,10 +308,6 @@ export async function generateStructuredOutput<T>(
       statusCode: 422,
       statusMessage: `No deterministic AI mock response configured for schema: ${options.schemaName}`,
     })
-  }
-
-  if (config.baseUrl) {
-    await assertSafeServerSideUrl(config.baseUrl)
   }
 
   const model = createLanguageModel(config)

@@ -1,4 +1,5 @@
 import { lookup } from 'node:dns/promises'
+import type { LookupAddress } from 'node:dns'
 import { isIP } from 'node:net'
 
 const BLOCKED_HOSTNAMES = new Set([
@@ -20,6 +21,16 @@ export interface ServerSideUrlValidationResult {
   reason?: string
   url?: URL
 }
+
+export interface ResolvedSafeServerSideUrl {
+  url: URL
+  addresses: LookupAddress[]
+}
+
+export type ServerSideUrlLookup = (
+  hostname: string,
+  options: { all: true, verbatim: true },
+) => Promise<LookupAddress[]>
 
 function normalizeHostname(hostname: string): string {
   return hostname
@@ -198,23 +209,46 @@ export async function assertSafeServerSideUrl(
   value: string,
   options: ServerSideUrlValidationOptions = {},
 ): Promise<void> {
+  await resolveSafeServerSideUrl(value, options)
+}
+
+export async function resolveSafeServerSideUrl(
+  value: string,
+  options: ServerSideUrlValidationOptions = {},
+  lookupImpl: ServerSideUrlLookup = lookup,
+): Promise<ResolvedSafeServerSideUrl> {
   const shape = validateServerSideUrlShape(value, options)
   if (!shape.ok || !shape.url) {
     throw createError({ statusCode: 422, statusMessage: shape.reason ?? 'URL is not allowed' })
   }
 
   const hostname = normalizeHostname(shape.url.hostname)
-  if (isIP(hostname)) return
+  const literalFamily = isIP(hostname)
+  if (literalFamily) {
+    return {
+      url: shape.url,
+      addresses: [{ address: hostname, family: literalFamily }],
+    }
+  }
 
-  let addresses: Array<{ address: string, family: number }>
+  let addresses: LookupAddress[]
   try {
-    addresses = await lookup(hostname, { all: true, verbatim: true })
+    addresses = await lookupImpl(hostname, { all: true, verbatim: true })
   } catch (err) {
-    if (options.requireDnsResolution === false) return
+    if (options.requireDnsResolution === false) {
+      return { url: shape.url, addresses: [] }
+    }
     throw createError({
       statusCode: 422,
       statusMessage: 'URL hostname could not be resolved safely',
       cause: err,
+    })
+  }
+
+  if (addresses.length === 0) {
+    throw createError({
+      statusCode: 422,
+      statusMessage: 'URL hostname could not be resolved safely',
     })
   }
 
@@ -226,4 +260,6 @@ export async function assertSafeServerSideUrl(
       })
     }
   }
+
+  return { url: shape.url, addresses }
 }

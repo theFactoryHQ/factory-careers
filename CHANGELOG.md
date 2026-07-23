@@ -28,6 +28,7 @@ self-hosters.
 
 ### Fixed
 
+- Bound application-owned OIDC discovery and organization-configured custom AI requests to validated public DNS answers without weakening TLS hostname verification.
 - Made Jobs, Candidates, and Applications dashboard lists complete beyond their first API page, with accurate ranges and full-result search, filtering, and sorting.
 - Kept chatbot conversations sendable beyond fifty stored messages by bounding only the recent model context.
 - Identified server logs and analytics as Factory Careers in production telemetry.

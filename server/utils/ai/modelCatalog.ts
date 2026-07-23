@@ -1,4 +1,5 @@
 import { PROVIDER_REGISTRY, type ModelInfo, type SupportedProvider } from './provider'
+import { safeOutboundFetch } from '../safeOutboundFetch'
 
 export interface ProviderCatalogInfo {
   name: string
@@ -47,6 +48,7 @@ interface RefreshProviderModelsOptions {
   force?: boolean
   ttlMs?: number
   fetchImpl?: typeof fetch
+  safeFetchImpl?: typeof fetch
   now?: () => Date
 }
 
@@ -159,7 +161,8 @@ export async function refreshProviderModels(
     return cached.value
   }
 
-  const fetchImpl = options.fetchImpl ?? fetch
+  const fetchImpl = options.fetchImpl
+    ?? (options.baseUrl ? options.safeFetchImpl ?? safeOutboundFetch : fetch)
   const models = await fetchProviderModels(provider, {
     apiKey: options.apiKey,
     baseUrl: options.baseUrl,
