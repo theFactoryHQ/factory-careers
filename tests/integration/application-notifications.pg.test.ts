@@ -20,6 +20,16 @@ if (postgresRequired && !adminUrl) {
 const describeWithPostgres = adminUrl ? describe : describe.skip
 const migrationsFolder = join(process.cwd(), 'server/database/migrations')
 
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise
+    reject = rejectPromise
+  })
+  return { promise, reject, resolve }
+}
+
 function migrationsThrough(index: number): string {
   const destination = mkdtempSync(join(tmpdir(), 'factory-careers-notification-migrations-'))
   cpSync(migrationsFolder, destination, { recursive: true })
@@ -209,6 +219,99 @@ describeWithPostgres('application notification PostgreSQL behavior', () => {
             and "status" = 'completed'`
         expect(recoveryMessages[0]?.count).toBe(1)
         expect(readFileSync(capturePath, 'utf8')).toContain('Late Candidate')
+
+        // A stale provider success must not overwrite the delivery state owned
+        // by a newer lease generation.
+        await client`update "application_notification_message"
+          set "status" = 'completed', "completed_at" = now()
+          where "status" = 'pending'`
+        await client`update "application_notification_delivery"
+          set "status" = 'completed', "completed_at" = now()
+          where "status" = 'pending'`
+
+        const workerAStartedAt = new Date()
+        const workerBStartedAt = new Date(workerAStartedAt.getTime() + (2 * 60_000) + 1)
+        const workerAStartedAtIso = workerAStartedAt.toISOString()
+        const raceMessageId = `stale-worker-message-${suffix}`
+        const raceDeliveryId = `stale-worker-delivery-${suffix}`
+        const raceRecipientKey = `stale-worker-${suffix}`
+        await client`insert into "application_notification_message" (
+          "id", "organization_id", "recipient_key", "recipient_kind", "recipient_email",
+          "cadence", "time_zone", "configuration_key", "scheduled_for", "dedupe_key",
+          "max_attempts", "available_at", "created_at", "updated_at"
+        ) values (
+          ${raceMessageId}, ${organizationId}, ${raceRecipientKey}, 'hiring_inbox', ${sharedEmail},
+          'immediate', 'UTC', 'stale-worker-race', ${workerAStartedAtIso},
+          ${`stale-worker-race-${suffix}`}, 2, ${workerAStartedAtIso}, ${workerAStartedAtIso}, ${workerAStartedAtIso}
+        )`
+        await client`insert into "application_notification_delivery" (
+          "id", "organization_id", "event_id", "application_id", "message_id",
+          "recipient_key", "recipient_kind", "recipient_email", "cadence",
+          "configuration_key", "scheduled_for", "created_at", "updated_at"
+        ) values (
+          ${raceDeliveryId}, ${organizationId}, 'application-notification:late-application',
+          'late-application', ${raceMessageId}, ${raceRecipientKey}, 'hiring_inbox',
+          ${sharedEmail}, 'immediate', 'stale-worker-race', ${workerAStartedAtIso},
+          ${workerAStartedAtIso}, ${workerAStartedAtIso}
+        )`
+
+        const workerAEnteredProvider = deferred<void>()
+        const workerAProviderResult = deferred<string>()
+        const workerA = processApplicationNotificationCycle(workerAStartedAt, async () => {
+          workerAEnteredProvider.resolve()
+          return workerAProviderResult.promise
+        })
+        await workerAEnteredProvider.promise
+
+        const workerBEnteredProvider = deferred<void>()
+        const workerBProviderResult = deferred<string>()
+        const workerB = processApplicationNotificationCycle(workerBStartedAt, async () => {
+          workerBEnteredProvider.resolve()
+          return workerBProviderResult.promise
+        })
+        await workerBEnteredProvider.promise
+
+        workerAProviderResult.resolve('provider-stale-attempt')
+        await workerA
+
+        const [intermediateMessage] = await client<{
+          attemptCount: number
+          providerMessageId: string | null
+          status: string
+        }[]>`select "attempt_count" as "attemptCount", "provider_message_id" as "providerMessageId", "status"
+          from "application_notification_message" where "id" = ${raceMessageId}`
+        const [intermediateDelivery] = await client<{
+          completedAt: Date | null
+          status: string
+        }[]>`select "completed_at" as "completedAt", "status"
+          from "application_notification_delivery" where "id" = ${raceDeliveryId}`
+        expect(intermediateMessage).toEqual({
+          attemptCount: 2,
+          providerMessageId: null,
+          status: 'processing',
+        })
+        expect(intermediateDelivery).toEqual({
+          completedAt: null,
+          status: 'pending',
+        })
+
+        workerBProviderResult.reject(new Error('active worker terminal failure'))
+        await workerB
+
+        const [finalMessage] = await client<{
+          attemptCount: number
+          providerMessageId: string | null
+          status: string
+        }[]>`select "attempt_count" as "attemptCount", "provider_message_id" as "providerMessageId", "status"
+          from "application_notification_message" where "id" = ${raceMessageId}`
+        const [finalDelivery] = await client<{ status: string }[]>`
+          select "status" from "application_notification_delivery" where "id" = ${raceDeliveryId}`
+        expect(finalMessage).toEqual({
+          attemptCount: 2,
+          providerMessageId: null,
+          status: 'failed',
+        })
+        expect(finalDelivery?.status).toBe('failed')
 
         await client.unsafe(`do $$ begin
           if not exists (select 1 from pg_roles where rolname = 'anon') then

@@ -30,6 +30,7 @@ const DETAIL_LIMIT = 100
 
 type NotificationEvent = typeof applicationNotificationEvent.$inferSelect
 type NotificationMessage = typeof applicationNotificationMessage.$inferSelect
+type ApplicationNotificationSender = typeof sendApplicationNotificationEmail
 
 function leaseExpiresAt(now: Date): Date {
   return new Date(now.getTime() + LEASE_MS)
@@ -135,6 +136,17 @@ async function fanOutEvent(event: NotificationEvent, now: Date): Promise<void> {
   })
 
   await db.transaction(async (tx) => {
+    const activeLease = await tx.select({ id: applicationNotificationEvent.id })
+      .from(applicationNotificationEvent)
+      .where(and(
+        eq(applicationNotificationEvent.id, event.id),
+        eq(applicationNotificationEvent.status, 'processing'),
+        eq(applicationNotificationEvent.attemptCount, event.attemptCount),
+      ))
+      .limit(1)
+      .for('update')
+    if (activeLease.length === 0) return
+
     for (const plan of plans) {
       const existingDelivery = await tx.select({ id: applicationNotificationDelivery.id })
         .from(applicationNotificationDelivery)
@@ -293,7 +305,7 @@ async function claimMessages(now: Date): Promise<NotificationMessage[]> {
 
 async function cancelMessage(message: NotificationMessage, resultCode: string, now: Date): Promise<void> {
   await db.transaction(async (tx) => {
-    await tx.update(applicationNotificationMessage).set({
+    const cancelled = await tx.update(applicationNotificationMessage).set({
       status: 'cancelled',
       leaseExpiresAt: null,
       resultCode,
@@ -303,7 +315,9 @@ async function cancelMessage(message: NotificationMessage, resultCode: string, n
       eq(applicationNotificationMessage.id, message.id),
       eq(applicationNotificationMessage.status, 'processing'),
       eq(applicationNotificationMessage.attemptCount, message.attemptCount),
-    ))
+    )).returning({ id: applicationNotificationMessage.id })
+    if (cancelled.length === 0) return
+
     await tx.update(applicationNotificationDelivery).set({
       status: 'cancelled',
       completedAt: now,
@@ -350,13 +364,12 @@ function titleCase(value: string): string {
   return value.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase())
 }
 
-async function processMessage(message: NotificationMessage, now: Date): Promise<void> {
-  if (message.cadence === 'off') {
-    await cancelMessage(message, 'subscription_inactive', now)
-    return
-  }
-
-  if (!await subscriptionStillActive(message)) {
+async function processMessage(
+  message: NotificationMessage,
+  now: Date,
+  sendNotification: ApplicationNotificationSender,
+): Promise<void> {
+  if (message.cadence === 'off' || !(await subscriptionStillActive(message))) {
     await cancelMessage(message, 'subscription_inactive', now)
     return
   }
@@ -434,7 +447,7 @@ async function processMessage(message: NotificationMessage, now: Date): Promise<
   }
 
   try {
-    const providerMessageId = await sendApplicationNotificationEmail({
+    const providerMessageId = await sendNotification({
       idempotencyKey: `application-notification-message:${message.id}`,
       recipientEmail: message.recipientEmail,
       cadence: message.cadence,
@@ -446,7 +459,7 @@ async function processMessage(message: NotificationMessage, now: Date): Promise<
     })
 
     await db.transaction(async (tx) => {
-      await tx.update(applicationNotificationMessage).set({
+      const completed = await tx.update(applicationNotificationMessage).set({
         status: 'completed',
         leaseExpiresAt: null,
         providerMessageId,
@@ -457,7 +470,9 @@ async function processMessage(message: NotificationMessage, now: Date): Promise<
         eq(applicationNotificationMessage.id, message.id),
         eq(applicationNotificationMessage.status, 'processing'),
         eq(applicationNotificationMessage.attemptCount, message.attemptCount),
-      ))
+      )).returning({ id: applicationNotificationMessage.id })
+      if (completed.length === 0) return
+
       await tx.update(applicationNotificationDelivery).set({
         status: 'completed',
         completedAt: now,
@@ -476,7 +491,7 @@ async function processMessage(message: NotificationMessage, now: Date): Promise<
       failureCode: error instanceof Error ? error.name : 'provider_failed',
     })
     await db.transaction(async (tx) => {
-      await tx.update(applicationNotificationMessage).set({
+      const transitioned = await tx.update(applicationNotificationMessage).set({
         ...outcome,
         leaseExpiresAt: null,
         updatedAt: now,
@@ -484,7 +499,9 @@ async function processMessage(message: NotificationMessage, now: Date): Promise<
         eq(applicationNotificationMessage.id, message.id),
         eq(applicationNotificationMessage.status, 'processing'),
         eq(applicationNotificationMessage.attemptCount, message.attemptCount),
-      ))
+      )).returning({ id: applicationNotificationMessage.id })
+      if (transitioned.length === 0) return
+
       if (outcome.status === 'failed') {
         await tx.update(applicationNotificationDelivery).set({
           status: 'failed',
@@ -499,7 +516,10 @@ async function processMessage(message: NotificationMessage, now: Date): Promise<
   }
 }
 
-export async function processApplicationNotificationCycle(now = new Date()): Promise<void> {
+export async function processApplicationNotificationCycle(
+  now = new Date(),
+  sendNotification: ApplicationNotificationSender = sendApplicationNotificationEmail,
+): Promise<void> {
   const events = await claimEvents(now)
   for (const event of events) {
     try {
@@ -512,6 +532,6 @@ export async function processApplicationNotificationCycle(now = new Date()): Pro
 
   const messages = await claimMessages(now)
   for (const message of messages) {
-    await processMessage(message, now)
+    await processMessage(message, now, sendNotification)
   }
 }
