@@ -85,7 +85,8 @@ describe('Factory Careers updates identity', () => {
 
     expect(updatesPage).toContain("description: 'Review Factory Careers releases and product changes'")
     expect(updatesPage).toContain('cd /path/to/factory-careers')
-    expect(updatesPage).toContain('https://github.com/theFactoryHQ/factory-careers/releases')
+    expect(updatesPage).toContain("import { FACTORY_CAREERS_RELEASES_URL } from '~~/shared/project-links'")
+    expect(updatesPage).toContain(':href="FACTORY_CAREERS_RELEASES_URL"')
     expect(updatesPage).not.toContain('/path/to/reqcore')
     expect(updatesPage).not.toContain('caffeinebounce/factory-careers/releases')
   })

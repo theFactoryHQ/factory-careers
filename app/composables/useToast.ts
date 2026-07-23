@@ -1,4 +1,5 @@
 import type { PostHog } from 'posthog-js'
+import { FACTORY_CAREERS_NEW_ISSUE_URL } from '~~/shared/project-links'
 
 export type ToastType = 'error' | 'success' | 'warning' | 'info'
 
@@ -11,8 +12,6 @@ export interface Toast {
   link?: { label: string; href: string }
   duration?: number
 }
-
-const GITHUB_ISSUES_URL = 'https://github.com/caffeinebounce/factory-careers/issues/new'
 
 function getPostHog(): PostHog | undefined {
   try {
@@ -73,7 +72,7 @@ export function useToast() {
       details: opts?.details,
       link: {
         label: 'Report issue',
-        href: GITHUB_ISSUES_URL,
+        href: FACTORY_CAREERS_NEW_ISSUE_URL,
       },
     })
   }

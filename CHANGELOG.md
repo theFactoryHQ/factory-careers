@@ -27,6 +27,7 @@ self-hosters.
 
 ### Fixed
 
+- Kept source, release, and issue-report links consistently pointed at the Factory-owned repository.
 - Kept the application status filter synchronized with filtered and unfiltered dashboard navigation.
 - Removed the verbose search-scope helper from the job pipeline.
 - Made AI usage charts render a true rolling 30-day window with readable scales, quiet-day gaps, compact bars, period totals, and accessible daily details.
