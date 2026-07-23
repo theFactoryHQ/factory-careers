@@ -43,8 +43,8 @@ describeWithPostgres('application notification PostgreSQL behavior', () => {
     const databaseName = `careers_notifications_${suffix}`
     const capturePath = join(tmpdir(), `factory-careers-notifications-${suffix}.jsonl`)
     // PostgreSQL 14 on developer Macs cannot execute the unrelated PostgreSQL
-    // 15+ composite SET NULL migration at 0056. The notification migration only
-    // depends on schema available through 0055, so apply 0059 directly below.
+    // 15+ composite SET NULL migration at 0056. The notification migrations only
+    // depend on schema available through 0055, so apply them directly below.
     const legacyMigrations = migrationsThrough(55)
 
     try {
@@ -60,12 +60,17 @@ describeWithPostgres('application notification PostgreSQL behavior', () => {
         await client`insert into "candidate" ("id", "organization_id", "first_name", "last_name", "email") values ('historical-candidate', ${organizationId}, 'Historical', 'Candidate', ${`historical-${suffix}@example.com`})`
         await client`insert into "application" ("id", "organization_id", "candidate_id", "job_id") values ('historical-application', ${organizationId}, 'historical-candidate', ${jobId})`
 
-        const notificationMigration = readFileSync(
-          join(migrationsFolder, '0059_application_email_notifications.sql'),
-          'utf8',
-        )
-        for (const statement of notificationMigration.split('--> statement-breakpoint')) {
-          if (statement.trim()) await client.unsafe(statement)
+        for (const migrationName of [
+          '0059_application_email_notifications.sql',
+          '0060_notification_membership_snapshot_utc.sql',
+        ]) {
+          const notificationMigration = readFileSync(
+            join(migrationsFolder, migrationName),
+            'utf8',
+          )
+          for (const statement of notificationMigration.split('--> statement-breakpoint')) {
+            if (statement.trim()) await client.unsafe(statement)
+          }
         }
 
         const [historical] = await client<{ count: number }[]>`select count(*)::int as count from "application_notification_event"`
