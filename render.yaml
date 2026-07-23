@@ -17,6 +17,8 @@ services:
         value: "false"
       - key: APPLICATION_NOTIFICATION_WORKER_ENABLED
         value: "true"
+      - key: TRUST_PROXY_HEADERS
+        value: "true"
       - key: BETTER_AUTH_URL
         value: https://careers.thefactoryhq.com
       - key: NUXT_PUBLIC_SITE_URL

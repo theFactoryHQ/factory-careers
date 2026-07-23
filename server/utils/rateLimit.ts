@@ -197,15 +197,24 @@ export function createRateLimiter(config: RateLimitConfig): RateLimiter {
  * because they are trivially spoofable by direct clients. Uses the socket remote
  * address which cannot be forged at the application layer.
  *
- * If running behind a trusted reverse proxy (nginx, Cloudflare, etc.), configure
- * the proxy to overwrite (not append to) X-Forwarded-For, then set the
- * TRUSTED_PROXY_IP env var to enable header-based IP extraction.
+ * If running behind a managed ingress that owns the forwarding headers and
+ * cannot be bypassed, set TRUST_PROXY_HEADERS. For a self-hosted reverse proxy
+ * with a stable peer address, set TRUSTED_PROXY_IP instead.
  */
 function getClientIp(event: H3Event): string {
-  // Only trust proxy headers when explicitly configured via validated env schema
+  const socketIp = getRequestIP(event)
+
+  // Dynamic managed ingress mode. The deployment must overwrite the forwarded
+  // client address and prevent direct public access to this application.
+  if (env.TRUST_PROXY_HEADERS) {
+    const forwardedIp = getRequestIP(event, { xForwardedFor: true })?.trim()
+    return forwardedIp || socketIp || '0.0.0.0'
+  }
+
+  // Static self-hosted proxy mode. Only the configured socket peer can supply
+  // forwarding headers.
   const trustedProxy = env.TRUSTED_PROXY_IP
   if (trustedProxy) {
-    const socketIp = getRequestIP(event)
     if (socketIp === trustedProxy) {
       // Request came from the trusted proxy — read the forwarded header
       const forwarded = getHeader(event, 'x-forwarded-for')
@@ -220,5 +229,5 @@ function getClientIp(event: H3Event): string {
   }
 
   // Default: use the socket remote address (cannot be spoofed)
-  return getRequestIP(event) ?? '0.0.0.0'
+  return socketIp ?? '0.0.0.0'
 }

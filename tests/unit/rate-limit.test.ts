@@ -12,11 +12,22 @@ interface FakeEvent {
 }
 
 const envStub = {
+  TRUST_PROXY_HEADERS: false,
   TRUSTED_PROXY_IP: undefined as string | undefined,
 }
 
 vi.stubGlobal('env', envStub)
-vi.stubGlobal('getRequestIP', (event: FakeEvent) => event.__ip)
+vi.stubGlobal(
+  'getRequestIP',
+  (event: FakeEvent, options?: { xForwardedFor?: boolean }) => {
+    if (options?.xForwardedFor) {
+      return event.__headers['x-forwarded-for']
+        ?.split(',')[0]
+        ?.trim() || event.__ip
+    }
+    return event.__ip
+  },
+)
 vi.stubGlobal('getHeader', (event: FakeEvent, name: string) => event.__headers[name.toLowerCase()])
 vi.stubGlobal('setResponseHeaders', (event: FakeEvent, headers: Record<string, string | number>) => {
   for (const [k, v] of Object.entries(headers)) event.__resHeaders[k] = String(v)
@@ -33,6 +44,7 @@ vi.stubGlobal('createError', (opts: { statusCode: number, statusMessage?: string
 
 const { createRateLimiter } = await import('../../server/utils/rateLimit')
 const { readPositiveIntegerEnv } = await import('../../server/utils/rateLimitConfig')
+const { envSchema } = await import('../../server/utils/env')
 const TEST_RATE_LIMIT_ENV = 'REQCORE_TEST_RATE_LIMIT_MAX_REQUESTS'
 
 function makeEvent(ip = '1.2.3.4', headers: Record<string, string> = {}): FakeEvent & H3Event<EventHandlerRequest> {
@@ -40,6 +52,7 @@ function makeEvent(ip = '1.2.3.4', headers: Record<string, string> = {}): FakeEv
 }
 
 beforeEach(() => {
+  envStub.TRUST_PROXY_HEADERS = false
   envStub.TRUSTED_PROXY_IP = undefined
   delete process.env[TEST_RATE_LIMIT_ENV]
 })
@@ -208,6 +221,7 @@ describe('createRateLimiter', () => {
   })
 
   it('respects X-Forwarded-For only when TRUSTED_PROXY_IP matches the socket peer', async () => {
+    envStub.TRUST_PROXY_HEADERS = false
     envStub.TRUSTED_PROXY_IP = '127.0.0.1'
     const limiter = createRateLimiter({ windowMs: 60_000, maxRequests: 1 })
 
@@ -222,6 +236,51 @@ describe('createRateLimiter', () => {
     // Re-using the trusted hop with the same forwarded IP should now hit the limit.
     const trustedAgain = makeEvent('127.0.0.1', { 'x-forwarded-for': '203.0.113.7' })
     await expect(limiter(trustedAgain)).rejects.toMatchObject({ statusCode: 429 })
+  })
+
+  it('ignores spoofed forwarding headers in the secure default mode', async () => {
+    const limiter = createRateLimiter({ windowMs: 60_000, maxRequests: 1 })
+    const firstSocket = makeEvent('198.51.100.1', { 'x-forwarded-for': '203.0.113.7' })
+    const secondSocket = makeEvent('198.51.100.2', { 'x-forwarded-for': '203.0.113.7' })
+
+    await expect(limiter(firstSocket)).resolves.toBeUndefined()
+    await expect(limiter(secondSocket)).resolves.toBeUndefined()
+    await expect(limiter(firstSocket)).rejects.toMatchObject({ statusCode: 429 })
+  })
+
+  it('isolates forwarded clients sharing one explicitly trusted dynamic ingress', async () => {
+    envStub.TRUST_PROXY_HEADERS = true
+    const limiter = createRateLimiter({ windowMs: 60_000, maxRequests: 1 })
+    const firstClient = makeEvent('10.0.0.5', { 'x-forwarded-for': '203.0.113.7' })
+    const secondClient = makeEvent('10.0.0.5', { 'x-forwarded-for': '198.51.100.9' })
+
+    await expect(limiter(firstClient)).resolves.toBeUndefined()
+    await expect(limiter(secondClient)).resolves.toBeUndefined()
+    await expect(limiter(firstClient)).rejects.toMatchObject({ statusCode: 429 })
+  })
+
+  it('uses the first address from a trusted multi-hop forwarded chain', async () => {
+    envStub.TRUST_PROXY_HEADERS = true
+    const limiter = createRateLimiter({ windowMs: 60_000, maxRequests: 1 })
+
+    await limiter(makeEvent('10.0.0.5', {
+      'x-forwarded-for': '203.0.113.7, 10.0.0.1',
+    }))
+
+    await expect(limiter(makeEvent('10.0.0.5', {
+      'x-forwarded-for': '203.0.113.7, 10.0.0.2',
+    }))).rejects.toMatchObject({ statusCode: 429 })
+  })
+
+  it('falls back to the socket when trusted forwarding data is missing or empty', async () => {
+    envStub.TRUST_PROXY_HEADERS = true
+    const limiter = createRateLimiter({ windowMs: 60_000, maxRequests: 1 })
+
+    await limiter(makeEvent('10.0.0.5'))
+
+    await expect(limiter(makeEvent('10.0.0.5', {
+      'x-forwarded-for': ' , ',
+    }))).rejects.toMatchObject({ statusCode: 429 })
   })
 })
 
@@ -247,5 +306,28 @@ describe('readPositiveIntegerEnv', () => {
     finally {
       warn.mockRestore()
     }
+  })
+})
+
+describe('trusted proxy environment', () => {
+  const validEnv = {
+    DATABASE_URL: 'postgresql://factory-careers:test@localhost:5432/factory-careers',
+    BETTER_AUTH_SECRET: 'factory-careers-test-secret-value-32',
+    BETTER_AUTH_URL: 'http://localhost:3000',
+    S3_ENDPOINT: 'http://localhost:9000',
+    S3_ACCESS_KEY: 'factory-careers',
+    S3_SECRET_KEY: 'factory-careers-secret',
+    S3_BUCKET: 'factory-careers',
+  }
+
+  it('keeps dynamic proxy-header trust disabled by default', () => {
+    expect(envSchema.parse(validEnv).TRUST_PROXY_HEADERS).toBe(false)
+  })
+
+  it('enables dynamic proxy-header trust only from an explicit flag', () => {
+    expect(envSchema.parse({
+      ...validEnv,
+      TRUST_PROXY_HEADERS: 'true',
+    }).TRUST_PROXY_HEADERS).toBe(true)
   })
 })

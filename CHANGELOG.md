@@ -27,6 +27,7 @@ self-hosters.
 
 ### Fixed
 
+- Gave Render-hosted users independent client-IP rate-limit buckets behind the managed ingress.
 - Kept source, release, and issue-report links consistently pointed at the Factory-owned repository.
 - Kept the application status filter synchronized with filtered and unfiltered dashboard navigation.
 - Removed the verbose search-scope helper from the job pipeline.

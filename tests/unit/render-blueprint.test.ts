@@ -16,6 +16,10 @@ describe('Render blueprint', () => {
     expect(source).toMatch(/key: RECRUITING_WORKER_ENABLED\s+value: "false"/)
   })
 
+  it('trusts Render-owned forwarding headers for production rate-limit identity', () => {
+    expect(source).toMatch(/key: TRUST_PROXY_HEADERS\s+value: "true"/)
+  })
+
   it('keeps production Microsoft Calendar in app-only mode', () => {
     expect(source).toContain('key: MICROSOFT_CALENDAR_AUTH_MODE')
     expect(source).toContain('value: application')

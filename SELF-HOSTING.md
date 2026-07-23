@@ -69,3 +69,19 @@ docker run --rm \
 - Rotate `BETTER_AUTH_SECRET`, database credentials, and storage credentials if `.env` is exposed.
 - Complete `docs/operations/PRODUCTION-APPROVAL-CHECKLIST.md` before storing real candidate data.
 
+### Reverse proxies and rate-limit identity
+
+Factory Careers uses the request's socket peer for rate limiting by default.
+This is the secure setting for direct deployments because clients cannot spoof
+the TCP peer address with an HTTP header.
+
+For a self-hosted reverse proxy with a stable address, leave
+`TRUST_PROXY_HEADERS=false` and set `TRUSTED_PROXY_IP` to that exact socket-peer
+IP. Factory Careers will then accept `X-Forwarded-For` (or `X-Real-IP` as a
+fallback) only from that proxy.
+
+A dynamic managed ingress may instead set `TRUST_PROXY_HEADERS=true`, but only
+after you verify that the platform puts the real client address first in
+`X-Forwarded-For` and that clients cannot connect directly to the application
+port. Do not enable this mode on a directly reachable app: a client could send
+an arbitrary forwarding header and evade IP-based rate limits.
