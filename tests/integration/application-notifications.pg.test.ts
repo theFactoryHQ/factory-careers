@@ -187,7 +187,21 @@ describeWithPostgres('application notification PostgreSQL behavior', () => {
           values ('late-candidate', ${organizationId}, 'Late', 'Candidate', ${`late-${suffix}@example.com`})`
         await client`insert into "application" ("id", "organization_id", "candidate_id", "job_id")
           values ('late-application', ${organizationId}, 'late-candidate', ${jobId})`
-        await processApplicationNotificationCycle(new Date())
+        const [lateEventTiming] = await client<{
+          availableAt: string
+          claimable: boolean
+          cycleNow: string
+        }[]>`with cycle_clock as (
+            select date_trunc('milliseconds', clock_timestamp()) + interval '1 millisecond' as "cycleNow"
+          )
+          select event."available_at" as "availableAt", cycle_clock."cycleNow",
+            event."available_at" <= cycle_clock."cycleNow" as "claimable"
+          from "application_notification_event" as event
+          cross join cycle_clock
+          where event."application_id" = 'late-application'`
+        expect(lateEventTiming).toBeDefined()
+        expect(lateEventTiming?.claimable).toBe(true)
+        await processApplicationNotificationCycle(new Date(lateEventTiming!.cycleNow))
 
         const laterDeliveries = await client<{
           applicationId: string
