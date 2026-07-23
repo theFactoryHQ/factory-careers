@@ -6,6 +6,8 @@ import { resourceFromAttributes } from '@opentelemetry/resources'
 import type { H3Event } from 'h3'
 import { version as APP_VERSION } from '../../package.json'
 
+const FACTORY_CAREERS_SERVICE_NAME = 'factory-careers'
+
 let loggerProvider: LoggerProvider | null = null
 
 /**
@@ -24,7 +26,7 @@ export function initLoggerProvider(): void {
 
   loggerProvider = new LoggerProvider({
     resource: resourceFromAttributes({
-      'service.name': 'reqcore',
+      'service.name': FACTORY_CAREERS_SERVICE_NAME,
       'service.version': APP_VERSION,
       'deployment.environment': process.env.RAILWAY_ENVIRONMENT_NAME || 'development',
     }),
@@ -60,7 +62,7 @@ export async function shutdownLoggerProvider(): Promise<void> {
 // ─────────────────────────────────────────────
 
 function getLogger() {
-  return logs.getLogger('reqcore')
+  return logs.getLogger(FACTORY_CAREERS_SERVICE_NAME)
 }
 
 interface LogContext {
