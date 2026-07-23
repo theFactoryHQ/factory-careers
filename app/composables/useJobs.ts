@@ -1,5 +1,13 @@
 import type { Ref } from 'vue'
-import type { CreateJobRequest } from '~~/shared/job-contract'
+import type {
+  CreateJobRequest,
+  JobExperienceLevel,
+  JobRemoteStatus,
+  JobStatus,
+  JobType,
+} from '~~/shared/job-contract'
+import type { FactoryDivision, JobDescriptionBlock } from '~~/shared/job-listing-structure'
+import type { PipelineCounts } from '~~/shared/application-status'
 
 export type JobsListQuery = {
   page?: number
@@ -7,11 +15,80 @@ export type JobsListQuery = {
   status?: string
 }
 
+export type JobsListItem = {
+  id: string
+  title: string
+  slug: string
+  description: string | null
+  divisions: FactoryDivision[]
+  descriptionBlocks: JobDescriptionBlock[]
+  location: string | null
+  type: JobType
+  status: JobStatus
+  experienceLevel: JobExperienceLevel | null
+  remoteStatus: JobRemoteStatus | null
+  activeFrom: string
+  createdAt: string
+  updatedAt: string
+  pipeline: PipelineCounts
+}
+
 export type JobsListResponse = {
-  data: Array<Record<string, unknown>>
+  data: JobsListItem[]
   total: number
   page?: number
   limit?: number
+}
+
+type JobsPageFetcher<T> = (
+  page: number,
+  limit: number,
+) => Promise<{
+  data: T[]
+  total: number
+  page?: number
+  limit?: number
+}>
+
+function assertPositiveInteger(value: number, label: string) {
+  if (!Number.isInteger(value) || value < 1) {
+    throw new RangeError(`${label} must be a positive integer`)
+  }
+}
+
+/**
+ * Load every page from the bounded jobs list API while preserving API page
+ * order. Remaining pages are requested in small parallel batches.
+ */
+export async function fetchAllJobsPages<T>(
+  fetchPage: JobsPageFetcher<T>,
+  pageSize = 100,
+  batchSize = 4,
+) {
+  assertPositiveInteger(pageSize, 'pageSize')
+  assertPositiveInteger(batchSize, 'batchSize')
+
+  const firstPage = await fetchPage(1, pageSize)
+  const totalPages = Math.max(1, Math.ceil(firstPage.total / pageSize))
+  const pages: T[][] = [firstPage.data]
+
+  for (let first = 2; first <= totalPages; first += batchSize) {
+    const pageNumbers = Array.from(
+      { length: Math.min(batchSize, totalPages - first + 1) },
+      (_, index) => first + index,
+    )
+    const batch = await Promise.all(
+      pageNumbers.map(page => fetchPage(page, pageSize)),
+    )
+    pages.push(...batch.map(response => response.data))
+  }
+
+  return {
+    data: pages.flat(),
+    total: firstPage.total,
+    page: 1,
+    limit: pageSize,
+  }
 }
 
 /** Stable Nuxt payload key for a /api/jobs query object. */
@@ -138,6 +215,36 @@ export function useJobs(options?: {
     refresh,
     createJob,
     deleteJob,
+  }
+}
+
+/** Complete, cached job inventory for dashboard-wide client filtering. */
+export function useAllJobs() {
+  const requestFetch = useRequestFetch()
+  const { data, status: fetchStatus, error, refresh } = useAsyncData(
+    'jobs-all',
+    () => fetchAllJobsPages(
+      (page, limit) => requestFetch<JobsListResponse>('/api/jobs', {
+        query: { page, limit },
+      }),
+    ),
+    {
+      getCachedData: getSwrCachedData,
+    },
+  )
+
+  watchFetchSwrStamp(data)
+
+  const jobs = computed(() => data.value?.data ?? [])
+  const total = computed(() => data.value?.total ?? 0)
+
+  return {
+    data,
+    jobs,
+    total,
+    fetchStatus,
+    error,
+    refresh,
   }
 }
 

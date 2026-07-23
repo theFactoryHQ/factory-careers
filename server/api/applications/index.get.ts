@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import type { z } from 'zod'
 import { application, applicationSearchDocument, candidate, job } from '../../database/schema'
 import {
@@ -48,6 +48,29 @@ const getCachedApplications = defineOrgScopedCachedFunction(
     }
 
     const where = and(...conditions)
+    const direction = query.sortDir === 'asc' ? asc : desc
+    const scoreWithNullFallback = sql<number>`coalesce(${application.score}, -1)`
+    const orderBy = (() => {
+      switch (query.sortBy) {
+        case 'name':
+          return [
+            direction(candidate.firstName),
+            direction(candidate.lastName),
+            direction(application.id),
+          ]
+        case 'email':
+          return [direction(candidate.email), direction(application.id)]
+        case 'job':
+          return [direction(job.title), direction(application.id)]
+        case 'status':
+          return [direction(application.status), direction(application.id)]
+        case 'score':
+          return [direction(scoreWithNullFallback), direction(application.id)]
+        case 'created':
+          return [direction(application.createdAt), direction(application.id)]
+      }
+    })()
+
     let rowsQuery = db
       .select({
         id: application.id,
@@ -87,7 +110,7 @@ const getCachedApplications = defineOrgScopedCachedFunction(
 
     const rows = await rowsQuery
       .where(where)
-      .orderBy(desc(application.createdAt))
+      .orderBy(...orderBy)
       .limit(query.limit)
       .offset(offset)
 

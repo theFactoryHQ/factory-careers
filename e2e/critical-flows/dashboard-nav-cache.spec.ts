@@ -1,4 +1,9 @@
 import { test, expect } from '../fixtures'
+import {
+  createApplication,
+  createCandidate,
+  createJob,
+} from '../helpers/recruiting-fixtures'
 
 test.describe('Dashboard list keepalive', () => {
   test('candidates search survives candidates → applications → candidates navigation', async ({ authenticatedPage }) => {
@@ -24,10 +29,21 @@ test.describe('Dashboard list keepalive', () => {
   test('application status follows filtered and unfiltered dashboard entry points', async ({ authenticatedPage }) => {
     const page = authenticatedPage
     const topNav = page.getByRole('banner')
+    const runId = Date.now()
+    const job = await createJob(page.request, `Dashboard navigation ${runId}`)
+    const candidate = await createCandidate(page.request, {
+      firstName: 'Dashboard',
+      lastName: 'Navigation',
+      email: `dashboard-navigation-${runId}@test.local`,
+    })
+    await createApplication(page.request, {
+      candidateId: candidate.id,
+      jobId: job.id,
+    })
 
     await page.goto('/dashboard/applications?status=screening')
     await page.waitForLoadState('networkidle')
-    await page.getByRole('button', { name: 'Filters' }).click()
+    await page.getByRole('button', { name: /^Filters/ }).click()
 
     let filterDrawer = page.getByRole('dialog', { name: 'Filter applications' })
     await expect(filterDrawer.getByRole('button', { name: 'Screening' })).toHaveClass(/is-active/)
@@ -38,7 +54,7 @@ test.describe('Dashboard list keepalive', () => {
 
     await page.getByRole('main').getByRole('link', { name: /Applications.*Total received/i }).click()
     await expect(page).toHaveURL(/\/dashboard\/applications$/)
-    await page.getByRole('button', { name: 'Filters' }).click()
+    await page.getByRole('button', { name: /^Filters/ }).click()
 
     filterDrawer = page.getByRole('dialog', { name: 'Filter applications' })
     await expect(filterDrawer.getByRole('button', { name: 'Any' })).toHaveClass(/is-active/)
@@ -49,7 +65,7 @@ test.describe('Dashboard list keepalive', () => {
 
     await page.getByRole('main').getByRole('link', { name: /To Review/i }).click()
     await expect(page).toHaveURL(/\/dashboard\/applications\?status=new$/)
-    await page.getByRole('button', { name: 'Filters' }).click()
+    await page.getByRole('button', { name: /^Filters/ }).click()
 
     filterDrawer = page.getByRole('dialog', { name: 'Filter applications' })
     await expect(filterDrawer.getByRole('button', { name: 'New' })).toHaveClass(/is-active/)

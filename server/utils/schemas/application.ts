@@ -31,6 +31,8 @@ export const applicationQuerySchema = paginationQuerySchema().extend({
   search: z.string().trim().min(3, 'Search must be at least 3 characters').max(200).optional(),
   /** JSON-encoded array of { propertyDefinitionId, op, value } filters */
   propertyFilters: z.string().optional(),
+  sortBy: z.enum(['name', 'email', 'job', 'status', 'score', 'created']).default('created'),
+  sortDir: z.enum(['asc', 'desc']).default('desc'),
 })
 
 /** Reusable schema for `:id` route params */

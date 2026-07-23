@@ -1,4 +1,4 @@
-import { eq, and, or, ilike, desc, sql, gte, lte } from 'drizzle-orm'
+import { eq, and, or, ilike, asc, desc, sql, gte, lte } from 'drizzle-orm'
 import type { z } from 'zod'
 import { candidate, application } from '../../database/schema'
 import {
@@ -52,6 +52,28 @@ const getCachedCandidates = defineOrgScopedCachedFunction(
     }
 
     const where = and(...conditions)
+    const applicationCount = sql<number>`count(${application.id})::int`
+    const direction = query.sortDir === 'asc' ? asc : desc
+    const phoneWithNullFallback = sql<string>`coalesce(${candidate.phone}, '')`
+
+    const orderBy = (() => {
+      switch (query.sortBy) {
+        case 'name':
+          return [
+            direction(candidate.firstName),
+            direction(candidate.lastName),
+            direction(candidate.id),
+          ]
+        case 'email':
+          return [direction(candidate.email), direction(candidate.id)]
+        case 'phone':
+          return [direction(phoneWithNullFallback), direction(candidate.id)]
+        case 'applications':
+          return [direction(applicationCount), direction(candidate.id)]
+        case 'created':
+          return [direction(candidate.createdAt), direction(candidate.id)]
+      }
+    })()
 
     const [data, total] = await Promise.all([
       db
@@ -67,13 +89,16 @@ const getCachedCandidates = defineOrgScopedCachedFunction(
           quickNotes: candidate.quickNotes,
           createdAt: candidate.createdAt,
           updatedAt: candidate.updatedAt,
-          applicationCount: sql<number>`count(${application.id})::int`,
+          applicationCount,
         })
         .from(candidate)
-        .leftJoin(application, eq(application.candidateId, candidate.id))
+        .leftJoin(application, and(
+          eq(application.candidateId, candidate.id),
+          eq(application.organizationId, orgId),
+        ))
         .where(where)
         .groupBy(candidate.id)
-        .orderBy(desc(candidate.createdAt))
+        .orderBy(...orderBy)
         .limit(query.limit)
         .offset(offset),
       db.$count(candidate, where),
