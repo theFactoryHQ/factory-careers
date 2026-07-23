@@ -102,7 +102,7 @@ jobs:
 
       - name: Audit dependencies (high severity+)
         id: audit
-        run: npm audit --omit=dev --audit-level=high
+        run: npm audit --audit-level=high
 
       - name: Validate production environment contract
         id: production_env
