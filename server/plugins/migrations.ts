@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
 import * as schema from '../database/schema'
+import { backfillSsoProviderClientSecrets } from '../utils/ssoProviderSecrets'
 
 const MIGRATION_LOCK_ID = 123456789
 
@@ -10,7 +11,7 @@ interface MigrationSessionDependencies<Client, Database> {
   createClient: (databaseUrl: string, options: { max: 1 }) => Client
   createDatabase: (client: Client) => Database
   execute: (database: Database, statement: string) => Promise<unknown>
-  migrate: (database: Database) => Promise<void>
+  migrate: (database: Database, client: Client) => Promise<void>
   close: (client: Client) => Promise<void>
 }
 
@@ -40,7 +41,7 @@ export async function runMigrationsOnSession<Client, Database>({
     lockAcquired = true
 
     await execute(database, 'SET client_min_messages TO warning')
-    await runMigrations(database)
+    await runMigrations(database, client)
     await execute(database, 'SET client_min_messages TO notice')
   } catch (error) {
     failed = true
@@ -74,11 +75,14 @@ export default defineNitroPlugin(async () => {
   // Skip during build-time prerendering — database isn't available
   if (import.meta.prerender) return
 
-  // Temporary bootstrap services can opt out until DATABASE_URL is wired.
-  if (env.SKIP_RUNTIME_MIGRATIONS || process.env.RAILWAY_ENVIRONMENT_ID) {
+  // Temporary bootstrap services can opt out of schema migrations. The SSO
+  // secret backfill still runs because it is a key-dependent data migration
+  // that cannot be represented safely in SQL.
+  const skipSchemaMigrations =
+    env.SKIP_RUNTIME_MIGRATIONS || Boolean(process.env.RAILWAY_ENVIRONMENT_ID)
+  if (skipSchemaMigrations) {
     console.log('[Factory Careers] Skipping runtime migrations')
     logInfo('migrations.skipped_runtime')
-    return
   }
 
   try {
@@ -91,10 +95,23 @@ export default defineNitroPlugin(async () => {
       execute: async (database, statement) => {
         await database.execute(statement)
       },
-      migrate: async (database) => {
-        console.log('[Factory Careers] Running database migrations...')
-        await migrate(database, {
-          migrationsFolder: './server/database/migrations',
+      migrate: async (database, client) => {
+        if (!skipSchemaMigrations) {
+          console.log('[Factory Careers] Running database migrations...')
+          await migrate(database, {
+            migrationsFolder: './server/database/migrations',
+          })
+        }
+
+        const backfill = await backfillSsoProviderClientSecrets(
+          client,
+          env.BETTER_AUTH_SECRET,
+        )
+        logInfo('sso_provider_secrets.backfill_completed', {
+          scanned_count: backfill.scanned,
+          encrypted_count: backfill.encrypted,
+          already_encrypted_count: backfill.alreadyEncrypted,
+          without_client_secret_count: backfill.withoutClientSecret,
         })
       },
       close: async (client) => {

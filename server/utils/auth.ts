@@ -15,6 +15,7 @@ import {
   uniqueTrustedOrigins,
 } from "./authOrigins";
 import { createEnterpriseSsoOptions } from "./ssoProvisioning";
+import { wrapSsoProviderSecretAdapter } from "./ssoProviderSecrets";
 import * as schema from "../database/schema";
 
 type Auth = ReturnType<typeof betterAuth>;
@@ -191,10 +192,13 @@ function getAuth(): Auth {
     _auth = betterAuth({
       baseURL,
       trustedOrigins: resolveTrustedOrigins(baseURL),
-      database: drizzleAdapter(db, {
-        provider: "pg",
-        schema,
-      }),
+      database: wrapSsoProviderSecretAdapter(
+        drizzleAdapter(db, {
+          provider: "pg",
+          schema,
+        }),
+        env.BETTER_AUTH_SECRET,
+      ),
       secret: env.BETTER_AUTH_SECRET,
 
       // ── Session Hardening ────────────────────────────────────

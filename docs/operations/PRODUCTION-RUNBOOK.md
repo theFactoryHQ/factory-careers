@@ -83,6 +83,56 @@ unexpected cycle-level exception. These events never contain candidate names,
 addresses, template content, or raw provider errors. Leave failed rows in place
 for incident review; do not manually alter attempts or leases.
 
+## SSO Provider Secret Encryption
+
+Organization OIDC client secrets in `sso_provider.oidc_config` are encrypted
+with randomized AES-256-GCM ciphertext under a domain-separated key derived from
+`BETTER_AUTH_SECRET`. Better Auth receives the plaintext only after the database
+adapter decrypts a provider in memory. Registration and management responses
+must expose neither the plaintext nor the stored ciphertext.
+
+Every runtime startup runs an idempotent, 100-row paginated backfill after
+schema migrations while holding PostgreSQL advisory locks. Wait for
+`sso_provider_secrets.backfill_completed` before completing a rollout. Its
+attributes contain counts only: `scanned_count`, `encrypted_count`,
+`already_encrypted_count`, and `without_client_secret_count`.
+
+Verify completion without selecting credential values:
+
+```sql
+SELECT
+  count(*) FILTER (
+    WHERE oidc_config::jsonb ? 'clientSecret'
+  ) AS providers_with_client_secrets,
+  count(*) FILTER (
+    WHERE oidc_config::jsonb ->> '_factoryCareersClientSecretEncryption' = 'v1'
+  ) AS encrypted_client_secrets
+FROM sso_provider
+WHERE oidc_config IS NOT NULL;
+```
+
+The two counts must match. Do not select, copy, or log `clientSecret` values.
+Malformed configuration, corrupted ciphertext, or a mismatched
+`BETTER_AUTH_SECRET` fails startup closed with `migrations.failed`; never bypass
+the backfill or edit ciphertext manually. Restore the prior application secret
+and redeploy before investigating provider-by-provider.
+
+`BETTER_AUTH_SECRET` rotation also invalidates other Better Auth state and
+cannot decrypt existing SSO ciphertext. Before a planned rotation:
+
+1. Confirm a non-SSO owner account can administer every affected organization.
+2. Record each provider's non-secret settings and confirm its current client
+   secret can be retrieved or replaced at the identity provider.
+3. In a maintenance window, delete the SSO providers through the supported
+   organization settings flow while the old application secret is active.
+4. Rotate `BETTER_AUTH_SECRET`, redeploy, and re-register each provider from the
+   identity provider's source credentials.
+5. Re-run the count query and complete a real OIDC sign-in and callback smoke
+   test before ending the maintenance window.
+
+If the source credentials are unavailable, do not rotate the application
+secret until each identity-provider credential has been replaced safely.
+
 ## Validation
 
 ```bash
