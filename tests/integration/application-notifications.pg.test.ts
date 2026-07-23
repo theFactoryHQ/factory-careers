@@ -76,6 +76,14 @@ describeWithPostgres('application notification PostgreSQL behavior', () => {
         await client`insert into "application_notification_subscription" (
           "id", "organization_id", "recipient_kind", "cadence", "time_zone"
         ) values ('inbox-one', ${organizationId}, 'hiring_inbox', 'weekly', 'America/New_York')`
+        const [defaultInbox] = await client<{
+          cadence: string
+          deliveryTime: string
+          weeklyDay: number
+          monthlyDay: number
+        }[]>`select "cadence", "delivery_time" as "deliveryTime", "weekly_day" as "weeklyDay", "monthly_day" as "monthlyDay"
+          from "application_notification_subscription" where "id" = 'inbox-one'`
+        expect(defaultInbox).toEqual({ cadence: 'weekly', deliveryTime: '09:00', weeklyDay: 1, monthlyDay: 1 })
         await expect(client`insert into "application_notification_subscription" (
           "id", "organization_id", "recipient_kind", "cadence", "time_zone"
         ) values ('inbox-two', ${organizationId}, 'hiring_inbox', 'daily', 'UTC')`).rejects.toBeTruthy()
@@ -86,17 +94,22 @@ describeWithPostgres('application notification PostgreSQL behavior', () => {
         await client`insert into "member" ("id", "user_id", "organization_id", "role")
           values ('notification-member', 'notification-user', ${organizationId}, 'member')`
         await client`insert into "application_notification_subscription" (
-          "id", "organization_id", "recipient_kind", "user_id", "cadence", "time_zone"
-        ) values ('member-one', ${organizationId}, 'member', 'notification-user', 'immediate', 'America/New_York')`
+          "id", "organization_id", "recipient_kind", "user_id", "member_id", "cadence", "time_zone"
+        ) values ('member-one', ${organizationId}, 'member', 'notification-user', 'notification-member', 'immediate', 'America/New_York')`
         await client`insert into "candidate" ("id", "organization_id", "first_name", "last_name", "email")
           values ('second-candidate', ${organizationId}, 'Second', 'Candidate', ${`second-${suffix}@example.com`})`
         await client`insert into "application" ("id", "organization_id", "candidate_id", "job_id")
           values ('second-application', ${organizationId}, 'second-candidate', ${jobId})`
 
+        const changedInboxEmail = `changed-${suffix}@example.com`
+        await client`update "application_notification_subscription" set
+          "recipient_email" = ${changedInboxEmail}, "cadence" = 'daily', "time_zone" = 'UTC', "updated_at" = now()
+          where "id" = 'inbox-one'`
+
         Object.assign(process.env, {
           NODE_ENV: 'test',
           DATABASE_URL: databaseUrl(databaseName),
-          BETTER_AUTH_SECRET: 'notification-integration-secret-at-least-32-characters',
+          BETTER_AUTH_SECRET: 'a'.repeat(32),
           BETTER_AUTH_URL: 'http://localhost:3000',
           S3_ENDPOINT: 'http://localhost:9000',
           S3_ACCESS_KEY: 'test',
@@ -120,13 +133,71 @@ describeWithPostgres('application notification PostgreSQL behavior', () => {
           { applicationId: 'second-application', recipientKey: 'hiring_inbox', status: 'pending' },
           { applicationId: 'second-application', recipientKey: 'member:notification-user', status: 'completed' },
         ])
-        const messages = await client<{ cadence: string, status: string }[]>`
-          select "cadence", "status" from "application_notification_message" order by "cadence"`
+        const messages = await client<{ cadence: string, recipientEmail: string, status: string }[]>`
+          select "cadence", "recipient_email" as "recipientEmail", "status"
+          from "application_notification_message" order by "cadence"`
         expect(messages).toEqual([
-          { cadence: 'immediate', status: 'completed' },
-          { cadence: 'weekly', status: 'pending' },
+          { cadence: 'immediate', recipientEmail: sharedEmail, status: 'completed' },
+          { cadence: 'weekly', recipientEmail: sharedEmail, status: 'pending' },
         ])
         expect(readFileSync(capturePath, 'utf8')).toContain(`New application: Second Candidate for Operator`)
+
+        await client`update "application_notification_message" set "status" = 'completed', "completed_at" = now()
+          where "cadence" = 'weekly'`
+        await client`update "application_notification_delivery" set "status" = 'completed', "completed_at" = now()
+          where "cadence" = 'weekly'`
+        await client`delete from "member" where "id" = 'notification-member'`
+        const [subscriptionsAfterRemoval] = await client<{ count: number }[]>`
+          select count(*)::int as count from "application_notification_subscription"
+          where "recipient_kind" = 'member' and "user_id" = 'notification-user'`
+        expect(subscriptionsAfterRemoval?.count).toBe(0)
+        await client`insert into "member" ("id", "user_id", "organization_id", "role")
+          values ('notification-member-rejoined', 'notification-user', ${organizationId}, 'member')`
+
+        await client`insert into "candidate" ("id", "organization_id", "first_name", "last_name", "email")
+          values ('changed-config-candidate', ${organizationId}, 'Changed', 'Config', ${`changed-config-${suffix}@example.com`})`
+        await client`insert into "application" ("id", "organization_id", "candidate_id", "job_id")
+          values ('changed-config-application', ${organizationId}, 'changed-config-candidate', ${jobId})`
+
+        await client`update "application_notification_subscription" set
+          "recipient_email" = null, "cadence" = 'weekly', "time_zone" = 'America/New_York', "updated_at" = now()
+          where "id" = 'inbox-one'`
+        await client`insert into "candidate" ("id", "organization_id", "first_name", "last_name", "email")
+          values ('late-candidate', ${organizationId}, 'Late', 'Candidate', ${`late-${suffix}@example.com`})`
+        await client`insert into "application" ("id", "organization_id", "candidate_id", "job_id")
+          values ('late-application', ${organizationId}, 'late-candidate', ${jobId})`
+        await processApplicationNotificationCycle(new Date())
+
+        const laterDeliveries = await client<{
+          applicationId: string
+          recipientKey: string
+          recipientEmail: string
+          status: string
+        }[]>`select "application_id" as "applicationId", "recipient_key" as "recipientKey",
+          "recipient_email" as "recipientEmail", "status"
+          from "application_notification_delivery"
+          where "application_id" in ('changed-config-application', 'late-application')
+          order by "application_id", "recipient_key"`
+        expect(laterDeliveries).toEqual([
+          {
+            applicationId: 'changed-config-application',
+            recipientKey: 'hiring_inbox',
+            recipientEmail: changedInboxEmail,
+            status: 'pending',
+          },
+          {
+            applicationId: 'late-application',
+            recipientKey: 'hiring_inbox',
+            recipientEmail: sharedEmail,
+            status: 'completed',
+          },
+        ])
+        const recoveryMessages = await client<{ count: number }[]>`
+          select count(*)::int as count from "application_notification_message"
+          where "dedupe_key" like '%:recovery:application-notification:late-application'
+            and "status" = 'completed'`
+        expect(recoveryMessages[0]?.count).toBe(1)
+        expect(readFileSync(capturePath, 'utf8')).toContain('Late Candidate')
 
         await client.unsafe(`do $$ begin
           if not exists (select 1 from pg_roles where rolname = 'anon') then
@@ -134,12 +205,22 @@ describeWithPostgres('application notification PostgreSQL behavior', () => {
           end if;
         end $$`)
         await client.unsafe('grant usage on schema public to anon')
-        await client.unsafe('grant select on application_notification_event to anon')
+        await client.unsafe('grant select on application_notification_event, application_notification_subscription, application_notification_delivery, application_notification_message to anon')
         const anonymous = await client.begin(async (tx) => {
           await tx.unsafe('set local role anon')
-          return tx<{ count: number }[]>`select count(*)::int as count from "application_notification_event"`
+          return tx<{ tableName: string, count: number }[]>`
+            select 'delivery' as "tableName", count(*)::int as count from "application_notification_delivery"
+            union all select 'event', count(*)::int from "application_notification_event"
+            union all select 'message', count(*)::int from "application_notification_message"
+            union all select 'subscription', count(*)::int from "application_notification_subscription"
+            order by "tableName"`
         })
-        expect(anonymous[0]?.count).toBe(0)
+        expect(anonymous).toEqual([
+          { tableName: 'delivery', count: 0 },
+          { tableName: 'event', count: 0 },
+          { tableName: 'message', count: 0 },
+          { tableName: 'subscription', count: 0 },
+        ])
       }
       finally {
         await client.end()

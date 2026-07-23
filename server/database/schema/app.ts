@@ -13,9 +13,10 @@ import {
   foreignKey,
   primaryKey,
   numeric,
+  check,
 } from 'drizzle-orm/pg-core'
 import { relations, sql } from 'drizzle-orm'
-import { organization, user } from './auth'
+import { member, organization, user } from './auth'
 import type { ScoringBand } from '~~/shared/scoring-bands'
 import type { FactoryDivision, JobDescriptionBlock } from '~~/shared/job-listing-structure'
 
@@ -103,6 +104,29 @@ export const applicationNotificationRecipientKindEnum = pgEnum('application_noti
   'hiring_inbox',
   'member',
 ])
+
+export type ApplicationNotificationSubscriptionSnapshot = {
+  defaultTimeZone: string
+  inbox: null | {
+    recipientEmail: string | null
+    cadence: 'immediate' | 'daily' | 'weekly' | 'monthly' | 'off'
+    timeZone: string
+    deliveryTime: string
+    weeklyDay: number
+    monthlyDay: number
+  }
+  members: Array<{
+    userId: string
+    memberId: string
+    recipientEmail: string
+    membershipCreatedAt: string
+    cadence: 'immediate' | 'daily' | 'weekly' | 'monthly' | 'off'
+    timeZone: string
+    deliveryTime: string
+    weeklyDay: number
+    monthlyDay: number
+  }>
+}
 
 // ─────────────────────────────────────────────
 // ATS Domain Tables — ALL scoped by organizationId
@@ -217,6 +241,7 @@ export const applicationNotificationSubscription = pgTable('application_notifica
   organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
   recipientKind: applicationNotificationRecipientKindEnum('recipient_kind').notNull(),
   userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+  memberId: text('member_id').references(() => member.id, { onDelete: 'cascade' }),
   recipientEmail: text('recipient_email'),
   cadence: applicationNotificationCadenceEnum('cadence').notNull(),
   timeZone: text('time_zone').notNull(),
@@ -228,6 +253,14 @@ export const applicationNotificationSubscription = pgTable('application_notifica
 }, (t) => ([
   index('application_notification_subscription_organization_id_idx').on(t.organizationId),
   index('application_notification_subscription_user_id_idx').on(t.userId),
+  index('application_notification_subscription_member_id_idx').on(t.memberId),
+  check('application_notification_subscription_recipient_check', sql`
+    (${t.recipientKind} = 'hiring_inbox' AND ${t.userId} IS NULL AND ${t.memberId} IS NULL)
+    OR (${t.recipientKind} = 'member' AND ${t.userId} IS NOT NULL AND ${t.memberId} IS NOT NULL AND ${t.recipientEmail} IS NULL)
+  `),
+  check('application_notification_subscription_delivery_time_check', sql`${t.deliveryTime} ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$'`),
+  check('application_notification_subscription_weekly_day_check', sql`${t.weeklyDay} BETWEEN 1 AND 7`),
+  check('application_notification_subscription_monthly_day_check', sql`${t.monthlyDay} BETWEEN 1 AND 28`),
   uniqueIndex('application_notification_subscription_inbox_unique_idx')
     .on(t.organizationId)
     .where(sql`${t.recipientKind} = 'hiring_inbox'`),
@@ -244,6 +277,7 @@ export const applicationNotificationEvent = pgTable('application_notification_ev
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
   applicationId: text('application_id').notNull().references(() => application.id, { onDelete: 'cascade' }),
+  subscriptionSnapshot: jsonb('subscription_snapshot').$type<ApplicationNotificationSubscriptionSnapshot>().notNull(),
   status: processingTaskStatusEnum('status').notNull().default('pending'),
   attemptCount: integer('attempt_count').notNull().default(0),
   maxAttempts: integer('max_attempts').notNull().default(5),
@@ -271,9 +305,11 @@ export const applicationNotificationMessage = pgTable('application_notification_
   recipientKey: text('recipient_key').notNull(),
   recipientKind: applicationNotificationRecipientKindEnum('recipient_kind').notNull(),
   userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+  memberId: text('member_id'),
   recipientEmail: text('recipient_email').notNull(),
   cadence: applicationNotificationCadenceEnum('cadence').notNull(),
   timeZone: text('time_zone').notNull(),
+  configurationKey: text('configuration_key').notNull(),
   scheduledFor: timestamp('scheduled_for', { withTimezone: true }).notNull(),
   dedupeKey: text('dedupe_key').notNull(),
   status: processingTaskStatusEnum('status').notNull().default('pending'),
@@ -289,6 +325,7 @@ export const applicationNotificationMessage = pgTable('application_notification_
 }, (t) => ([
   index('application_notification_message_organization_id_idx').on(t.organizationId),
   index('application_notification_message_user_id_idx').on(t.userId),
+  index('application_notification_message_member_id_idx').on(t.memberId),
   uniqueIndex('application_notification_message_dedupe_key_idx').on(t.dedupeKey),
   index('application_notification_message_runnable_idx')
     .on(t.status, t.availableAt)
@@ -308,8 +345,10 @@ export const applicationNotificationDelivery = pgTable('application_notification
   recipientKey: text('recipient_key').notNull(),
   recipientKind: applicationNotificationRecipientKindEnum('recipient_kind').notNull(),
   userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+  memberId: text('member_id'),
   recipientEmail: text('recipient_email').notNull(),
   cadence: applicationNotificationCadenceEnum('cadence').notNull(),
+  configurationKey: text('configuration_key').notNull(),
   scheduledFor: timestamp('scheduled_for', { withTimezone: true }).notNull(),
   status: processingTaskStatusEnum('status').notNull().default('pending'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -321,6 +360,7 @@ export const applicationNotificationDelivery = pgTable('application_notification
   index('application_notification_delivery_application_id_idx').on(t.applicationId),
   index('application_notification_delivery_message_id_idx').on(t.messageId),
   index('application_notification_delivery_user_id_idx').on(t.userId),
+  index('application_notification_delivery_member_id_idx').on(t.memberId),
   uniqueIndex('application_notification_delivery_event_recipient_unique_idx').on(t.eventId, t.recipientKey),
   index('application_notification_delivery_due_idx')
     .on(t.status, t.scheduledFor)

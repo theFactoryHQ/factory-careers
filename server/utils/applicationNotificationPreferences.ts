@@ -3,6 +3,7 @@ import {
   applicationNotificationDelivery,
   applicationNotificationMessage,
   applicationNotificationSubscription,
+  member,
   orgSettings,
 } from '../database/schema'
 import { db } from './db'
@@ -16,6 +17,16 @@ import {
 } from '~~/shared/application-notifications'
 
 const DEFAULT_TIME_ZONE = 'America/New_York'
+
+export function normalizeHiringInboxRecipient(recipientEmail: string | null | undefined): {
+  recipientEmail: string
+  usesEnvironmentFallback: boolean
+} {
+  const normalized = recipientEmail?.trim().toLowerCase()
+  return normalized
+    ? { recipientEmail: normalized, usesEnvironmentFallback: false }
+    : { recipientEmail: env.FACTORY_CAREERS_HIRING_INBOX, usesEnvironmentFallback: true }
+}
 
 export type PersonalApplicationNotificationResponse = ApplicationNotificationPreference & {
   nextDeliveryAt: string | null
@@ -48,13 +59,21 @@ export async function getPersonalApplicationNotificationPreference(input: {
   now?: Date
 }): Promise<PersonalApplicationNotificationResponse> {
   const [subscription, defaultTimeZone] = await Promise.all([
-    db.query.applicationNotificationSubscription.findFirst({
-      where: and(
+    db.select({
+      cadence: applicationNotificationSubscription.cadence,
+      timeZone: applicationNotificationSubscription.timeZone,
+      deliveryTime: applicationNotificationSubscription.deliveryTime,
+      weeklyDay: applicationNotificationSubscription.weeklyDay,
+      monthlyDay: applicationNotificationSubscription.monthlyDay,
+    }).from(applicationNotificationSubscription)
+      .innerJoin(member, eq(member.id, applicationNotificationSubscription.memberId))
+      .where(and(
         eq(applicationNotificationSubscription.organizationId, input.organizationId),
         eq(applicationNotificationSubscription.recipientKind, 'member'),
         eq(applicationNotificationSubscription.userId, input.userId),
-      ),
-    }),
+        eq(member.organizationId, input.organizationId),
+        eq(member.userId, input.userId),
+      )).limit(1).then(rows => rows[0]),
     getOrganizationNotificationTimeZone(input.organizationId),
   ])
 
@@ -100,13 +119,13 @@ export async function getHiringInboxApplicationNotificationSettings(input: {
         ...DEFAULT_HIRING_INBOX_NOTIFICATION_PREFERENCE,
         timeZone: defaultTimeZone,
       }
-  const usesEnvironmentFallback = !subscription?.recipientEmail
+  const recipient = normalizeHiringInboxRecipient(subscription?.recipientEmail)
 
   return {
     ...preference,
-    recipientEmail: subscription?.recipientEmail ?? env.FACTORY_CAREERS_HIRING_INBOX,
+    recipientEmail: recipient.recipientEmail,
     nextDeliveryAt: nextDeliveryAt(preference, input.now),
-    usesEnvironmentFallback,
+    usesEnvironmentFallback: recipient.usesEnvironmentFallback,
   }
 }
 
@@ -114,15 +133,7 @@ async function cancelUnsentForRecipient(
   executor: Parameters<Parameters<typeof db.transaction>[0]>[0],
   input: { organizationId: string, recipientKey: string, now: Date },
 ): Promise<void> {
-  await executor.update(applicationNotificationDelivery)
-    .set({ status: 'cancelled', completedAt: input.now, updatedAt: input.now })
-    .where(and(
-      eq(applicationNotificationDelivery.organizationId, input.organizationId),
-      eq(applicationNotificationDelivery.recipientKey, input.recipientKey),
-      inArray(applicationNotificationDelivery.status, ['pending', 'processing']),
-    ))
-
-  await executor.update(applicationNotificationMessage)
+  const cancelledMessages = await executor.update(applicationNotificationMessage)
     .set({
       status: 'cancelled',
       leaseExpiresAt: null,
@@ -133,8 +144,19 @@ async function cancelUnsentForRecipient(
     .where(and(
       eq(applicationNotificationMessage.organizationId, input.organizationId),
       eq(applicationNotificationMessage.recipientKey, input.recipientKey),
-      inArray(applicationNotificationMessage.status, ['pending', 'processing']),
-    ))
+      eq(applicationNotificationMessage.status, 'pending'),
+    )).returning({ id: applicationNotificationMessage.id })
+
+  if (cancelledMessages.length > 0) {
+    await executor.update(applicationNotificationDelivery)
+      .set({ status: 'cancelled', completedAt: input.now, updatedAt: input.now })
+      .where(and(
+        eq(applicationNotificationDelivery.organizationId, input.organizationId),
+        eq(applicationNotificationDelivery.recipientKey, input.recipientKey),
+        eq(applicationNotificationDelivery.status, 'pending'),
+        inArray(applicationNotificationDelivery.messageId, cancelledMessages.map(row => row.id)),
+      ))
+  }
 }
 
 export async function savePersonalApplicationNotificationPreference(input: {
@@ -145,6 +167,12 @@ export async function savePersonalApplicationNotificationPreference(input: {
 }): Promise<PersonalApplicationNotificationResponse> {
   const now = input.now ?? new Date()
   await db.transaction(async (tx) => {
+    const [membership] = await tx.select({ id: member.id }).from(member).where(and(
+      eq(member.organizationId, input.organizationId),
+      eq(member.userId, input.userId),
+    )).limit(1)
+    if (!membership) throw new Error('active_membership_required')
+
     if (input.preference.cadence === 'off') {
       await tx.delete(applicationNotificationSubscription).where(and(
         eq(applicationNotificationSubscription.organizationId, input.organizationId),
@@ -163,6 +191,7 @@ export async function savePersonalApplicationNotificationPreference(input: {
       organizationId: input.organizationId,
       recipientKind: 'member',
       userId: input.userId,
+      memberId: membership.id,
       recipientEmail: null,
       ...input.preference,
       createdAt: now,
@@ -170,7 +199,7 @@ export async function savePersonalApplicationNotificationPreference(input: {
     }).onConflictDoUpdate({
       target: [applicationNotificationSubscription.organizationId, applicationNotificationSubscription.userId],
       targetWhere: sql`${applicationNotificationSubscription.recipientKind} = 'member'`,
-      set: { ...input.preference, recipientEmail: null, updatedAt: now },
+      set: { ...input.preference, memberId: membership.id, recipientEmail: null, updatedAt: now },
     })
   })
 
@@ -186,21 +215,24 @@ export async function saveHiringInboxApplicationNotificationSettings(input: {
   now?: Date
 }): Promise<HiringInboxApplicationNotificationResponse> {
   const now = input.now ?? new Date()
+  const normalizedRecipient = input.settings.recipientEmail?.trim().toLowerCase() || null
+  const settings = { ...input.settings, recipientEmail: normalizedRecipient }
   await db.transaction(async (tx) => {
     await tx.insert(applicationNotificationSubscription).values({
       organizationId: input.organizationId,
       recipientKind: 'hiring_inbox',
       userId: null,
-      ...input.settings,
+      memberId: null,
+      ...settings,
       createdAt: now,
       updatedAt: now,
     }).onConflictDoUpdate({
       target: applicationNotificationSubscription.organizationId,
       targetWhere: sql`${applicationNotificationSubscription.recipientKind} = 'hiring_inbox'`,
-      set: { ...input.settings, userId: null, updatedAt: now },
+      set: { ...settings, userId: null, memberId: null, updatedAt: now },
     })
 
-    if (input.settings.cadence === 'off') {
+    if (settings.cadence === 'off') {
       await cancelUnsentForRecipient(tx, {
         organizationId: input.organizationId,
         recipientKey: 'hiring_inbox',
@@ -209,11 +241,12 @@ export async function saveHiringInboxApplicationNotificationSettings(input: {
     }
   })
 
-  const preference: ApplicationNotificationPreference = input.settings
+  const preference: ApplicationNotificationPreference = settings
+  const recipient = normalizeHiringInboxRecipient(settings.recipientEmail)
   return {
-    ...input.settings,
-    recipientEmail: input.settings.recipientEmail ?? env.FACTORY_CAREERS_HIRING_INBOX,
+    ...settings,
+    recipientEmail: recipient.recipientEmail,
     nextDeliveryAt: nextDeliveryAt(preference, now),
-    usesEnvironmentFallback: input.settings.recipientEmail === null,
+    usesEnvironmentFallback: recipient.usesEnvironmentFallback,
   }
 }

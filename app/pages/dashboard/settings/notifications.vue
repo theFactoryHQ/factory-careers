@@ -66,7 +66,7 @@ const inboxUsesFallback = ref(false)
 const savingPersonal = ref(false)
 const savingInbox = ref(false)
 
-const { data: personal, status: personalStatus } = await useFetch<PreferenceResponse>(
+const { data: personal, status: personalStatus, refresh: refreshPersonal } = await useFetch<PreferenceResponse>(
   '/api/notification-preferences/application-email',
   { key: 'application-notification-personal' },
 )
@@ -187,6 +187,10 @@ async function saveInbox() {
 
       <div class="ui-settings-panel-body space-y-5">
         <div v-if="personalStatus === 'pending'" class="flex items-center gap-2 text-sm text-surface-500"><Loader2 class="size-4 animate-spin" /> Loading preference…</div>
+        <div v-else-if="personalStatus === 'error'" class="space-y-3 text-sm text-surface-600 dark:text-surface-300">
+          <p>Unable to load your notification preference.</p>
+          <button type="button" class="ui-button ui-button-secondary" @click="refreshPersonal()">Try again</button>
+        </div>
         <template v-else>
           <div>
             <label for="personal-cadence" class="mb-1.5 block text-sm font-medium text-surface-700 dark:text-surface-300">Cadence</label>
@@ -241,6 +245,10 @@ async function saveInbox() {
 
       <div class="ui-settings-panel-body space-y-5">
         <div v-if="inboxStatus === 'pending' || inboxStatus === 'idle'" class="flex items-center gap-2 text-sm text-surface-500"><Loader2 class="size-4 animate-spin" /> Loading inbox settings…</div>
+        <div v-else-if="inboxStatus === 'error'" class="space-y-3 text-sm text-surface-600 dark:text-surface-300">
+          <p>Unable to load careers inbox settings.</p>
+          <button type="button" class="ui-button ui-button-secondary" @click="loadInbox()">Try again</button>
+        </div>
         <template v-else>
           <div>
             <label for="inbox-email" class="mb-1.5 block text-sm font-medium text-surface-700 dark:text-surface-300">Recipient email</label>

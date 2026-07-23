@@ -21,6 +21,7 @@ describe('application notification fan-out', () => {
       },
       members: [{
         userId: 'user-1',
+        memberId: 'member-1',
         recipientEmail: 'careers@example.com',
         membershipCreatedAt: new Date('2026-01-01T00:00:00.000Z'),
         cadence: 'immediate',
@@ -43,6 +44,7 @@ describe('application notification fan-out', () => {
       inbox: null,
       members: [{
         userId: 'user-1',
+        memberId: 'member-1',
         recipientEmail: 'one@example.com',
         membershipCreatedAt: new Date('2026-07-22T14:01:00.000Z'),
         cadence: 'daily',
@@ -52,6 +54,7 @@ describe('application notification fan-out', () => {
         monthlyDay: 1,
       }, {
         userId: 'user-2',
+        memberId: 'member-2',
         recipientEmail: 'two@example.com',
         membershipCreatedAt: new Date('2026-01-01T00:00:00.000Z'),
         cadence: 'off',
@@ -71,6 +74,7 @@ describe('application notification fan-out', () => {
       eventId: 'event-1',
       recipientKey: 'hiring_inbox',
       cadence: 'immediate',
+      configurationKey: 'config-a',
       scheduledFor: createdAt,
     })).toBe('application-notification:immediate:event-1:hiring_inbox')
 
@@ -79,8 +83,25 @@ describe('application notification fan-out', () => {
       eventId: 'event-2',
       recipientKey: 'member:user-1',
       cadence: 'weekly',
+      configurationKey: 'config-a',
       scheduledFor: new Date('2026-07-27T13:00:00.000Z'),
-    })).toBe('application-notification:digest:org-1:member:user-1:weekly:2026-07-27T13:00:00.000Z')
+    })).toBe('application-notification:digest:org-1:member:user-1:weekly:config-a:2026-07-27T13:00:00.000Z')
+
+    expect(getApplicationNotificationMessageDedupeKey({
+      organizationId: 'org-1',
+      eventId: 'event-2',
+      recipientKey: 'member:user-1',
+      cadence: 'weekly',
+      configurationKey: 'config-b',
+      scheduledFor: new Date('2026-07-27T13:00:00.000Z'),
+    })).not.toBe(getApplicationNotificationMessageDedupeKey({
+      organizationId: 'org-1',
+      eventId: 'event-2',
+      recipientKey: 'member:user-1',
+      cadence: 'weekly',
+      configurationKey: 'config-a',
+      scheduledFor: new Date('2026-07-27T13:00:00.000Z'),
+    }))
   })
 
   it('bounds retries and exposes only sanitized result codes', () => {

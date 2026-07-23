@@ -23,5 +23,8 @@ describe('application notification worker plugin', () => {
     expect(queue).toContain('DETAIL_LIMIT = 100')
     expect(queue).toContain("'empty_digest'")
     expect(queue).toContain("'subscription_inactive'")
+    expect(queue).toContain("for('update')")
+    expect(queue).toContain('configurationKey: plan.configurationKey')
+    expect(queue).toContain("message.status !== 'pending'")
   })
 })

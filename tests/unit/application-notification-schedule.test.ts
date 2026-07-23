@@ -4,7 +4,9 @@ import {
   DEFAULT_MEMBER_NOTIFICATION_PREFERENCE,
   applicationNotificationPreferenceSchema,
   calculateNextApplicationNotificationDelivery,
+  hiringInboxNotificationSettingsSchema,
 } from '../../shared/application-notifications'
+import { cliHiringInboxNotificationSettingsSchema } from '../../packages/careers-cli/src/schemas'
 
 describe('application notification schedules', () => {
   it('defaults the shared inbox to a Monday morning weekly digest and members to off', () => {
@@ -44,6 +46,20 @@ describe('application notification schedules', () => {
       weeklyDay: 0,
       monthlyDay: 29,
     })).toThrow()
+  })
+
+  it('normalizes inbox email before validating it in API and CLI contracts', () => {
+    const input = {
+      cadence: 'weekly' as const,
+      deliveryTime: '09:00',
+      timeZone: 'America/New_York',
+      weeklyDay: 1,
+      monthlyDay: 1,
+      recipientEmail: '  Careers@Example.COM  ',
+    }
+
+    expect(hiringInboxNotificationSettingsSchema.parse(input).recipientEmail).toBe('careers@example.com')
+    expect(cliHiringInboxNotificationSettingsSchema.parse(input).recipientEmail).toBe('careers@example.com')
   })
 
   it('schedules daily, weekly, and monthly deliveries in the configured timezone', () => {

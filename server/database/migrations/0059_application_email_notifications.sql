@@ -7,6 +7,7 @@ CREATE TABLE "application_notification_subscription" (
 	"organization_id" text NOT NULL,
 	"recipient_kind" "application_notification_recipient_kind" NOT NULL,
 	"user_id" text,
+	"member_id" text,
 	"recipient_email" text,
 	"cadence" "application_notification_cadence" NOT NULL,
 	"time_zone" text NOT NULL,
@@ -16,8 +17,8 @@ CREATE TABLE "application_notification_subscription" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "application_notification_subscription_recipient_check" CHECK (
-		("recipient_kind" = 'hiring_inbox' AND "user_id" IS NULL)
-		OR ("recipient_kind" = 'member' AND "user_id" IS NOT NULL AND "recipient_email" IS NULL)
+		("recipient_kind" = 'hiring_inbox' AND "user_id" IS NULL AND "member_id" IS NULL)
+		OR ("recipient_kind" = 'member' AND "user_id" IS NOT NULL AND "member_id" IS NOT NULL AND "recipient_email" IS NULL)
 	),
 	CONSTRAINT "application_notification_subscription_delivery_time_check" CHECK ("delivery_time" ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$'),
 	CONSTRAINT "application_notification_subscription_weekly_day_check" CHECK ("weekly_day" BETWEEN 1 AND 7),
@@ -28,6 +29,7 @@ CREATE TABLE "application_notification_event" (
 	"id" text PRIMARY KEY NOT NULL,
 	"organization_id" text NOT NULL,
 	"application_id" text NOT NULL,
+	"subscription_snapshot" jsonb NOT NULL,
 	"status" "processing_task_status" DEFAULT 'pending' NOT NULL,
 	"attempt_count" integer DEFAULT 0 NOT NULL,
 	"max_attempts" integer DEFAULT 5 NOT NULL,
@@ -47,9 +49,11 @@ CREATE TABLE "application_notification_message" (
 	"recipient_key" text NOT NULL,
 	"recipient_kind" "application_notification_recipient_kind" NOT NULL,
 	"user_id" text,
+	"member_id" text,
 	"recipient_email" text NOT NULL,
 	"cadence" "application_notification_cadence" NOT NULL,
 	"time_zone" text NOT NULL,
+	"configuration_key" text NOT NULL,
 	"scheduled_for" timestamp with time zone NOT NULL,
 	"dedupe_key" text NOT NULL,
 	"status" "processing_task_status" DEFAULT 'pending' NOT NULL,
@@ -74,8 +78,10 @@ CREATE TABLE "application_notification_delivery" (
 	"recipient_key" text NOT NULL,
 	"recipient_kind" "application_notification_recipient_kind" NOT NULL,
 	"user_id" text,
+	"member_id" text,
 	"recipient_email" text NOT NULL,
 	"cadence" "application_notification_cadence" NOT NULL,
+	"configuration_key" text NOT NULL,
 	"scheduled_for" timestamp with time zone NOT NULL,
 	"status" "processing_task_status" DEFAULT 'pending' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -86,6 +92,8 @@ CREATE TABLE "application_notification_delivery" (
 ALTER TABLE "application_notification_subscription" ADD CONSTRAINT "application_notification_subscription_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;
 --> statement-breakpoint
 ALTER TABLE "application_notification_subscription" ADD CONSTRAINT "application_notification_subscription_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
+--> statement-breakpoint
+ALTER TABLE "application_notification_subscription" ADD CONSTRAINT "application_notification_subscription_member_id_member_id_fk" FOREIGN KEY ("member_id") REFERENCES "public"."member"("id") ON DELETE cascade ON UPDATE no action;
 --> statement-breakpoint
 ALTER TABLE "application_notification_event" ADD CONSTRAINT "application_notification_event_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;
 --> statement-breakpoint
@@ -109,6 +117,8 @@ CREATE INDEX "application_notification_subscription_organization_id_idx" ON "app
 --> statement-breakpoint
 CREATE INDEX "application_notification_subscription_user_id_idx" ON "application_notification_subscription" USING btree ("user_id");
 --> statement-breakpoint
+CREATE INDEX "application_notification_subscription_member_id_idx" ON "application_notification_subscription" USING btree ("member_id");
+--> statement-breakpoint
 CREATE UNIQUE INDEX "application_notification_subscription_inbox_unique_idx" ON "application_notification_subscription" USING btree ("organization_id") WHERE "recipient_kind" = 'hiring_inbox';
 --> statement-breakpoint
 CREATE UNIQUE INDEX "application_notification_subscription_member_unique_idx" ON "application_notification_subscription" USING btree ("organization_id", "user_id") WHERE "recipient_kind" = 'member';
@@ -123,6 +133,8 @@ CREATE INDEX "application_notification_message_organization_id_idx" ON "applicat
 --> statement-breakpoint
 CREATE INDEX "application_notification_message_user_id_idx" ON "application_notification_message" USING btree ("user_id");
 --> statement-breakpoint
+CREATE INDEX "application_notification_message_member_id_idx" ON "application_notification_message" USING btree ("member_id");
+--> statement-breakpoint
 CREATE UNIQUE INDEX "application_notification_message_dedupe_key_idx" ON "application_notification_message" USING btree ("dedupe_key");
 --> statement-breakpoint
 CREATE INDEX "application_notification_message_runnable_idx" ON "application_notification_message" USING btree ("status", "available_at") WHERE "status" IN ('pending', 'processing');
@@ -136,6 +148,8 @@ CREATE INDEX "application_notification_delivery_application_id_idx" ON "applicat
 CREATE INDEX "application_notification_delivery_message_id_idx" ON "application_notification_delivery" USING btree ("message_id");
 --> statement-breakpoint
 CREATE INDEX "application_notification_delivery_user_id_idx" ON "application_notification_delivery" USING btree ("user_id");
+--> statement-breakpoint
+CREATE INDEX "application_notification_delivery_member_id_idx" ON "application_notification_delivery" USING btree ("member_id");
 --> statement-breakpoint
 CREATE UNIQUE INDEX "application_notification_delivery_event_recipient_unique_idx" ON "application_notification_delivery" USING btree ("event_id", "recipient_key");
 --> statement-breakpoint
@@ -162,11 +176,59 @@ RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = pg_catalog, public
 AS $$
+DECLARE
+	subscription_snapshot jsonb;
 BEGIN
+	SELECT jsonb_build_object(
+		'defaultTimeZone', COALESCE((
+			SELECT settings.email_business_hours_timezone
+			FROM public.org_settings AS settings
+			WHERE settings.organization_id = NEW.organization_id
+			LIMIT 1
+		), 'America/New_York'),
+		'inbox', (
+			SELECT jsonb_build_object(
+				'recipientEmail', subscription.recipient_email,
+				'cadence', subscription.cadence,
+				'timeZone', subscription.time_zone,
+				'deliveryTime', subscription.delivery_time,
+				'weeklyDay', subscription.weekly_day,
+				'monthlyDay', subscription.monthly_day
+			)
+			FROM public.application_notification_subscription AS subscription
+			WHERE subscription.organization_id = NEW.organization_id
+				AND subscription.recipient_kind = 'hiring_inbox'
+			LIMIT 1
+		),
+		'members', COALESCE((
+			SELECT jsonb_agg(jsonb_build_object(
+				'userId', subscription.user_id,
+				'memberId', subscription.member_id,
+				'recipientEmail', account.email,
+				'membershipCreatedAt', membership.created_at,
+				'cadence', subscription.cadence,
+				'timeZone', subscription.time_zone,
+				'deliveryTime', subscription.delivery_time,
+				'weeklyDay', subscription.weekly_day,
+				'monthlyDay', subscription.monthly_day
+			) ORDER BY subscription.user_id)
+			FROM public.application_notification_subscription AS subscription
+			JOIN public.member AS membership
+				ON membership.id = subscription.member_id
+				AND membership.organization_id = subscription.organization_id
+				AND membership.user_id = subscription.user_id
+			JOIN public.user AS account ON account.id = subscription.user_id
+			WHERE subscription.organization_id = NEW.organization_id
+				AND subscription.recipient_kind = 'member'
+				AND subscription.cadence <> 'off'
+		), '[]'::jsonb)
+	) INTO subscription_snapshot;
+
 	INSERT INTO public.application_notification_event (
 		id,
 		organization_id,
 		application_id,
+		subscription_snapshot,
 		status,
 		available_at,
 		created_at,
@@ -175,6 +237,7 @@ BEGIN
 		'application-notification:' || NEW.id,
 		NEW.organization_id,
 		NEW.id,
+		subscription_snapshot,
 		'pending',
 		now(),
 		now(),

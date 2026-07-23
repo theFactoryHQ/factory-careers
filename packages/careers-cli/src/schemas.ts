@@ -86,5 +86,5 @@ export const cliApplicationNotificationPreferenceSchema = z.object({
 
 export const cliHiringInboxNotificationSettingsSchema = z.object({
   ...cliNotificationPreferenceFields,
-  recipientEmail: z.email().trim().toLowerCase().nullable(),
+  recipientEmail: z.string().trim().toLowerCase().pipe(z.email()).nullable(),
 })

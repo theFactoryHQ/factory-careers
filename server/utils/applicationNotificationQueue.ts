@@ -9,18 +9,18 @@ import {
   job,
   member,
   organization,
-  user,
 } from '../database/schema'
 import { db } from './db'
 import { resolveFactoryCareersBaseUrl } from './baseUrl'
 import { sendApplicationNotificationEmail } from './email'
 import { env } from './env'
-import { getHiringInboxApplicationNotificationSettings } from './applicationNotificationPreferences'
+import { normalizeHiringInboxRecipient } from './applicationNotificationPreferences'
 import {
   buildApplicationNotificationRecipientPlans,
   getApplicationNotificationFailureOutcome,
   getApplicationNotificationMessageDedupeKey,
 } from '~~/shared/application-notification-delivery'
+import { DEFAULT_HIRING_INBOX_NOTIFICATION_PREFERENCE } from '~~/shared/application-notifications'
 import type { ApplicationDigestGroup } from '../lib/email/templates'
 
 const EVENT_CLAIM_LIMIT = 50
@@ -108,95 +108,112 @@ async function fanOutEvent(event: NotificationEvent, now: Date): Promise<void> {
 
   if (!applicationRow) return
 
-  const [inbox, memberRows] = await Promise.all([
-    getHiringInboxApplicationNotificationSettings({
-      organizationId: event.organizationId,
-      now: event.createdAt,
-    }),
-    db.select({
-      userId: applicationNotificationSubscription.userId,
-      recipientEmail: user.email,
-      membershipCreatedAt: member.createdAt,
-      cadence: applicationNotificationSubscription.cadence,
-      timeZone: applicationNotificationSubscription.timeZone,
-      deliveryTime: applicationNotificationSubscription.deliveryTime,
-      weeklyDay: applicationNotificationSubscription.weeklyDay,
-      monthlyDay: applicationNotificationSubscription.monthlyDay,
-    }).from(applicationNotificationSubscription)
-      .innerJoin(applicationNotificationEvent, eq(applicationNotificationEvent.id, event.id))
-      .innerJoin(member, and(
-        eq(member.organizationId, applicationNotificationSubscription.organizationId),
-        eq(member.userId, applicationNotificationSubscription.userId),
-      ))
-      .innerJoin(user, eq(user.id, applicationNotificationSubscription.userId))
-      .where(and(
-        eq(applicationNotificationSubscription.organizationId, event.organizationId),
-        eq(applicationNotificationSubscription.recipientKind, 'member'),
-        ne(applicationNotificationSubscription.cadence, 'off'),
-        lte(applicationNotificationSubscription.createdAt, applicationNotificationEvent.createdAt),
-        lte(member.createdAt, applicationNotificationEvent.createdAt),
-      )),
-  ])
+  const snapshot = event.subscriptionSnapshot
+  const inboxSnapshot = snapshot.inbox ?? {
+    ...DEFAULT_HIRING_INBOX_NOTIFICATION_PREFERENCE,
+    recipientEmail: null,
+    timeZone: snapshot.defaultTimeZone,
+  }
+  const inboxRecipient = normalizeHiringInboxRecipient(inboxSnapshot.recipientEmail)
 
   const plans = buildApplicationNotificationRecipientPlans({
     createdAt: event.createdAt,
-    inbox: inbox.cadence === 'off' || !inbox.recipientEmail
+    inbox: inboxSnapshot.cadence === 'off' || !inboxRecipient.recipientEmail
       ? null
       : {
-          recipientEmail: inbox.recipientEmail,
-          cadence: inbox.cadence,
-          timeZone: inbox.timeZone,
-          deliveryTime: inbox.deliveryTime,
-          weeklyDay: inbox.weeklyDay,
-          monthlyDay: inbox.monthlyDay,
+          recipientEmail: inboxRecipient.recipientEmail,
+          cadence: inboxSnapshot.cadence,
+          timeZone: inboxSnapshot.timeZone,
+          deliveryTime: inboxSnapshot.deliveryTime,
+          weeklyDay: inboxSnapshot.weeklyDay,
+          monthlyDay: inboxSnapshot.monthlyDay,
         },
-    members: memberRows.flatMap(row => row.userId
-      ? [{ ...row, userId: row.userId }]
-      : []),
+    members: snapshot.members.map(row => ({
+      ...row,
+      membershipCreatedAt: new Date(row.membershipCreatedAt),
+    })),
   })
 
   await db.transaction(async (tx) => {
     for (const plan of plans) {
+      const existingDelivery = await tx.select({ id: applicationNotificationDelivery.id })
+        .from(applicationNotificationDelivery)
+        .where(and(
+          eq(applicationNotificationDelivery.eventId, event.id),
+          eq(applicationNotificationDelivery.recipientKey, plan.recipientKey),
+        )).limit(1)
+      if (existingDelivery.length > 0) continue
+
       const dedupeKey = getApplicationNotificationMessageDedupeKey({
         organizationId: event.organizationId,
         eventId: event.id,
         recipientKey: plan.recipientKey,
         cadence: plan.cadence,
+        configurationKey: plan.configurationKey,
         scheduledFor: plan.scheduledFor,
       })
-      const inserted = await tx.insert(applicationNotificationMessage).values({
+      const messageValues = {
         organizationId: event.organizationId,
         recipientKey: plan.recipientKey,
         recipientKind: plan.recipientKind,
         userId: plan.userId,
+        memberId: plan.memberId,
         recipientEmail: plan.recipientEmail,
         cadence: plan.cadence,
         timeZone: plan.timeZone,
+        configurationKey: plan.configurationKey,
         scheduledFor: plan.scheduledFor,
-        dedupeKey,
         availableAt: plan.scheduledFor,
         createdAt: now,
         updatedAt: now,
+      }
+      const inserted = await tx.insert(applicationNotificationMessage).values({
+        ...messageValues,
+        dedupeKey,
       }).onConflictDoNothing({
         target: applicationNotificationMessage.dedupeKey,
-      }).returning({ id: applicationNotificationMessage.id })
+      }).returning({ id: applicationNotificationMessage.id, status: applicationNotificationMessage.status })
 
-      const messageId = inserted[0]?.id ?? (await tx.select({ id: applicationNotificationMessage.id })
-        .from(applicationNotificationMessage)
+      let message = inserted[0] ?? (await tx.select({
+        id: applicationNotificationMessage.id,
+        status: applicationNotificationMessage.status,
+      }).from(applicationNotificationMessage)
         .where(eq(applicationNotificationMessage.dedupeKey, dedupeKey))
-        .limit(1))[0]?.id
-      if (!messageId) throw new Error('notification_message_missing')
+        .limit(1)
+        .for('update'))[0]
+      if (!message) throw new Error('notification_message_missing')
+
+      if (message.status !== 'pending') {
+        const recoveryDedupeKey = `${dedupeKey}:recovery:${event.id}`
+        message = (await tx.insert(applicationNotificationMessage).values({
+          ...messageValues,
+          dedupeKey: recoveryDedupeKey,
+          availableAt: now,
+        }).onConflictDoNothing({
+          target: applicationNotificationMessage.dedupeKey,
+        }).returning({ id: applicationNotificationMessage.id, status: applicationNotificationMessage.status }))[0]
+          ?? (await tx.select({
+            id: applicationNotificationMessage.id,
+            status: applicationNotificationMessage.status,
+          }).from(applicationNotificationMessage)
+            .where(eq(applicationNotificationMessage.dedupeKey, recoveryDedupeKey))
+            .limit(1)
+            .for('update'))[0]
+      }
+      if (!message || message.status !== 'pending') throw new Error('notification_message_unavailable')
 
       await tx.insert(applicationNotificationDelivery).values({
         organizationId: event.organizationId,
         eventId: event.id,
         applicationId: event.applicationId,
-        messageId,
+        messageId: message.id,
         recipientKey: plan.recipientKey,
         recipientKind: plan.recipientKind,
         userId: plan.userId,
+        memberId: plan.memberId,
         recipientEmail: plan.recipientEmail,
         cadence: plan.cadence,
+        configurationKey: plan.configurationKey,
         scheduledFor: plan.scheduledFor,
         createdAt: now,
         updatedAt: now,
@@ -310,18 +327,20 @@ async function subscriptionStillActive(message: NotificationMessage): Promise<bo
     return current?.cadence !== 'off'
   }
 
-  if (!message.userId) return false
+  if (!message.userId || !message.memberId) return false
   const active = await db.select({ id: member.id })
     .from(member)
     .innerJoin(applicationNotificationSubscription, and(
       eq(applicationNotificationSubscription.organizationId, member.organizationId),
       eq(applicationNotificationSubscription.userId, member.userId),
+      eq(applicationNotificationSubscription.memberId, member.id),
       eq(applicationNotificationSubscription.recipientKind, 'member'),
       ne(applicationNotificationSubscription.cadence, 'off'),
     ))
     .where(and(
       eq(member.organizationId, message.organizationId),
       eq(member.userId, message.userId),
+      eq(member.id, message.memberId),
     ))
     .limit(1)
   return active.length > 0

@@ -10,6 +10,7 @@ type InboxRecipient = ApplicationNotificationPreference & {
 
 type MemberRecipient = ApplicationNotificationPreference & {
   userId: string
+  memberId: string
   recipientEmail: string
   membershipCreatedAt: Date
 }
@@ -19,7 +20,29 @@ export type ApplicationNotificationRecipientPlan = ApplicationNotificationPrefer
   recipientKey: string
   recipientEmail: string
   userId: string | null
+  memberId: string | null
+  configurationKey: string
   scheduledFor: Date
+}
+
+export function getApplicationNotificationConfigurationKey(input: {
+  recipientKey: string
+  recipientEmail: string
+  cadence: ApplicationNotificationCadence
+  timeZone: string
+  deliveryTime: string
+  weeklyDay: number
+  monthlyDay: number
+}): string {
+  return [
+    input.recipientKey,
+    input.recipientEmail.trim().toLowerCase(),
+    input.cadence,
+    input.timeZone,
+    input.deliveryTime,
+    input.weeklyDay,
+    input.monthlyDay,
+  ].map(value => encodeURIComponent(String(value))).join('.')
 }
 
 export function buildApplicationNotificationRecipientPlans(input: {
@@ -37,6 +60,11 @@ export function buildApplicationNotificationRecipientPlans(input: {
         recipientKind: 'hiring_inbox',
         recipientKey: 'hiring_inbox',
         userId: null,
+        memberId: null,
+        configurationKey: getApplicationNotificationConfigurationKey({
+          ...input.inbox,
+          recipientKey: 'hiring_inbox',
+        }),
         scheduledFor,
       })
     }
@@ -57,6 +85,11 @@ export function buildApplicationNotificationRecipientPlans(input: {
       recipientKey: `member:${member.userId}`,
       recipientEmail: member.recipientEmail,
       userId: member.userId,
+      memberId: member.memberId,
+      configurationKey: getApplicationNotificationConfigurationKey({
+        ...member,
+        recipientKey: `member:${member.userId}`,
+      }),
       scheduledFor,
     })
   }
@@ -69,6 +102,7 @@ export function getApplicationNotificationMessageDedupeKey(input: {
   eventId: string
   recipientKey: string
   cadence: ApplicationNotificationCadence
+  configurationKey: string
   scheduledFor: Date
 }): string {
   if (input.cadence === 'immediate') {
@@ -80,6 +114,7 @@ export function getApplicationNotificationMessageDedupeKey(input: {
     input.organizationId,
     input.recipientKey,
     input.cadence,
+    input.configurationKey,
     input.scheduledFor.toISOString(),
   ].join(':')
 }

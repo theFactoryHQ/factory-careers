@@ -43,7 +43,7 @@ export const applicationNotificationPreferenceSchema = z.object({
 })
 
 export const hiringInboxNotificationSettingsSchema = applicationNotificationPreferenceSchema.extend({
-  recipientEmail: z.email().trim().toLowerCase().nullable(),
+  recipientEmail: z.string().trim().toLowerCase().pipe(z.email()).nullable(),
 })
 
 export type ApplicationNotificationPreference = z.infer<typeof applicationNotificationPreferenceSchema>

@@ -32,4 +32,14 @@ describe('application notification settings page', () => {
     expect(page).toContain('<select')
     expect(page).toContain('Next delivery')
   })
+
+  it('does not expose default forms after a settings request fails and offers retry actions', () => {
+    const page = read('app/pages/dashboard/settings/notifications.vue')
+
+    expect(page).toContain("personalStatus === 'error'")
+    expect(page).toContain('refreshPersonal')
+    expect(page).toContain("inboxStatus === 'error'")
+    expect(page).toContain('loadInbox')
+    expect(page).toContain('Unable to load')
+  })
 })
