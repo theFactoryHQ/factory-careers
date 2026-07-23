@@ -30,6 +30,25 @@ function deferred<T>() {
   return { promise, reject, resolve }
 }
 
+function capturedQueueLogger() {
+  const entries: Array<{
+    severity: 'error' | 'warn'
+    body: string
+    attributes: Record<string, string | number | boolean>
+  }> = []
+  return {
+    entries,
+    logger: {
+      logError(body: string, attributes: Record<string, string | number | boolean>) {
+        entries.push({ severity: 'error', body, attributes })
+      },
+      logWarn(body: string, attributes: Record<string, string | number | boolean>) {
+        entries.push({ severity: 'warn', body, attributes })
+      },
+    },
+  }
+}
+
 function migrationsThrough(index: number): string {
   const destination = mkdtempSync(join(tmpdir(), 'factory-careers-notification-migrations-'))
   cpSync(migrationsFolder, destination, { recursive: true })
@@ -271,10 +290,11 @@ describeWithPostgres('application notification PostgreSQL behavior', () => {
 
         const workerAEnteredProvider = deferred<void>()
         const workerAProviderResult = deferred<string>()
+        const raceTelemetry = capturedQueueLogger()
         const workerA = processApplicationNotificationCycle(workerAStartedAt, async () => {
           workerAEnteredProvider.resolve()
           return workerAProviderResult.promise
-        })
+        }, raceTelemetry.logger)
         await workerAEnteredProvider.promise
 
         const workerBEnteredProvider = deferred<void>()
@@ -282,7 +302,7 @@ describeWithPostgres('application notification PostgreSQL behavior', () => {
         const workerB = processApplicationNotificationCycle(workerBStartedAt, async () => {
           workerBEnteredProvider.resolve()
           return workerBProviderResult.promise
-        })
+        }, raceTelemetry.logger)
         await workerBEnteredProvider.promise
 
         workerAProviderResult.resolve('provider-stale-attempt')
@@ -308,6 +328,7 @@ describeWithPostgres('application notification PostgreSQL behavior', () => {
           completedAt: null,
           status: 'pending',
         })
+        expect(raceTelemetry.entries).toEqual([])
 
         workerBProviderResult.reject(new Error('active worker terminal failure'))
         await workerB
@@ -326,6 +347,214 @@ describeWithPostgres('application notification PostgreSQL behavior', () => {
           status: 'failed',
         })
         expect(finalDelivery?.status).toBe('failed')
+        expect(raceTelemetry.entries).toEqual([{
+          severity: 'error',
+          body: 'application_notification.message_failed',
+          attributes: {
+            org_id: organizationId,
+            queue_kind: 'message',
+            record_id: raceMessageId,
+            attempt_count: 2,
+            max_attempts: 2,
+            result_code: 'error',
+            retryable: false,
+            cadence: 'immediate',
+            recipient_kind: 'hiring_inbox',
+          },
+        }])
+
+        const providerRetryMessageId = `provider-retry-message-${suffix}`
+        const providerRetryDeliveryId = `provider-retry-delivery-${suffix}`
+        const providerRetryRecipientKey = `provider-retry-${suffix}`
+        const providerRetryStartedAt = new Date(workerBStartedAt.getTime() + 60_000)
+        const providerRetryStartedAtIso = providerRetryStartedAt.toISOString()
+        await client`insert into "application_notification_message" (
+          "id", "organization_id", "recipient_key", "recipient_kind", "recipient_email",
+          "cadence", "time_zone", "configuration_key", "scheduled_for", "dedupe_key",
+          "max_attempts", "available_at", "created_at", "updated_at"
+        ) values (
+          ${providerRetryMessageId}, ${organizationId}, ${providerRetryRecipientKey},
+          'hiring_inbox', ${sharedEmail}, 'immediate', 'UTC', 'provider-retry',
+          ${providerRetryStartedAtIso}, ${`provider-retry-${suffix}`}, 2,
+          ${providerRetryStartedAtIso}, ${providerRetryStartedAtIso}, ${providerRetryStartedAtIso}
+        )`
+        await client`insert into "application_notification_delivery" (
+          "id", "organization_id", "event_id", "application_id", "message_id",
+          "recipient_key", "recipient_kind", "recipient_email", "cadence",
+          "configuration_key", "scheduled_for", "created_at", "updated_at"
+        ) values (
+          ${providerRetryDeliveryId}, ${organizationId}, 'application-notification:late-application',
+          'late-application', ${providerRetryMessageId}, ${providerRetryRecipientKey},
+          'hiring_inbox', ${sharedEmail}, 'immediate', 'provider-retry',
+          ${providerRetryStartedAtIso}, ${providerRetryStartedAtIso}, ${providerRetryStartedAtIso}
+        )`
+
+        const providerFailure = new Error(`private provider failure for ${sharedEmail}`)
+        providerFailure.name = 'Provider Timeout'
+        const providerTelemetry = capturedQueueLogger()
+        await processApplicationNotificationCycle(
+          providerRetryStartedAt,
+          async () => { throw providerFailure },
+          providerTelemetry.logger,
+        )
+        expect(providerTelemetry.entries).toEqual([{
+          severity: 'warn',
+          body: 'application_notification.message_retry_scheduled',
+          attributes: {
+            org_id: organizationId,
+            queue_kind: 'message',
+            record_id: providerRetryMessageId,
+            attempt_count: 1,
+            max_attempts: 2,
+            result_code: 'provider_timeout',
+            retryable: true,
+            cadence: 'immediate',
+            recipient_kind: 'hiring_inbox',
+          },
+        }])
+        expect(JSON.stringify(providerTelemetry.entries)).not.toContain(sharedEmail)
+        expect(JSON.stringify(providerTelemetry.entries)).not.toContain('private provider failure')
+
+        await processApplicationNotificationCycle(
+          new Date(providerRetryStartedAt.getTime() + 31_000),
+          async () => { throw providerFailure },
+          providerTelemetry.logger,
+        )
+        expect(providerTelemetry.entries.at(-1)).toEqual({
+          severity: 'error',
+          body: 'application_notification.message_failed',
+          attributes: {
+            org_id: organizationId,
+            queue_kind: 'message',
+            record_id: providerRetryMessageId,
+            attempt_count: 2,
+            max_attempts: 2,
+            result_code: 'provider_timeout',
+            retryable: false,
+            cadence: 'immediate',
+            recipient_kind: 'hiring_inbox',
+          },
+        })
+
+        const fanoutCandidateId = `fanout-candidate-${suffix}`
+        const fanoutApplicationId = `fanout-application-${suffix}`
+        const fanoutStartedAt = new Date(providerRetryStartedAt.getTime() + 120_000)
+        await client`insert into "candidate" ("id", "organization_id", "first_name", "last_name", "email")
+          values (${fanoutCandidateId}, ${organizationId}, 'Fanout', 'Failure', ${`fanout-${suffix}@example.com`})`
+        await client`insert into "application" ("id", "organization_id", "candidate_id", "job_id")
+          values (${fanoutApplicationId}, ${organizationId}, ${fanoutCandidateId}, ${jobId})`
+        await client`update "application_notification_event"
+          set "subscription_snapshot" = '{}'::jsonb, "max_attempts" = 2,
+            "available_at" = ${fanoutStartedAt.toISOString()}, "updated_at" = ${fanoutStartedAt.toISOString()}
+          where "application_id" = ${fanoutApplicationId}`
+
+        const fanoutTelemetry = capturedQueueLogger()
+        await processApplicationNotificationCycle(
+          fanoutStartedAt,
+          async () => 'unused-provider-id',
+          fanoutTelemetry.logger,
+        )
+        const [fanoutEvent] = await client<{ id: string }[]>`
+          select "id" from "application_notification_event"
+          where "application_id" = ${fanoutApplicationId}`
+        expect(fanoutTelemetry.entries).toEqual([{
+          severity: 'warn',
+          body: 'application_notification.event_retry_scheduled',
+          attributes: {
+            org_id: organizationId,
+            queue_kind: 'event',
+            record_id: fanoutEvent!.id,
+            attempt_count: 1,
+            max_attempts: 2,
+            result_code: 'typeerror',
+            retryable: true,
+          },
+        }])
+
+        await processApplicationNotificationCycle(
+          new Date(fanoutStartedAt.getTime() + 31_000),
+          async () => 'unused-provider-id',
+          fanoutTelemetry.logger,
+        )
+        expect(fanoutTelemetry.entries.at(-1)).toEqual({
+          severity: 'error',
+          body: 'application_notification.event_failed',
+          attributes: {
+            org_id: organizationId,
+            queue_kind: 'event',
+            record_id: fanoutEvent!.id,
+            attempt_count: 2,
+            max_attempts: 2,
+            result_code: 'typeerror',
+            retryable: false,
+          },
+        })
+
+        const leaseCandidateId = `lease-candidate-${suffix}`
+        const leaseApplicationId = `lease-application-${suffix}`
+        const leaseMessageId = `lease-message-${suffix}`
+        const leaseCheckAt = new Date(fanoutStartedAt.getTime() + 120_000)
+        const leaseCheckAtIso = leaseCheckAt.toISOString()
+        const expiredLeaseIso = new Date(leaseCheckAt.getTime() - 1).toISOString()
+        await client`insert into "candidate" ("id", "organization_id", "first_name", "last_name", "email")
+          values (${leaseCandidateId}, ${organizationId}, 'Lease', 'Expired', ${`lease-${suffix}@example.com`})`
+        await client`insert into "application" ("id", "organization_id", "candidate_id", "job_id")
+          values (${leaseApplicationId}, ${organizationId}, ${leaseCandidateId}, ${jobId})`
+        await client`update "application_notification_event"
+          set "status" = 'processing', "attempt_count" = 3, "max_attempts" = 3,
+            "lease_expires_at" = ${expiredLeaseIso}, "updated_at" = ${expiredLeaseIso}
+          where "application_id" = ${leaseApplicationId}`
+        const [leaseEvent] = await client<{ id: string }[]>`
+          select "id" from "application_notification_event"
+          where "application_id" = ${leaseApplicationId}`
+        await client`insert into "application_notification_message" (
+          "id", "organization_id", "recipient_key", "recipient_kind", "recipient_email",
+          "cadence", "time_zone", "configuration_key", "scheduled_for", "dedupe_key",
+          "status", "attempt_count", "max_attempts", "available_at", "lease_expires_at",
+          "created_at", "updated_at"
+        ) values (
+          ${leaseMessageId}, ${organizationId}, ${`lease-recipient-${suffix}`},
+          'hiring_inbox', ${sharedEmail}, 'weekly', 'UTC', 'lease-expired',
+          ${leaseCheckAtIso}, ${`lease-expired-${suffix}`}, 'processing', 3, 3,
+          ${leaseCheckAtIso}, ${expiredLeaseIso}, ${expiredLeaseIso}, ${expiredLeaseIso}
+        )`
+
+        const leaseTelemetry = capturedQueueLogger()
+        await processApplicationNotificationCycle(
+          leaseCheckAt,
+          async () => 'unused-provider-id',
+          leaseTelemetry.logger,
+        )
+        expect(leaseTelemetry.entries).toEqual([
+          {
+            severity: 'error',
+            body: 'application_notification.event_failed',
+            attributes: {
+              org_id: organizationId,
+              queue_kind: 'event',
+              record_id: leaseEvent!.id,
+              attempt_count: 3,
+              max_attempts: 3,
+              result_code: 'lease_expired',
+              retryable: false,
+            },
+          },
+          {
+            severity: 'error',
+            body: 'application_notification.message_failed',
+            attributes: {
+              org_id: organizationId,
+              queue_kind: 'message',
+              record_id: leaseMessageId,
+              attempt_count: 3,
+              max_attempts: 3,
+              result_code: 'lease_expired',
+              retryable: false,
+              cadence: 'weekly',
+              recipient_kind: 'hiring_inbox',
+            },
+          },
+        ])
 
         await client.unsafe(`do $$ begin
           if not exists (select 1 from pg_roles where rolname = 'anon') then

@@ -28,6 +28,7 @@ self-hosters.
 
 ### Fixed
 
+- Made application notification retries and exhausted deliveries emit sanitized structured telemetry for operators.
 - Prevented expired application notification workers from overwriting delivery state owned by a newer queue attempt.
 - Kept member application notifications from disappearing when application and database time zones differ.
 - Gave Render-hosted users independent client-IP rate-limit buckets behind the managed ingress.

@@ -41,8 +41,24 @@ idempotency keys protect overlapping workers during deploys.
 After deployment, verify that a newly inserted application creates one
 `application_notification_event` row, progresses to recipient delivery/message
 rows, and reaches `completed`. Do not manually backfill older applications.
-Failures expose sanitized `result_code` values; inspect server logs for the
-corresponding worker cycle and leave failed rows in place for incident review.
+Expected queue failures emit one of these structured events after the worker
+owns and persists the corresponding row transition:
+
+- `application_notification.event_retry_scheduled`
+- `application_notification.event_failed`
+- `application_notification.message_retry_scheduled`
+- `application_notification.message_failed`
+
+Their safe attributes are `org_id`, `queue_kind`, `record_id`, `attempt_count`,
+`max_attempts`, sanitized `result_code`, and `retryable`; message events also
+include `cadence` and `recipient_kind`. They never include recipient addresses,
+candidate or application content, provider payloads, or raw exception text.
+Retryable rows remain `pending` with backoff. Terminal rows remain `failed` for
+incident review; leave those rows in place and do not edit queue state directly.
+
+`application_notification_worker.cycle_failed` is reserved for an unexpected
+exception that escapes an entire worker cycle. It is not emitted for each
+provider or fanout failure handled by the durable queue.
 
 ## Validation
 

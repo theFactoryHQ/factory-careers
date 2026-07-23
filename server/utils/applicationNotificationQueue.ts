@@ -15,6 +15,7 @@ import { resolveFactoryCareersBaseUrl } from './baseUrl'
 import { sendApplicationNotificationEmail } from './email'
 import { env } from './env'
 import { normalizeHiringInboxRecipient } from './applicationNotificationPreferences'
+import { logError, logWarn } from './logger'
 import {
   buildApplicationNotificationRecipientPlans,
   getApplicationNotificationFailureOutcome,
@@ -32,13 +33,75 @@ type NotificationEvent = typeof applicationNotificationEvent.$inferSelect
 type NotificationMessage = typeof applicationNotificationMessage.$inferSelect
 type ApplicationNotificationSender = typeof sendApplicationNotificationEmail
 
+export type ApplicationNotificationQueueLogger = {
+  logError(body: string, attributes: Record<string, string | number | boolean>): void
+  logWarn(body: string, attributes: Record<string, string | number | boolean>): void
+}
+
+type ApplicationNotificationFailureTransition = {
+  organizationId: string
+  queueKind: 'event' | 'message'
+  recordId: string
+  attemptCount: number
+  maxAttempts: number
+  resultCode: string
+  retryable: boolean
+  cadence?: NotificationMessage['cadence']
+  recipientKind?: NotificationMessage['recipientKind']
+}
+
+type NotificationClaimBatch<T> = {
+  claimed: T[]
+  exhausted: ApplicationNotificationFailureTransition[]
+}
+
+const defaultQueueLogger: ApplicationNotificationQueueLogger = {
+  logError,
+  logWarn,
+}
+
+function safeNotificationResultCode(value: string): string {
+  return /^[a-z0-9_]{1,80}$/.test(value)
+    ? value
+    : 'notification_delivery_failed'
+}
+
+export function emitApplicationNotificationFailureTelemetry(
+  transition: ApplicationNotificationFailureTransition | null,
+  logger: ApplicationNotificationQueueLogger,
+): void {
+  if (!transition) return
+
+  const attributes: Record<string, string | number | boolean> = {
+    org_id: transition.organizationId,
+    queue_kind: transition.queueKind,
+    record_id: transition.recordId,
+    attempt_count: transition.attemptCount,
+    max_attempts: transition.maxAttempts,
+    result_code: safeNotificationResultCode(transition.resultCode),
+    retryable: transition.retryable,
+  }
+  if (transition.cadence) attributes.cadence = transition.cadence
+  if (transition.recipientKind) attributes.recipient_kind = transition.recipientKind
+
+  const eventName = transition.retryable
+    ? `application_notification.${transition.queueKind}_retry_scheduled`
+    : `application_notification.${transition.queueKind}_failed`
+  if (transition.retryable) {
+    logger.logWarn(eventName, attributes)
+  }
+  else {
+    logger.logError(eventName, attributes)
+  }
+}
+
 function leaseExpiresAt(now: Date): Date {
   return new Date(now.getTime() + LEASE_MS)
 }
 
-async function claimEvents(now: Date): Promise<NotificationEvent[]> {
+async function claimEvents(now: Date): Promise<NotificationClaimBatch<NotificationEvent>> {
   return db.transaction(async (tx) => {
-    await tx.update(applicationNotificationEvent).set({
+    const exhausted = await tx.update(applicationNotificationEvent).set({
       status: 'failed',
       leaseExpiresAt: null,
       resultCode: 'lease_expired',
@@ -48,7 +111,22 @@ async function claimEvents(now: Date): Promise<NotificationEvent[]> {
       eq(applicationNotificationEvent.status, 'processing'),
       lte(applicationNotificationEvent.leaseExpiresAt, now),
       sql`${applicationNotificationEvent.attemptCount} >= ${applicationNotificationEvent.maxAttempts}`,
-    ))
+    )).returning({
+      id: applicationNotificationEvent.id,
+      organizationId: applicationNotificationEvent.organizationId,
+      attemptCount: applicationNotificationEvent.attemptCount,
+      maxAttempts: applicationNotificationEvent.maxAttempts,
+    })
+
+    const exhaustedTransitions = exhausted.map(row => ({
+      organizationId: row.organizationId,
+      queueKind: 'event' as const,
+      recordId: row.id,
+      attemptCount: row.attemptCount,
+      maxAttempts: row.maxAttempts,
+      resultCode: 'lease_expired',
+      retryable: false,
+    }))
 
     const claimable = await tx.select({ id: applicationNotificationEvent.id })
       .from(applicationNotificationEvent)
@@ -69,25 +147,32 @@ async function claimEvents(now: Date): Promise<NotificationEvent[]> {
       .limit(EVENT_CLAIM_LIMIT)
       .for('update', { skipLocked: true })
 
-    if (claimable.length === 0) return []
-    return tx.update(applicationNotificationEvent).set({
+    if (claimable.length === 0) {
+      return { claimed: [], exhausted: exhaustedTransitions }
+    }
+    const claimed = await tx.update(applicationNotificationEvent).set({
       status: 'processing',
       attemptCount: sql`${applicationNotificationEvent.attemptCount} + 1`,
       leaseExpiresAt: leaseExpiresAt(now),
       resultCode: null,
       updatedAt: now,
     }).where(inArray(applicationNotificationEvent.id, claimable.map(row => row.id))).returning()
+    return { claimed, exhausted: exhaustedTransitions }
   })
 }
 
-async function failEvent(event: NotificationEvent, error: unknown, now: Date): Promise<void> {
+async function failEvent(
+  event: NotificationEvent,
+  error: unknown,
+  now: Date,
+): Promise<ApplicationNotificationFailureTransition | null> {
   const outcome = getApplicationNotificationFailureOutcome({
     attemptCount: event.attemptCount,
     maxAttempts: event.maxAttempts,
     now,
     failureCode: error instanceof Error ? error.name : 'fanout_failed',
   })
-  await db.update(applicationNotificationEvent).set({
+  const transitioned = await db.update(applicationNotificationEvent).set({
     ...outcome,
     leaseExpiresAt: null,
     updatedAt: now,
@@ -95,7 +180,23 @@ async function failEvent(event: NotificationEvent, error: unknown, now: Date): P
     eq(applicationNotificationEvent.id, event.id),
     eq(applicationNotificationEvent.status, 'processing'),
     eq(applicationNotificationEvent.attemptCount, event.attemptCount),
-  ))
+  )).returning({
+    id: applicationNotificationEvent.id,
+    organizationId: applicationNotificationEvent.organizationId,
+    attemptCount: applicationNotificationEvent.attemptCount,
+    maxAttempts: applicationNotificationEvent.maxAttempts,
+  })
+  const owned = transitioned[0]
+  if (!owned) return null
+  return {
+    organizationId: owned.organizationId,
+    queueKind: 'event',
+    recordId: owned.id,
+    attemptCount: owned.attemptCount,
+    maxAttempts: owned.maxAttempts,
+    resultCode: outcome.resultCode,
+    retryable: outcome.status === 'pending',
+  }
 }
 
 async function fanOutEvent(event: NotificationEvent, now: Date): Promise<void> {
@@ -248,7 +349,7 @@ async function fanOutEvent(event: NotificationEvent, now: Date): Promise<void> {
   })
 }
 
-async function claimMessages(now: Date): Promise<NotificationMessage[]> {
+async function claimMessages(now: Date): Promise<NotificationClaimBatch<NotificationMessage>> {
   return db.transaction(async (tx) => {
     const exhausted = await tx.update(applicationNotificationMessage).set({
       status: 'failed',
@@ -260,7 +361,14 @@ async function claimMessages(now: Date): Promise<NotificationMessage[]> {
       eq(applicationNotificationMessage.status, 'processing'),
       lte(applicationNotificationMessage.leaseExpiresAt, now),
       sql`${applicationNotificationMessage.attemptCount} >= ${applicationNotificationMessage.maxAttempts}`,
-    )).returning({ id: applicationNotificationMessage.id })
+    )).returning({
+      id: applicationNotificationMessage.id,
+      organizationId: applicationNotificationMessage.organizationId,
+      attemptCount: applicationNotificationMessage.attemptCount,
+      maxAttempts: applicationNotificationMessage.maxAttempts,
+      cadence: applicationNotificationMessage.cadence,
+      recipientKind: applicationNotificationMessage.recipientKind,
+    })
 
     if (exhausted.length > 0) {
       await tx.update(applicationNotificationDelivery).set({
@@ -292,14 +400,29 @@ async function claimMessages(now: Date): Promise<NotificationMessage[]> {
       .limit(MESSAGE_CLAIM_LIMIT)
       .for('update', { skipLocked: true })
 
-    if (claimable.length === 0) return []
-    return tx.update(applicationNotificationMessage).set({
+    const exhaustedTransitions = exhausted.map(row => ({
+      organizationId: row.organizationId,
+      queueKind: 'message' as const,
+      recordId: row.id,
+      attemptCount: row.attemptCount,
+      maxAttempts: row.maxAttempts,
+      resultCode: 'lease_expired',
+      retryable: false,
+      cadence: row.cadence,
+      recipientKind: row.recipientKind,
+    }))
+
+    if (claimable.length === 0) {
+      return { claimed: [], exhausted: exhaustedTransitions }
+    }
+    const claimed = await tx.update(applicationNotificationMessage).set({
       status: 'processing',
       attemptCount: sql`${applicationNotificationMessage.attemptCount} + 1`,
       leaseExpiresAt: leaseExpiresAt(now),
       resultCode: null,
       updatedAt: now,
     }).where(inArray(applicationNotificationMessage.id, claimable.map(row => row.id))).returning()
+    return { claimed, exhausted: exhaustedTransitions }
   })
 }
 
@@ -368,10 +491,10 @@ async function processMessage(
   message: NotificationMessage,
   now: Date,
   sendNotification: ApplicationNotificationSender,
-): Promise<void> {
+): Promise<ApplicationNotificationFailureTransition | null> {
   if (message.cadence === 'off' || !(await subscriptionStillActive(message))) {
     await cancelMessage(message, 'subscription_inactive', now)
-    return
+    return null
   }
 
   const [{ total = 0 } = { total: 0 }, rows, organizationRow] = await Promise.all([
@@ -420,7 +543,7 @@ async function processMessage(
   const totalApplications = Number(total)
   if (totalApplications === 0 || rows.length === 0) {
     await cancelMessage(message, 'empty_digest', now)
-    return
+    return null
   }
 
   const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -482,6 +605,7 @@ async function processMessage(
         eq(applicationNotificationDelivery.status, 'pending'),
       ))
     })
+    return null
   }
   catch (error) {
     const outcome = getApplicationNotificationFailureOutcome({
@@ -490,7 +614,7 @@ async function processMessage(
       now,
       failureCode: error instanceof Error ? error.name : 'provider_failed',
     })
-    await db.transaction(async (tx) => {
+    const transitioned = await db.transaction(async (tx) => {
       const transitioned = await tx.update(applicationNotificationMessage).set({
         ...outcome,
         leaseExpiresAt: null,
@@ -500,7 +624,7 @@ async function processMessage(
         eq(applicationNotificationMessage.status, 'processing'),
         eq(applicationNotificationMessage.attemptCount, message.attemptCount),
       )).returning({ id: applicationNotificationMessage.id })
-      if (transitioned.length === 0) return
+      if (transitioned.length === 0) return null
 
       if (outcome.status === 'failed') {
         await tx.update(applicationNotificationDelivery).set({
@@ -512,26 +636,48 @@ async function processMessage(
           eq(applicationNotificationDelivery.status, 'pending'),
         ))
       }
+      return transitioned[0] ?? null
     })
+    if (!transitioned) return null
+    return {
+      organizationId: message.organizationId,
+      queueKind: 'message',
+      recordId: transitioned.id,
+      attemptCount: message.attemptCount,
+      maxAttempts: message.maxAttempts,
+      resultCode: outcome.resultCode,
+      retryable: outcome.status === 'pending',
+      cadence: message.cadence,
+      recipientKind: message.recipientKind,
+    }
   }
 }
 
 export async function processApplicationNotificationCycle(
   now = new Date(),
   sendNotification: ApplicationNotificationSender = sendApplicationNotificationEmail,
+  logger: ApplicationNotificationQueueLogger = defaultQueueLogger,
 ): Promise<void> {
-  const events = await claimEvents(now)
-  for (const event of events) {
+  const eventBatch = await claimEvents(now)
+  for (const transition of eventBatch.exhausted) {
+    emitApplicationNotificationFailureTelemetry(transition, logger)
+  }
+  for (const event of eventBatch.claimed) {
     try {
       await fanOutEvent(event, now)
     }
     catch (error) {
-      await failEvent(event, error, now)
+      const transition = await failEvent(event, error, now)
+      emitApplicationNotificationFailureTelemetry(transition, logger)
     }
   }
 
-  const messages = await claimMessages(now)
-  for (const message of messages) {
-    await processMessage(message, now, sendNotification)
+  const messageBatch = await claimMessages(now)
+  for (const transition of messageBatch.exhausted) {
+    emitApplicationNotificationFailureTelemetry(transition, logger)
+  }
+  for (const message of messageBatch.claimed) {
+    const transition = await processMessage(message, now, sendNotification)
+    emitApplicationNotificationFailureTelemetry(transition, logger)
   }
 }
