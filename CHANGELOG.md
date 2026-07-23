@@ -28,6 +28,7 @@ self-hosters.
 
 ### Fixed
 
+- Made immediate and delayed candidate acknowledgement and rejection emails durable across deploys and restarts, with idempotent delivery and bounded retries.
 - Bound application-owned OIDC discovery and organization-configured custom AI requests to validated public DNS answers without weakening TLS hostname verification.
 - Made Jobs, Candidates, and Applications dashboard lists complete beyond their first API page, with accurate ranges and full-result search, filtering, and sorting.
 - Kept chatbot conversations sendable beyond fifty stored messages by bounding only the recent model context.

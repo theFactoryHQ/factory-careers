@@ -128,6 +128,17 @@ export type ApplicationNotificationSubscriptionSnapshot = {
   }>
 }
 
+export type CandidateWorkflowEmailSnapshot = {
+  candidateName: string
+  candidateFirstName: string
+  candidateLastName: string
+  jobTitle: string
+  organizationName: string
+  applicationDate: string
+  applicationStatus: string
+  dashboardApplicationUrl?: string
+}
+
 // ─────────────────────────────────────────────
 // ATS Domain Tables — ALL scoped by organizationId
 // ─────────────────────────────────────────────
@@ -230,6 +241,46 @@ export const application = pgTable('application', {
   index('application_job_id_idx').on(t.jobId),
   index('application_current_analysis_run_id_idx').on(t.currentAnalysisRunId),
   uniqueIndex('application_org_candidate_job_idx').on(t.organizationId, t.candidateId, t.jobId),
+]))
+
+/**
+ * Durable candidate-facing acknowledgement and rejection emails.
+ * Template source and render inputs are snapshotted at enqueue time so later
+ * settings or template edits cannot change an already committed delivery.
+ */
+export const candidateWorkflowEmailQueue = pgTable('candidate_workflow_email_queue', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  applicationId: text('application_id').notNull().references(() => application.id, { onDelete: 'cascade' }),
+  candidateId: text('candidate_id').notNull().references(() => candidate.id, { onDelete: 'cascade' }),
+  jobId: text('job_id').notNull().references(() => job.id, { onDelete: 'cascade' }),
+  purpose: emailTemplatePurposeEnum('purpose').notNull(),
+  recipientEmail: text('recipient_email').notNull(),
+  templateId: text('template_id').notNull(),
+  templateSubject: text('template_subject').notNull(),
+  templateBody: text('template_body').notNull(),
+  snapshot: jsonb('snapshot').$type<CandidateWorkflowEmailSnapshot>().notNull(),
+  scheduledFor: timestamp('scheduled_for', { withTimezone: true }).notNull(),
+  dedupeKey: text('dedupe_key').notNull(),
+  status: processingTaskStatusEnum('status').notNull().default('pending'),
+  attemptCount: integer('attempt_count').notNull().default(0),
+  maxAttempts: integer('max_attempts').notNull().default(5),
+  availableAt: timestamp('available_at', { withTimezone: true }).notNull(),
+  leaseExpiresAt: timestamp('lease_expires_at', { withTimezone: true }),
+  providerMessageId: text('provider_message_id'),
+  resultCode: text('result_code'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+}, (t) => ([
+  index('candidate_workflow_email_queue_organization_id_idx').on(t.organizationId),
+  index('candidate_workflow_email_queue_application_id_idx').on(t.applicationId),
+  uniqueIndex('candidate_workflow_email_queue_dedupe_key_idx').on(t.dedupeKey),
+  index('candidate_workflow_email_queue_runnable_idx')
+    .on(t.status, t.availableAt)
+    .where(sql`${t.status} IN ('pending', 'processing')`),
+  check('candidate_workflow_email_queue_purpose_check', sql`${t.purpose} IN ('application_acknowledgement', 'application_rejection')`),
+  check('candidate_workflow_email_queue_attempts_check', sql`${t.attemptCount} >= 0 AND ${t.maxAttempts} > 0`),
 ]))
 
 /**

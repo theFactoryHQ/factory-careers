@@ -442,6 +442,13 @@
       "when": 1784235600000,
       "tag": "0061_hash_invite_link_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1784239200000,
+      "tag": "0062_candidate_workflow_email_queue",
+      "breakpoints": true
     }
   ]
 }

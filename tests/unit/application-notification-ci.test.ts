@@ -11,7 +11,9 @@ describe('application notification PostgreSQL CI gate', () => {
     }
 
     expect(packageJson.scripts['test:integration:application-notifications'])
-      .toBe('vitest run tests/integration/application-notifications.pg.test.ts')
+      .toBe(
+        'vitest run tests/integration/application-notifications.pg.test.ts tests/integration/candidate-workflow-email.pg.test.ts',
+      )
   })
 
   it('provisions PostgreSQL 16 and runs the notification test in required mode', () => {

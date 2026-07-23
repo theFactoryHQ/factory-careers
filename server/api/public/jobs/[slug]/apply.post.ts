@@ -2,7 +2,7 @@ import { eq, and, asc, isNull, or, sql } from 'drizzle-orm'
 import { job, jobQuestion, organization, applicationSource, trackingLink, orgSettings } from '../../../../database/schema'
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
 import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
-import { sendConfiguredApplicationAcknowledgementEmail } from '../../../../utils/email'
+import { prepareConfiguredCandidateWorkflowEmail } from '../../../../utils/candidateWorkflowEmailQueue'
 import {
   DEFAULT_DOCUMENT_PARSE_TIMEOUT_MS,
   DocumentParseError,
@@ -463,6 +463,28 @@ export default defineEventHandler(async (event) => {
       }
     : undefined
 
+  const applicationSubmittedAt = new Date()
+  const candidateName = `${firstName} ${lastName}`.trim()
+  const candidateWorkflowEmail = await prepareConfiguredCandidateWorkflowEmail({
+    purpose: 'application_acknowledgement',
+    now: applicationSubmittedAt,
+    data: {
+      organizationId: orgId,
+      candidateEmail: email.toLowerCase(),
+      candidateName,
+      candidateFirstName: firstName,
+      candidateLastName: lastName,
+      jobTitle: existingJob.title,
+      organizationName: env.FACTORY_ORG_NAME,
+      applicationDate: applicationSubmittedAt.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+      applicationStatus: 'new',
+    },
+  })
+
   let createdApplication: Awaited<ReturnType<typeof createPublicApplication>>
   try {
     createdApplication = await createPublicApplication({
@@ -487,6 +509,7 @@ export default defineEventHandler(async (event) => {
       responses: validNonFileResponses,
       documents: plannedDocumentUploads.map(({ data: _data, kind: _kind, ...reservedDocument }) => reservedDocument),
       maxDocumentsPerCandidate: MAX_DOCUMENTS_PER_CANDIDATE,
+      candidateWorkflowEmail,
     })
   } catch (error) {
     if (error instanceof DuplicatePublicApplicationError) {
@@ -629,38 +652,9 @@ export default defineEventHandler(async (event) => {
   }
 
   // ─────────────────────────────────────────────
-  // 12. Send the candidate acknowledgement. Internal application notifications
-  // are enqueued by the database trigger and delivered by the durable worker.
+  // 12. Candidate acknowledgement and internal application notifications were
+  // durably enqueued with the owning application transaction.
   // ─────────────────────────────────────────────
-
-  if (newApplication) {
-    const candidateName = `${firstName} ${lastName}`.trim()
-
-    const receiptEmail = sendConfiguredApplicationAcknowledgementEmail({
-      organizationId: orgId,
-      candidateEmail: email.toLowerCase(),
-      candidateName,
-      candidateFirstName: firstName,
-      candidateLastName: lastName,
-      jobTitle: existingJob.title,
-      organizationName: env.FACTORY_ORG_NAME,
-      applicationDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-      applicationStatus: 'new',
-    }).catch((err) => {
-      logError('application.receipt_email_failed', {
-        application_id: newApplication.id,
-        job_id: jobId,
-        error_message: err instanceof Error ? err.message : String(err),
-      })
-      if (env.FACTORY_EMAIL_TEST_MODE === 'capture') {
-        throw err
-      }
-    })
-
-    if (env.FACTORY_EMAIL_TEST_MODE === 'capture') {
-      await receiptEmail
-    }
-  }
 
   // ─────────────────────────────────────────────
   // 13. Queue automatic scoring only after every upload is completed and the

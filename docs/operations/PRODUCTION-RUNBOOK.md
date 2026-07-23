@@ -60,6 +60,29 @@ incident review; leave those rows in place and do not edit queue state directly.
 exception that escapes an entire worker cycle. It is not emitted for each
 provider or fanout failure handled by the durable queue.
 
+Candidate acknowledgements and rejection emails use the same
+`APPLICATION_NOTIFICATION_WORKER_ENABLED` runtime flag but a separate
+`candidate_workflow_email_queue`. Both immediate and delayed sends are inserted
+with the owning application or status transition, and Resend receives a stable
+queue-row idempotency key. Inspect counts by state without selecting recipient
+or template content:
+
+```sql
+SELECT purpose, status, count(*)
+FROM candidate_workflow_email_queue
+GROUP BY purpose, status
+ORDER BY purpose, status;
+```
+
+Retry and terminal transitions emit
+`candidate_workflow_email.retry_scheduled` and
+`candidate_workflow_email.failed`. Their safe attributes are `org_id`,
+`queue_id`, `purpose`, `attempt_count`, `max_attempts`, sanitized `result_code`,
+and `retryable`. `candidate_workflow_email_worker.cycle_failed` indicates an
+unexpected cycle-level exception. These events never contain candidate names,
+addresses, template content, or raw provider errors. Leave failed rows in place
+for incident review; do not manually alter attempts or leases.
+
 ## Validation
 
 ```bash
