@@ -15,6 +15,7 @@ import { emailClient } from "../lib/email/client";
 import {
   ApplicationRejectionEmail,
   ApplicationReceiptEmail,
+  ApplicationDigestEmail,
   ApplicationTeamAlertEmail,
   CandidateWorkflowEmail,
   InterviewInvitationEmail,
@@ -25,6 +26,7 @@ import {
   PrivacyRequestVerificationEmail,
   VerificationEmail,
   careersEmailConfig,
+  type ApplicationDigestGroup,
 } from "../lib/email/templates";
 import { env } from "./env";
 import { logError } from "./logger";
@@ -485,6 +487,60 @@ export async function sendApplicationTeamAlertEmail(data: {
       error_message: err instanceof Error ? err.message : String(err),
     });
   }
+}
+
+export async function sendApplicationNotificationEmail(data: {
+  idempotencyKey: string;
+  recipientEmail: string;
+  cadence: "immediate" | "daily" | "weekly" | "monthly";
+  organizationName: string;
+  totalApplications: number;
+  overflowCount: number;
+  dashboardUrl: string;
+  groups: ApplicationDigestGroup[];
+}): Promise<string | null> {
+  const firstApplication = data.groups[0]?.applications[0];
+  const firstJobTitle = data.groups[0]?.jobTitle;
+  const isImmediate = data.cadence === "immediate";
+
+  if (isImmediate && (!firstApplication || !firstJobTitle)) {
+    throw new Error("notification_payload_empty");
+  }
+
+  const cadenceLabel = `${data.cadence.charAt(0).toUpperCase()}${data.cadence.slice(1)}`;
+  const result = await emailClient.send({
+    from: emailClient.defaultFrom,
+    to: data.recipientEmail,
+    subject: isImmediate
+      ? `New application: ${firstApplication.candidateName} for ${firstJobTitle}`
+      : `${cadenceLabel} application summary — ${data.totalApplications}`,
+    react: isImmediate
+      ? ApplicationTeamAlertEmail({
+          candidateEmail: firstApplication.candidateEmail || "",
+          candidateName: firstApplication.candidateName,
+          jobTitle: firstJobTitle,
+          organizationName: data.organizationName,
+          dashboardUrl: firstApplication.dashboardUrl,
+          config: careersEmailConfig,
+        }) as React.ReactElement
+      : ApplicationDigestEmail({
+          cadence: data.cadence,
+          organizationName: data.organizationName,
+          totalApplications: data.totalApplications,
+          overflowCount: data.overflowCount,
+          dashboardUrl: data.dashboardUrl,
+          groups: data.groups,
+          config: careersEmailConfig,
+        }) as React.ReactElement,
+  }, { idempotencyKey: data.idempotencyKey });
+
+  if (result.error) {
+    const providerError = new Error("Application notification provider rejected the message");
+    providerError.name = result.error.name || "provider_rejected";
+    throw providerError;
+  }
+
+  return result.data?.id ?? null;
 }
 
 export async function sendPrivacyRequestVerificationEmail(data: {

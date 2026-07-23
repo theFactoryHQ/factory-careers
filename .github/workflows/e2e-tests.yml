@@ -715,6 +715,7 @@ jobs:
       FACTORY_EMAIL_TEST_MODE: capture
       FACTORY_EMAIL_CAPTURE_PATH: /tmp/factory-careers-e2e-email.jsonl
       FACTORY_CAREERS_HIRING_INBOX: hiring-e2e@example.com
+      APPLICATION_NOTIFICATION_WORKER_ENABLED: "true"
       FACTORY_CAREERS_PRIVACY_INBOX: privacy-e2e@example.com
       S3_ENDPOINT: http://127.0.0.1:9000
       S3_ACCESS_KEY: e2e-access-key

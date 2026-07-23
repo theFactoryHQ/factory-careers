@@ -29,6 +29,20 @@ Production uses Render plus Supabase Postgres and Supabase Storage S3. Required 
 - `AUTH_MICROSOFT_CLIENT_SECRET`
 - `AUTH_MICROSOFT_TENANT_ID`
 - `FACTORY_CAREERS_HIRING_INBOX`
+- `APPLICATION_NOTIFICATION_WORKER_ENABLED=true`
+
+`FACTORY_CAREERS_HIRING_INBOX` remains the fallback shared recipient when an
+organization has not saved an inbox override. The default shared schedule is a
+weekly Monday 09:00 digest in the organization email-workflow timezone; personal
+notifications default to off. Only one application-notification worker should be
+enabled per ordinary Render web process, although database leases and Resend
+idempotency keys protect overlapping workers during deploys.
+
+After deployment, verify that a newly inserted application creates one
+`application_notification_event` row, progresses to recipient delivery/message
+rows, and reaches `completed`. Do not manually backfill older applications.
+Failures expose sanitized `result_code` values; inspect server logs for the
+corresponding worker cycle and leave failed rows in place for incident review.
 
 ## Validation
 
@@ -44,4 +58,3 @@ npm run ops:object-storage-restore-rehearsal
 - Disable affected public or dashboard flows through feature flags where possible.
 - Preserve logs and deployment metadata before rollback.
 - Prefer rollback to the last known-good commit/image when the blast radius is unclear.
-

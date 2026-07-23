@@ -15,6 +15,8 @@ self-hosters.
 ### Added
 
 - Added CLI batch inspection and resumption plus organization-wide missing-only scoring, finite wait controls, and stable nonzero outcomes for failed, cancelled, or timed-out processing.
+- Added independent application email preferences for each member and the shared careers inbox, with immediate, daily, weekly, monthly, and off cadences in dashboard settings and the authenticated CLI.
+- Added a durable application notification worker with database-triggered event capture, grouped digest emails, tenant isolation, leases, bounded retries, and provider idempotency.
 
 ### Changed
 

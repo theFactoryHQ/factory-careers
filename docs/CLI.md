@@ -187,6 +187,7 @@ Core commands:
 - `system info`, `system version`, `system changelog`, `system capabilities`
 - `source-tracking list`, `source-tracking get`, `source-tracking create`, `source-tracking update`, `source-tracking delete`, `source-tracking link-stats`, `source-tracking stats`
 - `email-templates list`, `email-templates create`, `email-templates update`, `email-templates delete`
+- `notifications personal get`, `notifications personal set`, `notifications inbox get`, `notifications inbox set`
 - `properties list`, `properties create`, `properties update`, `properties delete`, `properties reorder`
 - `org search`, `org settings`, `org update-settings`, `org invite-links info`, `org invite-links list`, `org invite-links create`, `org invite-links accept`, `org invite-links revoke`, `org join-requests create`, `org join-requests list`, `org join-requests approve`, `org join-requests reject`, `org sso-providers list`, `org sso-providers register`, `org sso-providers delete`
 - `calendar status`, `calendar connect`, `calendar disconnect`, `calendar renew-webhooks`
@@ -212,6 +213,8 @@ Some routes intentionally remain outside the deterministic CLI surface:
 Server API coverage is tracked in `packages/careers-cli/src/routeCoverage.ts`. The unit test `tests/unit/cli-route-coverage-manifest.test.ts` walks `server/api` and fails if a route is missing from the manifest, if a supported route lacks a CLI command, or if an excluded/internal route lacks a reason. When adding or changing a portal/API workflow, update the CLI command surface or record the explicit exclusion in that manifest.
 
 `email-templates create --stdin --yes` and `email-templates update --stdin --yes` accept the same workflow template payloads as `/api/email-templates`, including `purpose` values such as `application_acknowledgement`, `application_rejection`, and `interview_invitation`.
+
+`notifications personal set --stdin --yes` and `notifications inbox set --stdin --yes` accept a normalized schedule with `cadence`, `timeZone`, `deliveryTime`, `weeklyDay`, and `monthlyDay`. Inbox settings additionally accept `recipientEmail`; use `null` to restore `FACTORY_CAREERS_HIRING_INBOX` as the fallback. Cadence is one of `immediate`, `daily`, `weekly`, `monthly`, or `off`.
 
 `org update-settings --stdin --yes` accepts the same JSON payload as `/api/org-settings`, including `signupAllowedDomains` for owner-managed signup domain allowlists and workflow email settings such as `sendApplicationAcknowledgement`, `applicationAcknowledgementTemplateId`, `sendApplicationRejection`, `applicationRejectionTemplateId`, and `interviewInvitationTemplateId`. The server still enforces owner-only updates and requires each signup domain to match a configured SSO provider or organization-level calendar integration.
 

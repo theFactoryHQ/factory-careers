@@ -24,7 +24,7 @@ async function advanceToSubmitButton(page: Page) {
 }
 
 test.describe("Fake mail capture", () => {
-  test("captures application receipt and hiring-team alert without external delivery", async ({ authenticatedPage, browser }, testInfo) => {
+  test("captures application receipt and durable immediate alert without external delivery", async ({ authenticatedPage, browser }, testInfo) => {
     const capturePath = process.env.FACTORY_EMAIL_CAPTURE_PATH;
     expect(capturePath, "FACTORY_EMAIL_CAPTURE_PATH must be set for fake-mail E2E").toBeTruthy();
     expect(process.env.FACTORY_EMAIL_TEST_MODE, "E2E mail must use capture mode, not a real provider").toBe("capture");
@@ -41,6 +41,18 @@ test.describe("Fake mail capture", () => {
     const applicantName = `${applicant.firstName} ${applicant.lastName}`;
     const hiringInbox = process.env.FACTORY_CAREERS_HIRING_INBOX || "careers@thefactoryhq.com";
     const organizationName = process.env.FACTORY_ORG_NAME || "Factory";
+
+    const notificationSettings = await recruiterPage.request.patch("/api/notification-settings/application-email", {
+      data: {
+        cadence: "immediate",
+        recipientEmail: hiringInbox,
+        timeZone: "America/New_York",
+        deliveryTime: "09:00",
+        weeklyDay: 1,
+        monthlyDay: 1,
+      },
+    });
+    expect(notificationSettings.ok(), "inbox notification settings should save").toBe(true);
 
     await recruiterPage.goto("/dashboard/jobs/new");
     await recruiterPage.waitForLoadState("networkidle");
@@ -99,7 +111,7 @@ test.describe("Fake mail capture", () => {
 
     await expect.poll(async () => (await readCapturedEmails(capturePath!)).length, {
       message: "application submission should capture receipt and team alert emails",
-      timeout: 10_000,
+      timeout: 20_000,
     }).toBeGreaterThanOrEqual(2);
 
     const capturedEmails = await readCapturedEmails(capturePath!);
