@@ -26,6 +26,7 @@ import type {
   ChatbotStreamEvent,
   ChatbotToolCall,
 } from '~~/shared/chatbot'
+import { selectChatbotContextMessages } from '~~/shared/chatbot'
 
 /** Lightweight summary of an AI configuration as exposed by GET /api/ai-config. */
 export interface ChatbotAiConfigSummary {
@@ -438,15 +439,17 @@ export function useChatbot() {
           aiConfigId: selectedAiConfigId.value,
           scope: scope.value,
           thinking: thinking.value,
-          messages: messages.value
-            .slice(0, -1) // exclude the empty assistant placeholder
-            .map((m) => ({
-              role: m.role,
-              content: m.content,
-              ...(m.id === userMessage.id && attachmentIds.length
-                ? { attachmentIds }
-                : {}),
-            })),
+          messages: selectChatbotContextMessages(
+            messages.value
+              .slice(0, -1) // exclude the empty assistant placeholder
+              .map((m) => ({
+                role: m.role,
+                content: m.content,
+                ...(m.id === userMessage.id && attachmentIds.length
+                  ? { attachmentIds }
+                  : {}),
+              })),
+          ),
         }),
         signal: controller.signal,
       })

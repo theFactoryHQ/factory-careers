@@ -28,6 +28,7 @@ self-hosters.
 
 ### Fixed
 
+- Kept chatbot conversations sendable beyond fifty stored messages by bounding only the recent model context.
 - Identified server logs and analytics as Factory Careers in production telemetry.
 - Made application notification retries and exhausted deliveries emit sanitized structured telemetry for operators.
 - Prevented expired application notification workers from overwriting delivery state owned by a newer queue attempt.
