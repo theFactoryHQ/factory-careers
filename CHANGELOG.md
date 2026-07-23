@@ -26,6 +26,7 @@ self-hosters.
 
 ### Fixed
 
+- Kept the application status filter synchronized with filtered and unfiltered dashboard navigation.
 - Removed the verbose search-scope helper from the job pipeline.
 - Made AI usage charts render a true rolling 30-day window with readable scales, quiet-day gaps, compact bars, period totals, and accessible daily details.
 - Pinned recruiter-search database functions to trusted schemas, protected device authorization with row-level security, and indexed durable-processing relationships used during cleanup.

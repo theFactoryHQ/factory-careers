@@ -3,9 +3,12 @@ import { dashboardListPageKeepalive } from '~~/shared/dashboard-keepalive'
 import { FileText, Search, Briefcase, Clock, ArrowUp, ArrowDown, ArrowUpDown, Minimize2 } from 'lucide-vue-next'
 import type { SortDir } from '~/composables/useTableSort'
 import {
+  APPLICATION_STATUS_KEYS,
   formatRelativeTime,
   getApplicationStatusLabel,
   getScoreBadgeClass,
+  parseApplicationStatusQuery,
+  type ApplicationStatusKey,
 } from '~/utils/status-display'
 import { getPropertyValue } from '~/utils/property-display'
 
@@ -62,20 +65,24 @@ const {
 
 // ── Status filter ─────────────────────────────────────────────────────────────
 
-const STATUS_OPTIONS = ['new', 'screening', 'interview', 'offer', 'hired', 'rejected'] as const
-type Status = typeof STATUS_OPTIONS[number]
+const activeStatus = useState<ApplicationStatusKey | undefined>(
+  'app-filter-status',
+  () => parseApplicationStatusQuery(route.query.status),
+)
 
-const initialAppStatus = STATUS_OPTIONS.includes(route.query.status as any)
-  ? (route.query.status as Status)
-  : undefined
-const activeStatus = useState<Status | undefined>('app-filter-status', () => initialAppStatus)
-// Ensure the state matches the URL on navigation (useState caches across client-side navigations)
-if (initialAppStatus !== undefined) {
-  activeStatus.value = initialAppStatus
-}
+// Route navigation is authoritative, including when it clears the status query.
+watch(
+  () => route.query.status,
+  (status) => {
+    activeStatus.value = parseApplicationStatusQuery(status)
+  },
+  { immediate: true },
+)
 
 // Sync the URL when the status filter changes
 watch(activeStatus, (newStatus) => {
+  if (parseApplicationStatusQuery(route.query.status) === newStatus) return
+
   const query = { ...route.query }
   if (newStatus) {
     query.status = newStatus
@@ -183,7 +190,7 @@ function clearAllFilters() {
 // ── Drawer + Saved Views ──────────────────────────────────────────────────────
 
 type ApplicationsViewSettings = {
-  status?: Status
+  status?: ApplicationStatusKey
   jobId?: string
   propertyFilters: import('~~/shared/properties').PropertyFilter[]
   sortKey: SortKey
@@ -297,7 +304,7 @@ const selectedApplicationId = ref<string | null>(null)
               @click="activeStatus = undefined"
             >Any</button>
             <button
-              v-for="s in STATUS_OPTIONS"
+              v-for="s in APPLICATION_STATUS_KEYS"
               :key="s"
               type="button"
               class="factory-filter-chip px-3 py-1.5 text-xs"

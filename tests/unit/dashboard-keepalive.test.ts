@@ -49,4 +49,20 @@ describe('dashboard list keepalive policy', () => {
     const pipeline = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
     expect(pipeline).not.toMatch(/keepalive:\s*/)
   })
+
+  it('syncs application status state from the route query, including cleared filters', () => {
+    const applications = readProjectFile('app/pages/dashboard/applications/index.vue')
+
+    expect(applications).toMatch(
+      /watch\(\s*\(\)\s*=>\s*route\.query\.status,[\s\S]*?activeStatus\.value\s*=\s*parseApplicationStatusQuery\([^)]*\)[\s\S]*?\{\s*immediate:\s*true\s*\}/,
+    )
+  })
+
+  it('avoids replacing the URL when application status already matches it', () => {
+    const applications = readProjectFile('app/pages/dashboard/applications/index.vue')
+
+    expect(applications).toMatch(
+      /watch\(activeStatus,[\s\S]*?parseApplicationStatusQuery\(route\.query\.status\)[\s\S]*?===\s*newStatus[\s\S]*?return/,
+    )
+  })
 })

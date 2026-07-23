@@ -20,4 +20,38 @@ test.describe('Dashboard list keepalive', () => {
 
     await expect(page.getByLabel('Search candidates')).toHaveValue(marker, { timeout: 10_000 })
   })
+
+  test('application status follows filtered and unfiltered dashboard entry points', async ({ authenticatedPage }) => {
+    const page = authenticatedPage
+    const topNav = page.getByRole('banner')
+
+    await page.goto('/dashboard/applications?status=screening')
+    await page.waitForLoadState('networkidle')
+    await page.getByRole('button', { name: 'Filters' }).click()
+
+    let filterDrawer = page.getByRole('dialog', { name: 'Filter applications' })
+    await expect(filterDrawer.getByRole('button', { name: 'Screening' })).toHaveClass(/is-active/)
+    await filterDrawer.getByRole('button', { name: 'Close' }).click()
+
+    await topNav.getByRole('link', { name: 'Dashboard' }).click()
+    await page.waitForURL('**/dashboard', { timeout: 15_000 })
+
+    await page.getByRole('main').getByRole('link', { name: /Applications.*Total received/i }).click()
+    await expect(page).toHaveURL(/\/dashboard\/applications$/)
+    await page.getByRole('button', { name: 'Filters' }).click()
+
+    filterDrawer = page.getByRole('dialog', { name: 'Filter applications' })
+    await expect(filterDrawer.getByRole('button', { name: 'Any' })).toHaveClass(/is-active/)
+    await filterDrawer.getByRole('button', { name: 'Close' }).click()
+
+    await topNav.getByRole('link', { name: 'Dashboard' }).click()
+    await page.waitForURL('**/dashboard', { timeout: 15_000 })
+
+    await page.getByRole('main').getByRole('link', { name: /To Review/i }).click()
+    await expect(page).toHaveURL(/\/dashboard\/applications\?status=new$/)
+    await page.getByRole('button', { name: 'Filters' }).click()
+
+    filterDrawer = page.getByRole('dialog', { name: 'Filter applications' })
+    await expect(filterDrawer.getByRole('button', { name: 'New' })).toHaveClass(/is-active/)
+  })
 })

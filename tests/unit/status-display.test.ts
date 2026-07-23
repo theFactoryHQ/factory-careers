@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
+  APPLICATION_STATUS_KEYS,
   APPLICATION_PIPELINE_STAGES,
   getApplicationStatusBadgeClass,
   getApplicationStatusDotClass,
@@ -30,10 +31,21 @@ import {
   getSourceChannelBadgeClass,
   getSourceChannelDotClass,
   getSourceChannelLabel,
+  parseApplicationStatusQuery,
 } from '../../app/utils/status-display'
 
 describe('status display helpers', () => {
   const stylesheet = readFileSync(join(process.cwd(), 'app/assets/css/main.css'), 'utf8')
+
+  it('parses only recognized scalar application status queries', () => {
+    for (const status of APPLICATION_STATUS_KEYS) {
+      expect(parseApplicationStatusQuery(status)).toBe(status)
+    }
+
+    expect(parseApplicationStatusQuery(undefined)).toBeUndefined()
+    expect(parseApplicationStatusQuery('pending')).toBeUndefined()
+    expect(parseApplicationStatusQuery(['screening'])).toBeUndefined()
+  })
 
   it('returns centralized labels with readable fallbacks', () => {
     expect(getApplicationStatusLabel('screening')).toBe('Screening')
