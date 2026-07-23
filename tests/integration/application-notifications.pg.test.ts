@@ -11,6 +11,12 @@ import * as schema from '../../server/database/schema'
 const adminUrl = process.env.APPLICATION_NOTIFICATION_PG_TEST_URL
   ?? process.env.PROCESSING_QUEUE_PG_TEST_URL
   ?? process.env.SCORING_RUN_PG_TEST_URL
+const postgresRequired = process.env.APPLICATION_NOTIFICATION_PG_REQUIRED === 'true'
+if (postgresRequired && !adminUrl) {
+  throw new Error(
+    'APPLICATION_NOTIFICATION_PG_TEST_URL is required when APPLICATION_NOTIFICATION_PG_REQUIRED=true',
+  )
+}
 const describeWithPostgres = adminUrl ? describe : describe.skip
 const migrationsFolder = join(process.cwd(), 'server/database/migrations')
 

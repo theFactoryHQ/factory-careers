@@ -28,6 +28,7 @@
     "db:reseed": "npx tsx server/scripts/delete-demo-org.ts && npx tsx server/scripts/seed.ts",
     "test": "vitest run",
     "test:unit": "vitest run",
+    "test:integration:application-notifications": "vitest run tests/integration/application-notifications.pg.test.ts",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "test:smoke:ai-candidate-review": "vitest run --config vitest.smoke.config.ts tests/smoke/ai-candidate-review-context-smoke.smoke.ts",
