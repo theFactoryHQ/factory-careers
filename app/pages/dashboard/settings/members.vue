@@ -222,7 +222,7 @@ function formatExpiresAt(expiresAt: Date | string): string {
 // ─────────────────────────────────────────────
 // Invite links (shareable)
 // ─────────────────────────────────────────────
-const inviteLinks = ref<InviteLink[]>([])
+const inviteLinks = ref<ListedInviteLink[]>([])
 const isLoadingLinks = ref(true)
 const linksError = ref('')
 const showCreateLinkForm = ref(false)
@@ -231,6 +231,9 @@ const newLinkMaxUses = ref<string | number>('')
 const newLinkExpiresInHours = ref(168) // 7 days default
 const isCreatingLink = ref(false)
 const createLinkError = ref('')
+const createdInviteLink = ref<CreatedInviteLink | null>(null)
+const createdInviteLinkCopyButton = ref<HTMLButtonElement | null>(null)
+const createInviteLinkButton = ref<HTMLButtonElement | null>(null)
 const copiedLinkId = ref<string | null>(null)
 const revokingLinkId = ref<string | null>(null)
 
@@ -266,7 +269,7 @@ async function handleCreateLink() {
       return
     }
 
-    await createInviteLinkApi({
+    createdInviteLink.value = await createInviteLinkApi({
       role: newLinkRole.value,
       maxUses,
       expiresInHours: newLinkExpiresInHours.value,
@@ -278,6 +281,8 @@ async function handleCreateLink() {
     newLinkMaxUses.value = ''
     newLinkExpiresInHours.value = 168
     await fetchInviteLinks()
+    await nextTick()
+    createdInviteLinkCopyButton.value?.focus()
   }
   catch (err: any) {
     toast.error('Failed to create invite link', { message: err?.data?.statusMessage })
@@ -291,23 +296,33 @@ function getInviteLinkUrl(token: string): string {
   return `${window.location.origin}/join/${token}`
 }
 
-async function copyLinkToClipboard(link: { id: string; token: string }) {
+async function copyCreatedInviteLink() {
+  const revealedLink = createdInviteLink.value
+  if (!revealedLink) return
+
   try {
-    await navigator.clipboard.writeText(getInviteLinkUrl(link.token))
-    copiedLinkId.value = link.id
+    await navigator.clipboard.writeText(getInviteLinkUrl(revealedLink.token))
+    copiedLinkId.value = revealedLink.id
     setTimeout(() => { copiedLinkId.value = null }, 2000)
   }
   catch {
     // Fallback for non-secure contexts
     const textArea = document.createElement('textarea')
-    textArea.value = getInviteLinkUrl(link.token)
+    textArea.value = getInviteLinkUrl(revealedLink.token)
     document.body.appendChild(textArea)
     textArea.select()
     document.execCommand('copy')
     document.body.removeChild(textArea)
-    copiedLinkId.value = link.id
+    copiedLinkId.value = revealedLink.id
     setTimeout(() => { copiedLinkId.value = null }, 2000)
   }
+}
+
+async function dismissCreatedInviteLink() {
+  createdInviteLink.value = null
+  copiedLinkId.value = null
+  await nextTick()
+  createInviteLinkButton.value?.focus()
 }
 
 async function handleRevokeLink(linkId: string) {
@@ -731,6 +746,7 @@ onUnmounted(() => {
           </div>
           <button
             v-if="!showCreateLinkForm"
+            ref="createInviteLinkButton"
             class="ui-button ui-button-primary px-3 py-1.5 text-xs"
             @click="showCreateLinkForm = true"
           >
@@ -807,6 +823,48 @@ onUnmounted(() => {
         </div>
       </Transition>
 
+      <div
+        v-if="createdInviteLink"
+        class="ui-feedback-success mx-4 sm:mx-6 my-4 p-4"
+        role="status"
+        aria-live="polite"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-semibold">Invite link created</h3>
+            <p class="mt-1 text-xs">
+              This link cannot be shown again. Copy it now and share it securely.
+            </p>
+          </div>
+          <button
+            class="ui-button ui-button-ghost p-1"
+            aria-label="Dismiss invite link"
+            @click="dismissCreatedInviteLink"
+          >
+            <X class="size-4" />
+          </button>
+        </div>
+        <div class="mt-3 flex flex-col sm:flex-row gap-2">
+          <input
+            class="ui-field min-w-0 flex-1 font-mono text-xs"
+            :value="getInviteLinkUrl(createdInviteLink.token)"
+            readonly
+            aria-label="New invite link"
+            @focus="($event.target as HTMLInputElement).select()"
+          />
+          <button
+            ref="createdInviteLinkCopyButton"
+            class="ui-button ui-button-primary px-3 py-1.5 text-xs"
+            aria-label="Copy newly created invite link"
+            @click="copyCreatedInviteLink"
+          >
+            <Check v-if="copiedLinkId === createdInviteLink.id" class="size-3" />
+            <Copy v-else class="size-3" />
+            {{ copiedLinkId === createdInviteLink.id ? 'Copied' : 'Copy link' }}
+          </button>
+        </div>
+      </div>
+
       <!-- Loading state -->
       <div v-if="isLoadingLinks" class="ui-empty-state px-4 sm:px-6 py-6 text-sm">
         <Loader2 class="size-4 animate-spin mx-auto mb-1.5" />
@@ -866,16 +924,6 @@ onUnmounted(() => {
           </div>
 
           <div class="flex items-center gap-1.5 flex-shrink-0 pl-12 sm:pl-0">
-            <button
-              v-if="isLinkActive(link)"
-              class="ui-button ui-button-secondary px-3 py-1.5 text-xs"
-              :title="copiedLinkId === link.id ? 'Copied!' : 'Copy invite link'"
-              @click="copyLinkToClipboard(link)"
-            >
-              <Check v-if="copiedLinkId === link.id" class="ui-icon-success size-3" />
-              <Copy v-else class="size-3" />
-              {{ copiedLinkId === link.id ? 'Copied' : 'Copy' }}
-            </button>
             <button
               :disabled="revokingLinkId === link.id"
               class="ui-button ui-button-danger-outline px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"

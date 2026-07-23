@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Eye } from 'lucide-vue-next'
+import { FACTORY_CAREERS_REPOSITORY_URL } from '~~/shared/project-links'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 
 const { session } = await useAuthSession()
@@ -34,7 +35,7 @@ const isDemoAccount = computed(() => session.value?.user?.email === config.publi
       <span>
         <strong>Demo mode</strong> — Explore freely with sample data. Editing is disabled here.
         <a
-          href="https://github.com/caffeinebounce/factory-careers"
+          :href="FACTORY_CAREERS_REPOSITORY_URL"
           target="_blank"
           rel="noopener noreferrer"
           class="ml-1 font-semibold text-brand-300 underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"

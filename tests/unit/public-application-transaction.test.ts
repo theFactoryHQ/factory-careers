@@ -15,6 +15,7 @@ type State = {
   processingAvailability: Map<string, Date>
   complianceResponses: string[]
   questionResponses: string[]
+  workflowEmails: string[]
 }
 
 function cloneState(state: State): State {
@@ -28,6 +29,7 @@ function cloneState(state: State): State {
     ),
     complianceResponses: [...state.complianceResponses],
     questionResponses: [...state.questionResponses],
+    workflowEmails: [...state.workflowEmails],
   }
 }
 
@@ -43,6 +45,7 @@ function createTestAdapter(options: {
     processingAvailability: new Map(),
     complianceResponses: [],
     questionResponses: [],
+    workflowEmails: [],
   }
   let transactionQueue = Promise.resolve()
 
@@ -93,6 +96,9 @@ function createTestAdapter(options: {
           if (options.failResponses) throw new Error('response write failed')
           working.questionResponses.push(...inputs.map((input) => input.applicationId))
         },
+        async enqueueCandidateWorkflowEmail(input) {
+          working.workflowEmails.push(`${input.applicationId}:${input.prepared.purpose}`)
+        },
       }
 
       try {
@@ -104,6 +110,7 @@ function createTestAdapter(options: {
         state.processingAvailability = working.processingAvailability
         state.complianceResponses = working.complianceResponses
         state.questionResponses = working.questionResponses
+        state.workflowEmails = working.workflowEmails
         return result
       } finally {
         release()
@@ -244,5 +251,34 @@ describe('createPublicApplication transaction', () => {
     expect(state.processingAvailability.get('document-1')?.toISOString()).toBe(
       new Date(Date.parse('2026-07-16T12:00:00.000Z') + DOCUMENT_UPLOAD_RECONCILIATION_GRACE_MS).toISOString(),
     )
+  })
+
+  it('commits the acknowledgement queue row with the owning application transaction', async () => {
+    const { adapter, state } = createTestAdapter()
+    await createPublicApplication({
+      ...applicationInput,
+      candidateWorkflowEmail: {
+        purpose: 'application_acknowledgement',
+        recipientEmail: 'ada@example.com',
+        templateId: 'system-application-acknowledgement',
+        templateSubject: 'Received',
+        templateBody: 'Hello {{candidateName}}',
+        snapshot: {
+          candidateName: 'Ada Lovelace',
+          candidateFirstName: 'Ada',
+          candidateLastName: 'Lovelace',
+          jobTitle: 'Engineer',
+          organizationName: 'Factory',
+          applicationDate: 'July 24, 2026',
+          applicationStatus: 'new',
+        },
+        scheduledFor: new Date('2026-07-24T20:00:00.000Z'),
+        availableAt: new Date('2026-07-24T20:00:00.000Z'),
+      },
+    }, adapter)
+
+    expect(state.workflowEmails).toEqual([
+      'application-1:application_acknowledgement',
+    ])
   })
 })

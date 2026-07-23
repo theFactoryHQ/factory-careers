@@ -43,7 +43,7 @@ function getStageCount(pipeline: any, key: string): number {
 // Fetch jobs with pipeline data
 // ─────────────────────────────────────────────
 
-const { data, jobs, total, fetchStatus, error, refresh } = useJobs()
+const { data, jobs, total, fetchStatus, error, refresh } = useAllJobs()
 
 const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, data)
 

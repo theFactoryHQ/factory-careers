@@ -10,7 +10,8 @@ describe('candidate cache refresh', () => {
     const useCandidate = readProjectFile('app/composables/useCandidate.ts')
     const useCandidates = readProjectFile('app/composables/useCandidates.ts')
 
-    expect(useCandidates).toContain('`candidates-${JSON.stringify(query.value)}`')
+    expect(useCandidates).toContain('export function candidatesListKey')
+    expect(useCandidates).toContain('candidatesListKey(query.value)')
     expect(useCandidates).toContain('getSwrCachedData')
     expect(useCandidate).toContain("key.startsWith('candidates-')")
     expect(useCandidate).toContain('getSwrCachedData')

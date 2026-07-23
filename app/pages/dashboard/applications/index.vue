@@ -3,9 +3,12 @@ import { dashboardListPageKeepalive } from '~~/shared/dashboard-keepalive'
 import { FileText, Search, Briefcase, Clock, ArrowUp, ArrowDown, ArrowUpDown, Minimize2 } from 'lucide-vue-next'
 import type { SortDir } from '~/composables/useTableSort'
 import {
+  APPLICATION_STATUS_KEYS,
   formatRelativeTime,
   getApplicationStatusLabel,
   getScoreBadgeClass,
+  parseApplicationStatusQuery,
+  type ApplicationStatusKey,
 } from '~/utils/status-display'
 import { getPropertyValue } from '~/utils/property-display'
 
@@ -62,20 +65,24 @@ const {
 
 // ── Status filter ─────────────────────────────────────────────────────────────
 
-const STATUS_OPTIONS = ['new', 'screening', 'interview', 'offer', 'hired', 'rejected'] as const
-type Status = typeof STATUS_OPTIONS[number]
+const activeStatus = useState<ApplicationStatusKey | undefined>(
+  'app-filter-status',
+  () => parseApplicationStatusQuery(route.query.status),
+)
 
-const initialAppStatus = STATUS_OPTIONS.includes(route.query.status as any)
-  ? (route.query.status as Status)
-  : undefined
-const activeStatus = useState<Status | undefined>('app-filter-status', () => initialAppStatus)
-// Ensure the state matches the URL on navigation (useState caches across client-side navigations)
-if (initialAppStatus !== undefined) {
-  activeStatus.value = initialAppStatus
-}
+// Route navigation is authoritative, including when it clears the status query.
+watch(
+  () => route.query.status,
+  (status) => {
+    activeStatus.value = parseApplicationStatusQuery(status)
+  },
+  { immediate: true },
+)
 
 // Sync the URL when the status filter changes
 watch(activeStatus, (newStatus) => {
+  if (parseApplicationStatusQuery(route.query.status) === newStatus) return
+
   const query = { ...route.query }
   if (newStatus) {
     query.status = newStatus
@@ -89,27 +96,17 @@ watch(activeStatus, (newStatus) => {
 const statusFilter = computed(() => activeStatus.value)
 const propertyFilters = ref<import('~~/shared/properties').PropertyFilter[]>([])
 
-const { data, applications, total, fetchStatus, error, refresh } = useApplications({
-  status: statusFilter,
-  propertyFilters,
-})
-
-const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, data)
-
 const { formatPersonName } = useOrgSettings()
 
-// ── Job filter (client-side) ──────────────────────────────────────────────────
+// ── Job filter ────────────────────────────────────────────────────────────────
 
 const activeJobId = ref<string | undefined>(undefined)
-
-const uniqueJobs = computed(() => {
-  const apps = applications.value ?? []
-  const map = new Map<string, string>()
-  for (const app of apps) {
-    if (!map.has(app.jobId)) map.set(app.jobId, app.jobTitle)
-  }
-  return Array.from(map, ([id, title]) => ({ id, title })).sort((a, b) => a.title.localeCompare(b.title))
-})
+const { jobs: allJobs } = useAllJobs()
+const uniqueJobs = computed(() =>
+  allJobs.value
+    .map(job => ({ id: job.id, title: job.title }))
+    .sort((a, b) => a.title.localeCompare(b.title)),
+)
 
 // ── Sorting ───────────────────────────────────────────────────────────────────
 
@@ -121,49 +118,41 @@ const { sortKey, sortDir, toggleSort } = useTableSort<SortKey>({
   defaultDirForKey: (key) => (key === 'created' || key === 'score' ? 'desc' : 'asc'),
 })
 
-// ── Filtered + sorted list ────────────────────────────────────────────────────
+const PAGE_SIZE = 20
+const page = ref(1)
+const applicationSearch = computed(() =>
+  debouncedSearch.value.length >= 3 ? debouncedSearch.value : undefined,
+)
+const searchTooShort = computed(() =>
+  debouncedSearch.value.length > 0 && debouncedSearch.value.length < 3,
+)
 
-const filteredApplications = computed(() => {
-  let list = [...applications.value]
+const { data, applications, total, fetchStatus, error, refresh } = useApplications({
+  page,
+  limit: PAGE_SIZE,
+  status: statusFilter,
+  jobId: activeJobId,
+  search: applicationSearch,
+  propertyFilters,
+  sortBy: sortKey,
+  sortDir,
+})
 
-  // Job filter
-  if (activeJobId.value) {
-    list = list.filter(app => app.jobId === activeJobId.value)
-  }
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, data)
 
-  // Search filter (client-side)
-  if (debouncedSearch.value) {
-    const q = debouncedSearch.value
-    list = list.filter(app =>
-      formatPersonName(app.candidateFirstName, app.candidateLastName).toLowerCase().includes(q)
-      || `${app.candidateFirstName} ${app.candidateLastName}`.toLowerCase().includes(q)
-      || app.candidateEmail.toLowerCase().includes(q)
-      || app.jobTitle.toLowerCase().includes(q),
-    )
-  }
-
-  // Sort
-  const dir = sortDir.value === 'asc' ? 1 : -1
-  list.sort((a, b) => {
-    switch (sortKey.value) {
-      case 'name':
-        return dir * formatPersonName(a.candidateFirstName, a.candidateLastName).localeCompare(formatPersonName(b.candidateFirstName, b.candidateLastName))
-      case 'email':
-        return dir * a.candidateEmail.localeCompare(b.candidateEmail)
-      case 'job':
-        return dir * a.jobTitle.localeCompare(b.jobTitle)
-      case 'status':
-        return dir * a.status.localeCompare(b.status)
-      case 'score':
-        return dir * ((a.score ?? -1) - (b.score ?? -1))
-      case 'created':
-        return dir * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-      default:
-        return 0
-    }
-  })
-
-  return list
+watch(
+  [statusFilter, activeJobId, debouncedSearch, sortKey, sortDir],
+  () => {
+    page.value = 1
+  },
+)
+watch(propertyFilters, () => {
+  page.value = 1
+}, { deep: true })
+watch(data, (response) => {
+  if (!response) return
+  const lastPage = Math.max(1, Math.ceil(response.total / PAGE_SIZE))
+  if (page.value > lastPage) page.value = lastPage
 })
 
 const hasActiveFilters = computed(() =>
@@ -183,7 +172,7 @@ function clearAllFilters() {
 // ── Drawer + Saved Views ──────────────────────────────────────────────────────
 
 type ApplicationsViewSettings = {
-  status?: Status
+  status?: ApplicationStatusKey
   jobId?: string
   propertyFilters: import('~~/shared/properties').PropertyFilter[]
   sortKey: SortKey
@@ -297,7 +286,7 @@ const selectedApplicationId = ref<string | null>(null)
               @click="activeStatus = undefined"
             >Any</button>
             <button
-              v-for="s in STATUS_OPTIONS"
+              v-for="s in APPLICATION_STATUS_KEYS"
               :key="s"
               type="button"
               class="factory-filter-chip px-3 py-1.5 text-xs"
@@ -356,8 +345,19 @@ const selectedApplicationId = ref<string | null>(null)
       </div>
     </FilterDrawer>
 
+    <!-- Minimum search state -->
+    <div v-if="searchTooShort" class="ui-empty-panel">
+      <Search class="size-8 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
+      <h3 class="text-base font-semibold text-surface-700 dark:text-surface-200 mb-1">
+        Enter at least 3 characters to search applications
+      </h3>
+      <p class="text-sm text-white/60">
+        Application content search begins after the third character.
+      </p>
+    </div>
+
     <!-- Loading -->
-    <div v-if="showSkeleton" class="text-center py-16 text-surface-400">
+    <div v-else-if="showSkeleton" class="text-center py-16 text-surface-400">
       Loading applications…
     </div>
 
@@ -372,7 +372,7 @@ const selectedApplicationId = ref<string | null>(null)
 
     <!-- Empty state -->
     <div
-      v-else-if="applications.length === 0"
+      v-else-if="applications.length === 0 && !hasActiveFilters"
       class="ui-empty-panel"
     >
       <FileText class="size-10 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
@@ -384,7 +384,7 @@ const selectedApplicationId = ref<string | null>(null)
 
     <!-- No results after filtering -->
     <div
-      v-else-if="filteredApplications.length === 0"
+      v-else-if="applications.length === 0"
       class="ui-empty-panel"
     >
       <Search class="size-8 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
@@ -407,7 +407,7 @@ const selectedApplicationId = ref<string | null>(null)
           <!-- Fullscreen header -->
           <div v-if="isFullscreen" class="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0 bg-white/[0.02]">
             <span class="text-sm font-semibold text-white">
-              Applications — {{ filteredApplications.length }} result{{ filteredApplications.length === 1 ? '' : 's' }}
+              Applications — {{ applications.length }} result{{ applications.length === 1 ? '' : 's' }}
             </span>
             <button
               type="button"
@@ -480,7 +480,7 @@ const selectedApplicationId = ref<string | null>(null)
           </thead>
           <tbody>
             <tr
-              v-for="app in filteredApplications"
+              v-for="app in applications"
               :key="app.id"
               class="ui-table-row group cursor-pointer [&>td]:align-top"
               @click="selectedApplicationId = app.id"
@@ -538,10 +538,12 @@ const selectedApplicationId = ref<string | null>(null)
         </table>
       </div>
 
-      <!-- Footer count -->
-      <p class="text-xs text-surface-400 pt-3">
-        Showing {{ filteredApplications.length }} of {{ total }} application{{ total === 1 ? '' : 's' }}
-      </p>
+      <DashboardListPagination
+        v-model:page="page"
+        :page-size="PAGE_SIZE"
+        :total="total"
+        noun="applications"
+      />
           </div>
         </div>
       </Teleport>

@@ -1,9 +1,13 @@
+import { randomUUID } from 'node:crypto'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { test, expect } from '../fixtures'
+import { withE2eDb } from '../helpers/db'
+import { SSO_CLIENT_SECRET_CIPHERTEXT_PREFIX } from '../../server/utils/ssoProviderSecrets'
 
 type MockOidcIssuer = {
   issuer: string
+  tokenExchangeCount: () => number
   close: () => Promise<void>
 }
 
@@ -18,15 +22,22 @@ function getMockOidcIssuerPort(): number {
   return port
 }
 
-async function startMockOidcIssuer(): Promise<MockOidcIssuer> {
+async function startMockOidcIssuer(options: {
+  clientId: string
+  clientSecret: string
+}): Promise<MockOidcIssuer> {
   let server: Server
   const port = getMockOidcIssuerPort()
+  let tokenExchangeCount = 0
+  const emailsByCode = new Map<string, string>()
+  const emailsByAccessToken = new Map<string, string>()
 
   server = createServer((req, res) => {
     const address = server.address() as AddressInfo
     const issuer = `http://127.0.0.1:${address.port}`
+    const requestUrl = new URL(req.url || '/', issuer)
 
-    if (req.url === '/.well-known/openid-configuration') {
+    if (requestUrl.pathname === '/.well-known/openid-configuration') {
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end(JSON.stringify({
         issuer,
@@ -41,13 +52,84 @@ async function startMockOidcIssuer(): Promise<MockOidcIssuer> {
       return
     }
 
-    if (req.url?.startsWith('/authorize')) {
+    if (requestUrl.pathname === '/authorize') {
+      const state = requestUrl.searchParams.get('state')
+      const redirectUri = requestUrl.searchParams.get('redirect_uri')
+      const email = requestUrl.searchParams.get('login_hint')
+      if (!state || !redirectUri || !email) {
+        res.writeHead(400)
+        res.end('missing OIDC authorization parameters')
+        return
+      }
+
+      const code = `mock-code-${emailsByCode.size + 1}`
+      emailsByCode.set(code, email)
+      const callback = new URL(redirectUri)
+      callback.searchParams.set('code', code)
+      callback.searchParams.set('state', state)
       res.writeHead(200, { 'content-type': 'text/html' })
-      res.end('<main><h1>Mock IdP sign-in</h1></main>')
+      res.end(`<main><h1>Mock IdP sign-in</h1><a href="${callback.toString()}">Continue with mock IdP</a></main>`)
       return
     }
 
-    if (req.url === '/jwks') {
+    if (requestUrl.pathname === '/token' && req.method === 'POST') {
+      const expectedAuthorization = `Basic ${Buffer.from(`${options.clientId}:${options.clientSecret}`).toString('base64')}`
+      if (req.headers.authorization !== expectedAuthorization) {
+        res.writeHead(401, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ error: 'invalid_client' }))
+        return
+      }
+
+      let body = ''
+      req.setEncoding('utf8')
+      req.on('data', chunk => {
+        body += chunk
+      })
+      req.on('end', () => {
+        const code = new URLSearchParams(body).get('code')
+        const email = code ? emailsByCode.get(code) : undefined
+        if (!code || !email) {
+          res.writeHead(400, { 'content-type': 'application/json' })
+          res.end(JSON.stringify({ error: 'invalid_grant' }))
+          return
+        }
+
+        const accessToken = `mock-access-${code}`
+        emailsByAccessToken.set(accessToken, email)
+        tokenExchangeCount += 1
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({
+          access_token: accessToken,
+          token_type: 'Bearer',
+          expires_in: 3600,
+          scope: 'openid email profile',
+        }))
+      })
+      return
+    }
+
+    if (requestUrl.pathname === '/userinfo') {
+      const accessToken = req.headers.authorization?.replace(/^Bearer /, '')
+      const email = accessToken
+        ? emailsByAccessToken.get(accessToken)
+        : undefined
+      if (!email) {
+        res.writeHead(401, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ error: 'invalid_token' }))
+        return
+      }
+
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({
+        sub: `mock-user-${email}`,
+        email,
+        email_verified: true,
+        name: 'Mock SSO User',
+      }))
+      return
+    }
+
+    if (requestUrl.pathname === '/jwks') {
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end(JSON.stringify({ keys: [] }))
       return
@@ -76,6 +158,7 @@ async function startMockOidcIssuer(): Promise<MockOidcIssuer> {
 
   return {
     issuer: `http://127.0.0.1:${address.port}`,
+    tokenExchangeCount: () => tokenExchangeCount,
     close: () => new Promise<void>((resolve, reject) => {
       server.close((error) => error ? reject(error) : resolve())
     }),
@@ -84,10 +167,12 @@ async function startMockOidcIssuer(): Promise<MockOidcIssuer> {
 
 test.describe('SSO domain provisioning', () => {
   test('routes configured work domains to local SSO only and rejects unconfigured domains', async ({ authenticatedPage, browser }, testInfo) => {
-    const id = `${Date.now()}-${testInfo.workerIndex}-${Math.random().toString(36).slice(2)}`
+    const id = `${Date.now()}-${testInfo.workerIndex}-${randomUUID()}`
     const providerId = `sso-${id}`
     const domain = `sso-${id}.example.com`
-    const mockIssuer = await startMockOidcIssuer()
+    const clientId = `client-${id}`
+    const clientSecret = `secret-${id}`
+    const mockIssuer = await startMockOidcIssuer({ clientId, clientSecret })
 
     try {
       await authenticatedPage.goto('/dashboard/settings/sso')
@@ -96,8 +181,8 @@ test.describe('SSO domain provisioning', () => {
       await authenticatedPage.getByLabel('Email domain').fill(domain)
       await authenticatedPage.getByLabel('Issuer URL').fill(mockIssuer.issuer)
       await authenticatedPage.getByLabel('Provider ID').fill(providerId)
-      await authenticatedPage.getByLabel('Client ID').fill(`client-${id}`)
-      await authenticatedPage.getByLabel('Client Secret').fill(`secret-${id}`)
+      await authenticatedPage.getByLabel('Client ID').fill(clientId)
+      await authenticatedPage.getByLabel('Client Secret').fill(clientSecret)
 
       const [registrationResponse] = await Promise.all([
         authenticatedPage.waitForResponse(
@@ -106,10 +191,54 @@ test.describe('SSO domain provisioning', () => {
         ),
         authenticatedPage.getByRole('button', { name: 'Register SSO Provider' }).click(),
       ])
-      expect(
-        registrationResponse.status(),
-        await registrationResponse.text(),
-      ).toBe(201)
+      const registrationBody = await registrationResponse.text()
+      expect(registrationResponse.status(), registrationBody).toBe(201)
+      expect(registrationBody).not.toContain(clientSecret)
+      expect(registrationBody).not.toContain(
+        SSO_CLIENT_SECRET_CIPHERTEXT_PREFIX,
+      )
+
+      const rawOidcConfig = await withE2eDb(
+        'SSO encrypted client-secret lookup',
+        async (sql) => {
+          const [record] = await sql<{ oidcConfig: string }[]>`
+            select "oidc_config" as "oidcConfig"
+            from "sso_provider"
+            where "provider_id" = ${providerId}
+          `
+          return record?.oidcConfig
+        },
+      )
+      expect(rawOidcConfig).toBeTruthy()
+      expect(rawOidcConfig).not.toContain(clientSecret)
+      const storedClientSecret = (JSON.parse(rawOidcConfig!) as {
+        clientSecret: string
+      }).clientSecret
+      expect(storedClientSecret.startsWith(
+        SSO_CLIENT_SECRET_CIPHERTEXT_PREFIX,
+      )).toBe(true)
+
+      const managementResponse = await authenticatedPage.context().request.get(
+        '/api/sso/providers',
+      )
+      expect(managementResponse.status()).toBe(200)
+      const managementBody = await managementResponse.text()
+      expect(managementBody).not.toContain(clientSecret)
+      expect(managementBody).not.toContain(storedClientSecret)
+
+      for (const builtInManagementPath of [
+        '/api/auth/sso/providers',
+        `/api/auth/sso/get-provider?providerId=${encodeURIComponent(providerId)}`,
+      ]) {
+        const response = await authenticatedPage.context().request.get(
+          builtInManagementPath,
+          { headers: { origin: 'http://127.0.0.1:3333' } },
+        )
+        const responseBody = await response.text()
+        expect(response.status(), responseBody).toBe(200)
+        expect(responseBody).not.toContain(clientSecret)
+        expect(responseBody).not.toContain(storedClientSecret)
+      }
 
       await expect(authenticatedPage.getByRole('heading', { name: providerId })).toBeVisible()
       await expect(authenticatedPage.getByText(domain, { exact: true })).toBeVisible()
@@ -174,6 +303,9 @@ test.describe('SSO domain provisioning', () => {
       expect(ssoResponse.status()).toBe(200)
 
       await expect(signInPage.getByRole('heading', { name: 'Mock IdP sign-in' })).toBeVisible()
+      await signInPage.getByRole('link', { name: 'Continue with mock IdP' }).click()
+      await expect(signInPage).toHaveURL(/\/dashboard(?:\/|$)/)
+      expect(mockIssuer.tokenExchangeCount()).toBe(1)
       await signInContext.close()
     }
     finally {

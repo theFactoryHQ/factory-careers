@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { dashboardListPageKeepalive } from '~~/shared/dashboard-keepalive'
-import { Users, Plus, Phone, ArrowUp, ArrowDown, ArrowUpDown, StickyNote, Minimize2 } from 'lucide-vue-next'
+import { Users, Plus, Phone, ArrowUp, ArrowDown, ArrowUpDown, StickyNote, Minimize2, Search } from 'lucide-vue-next'
 import { formatPhoneNumber } from '~/utils/phone-format'
 import type { SortDir } from '~/composables/useTableSort'
 import { getPropertyValue } from '~/utils/property-display'
@@ -62,6 +62,9 @@ const activeFilterCount = computed(() =>
   [filterGender.value, filterDobFrom.value, filterDobTo.value].filter(Boolean).length
   + propertyFilters.value.length
 )
+const hasActiveFilters = computed(() =>
+  Boolean(debouncedSearch.value) || activeFilterCount.value > 0
+)
 
 function clearFilters() {
   filterGender.value = undefined
@@ -69,16 +72,6 @@ function clearFilters() {
   filterDobTo.value = undefined
   propertyFilters.value = []
 }
-
-const { data, candidates, total, fetchStatus, error, refresh } = useCandidates({
-  search: debouncedSearch,
-  gender: filterGender,
-  dobFrom: filterDobFrom,
-  dobTo: filterDobTo,
-  propertyFilters,
-})
-
-const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, data)
 
 // Org localization (name + date format)
 const { formatCandidateName, formatDateTime } = useOrgSettings()
@@ -99,28 +92,36 @@ const {
   defaultDirForKey: (key) => (key === 'created' || key === 'applications' ? 'desc' : 'asc'),
 })
 
-const sortedCandidates = computed(() => {
-  const list = [...candidates.value]
-  const dir = sortDir.value === 'asc' ? 1 : -1
+const PAGE_SIZE = 20
+const page = ref(1)
 
-  list.sort((a, b) => {
-    switch (sortKey.value) {
-      case 'name':
-        return dir * formatCandidateName(a).localeCompare(formatCandidateName(b))
-      case 'email':
-        return dir * a.email.localeCompare(b.email)
-      case 'phone':
-        return dir * (a.phone ?? '').localeCompare(b.phone ?? '')
-      case 'applications':
-        return dir * ((a.applicationCount ?? 0) - (b.applicationCount ?? 0))
-      case 'created':
-        return dir * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-      default:
-        return 0
-    }
-  })
+const { data, candidates, total, fetchStatus, error, refresh } = useCandidates({
+  page,
+  limit: PAGE_SIZE,
+  search: debouncedSearch,
+  gender: filterGender,
+  dobFrom: filterDobFrom,
+  dobTo: filterDobTo,
+  propertyFilters,
+  sortBy: sortKey,
+  sortDir,
+})
 
-  return list
+const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, data)
+
+watch(
+  [debouncedSearch, filterGender, filterDobFrom, filterDobTo, sortKey, sortDir],
+  () => {
+    page.value = 1
+  },
+)
+watch(propertyFilters, () => {
+  page.value = 1
+}, { deep: true })
+watch(data, (response) => {
+  if (!response) return
+  const lastPage = Math.max(1, Math.ceil(response.total / PAGE_SIZE))
+  if (page.value > lastPage) page.value = lastPage
 })
 
 // ── Quick notes inline editing ────────────────────────────────────────────────
@@ -354,27 +355,37 @@ const selectedCandidateId = ref<string | null>(null)
 
     <!-- Empty state -->
     <div
-      v-else-if="candidates.length === 0"
+      v-else-if="candidates.length === 0 && !hasActiveFilters"
       class="ui-empty-panel"
     >
       <Users class="size-10 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
       <h3 class="text-base font-semibold text-surface-700 dark:text-surface-200 mb-1">
-        {{ debouncedSearch ? 'No candidates found' : 'No candidates yet' }}
+        No candidates yet
       </h3>
       <p class="text-sm text-white/60 mb-4">
-        {{ debouncedSearch
-          ? 'Try adjusting your search terms.'
-          : 'Add your first candidate to start building your talent pool.'
-        }}
+        Add your first candidate to start building your talent pool.
       </p>
       <NuxtLink
-        v-if="!debouncedSearch"
         :to="$localePath('/dashboard/candidates/new')"
         class="ui-button ui-button-primary"
       >
         <Plus class="size-4" />
         Add Candidate
       </NuxtLink>
+    </div>
+
+    <!-- No results after filtering -->
+    <div
+      v-else-if="candidates.length === 0"
+      class="ui-empty-panel"
+    >
+      <Search class="size-8 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
+      <h3 class="text-base font-semibold text-surface-700 dark:text-surface-200 mb-1">
+        No candidates found
+      </h3>
+      <p class="text-sm text-white/60">
+        Try adjusting your search terms or filters.
+      </p>
     </div>
 
     <!-- Candidate table -->
@@ -384,7 +395,7 @@ const selectedCandidateId = ref<string | null>(null)
           <!-- Fullscreen header -->
           <div v-if="isFullscreen" class="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0 bg-white/[0.02]">
             <span class="text-sm font-semibold text-white">
-              Candidates — {{ sortedCandidates.length }} result{{ sortedCandidates.length === 1 ? '' : 's' }}
+              Candidates — {{ candidates.length }} result{{ candidates.length === 1 ? '' : 's' }}
             </span>
             <button
               type="button"
@@ -452,7 +463,7 @@ const selectedCandidateId = ref<string | null>(null)
           </thead>
           <tbody>
             <tr
-              v-for="c in sortedCandidates"
+              v-for="c in candidates"
               :key="c.id"
               class="ui-table-row group [&>td]:align-middle"
             >
@@ -553,10 +564,12 @@ const selectedCandidateId = ref<string | null>(null)
         </table>
       </div>
 
-      <!-- Total count -->
-      <p class="text-xs text-white/60 pt-3">
-        {{ total }} candidate{{ total === 1 ? '' : 's' }} total
-      </p>
+      <DashboardListPagination
+        v-model:page="page"
+        :page-size="PAGE_SIZE"
+        :total="total"
+        noun="candidates"
+      />
           </div>
         </div>
       </Teleport>

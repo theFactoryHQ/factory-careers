@@ -17,11 +17,10 @@ import { getChatbotAttachments } from '../../utils/chatbotAttachments'
 import { requireChatbotAccess } from '../../utils/chatbotAccess'
 import { extractChatbotSources } from '../../utils/chatbotSources'
 import { createRateLimiter } from '../../utils/rateLimit'
-import { assertSafeServerSideUrl } from '../../utils/serverSideUrl'
 import { trackEvent } from '../../utils/trackEvent'
 import {
+  CHATBOT_CONTEXT_MESSAGE_LIMIT,
   CHATBOT_MAX_ATTACHMENTS_PER_MESSAGE,
-  CHATBOT_MAX_MESSAGES,
   type ChatbotAttachment,
   type ChatbotSource,
   type ChatbotStreamEvent,
@@ -69,7 +68,7 @@ const bodySchema = z.object({
       }),
     )
     .min(1)
-    .max(CHATBOT_MAX_MESSAGES),
+    .max(CHATBOT_CONTEXT_MESSAGE_LIMIT),
   thinking: z.boolean().optional(),
 })
 
@@ -233,10 +232,6 @@ export default defineEventHandler(async (event) => {
     .where(eq(chatbotConversation.id, conversation.id))
 
   // ── Build model + tools ──
-  if (config.baseUrl) {
-    await assertSafeServerSideUrl(config.baseUrl)
-  }
-
   const tools = buildChatbotTools({
     orgId,
     scope: body.scope,

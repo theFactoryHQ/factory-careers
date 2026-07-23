@@ -1,10 +1,7 @@
 import { eq, and, isNull, gt } from 'drizzle-orm'
-import { z } from 'zod'
 import { inviteLink, organization, user } from '../../../database/schema'
-
-const inviteLinkInfoParamsSchema = z.object({
-  token: z.string().regex(/^[0-9a-f]{64}$/),
-})
+import { hashInviteLinkToken } from '../../../utils/inviteLinkToken'
+import { inviteLinkInfoParamsSchema } from '../../../utils/schemas/inviteLink'
 
 /**
  * GET /api/invite-links/info/:token
@@ -26,6 +23,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const { token } = parsedParams.data
+  const tokenHash = hashInviteLinkToken(token)
 
   const [link] = await db
     .select({
@@ -42,7 +40,7 @@ export default defineEventHandler(async (event) => {
     .leftJoin(user, eq(inviteLink.createdById, user.id))
     .where(
       and(
-        eq(inviteLink.token, token),
+        eq(inviteLink.tokenHash, tokenHash),
         isNull(inviteLink.revokedAt),
         gt(inviteLink.expiresAt, new Date()),
       ),

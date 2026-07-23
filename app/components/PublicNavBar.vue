@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Github, Sun, Moon } from 'lucide-vue-next'
+import { FACTORY_CAREERS_REPOSITORY_URL } from '~~/shared/project-links'
 
 defineProps<{
   activePage?: 'features' | 'jobs' | 'roadmap' | 'blog' | 'docs'
@@ -50,7 +51,7 @@ const { isDark, toggle: toggleColorMode } = useColorMode()
           {{ t('home.nav.openPositions') }}
         </NuxtLink>
         <a
-          href="https://github.com/caffeinebounce/factory-careers"
+          :href="FACTORY_CAREERS_REPOSITORY_URL"
           target="_blank"
           rel="noopener noreferrer"
           class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium text-surface-500 dark:text-surface-400 transition hover:text-surface-900 dark:hover:text-white"

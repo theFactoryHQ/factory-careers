@@ -49,4 +49,22 @@ describe('application notification persistence', () => {
     }
     expect(journal).toContain('"tag": "0059_application_email_notifications"')
   })
+
+  it('normalizes membership snapshot timestamps in a forward migration', () => {
+    const originalMigration = read('server/database/migrations/0059_application_email_notifications.sql')
+    const migration = read('server/database/migrations/0060_notification_membership_snapshot_utc.sql')
+    const journal = JSON.parse(read('server/database/migrations/meta/_journal.json')) as {
+      entries: Array<{ idx: number, tag: string }>
+    }
+
+    expect(originalMigration).toContain("'membershipCreatedAt', membership.created_at,")
+    expect(originalMigration).not.toContain("membership.created_at AT TIME ZONE 'UTC'")
+    expect(migration).toContain('CREATE OR REPLACE FUNCTION public.enqueue_application_notification_event()')
+    expect(migration).toContain("'membershipCreatedAt', membership.created_at AT TIME ZONE 'UTC',")
+    expect(migration).not.toContain('CREATE TRIGGER application_notification_application_inserted')
+    expect(journal.entries.find(entry => entry.idx === 60)).toEqual(expect.objectContaining({
+      idx: 60,
+      tag: '0060_notification_membership_snapshot_utc',
+    }))
+  })
 })

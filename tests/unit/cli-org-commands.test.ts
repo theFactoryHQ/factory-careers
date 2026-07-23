@@ -175,6 +175,7 @@ describe('CLI org commands', () => {
     const configPath = join(dir, 'config.json')
     writeAuthedConfig(configPath)
     const token = 'a'.repeat(64)
+    const createdToken = 'b'.repeat(64)
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url === `https://careers.example.com/api/invite-links/info/${token}` && init?.method === 'GET') {
         expect(init.headers).not.toHaveProperty('Authorization')
@@ -193,7 +194,7 @@ describe('CLI org commands', () => {
       if (url === 'https://careers.example.com/api/invite-links' && init?.method === 'POST') {
         expect(init.headers).toMatchObject({ Authorization: 'Bearer secret-token' })
         expect(JSON.parse(String(init.body))).toEqual({ role: 'admin', maxUses: 5, expiresInHours: 24 })
-        return Response.json({ id: 'invite_2', role: 'admin', token: 'tok_2' }, { status: 201 })
+        return Response.json({ id: 'invite_2', role: 'admin', token: createdToken }, { status: 201 })
       }
       if (url === 'https://careers.example.com/api/invite-links/accept' && init?.method === 'POST') {
         expect(init.headers).toMatchObject({ Authorization: 'Bearer secret-token' })
@@ -256,7 +257,10 @@ describe('CLI org commands', () => {
       expiresAt: '2026-06-01T00:00:00.000Z',
     })
     expect(JSON.parse(listOut[0])).toEqual([{ id: 'invite_1', role: 'member' }])
-    expect(JSON.parse(createOut[0])).toEqual({ id: 'invite_2', role: 'admin', token: 'tok_2' })
+    expect(JSON.parse(listOut[0])[0]).not.toHaveProperty('token')
+    expect(JSON.parse(listOut[0])[0]).not.toHaveProperty('tokenHash')
+    expect(JSON.parse(createOut[0])).toEqual({ id: 'invite_2', role: 'admin', token: createdToken })
+    expect(JSON.parse(createOut[0]).token).toMatch(/^[0-9a-f]{64}$/)
     expect(JSON.parse(acceptOut[0])).toEqual({ success: true, organizationId: 'org_1', organizationName: 'Factory', role: 'member' })
     expect(JSON.parse(revokeOut[0])).toEqual({ success: true })
   })

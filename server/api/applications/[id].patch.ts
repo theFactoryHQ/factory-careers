@@ -1,7 +1,10 @@
 import { eq, and } from 'drizzle-orm'
 import { application, candidate, job, organization } from '../../database/schema'
 import { applicationIdParamSchema, updateApplicationSchema, APPLICATION_STATUS_TRANSITIONS } from '../../utils/schemas/application'
-import { sendConfiguredApplicationRejectionEmail } from '../../utils/email'
+import {
+  enqueueCandidateWorkflowEmail,
+  prepareConfiguredCandidateWorkflowEmail,
+} from '../../utils/candidateWorkflowEmailQueue'
 import { resolveFactoryCareersBaseUrl } from '../../utils/baseUrl'
 
 /**
@@ -36,19 +39,46 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const [updated] = await db.update(application)
-    .set({ ...body, updatedAt: new Date() })
-    .where(and(eq(application.id, id), eq(application.organizationId, orgId)))
-    .returning({
-      id: application.id,
-      candidateId: application.candidateId,
-      jobId: application.jobId,
-      status: application.status,
-      score: application.score,
-      notes: application.notes,
-      createdAt: application.createdAt,
-      updatedAt: application.updatedAt,
-    })
+  const transitionAt = new Date()
+  const preparedRejection = body.status === 'rejected' && current.status !== 'rejected'
+    ? await prepareApplicationRejection(id, orgId, transitionAt)
+    : null
+
+  const updated = await db.transaction(async (tx) => {
+    const updateConditions = [
+      eq(application.id, id),
+      eq(application.organizationId, orgId),
+    ]
+    if (body.status && body.status !== current.status) {
+      updateConditions.push(eq(application.status, current.status))
+    }
+    const [row] = await tx.update(application)
+      .set({ ...body, updatedAt: transitionAt })
+      .where(and(...updateConditions))
+      .returning({
+        id: application.id,
+        candidateId: application.candidateId,
+        jobId: application.jobId,
+        status: application.status,
+        score: application.score,
+        notes: application.notes,
+        createdAt: application.createdAt,
+        updatedAt: application.updatedAt,
+      })
+    if (!row) return null
+
+    if (preparedRejection?.prepared) {
+      await enqueueCandidateWorkflowEmail(tx as unknown as Pick<typeof db, 'insert'>, {
+        prepared: preparedRejection.prepared,
+        organizationId: orgId,
+        applicationId: id,
+        candidateId: row.candidateId,
+        jobId: row.jobId,
+        transitionAt,
+      })
+    }
+    return row
+  })
 
   if (!updated) {
     throw createError({ statusCode: 404, statusMessage: 'Not found' })
@@ -82,22 +112,16 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (body.status === 'rejected' && current.status !== 'rejected') {
-    void sendApplicationRejectionNotification(id, orgId).catch((err) => {
-      logError('application.rejection_email_failed', {
-        application_id: id,
-        job_id: updated.jobId,
-        error_message: err instanceof Error ? err.message : String(err),
-      })
-    })
-  }
-
   await invalidateOrgScopedDashboardCache(event)
 
   return updated
 })
 
-async function sendApplicationRejectionNotification(applicationId: string, organizationId: string) {
+async function prepareApplicationRejection(
+  applicationId: string,
+  organizationId: string,
+  now: Date,
+) {
   const [details] = await db
     .select({
       candidateFirstName: candidate.firstName,
@@ -109,29 +133,47 @@ async function sendApplicationRejectionNotification(applicationId: string, organ
       applicationStatus: application.status,
     })
     .from(application)
-    .innerJoin(candidate, eq(candidate.id, application.candidateId))
-    .innerJoin(job, eq(job.id, application.jobId))
-    .innerJoin(organization, eq(organization.id, application.organizationId))
+    .innerJoin(candidate, and(
+      eq(candidate.id, application.candidateId),
+      eq(candidate.organizationId, organizationId),
+    ))
+    .innerJoin(job, and(
+      eq(job.id, application.jobId),
+      eq(job.organizationId, organizationId),
+    ))
+    .innerJoin(organization, and(
+      eq(organization.id, application.organizationId),
+      eq(organization.id, organizationId),
+    ))
     .where(and(
       eq(application.id, applicationId),
       eq(application.organizationId, organizationId),
     ))
     .limit(1)
 
-  if (!details) return
+  if (!details) throw new Error('candidate_workflow_email_context_unavailable')
 
   const candidateName = `${details.candidateFirstName} ${details.candidateLastName}`.trim()
 
-  await sendConfiguredApplicationRejectionEmail({
-    organizationId,
-    candidateEmail: details.candidateEmail,
-    candidateName,
-    candidateFirstName: details.candidateFirstName,
-    candidateLastName: details.candidateLastName,
-    jobTitle: details.jobTitle,
-    organizationName: details.organizationName,
-    applicationDate: details.applicationCreatedAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-    applicationStatus: details.applicationStatus,
-    dashboardApplicationUrl: `${resolveFactoryCareersBaseUrl()}/dashboard/applications/${applicationId}`,
+  const prepared = await prepareConfiguredCandidateWorkflowEmail({
+    purpose: 'application_rejection',
+    now,
+    data: {
+      organizationId,
+      candidateEmail: details.candidateEmail,
+      candidateName,
+      candidateFirstName: details.candidateFirstName,
+      candidateLastName: details.candidateLastName,
+      jobTitle: details.jobTitle,
+      organizationName: details.organizationName,
+      applicationDate: details.applicationCreatedAt.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+      applicationStatus: 'rejected',
+      dashboardApplicationUrl: `${resolveFactoryCareersBaseUrl()}/dashboard/applications/${applicationId}`,
+    },
   })
+  return { prepared }
 }

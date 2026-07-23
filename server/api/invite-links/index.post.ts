@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { inviteLink } from '../../database/schema'
+import { hashInviteLinkToken } from '../../utils/inviteLinkToken'
 import { createInviteLinkSchema } from '../../utils/schemas/inviteLink'
 
 /**
@@ -15,20 +16,20 @@ export default defineEventHandler(async (event) => {
 
   // Generate a cryptographically secure token (32 bytes = 64 hex chars)
   const token = randomBytes(32).toString('hex')
+  const tokenHash = hashInviteLinkToken(token)
 
   const expiresAt = new Date(Date.now() + body.expiresInHours * 60 * 60 * 1000)
 
   const [created] = await db.insert(inviteLink).values({
     organizationId: orgId,
     createdById: session.user.id,
-    token,
+    tokenHash,
     role: body.role,
     maxUses: body.maxUses ?? null,
     useCount: 0,
     expiresAt,
   }).returning({
     id: inviteLink.id,
-    token: inviteLink.token,
     role: inviteLink.role,
     maxUses: inviteLink.maxUses,
     useCount: inviteLink.useCount,
@@ -50,5 +51,5 @@ export default defineEventHandler(async (event) => {
   })
 
   setResponseStatus(event, 201)
-  return created
+  return { ...created, token }
 })

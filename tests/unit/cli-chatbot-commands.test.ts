@@ -179,6 +179,43 @@ describe('CLI chatbot commands', () => {
     expect(JSON.parse(deleteOut[0])).toEqual({ success: true })
   })
 
+  it('forwards a supported fifty-message chatbot context without changing the body', async () => {
+    const dir = tempDir()
+    const configPath = join(dir, 'config.json')
+    writeAuthedConfig(configPath)
+    const messages = Array.from({ length: 50 }, (_, index) => ({
+      role: index % 2 === 0 ? 'user' : 'assistant',
+      content: `message-${index}`,
+      ...(index === 48 ? { attachmentIds: ['att_1'] } : {}),
+    }))
+    const requestBody = {
+      conversationId: 'conv_1',
+      scope: { kind: 'organization' },
+      messages,
+    }
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      expect(url).toBe('https://careers.example.com/api/chatbot/chat')
+      expect(init?.method).toBe('POST')
+      expect(JSON.parse(String(init?.body))).toEqual(requestBody)
+      return new Response('data: {"type":"finish"}\n\n', {
+        headers: { 'content-type': 'text/event-stream' },
+      })
+    })
+
+    const exitCode = await runCli(
+      ['chatbot', 'chat', '--stdin', '--yes', '--config', configPath, '--json'],
+      {
+        stdout: () => {},
+        stderr: () => {},
+        fetch: fetchMock as typeof fetch,
+        stdin: async () => JSON.stringify(requestBody),
+      },
+    )
+
+    expect(exitCode).toBe(0)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it('manages chatbot folders and agents', async () => {
     const dir = tempDir()
     const configPath = join(dir, 'config.json')

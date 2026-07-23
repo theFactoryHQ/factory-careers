@@ -8,6 +8,14 @@ export const APPLICATION_STATUS_KEYS = [
 ] as const
 
 export type ApplicationStatusKey = typeof APPLICATION_STATUS_KEYS[number]
+
+export function parseApplicationStatusQuery(value: unknown): ApplicationStatusKey | undefined {
+  return typeof value === 'string'
+    && (APPLICATION_STATUS_KEYS as readonly string[]).includes(value)
+    ? value as ApplicationStatusKey
+    : undefined
+}
+
 export type ApplicationStatusBadgeVariant = 'soft' | 'ring' | 'subtle-ring' | 'factory'
 export type ApplicationTransitionButtonVariant = 'solid' | 'subtle' | 'factory'
 export type InterviewStatusBadgeVariant = 'ring'

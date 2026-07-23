@@ -126,6 +126,33 @@ describe('AI model catalog', () => {
     })
   })
 
+  it('uses safe outbound fetch by default for a custom provider base URL', async () => {
+    const safeFetchImpl = vi.fn(async () => Response.json({
+      data: [{ id: 'custom-chat-model', created: 1770000000 }],
+    }))
+    const ordinaryFetch = vi.fn(async () => {
+      throw new Error('ordinary fetch must not be used')
+    })
+    vi.stubGlobal('fetch', ordinaryFetch)
+
+    const result = await refreshProviderModels('openai_compatible', {
+      apiKey: 'custom-key',
+      baseUrl: 'https://llm.example.com/v1',
+      force: true,
+      safeFetchImpl,
+      now: () => new Date('2026-05-21T12:00:00.000Z'),
+    })
+
+    expect(safeFetchImpl).toHaveBeenCalledWith(
+      'https://llm.example.com/v1/models',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer custom-key' }),
+      }),
+    )
+    expect(ordinaryFetch).not.toHaveBeenCalled()
+    expect(result.models.map(model => model.id)).toEqual(['custom-chat-model'])
+  })
+
   it('normalizes and filters Gemini model-list responses to generation models', async () => {
     const fetchImpl = vi.fn(async () => ({
       ok: true,

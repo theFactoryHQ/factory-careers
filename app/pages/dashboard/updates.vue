@@ -8,6 +8,7 @@ import {
   HardDrive, Database, Shield, Loader2,
   Cpu, MemoryStick, Info,
 } from 'lucide-vue-next'
+import { FACTORY_CAREERS_RELEASES_URL } from '~~/shared/project-links'
 import { getReleaseStatusPresentation } from '~/utils/releaseStatusPresentation'
 
 definePageMeta({
@@ -817,7 +818,7 @@ function formatDate(dateString: string | null | undefined): string {
     <!-- Footer link -->
     <div class="mt-8 mb-4 text-center">
       <a
-        href="https://github.com/theFactoryHQ/factory-careers/releases"
+        :href="FACTORY_CAREERS_RELEASES_URL"
         target="_blank"
         rel="noopener noreferrer"
         class="ui-inline-link ui-inline-link-brand inline-flex items-center gap-1.5 text-xs font-medium"

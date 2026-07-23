@@ -20,12 +20,26 @@ self-hosters.
 
 ### Changed
 
+- Made shareable invite links a one-time reveal and stored only one-way token hashes, while preserving previously distributed links through migration.
+- Kept pre-made scoring rubrics consistent across job creation, job editing, API, and CLI paths.
 - Made CI compare ordinary changelog additions with the pull request merge base, preserve its existing Unreleased entries, and reject stale or unfinalized release PRs before publishing and validating the exact versioned GitHub Release body.
 - Shared typed job create and update contracts across the dashboard and API while preserving deliberate null-versus-omitted field behavior.
 - Made the generated Nuxt ESLint configuration a required local and pull-request gate, and clarified that host development runs on port 3001 while the full Docker stack remains on port 3000.
 
 ### Fixed
 
+- Encrypted organization OIDC client secrets at rest, backfilled existing providers safely, and kept SSO registration, discovery, and callbacks transparent.
+- Made immediate and delayed candidate acknowledgement and rejection emails durable across deploys and restarts, with idempotent delivery and bounded retries.
+- Bound application-owned OIDC discovery and organization-configured custom AI requests to validated public DNS answers without weakening TLS hostname verification.
+- Made Jobs, Candidates, and Applications dashboard lists complete beyond their first API page, with accurate ranges and full-result search, filtering, and sorting.
+- Kept chatbot conversations sendable beyond fifty stored messages by bounding only the recent model context.
+- Identified server logs and analytics as Factory Careers in production telemetry.
+- Made application notification retries and exhausted deliveries emit sanitized structured telemetry for operators.
+- Prevented expired application notification workers from overwriting delivery state owned by a newer queue attempt.
+- Kept member application notifications from disappearing when application and database time zones differ.
+- Gave Render-hosted users independent client-IP rate-limit buckets behind the managed ingress.
+- Kept source, release, and issue-report links consistently pointed at the Factory-owned repository.
+- Kept the application status filter synchronized with filtered and unfiltered dashboard navigation.
 - Removed the verbose search-scope helper from the job pipeline.
 - Made AI usage charts render a true rolling 30-day window with readable scales, quiet-day gaps, compact bars, period totals, and accessible daily details.
 - Pinned recruiter-search database functions to trusted schemas, protected device authorization with row-level security, and indexed durable-processing relationships used during cleanup.

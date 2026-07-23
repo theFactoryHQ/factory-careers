@@ -30,6 +30,8 @@ export const candidateQuerySchema = paginationQuerySchema().extend({
   dobTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'dobTo must be YYYY-MM-DD').optional(),
   /** JSON-encoded array of { propertyDefinitionId, op, value } filters */
   propertyFilters: z.string().optional(),
+  sortBy: z.enum(['name', 'email', 'phone', 'applications', 'created']).default('created'),
+  sortDir: z.enum(['asc', 'desc']).default('desc'),
 })
 
 /** Reusable schema for `:id` route params */

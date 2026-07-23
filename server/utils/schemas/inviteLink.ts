@@ -1,4 +1,12 @@
 import { z } from 'zod'
+import {
+  INVITE_LINK_TOKEN_LENGTH,
+  INVITE_LINK_TOKEN_PATTERN,
+} from '../inviteLinkToken'
+
+const inviteLinkTokenSchema = z.string()
+  .length(INVITE_LINK_TOKEN_LENGTH)
+  .regex(INVITE_LINK_TOKEN_PATTERN)
 
 /**
  * Schema for creating a new shareable invite link.
@@ -14,5 +22,9 @@ export const createInviteLinkSchema = z.object({
  * Schema for accepting an invite link by token.
  */
 export const acceptInviteLinkSchema = z.object({
-  token: z.string().min(1).max(128),
+  token: inviteLinkTokenSchema,
+})
+
+export const inviteLinkInfoParamsSchema = z.object({
+  token: inviteLinkTokenSchema,
 })

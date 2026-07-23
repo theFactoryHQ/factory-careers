@@ -218,6 +218,8 @@ Server API coverage is tracked in `packages/careers-cli/src/routeCoverage.ts`. T
 
 `org update-settings --stdin --yes` accepts the same JSON payload as `/api/org-settings`, including `signupAllowedDomains` for owner-managed signup domain allowlists and workflow email settings such as `sendApplicationAcknowledgement`, `applicationAcknowledgementTemplateId`, `sendApplicationRejection`, `applicationRejectionTemplateId`, and `interviewInvitationTemplateId`. The server still enforces owner-only updates and requires each signup domain to match a configured SSO provider or organization-level calendar integration.
 
+`org invite-links create --stdin --yes` returns the new raw invite token once so the caller can construct and distribute the link. `org invite-links list` returns revocable invite metadata without either raw tokens or token hashes; if a link is lost, revoke it and create a replacement.
+
 ## Examples
 
 Create a job, add questions, create a candidate, and apply:

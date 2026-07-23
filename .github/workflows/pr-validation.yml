@@ -25,6 +25,21 @@ jobs:
       }}
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: factory_notifications_ci
+          POSTGRES_PASSWORD: factory_notifications_ci
+          POSTGRES_DB: factory_notifications_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U factory_notifications_ci -d factory_notifications_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -62,6 +77,12 @@ jobs:
         id: tests
         run: npm run test:unit
 
+      - name: Run application notification PostgreSQL integration test
+        run: npm run test:integration:application-notifications
+        env:
+          APPLICATION_NOTIFICATION_PG_TEST_URL: postgresql://factory_notifications_ci:factory_notifications_ci@127.0.0.1:5432/postgres
+          APPLICATION_NOTIFICATION_PG_REQUIRED: "true"
+
       - name: Lint
         id: lint
         run: npm run lint
@@ -81,12 +102,7 @@ jobs:
 
       - name: Audit dependencies (high severity+)
         id: audit
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm audit --audit-level=high 2>&1 | tee audit-output.txt || true
-          # Advisory-only: does not fail the job on high-severity transitive issues.
-          # See CodeRabbit review on PR #24.
+        run: npm audit --audit-level=high
 
       - name: Validate production environment contract
         id: production_env

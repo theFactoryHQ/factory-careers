@@ -308,10 +308,12 @@ describe('P0 tenant-isolation route coverage', () => {
 
   it('validates discovered SSO endpoints with DNS checks and blocks redirects', () => {
     const securitySource = read('server/utils/ssoSecurity.ts')
+    const safeFetchSource = read('server/utils/safeOutboundFetch.ts')
 
     expect(securitySource).toContain('async function validateDiscoveryEndpoint')
     expect(securitySource).toContain('await assertSafeServerSideUrl(value')
-    expect(securitySource).toContain("redirect: 'error'")
+    expect(securitySource).toContain('createSafeOutboundFetch(')
+    expect(safeFetchSource).toContain("redirect: 'error'")
   })
 
   it('uses the dedicated AI config read permission for config-management reads', () => {
@@ -326,14 +328,13 @@ describe('P0 tenant-isolation route coverage', () => {
     }
   })
 
-  it('performs DNS-backed custom AI base URL validation before direct chatbot model use', () => {
+  it('binds custom AI provider requests to validated addresses', () => {
     const source = read('server/api/chatbot/chat.post.ts')
-    const assertionIndex = source.indexOf('await assertSafeServerSideUrl(config.baseUrl)')
-    const modelIndex = source.indexOf('const model = createLanguageModel')
+    const providerSource = read('server/utils/ai/provider.ts')
 
-    expect(source).toContain("from '../../utils/serverSideUrl'")
-    expect(assertionIndex).toBeGreaterThanOrEqual(0)
-    expect(modelIndex).toBeGreaterThan(assertionIndex)
+    expect(source).toContain('const model = createLanguageModel')
+    expect(providerSource).toContain("from '../safeOutboundFetch'")
+    expect(providerSource).toContain('fetch: safeOutboundFetch')
   })
 
   it('uses byte-safe OAuth state comparison for Microsoft calendar callbacks', () => {
@@ -401,7 +402,9 @@ describe('P0 tenant-isolation route coverage', () => {
     expect(acceptSource).toContain('auth.api.getSession({ headers: event.headers })')
     expect(acceptSource).not.toContain('requireAuth(event)')
     expect(acceptSource).not.toContain('requirePermission(event')
-    expect(acceptSource).toContain('eq(inviteLink.token, body.token)')
+    expect(infoSource).toContain('eq(inviteLink.tokenHash, tokenHash)')
+    expect(acceptSource).toContain('eq(inviteLink.tokenHash, tokenHash)')
+    expect(acceptSource).not.toContain('eq(inviteLink.token, body.token)')
     expect(acceptSource).toContain('onConflictDoNothing({ target: [member.userId, member.organizationId] })')
   })
 })

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Cloud, Server, ArrowRight, Sparkles } from 'lucide-vue-next'
+import { FACTORY_CAREERS_REPOSITORY_URL } from '~~/shared/project-links'
 
 const localePath = useLocalePath()
 const isLoading = ref(false)
@@ -53,7 +54,7 @@ async function handleUpgrade() {
               <ArrowRight class="ml-auto size-3 text-white/20 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
             </button>
             <a
-              href="https://github.com/caffeinebounce/factory-careers"
+              :href="FACTORY_CAREERS_REPOSITORY_URL"
               target="_blank"
               rel="noopener noreferrer"
               class="group flex items-center gap-2 whitespace-nowrap rounded-xl border border-white/[0.06] bg-white/[0.04] px-3 py-2.5 transition-all hover:border-accent-400/30 hover:bg-accent-500/10 hover:shadow-md hover:shadow-accent-500/5 active:scale-[0.97]"

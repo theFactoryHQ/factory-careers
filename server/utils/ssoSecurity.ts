@@ -4,9 +4,14 @@ import {
   validateServerSideUrlShape,
   type ServerSideUrlValidationResult,
 } from './serverSideUrl'
+import { createSafeOutboundFetch } from './safeOutboundFetch'
 
 interface SsoUrlValidationOptions {
   allowLocalHttp?: boolean
+}
+
+interface SsoDiscoveryDependencies {
+  safeFetch?: typeof fetch
 }
 
 interface OidcDiscoveryDocument {
@@ -143,6 +148,7 @@ export async function buildOidcRegistrationConfigFromDiscovery(
 export async function discoverOidcRegistrationConfig(
   issuer: string,
   options: SsoUrlValidationOptions = {},
+  dependencies: SsoDiscoveryDependencies = {},
 ): Promise<OidcRegistrationConfig> {
   const issuerResult = validateSsoIssuerUrlShape(issuer, options)
   if (!issuerResult.ok) {
@@ -152,15 +158,23 @@ export async function discoverOidcRegistrationConfig(
     })
   }
 
-  await assertSafeServerSideUrl(issuer, validationOptionsForUrl(issuer, options))
-
   const discoveryEndpoint = computeOidcDiscoveryEndpoint(issuer)
-  await assertSafeServerSideUrl(discoveryEndpoint, validationOptionsForUrl(discoveryEndpoint, options))
-
-  const doc = await $fetch<OidcDiscoveryDocument>(discoveryEndpoint, {
-    timeout: 10_000,
-    redirect: 'error',
+  // Security boundary: this application owns and binds registration-time
+  // discovery. Better Auth owns the later token, user-info, and JWKS requests
+  // and does not currently expose a supported per-request fetch hook. Do not
+  // replace this with a global dispatcher; reassess when the dependency adds
+  // fetch injection for its enterprise OIDC callback.
+  const safeFetch = dependencies.safeFetch ?? createSafeOutboundFetch(
+    {},
+    validationOptionsForUrl(discoveryEndpoint, options),
+  )
+  const response = await safeFetch(discoveryEndpoint, {
+    signal: AbortSignal.timeout(10_000),
   })
+  if (!response.ok) {
+    throw new Error(`OIDC discovery request failed with status ${response.status}`)
+  }
+  const doc = await response.json() as OidcDiscoveryDocument
   return await buildOidcRegistrationConfigFromDiscovery(issuer, doc, options)
 }
 

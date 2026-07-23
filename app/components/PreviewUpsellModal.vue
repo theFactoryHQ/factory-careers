@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Eye, X, Github, Rocket, Cloud } from 'lucide-vue-next'
+import { FACTORY_CAREERS_REPOSITORY_URL } from '~~/shared/project-links'
 
 const emit = defineEmits<{
   close: []
@@ -57,7 +58,7 @@ function closeModal() {
 
             <!-- Self-host option -->
             <a
-              href="https://github.com/caffeinebounce/factory-careers"
+              :href="FACTORY_CAREERS_REPOSITORY_URL"
               target="_blank"
               rel="noopener noreferrer"
               class="ui-selectable-panel flex items-start gap-3 px-4 py-3 no-underline group"
@@ -73,7 +74,7 @@ function closeModal() {
           </div>
 
           <a
-            href="https://github.com/caffeinebounce/factory-careers"
+            :href="FACTORY_CAREERS_REPOSITORY_URL"
             target="_blank"
             rel="noopener noreferrer"
             class="ui-inline-link ui-inline-link-muted inline-flex items-center gap-1.5 text-xs no-underline"

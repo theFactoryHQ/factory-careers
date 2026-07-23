@@ -428,6 +428,27 @@
       "when": 1784228400000,
       "tag": "0059_application_email_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1784232000000,
+      "tag": "0060_notification_membership_snapshot_utc",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1784235600000,
+      "tag": "0061_hash_invite_link_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1784239200000,
+      "tag": "0062_candidate_workflow_email_queue",
+      "breakpoints": true
     }
   ]
 }

@@ -34,6 +34,8 @@ export type ApplicationsListQuery = {
   status?: string
   search?: string
   propertyFilters?: string
+  sortBy?: 'name' | 'email' | 'job' | 'status' | 'score' | 'created'
+  sortDir?: 'asc' | 'desc'
 }
 
 /** Stable Nuxt payload key for a /api/applications query object. */
@@ -46,6 +48,8 @@ export function applicationsListKey(query: ApplicationsListQuery): string {
   if (query.status) normalized.status = query.status
   if (query.search) normalized.search = query.search
   if (query.propertyFilters) normalized.propertyFilters = query.propertyFilters
+  if (query.sortBy) normalized.sortBy = query.sortBy
+  if (query.sortDir) normalized.sortDir = query.sortDir
   return `applications-${JSON.stringify(normalized)}`
 }
 
@@ -69,6 +73,8 @@ export function useApplications(options?: {
   status?: Ref<string | undefined> | string
   search?: Ref<string | undefined> | string
   propertyFilters?: Ref<PropertyFilter[] | undefined> | PropertyFilter[]
+  sortBy?: Ref<ApplicationsListQuery['sortBy']> | ApplicationsListQuery['sortBy']
+  sortDir?: Ref<ApplicationsListQuery['sortDir']> | ApplicationsListQuery['sortDir']
 }) {
   const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 
@@ -82,6 +88,8 @@ export function useApplications(options?: {
       ...(toValue(options?.status) && { status: toValue(options?.status) }),
       ...(toValue(options?.search) && { search: toValue(options?.search) }),
       ...(pf && pf.length > 0 && { propertyFilters: JSON.stringify(pf) }),
+      ...(toValue(options?.sortBy) && { sortBy: toValue(options?.sortBy) }),
+      ...(toValue(options?.sortDir) && { sortDir: toValue(options?.sortDir) }),
     }
   })
 

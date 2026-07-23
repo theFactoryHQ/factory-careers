@@ -13,6 +13,10 @@ import {
   enqueueProcessingTaskInTransaction,
   type ProcessingQueueDatabaseExecutor,
 } from './processingQueue'
+import {
+  enqueueCandidateWorkflowEmail,
+  type PreparedCandidateWorkflowEmail,
+} from './candidateWorkflowEmailQueue'
 
 type ResponseValue = string | string[] | number | boolean
 
@@ -52,6 +56,7 @@ export type PublicApplicationTransactionInput = {
     questionId?: string
   }>
   maxDocumentsPerCandidate: number
+  candidateWorkflowEmail?: PreparedCandidateWorkflowEmail | null
 }
 
 export type PublicApplicationTransaction = {
@@ -99,6 +104,14 @@ export type PublicApplicationTransaction = {
     questionId: string
     value: ResponseValue
   }>): Promise<void>
+  enqueueCandidateWorkflowEmail(input: {
+    prepared: PreparedCandidateWorkflowEmail
+    organizationId: string
+    applicationId: string
+    candidateId: string
+    jobId: string
+    transitionAt: Date
+  }): Promise<void>
 }
 
 export type PublicApplicationTransactionAdapter = {
@@ -207,6 +220,10 @@ const drizzleTransactionAdapter: PublicApplicationTransactionAdapter = {
       async insertQuestionResponses(inputs) {
         await tx.insert(questionResponse).values(inputs)
       },
+
+      async enqueueCandidateWorkflowEmail(input) {
+        await enqueueCandidateWorkflowEmail(tx as unknown as Pick<typeof db, 'insert'>, input)
+      },
     }))
   },
 }
@@ -294,6 +311,17 @@ export async function createPublicApplication(
         applicationId,
         ...response,
       })))
+    }
+
+    if (input.candidateWorkflowEmail) {
+      await tx.enqueueCandidateWorkflowEmail({
+        prepared: input.candidateWorkflowEmail,
+        organizationId: input.organizationId,
+        applicationId,
+        candidateId,
+        jobId: input.jobId,
+        transitionAt: input.candidateWorkflowEmail.scheduledFor,
+      })
     }
 
     return { candidateId, applicationId, documentProcessingTasks }

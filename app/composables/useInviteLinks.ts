@@ -24,15 +24,22 @@ export interface InviteLinkInfoResponse {
   expiresAt: string
 }
 
-export interface InviteLink {
+export interface InviteLinkMetadata {
   id: string
-  token: string
   role: string
   maxUses: number | null
   useCount: number
   expiresAt: string
   createdAt: string
+}
+
+export interface ListedInviteLink extends InviteLinkMetadata {
+  revokedAt: string | null
   createdByName: string | null
+}
+
+export interface CreatedInviteLink extends InviteLinkMetadata {
+  token: string
 }
 
 // ── Composable ──────────────────────────────────────────────────────
@@ -67,10 +74,10 @@ export function useInviteLinks() {
   /**
    * List all invite links for the current organisation.
    */
-  async function listInviteLinks(): Promise<InviteLink[]> {
+  async function listInviteLinks(): Promise<ListedInviteLink[]> {
     const url: string = '/api/invite-links'
 
-    return await $fetch<InviteLink[]>(url)
+    return await $fetch<ListedInviteLink[]>(url)
   }
 
   /**
@@ -80,10 +87,10 @@ export function useInviteLinks() {
     role?: 'admin' | 'member'
     maxUses?: number | null
     expiresInHours?: number
-  }): Promise<void> {
+  }): Promise<CreatedInviteLink> {
     const url: string = '/api/invite-links'
 
-    await $fetch(url, {
+    return await $fetch<CreatedInviteLink>(url, {
       method: 'POST',
       body: opts,
     })

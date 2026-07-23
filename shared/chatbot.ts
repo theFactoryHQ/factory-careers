@@ -18,8 +18,16 @@ export const CHATBOT_MAX_UPLOAD_BYTES = 8 * 1024 * 1024
 /** Maximum number of attachments a user can include in a single message. */
 export const CHATBOT_MAX_ATTACHMENTS_PER_MESSAGE = 5
 
-/** Maximum number of messages kept in a single conversation. */
-export const CHATBOT_MAX_MESSAGES = 50
+/** Maximum number of recent conversation messages sent to the model. */
+export const CHATBOT_CONTEXT_MESSAGE_LIMIT = 50
+
+/**
+ * Select the recent model context without mutating the complete persisted
+ * conversation history.
+ */
+export function selectChatbotContextMessages<T>(messages: readonly T[]): T[] {
+  return messages.slice(-CHATBOT_CONTEXT_MESSAGE_LIMIT)
+}
 
 /** Maximum characters of attachment text injected into the model prompt. */
 export const CHATBOT_MAX_ATTACHMENT_CHARS = 40_000

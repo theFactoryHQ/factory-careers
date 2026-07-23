@@ -8,6 +8,7 @@ import {
   Cloud, Server, Sparkles, Radio, History,
   MessageCircle, MoreHorizontal, Mail, Home,
 } from 'lucide-vue-next'
+import { FACTORY_CAREERS_REPOSITORY_URL } from '~~/shared/project-links'
 import { getJobStatusBadgeClass, getJobStatusLabel } from '~/utils/status-display'
 
 const route = useRoute()
@@ -437,7 +438,7 @@ function handleNewJobClick() {
                     </div>
                   </NuxtLink>
                   <a
-                    href="https://github.com/caffeinebounce/factory-careers"
+                    :href="FACTORY_CAREERS_REPOSITORY_URL"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="flex items-start gap-3 px-3 py-2.5 transition-colors hover:bg-white/[0.05] no-underline group/item"
@@ -783,7 +784,7 @@ function handleNewJobClick() {
                 Factory Staff — Sign in
               </NuxtLink>
               <a
-                href="https://github.com/caffeinebounce/factory-careers"
+                :href="FACTORY_CAREERS_REPOSITORY_URL"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/62 hover:bg-white/[0.05] hover:text-white transition-colors no-underline mt-1"
