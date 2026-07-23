@@ -2,6 +2,12 @@
 import {
   Brain, Sparkles, SlidersHorizontal, Plus, Trash2, Loader2, Save, RotateCcw,
 } from 'lucide-vue-next'
+import {
+  clonePremadeCriteria,
+  PREMADE_CRITERIA_TEMPLATE_KEYS,
+  type PremadeCriteriaTemplateKey,
+  type PremadeScoringCriterion,
+} from '~~/shared/scoring-criteria'
 
 definePageMeta({
   layout: 'dashboard',
@@ -26,14 +32,7 @@ useSeoMeta({
 // Types & constants
 // ─────────────────────────────────────────────
 
-type ScoringCriterionDraft = {
-  key: string
-  name: string
-  description: string
-  category: 'technical' | 'experience' | 'soft_skills' | 'education' | 'culture' | 'custom'
-  maxScore: number
-  weight: number
-}
+type ScoringCriterionDraft = PremadeScoringCriterion
 
 const categoryLabels: Record<string, string> = {
   technical: 'Technical',
@@ -134,32 +133,19 @@ async function toggleAutoScore() {
 // Template loading
 // ─────────────────────────────────────────────
 
-const selectedTemplate = ref<'standard' | 'technical' | 'non_technical'>('standard')
-
-const templates: Record<string, ScoringCriterionDraft[]> = {
-  standard: [
-    { key: 'technical_skills', name: 'Technical Skills', description: 'Evaluate the candidate\'s technical competencies against the job requirements.', category: 'technical', maxScore: 10, weight: 50 },
-    { key: 'relevant_experience', name: 'Relevant Experience', description: 'Assess years and quality of experience directly relevant to the role.', category: 'experience', maxScore: 10, weight: 50 },
-    { key: 'education_fit', name: 'Education & Certifications', description: 'Evaluate educational background and certifications relevant to the position.', category: 'education', maxScore: 10, weight: 30 },
-  ],
-  technical: [
-    { key: 'core_tech_stack', name: 'Core Tech Stack Match', description: 'How well the candidate\'s technical skills match the primary technologies.', category: 'technical', maxScore: 10, weight: 70 },
-    { key: 'system_design', name: 'System Design & Architecture', description: 'Evidence of system design experience and architectural decision-making.', category: 'technical', maxScore: 10, weight: 50 },
-    { key: 'engineering_practices', name: 'Engineering Practices', description: 'Testing, CI/CD, code review, and software development lifecycle experience.', category: 'technical', maxScore: 10, weight: 40 },
-    { key: 'relevant_experience', name: 'Relevant Experience', description: 'Years and depth of experience in similar roles or domains.', category: 'experience', maxScore: 10, weight: 50 },
-    { key: 'leadership_collab', name: 'Leadership & Collaboration', description: 'Evidence of mentoring, tech leadership, and cross-team collaboration.', category: 'soft_skills', maxScore: 10, weight: 30 },
-  ],
-  non_technical: [
-    { key: 'relevant_experience', name: 'Relevant Experience', description: 'Depth and breadth of experience applicable to the role.', category: 'experience', maxScore: 10, weight: 60 },
-    { key: 'communication', name: 'Communication Skills', description: 'Evidence of written and verbal communication ability.', category: 'soft_skills', maxScore: 10, weight: 50 },
-    { key: 'domain_knowledge', name: 'Domain Knowledge', description: 'Relevant industry or domain expertise.', category: 'experience', maxScore: 10, weight: 40 },
-    { key: 'education_fit', name: 'Education & Certifications', description: 'Educational background and certifications relevant to the position.', category: 'education', maxScore: 10, weight: 30 },
-    { key: 'culture_fit', name: 'Culture & Values Alignment', description: 'Indicators of alignment with company values and team culture.', category: 'culture', maxScore: 10, weight: 30 },
-  ],
+const selectedTemplate = ref<PremadeCriteriaTemplateKey>('standard')
+const premadeTemplateDetails: Record<PremadeCriteriaTemplateKey, { label: string, desc: string }> = {
+  standard: { label: 'Standard', desc: '3 balanced criteria for any role' },
+  technical: { label: 'Technical', desc: '5 criteria focused on engineering' },
+  non_technical: { label: 'Non-Technical', desc: '5 criteria for business roles' },
 }
+const premadeTemplateOptions = PREMADE_CRITERIA_TEMPLATE_KEYS.map(key => ({
+  key,
+  ...premadeTemplateDetails[key],
+}))
 
-function loadTemplate(template: 'standard' | 'technical' | 'non_technical') {
-  scoringCriteria.value = structuredClone(templates[template] ?? [])
+function loadTemplate(template: PremadeCriteriaTemplateKey) {
+  scoringCriteria.value = clonePremadeCriteria(template)
 }
 
 // ─────────────────────────────────────────────
@@ -387,11 +373,7 @@ function resetCriteria() {
         <!-- Pre-made template selector -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           <button
-            v-for="tmpl in [
-              { key: 'standard', label: 'Standard', desc: '3 balanced criteria for any role' },
-              { key: 'technical', label: 'Technical', desc: '5 criteria focused on engineering' },
-              { key: 'non_technical', label: 'Non-Technical', desc: '5 criteria for business roles' },
-            ] as const"
+            v-for="tmpl in premadeTemplateOptions"
             :key="tmpl.key"
             type="button"
             class="p-4 rounded-lg border text-left transition-all"
