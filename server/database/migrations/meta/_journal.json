@@ -435,6 +435,13 @@
       "when": 1784232000000,
       "tag": "0060_notification_membership_snapshot_utc",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1784235600000,
+      "tag": "0061_hash_invite_link_tokens",
+      "breakpoints": true
     }
   ]
 }

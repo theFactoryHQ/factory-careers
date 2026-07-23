@@ -1,5 +1,6 @@
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { inviteLink, member, organization } from "../../database/schema";
+import { hashInviteLinkToken } from "../../utils/inviteLinkToken";
 import { acceptInviteLinkSchema } from "../../utils/schemas/inviteLink";
 
 /**
@@ -21,7 +22,15 @@ export default defineEventHandler(async (event) => {
 		throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
 	}
 
-	const body = await readValidatedBody(event, acceptInviteLinkSchema.parse);
+	const parsedBody = acceptInviteLinkSchema.safeParse(await readBody(event));
+	if (!parsedBody.success) {
+		throw createError({
+			statusCode: 404,
+			statusMessage: "Invalid, expired, or revoked invite link",
+		});
+	}
+	const body = parsedBody.data;
+	const tokenHash = hashInviteLinkToken(body.token);
 
 	// ── Step 2: Validate the token ──
 	// Single query to find the link AND check all validity conditions
@@ -39,7 +48,7 @@ export default defineEventHandler(async (event) => {
 		.innerJoin(organization, eq(inviteLink.organizationId, organization.id))
 		.where(
 			and(
-				eq(inviteLink.token, body.token),
+				eq(inviteLink.tokenHash, tokenHash),
 				isNull(inviteLink.revokedAt),
 				gt(inviteLink.expiresAt, new Date()),
 			),

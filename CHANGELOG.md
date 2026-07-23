@@ -20,6 +20,7 @@ self-hosters.
 
 ### Changed
 
+- Made shareable invite links a one-time reveal and stored only one-way token hashes, while preserving previously distributed links through migration.
 - Kept pre-made scoring rubrics consistent across job creation, job editing, API, and CLI paths.
 - Made CI compare ordinary changelog additions with the pull request merge base, preserve its existing Unreleased entries, and reject stale or unfinalized release PRs before publishing and validating the exact versioned GitHub Release body.
 - Shared typed job create and update contracts across the dashboard and API while preserving deliberate null-versus-omitted field behavior.

@@ -62,6 +62,13 @@ test.describe('Auth and organization edge flows', () => {
     expect(inviteLink.maxUses).toBe(1)
     expect(inviteLink.useCount).toBe(0)
 
+    const listResponse = await ownerPage.request.get('/api/invite-links')
+    expect(listResponse.status(), `List invite links API returned ${listResponse.status()}`).toBe(200)
+    const listedLinks = await listResponse.json() as Array<Record<string, unknown>>
+    expect(listedLinks).toHaveLength(1)
+    expect(listedLinks[0]).not.toHaveProperty('token')
+    expect(listedLinks[0]).not.toHaveProperty('tokenHash')
+
     const baseURL = testInfo.project.use.baseURL as string
     const context = await browser.newContext({ baseURL })
     const inviteePage = await context.newPage()
@@ -105,5 +112,51 @@ test.describe('Auth and organization edge flows', () => {
     } finally {
       await context.close()
     }
+  })
+
+  test('new invite links are revealed once and listed only as metadata', async ({ authenticatedPage }, testInfo) => {
+    const page = authenticatedPage
+    const baseURL = testInfo.project.use.baseURL as string
+
+    await page.goto('/dashboard/settings/members')
+    await page.waitForLoadState('networkidle')
+
+    const inviteLinksSection = page.locator('section').filter({
+      has: page.getByRole('heading', { name: 'Invite links' }),
+    })
+    await inviteLinksSection.getByRole('button', { name: 'Create link' }).click()
+
+    const [createResponse, listResponse] = await Promise.all([
+      page.waitForResponse(
+        response => response.url().endsWith('/api/invite-links')
+          && response.request().method() === 'POST',
+      ),
+      page.waitForResponse(
+        response => response.url().endsWith('/api/invite-links')
+          && response.request().method() === 'GET',
+      ),
+      inviteLinksSection.getByRole('button', { name: 'Create', exact: true }).click(),
+    ])
+
+    expect(createResponse.status()).toBe(201)
+    const created = await createResponse.json() as { id: string; token: string }
+    expect(created.token).toMatch(/^[0-9a-f]{64}$/)
+
+    expect(listResponse.status()).toBe(200)
+    const listedLinks = await listResponse.json() as Array<Record<string, unknown>>
+    const listedCreatedLink = listedLinks.find(link => link.id === created.id)
+    expect(listedCreatedLink).toBeDefined()
+    expect(listedCreatedLink).not.toHaveProperty('token')
+    expect(listedCreatedLink).not.toHaveProperty('tokenHash')
+
+    const revealPanel = inviteLinksSection.getByRole('status')
+    await expect(revealPanel.getByText('This link cannot be shown again')).toBeVisible()
+    await expect(revealPanel.getByLabel('New invite link')).toHaveValue(`${baseURL}/join/${created.token}`)
+    await expect(revealPanel.getByRole('button', { name: 'Copy newly created invite link' })).toBeFocused()
+    await expect(inviteLinksSection.locator('.ui-list-row').getByRole('button', { name: /copy/i })).toHaveCount(0)
+
+    await revealPanel.getByRole('button', { name: 'Dismiss invite link' }).click()
+    await expect(revealPanel).toBeHidden()
+    await expect(inviteLinksSection.getByRole('button', { name: 'Create link' })).toBeFocused()
   })
 })

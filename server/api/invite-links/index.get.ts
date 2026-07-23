@@ -13,7 +13,6 @@ export default defineEventHandler(async (event) => {
   const links = await db
     .select({
       id: inviteLink.id,
-      token: inviteLink.token,
       role: inviteLink.role,
       maxUses: inviteLink.maxUses,
       useCount: inviteLink.useCount,

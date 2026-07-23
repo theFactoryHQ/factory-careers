@@ -62,7 +62,7 @@ describe('application notification persistence', () => {
     expect(migration).toContain('CREATE OR REPLACE FUNCTION public.enqueue_application_notification_event()')
     expect(migration).toContain("'membershipCreatedAt', membership.created_at AT TIME ZONE 'UTC',")
     expect(migration).not.toContain('CREATE TRIGGER application_notification_application_inserted')
-    expect(journal.entries.at(-1)).toEqual(expect.objectContaining({
+    expect(journal.entries.find(entry => entry.idx === 60)).toEqual(expect.objectContaining({
       idx: 60,
       tag: '0060_notification_membership_snapshot_utc',
     }))
