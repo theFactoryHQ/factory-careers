@@ -101,7 +101,7 @@ describe('Playwright E2E harness contract', () => {
       devDependencies?: Record<string, string>
     }
 
-    expect(packageJson.devDependencies?.['@axe-core/playwright']).toBe('^4.11.3')
+    expect(packageJson.devDependencies?.['@axe-core/playwright']).toBe('^4.12.1')
     expect(packageJson.scripts?.['test:e2e:a11y']).toBe(
       'NUXT_DEVTOOLS=false playwright test e2e/accessibility --workers=1',
     )
