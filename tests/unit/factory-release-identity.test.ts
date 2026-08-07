@@ -103,13 +103,13 @@ describe('Factory Careers release identity', () => {
         if: \${{ env.HAS_RELEASE_PLEASE_TOKEN == 'true' }}`
     const checkoutStep = `      - name: Checkout draft release
         if: \${{ steps.release.outputs.release_created == 'true' }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: \${{ steps.release.outputs.tag_name }}
           persist-credentials: false`
     const setupNodeStep = `      - name: Setup Node.js
         if: \${{ steps.release.outputs.release_created == 'true' }}
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc`
     const extractStep = `      - name: Extract curated release notes
@@ -226,12 +226,12 @@ describe('Factory Careers release identity', () => {
     expect(releaseNotesJobStart).toBeGreaterThan(-1)
     expect(releaseNotesJobStart).toBeLessThan(smokeTestJobStart)
     expect(releaseNotesJob).toContain(`      - name: Checkout release tag
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: \${{ needs.resolve-tag.outputs.tag }}
           persist-credentials: false`)
     expect(releaseNotesJob).toContain(`      - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc`)
     expect(releaseNotesJob).toContain(
