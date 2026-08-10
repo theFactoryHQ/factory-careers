@@ -111,7 +111,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@crowdin/cli": "^4.15.0",
-    "@nuxt/eslint": "^1.16.0",
+    "@nuxt/eslint": "^1.17.0",
     "@playwright/test": "^1.62.1",
     "@types/node": "^25.9.5",
     "@types/nodemailer": "^8.0.0",
