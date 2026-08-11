@@ -29,6 +29,7 @@ self-hosters.
 
 ### Fixed
 
+- Added rollback-safe SSO client-secret storage across mixed application versions and proactive Microsoft credential monitoring with expiry and incident alerts.
 - Encrypted organization OIDC client secrets at rest, backfilled existing providers safely, and kept SSO registration, discovery, and callbacks transparent.
 - Made immediate and delayed candidate acknowledgement and rejection emails durable across deploys and restarts, with idempotent delivery and bounded retries.
 - Bound application-owned OIDC discovery and organization-configured custom AI requests to validated public DNS answers without weakening TLS hostname verification.

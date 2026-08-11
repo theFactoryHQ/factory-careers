@@ -27,6 +27,14 @@ Use this checklist before launching or materially changing any environment that 
 | CodeQL | No unresolved high-severity findings |  |
 | Playwright e2e | Pass against production build with synthetic data |  |
 | Tenant isolation checks | Pass |  |
+| SSO storage validation | Pass before any backfill |  |
+| `SSO_PROVIDER_SECRET_STORAGE_MODE` | Explicitly matches the approved rollout phase |  |
+| SSO credential metadata | Key ID, activation, expiry, and last success present; no secret fields |  |
+| Authenticated Microsoft probe | Stable healthy code; no raw provider data |  |
+| Real Microsoft sign-in | Reaches `/dashboard` |  |
+| Minimum safe rollback target | Compatibility-capable SHA and Render deploy recorded |  |
+| Historical-artifact rollback rehearsal | Old artifact fails readiness; current deploy remains live |  |
+| SSO monitor | Manual run healthy and 15-minute schedule enabled |  |
 | `npm run ops:validate-production-env -- <env-file>` | Pass against exact production values |  |
 | `npm run ops:backup-restore-rehearsal` | Pass |  |
 | `npm run ops:object-storage-restore-rehearsal` | Pass |  |
@@ -40,4 +48,3 @@ Use this checklist before launching or materially changing any environment that 
 | Privacy/legal |  |  |  |
 | Operations |  |  |  |
 | Data processors |  |  |  |
-

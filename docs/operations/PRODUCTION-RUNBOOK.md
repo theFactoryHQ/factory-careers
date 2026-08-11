@@ -28,6 +28,10 @@ Production uses Render plus Supabase Postgres and Supabase Storage S3. Required 
 - `AUTH_MICROSOFT_CLIENT_ID`
 - `AUTH_MICROSOFT_CLIENT_SECRET`
 - `AUTH_MICROSOFT_TENANT_ID`
+- `SSO_PROVIDER_SECRET_STORAGE_MODE`
+- `FACTORY_CAREERS_SSO_PROVIDER_ID`
+- `CRON_SECRET`
+- `FACTORY_CAREERS_OPERATIONS_INBOX`
 - `FACTORY_CAREERS_HIRING_INBOX`
 - `APPLICATION_NOTIFICATION_WORKER_ENABLED=true`
 
@@ -83,39 +87,94 @@ unexpected cycle-level exception. These events never contain candidate names,
 addresses, template content, or raw provider errors. Leave failed rows in place
 for incident review; do not manually alter attempts or leases.
 
-## SSO Provider Secret Encryption
+## SSO Provider Secret Storage and Rollout
 
-Organization OIDC client secrets in `sso_provider.oidc_config` are encrypted
-with randomized AES-256-GCM ciphertext under a domain-separated key derived from
-`BETTER_AUTH_SECRET`. Better Auth receives the plaintext only after the database
-adapter decrypts a provider in memory. Registration and management responses
-must expose neither the plaintext nor the stored ciphertext.
+Organization OIDC client secrets in `sso_provider.oidc_config` use randomized
+AES-256-GCM storage under a domain-separated key derived from
+`BETTER_AUTH_SECRET`. Better Auth receives plaintext only in application memory.
+Registration, management, readiness, health, CI, and monitoring responses must
+never expose a credential value, stored configuration, token, provider
+identifier, secret-derived identifier, or raw identity-provider response.
 
-Every runtime startup runs an idempotent, 100-row paginated backfill after
-schema migrations while holding PostgreSQL advisory locks. Wait for
-`sso_provider_secrets.backfill_completed` before completing a rollout. Its
-attributes contain counts only: `scanned_count`, `encrypted_count`,
-`already_encrypted_count`, and `without_client_secret_count`.
+`SSO_PROVIDER_SECRET_STORAGE_MODE` has two values:
 
-Verify completion without selecting credential values:
+- `compatibility` reads plaintext or encrypted records, writes plaintext, and
+  never runs the backfill. Use it only for the first mixed-version-safe release.
+- `encrypted` reads either format, writes encrypted records, and runs the
+  advisory-lock-protected backfill after a full read-only validation pass.
 
-```sql
-SELECT
-  count(*) FILTER (
-    WHERE oidc_config::jsonb ? 'clientSecret'
-  ) AS providers_with_client_secrets,
-  count(*) FILTER (
-    WHERE oidc_config::jsonb ->> '_factoryCareersClientSecretEncryption' = 'v1'
-  ) AS encrypted_client_secrets
-FROM sso_provider
-WHERE oidc_config IS NOT NULL;
-```
+The repository default is `encrypted`. Factory production manages the value
+explicitly in Render so a Blueprint sync cannot skip a rollout phase. Never
+change directly from an old, plaintext-only runtime to `encrypted`.
 
-The two counts must match. Do not select, copy, or log `clientSecret` values.
-Malformed configuration, corrupted ciphertext, or a mismatched
-`BETTER_AUTH_SECRET` fails startup closed with `migrations.failed`; never bypass
-the backfill or edit ciphertext manually. Restore the prior application secret
-and redeploy before investigating provider-by-provider.
+Startup performs a bounded read-only validation before any provider mutation.
+In encrypted mode, it validates, backfills under the migration session lock,
+and validates again. `/api/readyz` stays unavailable until this completes. The
+safe events are count-only:
+
+- `sso_provider_secrets.validation_completed`
+- `sso_provider_secrets.backfill_completed`
+- `sso_provider_secrets.post_validation_completed`
+
+Malformed JSON, an unsupported marker, an empty configured secret, corrupted
+storage, or a mismatched `BETTER_AUTH_SECRET` fails startup closed with a generic
+error and no pre-validation mutation. Do not bypass validation or edit stored
+provider configuration manually.
+
+### Compatibility-first production sequence
+
+1. Set `SSO_PROVIDER_SECRET_STORAGE_MODE=compatibility` before the release can
+   deploy.
+2. Deploy the compatibility-capable runtime and prove readiness, the
+   authenticated stable-code probe, and a real Microsoft sign-in to
+   `/dashboard`.
+3. Confirm with a metadata-only query that the provider remains plaintext and
+   unmarked.
+4. Rotate only the dedicated database application role's password. Do not
+   rotate the owner or migration role.
+5. Update Render's hidden database environment value and redeploy the same
+   compatibility runtime.
+6. Run one bounded rollback rehearsal to a pre-compatibility artifact. The old
+   artifact must fail database readiness while Render keeps the current deploy
+   serving.
+7. Record the compatibility SHA and deploy ID as the minimum safe rollback
+   target. Never roll back to an earlier artifact.
+8. Set the mode to `encrypted`, deploy, require validation/backfill/post-
+   validation success, and verify zero plaintext or invalid-marker records.
+9. Repeat the real Microsoft sign-in. Rehearse rollback to the compatibility
+   target; it must remain healthy because it reads both formats.
+
+Use [SSO-RESILIENCE-ROLLOUT.md](SSO-RESILIENCE-ROLLOUT.md) for the exact
+metadata-only count query, evidence ledger, rollback rules, and live proof
+sequence.
+
+### Microsoft credential health and rotation
+
+`POST /api/operations/sso-health` requires `CRON_SECRET` and performs a real
+Microsoft client-credential exchange with the configured Factory Careers SSO
+provider. It returns only a stable code and checked timestamp. The GitHub
+workflow calls it every 15 minutes. Invalid credentials, missing metadata, and
+expiry thresholds alert immediately; transient failures require two fresh
+probes. Operational email is state-transition based and repeated active-
+incident alerts are rate-limited.
+
+Non-secret key ID, activation, expiry, last-probe status, and last-success time
+live in `sso_provider_credential_metadata`, scoped to the provider's
+organization. The table must never contain a credential value, token, stored
+provider configuration, or secret-derived identifier.
+
+Rotate Microsoft credentials with overlap:
+
+1. Create one replacement and preserve the predecessor.
+2. Persist the concealed replacement in the canonical 1Password item.
+3. Independently prove the stored replacement with a Microsoft token exchange.
+4. Update Factory Careers through a supported secure boundary and upsert its
+   non-secret key metadata.
+5. Prove the stable health code, readiness, and a real Microsoft sign-in.
+6. Remove the predecessor only after every replacement proof succeeds.
+
+If secure persistence or independent verification fails, remove the unused
+replacement and leave production on the verified predecessor.
 
 `BETTER_AUTH_SECRET` rotation also invalidates other Better Auth state and
 cannot decrypt existing SSO ciphertext. Before a planned rotation:
