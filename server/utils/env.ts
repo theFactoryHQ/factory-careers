@@ -82,6 +82,10 @@ export const envSchema = z
     SSO_PROVIDER_SECRET_STORAGE_MODE: z
       .enum(["compatibility", "encrypted"])
       .default("encrypted"),
+    FACTORY_CAREERS_SSO_PROVIDER_ID: emptyToUndefined
+      .pipe(z.string().min(1).max(64))
+      .optional()
+      .default("thefactoryhq-sso"),
     BETTER_AUTH_URL: z
       .preprocess((val) => {
         if (typeof val !== "string") return val;
