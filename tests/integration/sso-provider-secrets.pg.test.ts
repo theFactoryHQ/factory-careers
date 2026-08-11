@@ -67,6 +67,28 @@ describeWithPostgres('SSO provider secret backfill on PostgreSQL', () => {
           (${`sso_secret_${suffix}_public`}, 'https://idp.example.com', 'public.example.com',
             ${publicConfig}, ${userId}, ${`public-${suffix}`}, ${organizationId})`
 
+        await client`insert into "sso_provider_credential_metadata"
+          ("id", "sso_provider_id", "organization_id", "credential_key_id", "activated_at", "expires_at")
+          values
+          (${`sso_metadata_${suffix}`}, ${`sso_secret_${suffix}_plaintext`}, ${organizationId},
+            'non-secret-key-id', now(), now() + interval '90 days')`
+        const [metadata] = await client<Record<string, unknown>[]>`
+          select * from "sso_provider_credential_metadata"
+          where "organization_id" = ${organizationId}
+        `
+        expect(metadata).toMatchObject({
+          sso_provider_id: `sso_secret_${suffix}_plaintext`,
+          organization_id: organizationId,
+          credential_key_id: 'non-secret-key-id',
+        })
+        expect(Object.keys(metadata!)).not.toEqual(expect.arrayContaining([
+          'client_secret',
+          'access_token',
+          'ciphertext',
+          'fingerprint',
+          'credential_value',
+        ]))
+
         const contender = postgres(databaseUrl(databaseName), {
           max: 1,
           onnotice: () => undefined,
