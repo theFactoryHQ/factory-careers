@@ -10,8 +10,6 @@ useSeoMeta({
     robots: "noindex, nofollow",
 });
 
-const FACTORY_SSO_PROVIDER_ID = "thefactoryhq-sso";
-
 const ssoRedirecting = ref(false);
 const workEmail = ref("");
 const route = useRoute();
@@ -65,10 +63,23 @@ async function handleFactorySso() {
         : localePath("/auth/sign-in");
 
     try {
+        if (!normalizedWorkEmail) {
+            const serverSsoQuery = new URLSearchParams();
+            if (pendingInvitation) {
+                serverSsoQuery.set("invitation", pendingInvitation);
+            } else if (safeRedirect) {
+                serverSsoQuery.set("redirect", safeRedirect);
+            }
+
+            const queryString = serverSsoQuery.toString();
+            const serverSsoUrl = `/api/auth/factory-sso${queryString ? `?${queryString}` : ""}`;
+            await navigateTo(serverSsoUrl, { external: true });
+            return;
+        }
+
         const result = await authClient.signIn.sso({
-            ...(normalizedWorkEmail
-                ? { email: normalizedWorkEmail, loginHint: normalizedWorkEmail }
-                : { providerId: FACTORY_SSO_PROVIDER_ID }),
+            email: normalizedWorkEmail,
+            loginHint: normalizedWorkEmail,
             callbackURL,
             errorCallbackURL,
             providerType: "oidc",
