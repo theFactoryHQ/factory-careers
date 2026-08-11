@@ -15,6 +15,7 @@ import {
   isEncryptedSsoProviderClientSecret,
   protectSsoProviderRecord,
   type SsoProviderSecretStorageMode,
+  validateSsoProviderClientSecrets,
   wrapSsoProviderSecretAdapter,
 } from '../../server/utils/ssoProviderSecrets'
 
@@ -148,7 +149,8 @@ describe('Better Auth SSO adapter storage boundary', () => {
 
     expect(authSource).toContain('wrapSsoProviderSecretAdapter(')
     expect(authSource).toContain('env.BETTER_AUTH_SECRET')
-    expect(migrationSource).toContain('backfillSsoProviderClientSecrets(')
+    expect(migrationSource).toContain('prepareSsoProviderSecretStorage({')
+    expect(migrationSource).toContain('validateSsoProviderClientSecrets')
     expect(migrationSource).toContain('sso_provider_secrets.backfill_completed')
   })
 
@@ -426,5 +428,53 @@ describe('SSO provider client-secret storage modes', () => {
     })
 
     expect(readClientSecret(storedData!)).toMatch(/^fc-sso:v1:/)
+  })
+})
+
+describe('SSO provider client-secret validation', () => {
+  function validationSql(rows: Array<{ id: string, oidcConfig: string }>) {
+    let calls = 0
+    return vi.fn(async () => {
+      calls += 1
+      return calls === 1 ? rows : []
+    })
+  }
+
+  it('classifies plaintext, encrypted, and public-client provider records without mutation', async () => {
+    const encrypted = protectSsoProviderRecord(providerRecord(), ROOT_SECRET)
+    const sql = validationSql([
+      { id: 'encrypted', oidcConfig: encrypted.oidcConfig! },
+      { id: 'plaintext', oidcConfig: providerRecord().oidcConfig! },
+      { id: 'public', oidcConfig: JSON.stringify({ clientId: 'public', pkce: true }) },
+    ])
+
+    await expect(validateSsoProviderClientSecrets(sql as never, ROOT_SECRET)).resolves.toEqual({
+      scanned: 3,
+      plaintext: 1,
+      encrypted: 1,
+      withoutClientSecret: 1,
+    })
+    expect(sql).toHaveBeenCalledTimes(1)
+    expect(sql.mock.calls.flat().join(' ')).not.toContain('update')
+  })
+
+  it.each([
+    ['malformed JSON', '{'],
+    ['empty plaintext', JSON.stringify({ clientId: 'client', clientSecret: '' })],
+    ['unknown marker', JSON.stringify({
+      clientId: 'client',
+      clientSecret: 'opaque',
+      _factoryCareersClientSecretEncryption: 'v2',
+    })],
+    ['undecryptable ciphertext', JSON.stringify({
+      clientId: 'client',
+      clientSecret: `${SSO_CLIENT_SECRET_CIPHERTEXT_PREFIX}invalid`,
+      _factoryCareersClientSecretEncryption: 'v1',
+    })],
+  ])('rejects %s with a sanitized error', async (_name, oidcConfig) => {
+    const sql = validationSql([{ id: 'bad', oidcConfig }])
+
+    await expect(validateSsoProviderClientSecrets(sql as never, ROOT_SECRET))
+      .rejects.toThrowError(SsoProviderSecretError)
   })
 })

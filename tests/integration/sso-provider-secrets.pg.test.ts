@@ -11,6 +11,7 @@ import {
   backfillSsoProviderClientSecrets,
   decryptSsoProviderClientSecret,
   type SsoProviderSecretBackfillResult,
+  validateSsoProviderClientSecrets,
 } from '../../server/utils/ssoProviderSecrets'
 
 const ROOT_SECRET = 'postgres-sso-provider-test-secret'.repeat(2)
@@ -131,6 +132,23 @@ describeWithPostgres('SSO provider secret backfill on PostgreSQL', () => {
           alreadyEncrypted: 1,
           withoutClientSecret: 1,
         })
+
+        const beforeFailedValidation = await client<{ id: string, oidcConfig: string }[]>`
+          select "id", "oidc_config" as "oidcConfig"
+          from "sso_provider"
+          order by "id" asc
+        `
+        await expect(validateSsoProviderClientSecrets(
+          client,
+          'rotated-without-reencrypting-existing-providers'.repeat(2),
+          { batchSize: 1 },
+        )).rejects.toThrowError(SsoProviderSecretError)
+        const afterFailedValidation = await client<{ id: string, oidcConfig: string }[]>`
+          select "id", "oidc_config" as "oidcConfig"
+          from "sso_provider"
+          order by "id" asc
+        `
+        expect(afterFailedValidation).toEqual(beforeFailedValidation)
 
         await expect(backfillSsoProviderClientSecrets(
           client,

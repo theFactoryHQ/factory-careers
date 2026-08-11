@@ -232,9 +232,94 @@ export type SsoProviderSecretBackfillResult = {
   withoutClientSecret: number
 }
 
+export type SsoProviderSecretValidationResult = {
+  scanned: number
+  plaintext: number
+  encrypted: number
+  withoutClientSecret: number
+}
+
 type StoredSsoProviderConfig = {
   id: string
   oidcConfig: string
+}
+
+function validateStoredOidcConfig(
+  oidcConfig: string,
+  secret: string,
+): 'plaintext' | 'encrypted' | 'withoutClientSecret' {
+  const parsed = parseOidcConfig(oidcConfig)
+  const clientSecret = parsed.clientSecret
+  const encryptionMarker = parsed[ENCRYPTION_MARKER_FIELD]
+
+  if (clientSecret === undefined) {
+    if (encryptionMarker !== undefined) throw new SsoProviderSecretError()
+    return 'withoutClientSecret'
+  }
+  if (typeof clientSecret !== 'string' || clientSecret.trim() === '') {
+    throw new SsoProviderSecretError()
+  }
+  if (encryptionMarker === undefined) return 'plaintext'
+  if (encryptionMarker !== ENCRYPTION_MARKER_VALUE) {
+    throw new SsoProviderSecretError()
+  }
+  decryptSsoProviderClientSecret(clientSecret, secret)
+  return 'encrypted'
+}
+
+/**
+ * Validate every stored SSO provider config without mutating it. This pass is
+ * deliberately separate from the backfill so malformed or undecryptable rows
+ * fail startup before any shared data changes.
+ */
+export async function validateSsoProviderClientSecrets(
+  sql: Sql,
+  secret: string,
+  options: { batchSize?: number } = {},
+): Promise<SsoProviderSecretValidationResult> {
+  const batchSize = options.batchSize ?? DEFAULT_BACKFILL_BATCH_SIZE
+  if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > 1_000) {
+    throw new Error('SSO provider secret validation batch size must be between 1 and 1000')
+  }
+
+  const result: SsoProviderSecretValidationResult = {
+    scanned: 0,
+    plaintext: 0,
+    encrypted: 0,
+    withoutClientSecret: 0,
+  }
+  let afterId: string | undefined
+
+  while (true) {
+    const rows = afterId
+      ? await sql<StoredSsoProviderConfig[]>`
+          select "id", "oidc_config" as "oidcConfig"
+          from "sso_provider"
+          where "oidc_config" is not null and "id" > ${afterId}
+          order by "id" asc
+          limit ${batchSize}
+        `
+      : await sql<StoredSsoProviderConfig[]>`
+          select "id", "oidc_config" as "oidcConfig"
+          from "sso_provider"
+          where "oidc_config" is not null
+          order by "id" asc
+          limit ${batchSize}
+        `
+
+    if (rows.length === 0) break
+
+    for (const row of rows) {
+      const classification = validateStoredOidcConfig(row.oidcConfig, secret)
+      result.scanned += 1
+      result[classification] += 1
+    }
+
+    afterId = rows.at(-1)!.id
+    if (rows.length < batchSize) break
+  }
+
+  return result
 }
 
 /**
