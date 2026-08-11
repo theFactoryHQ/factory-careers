@@ -116,8 +116,10 @@ describe('agent guidance', () => {
       expect(rollout).toContain(receipt)
     }
 
-    expect(rollout).not.toMatch(/postgres(?:ql)?:\/\//i)
-    expect(rollout).not.toContain('fc-sso:v1:')
-    expect(rollout).not.toMatch(/access_token|client_secret\s*=|error_description/i)
+    for (const document of [runbook, rollout, checklist]) {
+      expect(document).not.toMatch(/postgres(?:ql)?:\/\//i)
+      expect(document).not.toContain('fc-sso:v1:')
+      expect(document).not.toMatch(/access_token|client_secret\s*=|error_description/i)
+    }
   })
 })

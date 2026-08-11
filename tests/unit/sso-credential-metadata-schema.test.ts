@@ -34,8 +34,10 @@ describe('SSO credential metadata schema', () => {
       'utf8',
     )
 
-    expect(migration).toContain('REFERENCES "public"."sso_provider"("id") ON DELETE cascade')
-    expect(migration).toContain('REFERENCES "public"."organization"("id") ON DELETE cascade')
+    expect(migration).toContain(
+      'FOREIGN KEY ("sso_provider_id","organization_id") REFERENCES "public"."sso_provider"("id","organization_id") ON DELETE cascade',
+    )
+    expect(migration).toContain('CREATE UNIQUE INDEX "sso_provider_id_organization_id_unique_idx"')
     expect(migration).toContain('CREATE UNIQUE INDEX "sso_provider_credential_metadata_provider_id_idx"')
     expect(migration).toContain('ENABLE ROW LEVEL SECURITY')
     expect(migration).toContain('"consecutive_transient_failures" >= 0')

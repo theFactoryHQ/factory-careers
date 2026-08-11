@@ -15,9 +15,9 @@ CREATE TABLE "sso_provider_credential_metadata" (
 	CONSTRAINT "sso_provider_credential_metadata_failures_check" CHECK ("consecutive_transient_failures" >= 0)
 );
 --> statement-breakpoint
-ALTER TABLE "sso_provider_credential_metadata" ADD CONSTRAINT "sso_provider_credential_metadata_sso_provider_id_sso_provider_id_fk" FOREIGN KEY ("sso_provider_id") REFERENCES "public"."sso_provider"("id") ON DELETE cascade ON UPDATE no action;
+CREATE UNIQUE INDEX "sso_provider_id_organization_id_unique_idx" ON "sso_provider" USING btree ("id","organization_id");
 --> statement-breakpoint
-ALTER TABLE "sso_provider_credential_metadata" ADD CONSTRAINT "sso_provider_credential_metadata_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "sso_provider_credential_metadata" ADD CONSTRAINT "sso_provider_credential_metadata_provider_organization_fk" FOREIGN KEY ("sso_provider_id","organization_id") REFERENCES "public"."sso_provider"("id","organization_id") ON DELETE cascade ON UPDATE no action;
 --> statement-breakpoint
 CREATE UNIQUE INDEX "sso_provider_credential_metadata_provider_id_idx" ON "sso_provider_credential_metadata" USING btree ("sso_provider_id");
 --> statement-breakpoint

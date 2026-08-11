@@ -186,6 +186,9 @@ export function prepareSsoProviderRecordForStorage<T>(
   mode: SsoProviderSecretStorageMode,
 ): T {
   if (mode === 'encrypted') return protectSsoProviderRecord(record, secret)
+  // Compatibility mode intentionally stores client secrets as plaintext. It
+  // exists only for the bounded rollback window while mixed runtime versions
+  // may still reach the shared database.
   if (!record || typeof record !== 'object' || Array.isArray(record)) return record
   const value = record as Record<string, unknown>
   if (!Object.hasOwn(value, 'oidcConfig')) return record

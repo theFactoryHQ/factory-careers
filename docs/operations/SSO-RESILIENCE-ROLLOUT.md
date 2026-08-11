@@ -51,7 +51,8 @@ response into this file, a terminal transcript, a pull request, or an issue.
 1. Set `SSO_PROVIDER_SECRET_STORAGE_MODE=compatibility` on the current Render
    service before its deployment can start.
 2. Confirm `CRON_SECRET`, `FACTORY_CAREERS_OPERATIONS_INBOX`, and
-   `FACTORY_CAREERS_SSO_PROVIDER_ID` are present through value-hidden UI.
+   `FACTORY_CAREERS_SSO_PROVIDER_ID` and `FACTORY_ORG_SLUG` are present through
+   value-hidden UI. Together they identify the tenant-unique provider target.
 3. Deploy the reviewed commit and verify its exact SHA and Render deploy ID.
 4. Require `/api/readyz` to return its normal healthy response.
 5. Call the authenticated SSO health route and record only its stable probe code
@@ -143,5 +144,11 @@ SELECT
     WHERE NOT (oidc_config::jsonb ? 'clientSecret')
   ) AS public_client_count
 FROM sso_provider
-WHERE oidc_config IS NOT NULL;
+WHERE provider_id = $1
+  AND oidc_config IS NOT NULL;
 ```
+
+Bind `$1` to the configured provider ID at execution time. Record only the
+counts in the ledger; do not record the provider ID or query parameters. Any
+global migration inventory must be run and reported separately from this
+provider-specific gate.

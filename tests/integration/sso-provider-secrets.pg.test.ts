@@ -81,13 +81,16 @@ describeWithPostgres('SSO provider secret backfill on PostgreSQL', () => {
           organization_id: organizationId,
           credential_key_id: 'non-secret-key-id',
         })
-        expect(Object.keys(metadata!)).not.toEqual(expect.arrayContaining([
+        const forbiddenColumns = [
           'client_secret',
           'access_token',
           'ciphertext',
           'fingerprint',
           'credential_value',
-        ]))
+        ]
+        expect(
+          Object.keys(metadata!).filter(key => forbiddenColumns.includes(key)),
+        ).toEqual([])
 
         const contender = postgres(databaseUrl(databaseName), {
           max: 1,

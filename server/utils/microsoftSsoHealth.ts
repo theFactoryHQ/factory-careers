@@ -115,7 +115,16 @@ export async function probeMicrosoftSsoCredential({
   }
 
   if (response.ok) {
-    return result(expiryCode(metadata.expiresAt, now) ?? 'healthy', checkedAt)
+    try {
+      const body = await response.json() as { access_token?: unknown }
+      if (typeof body.access_token === 'string' && body.access_token.trim()) {
+        return result(expiryCode(metadata.expiresAt, now) ?? 'healthy', checkedAt)
+      }
+    }
+    catch {
+      // A 2xx response without a valid token is not a successful exchange.
+    }
+    return result('transient_failure', checkedAt)
   }
 
   let providerCode: unknown

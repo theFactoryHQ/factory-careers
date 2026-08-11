@@ -6,6 +6,7 @@ import {
   timestamp,
   uniqueIndex,
   check,
+  foreignKey,
 } from 'drizzle-orm/pg-core'
 import { relations, sql } from 'drizzle-orm'
 import { user, organization } from './auth'
@@ -27,14 +28,13 @@ export const ssoProvider = pgTable('sso_provider', {
   index('sso_provider_domain_idx').on(t.domain),
   index('sso_provider_provider_id_idx').on(t.providerId),
   index('sso_provider_organization_id_idx').on(t.organizationId),
+  uniqueIndex('sso_provider_id_organization_id_unique_idx').on(t.id, t.organizationId),
 ]))
 
 export const ssoProviderCredentialMetadata = pgTable('sso_provider_credential_metadata', {
   id: text('id').primaryKey(),
-  ssoProviderId: text('sso_provider_id').notNull()
-    .references(() => ssoProvider.id, { onDelete: 'cascade' }),
-  organizationId: text('organization_id').notNull()
-    .references(() => organization.id, { onDelete: 'cascade' }),
+  ssoProviderId: text('sso_provider_id').notNull(),
+  organizationId: text('organization_id').notNull(),
   credentialKeyId: text('credential_key_id').notNull(),
   activatedAt: timestamp('activated_at', { withTimezone: true }).notNull(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
@@ -53,6 +53,11 @@ export const ssoProviderCredentialMetadata = pgTable('sso_provider_credential_me
     'sso_provider_credential_metadata_failures_check',
     sql`${t.consecutiveTransientFailures} >= 0`,
   ),
+  foreignKey({
+    name: 'sso_provider_credential_metadata_provider_organization_fk',
+    columns: [t.ssoProviderId, t.organizationId],
+    foreignColumns: [ssoProvider.id, ssoProvider.organizationId],
+  }).onDelete('cascade'),
 ]))
 
 export const ssoProviderRelations = relations(ssoProvider, ({ one }) => ({

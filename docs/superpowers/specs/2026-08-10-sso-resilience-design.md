@@ -78,10 +78,11 @@ Add `SSO_PROVIDER_SECRET_STORAGE_MODE` with two explicit values:
 - `encrypted`: read plaintext or ciphertext; write ciphertext; run the existing
   advisory-lock-protected backfill.
 
-The repository default remains `encrypted` so existing secure installations do
-not silently regress. Factory production will explicitly set `compatibility`
-for the first release and switch to `encrypted` only after the rollback fence
-is verified.
+Non-production and self-hosted development default to `encrypted` so existing
+secure installations do not silently regress. Production must set the mode
+explicitly: Factory starts with `compatibility` and may select `encrypted` only
+after the rollback fence is verified. An unset or blank production value fails
+environment validation before a backfill can begin.
 
 The adapter must use the same parser, marker validation, key derivation, and
 generic error type in both modes. No call site outside the adapter receives a
@@ -245,7 +246,7 @@ on the verified predecessor.
   and-swap guarded.
 - Microsoft probe failures are normalized to stable internal codes. Raw
   responses and OAuth descriptions are discarded.
-- Monitoring alerts are state-transition based and rate-limited.
+- Monitoring alerts are state-transition-based and rate-limited.
 - Rotation preserves the predecessor until the replacement passes every proof.
 
 ## Testing

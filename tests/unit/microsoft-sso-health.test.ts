@@ -88,11 +88,33 @@ describe('Microsoft SSO credential health probe', () => {
       provider: provider(),
       metadata: metadata(new Date(expiry)),
       rootSecret: ROOT_SECRET,
-      safeFetch: vi.fn(async () => new Response('{}', { status: 200 })),
+      safeFetch: vi.fn(async () => new Response(JSON.stringify({
+        access_token: 'access-token-that-must-not-leak',
+      }), { status: 200 })),
       now: NOW,
     })
 
     expect(result).toEqual({ ok: false, code, checkedAt: NOW.toISOString() })
+  })
+
+  it.each([
+    '{}',
+    '{"access_token":""}',
+    'not-json',
+  ])('treats a 2xx response without a non-empty token as transient: %s', async (body) => {
+    const result = await probeMicrosoftSsoCredential({
+      provider: provider(),
+      metadata: metadata(),
+      rootSecret: ROOT_SECRET,
+      safeFetch: vi.fn(async () => new Response(body, { status: 200 })),
+      now: NOW,
+    })
+
+    expect(result).toEqual({
+      ok: false,
+      code: 'transient_failure',
+      checkedAt: NOW.toISOString(),
+    })
   })
 
   it('normalizes timeouts and server errors as transient failures', async () => {

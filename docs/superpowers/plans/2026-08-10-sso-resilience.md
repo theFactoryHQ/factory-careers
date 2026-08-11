@@ -8,6 +8,9 @@
 
 **Tech Stack:** Nuxt 4/Nitro, TypeScript, Better Auth, Drizzle ORM, PostgreSQL, Vitest, Playwright, GitHub Actions, Render, Microsoft Entra ID, Supabase, 1Password.
 
+Before editing each task, run `git status --short` and preserve unrelated work.
+Run it again before every staging command and before final handoff.
+
 ---
 
 ## Task 1: Add explicit storage-mode behavior
@@ -67,7 +70,10 @@
 
 - [ ] Add environment contracts.
 
-  Add `SSO_PROVIDER_SECRET_STORAGE_MODE` to `envSchema` as `z.enum(['compatibility', 'encrypted']).default('encrypted')`. Add the same validation to `validate-production-env.mjs`, with `encrypted` as the absence/default behavior and a hard error for any other non-empty value.
+  Add `SSO_PROVIDER_SECRET_STORAGE_MODE` to `envSchema` with an `encrypted`
+  default only outside production. Production must fail closed when the value
+  is unset or blank, require an explicit `compatibility` first phase, and permit
+  `encrypted` only after the rollback fence is verified.
 
 - [ ] Run the focused tests and confirm they pass.
 
@@ -78,6 +84,7 @@
 - [ ] Commit the storage-mode slice.
 
   ```bash
+  git status --short
   git add server/utils/ssoProviderSecrets.ts server/utils/auth.ts server/utils/env.ts scripts/validate-production-env.mjs tests/unit/sso-provider-secrets.test.ts tests/unit/sso-env-extended.test.ts tests/unit/production-env-validation.test.ts
   git commit --no-verify -m "fix: make SSO secret storage rollout explicit"
   ```
@@ -159,6 +166,7 @@
 - [ ] Commit validation and readiness.
 
   ```bash
+  git status --short
   git add server/utils/ssoProviderSecrets.ts server/utils/ssoReadiness.ts server/plugins/migrations.ts server/api/readyz.get.ts tests/unit/sso-provider-secrets.test.ts tests/integration/sso-provider-secrets.pg.test.ts tests/unit/migration-locking.test.ts tests/unit/sso-readiness.test.ts
   git commit --no-verify -m "fix: fail closed before SSO storage migration"
   ```
@@ -205,6 +213,7 @@
 - [ ] Commit the metadata schema.
 
   ```bash
+  git status --short
   git add server/database/schema/sso.ts server/database/migrations/0063_sso_credential_health.sql server/database/migrations/meta/_journal.json tests/unit/sso-credential-metadata-schema.test.ts tests/integration/sso-provider-secrets.pg.test.ts
   git commit --no-verify -m "feat: track non-secret SSO credential health"
   ```
@@ -260,6 +269,7 @@
 - [ ] Commit the probe.
 
   ```bash
+  git status --short
   git add server/utils/microsoftSsoHealth.ts server/api/operations/sso-health.post.ts tests/unit/microsoft-sso-health.test.ts tests/unit/sso-health-route.test.ts tests/unit/security-route-coverage.test.ts
   git commit --no-verify -m "feat: add sanitized Microsoft SSO health probe"
   ```
@@ -325,6 +335,7 @@
 - [ ] Commit monitoring.
 
   ```bash
+  git status --short
   git add server/lib/email/templates.tsx server/utils/email.ts server/utils/env.ts render.yaml .github/workflows/sso-health-monitor.yml tests/unit/sso-health-alerting.test.ts tests/unit/sso-health-monitor-workflow.test.ts tests/unit/render-blueprint.test.ts tests/unit/application-email-branding.test.ts
   git commit --no-verify -m "feat: monitor Microsoft SSO credential health"
   ```
@@ -363,6 +374,7 @@
 - [ ] Commit documentation.
 
   ```bash
+  git status --short
   git add CHANGELOG.md docs/operations/PRODUCTION-RUNBOOK.md docs/operations/PRODUCTION-APPROVAL-CHECKLIST.md docs/operations/SSO-RESILIENCE-ROLLOUT.md tests/unit/agent-guidance.test.ts tests/unit/changelog.test.ts
   git commit --no-verify -m "docs: add SSO resilience rollout runbook"
   ```
@@ -396,6 +408,7 @@
 - [ ] Review the entire branch diff and repository state.
 
   ```bash
+  git status --short
   git status --short --branch
   git diff origin/main...HEAD --stat
   git diff origin/main...HEAD

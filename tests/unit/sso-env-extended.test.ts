@@ -52,6 +52,16 @@ describe('OIDC SSO — extended edge cases', () => {
 
       expect(result.success).toBe(false)
     })
+
+    it.each([undefined, '', '   '])('requires an explicit production mode for %j', (mode) => {
+      const result = envSchema.safeParse({
+        ...baseEnv,
+        NODE_ENV: 'production',
+        SSO_PROVIDER_SECRET_STORAGE_MODE: mode,
+      })
+
+      expect(result.success).toBe(false)
+    })
   })
 
   // ────────────────────────────────────

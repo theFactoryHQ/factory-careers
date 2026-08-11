@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 
 vi.stubEnv('DATABASE_URL', 'postgresql://user:pass@localhost:5432/test')
@@ -19,6 +21,21 @@ beforeAll(async () => {
 })
 
 describe('SSO health operations route', () => {
+  it('targets the configured organization and serializes metadata transitions', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'server/api/operations/sso-health.post.ts'),
+      'utf8',
+    )
+
+    expect(source).toContain('eq(organization.slug, env.FACTORY_ORG_SLUG)')
+    expect(source).toContain('eq(ssoProvider.organizationId, targetOrganization.id)')
+    expect(source).toContain('await db.transaction(async (tx) =>')
+    expect(source).toContain(".for('update')")
+    expect(source.indexOf(".for('update')")).toBeLessThan(
+      source.lastIndexOf('sendSsoOperationalAlertEmail'),
+    )
+  })
+
   it.each([undefined, '', 'wrong-secret'])('rejects a missing or invalid cron secret', async (providedSecret) => {
     const probe = vi.fn()
 
