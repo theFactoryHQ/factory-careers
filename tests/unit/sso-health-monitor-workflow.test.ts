@@ -1,8 +1,12 @@
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 describe('SSO health monitor workflow', () => {
-  const source = readFileSync('.github/workflows/sso-health-monitor.yml', 'utf8')
+  const source = readFileSync(
+    join(process.cwd(), '.github/workflows/sso-health-monitor.yml'),
+    'utf8',
+  )
 
   it('runs every fifteen minutes and supports a manual proof run', () => {
     expect(source).toContain("- cron: '*/15 * * * *'")

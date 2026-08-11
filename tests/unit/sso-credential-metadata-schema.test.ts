@@ -1,5 +1,6 @@
 import { getTableColumns } from 'drizzle-orm'
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ssoProviderCredentialMetadata } from '../../server/database/schema'
 
@@ -29,7 +30,7 @@ describe('SSO credential metadata schema', () => {
 
   it('migrates provider and organization foreign keys, uniqueness, RLS, and failure-count guard', () => {
     const migration = readFileSync(
-      'server/database/migrations/0063_sso_credential_health.sql',
+      join(process.cwd(), 'server/database/migrations/0063_sso_credential_health.sql'),
       'utf8',
     )
 
