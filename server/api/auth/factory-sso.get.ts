@@ -17,6 +17,12 @@ function appendAuthResponseCookies(event: Parameters<typeof appendResponseHeader
   if (cookie) appendResponseHeader(event, 'set-cookie', cookie)
 }
 
+function withSsoStartError(callbackURL: string): string {
+  const url = new URL(callbackURL, 'https://factory-careers.invalid')
+  url.searchParams.set('error', 'sso_start_failed')
+  return `${url.pathname}${url.search}${url.hash}`
+}
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const pendingInvitation = typeof query.invitation === 'string' ? query.invitation : null
@@ -51,12 +57,12 @@ export default defineEventHandler(async (event) => {
   appendAuthResponseCookies(event, response)
 
   if (!response.ok) {
-    return sendRedirect(event, `${errorCallbackURL}?error=sso_start_failed`, 302)
+    return sendRedirect(event, withSsoStartError(errorCallbackURL), 302)
   }
 
   const body = await response.json().catch(() => null) as { url?: unknown } | null
   if (typeof body?.url !== 'string') {
-    return sendRedirect(event, `${errorCallbackURL}?error=sso_start_failed`, 302)
+    return sendRedirect(event, withSsoStartError(errorCallbackURL), 302)
   }
 
   return sendRedirect(event, body.url, 302)
