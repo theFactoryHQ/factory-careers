@@ -14,6 +14,7 @@ import {
   encryptSsoProviderClientSecret,
   isEncryptedSsoProviderClientSecret,
   protectSsoProviderRecord,
+  type SsoProviderSecretStorageMode,
   wrapSsoProviderSecretAdapter,
 } from '../../server/utils/ssoProviderSecrets'
 
@@ -66,9 +67,12 @@ function createAdapter(overrides: Partial<DBAdapter> = {}): DBAdapter {
   } as DBAdapter
 }
 
-function wrappedAdapter(adapter: DBAdapter): DBAdapter {
+function wrappedAdapter(
+  adapter: DBAdapter,
+  mode: SsoProviderSecretStorageMode = 'encrypted',
+): DBAdapter {
   const factory = (() => adapter) as DBAdapterInstance
-  return wrapSsoProviderSecretAdapter(factory, ROOT_SECRET)({} as BetterAuthOptions)
+  return wrapSsoProviderSecretAdapter(factory, ROOT_SECRET, mode)({} as BetterAuthOptions)
 }
 
 describe('SSO provider client-secret encryption', () => {
@@ -368,5 +372,59 @@ describe('Better Auth SSO adapter storage boundary', () => {
     await expect(adapter.deleteMany({ model: 'ssoProvider', where })).resolves.toBe(2)
     expect(underlying.delete).toHaveBeenCalledOnce()
     expect(underlying.deleteMany).toHaveBeenCalledOnce()
+  })
+})
+
+describe('SSO provider client-secret storage modes', () => {
+  it('keeps compatibility writes plaintext and removes an encryption marker', async () => {
+    const encryptedProvider = protectSsoProviderRecord(providerRecord(), ROOT_SECRET)
+    let storedData: Record<string, unknown> | undefined
+    const adapter = wrappedAdapter(createAdapter({
+      create: vi.fn(async ({ data }) => {
+        storedData = data as Record<string, unknown>
+        return data as never
+      }),
+    }), 'compatibility')
+
+    const created = await adapter.create<ProviderRecord>({
+      model: 'ssoProvider',
+      data: encryptedProvider,
+    })
+
+    expect(readClientSecret(storedData!)).toBe(CLIENT_SECRET)
+    expect(storedData!.oidcConfig).not.toContain('_factoryCareersClientSecretEncryption')
+    expect(readClientSecret(created)).toBeUndefined()
+  })
+
+  it.each(['compatibility', 'encrypted'] satisfies SsoProviderSecretStorageMode[])(
+    '%s reads plaintext and encrypted provider rows',
+    async (mode) => {
+      const plaintextProvider = providerRecord()
+      const encryptedProvider = protectSsoProviderRecord(providerRecord(), ROOT_SECRET)
+      const adapter = wrappedAdapter(createAdapter({
+        findMany: vi.fn(async () => [plaintextProvider, encryptedProvider] as never),
+      }), mode)
+
+      const found = await adapter.findMany<ProviderRecord>({ model: 'ssoProvider' })
+
+      expect(found.map(readClientSecret)).toEqual([CLIENT_SECRET, CLIENT_SECRET])
+    },
+  )
+
+  it('keeps encrypted writes encrypted', async () => {
+    let storedData: Record<string, unknown> | undefined
+    const adapter = wrappedAdapter(createAdapter({
+      create: vi.fn(async ({ data }) => {
+        storedData = data as Record<string, unknown>
+        return data as never
+      }),
+    }), 'encrypted')
+
+    await adapter.create<ProviderRecord>({
+      model: 'ssoProvider',
+      data: providerRecord(),
+    })
+
+    expect(readClientSecret(storedData!)).toMatch(/^fc-sso:v1:/)
   })
 })

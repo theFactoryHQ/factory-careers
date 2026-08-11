@@ -244,6 +244,14 @@ function checkPlaceholders(env, errors) {
 }
 
 function checkAuth(env, errors, warnings) {
+  const storageMode = trimValue(env.SSO_PROVIDER_SECRET_STORAGE_MODE)
+  if (storageMode && !['compatibility', 'encrypted'].includes(storageMode)) {
+    errors.push(issue(
+      'SSO_PROVIDER_SECRET_STORAGE_MODE',
+      'must be compatibility or encrypted',
+    ))
+  }
+
   const authSecret = trimValue(env.BETTER_AUTH_SECRET)
   if (authSecret && authSecret.length < 32) {
     errors.push(issue('BETTER_AUTH_SECRET', 'must be at least 32 characters'))

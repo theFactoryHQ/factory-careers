@@ -34,6 +34,28 @@ describe('production environment preflight', () => {
     expect(result.errors).toEqual([])
   })
 
+  it.each(['compatibility', 'encrypted'])('accepts %s SSO provider secret storage mode', (mode) => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      SSO_PROVIDER_SECRET_STORAGE_MODE: mode,
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.errors).toEqual([])
+  })
+
+  it('rejects unsupported SSO provider secret storage modes', () => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      SSO_PROVIDER_SECRET_STORAGE_MODE: 'automatic',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(messages(result)).toContain(
+      'SSO_PROVIDER_SECRET_STORAGE_MODE: must be compatibility or encrypted',
+    )
+  })
+
   it('rejects example-style secrets and public localhost URLs from .env.example', () => {
     const env = parseEnvFile(`
       DATABASE_URL=postgresql://factory_careers:change-me@localhost:5432/factory_careers

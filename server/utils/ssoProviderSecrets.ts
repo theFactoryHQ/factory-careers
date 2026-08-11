@@ -24,6 +24,8 @@ const DEFAULT_BACKFILL_BATCH_SIZE = 100
 
 export const SSO_CLIENT_SECRET_CIPHERTEXT_PREFIX = `${CIPHERTEXT_NAMESPACE}v1:`
 
+export type SsoProviderSecretStorageMode = 'compatibility' | 'encrypted'
+
 export class SsoProviderSecretError extends Error {
   constructor() {
     super('SSO provider client secret could not be processed')
@@ -107,7 +109,7 @@ function parseOidcConfig(oidcConfig: string): Record<string, unknown> {
 function transformOidcConfig(
   oidcConfig: unknown,
   secret: string,
-  direction: 'protect' | 'reveal',
+  direction: 'protect' | 'reveal' | 'compatibility',
 ): unknown {
   if (oidcConfig === null || oidcConfig === undefined) return oidcConfig
   if (typeof oidcConfig !== 'string') throw new SsoProviderSecretError()
@@ -138,6 +140,19 @@ function transformOidcConfig(
     })
   }
 
+  if (direction === 'compatibility') {
+    if (encryptionMarker === undefined) return oidcConfig
+    if (encryptionMarker !== ENCRYPTION_MARKER_VALUE) {
+      throw new SsoProviderSecretError()
+    }
+    const compatibilityConfig: Record<string, unknown> = {
+      ...parsed,
+      clientSecret: decryptSsoProviderClientSecret(currentSecret, secret),
+    }
+    delete compatibilityConfig[ENCRYPTION_MARKER_FIELD]
+    return JSON.stringify(compatibilityConfig)
+  }
+
   if (encryptionMarker === undefined) {
     return oidcConfig
   }
@@ -162,6 +177,21 @@ export function protectSsoProviderRecord<T>(
   return {
     ...value,
     oidcConfig: transformOidcConfig(value.oidcConfig, secret, 'protect'),
+  } as T
+}
+
+export function prepareSsoProviderRecordForStorage<T>(
+  record: T,
+  secret: string,
+  mode: SsoProviderSecretStorageMode,
+): T {
+  if (mode === 'encrypted') return protectSsoProviderRecord(record, secret)
+  if (!record || typeof record !== 'object' || Array.isArray(record)) return record
+  const value = record as Record<string, unknown>
+  if (!Object.hasOwn(value, 'oidcConfig')) return record
+  return {
+    ...value,
+    oidcConfig: transformOidcConfig(value.oidcConfig, secret, 'compatibility'),
   } as T
 }
 
@@ -313,13 +343,14 @@ export async function backfillSsoProviderClientSecrets(
   }
 }
 
-function protectWrite<T extends Record<string, unknown>>(
+function prepareWrite<T extends Record<string, unknown>>(
   model: string,
   value: T,
   secret: string,
+  mode: SsoProviderSecretStorageMode,
 ): T {
   return model === 'ssoProvider'
-    ? protectSsoProviderRecord(value, secret)
+    ? prepareSsoProviderRecordForStorage(value, secret, mode)
     : value
 }
 
@@ -336,13 +367,14 @@ function revealResult<T>(model: string, value: T, secret: string): T {
 function wrapTransactionAdapter(
   adapter: DBTransactionAdapter,
   secret: string,
+  mode: SsoProviderSecretStorageMode,
 ): DBTransactionAdapter {
   return {
     ...adapter,
     async create(input) {
       const result = await adapter.create({
         ...input,
-        data: protectWrite(input.model, input.data, secret),
+        data: prepareWrite(input.model, input.data, secret, mode),
       })
       return (
         input.model === 'ssoProvider'
@@ -369,7 +401,7 @@ function wrapTransactionAdapter(
         input.model,
         await adapter.update({
           ...input,
-          update: protectWrite(input.model, input.update, secret),
+          update: prepareWrite(input.model, input.update, secret, mode),
         }),
         secret,
       )
@@ -377,7 +409,7 @@ function wrapTransactionAdapter(
     async updateMany(input) {
       return adapter.updateMany({
         ...input,
-        update: protectWrite(input.model, input.update, secret),
+        update: prepareWrite(input.model, input.update, secret, mode),
       })
     },
     async consumeOne(input) {
@@ -389,7 +421,7 @@ function wrapTransactionAdapter(
     },
     async incrementOne(input) {
       const set = input.set
-        ? protectWrite(input.model, input.set, secret)
+        ? prepareWrite(input.model, input.set, secret, mode)
         : input.set
       return revealResult(
         input.model,
@@ -400,13 +432,17 @@ function wrapTransactionAdapter(
   }
 }
 
-function wrapAdapter(adapter: DBAdapter, secret: string): DBAdapter {
-  const transactionAdapter = wrapTransactionAdapter(adapter, secret)
+function wrapAdapter(
+  adapter: DBAdapter,
+  secret: string,
+  mode: SsoProviderSecretStorageMode,
+): DBAdapter {
+  const transactionAdapter = wrapTransactionAdapter(adapter, secret, mode)
   return {
     ...transactionAdapter,
     async transaction(callback) {
       return adapter.transaction(transaction =>
-        callback(wrapTransactionAdapter(transaction, secret)))
+        callback(wrapTransactionAdapter(transaction, secret, mode)))
     },
   }
 }
@@ -419,7 +455,8 @@ function wrapAdapter(adapter: DBAdapter, secret: string): DBAdapter {
 export function wrapSsoProviderSecretAdapter(
   adapterFactory: DBAdapterInstance,
   secret: string,
+  mode: SsoProviderSecretStorageMode = 'encrypted',
 ): DBAdapterInstance {
   return (options: BetterAuthOptions) =>
-    wrapAdapter(adapterFactory(options), secret)
+    wrapAdapter(adapterFactory(options), secret, mode)
 }
