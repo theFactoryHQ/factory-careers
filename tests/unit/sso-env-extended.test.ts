@@ -25,6 +25,45 @@ const validOidc = {
 }
 
 describe('OIDC SSO — extended edge cases', () => {
+  describe('provider secret storage mode', () => {
+    it('defaults to encrypted storage', () => {
+      const result = envSchema.safeParse(baseEnv)
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.SSO_PROVIDER_SECRET_STORAGE_MODE).toBe('encrypted')
+      }
+    })
+
+    it.each(['compatibility', 'encrypted'])('accepts %s mode', (mode) => {
+      const result = envSchema.safeParse({
+        ...baseEnv,
+        SSO_PROVIDER_SECRET_STORAGE_MODE: mode,
+      })
+
+      expect(result.success).toBe(true)
+    })
+
+    it('rejects unsupported modes', () => {
+      const result = envSchema.safeParse({
+        ...baseEnv,
+        SSO_PROVIDER_SECRET_STORAGE_MODE: 'automatic',
+      })
+
+      expect(result.success).toBe(false)
+    })
+
+    it.each([undefined, '', '   '])('requires an explicit production mode for %j', (mode) => {
+      const result = envSchema.safeParse({
+        ...baseEnv,
+        NODE_ENV: 'production',
+        SSO_PROVIDER_SECRET_STORAGE_MODE: mode,
+      })
+
+      expect(result.success).toBe(false)
+    })
+  })
+
   // ────────────────────────────────────
   // Railway domain fallback (no explicit BETTER_AUTH_URL)
   // ────────────────────────────────────

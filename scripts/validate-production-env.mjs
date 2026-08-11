@@ -244,6 +244,24 @@ function checkPlaceholders(env, errors) {
 }
 
 function checkAuth(env, errors, warnings) {
+  const storageMode = trimValue(env.SSO_PROVIDER_SECRET_STORAGE_MODE)
+  if (!storageMode) {
+    errors.push(issue(
+      'SSO_PROVIDER_SECRET_STORAGE_MODE',
+      'must be explicitly set to compatibility or encrypted in production',
+    ))
+  } else if (!['compatibility', 'encrypted'].includes(storageMode)) {
+    errors.push(issue(
+      'SSO_PROVIDER_SECRET_STORAGE_MODE',
+      'must be compatibility or encrypted',
+    ))
+  } else if (storageMode === 'compatibility') {
+    warnings.push(issue(
+      'SSO_PROVIDER_SECRET_STORAGE_MODE',
+      'compatibility stores SSO client secrets as plaintext and must be limited to the rollback window',
+    ))
+  }
+
   const authSecret = trimValue(env.BETTER_AUTH_SECRET)
   if (authSecret && authSecret.length < 32) {
     errors.push(issue('BETTER_AUTH_SECRET', 'must be at least 32 characters'))

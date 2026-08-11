@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
       cookie: getHeader(event, 'cookie') ?? '',
     },
     body: JSON.stringify({
-      providerId: 'thefactoryhq-sso',
+      providerId: env.FACTORY_CAREERS_SSO_PROVIDER_ID,
       providerType: 'oidc',
       callbackURL,
       errorCallbackURL,

@@ -144,4 +144,12 @@ describe('parseChangelog', () => {
     expect(entries[0]).toMatchObject({ title: 'Unreleased', version: null, date: null })
     expect(entries[1]).toMatchObject({ title: 'v1.0.0', version: '1.0.0', date: '2026-07-16' })
   })
+
+  it('records rollback-safe SSO storage and credential monitoring under Unreleased', () => {
+    const changelog = readProjectFile('CHANGELOG.md')
+    const unreleased = changelog.split('## [1.0.0]')[0]!
+
+    expect(unreleased).toContain('rollback-safe SSO')
+    expect(unreleased).toContain('Microsoft credential monitoring')
+  })
 })
