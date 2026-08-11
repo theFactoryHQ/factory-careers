@@ -1,5 +1,14 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 
+vi.stubEnv('DATABASE_URL', 'postgresql://user:pass@localhost:5432/test')
+vi.stubEnv('BETTER_AUTH_SECRET', 'a'.repeat(32))
+vi.stubEnv('BETTER_AUTH_URL', 'https://careers.thefactoryhq.com')
+vi.stubEnv('S3_ENDPOINT', 'https://s3.example.com')
+vi.stubEnv('S3_ACCESS_KEY', 'test-key')
+vi.stubEnv('S3_SECRET_KEY', 'test-secret')
+vi.stubEnv('S3_BUCKET', 'test-bucket')
+delete (globalThis as Record<string, unknown>).__env
+
 type ExecuteSsoHealthRoute = typeof import('../../server/api/operations/sso-health.post').executeSsoHealthRoute
 let executeSsoHealthRoute: ExecuteSsoHealthRoute
 

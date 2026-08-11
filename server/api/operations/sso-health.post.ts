@@ -5,10 +5,11 @@ import {
 } from '../../database/schema'
 import { requireCronSecret } from '../../utils/cronAuth'
 import { db } from '../../utils/db'
+import { sendSsoOperationalAlertEmail } from '../../utils/email'
 import { env } from '../../utils/env'
 import {
+  deriveSsoHealthPersistence,
   getCachedMicrosoftSsoHealth,
-  isSuccessfulMicrosoftSsoExchange,
   probeMicrosoftSsoCredential,
   type MicrosoftSsoHealthResponse,
 } from '../../utils/microsoftSsoHealth'
@@ -54,15 +55,20 @@ async function runProductionProbe(): Promise<MicrosoftSsoHealthResponse> {
 
   if (provider?.organizationId && metadata) {
     const checkedAt = new Date(response.checkedAt)
+    const persistence = deriveSsoHealthPersistence({
+      previousStatus: metadata.lastProbeStatus,
+      previousAlertedAt: metadata.lastAlertedAt,
+      consecutiveTransientFailures: metadata.consecutiveTransientFailures,
+      result: response,
+      now: checkedAt,
+    })
     await db.update(ssoProviderCredentialMetadata)
       .set({
-        lastProbedAt: checkedAt,
-        lastProbeStatus: response.code,
-        consecutiveTransientFailures: response.code === 'transient_failure'
-          ? metadata.consecutiveTransientFailures + 1
-          : 0,
-        ...(isSuccessfulMicrosoftSsoExchange(response.code)
-          ? { lastSuccessfulProbeAt: checkedAt }
+        lastProbedAt: persistence.lastProbedAt,
+        lastProbeStatus: persistence.lastProbeStatus,
+        consecutiveTransientFailures: persistence.consecutiveTransientFailures,
+        ...(persistence.lastSuccessfulProbeAt
+          ? { lastSuccessfulProbeAt: persistence.lastSuccessfulProbeAt }
           : {}),
         updatedAt: checkedAt,
       })
@@ -70,6 +76,22 @@ async function runProductionProbe(): Promise<MicrosoftSsoHealthResponse> {
         eq(ssoProviderCredentialMetadata.ssoProviderId, provider.id),
         eq(ssoProviderCredentialMetadata.organizationId, provider.organizationId),
       ))
+
+    if (persistence.shouldAlert && env.FACTORY_CAREERS_OPERATIONS_INBOX) {
+      const sent = await sendSsoOperationalAlertEmail({
+        to: env.FACTORY_CAREERS_OPERATIONS_INBOX,
+        code: response.code,
+        checkedAt: response.checkedAt,
+      })
+      if (sent) {
+        await db.update(ssoProviderCredentialMetadata)
+          .set({ lastAlertedAt: checkedAt, updatedAt: checkedAt })
+          .where(and(
+            eq(ssoProviderCredentialMetadata.ssoProviderId, provider.id),
+            eq(ssoProviderCredentialMetadata.organizationId, provider.organizationId),
+          ))
+      }
+    }
   }
 
   return response

@@ -24,4 +24,11 @@ describe('Render blueprint', () => {
     expect(source).toContain('key: MICROSOFT_CALENDAR_AUTH_MODE')
     expect(source).toContain('value: application')
   })
+
+  it('keeps the production SSO mode and operations secrets explicitly managed', () => {
+    expect(source).toMatch(/key: SSO_PROVIDER_SECRET_STORAGE_MODE\s+sync: false/)
+    expect(source).toMatch(/key: CRON_SECRET\s+sync: false/)
+    expect(source).toMatch(/key: FACTORY_CAREERS_OPERATIONS_INBOX\s+sync: false/)
+    expect(source).toMatch(/key: FACTORY_CAREERS_SSO_PROVIDER_ID\s+value: thefactoryhq-sso/)
+  })
 })

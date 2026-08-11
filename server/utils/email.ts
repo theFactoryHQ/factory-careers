@@ -17,6 +17,7 @@ import {
   CandidateWorkflowEmail,
   InterviewInvitationEmail,
   OrgInvitationEmail,
+  OperationalAlertEmail,
   PasswordResetEmail,
   PrivacyRequestConfirmationEmail,
   PrivacyRequestInternalAlertEmail,
@@ -261,6 +262,34 @@ export async function sendApplicationTeamAlertEmail(data: {
       provider: "resend",
       error_message: err instanceof Error ? err.message : String(err),
     });
+  }
+}
+
+export async function sendSsoOperationalAlertEmail(data: {
+  to: string;
+  code: string;
+  checkedAt: string;
+}): Promise<boolean> {
+  try {
+    const response = await emailClient.send({
+      from: emailClient.defaultFrom,
+      to: data.to,
+      subject: `Factory Careers SSO alert — ${data.code}`,
+      react: OperationalAlertEmail({
+        code: data.code,
+        checkedAt: data.checkedAt,
+        config: careersEmailConfig,
+      }) as React.ReactElement,
+    });
+
+    if (response.error) {
+      logError("email.sso_operational_alert_send_failed", { provider: "resend" });
+      return false;
+    }
+    return true;
+  } catch {
+    logError("email.sso_operational_alert_send_failed", { provider: "resend" });
+    return false;
   }
 }
 

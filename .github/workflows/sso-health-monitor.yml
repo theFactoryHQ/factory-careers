@@ -1,0 +1,156 @@
+name: Factory Careers SSO Health Monitor
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: factory-careers-sso-health
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Probe Microsoft SSO credential
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FACTORY_CAREERS_PRODUCTION_URL: ${{ secrets.FACTORY_CAREERS_PRODUCTION_URL }}
+      FACTORY_CAREERS_CRON_SECRET: ${{ secrets.FACTORY_CAREERS_CRON_SECRET }}
+
+    steps:
+      - name: Run first sanitized probe
+        id: first
+        shell: bash
+        run: |
+          set -euo pipefail
+          response_file="$RUNNER_TEMP/sso-health.json"
+          : > "$response_file"
+          if ! curl --silent --show-error \
+            --output "$RUNNER_TEMP/sso-health.json" \
+            --request POST \
+            --header "x-cron-secret: $FACTORY_CAREERS_CRON_SECRET" \
+            --max-time 20 \
+            "${FACTORY_CAREERS_PRODUCTION_URL%/}/api/operations/sso-health"; then
+            : > "$response_file"
+          fi
+          node --input-type=module - "$response_file" > "$RUNNER_TEMP/sso-health-code.txt" <<'NODE'
+          import { readFileSync } from 'node:fs'
+          const allowed = new Set([
+            'healthy', 'invalid_client', 'transient_failure', 'metadata_missing',
+            'expires_30d', 'expires_14d', 'expires_7d', 'expired',
+          ])
+          let code = 'transient_failure'
+          try {
+            const parsed = JSON.parse(readFileSync(process.argv[2], 'utf8'))
+            if (allowed.has(parsed.code)) code = parsed.code
+          } catch {}
+          process.stdout.write(code)
+          NODE
+          code="$(<"$RUNNER_TEMP/sso-health-code.txt")"
+          echo "first_code=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Retry a transient failure once
+        id: second
+        if: ${{ steps.first.outputs.first_code == 'transient_failure' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sleep 60
+          response_file="$RUNNER_TEMP/sso-health-retry.json"
+          : > "$response_file"
+          if ! curl --silent --show-error \
+            --output "$RUNNER_TEMP/sso-health-retry.json" \
+            --request POST \
+            --header "x-cron-secret: $FACTORY_CAREERS_CRON_SECRET" \
+            --max-time 20 \
+            "${FACTORY_CAREERS_PRODUCTION_URL%/}/api/operations/sso-health"; then
+            : > "$response_file"
+          fi
+          node --input-type=module - "$response_file" > "$RUNNER_TEMP/sso-health-retry-code.txt" <<'NODE'
+          import { readFileSync } from 'node:fs'
+          const allowed = new Set([
+            'healthy', 'invalid_client', 'transient_failure', 'metadata_missing',
+            'expires_30d', 'expires_14d', 'expires_7d', 'expired',
+          ])
+          let code = 'transient_failure'
+          try {
+            const parsed = JSON.parse(readFileSync(process.argv[2], 'utf8'))
+            if (allowed.has(parsed.code)) code = parsed.code
+          } catch {}
+          process.stdout.write(code)
+          NODE
+          code="$(<"$RUNNER_TEMP/sso-health-retry-code.txt")"
+          echo "second_code=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Reconcile the SSO incident issue
+        if: ${{ always() }}
+        uses: actions/github-script@v8
+        env:
+          FIRST_CODE: ${{ steps.first.outputs.first_code }}
+          SECOND_CODE: ${{ steps.second.outputs.second_code }}
+        with:
+          script: |
+            const firstCode = process.env.FIRST_CODE || 'transient_failure'
+            const secondCode = process.env.SECOND_CODE || ''
+            const immediate = new Set([
+              'invalid_client', 'metadata_missing', 'expires_30d',
+              'expires_14d', 'expires_7d', 'expired',
+            ])
+            const shouldAlert = immediate.has(firstCode)
+              || (firstCode === 'transient_failure' && secondCode === 'transient_failure')
+              || immediate.has(secondCode)
+            const finalCode = secondCode || firstCode
+            const marker = 'factory-careers-sso-health'
+            const title = 'Incident: Factory Careers Microsoft SSO health'
+            const { owner, repo } = context.repo
+
+            const listed = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: 'incident:sso', per_page: 100,
+            })
+            const existing = listed.data.find(issue =>
+              !issue.pull_request && issue.body?.includes(marker))
+
+            if (!shouldAlert) {
+              if (existing) {
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: existing.number,
+                  body: `Recovered with stable status ${finalCode}. Run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+                })
+                await github.rest.issues.update({
+                  owner, repo, issue_number: existing.number, state: 'closed',
+                })
+              }
+              return
+            }
+
+            try {
+              await github.rest.issues.createLabel({
+                owner, repo, name: 'incident:sso', color: 'B60205',
+                description: 'Factory Careers SSO operational incident',
+              })
+            } catch (error) {
+              if (error.status !== 422) throw error
+            }
+
+            const body = [
+              `<!-- ${marker} -->`,
+              'The automated Factory Careers Microsoft SSO credential probe is unhealthy.',
+              `Stable status: ${finalCode}`,
+              `Run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+              'No credentials, tokens, provider responses, or identifiers are included.',
+            ].join('\n\n')
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: existing.number, body,
+              })
+            } else {
+              await github.rest.issues.create({
+                owner, repo, title, body, labels: ['incident:sso'],
+              })
+            }

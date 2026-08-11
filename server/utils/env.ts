@@ -293,6 +293,10 @@ export const envSchema = z
       .pipe(z.string().min(1))
       .optional()
       .default("careers@thefactoryhq.com"),
+    /** Operational inbox for Microsoft SSO health state transitions. */
+    FACTORY_CAREERS_OPERATIONS_INBOX: emptyToUndefined
+      .pipe(z.string().email())
+      .optional(),
     /** Privacy/legal notification inbox for CCPA deletion requests. */
     FACTORY_CAREERS_PRIVACY_INBOX: emptyToUndefined
       .pipe(z.string().min(1))

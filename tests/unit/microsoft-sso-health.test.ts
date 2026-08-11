@@ -143,4 +143,18 @@ describe('Microsoft SSO credential health probe', () => {
     expect(first).toEqual(second)
     expect(run).toHaveBeenCalledOnce()
   })
+
+  it('does not cache transient failures so retry probes are independent', async () => {
+    resetMicrosoftSsoHealthCache()
+    const run = vi.fn(async () => ({
+      ok: false as const,
+      code: 'transient_failure' as const,
+      checkedAt: NOW.toISOString(),
+    }))
+
+    await getCachedMicrosoftSsoHealth(run, NOW.getTime())
+    await getCachedMicrosoftSsoHealth(run, NOW.getTime() + 60_000)
+
+    expect(run).toHaveBeenCalledTimes(2)
+  })
 })

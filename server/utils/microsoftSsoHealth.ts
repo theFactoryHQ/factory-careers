@@ -36,6 +36,7 @@ interface ProbeMicrosoftSsoCredentialOptions {
 
 const MICROSOFT_GRAPH_SCOPE = 'https://graph.microsoft.com/.default'
 const CACHE_TTL_MS = 5 * 60_000
+const ALERT_RATE_LIMIT_MS = 24 * 60 * 60_000
 
 let cachedHealth: { expiresAt: number, value: MicrosoftSsoHealthResponse } | undefined
 let pendingHealth: Promise<MicrosoftSsoHealthResponse> | undefined
@@ -147,7 +148,9 @@ export async function getCachedMicrosoftSsoHealth(
   pendingHealth = run()
   try {
     const value = await pendingHealth
-    cachedHealth = { expiresAt: nowMs + CACHE_TTL_MS, value }
+    if (value.code !== 'transient_failure') {
+      cachedHealth = { expiresAt: nowMs + CACHE_TTL_MS, value }
+    }
     return value
   }
   finally {
@@ -157,4 +160,55 @@ export async function getCachedMicrosoftSsoHealth(
 
 export function isSuccessfulMicrosoftSsoExchange(code: MicrosoftSsoHealthCode): boolean {
   return code === 'healthy' || code.startsWith('expires_')
+}
+
+interface DeriveSsoHealthPersistenceOptions {
+  previousStatus: string | null
+  previousAlertedAt: Date | null
+  consecutiveTransientFailures: number
+  result: MicrosoftSsoHealthResponse
+  now?: Date
+}
+
+export type SsoHealthPersistence = {
+  shouldAlert: boolean
+  lastProbeStatus: MicrosoftSsoHealthCode
+  lastProbedAt: Date
+  lastSuccessfulProbeAt?: Date
+  consecutiveTransientFailures: number
+}
+
+export function deriveSsoHealthPersistence({
+  previousStatus,
+  previousAlertedAt,
+  consecutiveTransientFailures,
+  result: health,
+  now = new Date(health.checkedAt),
+}: DeriveSsoHealthPersistenceOptions): SsoHealthPersistence {
+  const unhealthy = health.code !== 'healthy'
+  const transitionedToUnhealthy = unhealthy && previousStatus !== health.code
+  const repeatableIncident = [
+    'invalid_client',
+    'transient_failure',
+    'metadata_missing',
+    'expired',
+  ].includes(health.code)
+  const alertWindowElapsed = unhealthy
+    && (
+      previousAlertedAt === null
+      || now.getTime() - previousAlertedAt.getTime() >= ALERT_RATE_LIMIT_MS
+    )
+
+  return {
+    shouldAlert: unhealthy
+      && (transitionedToUnhealthy || (repeatableIncident && alertWindowElapsed)),
+    lastProbeStatus: health.code,
+    lastProbedAt: now,
+    ...(isSuccessfulMicrosoftSsoExchange(health.code)
+      ? { lastSuccessfulProbeAt: now }
+      : {}),
+    consecutiveTransientFailures: health.code === 'transient_failure'
+      ? consecutiveTransientFailures + 1
+      : 0,
+  }
 }
