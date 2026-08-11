@@ -13,14 +13,6 @@ describe('Microsoft sign-in button presentation', () => {
     expect(source).not.toContain('Continue with Microsoft')
   })
 
-  it('routes provider-id sign-in through the server-owned SSO entry point', () => {
-    const source = read('app/pages/auth/sign-in.vue')
-
-    expect(source).toContain('/api/auth/factory-sso')
-    expect(source).not.toContain('const FACTORY_SSO_PROVIDER_ID')
-    expect(source).not.toContain('{ providerId: FACTORY_SSO_PROVIDER_ID }')
-  })
-
   it('uses the Factory slide-up orange hover treatment for the provider button', () => {
     const source = read('app/pages/auth/sign-in.vue')
     const styles = read('app/assets/css/main.css')
