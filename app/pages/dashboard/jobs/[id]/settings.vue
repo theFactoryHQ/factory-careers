@@ -44,8 +44,6 @@ async function handleDelete() {
   <div class="mx-auto max-w-3xl">
     <StaleRevalidateBar v-if="isRevalidating" />
 
-    <JobSubNavActions :job-id="jobId" />
-
     <div v-if="showSkeleton" class="py-12 text-center text-surface-400">
       Loading...
     </div>

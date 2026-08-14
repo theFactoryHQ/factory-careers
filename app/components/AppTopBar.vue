@@ -722,7 +722,9 @@ function handleNewJobClick() {
             </nav>
 
             <div class="ml-auto flex items-center gap-2 shrink-0">
-              <div id="job-sub-nav-actions" class="flex items-center gap-2" />
+              <div id="job-sub-nav-actions" class="flex items-center gap-2">
+                <JobSubNavActions v-if="activeJobId" :key="activeJobId" :job-id="activeJobId" />
+              </div>
             </div>
           </div>
         </div>

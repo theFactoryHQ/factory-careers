@@ -516,8 +516,6 @@ async function copyTrackingUrl(code: string) {
   <div class="mx-auto max-w-3xl">
     <StaleRevalidateBar v-if="isRevalidating" />
 
-    <JobSubNavActions :job-id="jobId" />
-
     <!-- Loading -->
     <div v-if="showSkeleton" class="text-center py-12 text-surface-400">
       Loading…
