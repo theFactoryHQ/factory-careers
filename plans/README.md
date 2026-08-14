@@ -12,6 +12,11 @@ honor its STOP conditions, and update your row when done.
 | [002](002-require-content-length-for-multipart-uploads.md) | Require bounded multipart uploads before buffering | P1 | M | - | DONE |
 | [004](004-resolve-high-critical-npm-audit.md) | Resolve high and critical npm audit advisories | P1 | M | - | DONE |
 | [003](003-remove-public-demo-passcode-config.md) | Remove the public demo passcode runtime config | P2 | S | - | DONE |
+| [005](005-enforce-migration-and-deployment-discipline.md) | Enforce migration and deployment discipline | P0 | L | 001-004 | DONE |
+| [006](006-fail-closed-dependency-readiness.md) | Fail closed when production dependencies are unusable | P0 | L | 005 | DONE |
+| [007](007-keep-public-job-pages-current.md) | Keep job listings and application forms current | P1 | M | 006 | DONE |
+| [008](008-production-canaries-and-alerts.md) | Add production canaries and incident alerts | P0 | L | 005-007 | DONE |
+| [009](009-encrypted-application-intake-recovery.md) | Add encrypted replayable submission recovery | P0 | XL | 005-008 | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
 REJECTED (with one-line rationale - finding fixed independently or approach
@@ -26,6 +31,8 @@ abandoned)
   requirements because dependency updates can affect Nuxt, Nitro, Vite, Drizzle,
   and CLI behavior.
 - 003 is independent and intentionally small.
+- 005 through 009 are an ordered reliability program. Production activation
+  follows the staged rollout and stop conditions in 009.
 
 ## Findings Considered And Rejected
 

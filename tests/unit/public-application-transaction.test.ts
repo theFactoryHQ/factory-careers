@@ -10,6 +10,7 @@ import { DOCUMENT_UPLOAD_RECONCILIATION_GRACE_MS } from '../../server/utils/proc
 type State = {
   candidates: Map<string, string>
   applications: Map<string, string>
+  applicationReceipts: Map<string, string | undefined>
   documents: Map<string, string>
   processingTasks: Map<string, string>
   processingAvailability: Map<string, Date>
@@ -23,6 +24,7 @@ function cloneState(state: State): State {
   return {
     candidates: new Map(state.candidates),
     applications: new Map(state.applications),
+    applicationReceipts: new Map(state.applicationReceipts),
     documents: new Map(state.documents),
     processingTasks: new Map(state.processingTasks),
     processingAvailability: new Map(
@@ -42,6 +44,7 @@ function createTestAdapter(options: {
   const state: State = {
     candidates: new Map(),
     applications: new Map(),
+    applicationReceipts: new Map(),
     documents: new Map(),
     processingTasks: new Map(),
     processingAvailability: new Map(),
@@ -81,6 +84,7 @@ function createTestAdapter(options: {
           if (working.applications.has(key)) return null
           const id = `application-${working.applications.size + 1}`
           working.applications.set(key, id)
+          working.applicationReceipts.set(id, input.recoveryReceiptId)
           return id
         },
         async insertDocuments(inputs) {
@@ -111,6 +115,7 @@ function createTestAdapter(options: {
         const result = await operation(tx)
         state.candidates = working.candidates
         state.applications = working.applications
+        state.applicationReceipts = working.applicationReceipts
         state.documents = working.documents
         state.processingTasks = working.processingTasks
         state.processingAvailability = working.processingAvailability
@@ -153,6 +158,12 @@ const applicationInput: PublicApplicationTransactionInput = {
 }
 
 describe('createPublicApplication transaction', () => {
+  it('binds the durable recovery receipt to the created application', async () => {
+    const { adapter, state } = createTestAdapter()
+    await createPublicApplication({ ...applicationInput, recoveryReceiptId: 'receipt-1' }, adapter)
+    expect(state.applicationReceipts.get('application-1')).toBe('receipt-1')
+  })
+
   it('marks the database transaction before inserting a synthetic canary', async () => {
     const { adapter, state } = createTestAdapter()
     await createPublicApplication({ ...applicationInput, canary: true }, adapter)

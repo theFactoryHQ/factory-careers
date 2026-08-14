@@ -31,6 +31,7 @@ type ComplianceResponseInput = {
 
 export type PublicApplicationTransactionInput = {
   canary?: boolean
+  recoveryReceiptId?: string
   organizationId: string
   jobId: string
   candidate: {
@@ -78,6 +79,7 @@ export type PublicApplicationTransaction = {
     candidateId: string
     jobId: string
     coverLetterText: string | null
+    recoveryReceiptId?: string
   }): Promise<string | null>
   insertDocuments(inputs: Array<{
     id: string
@@ -193,6 +195,7 @@ const drizzleTransactionAdapter: PublicApplicationTransactionAdapter = {
             jobId: input.jobId,
             status: 'new',
             coverLetterText: input.coverLetterText,
+            recoveryReceiptId: input.recoveryReceiptId,
           })
           .onConflictDoNothing({
             target: [application.organizationId, application.candidateId, application.jobId],
@@ -272,6 +275,7 @@ export async function createPublicApplication(
       candidateId,
       jobId: input.jobId,
       coverLetterText: input.coverLetterText || null,
+      recoveryReceiptId: input.recoveryReceiptId,
     })
     if (!applicationId) {
       throw new DuplicatePublicApplicationError()

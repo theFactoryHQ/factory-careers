@@ -309,6 +309,19 @@ export const envSchema = z
       .pipe(z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/))
       .optional()
       .default("general-interest"),
+    /** Durably encrypt public application intake before database access. */
+    APPLICATION_INTAKE_RECOVERY_ENABLED: envFlag(false),
+    /** JSON object mapping key IDs to base64-encoded 32-byte AES keys. */
+    APPLICATION_INTAKE_KEYRING: emptyToUndefined.pipe(z.string()).optional(),
+    /** Key ID used for new recovery receipts. */
+    APPLICATION_INTAKE_ACTIVE_KEY_ID: emptyToUndefined
+      .pipe(z.string().regex(/^[A-Za-z0-9._-]{1,64}$/))
+      .optional(),
+    /** Days failed recovery receipts remain available for owner replay. */
+    APPLICATION_INTAKE_RETENTION_DAYS: z.preprocess(
+      value => typeof value === 'string' ? Number(value) : value,
+      z.number().int().min(1).max(30).default(7),
+    ),
     /** Privacy/legal notification inbox for CCPA deletion requests. */
     FACTORY_CAREERS_PRIVACY_INBOX: emptyToUndefined
       .pipe(z.string().min(1))
@@ -344,6 +357,54 @@ export const envSchema = z
     FACTORY_DISABLE_ANALYTICS_CONSENT_BANNER: envFlag(true),
   })
   .superRefine((data, ctx) => {
+    if (data.APPLICATION_INTAKE_RECOVERY_ENABLED) {
+      if (!data.CRON_SECRET) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['CRON_SECRET'],
+          message: 'CRON_SECRET is required when application intake recovery is enabled',
+        })
+      }
+      if (!data.APPLICATION_INTAKE_KEYRING) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['APPLICATION_INTAKE_KEYRING'],
+          message: 'APPLICATION_INTAKE_KEYRING is required when application intake recovery is enabled',
+        })
+      }
+      if (!data.APPLICATION_INTAKE_ACTIVE_KEY_ID) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['APPLICATION_INTAKE_ACTIVE_KEY_ID'],
+          message: 'APPLICATION_INTAKE_ACTIVE_KEY_ID is required when application intake recovery is enabled',
+        })
+      }
+      if (data.APPLICATION_INTAKE_KEYRING && data.APPLICATION_INTAKE_ACTIVE_KEY_ID) {
+        try {
+          const parsed = JSON.parse(data.APPLICATION_INTAKE_KEYRING) as Record<string, unknown>
+          const entries = Object.entries(parsed ?? {})
+          if (entries.length === 0 || !(data.APPLICATION_INTAKE_ACTIVE_KEY_ID in parsed)) {
+            throw new Error('missing active key')
+          }
+          for (const [keyId, encoded] of entries) {
+            if (!/^[A-Za-z0-9._-]{1,64}$/.test(keyId)
+              || typeof encoded !== 'string'
+              || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)
+              || Buffer.from(encoded, 'base64').length !== 32) {
+              throw new Error('invalid keyring')
+            }
+          }
+        }
+        catch {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['APPLICATION_INTAKE_KEYRING'],
+            message: 'APPLICATION_INTAKE_KEYRING must contain the active key and only base64-encoded 32-byte values',
+          })
+        }
+      }
+    }
+
     if (data.NODE_ENV === "production") {
       if (!data.DATABASE_MIGRATION_URL) {
         ctx.addIssue({

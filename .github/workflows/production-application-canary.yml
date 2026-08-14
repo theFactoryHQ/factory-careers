@@ -64,14 +64,28 @@ jobs:
             'const body=JSON.parse(process.argv[1]); if(body.ok!==true||body.code!=="healthy") process.exit(1)' \
             "$response"
 
+      - name: Purge expired encrypted intake receipts
+        id: purge
+        shell: bash
+        run: |
+          set -euo pipefail
+          response=$(curl --fail --silent --show-error --max-time 90 \
+            --request POST \
+            --header "x-cron-secret: $FACTORY_CAREERS_CRON_SECRET" \
+            "$CAREERS_URL/api/operations/application-intake-recovery-purge")
+          node --input-type=module --eval \
+            'const body=JSON.parse(process.argv[1]); if(body.ok!==true||!["healthy","disabled"].includes(body.code)) process.exit(1)' \
+            "$response"
+
       - name: Reconcile canary incident
         if: ${{ always() }}
         uses: actions/github-script@v8
         env:
           RESULT: ${{ steps.canary.outcome }}
+          PURGE_RESULT: ${{ steps.purge.outcome }}
         with:
           script: |
-            const unhealthy = process.env.RESULT !== 'success'
+            const unhealthy = process.env.RESULT !== 'success' || process.env.PURGE_RESULT !== 'success'
             const marker = 'factory-careers-application-canary'
             const label = 'incident:applications'
             const { owner, repo } = context.repo

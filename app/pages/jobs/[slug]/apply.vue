@@ -81,6 +81,12 @@ const errors = ref<Record<string, string>>({})
 const submitError = ref<string | null>(null)
 const currentApplicationStep = ref<1 | 2 | 3>(1)
 
+type ApplicationSubmissionResult = { success: true, delayed?: boolean, receiptId?: string }
+const submitApplication = $fetch as unknown as (
+  url: string,
+  options: { method: 'POST', body: unknown },
+) => Promise<ApplicationSubmissionResult>
+
 const labelClass = 'mb-1.5 block text-sm font-medium text-white/70'
 const errorMessageClass = 'mt-1.5 flex items-center gap-1 text-xs text-danger-300'
 
@@ -344,6 +350,7 @@ async function handleSubmit() {
 
   isSubmitting.value = true
   try {
+    let submissionResult: ApplicationSubmissionResult
     // Build responses array from the map (exclude file_upload questions — those go as files)
     const fileQuestionIds = new Set(
       job.value?.questions
@@ -407,13 +414,13 @@ async function handleSubmit() {
       if (utmTerm) formData.append('utmTerm', utmTerm)
       if (utmContent) formData.append('utmContent', utmContent)
 
-      await $fetch(`/api/public/jobs/${jobSlug}/apply`, {
+      submissionResult = await submitApplication(`/api/public/jobs/${jobSlug}/apply`, {
         method: 'POST',
         body: formData,
       })
     } else {
       // No files — use JSON as before
-      await $fetch(`/api/public/jobs/${jobSlug}/apply`, {
+      submissionResult = await submitApplication(`/api/public/jobs/${jobSlug}/apply`, {
         method: 'POST',
         body: {
           firstName: form.value.firstName.trim(),
@@ -437,7 +444,12 @@ async function handleSubmit() {
     }
 
     track('application_submitted', { slug: jobSlug })
-    await navigateTo(localePath(`/jobs/${jobSlug}/confirmation`))
+    await navigateTo({
+      path: localePath(`/jobs/${jobSlug}/confirmation`),
+      query: submissionResult.delayed
+        ? { delayed: '1', receiptId: submissionResult.receiptId }
+        : undefined,
+    })
   } catch (err: any) {
     const message = err.data?.statusMessage ?? 'Something went wrong. Please try again.'
     submitError.value = message

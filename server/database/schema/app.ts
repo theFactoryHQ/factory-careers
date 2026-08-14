@@ -233,6 +233,8 @@ export const application = pgTable('application', {
   currentAnalysisRunId: text('current_analysis_run_id'),
   notes: text('notes'),
   coverLetterText: text('cover_letter_text'),
+  /** Random durable-intake receipt used only to make replay idempotent. */
+  recoveryReceiptId: text('recovery_receipt_id'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => ([
@@ -240,6 +242,9 @@ export const application = pgTable('application', {
   index('application_candidate_id_idx').on(t.candidateId),
   index('application_job_id_idx').on(t.jobId),
   index('application_current_analysis_run_id_idx').on(t.currentAnalysisRunId),
+  uniqueIndex('application_recovery_receipt_id_idx')
+    .on(t.recoveryReceiptId)
+    .where(sql`${t.recoveryReceiptId} IS NOT NULL`),
   uniqueIndex('application_org_candidate_job_idx').on(t.organizationId, t.candidateId, t.jobId),
 ]))
 

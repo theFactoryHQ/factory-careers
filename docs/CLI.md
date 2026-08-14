@@ -195,6 +195,7 @@ Core commands:
 - `dashboard summary`, `dashboard activity`, `dashboard timeline`, `dashboard candidate-timeline`, `dashboard ai-stats`
 - `chatbot upload`, `chatbot conversations list`, `chatbot conversations get`, `chatbot conversations create`, `chatbot conversations update`, `chatbot conversations delete`, `chatbot folders list`, `chatbot folders create`, `chatbot folders update`, `chatbot folders delete`, `chatbot agents list`, `chatbot agents create`, `chatbot agents update`, `chatbot agents delete`, `chatbot chat`
 - `public jobs list`, `public jobs get`, `public jobs apply`
+- `recovery list`, `recovery status`, `recovery replay`, `recovery purge`
 
 ## Not CLI Surfaced
 
@@ -220,6 +221,14 @@ Server API coverage is tracked in `packages/careers-cli/src/routeCoverage.ts`. T
 `org update-settings --stdin --yes` accepts the same JSON payload as `/api/org-settings`, including `signupAllowedDomains` for owner-managed signup domain allowlists and workflow email settings such as `sendApplicationAcknowledgement`, `applicationAcknowledgementTemplateId`, `sendApplicationRejection`, `applicationRejectionTemplateId`, and `interviewInvitationTemplateId`. The server still enforces owner-only updates and requires each signup domain to match a configured SSO provider or organization-level calendar integration.
 
 `org invite-links create --stdin --yes` returns the new raw invite token once so the caller can construct and distribute the link. `org invite-links list` returns revocable invite metadata without either raw tokens or token hashes; if a link is lost, revoke it and create a replacement.
+
+`recovery list` and `recovery status <receipt-id>` return receipt ID, creation,
+expiry, encryption key ID, and object size metadata only. They never return a
+name, email, filename, response, file bytes, job slug, or decrypted envelope.
+`recovery replay <receipt-id> --yes` re-enters the normal public application
+workflow and removes the encrypted receipt only after completion or a verified
+already-completed application. `recovery purge --yes` removes expired receipts
+owned by the active organization.
 
 ## Examples
 

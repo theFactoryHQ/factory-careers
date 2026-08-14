@@ -22,6 +22,7 @@ const SECRET_KEYS = new Set([
   'CRON_SECRET',
   'S3_ACCESS_KEY',
   'S3_SECRET_KEY',
+  'APPLICATION_INTAKE_KEYRING',
   'GITHUB_FEEDBACK_TOKEN',
   'POSTHOG_PUBLIC_KEY',
   'POSTHOG_FEATURE_FLAGS_KEY',
@@ -383,6 +384,38 @@ function checkStorage(env, errors, warnings) {
   }
   if (parseBoolean(env.FACTORY_CAREERS_CANARY_ENABLED) === true && !isSet(env, 'CRON_SECRET')) {
     errors.push(issue('CRON_SECRET', 'is required when FACTORY_CAREERS_CANARY_ENABLED is true'))
+  }
+  if (parseBoolean(env.APPLICATION_INTAKE_RECOVERY_ENABLED) === true) {
+    if (!isSet(env, 'CRON_SECRET')) {
+      errors.push(issue('CRON_SECRET', 'is required when application intake recovery is enabled'))
+    }
+    if (!isSet(env, 'APPLICATION_INTAKE_KEYRING')) {
+      errors.push(issue('APPLICATION_INTAKE_KEYRING', 'is required when application intake recovery is enabled'))
+    }
+    if (!isSet(env, 'APPLICATION_INTAKE_ACTIVE_KEY_ID')) {
+      errors.push(issue('APPLICATION_INTAKE_ACTIVE_KEY_ID', 'is required when application intake recovery is enabled'))
+    }
+    if (isSet(env, 'APPLICATION_INTAKE_KEYRING') && isSet(env, 'APPLICATION_INTAKE_ACTIVE_KEY_ID')) {
+      try {
+        const parsed = JSON.parse(trimValue(env.APPLICATION_INTAKE_KEYRING))
+        const entries = Object.entries(parsed ?? {})
+        if (entries.length === 0 || !(trimValue(env.APPLICATION_INTAKE_ACTIVE_KEY_ID) in parsed)) throw new Error('invalid')
+        for (const [keyId, encoded] of entries) {
+          if (!/^[A-Za-z0-9._-]{1,64}$/.test(keyId)
+            || typeof encoded !== 'string'
+            || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)
+            || Buffer.from(encoded, 'base64').length !== 32) throw new Error('invalid')
+        }
+      } catch {
+        errors.push(issue('APPLICATION_INTAKE_KEYRING', 'must contain the active key and only base64-encoded 32-byte values'))
+      }
+    }
+    const retentionDays = isSet(env, 'APPLICATION_INTAKE_RETENTION_DAYS')
+      ? parsePositiveInteger(env.APPLICATION_INTAKE_RETENTION_DAYS)
+      : 7
+    if (retentionDays === undefined || retentionDays > 30) {
+      errors.push(issue('APPLICATION_INTAKE_RETENTION_DAYS', 'must be an integer between 1 and 30'))
+    }
   }
   const s3Endpoint = requireUrl(env, 'S3_ENDPOINT', errors)
   if (s3Endpoint) {

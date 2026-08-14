@@ -16,6 +16,7 @@ self-hosters.
 
 - Added append-only migration enforcement, base-to-branch PostgreSQL upgrade rehearsal, and an exact-commit production deployment gate.
 - Added five-minute public-path monitoring, exact-deploy and daily full application canaries, sanitized incident lifecycle automation, and rate-limited operational alerts.
+- Added AES-256-GCM application intake recovery with seven-day retention, delayed-submission receipts, idempotent owner replay, metadata-only CLI operations, key rotation, and scheduled expiry cleanup.
 - Added CLI batch inspection and resumption plus organization-wide missing-only scoring, finite wait controls, and stable nonzero outcomes for failed, cancelled, or timed-out processing.
 - Added independent application email preferences for each member and the shared careers inbox, with immediate, daily, weekly, monthly, and off cadences in dashboard settings and the authenticated CLI.
 - Added a durable application notification worker with database-triggered event capture, grouped digest emails, tenant isolation, leases, bounded retries, and provider idempotency.

@@ -32,6 +32,14 @@ services:
         value: "false"
       - key: FACTORY_CAREERS_CANARY_JOB_SLUG
         value: general-interest
+      - key: APPLICATION_INTAKE_RECOVERY_ENABLED
+        value: "false"
+      - key: APPLICATION_INTAKE_KEYRING
+        sync: false
+      - key: APPLICATION_INTAKE_ACTIVE_KEY_ID
+        sync: false
+      - key: APPLICATION_INTAKE_RETENTION_DAYS
+        value: "7"
       - key: BETTER_AUTH_URL
         value: https://careers.thefactoryhq.com
       - key: NUXT_PUBLIC_SITE_URL

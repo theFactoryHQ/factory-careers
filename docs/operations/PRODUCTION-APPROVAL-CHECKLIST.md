@@ -39,6 +39,10 @@ Use this checklist before launching or materially changing any environment that 
 | Application canary | Exact-deploy and daily workflows healthy; zero residue |  |
 | Canary notification suppression | No candidate or internal email emitted |  |
 | Render exact-commit poll | Live commit equals gated commit before canary |  |
+| Intake recovery staged rollout | Disabled deploy healthy; keyring configured; enabled deploy healthy |  |
+| Intake encryption proof | Tamper, wrong-key, rotation, and no-plaintext tests pass |  |
+| Delayed submission drill | Forced downstream failure returns 202; replay succeeds; zero residue |  |
+| Recovery expiry | Seven-day purge and retired-key retention verified |  |
 | `npm run ops:validate-production-env -- <env-file>` | Pass against exact production values |  |
 | Database roles | `DATABASE_URL` is app-only; `DATABASE_MIGRATION_URL` is a distinct DDL role |  |
 | Runtime migration setting | `SKIP_RUNTIME_MIGRATIONS=false` |  |

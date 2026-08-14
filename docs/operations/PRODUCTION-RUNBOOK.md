@@ -36,6 +36,10 @@ Production uses Render plus Supabase Postgres and Supabase Storage S3. Required 
 - `FACTORY_CAREERS_HIRING_INBOX`
 - `FACTORY_CAREERS_CANARY_ENABLED=true`
 - `FACTORY_CAREERS_CANARY_JOB_SLUG=general-interest`
+- `APPLICATION_INTAKE_RECOVERY_ENABLED=true`
+- `APPLICATION_INTAKE_KEYRING` (concealed JSON key ID to 32-byte base64 key map)
+- `APPLICATION_INTAKE_ACTIVE_KEY_ID`
+- `APPLICATION_INTAKE_RETENTION_DAYS=7`
 - `APPLICATION_NOTIFICATION_WORKER_ENABLED=true`
 
 GitHub Actions additionally requires concealed
@@ -89,6 +93,38 @@ configured. Run it manually once, inspect metadata-only logs, and prove the
 synthetic email has no remaining candidate, application, document, processing,
 or notification records. Afterward, the workflow runs when the exact gated
 commit is live and once daily.
+
+### Encrypted application intake recovery
+
+Deploy recovery code with `APPLICATION_INTAKE_RECOVERY_ENABLED=false`. Generate
+a 32-byte random AES key, store the keyring in Factory 1Password and Render,
+set its non-secret key ID active, and deploy again. Enable recovery only after
+readiness and the full application canary are healthy.
+
+After basic form and file validation, the server encrypts the complete intake
+with AES-256-GCM before its first database read. The object key contains only a
+random receipt ID and date partition. Successful and expected-invalid requests
+delete the object. An unexpected downstream failure retains it for seven days
+and returns HTTP 202 with a receipt ID. If durable buffering fails, the server
+returns a generic 503 and does not claim receipt.
+
+Use these owner-only operations:
+
+1. Run `factory-careers recovery list --json` to inspect metadata.
+2. Run `factory-careers recovery status <receipt-id> --json` to confirm expiry and key ID.
+3. Run `factory-careers recovery replay <receipt-id> --yes --json` to process it through the normal workflow.
+4. Run `factory-careers recovery purge --yes --json` for an immediate expired-receipt sweep.
+
+The daily production workflow also purges expired encrypted objects. Replay
+detects an application bound to the receipt. It accepts a fully completed
+application, removes a partial receipt-bound application and its artifacts
+before retrying, and refuses to proceed when cleanup leaves residue.
+
+For key rotation, append a new key and make its ID active. Keep every retired
+key until all objects written by it have expired and been purged. Remove a
+retired key only after `recovery list` shows no receipt using that key ID.
+Never print the keyring, encrypted object, decrypted fields, request bodies, or
+applicant identifiers in logs, issues, chat, or command output.
 
 For an incident, preserve the failed deploy logs and run the repository
 migrator with the concealed migration-role URL:

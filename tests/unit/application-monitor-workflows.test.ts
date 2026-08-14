@@ -26,5 +26,6 @@ describe('application monitoring workflows', () => {
     expect(workflow).toContain('RENDER_API_KEY')
     expect(workflow).toContain('RENDER_SERVICE_ID')
     expect(workflow).toContain('/api/operations/application-canary')
+    expect(workflow).toContain('/api/operations/application-intake-recovery-purge')
   })
 })
