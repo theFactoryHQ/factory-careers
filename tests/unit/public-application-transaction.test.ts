@@ -16,6 +16,7 @@ type State = {
   complianceResponses: string[]
   questionResponses: string[]
   workflowEmails: string[]
+  canaryTransactions: number
 }
 
 function cloneState(state: State): State {
@@ -30,6 +31,7 @@ function cloneState(state: State): State {
     complianceResponses: [...state.complianceResponses],
     questionResponses: [...state.questionResponses],
     workflowEmails: [...state.workflowEmails],
+    canaryTransactions: state.canaryTransactions,
   }
 }
 
@@ -46,6 +48,7 @@ function createTestAdapter(options: {
     complianceResponses: [],
     questionResponses: [],
     workflowEmails: [],
+    canaryTransactions: 0,
   }
   let transactionQueue = Promise.resolve()
 
@@ -60,6 +63,9 @@ function createTestAdapter(options: {
 
       const working = cloneState(state)
       const tx: PublicApplicationTransaction = {
+        async setCanaryMode() {
+          working.canaryTransactions += 1
+        },
         async upsertCandidate(input) {
           const key = `${input.organizationId}:${input.email}`
           const id = working.candidates.get(key) ?? `candidate-${working.candidates.size + 1}`
@@ -111,6 +117,7 @@ function createTestAdapter(options: {
         state.complianceResponses = working.complianceResponses
         state.questionResponses = working.questionResponses
         state.workflowEmails = working.workflowEmails
+        state.canaryTransactions = working.canaryTransactions
         return result
       } finally {
         release()
@@ -146,6 +153,11 @@ const applicationInput: PublicApplicationTransactionInput = {
 }
 
 describe('createPublicApplication transaction', () => {
+  it('marks the database transaction before inserting a synthetic canary', async () => {
+    const { adapter, state } = createTestAdapter()
+    await createPublicApplication({ ...applicationInput, canary: true }, adapter)
+    expect(state.canaryTransactions).toBe(1)
+  })
   it('rolls back the candidate and application when compliance persistence fails', async () => {
     const { adapter, state } = createTestAdapter({ failCompliance: true })
 

@@ -34,7 +34,14 @@ Production uses Render plus Supabase Postgres and Supabase Storage S3. Required 
 - `CRON_SECRET`
 - `FACTORY_CAREERS_OPERATIONS_INBOX`
 - `FACTORY_CAREERS_HIRING_INBOX`
+- `FACTORY_CAREERS_CANARY_ENABLED=true`
+- `FACTORY_CAREERS_CANARY_JOB_SLUG=general-interest`
 - `APPLICATION_NOTIFICATION_WORKER_ENABLED=true`
+
+GitHub Actions additionally requires concealed
+`FACTORY_CAREERS_PRODUCTION_URL`, `FACTORY_CAREERS_CRON_SECRET`,
+`RENDER_API_KEY`, and `RENDER_SERVICE_ID` secrets. The Render identifiers and
+credentials are deployment controls and must not be emitted by workflow logs.
 
 ### Database migration invariant
 
@@ -61,6 +68,27 @@ ledger baseline after those legacy entries. The modeled-schema inventory covers
 the inherited tables and columns; the bidirectional timestamp-and-hash gate
 covers every migration from 0059 forward. Do not move the baseline or add a
 manual ledger entry without verifying the exact committed SQL outcome first.
+
+### Public-path monitoring and application canary
+
+The external monitor checks readiness, the public jobs API, the stable General
+Interest application page, and the FactoryHQ careers page every five minutes.
+It opens one `incident:applications` issue after two consecutive failures and
+closes that issue after recovery. The issue contains only the failing probe
+name, status class, workflow run, and commit metadata.
+
+`POST /api/operations/application-canary` requires `CRON_SECRET`. It submits a
+synthetic PDF through the public application workflow, suppresses candidate and
+internal email, skips scoring, and removes the candidate, application,
+responses, queue events, and storage object before returning healthy. A second
+cleanup pass runs even if the public route fails midway. Any residue is a
+failed canary and blocks rollout.
+
+Enable the canary only after the stable job slug and all workflow secrets are
+configured. Run it manually once, inspect metadata-only logs, and prove the
+synthetic email has no remaining candidate, application, document, processing,
+or notification records. Afterward, the workflow runs when the exact gated
+commit is live and once daily.
 
 For an incident, preserve the failed deploy logs and run the repository
 migrator with the concealed migration-role URL:

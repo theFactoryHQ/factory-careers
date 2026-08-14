@@ -25,6 +25,8 @@ import {
 } from '../../../../utils/createPublicApplication'
 import { rollbackPublicApplicationSubmission } from '../../../../utils/rollbackPublicApplicationSubmission'
 import { finalizeCandidateDocumentUpload } from '../../../../utils/candidateDocumentReservation'
+import { requireCronSecret } from '../../../../utils/cronAuth'
+import { validateApplicationCanaryIdentity } from '../../../../utils/applicationCanary'
 import {
   MAX_FILE_SIZE,
   MAX_DOCUMENTS_PER_CANDIDATE,
@@ -74,15 +76,26 @@ const MAX_PUBLIC_APPLICATION_MULTIPART_BYTES = (MAX_DOCUMENTS_PER_CANDIDATE * MA
  * 8. Upload files to S3 and create document records
  */
 export default defineEventHandler(async (event) => {
+  const canaryRequested = getHeader(event, 'x-factory-canary') === '1'
+  if (canaryRequested) {
+    if (!env.FACTORY_CAREERS_CANARY_ENABLED) {
+      throw createError({ statusCode: 404, statusMessage: 'Not found' })
+    }
+    requireCronSecret(getHeader(event, 'x-cron-secret'), env.CRON_SECRET)
+  }
+
   // Enforce rate limit before any processing.
   // Skipped outside production so local dev and test environments are not throttled.
   // CI flags must not bypass this when NODE_ENV=production because several
   // deployment platforms set them.
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' && !canaryRequested) {
     await applyRateLimit(event)
   }
 
   const { slug } = await getValidatedRouterParams(event, publicJobSlugSchema.parse)
+  if (canaryRequested && slug !== env.FACTORY_CAREERS_CANARY_JOB_SLUG) {
+    throw createError({ statusCode: 403, statusMessage: 'Invalid application canary' })
+  }
 
   // ─────────────────────────────────────────────
   // 1. Detect content type and parse request
@@ -232,6 +245,14 @@ export default defineEventHandler(async (event) => {
   if (website) {
     setResponseStatus(event, 200)
     return { success: true }
+  }
+
+  if (canaryRequested && !validateApplicationCanaryIdentity({
+    slug,
+    configuredSlug: env.FACTORY_CAREERS_CANARY_JOB_SLUG,
+    email,
+  })) {
+    throw createError({ statusCode: 403, statusMessage: 'Invalid application canary' })
   }
 
   // ─────────────────────────────────────────────
@@ -465,7 +486,7 @@ export default defineEventHandler(async (event) => {
 
   const applicationSubmittedAt = new Date()
   const candidateName = `${firstName} ${lastName}`.trim()
-  const candidateWorkflowEmail = await prepareConfiguredCandidateWorkflowEmail({
+  const candidateWorkflowEmail = canaryRequested ? null : await prepareConfiguredCandidateWorkflowEmail({
     purpose: 'application_acknowledgement',
     now: applicationSubmittedAt,
     data: {
@@ -488,6 +509,7 @@ export default defineEventHandler(async (event) => {
   let createdApplication: Awaited<ReturnType<typeof createPublicApplication>>
   try {
     createdApplication = await createPublicApplication({
+      canary: canaryRequested,
       organizationId: orgId,
       jobId,
       candidate: {
@@ -546,6 +568,7 @@ export default defineEventHandler(async (event) => {
 
       const rollback = await rollbackPublicApplicationSubmission({
         applicationId,
+        candidateId,
         organizationId: orgId,
         storageKeys: attemptedStorageKeys,
       })
@@ -661,7 +684,7 @@ export default defineEventHandler(async (event) => {
   // selected application resume has usable parsed text.
   // ─────────────────────────────────────────────
 
-  if (existingJob.autoScoreOnApply && newApplication && selectedResumeParsed) {
+  if (!canaryRequested && existingJob.autoScoreOnApply && newApplication && selectedResumeParsed) {
     await enqueueProcessingTask({
       organizationId: orgId,
       type: 'application_analysis',
@@ -676,6 +699,7 @@ export default defineEventHandler(async (event) => {
     application_id: newApplication?.id,
     has_resume: !!resumeUpload,
     auto_score_enabled: !!existingJob.autoScoreOnApply,
+    synthetic_canary: canaryRequested,
   })
 
   logApiRequest(event, null, 'application.received', {
@@ -686,7 +710,22 @@ export default defineEventHandler(async (event) => {
     question_count: validResponses.length,
     file_count: uploadedFiles.size,
     auto_score_enabled: !!existingJob.autoScoreOnApply,
+    synthetic_canary: canaryRequested,
   })
+
+  if (canaryRequested) {
+    const cleanup = await rollbackPublicApplicationSubmission({
+      applicationId,
+      candidateId,
+      organizationId: orgId,
+      storageKeys: attemptedStorageKeys,
+    })
+    if (!cleanup.relationalCleanupSucceeded || !cleanup.storageCleanupSucceeded) {
+      throw createError({ statusCode: 500, statusMessage: 'Application canary cleanup failed' })
+    }
+    setResponseStatus(event, 200)
+    return { ok: true, code: 'application_canary_passed' }
+  }
 
   await invalidateOrgScopedDashboardCacheForOrg(orgId)
 

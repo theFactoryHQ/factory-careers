@@ -72,6 +72,18 @@ describe('production environment preflight', () => {
     )
   })
 
+  it('requires cron authentication when the application canary is enabled', () => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      FACTORY_CAREERS_CANARY_ENABLED: 'true',
+      CRON_SECRET: '',
+    })
+    expect(result.ok).toBe(false)
+    expect(messages(result)).toContain(
+      'CRON_SECRET: is required when FACTORY_CAREERS_CANARY_ENABLED is true',
+    )
+  })
+
   it('rejects a migration URL that reuses the application database role', () => {
     const result = validateProductionEnv({
       ...validProductionEnv,

@@ -391,6 +391,7 @@ export default defineNitroPlugin(async () => {
     logError('migrations.failed', {
       error_message: error instanceof Error ? error.message : String(error),
     })
+    await sendCriticalOperationalAlert('migration.startup_failed')
     throw error
   }
 })

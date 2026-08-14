@@ -14,9 +14,20 @@ export default defineNitroPlugin((nitroApp) => {
 
   // Capture server errors to PostHog, but skip 404 "Page not found" errors
   // which are overwhelmingly bot/vulnerability scanner noise.
-  nitroApp.hooks.hook('error', (error) => {
+  nitroApp.hooks.hook('error', (error, context) => {
     const statusCode = (error as { statusCode?: number }).statusCode
     if (statusCode === 404) return
+
+    const path = context.event?.path ?? ''
+    if ((statusCode ?? 500) >= 500 && (
+      path === '/api/readyz'
+      || path === '/api/operations/application-canary'
+      || /^\/api\/public\/jobs\/[^/]+\/apply$/.test(path)
+    )) {
+      void sendCriticalOperationalAlert(
+        path === '/api/readyz' ? 'readiness.request_failed' : 'application.request_failed',
+      )
+    }
 
     const ph = useServerPostHog()
     if (!ph) return

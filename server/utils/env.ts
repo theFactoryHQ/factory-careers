@@ -302,6 +302,13 @@ export const envSchema = z
     FACTORY_CAREERS_OPERATIONS_INBOX: emptyToUndefined
       .pipe(z.string().email())
       .optional(),
+    /** Enable authenticated synthetic public application checks. */
+    FACTORY_CAREERS_CANARY_ENABLED: envFlag(false),
+    /** Stable public role used by the synthetic application check. */
+    FACTORY_CAREERS_CANARY_JOB_SLUG: emptyToUndefined
+      .pipe(z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/))
+      .optional()
+      .default("general-interest"),
     /** Privacy/legal notification inbox for CCPA deletion requests. */
     FACTORY_CAREERS_PRIVACY_INBOX: emptyToUndefined
       .pipe(z.string().min(1))
@@ -359,6 +366,14 @@ export const envSchema = z
           code: z.ZodIssueCode.custom,
           path: ["S3_SKIP_BUCKET_INIT"],
           message: "S3_SKIP_BUCKET_INIT cannot be true in production",
+        });
+      }
+
+      if (data.FACTORY_CAREERS_CANARY_ENABLED && !data.CRON_SECRET) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["CRON_SECRET"],
+          message: "CRON_SECRET is required when FACTORY_CAREERS_CANARY_ENABLED is true",
         });
       }
     }

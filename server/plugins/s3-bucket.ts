@@ -38,6 +38,7 @@ export default defineNitroPlugin(async () => {
       bucket: env.S3_BUCKET,
       error_name: error instanceof Error ? error.name : 'UnknownError',
     })
+    await sendCriticalOperationalAlert('storage.startup_failed')
     throw error
   }
 })

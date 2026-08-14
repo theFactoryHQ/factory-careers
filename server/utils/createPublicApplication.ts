@@ -30,6 +30,7 @@ type ComplianceResponseInput = {
 }
 
 export type PublicApplicationTransactionInput = {
+  canary?: boolean
   organizationId: string
   jobId: string
   candidate: {
@@ -60,6 +61,7 @@ export type PublicApplicationTransactionInput = {
 }
 
 export type PublicApplicationTransaction = {
+  setCanaryMode(): Promise<void>
   upsertCandidate(input: PublicApplicationTransactionInput['candidate'] & {
     organizationId: string
   }): Promise<string>
@@ -135,6 +137,9 @@ export class PublicApplicationDocumentLimitError extends CandidateDocumentLimitE
 const drizzleTransactionAdapter: PublicApplicationTransactionAdapter = {
   transaction: async <T>(operation: (tx: PublicApplicationTransaction) => Promise<T>) => {
     return db.transaction(async (tx) => operation({
+      async setCanaryMode() {
+        await tx.execute(sql`SELECT set_config('factory_careers.canary', 'on', true)`)
+      },
       async upsertCandidate(input) {
         const normalizedEmail = input.email.toLowerCase()
         const [row] = await tx.insert(candidate)
@@ -241,6 +246,7 @@ export async function createPublicApplication(
   documentProcessingTasks: Record<string, string>
 }> {
   return adapter.transaction(async (tx) => {
+    if (input.canary) await tx.setCanaryMode()
     const candidateId = await tx.upsertCandidate({
       organizationId: input.organizationId,
       ...input.candidate,

@@ -1,5 +1,5 @@
-import { and, eq } from 'drizzle-orm'
-import { application, document } from '../database/schema'
+import { and, eq, sql } from 'drizzle-orm'
+import { application, candidate, document } from '../database/schema'
 import { db } from './db'
 import { logError, logWarn } from './logger'
 import {
@@ -11,6 +11,7 @@ import { deleteFromS3 } from './s3'
 
 export type PublicApplicationRollbackInput = {
   applicationId: string
+  candidateId?: string
   organizationId: string
   storageKeys: string[]
 }
@@ -97,6 +98,15 @@ const defaultAdapter: PublicApplicationRollbackAdapter = {
           eq(application.id, input.applicationId),
           eq(application.organizationId, input.organizationId),
         ))
+      if (input.candidateId) {
+        await tx.delete(candidate)
+          .where(and(
+            eq(candidate.id, input.candidateId),
+            eq(candidate.organizationId, input.organizationId),
+            sql`NOT EXISTS (SELECT 1 FROM ${application} WHERE ${application.candidateId} = ${candidate.id})`,
+            sql`NOT EXISTS (SELECT 1 FROM ${document} WHERE ${document.candidateId} = ${candidate.id})`,
+          ))
+      }
     })
   },
   deleteStorageObject: deleteFromS3,
@@ -109,7 +119,7 @@ const defaultAdapter: PublicApplicationRollbackAdapter = {
 export async function rollbackPublicApplicationSubmission(
   input: PublicApplicationRollbackInput,
   adapter: PublicApplicationRollbackAdapter = defaultAdapter,
-): Promise<{ relationalCleanupSucceeded: boolean }> {
+): Promise<{ relationalCleanupSucceeded: boolean, storageCleanupSucceeded: boolean }> {
   try {
     await adapter.cleanupRelationalRecords({
       applicationId: input.applicationId,
@@ -119,7 +129,7 @@ export async function rollbackPublicApplicationSubmission(
     logError('application.rollback_failed', {
       result_code: 'relational_cleanup_failed',
     })
-    return { relationalCleanupSucceeded: false }
+    return { relationalCleanupSucceeded: false, storageCleanupSucceeded: false }
   }
 
   const storageKeys = [...new Set(input.storageKeys)]
@@ -135,5 +145,8 @@ export async function rollbackPublicApplicationSubmission(
     }
   })
 
-  return { relationalCleanupSucceeded: true }
+  return {
+    relationalCleanupSucceeded: true,
+    storageCleanupSucceeded: cleanupResults.every(result => result.status === 'fulfilled'),
+  }
 }

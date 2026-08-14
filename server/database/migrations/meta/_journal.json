@@ -456,6 +456,13 @@
       "when": 1784242800000,
       "tag": "0063_sso_credential_health",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1784246400000,
+      "tag": "0064_application_canary_suppression",
+      "breakpoints": true
     }
   ]
 }

@@ -270,11 +270,19 @@ export async function sendSsoOperationalAlertEmail(data: {
   code: string;
   checkedAt: string;
 }): Promise<boolean> {
+  return sendOperationalAlertEmail(data);
+}
+
+export async function sendOperationalAlertEmail(data: {
+  to: string;
+  code: string;
+  checkedAt: string;
+}): Promise<boolean> {
   try {
     const response = await emailClient.send({
       from: emailClient.defaultFrom,
       to: data.to,
-      subject: `Factory Careers SSO alert — ${data.code}`,
+      subject: `Factory Careers operational alert — ${data.code}`,
       react: OperationalAlertEmail({
         code: data.code,
         checkedAt: data.checkedAt,
@@ -283,12 +291,12 @@ export async function sendSsoOperationalAlertEmail(data: {
     });
 
     if (response.error) {
-      logError("email.sso_operational_alert_send_failed", { provider: "resend" });
+      logError("email.operational_alert_send_failed", { provider: "resend" });
       return false;
     }
     return true;
   } catch {
-    logError("email.sso_operational_alert_send_failed", { provider: "resend" });
+    logError("email.operational_alert_send_failed", { provider: "resend" });
     return false;
   }
 }

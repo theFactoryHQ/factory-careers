@@ -28,6 +28,10 @@ services:
         sync: false
       - key: FACTORY_CAREERS_OPERATIONS_INBOX
         sync: false
+      - key: FACTORY_CAREERS_CANARY_ENABLED
+        value: "false"
+      - key: FACTORY_CAREERS_CANARY_JOB_SLUG
+        value: general-interest
       - key: BETTER_AUTH_URL
         value: https://careers.thefactoryhq.com
       - key: NUXT_PUBLIC_SITE_URL

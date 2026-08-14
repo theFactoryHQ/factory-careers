@@ -122,6 +122,7 @@ export const cliRouteCoverage: CliRouteCoverageEntry[] = [
   { route: 'server/api/notification-settings/application-email.get.ts', status: 'supported', command: 'notifications inbox get' },
   { route: 'server/api/notification-settings/application-email.patch.ts', status: 'supported', command: 'notifications inbox set' },
   { route: 'server/api/operations/sso-health.post.ts', status: 'internal', reason: 'CRON-secret-only Microsoft credential probe for the production monitor; it is not a user-authenticated ATS command.' },
+  { route: 'server/api/operations/application-canary.post.ts', status: 'internal', reason: 'CRON-secret-only synthetic application probe for production monitoring; it is not a user-authenticated ATS command.' },
   { route: 'server/api/join-requests/[id]/approve.post.ts', status: 'supported', command: 'org join-requests approve' },
   { route: 'server/api/join-requests/[id]/reject.post.ts', status: 'supported', command: 'org join-requests reject' },
   { route: 'server/api/join-requests/index.get.ts', status: 'supported', command: 'org join-requests list' },
