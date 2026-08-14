@@ -14,6 +14,8 @@ import {
   encryptSsoProviderClientSecret,
   isEncryptedSsoProviderClientSecret,
   protectSsoProviderRecord,
+  type SsoProviderSecretStorageMode,
+  validateSsoProviderClientSecrets,
   wrapSsoProviderSecretAdapter,
 } from '../../server/utils/ssoProviderSecrets'
 
@@ -66,9 +68,12 @@ function createAdapter(overrides: Partial<DBAdapter> = {}): DBAdapter {
   } as DBAdapter
 }
 
-function wrappedAdapter(adapter: DBAdapter): DBAdapter {
+function wrappedAdapter(
+  adapter: DBAdapter,
+  mode: SsoProviderSecretStorageMode = 'encrypted',
+): DBAdapter {
   const factory = (() => adapter) as DBAdapterInstance
-  return wrapSsoProviderSecretAdapter(factory, ROOT_SECRET)({} as BetterAuthOptions)
+  return wrapSsoProviderSecretAdapter(factory, ROOT_SECRET, mode)({} as BetterAuthOptions)
 }
 
 describe('SSO provider client-secret encryption', () => {
@@ -144,7 +149,8 @@ describe('Better Auth SSO adapter storage boundary', () => {
 
     expect(authSource).toContain('wrapSsoProviderSecretAdapter(')
     expect(authSource).toContain('env.BETTER_AUTH_SECRET')
-    expect(migrationSource).toContain('backfillSsoProviderClientSecrets(')
+    expect(migrationSource).toContain('prepareSsoProviderSecretStorage({')
+    expect(migrationSource).toContain('validateSsoProviderClientSecrets')
     expect(migrationSource).toContain('sso_provider_secrets.backfill_completed')
   })
 
@@ -368,5 +374,107 @@ describe('Better Auth SSO adapter storage boundary', () => {
     await expect(adapter.deleteMany({ model: 'ssoProvider', where })).resolves.toBe(2)
     expect(underlying.delete).toHaveBeenCalledOnce()
     expect(underlying.deleteMany).toHaveBeenCalledOnce()
+  })
+})
+
+describe('SSO provider client-secret storage modes', () => {
+  it('keeps compatibility writes plaintext and removes an encryption marker', async () => {
+    const encryptedProvider = protectSsoProviderRecord(providerRecord(), ROOT_SECRET)
+    let storedData: Record<string, unknown> | undefined
+    const adapter = wrappedAdapter(createAdapter({
+      create: vi.fn(async ({ data }) => {
+        storedData = data as Record<string, unknown>
+        return data as never
+      }),
+    }), 'compatibility')
+
+    const created = await adapter.create<ProviderRecord>({
+      model: 'ssoProvider',
+      data: encryptedProvider,
+    })
+
+    expect(readClientSecret(storedData!)).toBe(CLIENT_SECRET)
+    expect(storedData!.oidcConfig).not.toContain('_factoryCareersClientSecretEncryption')
+    expect(readClientSecret(created)).toBeUndefined()
+  })
+
+  it.each(['compatibility', 'encrypted'] satisfies SsoProviderSecretStorageMode[])(
+    '%s reads plaintext and encrypted provider rows',
+    async (mode) => {
+      const plaintextProvider = providerRecord()
+      const encryptedProvider = protectSsoProviderRecord(providerRecord(), ROOT_SECRET)
+      const adapter = wrappedAdapter(createAdapter({
+        findMany: vi.fn(async () => [plaintextProvider, encryptedProvider] as never),
+      }), mode)
+
+      const found = await adapter.findMany<ProviderRecord>({ model: 'ssoProvider' })
+
+      expect(found.map(readClientSecret)).toEqual([CLIENT_SECRET, CLIENT_SECRET])
+    },
+  )
+
+  it('keeps encrypted writes encrypted', async () => {
+    let storedData: Record<string, unknown> | undefined
+    const adapter = wrappedAdapter(createAdapter({
+      create: vi.fn(async ({ data }) => {
+        storedData = data as Record<string, unknown>
+        return data as never
+      }),
+    }), 'encrypted')
+
+    await adapter.create<ProviderRecord>({
+      model: 'ssoProvider',
+      data: providerRecord(),
+    })
+
+    expect(readClientSecret(storedData!)).toMatch(/^fc-sso:v1:/)
+  })
+})
+
+describe('SSO provider client-secret validation', () => {
+  function validationSql(rows: Array<{ id: string, oidcConfig: string }>) {
+    let calls = 0
+    return vi.fn(async () => {
+      calls += 1
+      return calls === 1 ? rows : []
+    })
+  }
+
+  it('classifies plaintext, encrypted, and public-client provider records without mutation', async () => {
+    const encrypted = protectSsoProviderRecord(providerRecord(), ROOT_SECRET)
+    const sql = validationSql([
+      { id: 'encrypted', oidcConfig: encrypted.oidcConfig! },
+      { id: 'plaintext', oidcConfig: providerRecord().oidcConfig! },
+      { id: 'public', oidcConfig: JSON.stringify({ clientId: 'public', pkce: true }) },
+    ])
+
+    await expect(validateSsoProviderClientSecrets(sql as never, ROOT_SECRET)).resolves.toEqual({
+      scanned: 3,
+      plaintext: 1,
+      encrypted: 1,
+      withoutClientSecret: 1,
+    })
+    expect(sql).toHaveBeenCalledTimes(1)
+    expect(sql.mock.calls.flat().join(' ')).not.toContain('update')
+  })
+
+  it.each([
+    ['malformed JSON', '{'],
+    ['empty plaintext', JSON.stringify({ clientId: 'client', clientSecret: '' })],
+    ['unknown marker', JSON.stringify({
+      clientId: 'client',
+      clientSecret: 'opaque',
+      _factoryCareersClientSecretEncryption: 'v2',
+    })],
+    ['undecryptable ciphertext', JSON.stringify({
+      clientId: 'client',
+      clientSecret: `${SSO_CLIENT_SECRET_CIPHERTEXT_PREFIX}invalid`,
+      _factoryCareersClientSecretEncryption: 'v1',
+    })],
+  ])('rejects %s with a sanitized error', async (_name, oidcConfig) => {
+    const sql = validationSql([{ id: 'bad', oidcConfig }])
+
+    await expect(validateSsoProviderClientSecrets(sql as never, ROOT_SECRET))
+      .rejects.toThrowError(SsoProviderSecretError)
   })
 })

@@ -19,6 +19,14 @@ services:
         value: "true"
       - key: TRUST_PROXY_HEADERS
         value: "true"
+      - key: SSO_PROVIDER_SECRET_STORAGE_MODE
+        sync: false
+      - key: FACTORY_CAREERS_SSO_PROVIDER_ID
+        value: thefactoryhq-sso
+      - key: CRON_SECRET
+        sync: false
+      - key: FACTORY_CAREERS_OPERATIONS_INBOX
+        sync: false
       - key: BETTER_AUTH_URL
         value: https://careers.thefactoryhq.com
       - key: NUXT_PUBLIC_SITE_URL

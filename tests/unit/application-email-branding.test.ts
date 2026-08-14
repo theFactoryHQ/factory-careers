@@ -44,7 +44,7 @@ vi.stubGlobal("env", {
 });
 vi.stubGlobal("logError", vi.fn());
 
-const { sendApplicationReceiptEmail } = await import(
+const { sendApplicationReceiptEmail, sendSsoOperationalAlertEmail } = await import(
 	"../../server/utils/email"
 );
 
@@ -75,5 +75,25 @@ describe("application receipt email branding", () => {
 		expect(html).toContain("Product Engineer");
 		expect(html).toContain("Factory Holdings LLC.");
 		expect(html).toContain("5431 W 104th St, Los Angeles, CA 90045");
+	});
+
+	it("sends a sanitized branded SSO operational alert", async () => {
+		await sendSsoOperationalAlertEmail({
+			to: "operations@example.com",
+			code: "invalid_client",
+			checkedAt: "2026-08-10T12:00:00.000Z",
+		});
+
+		expect(emailSend).toHaveBeenCalledTimes(1);
+		const payload = emailSend.mock.calls[0][0] as {
+			to: string;
+			subject: string;
+			react: Parameters<typeof render>[0];
+		};
+		expect(payload.to).toBe("operations@example.com");
+		expect(payload.subject).toContain("Factory Careers SSO alert");
+		const html = await render(payload.react);
+		expect(html).toContain("invalid_client");
+		expect(html).toContain("2026-08-10T12:00:00.000Z");
 	});
 });

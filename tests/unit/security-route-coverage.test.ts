@@ -49,7 +49,7 @@ describe('API route security coverage', () => {
     const missingGuards = routeFiles.filter((path) => {
       if (intentionallyPublicRoutes.has(path)) return false
       const source = read(path)
-      return !/(requireAuth|requirePermission|requireChatbotAccess)\s*\(|auth\.api\.getSession\s*\(/.test(source)
+      return !/(requireAuth|requirePermission|requireChatbotAccess|requireCronSecret)\s*\(|auth\.api\.getSession\s*\(/.test(source)
     })
 
     expect(missingGuards).toEqual([])

@@ -24,6 +24,8 @@ const DEFAULT_BACKFILL_BATCH_SIZE = 100
 
 export const SSO_CLIENT_SECRET_CIPHERTEXT_PREFIX = `${CIPHERTEXT_NAMESPACE}v1:`
 
+export type SsoProviderSecretStorageMode = 'compatibility' | 'encrypted'
+
 export class SsoProviderSecretError extends Error {
   constructor() {
     super('SSO provider client secret could not be processed')
@@ -107,7 +109,7 @@ function parseOidcConfig(oidcConfig: string): Record<string, unknown> {
 function transformOidcConfig(
   oidcConfig: unknown,
   secret: string,
-  direction: 'protect' | 'reveal',
+  direction: 'protect' | 'reveal' | 'compatibility',
 ): unknown {
   if (oidcConfig === null || oidcConfig === undefined) return oidcConfig
   if (typeof oidcConfig !== 'string') throw new SsoProviderSecretError()
@@ -138,6 +140,19 @@ function transformOidcConfig(
     })
   }
 
+  if (direction === 'compatibility') {
+    if (encryptionMarker === undefined) return oidcConfig
+    if (encryptionMarker !== ENCRYPTION_MARKER_VALUE) {
+      throw new SsoProviderSecretError()
+    }
+    const compatibilityConfig: Record<string, unknown> = {
+      ...parsed,
+      clientSecret: decryptSsoProviderClientSecret(currentSecret, secret),
+    }
+    delete compatibilityConfig[ENCRYPTION_MARKER_FIELD]
+    return JSON.stringify(compatibilityConfig)
+  }
+
   if (encryptionMarker === undefined) {
     return oidcConfig
   }
@@ -162,6 +177,24 @@ export function protectSsoProviderRecord<T>(
   return {
     ...value,
     oidcConfig: transformOidcConfig(value.oidcConfig, secret, 'protect'),
+  } as T
+}
+
+export function prepareSsoProviderRecordForStorage<T>(
+  record: T,
+  secret: string,
+  mode: SsoProviderSecretStorageMode,
+): T {
+  if (mode === 'encrypted') return protectSsoProviderRecord(record, secret)
+  // Compatibility mode intentionally stores client secrets as plaintext. It
+  // exists only for the bounded rollback window while mixed runtime versions
+  // may still reach the shared database.
+  if (!record || typeof record !== 'object' || Array.isArray(record)) return record
+  const value = record as Record<string, unknown>
+  if (!Object.hasOwn(value, 'oidcConfig')) return record
+  return {
+    ...value,
+    oidcConfig: transformOidcConfig(value.oidcConfig, secret, 'compatibility'),
   } as T
 }
 
@@ -202,9 +235,94 @@ export type SsoProviderSecretBackfillResult = {
   withoutClientSecret: number
 }
 
+export type SsoProviderSecretValidationResult = {
+  scanned: number
+  plaintext: number
+  encrypted: number
+  withoutClientSecret: number
+}
+
 type StoredSsoProviderConfig = {
   id: string
   oidcConfig: string
+}
+
+function validateStoredOidcConfig(
+  oidcConfig: string,
+  secret: string,
+): 'plaintext' | 'encrypted' | 'withoutClientSecret' {
+  const parsed = parseOidcConfig(oidcConfig)
+  const clientSecret = parsed.clientSecret
+  const encryptionMarker = parsed[ENCRYPTION_MARKER_FIELD]
+
+  if (clientSecret === undefined) {
+    if (encryptionMarker !== undefined) throw new SsoProviderSecretError()
+    return 'withoutClientSecret'
+  }
+  if (typeof clientSecret !== 'string' || clientSecret.trim() === '') {
+    throw new SsoProviderSecretError()
+  }
+  if (encryptionMarker === undefined) return 'plaintext'
+  if (encryptionMarker !== ENCRYPTION_MARKER_VALUE) {
+    throw new SsoProviderSecretError()
+  }
+  decryptSsoProviderClientSecret(clientSecret, secret)
+  return 'encrypted'
+}
+
+/**
+ * Validate every stored SSO provider config without mutating it. This pass is
+ * deliberately separate from the backfill so malformed or undecryptable rows
+ * fail startup before any shared data changes.
+ */
+export async function validateSsoProviderClientSecrets(
+  sql: Sql,
+  secret: string,
+  options: { batchSize?: number } = {},
+): Promise<SsoProviderSecretValidationResult> {
+  const batchSize = options.batchSize ?? DEFAULT_BACKFILL_BATCH_SIZE
+  if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > 1_000) {
+    throw new Error('SSO provider secret validation batch size must be between 1 and 1000')
+  }
+
+  const result: SsoProviderSecretValidationResult = {
+    scanned: 0,
+    plaintext: 0,
+    encrypted: 0,
+    withoutClientSecret: 0,
+  }
+  let afterId: string | undefined
+
+  while (true) {
+    const rows = afterId
+      ? await sql<StoredSsoProviderConfig[]>`
+          select "id", "oidc_config" as "oidcConfig"
+          from "sso_provider"
+          where "oidc_config" is not null and "id" > ${afterId}
+          order by "id" asc
+          limit ${batchSize}
+        `
+      : await sql<StoredSsoProviderConfig[]>`
+          select "id", "oidc_config" as "oidcConfig"
+          from "sso_provider"
+          where "oidc_config" is not null
+          order by "id" asc
+          limit ${batchSize}
+        `
+
+    if (rows.length === 0) break
+
+    for (const row of rows) {
+      const classification = validateStoredOidcConfig(row.oidcConfig, secret)
+      result.scanned += 1
+      result[classification] += 1
+    }
+
+    afterId = rows.at(-1)!.id
+    if (rows.length < batchSize) break
+  }
+
+  return result
 }
 
 /**
@@ -313,13 +431,14 @@ export async function backfillSsoProviderClientSecrets(
   }
 }
 
-function protectWrite<T extends Record<string, unknown>>(
+function prepareWrite<T extends Record<string, unknown>>(
   model: string,
   value: T,
   secret: string,
+  mode: SsoProviderSecretStorageMode,
 ): T {
   return model === 'ssoProvider'
-    ? protectSsoProviderRecord(value, secret)
+    ? prepareSsoProviderRecordForStorage(value, secret, mode)
     : value
 }
 
@@ -336,13 +455,14 @@ function revealResult<T>(model: string, value: T, secret: string): T {
 function wrapTransactionAdapter(
   adapter: DBTransactionAdapter,
   secret: string,
+  mode: SsoProviderSecretStorageMode,
 ): DBTransactionAdapter {
   return {
     ...adapter,
     async create(input) {
       const result = await adapter.create({
         ...input,
-        data: protectWrite(input.model, input.data, secret),
+        data: prepareWrite(input.model, input.data, secret, mode),
       })
       return (
         input.model === 'ssoProvider'
@@ -369,7 +489,7 @@ function wrapTransactionAdapter(
         input.model,
         await adapter.update({
           ...input,
-          update: protectWrite(input.model, input.update, secret),
+          update: prepareWrite(input.model, input.update, secret, mode),
         }),
         secret,
       )
@@ -377,7 +497,7 @@ function wrapTransactionAdapter(
     async updateMany(input) {
       return adapter.updateMany({
         ...input,
-        update: protectWrite(input.model, input.update, secret),
+        update: prepareWrite(input.model, input.update, secret, mode),
       })
     },
     async consumeOne(input) {
@@ -389,7 +509,7 @@ function wrapTransactionAdapter(
     },
     async incrementOne(input) {
       const set = input.set
-        ? protectWrite(input.model, input.set, secret)
+        ? prepareWrite(input.model, input.set, secret, mode)
         : input.set
       return revealResult(
         input.model,
@@ -400,13 +520,17 @@ function wrapTransactionAdapter(
   }
 }
 
-function wrapAdapter(adapter: DBAdapter, secret: string): DBAdapter {
-  const transactionAdapter = wrapTransactionAdapter(adapter, secret)
+function wrapAdapter(
+  adapter: DBAdapter,
+  secret: string,
+  mode: SsoProviderSecretStorageMode,
+): DBAdapter {
+  const transactionAdapter = wrapTransactionAdapter(adapter, secret, mode)
   return {
     ...transactionAdapter,
     async transaction(callback) {
       return adapter.transaction(transaction =>
-        callback(wrapTransactionAdapter(transaction, secret)))
+        callback(wrapTransactionAdapter(transaction, secret, mode)))
     },
   }
 }
@@ -419,7 +543,8 @@ function wrapAdapter(adapter: DBAdapter, secret: string): DBAdapter {
 export function wrapSsoProviderSecretAdapter(
   adapterFactory: DBAdapterInstance,
   secret: string,
+  mode: SsoProviderSecretStorageMode = 'encrypted',
 ): DBAdapterInstance {
   return (options: BetterAuthOptions) =>
-    wrapAdapter(adapterFactory(options), secret)
+    wrapAdapter(adapterFactory(options), secret, mode)
 }

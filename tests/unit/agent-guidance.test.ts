@@ -81,4 +81,45 @@ describe('agent guidance', () => {
     expect(contributing).toContain('npm run check:conventions')
     expect(contributing).toContain('Agent-generated commits should use `git commit --no-verify`')
   })
+
+  it('documents the rollback-fenced SSO production sequence with metadata-only receipts', () => {
+    const runbook = read('docs/operations/PRODUCTION-RUNBOOK.md')
+    const rollout = read('docs/operations/SSO-RESILIENCE-ROLLOUT.md')
+    const checklist = read('docs/operations/PRODUCTION-APPROVAL-CHECKLIST.md')
+
+    for (const snippet of [
+      'SSO_PROVIDER_SECRET_STORAGE_MODE',
+      '`compatibility`',
+      '`encrypted`',
+      'minimum safe rollback',
+      'application role',
+      'real Microsoft sign-in',
+      'rollback rehearsal',
+      'predecessor',
+      '15 minutes',
+    ]) {
+      expect(`${runbook}\n${rollout}\n${checklist}`).toContain(snippet)
+    }
+
+    for (const receipt of [
+      'Compatibility commit SHA',
+      'Render deploy ID',
+      'Readiness timestamp',
+      'Probe code',
+      'Browser login timestamp',
+      'Encrypted provider count',
+      'Rollback rehearsal result',
+      'Entra replacement key ID',
+      '1Password item ID',
+      'Workflow run URL',
+    ]) {
+      expect(rollout).toContain(receipt)
+    }
+
+    for (const document of [runbook, rollout, checklist]) {
+      expect(document).not.toMatch(/postgres(?:ql)?:\/\//i)
+      expect(document).not.toContain('fc-sso:v1:')
+      expect(document).not.toMatch(/access_token|client_secret\s*=|error_description/i)
+    }
+  })
 })

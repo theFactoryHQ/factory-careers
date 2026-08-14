@@ -2,9 +2,83 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
 import * as schema from '../database/schema'
-import { backfillSsoProviderClientSecrets } from '../utils/ssoProviderSecrets'
+import {
+  backfillSsoProviderClientSecrets,
+  validateSsoProviderClientSecrets,
+  type SsoProviderSecretBackfillResult,
+  type SsoProviderSecretStorageMode,
+  type SsoProviderSecretValidationResult,
+} from '../utils/ssoProviderSecrets'
+import {
+  markSsoStorageFailed,
+  markSsoStorageReady,
+  resetSsoStorageReadiness,
+} from '../utils/ssoReadiness'
 
 const MIGRATION_LOCK_ID = 123456789
+
+interface PrepareSsoProviderSecretStorageOptions {
+  client: postgres.Sql
+  secret: string
+  mode: SsoProviderSecretStorageMode
+  validate?: (
+    client: postgres.Sql,
+    secret: string,
+  ) => Promise<SsoProviderSecretValidationResult>
+  backfill?: (
+    client: postgres.Sql,
+    secret: string,
+  ) => Promise<SsoProviderSecretBackfillResult>
+  markReady?: () => void
+  markFailed?: (error: unknown) => void
+}
+
+export async function prepareSsoProviderSecretStorage({
+  client,
+  secret,
+  mode,
+  validate = validateSsoProviderClientSecrets,
+  backfill = backfillSsoProviderClientSecrets,
+  markReady = markSsoStorageReady,
+  markFailed = markSsoStorageFailed,
+}: PrepareSsoProviderSecretStorageOptions): Promise<void> {
+  resetSsoStorageReadiness()
+
+  try {
+    const before = await validate(client, secret)
+    logInfo('sso_provider_secrets.validation_completed', {
+      mode,
+      scanned_count: before.scanned,
+      plaintext_count: before.plaintext,
+      encrypted_count: before.encrypted,
+      without_client_secret_count: before.withoutClientSecret,
+    })
+
+    if (mode === 'encrypted') {
+      const migration = await backfill(client, secret)
+      logInfo('sso_provider_secrets.backfill_completed', {
+        scanned_count: migration.scanned,
+        encrypted_count: migration.encrypted,
+        already_encrypted_count: migration.alreadyEncrypted,
+        without_client_secret_count: migration.withoutClientSecret,
+      })
+
+      const after = await validate(client, secret)
+      logInfo('sso_provider_secrets.post_validation_completed', {
+        scanned_count: after.scanned,
+        plaintext_count: after.plaintext,
+        encrypted_count: after.encrypted,
+        without_client_secret_count: after.withoutClientSecret,
+      })
+    }
+
+    markReady()
+  }
+  catch (error) {
+    markFailed(error)
+    throw error
+  }
+}
 
 interface MigrationSessionDependencies<Client, Database> {
   databaseUrl: string
@@ -74,6 +148,7 @@ export async function runMigrationsOnSession<Client, Database>({
 export default defineNitroPlugin(async () => {
   // Skip during build-time prerendering — database isn't available
   if (import.meta.prerender) return
+  resetSsoStorageReadiness()
 
   // Temporary bootstrap services can opt out of schema migrations. The SSO
   // secret backfill still runs because it is a key-dependent data migration
@@ -103,15 +178,10 @@ export default defineNitroPlugin(async () => {
           })
         }
 
-        const backfill = await backfillSsoProviderClientSecrets(
+        await prepareSsoProviderSecretStorage({
           client,
-          env.BETTER_AUTH_SECRET,
-        )
-        logInfo('sso_provider_secrets.backfill_completed', {
-          scanned_count: backfill.scanned,
-          encrypted_count: backfill.encrypted,
-          already_encrypted_count: backfill.alreadyEncrypted,
-          without_client_secret_count: backfill.withoutClientSecret,
+          secret: env.BETTER_AUTH_SECRET,
+          mode: env.SSO_PROVIDER_SECRET_STORAGE_MODE,
         })
       },
       close: async (client) => {
@@ -122,6 +192,7 @@ export default defineNitroPlugin(async () => {
     console.log('[Factory Careers] Database migrations applied successfully')
     logInfo('migrations.completed')
   } catch (error) {
+    markSsoStorageFailed(error)
     console.error('[Factory Careers] Migration failed:', error)
     logError('migrations.failed', {
       error_message: error instanceof Error ? error.message : String(error),

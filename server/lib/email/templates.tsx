@@ -303,6 +303,29 @@ export function ApplicationTeamAlertEmail({
   );
 }
 
+type OperationalAlertEmailProps = {
+  code: string;
+  checkedAt: string;
+  config?: EmailThemeConfig;
+};
+
+export function OperationalAlertEmail({
+  code,
+  checkedAt,
+  config,
+}: OperationalAlertEmailProps) {
+  return (
+    <CareersEmailShell
+      preview="Factory Careers SSO needs attention"
+      heading="Factory Careers SSO alert"
+      body="The automated Microsoft sign-in credential check reported an unhealthy state."
+      subtext={`Status: ${code} · Checked: ${checkedAt}`}
+      config={config}
+      footerNote="No credential values, tokens, or provider identifiers are included in this message."
+    />
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Application Digest (hiring inbox and personal subscriptions)
 // ─────────────────────────────────────────────────────────────────────────────

@@ -198,6 +198,7 @@ function getAuth(): Auth {
           schema,
         }),
         env.BETTER_AUTH_SECRET,
+        env.SSO_PROVIDER_SECRET_STORAGE_MODE,
       ),
       secret: env.BETTER_AUTH_SECRET,
 
