@@ -2,6 +2,7 @@ import { env } from './env'
 import { logError } from './logger'
 
 const ALERT_COOLDOWN_MS = 15 * 60 * 1000
+const FAILED_ALERT_COOLDOWN_MS = 60 * 1000
 const lastAlertedAt = new Map<string, Date>()
 const inFlight = new Set<string>()
 
@@ -27,10 +28,14 @@ export async function sendCriticalOperationalAlert(code: string): Promise<boolea
       code,
       checkedAt: now.toISOString(),
     })
-    if (sent) lastAlertedAt.set(code, now)
+    lastAlertedAt.set(
+      code,
+      sent ? now : new Date(now.getTime() - ALERT_COOLDOWN_MS + FAILED_ALERT_COOLDOWN_MS),
+    )
     return sent
   }
   catch {
+    lastAlertedAt.set(code, new Date(now.getTime() - ALERT_COOLDOWN_MS + FAILED_ALERT_COOLDOWN_MS))
     logError('operations.alert_send_failed', { result_code: 'provider_failure', alert_code: code })
     return false
   }

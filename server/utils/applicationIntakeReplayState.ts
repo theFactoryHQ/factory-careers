@@ -54,7 +54,7 @@ export async function prepareApplicationIntakeReplay(
 ): Promise<{ outcome: 'ready' | 'already_completed' }> {
   const existing = await adapter.findApplication(input)
   if (!existing) return { outcome: 'ready' }
-  if (existing.documents.every(item => item.uploadStatus === 'completed')) {
+  if (existing.documents.length > 0 && existing.documents.every(item => item.uploadStatus === 'completed')) {
     return { outcome: 'already_completed' }
   }
 

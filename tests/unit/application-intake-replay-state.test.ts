@@ -28,6 +28,25 @@ describe('application intake replay state', () => {
     expect(rollbackApplication).not.toHaveBeenCalled()
   })
 
+  it('replays an application row that has no completed document rows', async () => {
+    const rollbackApplication = vi.fn(async () => ({
+      relationalCleanupSucceeded: true,
+      storageCleanupSucceeded: true,
+    }))
+    await expect(prepareApplicationIntakeReplay({
+      organizationId: 'org-1',
+      receiptId: 'receipt-1',
+    }, {
+      findApplication: vi.fn(async () => ({
+        applicationId: 'app-1',
+        candidateId: 'candidate-1',
+        documents: [],
+      })),
+      rollbackApplication,
+    })).resolves.toEqual({ outcome: 'ready' })
+    expect(rollbackApplication).toHaveBeenCalledOnce()
+  })
+
   it('removes a partial receipt application before a clean replay', async () => {
     const rollbackApplication = vi.fn(async () => ({
       relationalCleanupSucceeded: true,

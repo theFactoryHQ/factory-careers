@@ -64,6 +64,10 @@ describe('application intake recovery encryption', () => {
 
     const tampered = { ...encrypted, ciphertext: `${encrypted.ciphertext.slice(0, -2)}AA` }
     expect(() => decryptApplicationIntakeEnvelope(tampered, { keyring, receiptId })).toThrow()
+    expect(() => decryptApplicationIntakeEnvelope({
+      ...encrypted,
+      expiresAt: '2027-08-21T12:00:00.000Z',
+    }, { keyring, receiptId })).toThrow()
     expect(() => decryptApplicationIntakeEnvelope(encrypted, {
       keyring,
       receiptId: '01915bb8-7f34-7a3e-8b3e-2d1db55bb71c',

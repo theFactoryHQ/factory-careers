@@ -18,10 +18,9 @@ export default defineNitroPlugin((nitroApp) => {
     const statusCode = (error as { statusCode?: number }).statusCode
     if (statusCode === 404) return
 
-    const path = context.event?.path ?? ''
+    const path = context.event ? getRequestURL(context.event).pathname : ''
     if ((statusCode ?? 500) >= 500 && (
       path === '/api/readyz'
-      || path === '/api/operations/application-canary'
       || /^\/api\/public\/jobs\/[^/]+\/apply$/.test(path)
     )) {
       void sendCriticalOperationalAlert(

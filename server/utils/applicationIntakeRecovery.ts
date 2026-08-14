@@ -97,8 +97,8 @@ export function parseApplicationIntakeKeyring(raw: string): ApplicationIntakeKey
   }))
 }
 
-function aad(keyId: string, receiptId: string): Buffer {
-  return Buffer.from(`${AAD_PREFIX}:${keyId}:${receiptId}`, 'utf8')
+function aad(keyId: string, receiptId: string, expiresAt: string): Buffer {
+  return Buffer.from(`${AAD_PREFIX}:${keyId}:${receiptId}:${expiresAt}`, 'utf8')
 }
 
 export function encryptApplicationIntakeEnvelope(
@@ -114,7 +114,7 @@ export function encryptApplicationIntakeEnvelope(
   if (!key) throw new Error('Active application intake key ID is not present in the keyring')
   const iv = randomBytes(12)
   const cipher = createCipheriv('aes-256-gcm', key, iv)
-  cipher.setAAD(aad(options.activeKeyId, options.receiptId))
+  cipher.setAAD(aad(options.activeKeyId, options.receiptId, options.expiresAt))
   const ciphertext = Buffer.concat([
     cipher.update(JSON.stringify(envelope), 'utf8'),
     cipher.final(),
@@ -141,7 +141,7 @@ export function decryptApplicationIntakeEnvelope(
   const key = options.keyring.get(encrypted.keyId)
   if (!key) throw new Error('Application intake recovery key is unavailable')
   const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(encrypted.iv, 'base64'))
-  decipher.setAAD(aad(encrypted.keyId, options.receiptId))
+  decipher.setAAD(aad(encrypted.keyId, options.receiptId, encrypted.expiresAt))
   decipher.setAuthTag(Buffer.from(encrypted.authTag, 'base64'))
   const plaintext = Buffer.concat([
     decipher.update(Buffer.from(encrypted.ciphertext, 'base64')),

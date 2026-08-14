@@ -398,8 +398,12 @@ function checkStorage(env, errors, warnings) {
     if (isSet(env, 'APPLICATION_INTAKE_KEYRING') && isSet(env, 'APPLICATION_INTAKE_ACTIVE_KEY_ID')) {
       try {
         const parsed = JSON.parse(trimValue(env.APPLICATION_INTAKE_KEYRING))
-        const entries = Object.entries(parsed ?? {})
-        if (entries.length === 0 || !(trimValue(env.APPLICATION_INTAKE_ACTIVE_KEY_ID) in parsed)) throw new Error('invalid')
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('invalid')
+        const entries = Object.entries(parsed)
+        const activeKeyId = trimValue(env.APPLICATION_INTAKE_ACTIVE_KEY_ID)
+        if (entries.length === 0
+          || !/^[A-Za-z0-9._-]{1,64}$/.test(activeKeyId)
+          || !Object.prototype.hasOwnProperty.call(parsed, activeKeyId)) throw new Error('invalid')
         for (const [keyId, encoded] of entries) {
           if (!/^[A-Za-z0-9._-]{1,64}$/.test(keyId)
             || typeof encoded !== 'string'

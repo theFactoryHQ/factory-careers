@@ -103,9 +103,15 @@ describe('application intake recovery owner operations', () => {
   })
 
   it('purges only expired objects and reports metadata counts', async () => {
-    const currentEncrypted = { ...encrypted, expiresAt: '2026-08-22T12:00:00.000Z' }
+    const currentEncrypted = encryptApplicationIntakeEnvelope(envelope, {
+      keyring,
+      activeKeyId: 'current',
+      receiptId: '01915bb8-7f34-7a3e-8b3e-2d1db55bb71b',
+      expiresAt: '2026-08-22T12:00:00.000Z',
+    })
     const deleteObject = vi.fn(async () => undefined)
     const result = await purgeExpiredApplicationIntakeReceipts({
+      keyring,
       now: new Date('2026-08-21T12:00:00.000Z'),
       listObjects: vi.fn(async () => [
         { key: storageKey },
@@ -116,7 +122,23 @@ describe('application intake recovery owner operations', () => {
         : Buffer.from(JSON.stringify(currentEncrypted))),
       deleteObject,
     })
-    expect(result).toEqual({ scanned: 2, purged: 1 })
+    expect(result).toEqual({ scanned: 2, purged: 1, failed: 0 })
+    expect(deleteObject).toHaveBeenCalledExactlyOnceWith(storageKey)
+  })
+
+  it('continues purging after an unreadable receipt and reports the failure', async () => {
+    const deleteObject = vi.fn(async () => undefined)
+    const result = await purgeExpiredApplicationIntakeReceipts({
+      keyring,
+      now: new Date('2026-08-22T12:00:00.000Z'),
+      listObjects: vi.fn(async () => [
+        { key: `_application-intake/v1/2026-08-14/01915bb8-7f34-7a3e-8b3e-2d1db55bb71b.json` },
+        { key: storageKey },
+      ]),
+      downloadObject: vi.fn(async key => key === storageKey ? bytes : Buffer.from('invalid')),
+      deleteObject,
+    })
+    expect(result).toEqual({ scanned: 2, purged: 1, failed: 1 })
     expect(deleteObject).toHaveBeenCalledExactlyOnceWith(storageKey)
   })
 })

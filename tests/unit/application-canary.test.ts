@@ -40,7 +40,8 @@ describe('application canary request', () => {
   it('submits multipart data through the public application endpoint with canary authentication', async () => {
     const fetchFn = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const url = String(input)
-      if (!init?.method) {
+      if (init?.method !== 'POST') {
+        expect(init?.signal).toBeInstanceOf(AbortSignal)
         return new Response(JSON.stringify({
           requireResume: true,
           questions: [{ id: 'question-1', type: 'long_text', required: true, options: null }],
@@ -53,6 +54,7 @@ describe('application canary request', () => {
         'x-factory-canary': '1',
       })
       expect(init.body).toBeInstanceOf(FormData)
+      expect(init.signal).toBeInstanceOf(AbortSignal)
       return new Response(JSON.stringify({ ok: true, code: 'application_canary_passed' }), { status: 200 })
     })
 

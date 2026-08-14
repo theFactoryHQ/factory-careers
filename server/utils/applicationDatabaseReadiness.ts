@@ -90,12 +90,13 @@ export async function assertApplicationDatabaseReady(databaseUrl: string): Promi
       can_update: boolean
     }[]>`
       SELECT
-        sequence_name,
-        has_sequence_privilege(current_user, format('%I.%I', sequence_schema, sequence_name), 'USAGE') AS can_usage,
-        has_sequence_privilege(current_user, format('%I.%I', sequence_schema, sequence_name), 'SELECT') AS can_select,
-        has_sequence_privilege(current_user, format('%I.%I', sequence_schema, sequence_name), 'UPDATE') AS can_update
-      FROM information_schema.sequences
-      WHERE sequence_schema = 'public'
+        sequence.relname AS sequence_name,
+        has_sequence_privilege(current_user, sequence.oid, 'USAGE') AS can_usage,
+        has_sequence_privilege(current_user, sequence.oid, 'SELECT') AS can_select,
+        has_sequence_privilege(current_user, sequence.oid, 'UPDATE') AS can_update
+      FROM pg_catalog.pg_class AS sequence
+      JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = sequence.relnamespace
+      WHERE namespace.nspname = 'public' AND sequence.relkind = 'S'
     `
     const missingSequencePrivileges = sequenceRows.flatMap(row =>
       (['USAGE', 'SELECT', 'UPDATE'] as const)

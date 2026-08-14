@@ -51,6 +51,8 @@ describe('OIDC SSO — extended edge cases', () => {
         { APPLICATION_INTAKE_KEYRING: JSON.stringify({ old: validKey }), APPLICATION_INTAKE_ACTIVE_KEY_ID: 'current' },
         { APPLICATION_INTAKE_KEYRING: JSON.stringify({ current: Buffer.alloc(31).toString('base64') }), APPLICATION_INTAKE_ACTIVE_KEY_ID: 'current' },
         { APPLICATION_INTAKE_KEYRING: JSON.stringify({ current: validKey, retired: Buffer.alloc(31).toString('base64') }), APPLICATION_INTAKE_ACTIVE_KEY_ID: 'current' },
+        { APPLICATION_INTAKE_KEYRING: JSON.stringify([validKey]), APPLICATION_INTAKE_ACTIVE_KEY_ID: '0' },
+        { APPLICATION_INTAKE_KEYRING: JSON.stringify({ current: validKey }), APPLICATION_INTAKE_ACTIVE_KEY_ID: 'toString' },
       ]) {
         expect(envSchema.safeParse({
           ...baseEnv,

@@ -36,8 +36,11 @@ jobs:
           set -euo pipefail
           test -n "$RENDER_API_KEY"
           test -n "$RENDER_SERVICE_ID"
-          for attempt in $(seq 1 40); do
-            echo "Waiting for exact production commit (attempt $attempt of 40)."
+          deadline=$(( $(date +%s) + 900 ))
+          attempt=0
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            attempt=$((attempt + 1))
+            echo "Waiting for exact production commit (attempt $attempt)."
             payload=$(curl --fail --silent --show-error --max-time 20 \
               --header "Authorization: Bearer $RENDER_API_KEY" \
               "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys?limit=20")
@@ -103,6 +106,6 @@ jobs:
             } catch (error) {
               if (error.status !== 422) throw error
             }
-            const body = `<!-- ${marker} -->\n\nThe authenticated end-to-end application canary failed.\n\nRun: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}\n\nNo applicant data, filenames, or response bodies are included.`
+            const body = `<!-- ${marker} -->\n\nThe production application canary workflow did not complete successfully.\n\nCanary step: ${process.env.RESULT}\nReceipt purge step: ${process.env.PURGE_RESULT}\n\nRun: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}\n\nNo applicant data, filenames, or response bodies are included.`
             if (existing) await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body })
             else await github.rest.issues.create({ owner, repo, title: 'Incident: Factory Careers application canary', body, labels: [label] })

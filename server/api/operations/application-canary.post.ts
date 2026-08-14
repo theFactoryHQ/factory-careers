@@ -25,12 +25,23 @@ export default defineEventHandler(async (event) => {
     failure = error
   }
 
-  const cleanup = await cleanupApplicationCanary(email)
+  let cleanup: { ok: boolean, residualRecords: number }
+  try {
+    cleanup = await cleanupApplicationCanary(email)
+  }
+  catch (error) {
+    cleanup = { ok: false, residualRecords: -1 }
+    failure ??= error
+  }
   if (failure || !response || !cleanup.ok) {
     logError('application.canary_failed', {
       result_code: cleanup.ok ? 'submission_failed' : 'cleanup_failed',
+      failure_reason: failure instanceof Error ? failure.message : 'unknown',
+      residual_records: cleanup.residualRecords,
     })
-    await sendCriticalOperationalAlert('application.canary_failed')
+    await sendCriticalOperationalAlert(cleanup.ok
+      ? 'application.canary_failed'
+      : 'application.canary_cleanup_failed')
     throw createError({ statusCode: 503, statusMessage: 'Application canary failed' })
   }
 

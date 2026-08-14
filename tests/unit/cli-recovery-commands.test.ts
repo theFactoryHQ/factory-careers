@@ -46,6 +46,11 @@ describe('application intake recovery CLI', () => {
     expect(fetch).not.toHaveBeenCalled()
 
     expect(await runCli([
+      'recovery', 'purge', '--json', '--config', config,
+    ], { fetch })).toBe(1)
+    expect(fetch).not.toHaveBeenCalled()
+
+    expect(await runCli([
       'recovery', 'purge', '--yes', '--json',
       '--config', config,
     ], { fetch })).toBe(0)

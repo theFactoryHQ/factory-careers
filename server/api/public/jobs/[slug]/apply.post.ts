@@ -327,6 +327,7 @@ export default defineEventHandler(async (event) => {
       })
     }
     catch {
+      logError('application.intake_buffer_failed', { result_code: 'buffer_write_failed' })
       await sendCriticalOperationalAlert('application.intake_buffer_failed')
       throw createError({ statusCode: 503, statusMessage: 'Applications are temporarily unavailable. Please try again later.' })
     }

@@ -6,7 +6,7 @@ import {
   parseApplicationIntakeKeyring,
 } from './applicationIntakeRecovery'
 import {
-  listApplicationIntakeReceipts,
+  listApplicationIntakeReceiptObjects,
   loadApplicationIntakeReceipt,
   type ApplicationIntakeReceiptListItem,
 } from './applicationIntakeRecoveryOperations'
@@ -25,11 +25,17 @@ export async function listOwnedApplicationIntakeReceipts(
   organizationId: string,
 ): Promise<ApplicationIntakeReceiptListItem[]> {
   const slugs = await ownedJobSlugs(organizationId)
-  const metadata = await listApplicationIntakeReceipts()
+  const metadata = await listApplicationIntakeReceiptObjects()
   const owned: ApplicationIntakeReceiptListItem[] = []
   for (const receipt of metadata) {
-    const loaded = await loadApplicationIntakeReceipt(receipt.receiptId, configuredKeyring())
-    if (slugs.has(loaded.envelope.jobSlug)) owned.push(receipt)
+    const loaded = await loadApplicationIntakeReceipt(receipt.receiptId, configuredKeyring(), {
+      knownStorageKey: receipt.storageKey,
+      knownEncryptedReceipt: receipt.encrypted,
+    })
+    if (slugs.has(loaded.envelope.jobSlug)) {
+      const { storageKey: _storageKey, encrypted: _encrypted, ...publicMetadata } = receipt
+      owned.push(publicMetadata)
+    }
   }
   return owned
 }

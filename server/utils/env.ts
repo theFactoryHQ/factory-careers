@@ -381,9 +381,14 @@ export const envSchema = z
       }
       if (data.APPLICATION_INTAKE_KEYRING && data.APPLICATION_INTAKE_ACTIVE_KEY_ID) {
         try {
-          const parsed = JSON.parse(data.APPLICATION_INTAKE_KEYRING) as Record<string, unknown>
-          const entries = Object.entries(parsed ?? {})
-          if (entries.length === 0 || !(data.APPLICATION_INTAKE_ACTIVE_KEY_ID in parsed)) {
+          const parsed = JSON.parse(data.APPLICATION_INTAKE_KEYRING) as unknown
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            throw new Error('invalid keyring')
+          }
+          const entries = Object.entries(parsed)
+          if (entries.length === 0
+            || !/^[A-Za-z0-9._-]{1,64}$/.test(data.APPLICATION_INTAKE_ACTIVE_KEY_ID)
+            || !Object.prototype.hasOwnProperty.call(parsed, data.APPLICATION_INTAKE_ACTIVE_KEY_ID)) {
             throw new Error('missing active key')
           }
           for (const [keyId, encoded] of entries) {

@@ -51,7 +51,9 @@ export async function executeApplicationCanary(input: {
 }): Promise<{ ok: true, code: 'application_canary_passed' }> {
   const fetchFn = input.fetchFn ?? fetch
   const baseUrl = input.baseUrl.replace(/\/$/, '')
-  const jobResponse = await fetchFn(`${baseUrl}/api/public/jobs/${encodeURIComponent(input.slug)}`)
+  const jobResponse = await fetchFn(`${baseUrl}/api/public/jobs/${encodeURIComponent(input.slug)}`, {
+    signal: AbortSignal.timeout(30_000),
+  })
   if (!jobResponse.ok) throw new Error('application_canary_job_unavailable')
   const job = await jobResponse.json() as { requireResume?: boolean, questions?: CanaryQuestion[] }
   const questions = job.questions ?? []
@@ -74,6 +76,7 @@ export async function executeApplicationCanary(input: {
       'x-factory-canary': '1',
     },
     body: form,
+    signal: AbortSignal.timeout(30_000),
   })
   const body = await response.json().catch(() => ({})) as { ok?: boolean, code?: string }
   if (!response.ok || body.ok !== true || body.code !== 'application_canary_passed') {

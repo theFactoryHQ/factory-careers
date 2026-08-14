@@ -119,6 +119,19 @@ async function main(): Promise<void> {
         missingPrivilegeRejected = true
       }
       if (!missingPrivilegeRejected) throw new Error('Application role rehearsal did not reject a missing INSERT privilege')
+
+      await client.unsafe(`GRANT INSERT ON TABLE application TO "${applicationRole}"`)
+      await client.unsafe('CREATE SEQUENCE readiness_unprivileged_sequence')
+      let missingSequencePrivilegeRejected = false
+      try {
+        await assertApplicationDatabaseReady(applicationUrl)
+      }
+      catch {
+        missingSequencePrivilegeRejected = true
+      }
+      if (!missingSequencePrivilegeRejected) {
+        throw new Error('Application role rehearsal did not reject missing sequence privileges')
+      }
     }
     finally {
       await client.end({ timeout: 5 })

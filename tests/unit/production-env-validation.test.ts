@@ -105,6 +105,18 @@ describe('production environment preflight', () => {
       APPLICATION_INTAKE_RETENTION_DAYS: '7',
     })
     expect(valid.ok).toBe(true)
+
+    for (const [keyring, activeKeyId] of [
+      [JSON.stringify([validKey]), '0'],
+      [JSON.stringify({ current: validKey }), 'toString'],
+    ]) {
+      expect(validateProductionEnv({
+        ...validProductionEnv,
+        APPLICATION_INTAKE_RECOVERY_ENABLED: 'true',
+        APPLICATION_INTAKE_KEYRING: keyring,
+        APPLICATION_INTAKE_ACTIVE_KEY_ID: activeKeyId,
+      }).ok).toBe(false)
+    }
   })
 
   it('rejects a migration URL that reuses the application database role', () => {

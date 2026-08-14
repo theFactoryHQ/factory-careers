@@ -19,6 +19,8 @@ type RecoveryStorageDependencies = {
   listObjects?: (prefix: string) => Promise<S3ObjectMetadata[]>
   downloadObject?: (key: string) => Promise<Buffer>
   deleteObject?: (key: string) => Promise<void>
+  knownStorageKey?: string
+  knownEncryptedReceipt?: EncryptedApplicationIntake
 }
 
 export type ApplicationIntakeReceiptListItem = {
@@ -55,12 +57,12 @@ async function storageObjects(deps: RecoveryStorageDependencies): Promise<S3Obje
   return (deps.listObjects ?? listS3Objects)(applicationIntakeRecoveryPrefix())
 }
 
-export async function listApplicationIntakeReceipts(
+export async function listApplicationIntakeReceiptObjects(
   deps: RecoveryStorageDependencies = {},
-): Promise<ApplicationIntakeReceiptListItem[]> {
+): Promise<Array<ApplicationIntakeReceiptListItem & { storageKey: string, encrypted: EncryptedApplicationIntake }>> {
   const download = deps.downloadObject ?? downloadFromS3
   const objects = await storageObjects(deps)
-  const receipts: ApplicationIntakeReceiptListItem[] = []
+  const receipts: Array<ApplicationIntakeReceiptListItem & { storageKey: string, encrypted: EncryptedApplicationIntake }> = []
   for (const object of objects) {
     const receiptId = receiptIdFromStorageKey(object.key)
     if (!receiptId) continue
@@ -71,9 +73,17 @@ export async function listApplicationIntakeReceipts(
       expiresAt: encrypted.expiresAt,
       keyId: encrypted.keyId,
       sizeBytes: object.sizeBytes,
+      storageKey: object.key,
+      encrypted,
     })
   }
   return receipts.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+}
+
+export async function listApplicationIntakeReceipts(
+  deps: RecoveryStorageDependencies = {},
+): Promise<ApplicationIntakeReceiptListItem[]> {
+  return (await listApplicationIntakeReceiptObjects(deps)).map(({ storageKey: _storageKey, encrypted: _encrypted, ...metadata }) => metadata)
 }
 
 export async function loadApplicationIntakeReceipt(
@@ -86,11 +96,13 @@ export async function loadApplicationIntakeReceipt(
   envelope: ApplicationIntakeEnvelope
 }> {
   if (!RECEIPT_ID_PATTERN.test(receiptId)) throw new Error('Invalid application intake receipt ID')
-  const object = (await storageObjects(deps)).find(item => receiptIdFromStorageKey(item.key) === receiptId)
-  if (!object) throw new Error('Application intake receipt was not found')
-  const encrypted = parseEncryptedReceipt(await (deps.downloadObject ?? downloadFromS3)(object.key))
+  const storageKey = deps.knownStorageKey
+    ?? (await storageObjects(deps)).find(item => receiptIdFromStorageKey(item.key) === receiptId)?.key
+  if (!storageKey || receiptIdFromStorageKey(storageKey) !== receiptId) throw new Error('Application intake receipt was not found')
+  const encrypted = deps.knownEncryptedReceipt
+    ?? parseEncryptedReceipt(await (deps.downloadObject ?? downloadFromS3)(storageKey))
   return {
-    storageKey: object.key,
+    storageKey,
     encrypted,
     envelope: decryptApplicationIntakeEnvelope(encrypted, { keyring, receiptId }),
   }
@@ -103,6 +115,7 @@ export async function replayApplicationIntakeEnvelope(
     secret: string
     receiptId: string
     fetchFn?: typeof fetch
+    timeoutMs?: number
   },
 ): Promise<{ outcome: 'completed' }> {
   const form = new FormData()
@@ -144,26 +157,35 @@ export async function replayApplicationIntakeEnvelope(
         'x-cron-secret': options.secret,
       },
       body: form,
+      signal: AbortSignal.timeout(options.timeoutMs ?? 30_000),
     },
   )
-  await response.json().catch(() => ({}))
+  const payload = await response.json().catch(() => ({})) as { data?: { code?: string } }
   if (response.status === 201) return { outcome: 'completed' }
-  throw new Error('Application intake replay failed')
+  throw new Error(`Application intake replay failed with status ${response.status}${payload.data?.code ? ` (${payload.data.code})` : ''}`)
 }
 
 export async function purgeExpiredApplicationIntakeReceipts(
-  options: RecoveryStorageDependencies & { now?: Date } = {},
-): Promise<{ scanned: number, purged: number }> {
+  options: RecoveryStorageDependencies & { keyring: ApplicationIntakeKeyring, now?: Date },
+): Promise<{ scanned: number, purged: number, failed: number }> {
   const objects = await storageObjects(options)
   const download = options.downloadObject ?? downloadFromS3
   const deleteObject = options.deleteObject ?? deleteFromS3
   let purged = 0
+  let failed = 0
   for (const object of objects) {
-    if (!receiptIdFromStorageKey(object.key)) continue
-    const encrypted = parseEncryptedReceipt(await download(object.key))
-    if (!isApplicationIntakeReceiptExpired(encrypted, options.now)) continue
-    await deleteObject(object.key)
-    purged += 1
+    const receiptId = receiptIdFromStorageKey(object.key)
+    if (!receiptId) continue
+    try {
+      const encrypted = parseEncryptedReceipt(await download(object.key))
+      decryptApplicationIntakeEnvelope(encrypted, { keyring: options.keyring, receiptId })
+      if (!isApplicationIntakeReceiptExpired(encrypted, options.now)) continue
+      await deleteObject(object.key)
+      purged += 1
+    }
+    catch {
+      failed += 1
+    }
   }
-  return { scanned: objects.length, purged }
+  return { scanned: objects.length, purged, failed }
 }
