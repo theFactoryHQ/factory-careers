@@ -39,8 +39,9 @@ or file body. Affected applicants must submit the form again.
 - Production requires a distinct `DATABASE_MIGRATION_URL` and rejects skipped
   runtime migrations.
 - Startup serializes migration work with an advisory lock.
-- Startup compares every bundled migration timestamp and hash with the Drizzle
-  migration ledger.
+- Startup compares every bundled migration timestamp and hash from the audited
+  migration 0059 reconciliation baseline forward with the Drizzle migration
+  ledger in both directions.
 - Startup compares every modeled table and column with the live public schema.
 - Readiness remains failed until migration, ledger, schema, and SSO storage
   checks all pass.

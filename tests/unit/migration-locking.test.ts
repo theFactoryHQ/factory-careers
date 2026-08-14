@@ -116,6 +116,27 @@ describe('runtime migration locking', () => {
     ])
   })
 
+  it('enforces the audited ledger baseline without rejecting legacy untracked migrations', async () => {
+    const migrationModule = await import('../../server/plugins/migrations') as Record<string, unknown>
+    const findMigrationLedgerDrift = migrationModule.findMigrationLedgerDrift as undefined | ((
+      expected: Array<{ folderMillis: number, hash: string }>,
+      actual: Array<{ createdAt: string, hash: string }>,
+      enforcementTimestamp: number,
+    ) => string[])
+
+    expect(findMigrationLedgerDrift?.(
+      [
+        { folderMillis: 100, hash: 'legacy-bundle-hash' },
+        { folderMillis: 200, hash: 'audited-hash' },
+      ],
+      [
+        { createdAt: '150', hash: 'legacy-ledger-hash' },
+        { createdAt: '200', hash: 'audited-hash' },
+      ],
+      200,
+    )).toEqual([])
+  })
+
   it('reports migration completion accurately when a non-production bootstrap skips SQL', async () => {
     const migrationModule = await import('../../server/plugins/migrations') as Record<string, unknown>
     const migrationCompletionSummary = migrationModule.migrationCompletionSummary as undefined | ((

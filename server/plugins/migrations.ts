@@ -19,6 +19,11 @@ import {
 } from '../utils/ssoReadiness'
 
 const MIGRATION_LOCK_ID = 123456789
+// Production's historical ledger begins partway through the inherited migration
+// journal and includes edited legacy hashes. Migration 0059 is the audited
+// reconciliation baseline; every migration from this timestamp forward must
+// match the deployed bundle in both directions.
+const MIGRATION_LEDGER_ENFORCEMENT_TIMESTAMP = 1784228400000
 
 interface MigrationExecutionInput {
   nodeEnv: string
@@ -90,11 +95,14 @@ interface AppliedMigration {
 export function findMigrationLedgerDrift(
   expected: ExpectedMigration[],
   actual: AppliedMigration[],
+  enforcementTimestamp = 0,
 ): string[] {
-  const appliedByTimestamp = new Map(actual.map(migration => [migration.createdAt, migration.hash]))
+  const enforcedExpected = expected.filter(migration => migration.folderMillis >= enforcementTimestamp)
+  const enforcedActual = actual.filter(migration => Number(migration.createdAt) >= enforcementTimestamp)
+  const appliedByTimestamp = new Map(enforcedActual.map(migration => [migration.createdAt, migration.hash]))
   const drift: string[] = []
 
-  for (const migration of expected) {
+  for (const migration of enforcedExpected) {
     const timestamp = String(migration.folderMillis)
     const appliedHash = appliedByTimestamp.get(timestamp)
     if (appliedHash === undefined) {
@@ -105,8 +113,8 @@ export function findMigrationLedgerDrift(
     }
   }
 
-  const expectedTimestamps = new Set(expected.map(migration => String(migration.folderMillis)))
-  for (const migration of actual) {
+  const expectedTimestamps = new Set(enforcedExpected.map(migration => String(migration.folderMillis)))
+  for (const migration of enforcedActual) {
     if (!expectedTimestamps.has(migration.createdAt)) {
       drift.push(`${migration.createdAt}:unexpected`)
     }
@@ -175,6 +183,7 @@ async function assertMigrationLedgerMatchesBundle(client: postgres.Sql): Promise
   const drift = findMigrationLedgerDrift(
     expected,
     rows.map(row => ({ createdAt: row.created_at, hash: row.hash })),
+    MIGRATION_LEDGER_ENFORCEMENT_TIMESTAMP,
   )
 
   if (drift.length > 0) {
