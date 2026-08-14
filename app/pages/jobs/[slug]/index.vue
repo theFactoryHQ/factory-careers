@@ -7,6 +7,7 @@ import {
   normalizeJobDescriptionBlocks,
   type FactoryDivision,
 } from '~~/shared/job-listing-structure'
+import { formatPublicJobDate } from '~~/shared/public-job-date'
 
 definePageMeta({
   layout: 'public',
@@ -206,7 +207,7 @@ const typeLabels: Record<string, string> = {
 const { locale } = useI18n()
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString(locale.value)
+  return formatPublicJobDate(dateStr, locale.value)
 }
 
 function hasSalaryValue(value?: number | null): value is number {

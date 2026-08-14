@@ -30,6 +30,7 @@ self-hosters.
 
 ### Fixed
 
+- Kept public job listings current within 60 seconds, disabled application-page caching, and made posted dates identical during server rendering and hydration.
 - Made production readiness require the least-privilege application database role and a real storage write, read, and delete probe, with startup failing closed on either dependency.
 - Kept the job sub-navigation to one Add, status, and actions control set while moving between Pipeline, Table, Application, AI, and Settings.
 - Updated the pinned Nano ID, DOMPurify, and tar transitive dependencies to resolve current security advisories.
