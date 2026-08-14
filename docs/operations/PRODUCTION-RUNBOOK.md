@@ -45,8 +45,8 @@ keep `SKIP_RUNTIME_MIGRATIONS=false`; startup rejects a skipped migration gate.
 Before readiness succeeds, one reserved database session takes the advisory
 lock, applies every bundled migration, and verifies both of these conditions:
 
-- Every bundled migration timestamp and hash exists in
-  `drizzle.__drizzle_migrations`.
+- Every bundled migration timestamp and hash from the audited migration 0059
+  reconciliation baseline forward exists in `drizzle.__drizzle_migrations`.
 - Every table and column in the Drizzle runtime model exists in the live
   `public` schema.
 
@@ -54,6 +54,13 @@ Any migration, ledger, permission, or schema mismatch fails the new deploy.
 Render must keep the last healthy deploy serving until the database gate passes.
 Do not bypass readiness or point `DATABASE_MIGRATION_URL` at the application
 role.
+
+The inherited database predates complete Drizzle ledger tracking and contains
+edited historical migration hashes. Migration 0059 establishes the audited
+ledger baseline after those legacy entries. The modeled-schema inventory covers
+the inherited tables and columns; the bidirectional timestamp-and-hash gate
+covers every migration from 0059 forward. Do not move the baseline or add a
+manual ledger entry without verifying the exact committed SQL outcome first.
 
 For an incident, preserve the failed deploy logs and run the repository
 migrator with the concealed migration-role URL:
