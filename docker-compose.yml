@@ -17,6 +17,35 @@ services:
       timeout: 5s
       retries: 10
 
+  db-role-bootstrap:
+    image: postgres:16-alpine
+    restart: "no"
+    environment:
+      PGHOST: db
+      PGDATABASE: ${DB_NAME}
+      PGUSER: ${DB_USER}
+      PGPASSWORD: ${DB_PASSWORD}
+      DB_APP_USER: ${DB_APP_USER}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        psql --set=ON_ERROR_STOP=1 --set=app_user="$${DB_APP_USER}" --set=app_password="$${DB_APP_PASSWORD}" <<'SQL'
+        SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'app_user', :'app_password')
+        WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = :'app_user') \gexec
+        SELECT format('ALTER ROLE %I WITH LOGIN PASSWORD %L', :'app_user', :'app_password') \gexec
+        SELECT format('GRANT CONNECT ON DATABASE %I TO %I', current_database(), :'app_user') \gexec
+        SELECT format('GRANT USAGE ON SCHEMA public TO %I', :'app_user') \gexec
+        SELECT format('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO %I', :'app_user') \gexec
+        SELECT format('GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO %I', :'app_user') \gexec
+        SELECT format('ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO %I', :'app_user') \gexec
+        SELECT format('ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO %I', :'app_user') \gexec
+        SQL
+
   minio:
     image: minio/minio
     container_name: factory_careers_minio
@@ -46,7 +75,8 @@ services:
     env_file: .env
     environment:
       # Override host-development values for the Docker network and port.
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      DATABASE_URL: postgresql://${DB_APP_USER}:${DB_APP_PASSWORD}@db:5432/${DB_NAME}
+      DATABASE_MIGRATION_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       S3_ENDPOINT: http://minio:9000
       BETTER_AUTH_URL: http://localhost:3000
       NUXT_PUBLIC_SITE_URL: http://localhost:3000
@@ -55,6 +85,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      db-role-bootstrap:
+        condition: service_completed_successfully
       minio:
         condition: service_healthy
     healthcheck:
