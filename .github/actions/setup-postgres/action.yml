@@ -1,0 +1,55 @@
+name: Set up isolated PostgreSQL
+description: Starts a disposable PostgreSQL 17 cluster for a macOS self-hosted job.
+
+inputs:
+  port:
+    description: Local TCP port for the disposable cluster.
+    required: true
+  database:
+    description: Database created after the cluster starts.
+    required: true
+  user:
+    description: PostgreSQL superuser for the disposable cluster.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Start disposable PostgreSQL
+      shell: bash
+      env:
+        POSTGRES_TEST_DATABASE: ${{ inputs.database }}
+        POSTGRES_TEST_PORT: ${{ inputs.port }}
+        POSTGRES_TEST_USER: ${{ inputs.user }}
+      run: |
+        set -euo pipefail
+        if ! [[ "$POSTGRES_TEST_PORT" =~ ^[0-9]{4,5}$ ]] || \
+           ! [[ "$POSTGRES_TEST_DATABASE" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || \
+           ! [[ "$POSTGRES_TEST_USER" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+          echo "::error title=Invalid PostgreSQL configuration::Port, database, or user input is invalid."
+          exit 1
+        fi
+        pg_bin="$(brew --prefix postgresql@17)/bin"
+        pg_data="${RUNNER_TEMP}/postgres-${GITHUB_RUN_ID}-${GITHUB_JOB}-${GITHUB_RUN_ATTEMPT}"
+        if lsof -nP -iTCP:"${POSTGRES_TEST_PORT}" -sTCP:LISTEN >/dev/null 2>&1; then
+          echo "::error title=PostgreSQL port unavailable::Port ${POSTGRES_TEST_PORT} is already in use."
+          exit 1
+        fi
+        mkdir -p "$pg_data"
+        "$pg_bin/initdb" -D "$pg_data" -A trust -U "$POSTGRES_TEST_USER" >/dev/null
+        cleanup_failed_start() {
+          "$pg_bin/pg_ctl" -D "$pg_data" -m immediate stop >/dev/null 2>&1 || true
+        }
+        trap cleanup_failed_start ERR
+        export PGUSER="$POSTGRES_TEST_USER"
+        "$pg_bin/pg_ctl" -D "$pg_data" -o "-p ${POSTGRES_TEST_PORT} -h 127.0.0.1" -w start >/dev/null
+        if [ "$POSTGRES_TEST_DATABASE" != "postgres" ]; then
+          "$pg_bin/createdb" -h 127.0.0.1 -p "$POSTGRES_TEST_PORT" -U "$POSTGRES_TEST_USER" "$POSTGRES_TEST_DATABASE"
+        fi
+        {
+          echo "POSTGRES_TEST_DATA=$pg_data"
+          echo "POSTGRES_TEST_PORT=$POSTGRES_TEST_PORT"
+          echo "PGUSER=$POSTGRES_TEST_USER"
+        } >> "$GITHUB_ENV"
+        echo "$pg_bin" >> "$GITHUB_PATH"
+        trap - ERR

@@ -14,6 +14,8 @@ describe('reliability workflow contracts', () => {
 
   it('runs migration discipline and upgrade rehearsal in pull-request validation', () => {
     const workflow = read('.github/workflows/pr-validation.yml')
+    expect(workflow).toContain('runs-on: [self-hosted, macOS, ARM64, factory-careers]')
+    expect(workflow).toContain('uses: ./.github/actions/setup-postgres')
     expect(workflow).toContain('npm run check:migration-discipline')
     expect(workflow).toContain('npm run test:integration:migrations')
     expect(workflow).toContain('MIGRATION_UPGRADE_PG_REQUIRED: "true"')
@@ -22,6 +24,8 @@ describe('reliability workflow contracts', () => {
   it('gates production deployment for the exact pushed main commit', () => {
     const workflow = read('.github/workflows/production-deploy-gate.yml')
     expect(workflow).toContain('name: Production deploy gate')
+    expect(workflow).toContain('runs-on: [self-hosted, macOS, ARM64, factory-careers]')
+    expect(workflow).toContain('uses: ./.github/actions/setup-postgres')
     expect(workflow).toContain('branches: [main]')
     expect(workflow).toContain('github.event.before')
     expect(workflow).toContain('npm run check:migration-discipline')

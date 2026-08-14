@@ -14,21 +14,7 @@ concurrency:
 jobs:
   validate:
     name: Production deploy gate
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: factory_deploy_ci
-          POSTGRES_PASSWORD: factory_deploy_ci
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U factory_deploy_ci -d postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
+    runs-on: [self-hosted, macOS, ARM64, factory-careers]
     steps:
       - name: Checkout exact pushed commit
         uses: actions/checkout@v7
@@ -36,11 +22,17 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
+      - name: Start isolated PostgreSQL
+        uses: ./.github/actions/setup-postgres
+        with:
+          port: "55441"
+          database: postgres
+          user: factory_deploy_ci
+
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-          cache: npm
           registry-url: https://npm.pkg.github.com
 
       - name: Install dependencies
@@ -57,7 +49,7 @@ jobs:
         run: npm run test:integration:migrations
         env:
           MIGRATION_DISCIPLINE_BASE_REF: ${{ github.event.before }}
-          MIGRATION_UPGRADE_PG_URL: postgresql://factory_deploy_ci:factory_deploy_ci@127.0.0.1:5432/postgres
+          MIGRATION_UPGRADE_PG_URL: postgresql://factory_deploy_ci:factory_deploy_ci@127.0.0.1:55441/postgres
           MIGRATION_UPGRADE_PG_REQUIRED: "true"
 
       - name: Run unit tests
@@ -66,7 +58,7 @@ jobs:
       - name: Run public application PostgreSQL integration
         run: npm run test:integration:application-notifications
         env:
-          APPLICATION_NOTIFICATION_PG_TEST_URL: postgresql://factory_deploy_ci:factory_deploy_ci@127.0.0.1:5432/postgres
+          APPLICATION_NOTIFICATION_PG_TEST_URL: postgresql://factory_deploy_ci:factory_deploy_ci@127.0.0.1:55441/postgres
           APPLICATION_NOTIFICATION_PG_REQUIRED: "true"
 
       - name: Lint
@@ -99,3 +91,7 @@ jobs:
 
       - name: Build exact production commit
         run: npm run build
+
+      - name: Stop isolated PostgreSQL
+        if: ${{ always() }}
+        run: pg_ctl -D "$POSTGRES_TEST_DATA" -m immediate stop

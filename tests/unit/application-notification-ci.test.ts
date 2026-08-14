@@ -16,18 +16,19 @@ describe('application notification PostgreSQL CI gate', () => {
       )
   })
 
-  it('provisions PostgreSQL 16 and runs the notification test in required mode', () => {
+  it('provisions isolated PostgreSQL and runs the notification test in required mode', () => {
     const workflow = read('.github/workflows/pr-validation.yml')
+    const postgresAction = read('.github/actions/setup-postgres/action.yml')
 
-    expect(workflow).toContain('image: postgres:16-alpine')
-    expect(workflow).toContain('--health-cmd "pg_isready -U factory_notifications_ci -d factory_notifications_ci"')
-    expect(workflow).toContain('--health-interval 5s')
-    expect(workflow).toContain('--health-timeout 5s')
-    expect(workflow).toContain('--health-retries 10')
+    expect(workflow).toContain('runs-on: [self-hosted, macOS, ARM64, factory-careers]')
+    expect(workflow).toContain('uses: ./.github/actions/setup-postgres')
+    expect(workflow).toContain('database: factory_notifications_ci')
+    expect(postgresAction).toContain('brew --prefix postgresql@17')
+    expect(postgresAction).toContain('pg_ctl')
     expect(workflow).toContain('name: Run application notification PostgreSQL integration test')
     expect(workflow).toContain('run: npm run test:integration:application-notifications')
     expect(workflow).toContain(
-      'APPLICATION_NOTIFICATION_PG_TEST_URL: postgresql://factory_notifications_ci:factory_notifications_ci@127.0.0.1:5432/postgres',
+      'APPLICATION_NOTIFICATION_PG_TEST_URL: postgresql://factory_notifications_ci:factory_notifications_ci@127.0.0.1:55440/postgres',
     )
     expect(workflow).toContain('APPLICATION_NOTIFICATION_PG_REQUIRED: "true"')
   })
