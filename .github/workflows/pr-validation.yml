@@ -109,6 +109,7 @@ jobs:
         run: npm run ops:validate-production-env
         env:
           DATABASE_URL: postgresql://factory_app:database-password-for-ci-prod-check@db.internal:5432/factory_careers
+          DATABASE_MIGRATION_URL: postgresql://factory_migrator:migration-password-for-ci-prod-check@db.internal:5432/factory_careers
           BETTER_AUTH_SECRET: ci-production-contract-secret-with-40-characters
           BETTER_AUTH_URL: https://careers.thefactory.com
           BETTER_AUTH_TRUSTED_ORIGINS: https://careers.thefactory.com

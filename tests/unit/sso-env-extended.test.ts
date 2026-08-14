@@ -68,6 +68,18 @@ describe('OIDC SSO — extended edge cases', () => {
   // Railway domain fallback (no explicit BETTER_AUTH_URL)
   // ────────────────────────────────────
   describe('Railway environment compatibility', () => {
+    it('retains the Railway environment ID in validated configuration', () => {
+      const result = envSchema.safeParse({
+        ...baseEnv,
+        RAILWAY_ENVIRONMENT_ID: 'environment-id',
+      })
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.RAILWAY_ENVIRONMENT_ID).toBe('environment-id')
+      }
+    })
+
     it('accepts OIDC config when BETTER_AUTH_URL is derived from RAILWAY_PUBLIC_DOMAIN', () => {
       const result = envSchema.safeParse({
         ...baseEnv,

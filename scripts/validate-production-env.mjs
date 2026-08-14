@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url'
 
 const REQUIRED_KEYS = [
   'DATABASE_URL',
+  'DATABASE_MIGRATION_URL',
   'BETTER_AUTH_SECRET',
   'BETTER_AUTH_URL',
   'S3_ENDPOINT',
@@ -14,6 +15,7 @@ const REQUIRED_KEYS = [
 
 const SECRET_KEYS = new Set([
   'DATABASE_URL',
+  'DATABASE_MIGRATION_URL',
   'DB_PASSWORD',
   'STORAGE_PASSWORD',
   'BETTER_AUTH_SECRET',
@@ -330,6 +332,10 @@ function checkAuth(env, errors, warnings) {
 
 function checkDatabase(env, errors, warnings) {
   const databaseUrl = requireUrl(env, 'DATABASE_URL', errors)
+  const migrationUrl = requireUrl(env, 'DATABASE_MIGRATION_URL', errors)
+  if (!migrationUrl) {
+    errors.push(issue('DATABASE_MIGRATION_URL', 'is required so production deploys can apply schema migrations before serving traffic'))
+  }
   if (!databaseUrl) return
 
   if (!['postgres:', 'postgresql:'].includes(databaseUrl.protocol)) {
@@ -343,6 +349,25 @@ function checkDatabase(env, errors, warnings) {
   }
   if (isLocalHostname(databaseUrl.hostname)) {
     warnings.push(issue('DATABASE_URL', 'points at localhost; production should use a private managed host or internal service DNS'))
+  }
+
+  if (migrationUrl) {
+    if (!['postgres:', 'postgresql:'].includes(migrationUrl.protocol)) {
+      errors.push(issue('DATABASE_MIGRATION_URL', 'must use postgres:// or postgresql://'))
+    }
+    if (!migrationUrl.username) {
+      errors.push(issue('DATABASE_MIGRATION_URL', 'must include a database user'))
+    }
+    if (!migrationUrl.password) {
+      errors.push(issue('DATABASE_MIGRATION_URL', 'must include a database password or use a secret manager that injects one'))
+    }
+    if (migrationUrl.username === databaseUrl.username) {
+      errors.push(issue('DATABASE_MIGRATION_URL', 'must use a database role distinct from DATABASE_URL'))
+    }
+  }
+
+  if (parseBoolean(env.SKIP_RUNTIME_MIGRATIONS) === true) {
+    errors.push(issue('SKIP_RUNTIME_MIGRATIONS', 'cannot be true in production'))
   }
 
   for (const key of ['DB_PASSWORD']) {

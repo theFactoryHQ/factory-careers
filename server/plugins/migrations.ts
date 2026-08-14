@@ -1,3 +1,6 @@
+import { getTableColumns, getTableName, is } from 'drizzle-orm'
+import { readMigrationFiles } from 'drizzle-orm/migrator'
+import { PgTable } from 'drizzle-orm/pg-core'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
@@ -16,6 +19,170 @@ import {
 } from '../utils/ssoReadiness'
 
 const MIGRATION_LOCK_ID = 123456789
+
+interface MigrationExecutionInput {
+  nodeEnv: string
+  databaseUrl: string
+  migrationDatabaseUrl?: string
+  skipRuntimeMigrations: boolean
+  railwayEnvironmentId?: string
+}
+
+export function resolveMigrationExecution({
+  nodeEnv,
+  databaseUrl,
+  migrationDatabaseUrl,
+  skipRuntimeMigrations,
+  railwayEnvironmentId,
+}: MigrationExecutionInput): { databaseUrl: string, skipSchemaMigrations: boolean } {
+  const skipSchemaMigrations = skipRuntimeMigrations || Boolean(railwayEnvironmentId)
+
+  if (nodeEnv === 'production' && skipSchemaMigrations) {
+    throw new Error('Production schema migrations cannot be skipped')
+  }
+
+  if (nodeEnv === 'production' && !migrationDatabaseUrl) {
+    throw new Error('DATABASE_MIGRATION_URL is required for production schema migrations')
+  }
+
+  if (
+    nodeEnv === 'production'
+    && migrationDatabaseUrl
+    && new URL(migrationDatabaseUrl).username === new URL(databaseUrl).username
+  ) {
+    throw new Error('DATABASE_MIGRATION_URL must use a database role distinct from DATABASE_URL')
+  }
+
+  return {
+    databaseUrl: migrationDatabaseUrl || databaseUrl,
+    skipSchemaMigrations,
+  }
+}
+
+export function findMissingRuntimeSchemaColumns(
+  expected: Record<string, string[]>,
+  actual: Record<string, string[]>,
+): string[] {
+  const missing: string[] = []
+
+  for (const [tableName, expectedColumns] of Object.entries(expected)) {
+    const actualColumns = new Set(actual[tableName] ?? [])
+    for (const columnName of expectedColumns) {
+      if (!actualColumns.has(columnName)) {
+        missing.push(`${tableName}.${columnName}`)
+      }
+    }
+  }
+
+  return missing.sort()
+}
+
+interface ExpectedMigration {
+  folderMillis: number
+  hash: string
+}
+
+interface AppliedMigration {
+  createdAt: string
+  hash: string
+}
+
+export function findMigrationLedgerDrift(
+  expected: ExpectedMigration[],
+  actual: AppliedMigration[],
+): string[] {
+  const appliedByTimestamp = new Map(actual.map(migration => [migration.createdAt, migration.hash]))
+  const drift: string[] = []
+
+  for (const migration of expected) {
+    const timestamp = String(migration.folderMillis)
+    const appliedHash = appliedByTimestamp.get(timestamp)
+    if (appliedHash === undefined) {
+      drift.push(`${timestamp}:missing`)
+    }
+    else if (appliedHash !== migration.hash) {
+      drift.push(`${timestamp}:hash-mismatch`)
+    }
+  }
+
+  const expectedTimestamps = new Set(expected.map(migration => String(migration.folderMillis)))
+  for (const migration of actual) {
+    if (!expectedTimestamps.has(migration.createdAt)) {
+      drift.push(`${migration.createdAt}:unexpected`)
+    }
+  }
+
+  return drift.sort()
+}
+
+export function migrationCompletionSummary(
+  schemaMigrationsSkipped: boolean,
+): { message: string, details: Record<string, boolean> } {
+  return {
+    message: schemaMigrationsSkipped
+      ? 'Runtime database schema verified; schema migrations were skipped'
+      : 'Database migrations applied and runtime schema verified successfully',
+    details: {
+      schema_migrations_skipped: schemaMigrationsSkipped,
+      schema_verified: true,
+    },
+  }
+}
+
+function expectedRuntimeSchemaColumns(): Record<string, string[]> {
+  const expected: Record<string, string[]> = {}
+
+  for (const value of Object.values(schema)) {
+    if (!is(value, PgTable)) continue
+
+    const tableName = getTableName(value)
+    expected[tableName] = Object.values(getTableColumns(value))
+      .map(column => column.name)
+      .sort()
+  }
+
+  return expected
+}
+
+async function assertRuntimeSchemaMatchesDrizzle(client: postgres.Sql): Promise<void> {
+  const rows = await client<{ table_name: string, column_name: string }[]>`
+    SELECT table_name, column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+  `
+  const actual: Record<string, string[]> = {}
+  for (const row of rows) {
+    actual[row.table_name] ??= []
+    actual[row.table_name]!.push(row.column_name)
+  }
+
+  const missing = findMissingRuntimeSchemaColumns(expectedRuntimeSchemaColumns(), actual)
+  if (missing.length > 0) {
+    throw new Error(
+      `Runtime database schema is missing ${missing.length} modeled columns: ${missing.slice(0, 20).join(', ')}`,
+    )
+  }
+}
+
+async function assertMigrationLedgerMatchesBundle(client: postgres.Sql): Promise<void> {
+  const expected = readMigrationFiles({
+    migrationsFolder: './server/database/migrations',
+  })
+  const rows = await client<{ created_at: string, hash: string }[]>`
+    SELECT created_at::text AS created_at, hash
+    FROM drizzle.__drizzle_migrations
+  `
+  const drift = findMigrationLedgerDrift(
+    expected,
+    rows.map(row => ({ createdAt: row.created_at, hash: row.hash })),
+  )
+
+  if (drift.length > 0) {
+    throw new Error(
+      `Database migration ledger does not match the bundled migrations: ${drift.slice(0, 20).join(', ')}`,
+    )
+  }
+}
 
 interface PrepareSsoProviderSecretStorageOptions {
   client: postgres.Sql
@@ -153,8 +320,14 @@ export default defineNitroPlugin(async () => {
   // Temporary bootstrap services can opt out of schema migrations. The SSO
   // secret backfill still runs because it is a key-dependent data migration
   // that cannot be represented safely in SQL.
-  const skipSchemaMigrations =
-    env.SKIP_RUNTIME_MIGRATIONS || Boolean(process.env.RAILWAY_ENVIRONMENT_ID)
+  const migrationExecution = resolveMigrationExecution({
+    nodeEnv: env.NODE_ENV,
+    databaseUrl: env.DATABASE_URL,
+    migrationDatabaseUrl: env.DATABASE_MIGRATION_URL,
+    skipRuntimeMigrations: env.SKIP_RUNTIME_MIGRATIONS,
+    railwayEnvironmentId: env.RAILWAY_ENVIRONMENT_ID,
+  })
+  const { skipSchemaMigrations } = migrationExecution
   if (skipSchemaMigrations) {
     console.log('[Factory Careers] Skipping runtime migrations')
     logInfo('migrations.skipped_runtime')
@@ -164,7 +337,7 @@ export default defineNitroPlugin(async () => {
     console.log('[Factory Careers] Waiting for the database migration lock...')
 
     await runMigrationsOnSession({
-      databaseUrl: env.DATABASE_URL,
+      databaseUrl: migrationExecution.databaseUrl,
       createClient: (databaseUrl, options) => postgres(databaseUrl, options),
       createDatabase: client => drizzle(client, { schema }),
       execute: async (database, statement) => {
@@ -176,7 +349,10 @@ export default defineNitroPlugin(async () => {
           await migrate(database, {
             migrationsFolder: './server/database/migrations',
           })
+          await assertMigrationLedgerMatchesBundle(client)
         }
+
+        await assertRuntimeSchemaMatchesDrizzle(client)
 
         await prepareSsoProviderSecretStorage({
           client,
@@ -189,8 +365,9 @@ export default defineNitroPlugin(async () => {
       },
     })
 
-    console.log('[Factory Careers] Database migrations applied successfully')
-    logInfo('migrations.completed')
+    const completion = migrationCompletionSummary(skipSchemaMigrations)
+    console.log(`[Factory Careers] ${completion.message}`)
+    logInfo('migrations.completed', completion.details)
   } catch (error) {
     markSsoStorageFailed(error)
     console.error('[Factory Careers] Migration failed:', error)

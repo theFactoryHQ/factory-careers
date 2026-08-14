@@ -36,6 +36,10 @@ Use this checklist before launching or materially changing any environment that 
 | Historical-artifact rollback rehearsal | Old artifact fails readiness; current deploy remains live |  |
 | SSO monitor | Manual run healthy and 15-minute schedule enabled |  |
 | `npm run ops:validate-production-env -- <env-file>` | Pass against exact production values |  |
+| Database roles | `DATABASE_URL` is app-only; `DATABASE_MIGRATION_URL` is a distinct DDL role |  |
+| Runtime migration setting | `SKIP_RUNTIME_MIGRATIONS=false` |  |
+| Migration startup gate | Bundled migration ledger and modeled schema verification pass |  |
+| Synthetic public application | HTTP 201 with application, response, and document records |  |
 | `npm run ops:backup-restore-rehearsal` | Pass |  |
 | `npm run ops:object-storage-restore-rehearsal` | Pass |  |
 

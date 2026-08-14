@@ -30,6 +30,8 @@ self-hosters.
 ### Fixed
 
 - Kept the job sub-navigation to one Add, status, and actions control set while moving between Pipeline, Table, Application, AI, and Settings.
+- Updated the pinned Nano ID, DOMPurify, and tar transitive dependencies to resolve current security advisories.
+- Made production startup apply every bundled database migration with a dedicated DDL role, verify the migration ledger and modeled schema, and fail readiness before serving traffic when either check drifts.
 - Routed provider-ID Microsoft sign-in through the server-owned SSO entry point so operator-configured provider changes cannot leave the admin login button on a stale hardcoded slug, and preserved invitation or redirect context when SSO startup fails.
 - Added rollback-safe SSO client-secret storage across mixed application versions and proactive Microsoft credential monitoring with expiry and incident alerts.
 - Encrypted organization OIDC client secrets at rest, backfilled existing providers safely, and kept SSO registration, discovery, and callbacks transparent.
