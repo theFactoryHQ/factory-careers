@@ -6,6 +6,22 @@ function read(path: string): string {
 }
 
 describe('Docker app health checks', () => {
+  it('provisions separate application and migration database roles', () => {
+    const setup = read('setup.sh')
+    const compose = read('docker-compose.yml')
+    const productionCompose = read('docker-compose.production.yml')
+
+    expect(setup).toContain('DB_APP_USER=factory_careers_app')
+    expect(setup).toContain('DB_APP_PASSWORD=${DB_APP_PASS}')
+
+    for (const source of [compose, productionCompose]) {
+      expect(source).toContain('db-role-bootstrap:')
+      expect(source).toContain('DATABASE_URL: postgresql://${DB_APP_USER}:${DB_APP_PASSWORD}@db:5432/${DB_NAME}')
+      expect(source).toContain('DATABASE_MIGRATION_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}')
+      expect(source).toContain('condition: service_completed_successfully')
+    }
+  })
+
   it('wires the image and compose app service to the readiness endpoint', () => {
     const dockerfile = read('Dockerfile')
     const compose = read('docker-compose.yml')

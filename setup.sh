@@ -22,6 +22,7 @@ fi
 
 AUTH_SECRET=$(openssl rand -base64 32)
 DB_PASS=$(openssl rand -hex 16)
+DB_APP_PASS=$(openssl rand -hex 16)
 STORAGE_PASS=$(openssl rand -hex 16)
 
 cat > .env <<EOF
@@ -32,11 +33,14 @@ cat > .env <<EOF
 # ─── Database ────────────────────────────────────────────────────────────────
 DB_USER=factory_careers
 DB_PASSWORD=${DB_PASS}
+DB_APP_USER=factory_careers_app
+DB_APP_PASSWORD=${DB_APP_PASS}
 DB_NAME=factory_careers
 
 # Used by host tools (drizzle-kit, drizzle studio). docker-compose overrides
 # this with the internal Docker hostname for the app container.
 DATABASE_URL=postgresql://factory_careers:${DB_PASS}@localhost:5432/factory_careers
+DATABASE_MIGRATION_URL=postgresql://factory_careers:${DB_PASS}@localhost:5432/factory_careers
 
 # ─── Authentication ──────────────────────────────────────────────────────────
 BETTER_AUTH_SECRET=${AUTH_SECRET}
