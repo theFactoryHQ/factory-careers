@@ -73,6 +73,18 @@ jobs:
         env:
           PR_PREFLIGHT_BASE_REF: origin/${{ github.base_ref || 'main' }}
 
+      - name: Enforce append-only migration discipline
+        run: npm run check:migration-discipline
+        env:
+          MIGRATION_DISCIPLINE_BASE_REF: origin/${{ github.base_ref || 'main' }}
+
+      - name: Rehearse base-to-branch migration upgrade
+        run: npm run test:integration:migrations
+        env:
+          MIGRATION_DISCIPLINE_BASE_REF: origin/${{ github.base_ref || 'main' }}
+          MIGRATION_UPGRADE_PG_URL: postgresql://factory_notifications_ci:factory_notifications_ci@127.0.0.1:5432/postgres
+          MIGRATION_UPGRADE_PG_REQUIRED: "true"
+
       - name: Run unit tests
         id: tests
         run: npm run test:unit

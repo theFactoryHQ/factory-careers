@@ -7,6 +7,7 @@ export { getFetchArgsForBaseRef }
 
 const productionEnv = {
   DATABASE_URL: 'postgresql://factory_app:database-password-for-ci-prod-check@db.internal:5432/factory_careers',
+  DATABASE_MIGRATION_URL: 'postgresql://factory_migrator:migration-password-for-ci-prod-check@db.internal:5432/factory_careers',
   BETTER_AUTH_SECRET: 'ci-production-contract-secret-with-40-characters',
   BETTER_AUTH_URL: 'https://careers.thefactory.com',
   BETTER_AUTH_TRUSTED_ORIGINS: 'https://careers.thefactory.com',
@@ -85,6 +86,13 @@ function runCliSmokeTests() {
 export function getPrPreflightSteps() {
   return [
     { name: 'Changelog policy', aliases: ['changelog'], run: () => run('npm', ['run', 'changelog:check']) },
+    {
+      name: 'Migration discipline',
+      aliases: ['migrations'],
+      run: () => run('npm', ['run', 'check:migration-discipline'], {
+        env: { MIGRATION_DISCIPLINE_BASE_REF: process.env.PR_PREFLIGHT_BASE_REF || 'origin/main' },
+      }),
+    },
     { name: 'CLI parity evidence', aliases: ['cli-parity'], run: runCliParityEvidence },
     { name: 'Unit tests', run: () => run('npm', ['run', 'test:unit']) },
     { name: 'Lint', run: runLint },

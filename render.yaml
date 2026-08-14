@@ -3,9 +3,10 @@ services:
     name: factory-careers
     runtime: docker
     repo: https://github.com/theFactoryHQ/factory-careers
-    plan: free
+    plan: starter
     region: oregon
     branch: main
+    autoDeployTrigger: checksPass
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/readyz
     envVars:

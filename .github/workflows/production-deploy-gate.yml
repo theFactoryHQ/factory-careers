@@ -1,0 +1,101 @@
+name: Production deploy gate
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy-gate
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Production deploy gate
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: factory_deploy_ci
+          POSTGRES_PASSWORD: factory_deploy_ci
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U factory_deploy_ci -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout exact pushed commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          registry-url: https://npm.pkg.github.com
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+
+      - name: Enforce migration discipline for this push
+        run: npm run check:migration-discipline
+        env:
+          MIGRATION_DISCIPLINE_BASE_REF: ${{ github.event.before }}
+
+      - name: Rehearse exact-commit migration upgrade
+        run: npm run test:integration:migrations
+        env:
+          MIGRATION_DISCIPLINE_BASE_REF: ${{ github.event.before }}
+          MIGRATION_UPGRADE_PG_URL: postgresql://factory_deploy_ci:factory_deploy_ci@127.0.0.1:5432/postgres
+          MIGRATION_UPGRADE_PG_REQUIRED: "true"
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run public application PostgreSQL integration
+        run: npm run test:integration:application-notifications
+        env:
+          APPLICATION_NOTIFICATION_PG_TEST_URL: postgresql://factory_deploy_ci:factory_deploy_ci@127.0.0.1:5432/postgres
+          APPLICATION_NOTIFICATION_PG_REQUIRED: "true"
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Validate production environment contract
+        run: npm run ops:validate-production-env
+        env:
+          DATABASE_URL: postgresql://factory_app:database-password-for-ci-prod-check@db.internal:5432/factory_careers
+          DATABASE_MIGRATION_URL: postgresql://factory_migrator:migration-password-for-ci-prod-check@db.internal:5432/factory_careers
+          BETTER_AUTH_SECRET: ci-production-contract-secret-with-40-characters
+          BETTER_AUTH_URL: https://careers.thefactoryhq.com
+          BETTER_AUTH_TRUSTED_ORIGINS: https://careers.thefactoryhq.com
+          SSO_PROVIDER_SECRET_STORAGE_MODE: encrypted
+          NUXT_PUBLIC_SITE_URL: https://careers.thefactoryhq.com
+          CRON_SECRET: ci-production-contract-cron-secret-32chars
+          S3_ENDPOINT: https://s3.us-east-1.amazonaws.com
+          S3_ACCESS_KEY: ci-production-access-key
+          S3_SECRET_KEY: ci-production-secret-key-material
+          S3_BUCKET: factory-careers-documents
+          S3_REGION: us-east-1
+          S3_FORCE_PATH_STYLE: "false"
+          SMTP_HOST: smtp.mailprovider.test
+          SMTP_PORT: "587"
+          SMTP_SECURE: "false"
+          SMTP_FROM: noreply@thefactoryhq.com
+
+      - name: Build exact production commit
+        run: npm run build
