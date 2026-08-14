@@ -29,6 +29,7 @@ self-hosters.
 
 ### Fixed
 
+- Updated the pinned Nano ID, DOMPurify, and tar transitive dependencies to resolve current security advisories.
 - Made production startup apply every bundled database migration with a dedicated DDL role, verify the migration ledger and modeled schema, and fail readiness before serving traffic when either check drifts.
 - Routed provider-ID Microsoft sign-in through the server-owned SSO entry point so operator-configured provider changes cannot leave the admin login button on a stale hardcoded slug, and preserved invitation or redirect context when SSO startup fails.
 - Added rollback-safe SSO client-secret storage across mixed application versions and proactive Microsoft credential monitoring with expiry and incident alerts.
