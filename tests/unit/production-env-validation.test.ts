@@ -20,6 +20,7 @@ const validProductionEnv = {
   SMTP_PASS: 'smtp-secret-value-12345',
   SMTP_FROM: 'Factory Careers <noreply@example.test>',
   SMTP_SECURE: 'false',
+  SSO_PROVIDER_SECRET_STORAGE_MODE: 'encrypted',
 }
 
 function messages(result: ReturnType<typeof validateProductionEnv>) {
@@ -32,6 +33,51 @@ describe('production environment preflight', () => {
 
     expect(result.ok).toBe(true)
     expect(result.errors).toEqual([])
+  })
+
+  it.each(['compatibility', 'encrypted'])('accepts %s SSO provider secret storage mode', (mode) => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      SSO_PROVIDER_SECRET_STORAGE_MODE: mode,
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.errors).toEqual([])
+  })
+
+  it('warns that compatibility mode is limited to the plaintext rollback window', () => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      SSO_PROVIDER_SECRET_STORAGE_MODE: 'compatibility',
+    })
+
+    expect(messages(result)).toContain(
+      'SSO_PROVIDER_SECRET_STORAGE_MODE: compatibility stores SSO client secrets as plaintext and must be limited to the rollback window',
+    )
+  })
+
+  it.each([undefined, '', '   '])('rejects a missing production storage mode for %j', (mode) => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      SSO_PROVIDER_SECRET_STORAGE_MODE: mode,
+    })
+
+    expect(result.ok).toBe(false)
+    expect(messages(result)).toContain(
+      'SSO_PROVIDER_SECRET_STORAGE_MODE: must be explicitly set to compatibility or encrypted in production',
+    )
+  })
+
+  it('rejects unsupported SSO provider secret storage modes', () => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      SSO_PROVIDER_SECRET_STORAGE_MODE: 'automatic',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(messages(result)).toContain(
+      'SSO_PROVIDER_SECRET_STORAGE_MODE: must be compatibility or encrypted',
+    )
   })
 
   it('rejects example-style secrets and public localhost URLs from .env.example', () => {

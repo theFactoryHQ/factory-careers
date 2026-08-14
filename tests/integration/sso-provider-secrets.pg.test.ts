@@ -11,6 +11,7 @@ import {
   backfillSsoProviderClientSecrets,
   decryptSsoProviderClientSecret,
   type SsoProviderSecretBackfillResult,
+  validateSsoProviderClientSecrets,
 } from '../../server/utils/ssoProviderSecrets'
 
 const ROOT_SECRET = 'postgres-sso-provider-test-secret'.repeat(2)
@@ -65,6 +66,31 @@ describeWithPostgres('SSO provider secret backfill on PostgreSQL', () => {
             ${plaintextConfig}, ${userId}, ${`plaintext-${suffix}`}, ${organizationId}),
           (${`sso_secret_${suffix}_public`}, 'https://idp.example.com', 'public.example.com',
             ${publicConfig}, ${userId}, ${`public-${suffix}`}, ${organizationId})`
+
+        await client`insert into "sso_provider_credential_metadata"
+          ("id", "sso_provider_id", "organization_id", "credential_key_id", "activated_at", "expires_at")
+          values
+          (${`sso_metadata_${suffix}`}, ${`sso_secret_${suffix}_plaintext`}, ${organizationId},
+            'non-secret-key-id', now(), now() + interval '90 days')`
+        const [metadata] = await client<Record<string, unknown>[]>`
+          select * from "sso_provider_credential_metadata"
+          where "organization_id" = ${organizationId}
+        `
+        expect(metadata).toMatchObject({
+          sso_provider_id: `sso_secret_${suffix}_plaintext`,
+          organization_id: organizationId,
+          credential_key_id: 'non-secret-key-id',
+        })
+        const forbiddenColumns = [
+          'client_secret',
+          'access_token',
+          'ciphertext',
+          'fingerprint',
+          'credential_value',
+        ]
+        expect(
+          Object.keys(metadata!).filter(key => forbiddenColumns.includes(key)),
+        ).toEqual([])
 
         const contender = postgres(databaseUrl(databaseName), {
           max: 1,
@@ -131,6 +157,23 @@ describeWithPostgres('SSO provider secret backfill on PostgreSQL', () => {
           alreadyEncrypted: 1,
           withoutClientSecret: 1,
         })
+
+        const beforeFailedValidation = await client<{ id: string, oidcConfig: string }[]>`
+          select "id", "oidc_config" as "oidcConfig"
+          from "sso_provider"
+          order by "id" asc
+        `
+        await expect(validateSsoProviderClientSecrets(
+          client,
+          'rotated-without-reencrypting-existing-providers'.repeat(2),
+          { batchSize: 1 },
+        )).rejects.toThrowError(SsoProviderSecretError)
+        const afterFailedValidation = await client<{ id: string, oidcConfig: string }[]>`
+          select "id", "oidc_config" as "oidcConfig"
+          from "sso_provider"
+          order by "id" asc
+        `
+        expect(afterFailedValidation).toEqual(beforeFailedValidation)
 
         await expect(backfillSsoProviderClientSecrets(
           client,

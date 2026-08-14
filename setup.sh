@@ -41,6 +41,7 @@ DATABASE_URL=postgresql://factory_careers:${DB_PASS}@localhost:5432/factory_care
 # ─── Authentication ──────────────────────────────────────────────────────────
 BETTER_AUTH_SECRET=${AUTH_SECRET}
 BETTER_AUTH_URL=http://localhost:3001
+SSO_PROVIDER_SECRET_STORAGE_MODE=encrypted
 FACTORY_DISABLE_PUBLIC_SIGNUP=false
 FACTORY_ADMIN_SSO_ONLY=false
 FACTORY_DISABLE_PUBLIC_ORG_CREATION=false

@@ -1,3 +1,5 @@
+import { getSsoStorageReadiness } from '../utils/ssoReadiness'
+
 export default defineEventHandler(async (event) => {
   setResponseHeader(event, 'Cache-Control', 'no-store')
 
@@ -6,10 +8,10 @@ export default defineEventHandler(async (event) => {
       "SELECT to_regclass('public.user') IS NOT NULL AS ready",
     )
 
-    if (!row?.ready) {
+    if (!row?.ready || !getSsoStorageReadiness().ready) {
       throw createError({
         statusCode: 503,
-        statusMessage: 'Database migrations are not ready',
+        statusMessage: 'Application is not ready',
       })
     }
 
@@ -22,7 +24,7 @@ export default defineEventHandler(async (event) => {
 
     throw createError({
       statusCode: 503,
-      statusMessage: 'Database is not ready',
+      statusMessage: 'Application is not ready',
     })
   }
 })

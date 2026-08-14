@@ -1,15 +1,61 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 
 type RunMigrationsOnSession = typeof import('../../server/plugins/migrations').runMigrationsOnSession
+type PrepareSsoProviderSecretStorage = typeof import('../../server/plugins/migrations').prepareSsoProviderSecretStorage
 
 let runMigrationsOnSession: RunMigrationsOnSession
+let prepareSsoProviderSecretStorage: PrepareSsoProviderSecretStorage
 
 beforeAll(async () => {
   vi.stubGlobal('defineNitroPlugin', (plugin: unknown) => plugin)
-  ;({ runMigrationsOnSession } = await import('../../server/plugins/migrations'))
+  ;({ runMigrationsOnSession, prepareSsoProviderSecretStorage } = await import('../../server/plugins/migrations'))
 })
 
 describe('runtime migration locking', () => {
+  it('validates before backfill, validates again, and marks encrypted storage ready', async () => {
+    const calls: string[] = []
+
+    await prepareSsoProviderSecretStorage({
+      client: 'reserved-client' as never,
+      secret: 'a'.repeat(32),
+      mode: 'encrypted',
+      validate: async () => {
+        calls.push('validate')
+        return { scanned: 1, plaintext: 0, encrypted: 1, withoutClientSecret: 0 }
+      },
+      backfill: async () => {
+        calls.push('backfill')
+        return { scanned: 1, encrypted: 0, alreadyEncrypted: 1, withoutClientSecret: 0 }
+      },
+      markReady: () => calls.push('ready'),
+      markFailed: () => calls.push('failed'),
+    })
+
+    expect(calls).toEqual(['validate', 'backfill', 'validate', 'ready'])
+  })
+
+  it('does not mutate compatibility storage and fails before backfill on invalid data', async () => {
+    const calls: string[] = []
+
+    await expect(prepareSsoProviderSecretStorage({
+      client: 'reserved-client' as never,
+      secret: 'a'.repeat(32),
+      mode: 'compatibility',
+      validate: async () => {
+        calls.push('validate')
+        throw new Error('invalid storage')
+      },
+      backfill: async () => {
+        calls.push('backfill')
+        return { scanned: 0, encrypted: 0, alreadyEncrypted: 0, withoutClientSecret: 0 }
+      },
+      markReady: () => calls.push('ready'),
+      markFailed: () => calls.push('failed'),
+    })).rejects.toThrow('invalid storage')
+
+    expect(calls).toEqual(['validate', 'failed'])
+  })
+
   it('waits for the advisory lock and keeps migrate, unlock, and close on one reserved session', async () => {
     const client = { name: 'reserved-client' }
     const database = { name: 'reserved-database' }

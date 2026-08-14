@@ -10,6 +10,7 @@ const productionEnv = {
   BETTER_AUTH_SECRET: 'ci-production-contract-secret-with-40-characters',
   BETTER_AUTH_URL: 'https://careers.thefactory.com',
   BETTER_AUTH_TRUSTED_ORIGINS: 'https://careers.thefactory.com',
+  SSO_PROVIDER_SECRET_STORAGE_MODE: 'encrypted',
   NUXT_PUBLIC_SITE_URL: 'https://careers.thefactory.com',
   CRON_SECRET: 'ci-production-contract-cron-secret-32chars',
   S3_ENDPOINT: 'https://s3.us-east-1.amazonaws.com',

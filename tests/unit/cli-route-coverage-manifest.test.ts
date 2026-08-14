@@ -50,4 +50,12 @@ describe('CLI route coverage manifest', () => {
       { route: 'server/api/documents/[id]/preview.get.ts', status: 'supported', command: 'documents preview' },
     ]))
   })
+
+  it('keeps the CRON-only SSO health probe outside the user-authenticated CLI', () => {
+    expect(cliRouteCoverage).toContainEqual({
+      route: 'server/api/operations/sso-health.post.ts',
+      status: 'internal',
+      reason: 'CRON-secret-only Microsoft credential probe for the production monitor; it is not a user-authenticated ATS command.',
+    })
+  })
 })

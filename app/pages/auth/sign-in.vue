@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { startFactorySso } from '~/utils/factory-sso-signin';
+
 definePageMeta({
     layout: "auth",
     middleware: ["guest"],
@@ -10,8 +12,6 @@ useSeoMeta({
     robots: "noindex, nofollow",
 });
 
-const FACTORY_SSO_PROVIDER_ID = "thefactoryhq-sso";
-
 const ssoRedirecting = ref(false);
 const workEmail = ref("");
 const route = useRoute();
@@ -21,12 +21,6 @@ const toast = useToast();
 
 function showSignInError(message: string, details?: string) {
     toast.error("Microsoft sign-in failed", { message, details });
-}
-
-function getSafeRedirectPath(value: unknown): string | null {
-    if (typeof value !== "string") return null;
-    if (!value.startsWith("/") || value.startsWith("//")) return null;
-    return value;
 }
 
 onMounted(() => {
@@ -49,48 +43,25 @@ onMounted(() => {
 async function handleFactorySso() {
     ssoRedirecting.value = true;
     track("signin_sso_started");
-    const normalizedWorkEmail = workEmail.value.trim().toLowerCase();
-
-    const pendingInvitation = route.query.invitation as string | undefined;
-    const safeRedirect = getSafeRedirectPath(route.query.redirect);
-    const callbackURL = pendingInvitation
-        ? localePath(`/auth/accept-invitation/${pendingInvitation}`)
-        : safeRedirect
-            ? localePath(safeRedirect)
-        : localePath("/dashboard");
-    const errorCallbackURL = pendingInvitation
-        ? localePath(`/auth/sign-in?invitation=${encodeURIComponent(pendingInvitation)}`)
-        : safeRedirect
-            ? localePath(`/auth/sign-in?redirect=${encodeURIComponent(safeRedirect)}`)
-        : localePath("/auth/sign-in");
 
     try {
-        const result = await authClient.signIn.sso({
-            ...(normalizedWorkEmail
-                ? { email: normalizedWorkEmail, loginHint: normalizedWorkEmail }
-                : { providerId: FACTORY_SSO_PROVIDER_ID }),
-            callbackURL,
-            errorCallbackURL,
-            providerType: "oidc",
+        const result = await startFactorySso({
+            workEmail: workEmail.value,
+            routeQuery: route.query,
+            localePath,
+            navigate: (url, options) => navigateTo(url, options),
+            signInSso: options => authClient.signIn.sso(options),
         });
 
-        if (result.error) {
+        if (result.status === "error") {
             showSignInError(
-                result.error.message ??
+                result.message ??
                 "Microsoft SSO is not available yet. Ask an owner to check the SSO configuration.",
-                result.error.code,
+                result.code,
             );
             ssoRedirecting.value = false;
             return;
         }
-
-        const redirectUrl = result.data?.url;
-        if (redirectUrl) {
-            await navigateTo(redirectUrl, { external: true });
-            return;
-        }
-
-        track("signin_sso_started");
     } catch (e: unknown) {
         showSignInError(
             e instanceof Error
