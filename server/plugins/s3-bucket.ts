@@ -11,31 +11,34 @@ export default defineNitroPlugin(async () => {
   // Skip during build-time prerendering — S3 isn't available
   if (import.meta.prerender) return
 
+  resetDependencyReadiness('storage')
+
   if (env.S3_SKIP_BUCKET_INIT) {
+    if (env.NODE_ENV === 'production') throw new Error('Production storage readiness cannot be skipped')
     console.log(`[Factory Careers] S3 bucket initialization skipped`)
     logInfo('s3.bucket_init_skipped', { bucket: env.S3_BUCKET })
-    return
-  }
-
-  // Managed S3 providers pre-provision buckets
-  // and enforce privacy at the platform level — skip bucket initialization
-  if (!env.S3_FORCE_PATH_STYLE) {
-    console.log(`[Factory Careers] S3 bucket "${env.S3_BUCKET}" — managed provider detected, skipping initialization`)
-    logInfo('s3.managed_provider_detected', { bucket: env.S3_BUCKET })
+    markDependencyReady('storage')
     return
   }
 
   try {
-    await ensureBucketExists()
+    if (env.S3_FORCE_PATH_STYLE) await ensureBucketExists()
+    await probeStorageReadiness({
+      put: (key, signal) => uploadToS3(key, Buffer.from('ready'), 'application/octet-stream', { abortSignal: signal }),
+      head: (key, signal) => objectExistsInS3(key, { abortSignal: signal }),
+      remove: (key, signal) => deleteFromS3(key, { abortSignal: signal }),
+    })
+    markDependencyReady('storage')
     console.log(`[Factory Careers] S3 bucket "${env.S3_BUCKET}" is ready`)
     logInfo('s3.bucket_ready', { bucket: env.S3_BUCKET })
   } catch (error) {
-    console.error(`[Factory Careers] Failed to initialize S3 bucket "${env.S3_BUCKET}":`, error)
+    markDependencyFailed('storage', error)
+    console.error('[Factory Careers] Storage readiness verification failed')
     logError('s3.bucket_init_failed', {
       bucket: env.S3_BUCKET,
-      error_message: error instanceof Error ? error.message : String(error),
+      error_name: error instanceof Error ? error.name : 'UnknownError',
     })
-    // Don't throw — the app can still start, but uploads will fail.
-    // This allows the app to boot even if MinIO is temporarily unavailable.
+    await sendCriticalOperationalAlert('storage.startup_failed')
+    throw error
   }
 })

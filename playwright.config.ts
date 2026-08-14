@@ -24,6 +24,11 @@ const webServerEnv = [
   shellEnv('APPLICATION_NOTIFICATION_WORKER_ENABLED', process.env.APPLICATION_NOTIFICATION_WORKER_ENABLED),
 ].filter(Boolean).join(' ')
 
+const migrationWebServerEnv = [
+  webServerEnv,
+  shellEnv('DATABASE_URL', process.env.DATABASE_MIGRATION_URL ?? process.env.DATABASE_URL),
+].filter(Boolean).join(' ')
+
 /**
  * Playwright E2E configuration for Reqcore.
  *
@@ -70,7 +75,7 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: `${webServerEnv} npm run db:migrate && ${webServerEnv} npx nuxt dev --port 3333 --host 127.0.0.1`,
+          command: `${migrationWebServerEnv} npm run db:migrate && ${webServerEnv} npx nuxt dev --port 3333 --host 127.0.0.1`,
           url: 'http://127.0.0.1:3333',
           reuseExistingServer: true,
           timeout: process.env.CI ? 120_000 : 60_000,

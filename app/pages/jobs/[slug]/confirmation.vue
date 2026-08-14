@@ -7,6 +7,11 @@ definePageMeta({
 
 const route = useRoute()
 const jobSlug = route.params.slug as string
+const delayed = computed(() => route.query.delayed === '1')
+const receiptId = computed(() => {
+  const value = typeof route.query.receiptId === 'string' ? route.query.receiptId : ''
+  return /^[0-9a-f-]{36}$/i.test(value) ? value : ''
+})
 const { track } = useTrack()
 
 onMounted(() => track('application_confirmed', { slug: jobSlug }))
@@ -30,7 +35,7 @@ useSeoMeta({
       </div>
 
       <h1 class="mb-3 text-4xl font-light leading-none tracking-tight text-white">
-        Application submitted
+        {{ delayed ? 'Application received' : 'Application submitted' }}
       </h1>
 
       <p class="mx-auto mb-2 max-w-md text-white/62">
@@ -40,8 +45,14 @@ useSeoMeta({
         </template>.
       </p>
 
-      <p class="mx-auto mb-8 max-w-md text-sm text-white/42">
+      <p v-if="delayed" class="mx-auto mb-3 max-w-md text-sm text-white/62">
+        We received your application, but processing is delayed. You do not need to submit it again.
+      </p>
+      <p v-else class="mx-auto mb-8 max-w-md text-sm text-white/42">
         Your application has been received. The hiring team will review it and get back to you if there&rsquo;s a match.
+      </p>
+      <p v-if="delayed && receiptId" class="mx-auto mb-8 max-w-md text-xs text-white/42">
+        Receipt ID: <code class="text-white/70">{{ receiptId }}</code>
       </p>
 
       <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">

@@ -7,6 +7,7 @@ import {
   HeadBucketCommand,
   CreateBucketCommand,
   DeleteBucketPolicyCommand,
+  ListObjectsV2Command,
 } from '@aws-sdk/client-s3'
 
 type S3RequestOptions = { abortSignal?: AbortSignal }
@@ -106,13 +107,49 @@ export async function downloadFromS3(
  *
  * @param key - The storage key of the object to delete
  */
-export async function deleteFromS3(key: string): Promise<void> {
+export async function deleteFromS3(
+  key: string,
+  options: S3RequestOptions = {},
+): Promise<void> {
   await getS3Client().send(
     new DeleteObjectCommand({
       Bucket: env.S3_BUCKET,
       Key: key,
     }),
+    { abortSignal: options.abortSignal },
   )
+}
+
+export type S3ObjectMetadata = {
+  key: string
+  lastModified?: Date
+  sizeBytes?: number
+}
+
+/** List every object under a server-owned prefix without returning contents. */
+export async function listS3Objects(
+  prefix: string,
+  options: S3RequestOptions = {},
+): Promise<S3ObjectMetadata[]> {
+  const objects: S3ObjectMetadata[] = []
+  let continuationToken: string | undefined
+  do {
+    const response = await getS3Client().send(new ListObjectsV2Command({
+      Bucket: env.S3_BUCKET,
+      Prefix: prefix,
+      ContinuationToken: continuationToken,
+    }), { abortSignal: options.abortSignal })
+    for (const item of response.Contents ?? []) {
+      if (!item.Key) continue
+      objects.push({
+        key: item.Key,
+        lastModified: item.LastModified,
+        sizeBytes: item.Size,
+      })
+    }
+    continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined
+  } while (continuationToken)
+  return objects
 }
 
 /**

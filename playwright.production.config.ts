@@ -34,6 +34,11 @@ const webServerEnv = [
   shellEnv('SMTP_FROM', process.env.SMTP_FROM),
 ].filter(Boolean).join(' ')
 
+const migrationWebServerEnv = [
+  webServerEnv,
+  shellEnv('DATABASE_URL', process.env.DATABASE_MIGRATION_URL ?? process.env.DATABASE_URL),
+].filter(Boolean).join(' ')
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -71,7 +76,7 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: `${webServerEnv} npm run db:migrate && ${webServerEnv} npm run build && ${webServerEnv} node .output/server/index.mjs`,
+          command: `${migrationWebServerEnv} npm run db:migrate && ${webServerEnv} npm run build && ${webServerEnv} node .output/server/index.mjs`,
           url: baseURL,
           reuseExistingServer: true,
           timeout: process.env.CI ? 180_000 : 120_000,

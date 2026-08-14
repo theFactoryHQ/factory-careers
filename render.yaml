@@ -3,9 +3,10 @@ services:
     name: factory-careers
     runtime: docker
     repo: https://github.com/theFactoryHQ/factory-careers
-    plan: free
+    plan: starter
     region: oregon
     branch: main
+    autoDeployTrigger: checksPass
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/readyz
     envVars:
@@ -27,6 +28,18 @@ services:
         sync: false
       - key: FACTORY_CAREERS_OPERATIONS_INBOX
         sync: false
+      - key: FACTORY_CAREERS_CANARY_ENABLED
+        value: "false"
+      - key: FACTORY_CAREERS_CANARY_JOB_SLUG
+        value: general-interest
+      - key: APPLICATION_INTAKE_RECOVERY_ENABLED
+        value: "false"
+      - key: APPLICATION_INTAKE_KEYRING
+        sync: false
+      - key: APPLICATION_INTAKE_ACTIVE_KEY_ID
+        sync: false
+      - key: APPLICATION_INTAKE_RETENTION_DAYS
+        value: "7"
       - key: BETTER_AUTH_URL
         value: https://careers.thefactoryhq.com
       - key: NUXT_PUBLIC_SITE_URL
@@ -61,6 +74,8 @@ services:
         value: "true"
       - key: S3_SKIP_BUCKET_POLICY
         value: "true"
+      - key: S3_SKIP_BUCKET_INIT
+        value: "false"
       - key: DATABASE_URL
         sync: false
       - key: DATABASE_MIGRATION_URL

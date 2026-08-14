@@ -8,6 +8,7 @@ import {
   type FactoryDivision,
   type JobDescriptionBlock,
 } from '~~/shared/job-listing-structure'
+import { formatPublicJobDate } from '~~/shared/public-job-date'
 
 definePageMeta({
   layout: 'public',
@@ -164,11 +165,7 @@ onMounted(() => document.addEventListener('mousedown', handleTypeDropdownClickOu
 onUnmounted(() => document.removeEventListener('mousedown', handleTypeDropdownClickOutside))
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString(locale.value, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+  return formatPublicJobDate(dateStr, locale.value)
 }
 
 function formatType(type?: string | null) {

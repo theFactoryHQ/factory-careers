@@ -1,0 +1,24 @@
+name: Set up least-privileged E2E database role
+description: Separates the Playwright application role from the PostgreSQL migration role.
+
+runs:
+  using: composite
+  steps:
+    - name: Create application role and default grants
+      shell: bash
+      env:
+        MIGRATION_DATABASE_URL: ${{ env.DATABASE_URL }}
+      run: |
+        set -euo pipefail
+        psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+        CREATE ROLE factory_e2e_app LOGIN PASSWORD 'factory_e2e_app' NOSUPERUSER NOCREATEDB NOCREATEROLE;
+        REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+        GRANT CONNECT ON DATABASE factory_careers_e2e TO factory_e2e_app;
+        GRANT USAGE ON SCHEMA public TO factory_e2e_app;
+        ALTER DEFAULT PRIVILEGES FOR ROLE factory_e2e IN SCHEMA public
+          GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO factory_e2e_app;
+        ALTER DEFAULT PRIVILEGES FOR ROLE factory_e2e IN SCHEMA public
+          GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO factory_e2e_app;
+        SQL
+        echo "DATABASE_MIGRATION_URL=$MIGRATION_DATABASE_URL" >> "$GITHUB_ENV"
+        echo "DATABASE_URL=postgresql://factory_e2e_app:factory_e2e_app@127.0.0.1:5432/factory_careers_e2e" >> "$GITHUB_ENV"

@@ -54,6 +54,7 @@ describe('git hook preflight checks', () => {
   it('keeps local pre-push checks aligned with PR validation', () => {
     expect(getPrPreflightSteps().map((step) => step.name)).toEqual([
       'Changelog policy',
+      'Migration discipline',
       'CLI parity evidence',
       'Unit tests',
       'Lint',

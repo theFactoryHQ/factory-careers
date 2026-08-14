@@ -25,6 +25,16 @@ import {
 } from '../../../../utils/createPublicApplication'
 import { rollbackPublicApplicationSubmission } from '../../../../utils/rollbackPublicApplicationSubmission'
 import { finalizeCandidateDocumentUpload } from '../../../../utils/candidateDocumentReservation'
+import { requireCronSecret } from '../../../../utils/cronAuth'
+import { validateApplicationCanaryIdentity } from '../../../../utils/applicationCanary'
+import {
+  createApplicationIntakeReceipt,
+  deleteApplicationIntakeReceipt,
+  isExpectedApplicationIntakeFailure,
+  parseApplicationIntakeKeyring,
+  type ApplicationIntakeReceiptMetadata,
+} from '../../../../utils/applicationIntakeRecovery'
+import { sendCriticalOperationalAlert } from '../../../../utils/operationalAlerts'
 import {
   MAX_FILE_SIZE,
   MAX_DOCUMENTS_PER_CANDIDATE,
@@ -74,15 +84,40 @@ const MAX_PUBLIC_APPLICATION_MULTIPART_BYTES = (MAX_DOCUMENTS_PER_CANDIDATE * MA
  * 8. Upload files to S3 and create document records
  */
 export default defineEventHandler(async (event) => {
+  const canaryRequested = getHeader(event, 'x-factory-canary') === '1'
+  const replayRequested = getHeader(event, 'x-application-intake-replay') === '1'
+  const replayReceiptId = getHeader(event, 'x-application-intake-receipt')
+  if (canaryRequested && replayRequested) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid application request' })
+  }
+  if (canaryRequested) {
+    if (!env.FACTORY_CAREERS_CANARY_ENABLED) {
+      throw createError({ statusCode: 404, statusMessage: 'Not found' })
+    }
+    requireCronSecret(getHeader(event, 'x-cron-secret'), env.CRON_SECRET)
+  }
+  if (replayRequested) {
+    if (!env.APPLICATION_INTAKE_RECOVERY_ENABLED) {
+      throw createError({ statusCode: 404, statusMessage: 'Not found' })
+    }
+    requireCronSecret(getHeader(event, 'x-cron-secret'), env.CRON_SECRET)
+    if (!replayReceiptId || !/^[0-9a-f-]{36}$/i.test(replayReceiptId)) {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid application recovery receipt' })
+    }
+  }
+
   // Enforce rate limit before any processing.
   // Skipped outside production so local dev and test environments are not throttled.
   // CI flags must not bypass this when NODE_ENV=production because several
   // deployment platforms set them.
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' && !canaryRequested && !replayRequested) {
     await applyRateLimit(event)
   }
 
   const { slug } = await getValidatedRouterParams(event, publicJobSlugSchema.parse)
+  if (canaryRequested && slug !== env.FACTORY_CAREERS_CANARY_JOB_SLUG) {
+    throw createError({ statusCode: 403, statusMessage: 'Invalid application canary' })
+  }
 
   // ─────────────────────────────────────────────
   // 1. Detect content type and parse request
@@ -234,9 +269,75 @@ export default defineEventHandler(async (event) => {
     return { success: true }
   }
 
+  if (canaryRequested && !validateApplicationCanaryIdentity({
+    slug,
+    configuredSlug: env.FACTORY_CAREERS_CANARY_JOB_SLUG,
+    email,
+  })) {
+    throw createError({ statusCode: 403, statusMessage: 'Invalid application canary' })
+  }
+
+  await validateBasicApplicationIntakeFiles(uploadedFiles, resumeUpload)
+
+  let recoveryReceipt: ApplicationIntakeReceiptMetadata | undefined
+  if (env.APPLICATION_INTAKE_RECOVERY_ENABLED && !canaryRequested && !replayRequested) {
+    try {
+      const files = [
+        ...(resumeUpload
+          ? [{
+              fieldName: 'resume',
+              filename: resumeUpload.filename,
+              mimeType: resumeUpload.type!,
+              dataBase64: resumeUpload.data.toString('base64'),
+            }]
+          : []),
+        ...Array.from(uploadedFiles, ([questionId, file]) => ({
+          fieldName: `file:${questionId}`,
+          filename: file.filename,
+          mimeType: file.type!,
+          dataBase64: file.data.toString('base64'),
+        })),
+      ]
+      recoveryReceipt = await createApplicationIntakeReceipt({
+        version: 1,
+        capturedAt: new Date().toISOString(),
+        jobSlug: slug,
+        fields: {
+          firstName,
+          lastName,
+          email,
+          phone,
+          country,
+          state,
+          coverLetterText,
+          ref: sourceRef,
+          utmSource,
+          utmMedium,
+          utmCampaign,
+          utmTerm,
+          utmContent,
+          compliance,
+        },
+        responses: responseArray,
+        files,
+      }, {
+        keyring: parseApplicationIntakeKeyring(env.APPLICATION_INTAKE_KEYRING!),
+        activeKeyId: env.APPLICATION_INTAKE_ACTIVE_KEY_ID!,
+        retentionDays: env.APPLICATION_INTAKE_RETENTION_DAYS,
+      })
+    }
+    catch {
+      logError('application.intake_buffer_failed', { result_code: 'buffer_write_failed' })
+      await sendCriticalOperationalAlert('application.intake_buffer_failed')
+      throw createError({ statusCode: 503, statusMessage: 'Applications are temporarily unavailable. Please try again later.' })
+    }
+  }
+
   // ─────────────────────────────────────────────
   // 2. Fetch the job by slug and verify it's open
   // ─────────────────────────────────────────────
+
+  try {
 
   const organizationScope = await getPublicJobScopeCondition()
   const jobConditions = [eq(job.slug, slug), getPublicJobVisibilityCondition()]
@@ -353,48 +454,14 @@ export default defineEventHandler(async (event) => {
       continue
     }
 
-    // Check file size
-    if (file.data.length > MAX_FILE_SIZE) {
-      throw createError({
-        statusCode: 413,
-        statusMessage: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024} MB`,
-      })
-    }
-
-    // Validate MIME from magic bytes (not Content-Type header)
-    const mimeType = await detectAllowedDocumentMimeType(file.data)
-    if (!mimeType) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Invalid file type. Allowed: PDF, DOC, DOCX',
-      })
-    }
-
-    // Store the validated MIME type back on the file object
-    file.type = mimeType
+    // Size and magic-byte MIME were validated before durable buffering.
   }
 
   // ─────────────────────────────────────────────
   // 5. Validate resume MIME type early (before any DB writes)
   // ─────────────────────────────────────────────
 
-  let resumeMimeType: string | undefined
-  if (resumeUpload) {
-    if (resumeUpload.data.length > MAX_FILE_SIZE) {
-      throw createError({
-        statusCode: 413,
-        statusMessage: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024} MB`,
-      })
-    }
-
-    resumeMimeType = await detectAllowedDocumentMimeType(resumeUpload.data) ?? undefined
-    if (!resumeMimeType) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Invalid file type for resume. Allowed: PDF, DOC, DOCX',
-      })
-    }
-  }
+  const resumeMimeType = resumeUpload?.type
 
   // ─────────────────────────────────────────────
   // 6. Persist the relational application core in one transaction
@@ -465,7 +532,7 @@ export default defineEventHandler(async (event) => {
 
   const applicationSubmittedAt = new Date()
   const candidateName = `${firstName} ${lastName}`.trim()
-  const candidateWorkflowEmail = await prepareConfiguredCandidateWorkflowEmail({
+  const candidateWorkflowEmail = canaryRequested ? null : await prepareConfiguredCandidateWorkflowEmail({
     purpose: 'application_acknowledgement',
     now: applicationSubmittedAt,
     data: {
@@ -488,6 +555,8 @@ export default defineEventHandler(async (event) => {
   let createdApplication: Awaited<ReturnType<typeof createPublicApplication>>
   try {
     createdApplication = await createPublicApplication({
+      canary: canaryRequested,
+      recoveryReceiptId: recoveryReceipt?.receiptId ?? replayReceiptId,
       organizationId: orgId,
       jobId,
       candidate: {
@@ -516,6 +585,7 @@ export default defineEventHandler(async (event) => {
       throw createError({
         statusCode: 409,
         statusMessage: 'You have already applied to this position',
+        data: { code: 'duplicate_application' },
       })
     }
     if (error instanceof PublicApplicationDocumentLimitError) {
@@ -546,6 +616,7 @@ export default defineEventHandler(async (event) => {
 
       const rollback = await rollbackPublicApplicationSubmission({
         applicationId,
+        candidateId,
         organizationId: orgId,
         storageKeys: attemptedStorageKeys,
       })
@@ -661,7 +732,7 @@ export default defineEventHandler(async (event) => {
   // selected application resume has usable parsed text.
   // ─────────────────────────────────────────────
 
-  if (existingJob.autoScoreOnApply && newApplication && selectedResumeParsed) {
+  if (!canaryRequested && existingJob.autoScoreOnApply && newApplication && selectedResumeParsed) {
     await enqueueProcessingTask({
       organizationId: orgId,
       type: 'application_analysis',
@@ -676,6 +747,7 @@ export default defineEventHandler(async (event) => {
     application_id: newApplication?.id,
     has_resume: !!resumeUpload,
     auto_score_enabled: !!existingJob.autoScoreOnApply,
+    synthetic_canary: canaryRequested,
   })
 
   logApiRequest(event, null, 'application.received', {
@@ -686,13 +758,87 @@ export default defineEventHandler(async (event) => {
     question_count: validResponses.length,
     file_count: uploadedFiles.size,
     auto_score_enabled: !!existingJob.autoScoreOnApply,
+    synthetic_canary: canaryRequested,
   })
+
+  if (canaryRequested) {
+    const cleanup = await rollbackPublicApplicationSubmission({
+      applicationId,
+      candidateId,
+      organizationId: orgId,
+      storageKeys: attemptedStorageKeys,
+    })
+    if (!cleanup.relationalCleanupSucceeded || !cleanup.storageCleanupSucceeded) {
+      throw createError({ statusCode: 500, statusMessage: 'Application canary cleanup failed' })
+    }
+    setResponseStatus(event, 200)
+    return { ok: true, code: 'application_canary_passed' }
+  }
 
   await invalidateOrgScopedDashboardCacheForOrg(orgId)
 
+  if (recoveryReceipt) {
+    try {
+      await deleteApplicationIntakeReceipt(recoveryReceipt)
+    }
+    catch {
+      logError('application.intake_buffer_cleanup_failed', { result_code: 'successful_submission_retained' })
+      await sendCriticalOperationalAlert('application.intake_buffer_cleanup_failed')
+    }
+  }
+
   setResponseStatus(event, 201)
   return { success: true }
+  }
+  catch (error) {
+    if (!recoveryReceipt) throw error
+    if (isExpectedApplicationIntakeFailure(error)) {
+      try {
+        await deleteApplicationIntakeReceipt(recoveryReceipt)
+      }
+      catch {
+        logError('application.intake_buffer_cleanup_failed', { result_code: 'expected_invalid_retained' })
+        await sendCriticalOperationalAlert('application.intake_buffer_cleanup_failed')
+      }
+      throw error
+    }
+
+    logError('application.processing_delayed', { result_code: 'durably_buffered' })
+    await sendCriticalOperationalAlert('application.processing_delayed')
+    setResponseStatus(event, 202)
+    return {
+      success: true,
+      delayed: true,
+      receiptId: recoveryReceipt.receiptId,
+    }
+  }
 })
+
+async function validateBasicApplicationIntakeFiles(
+  uploadedFiles: Map<string, { data: Buffer, filename: string, type?: string }>,
+  resumeUpload: { data: Buffer, filename: string, type?: string } | null,
+): Promise<void> {
+  const files = [
+    ...uploadedFiles.values(),
+    ...(resumeUpload ? [resumeUpload] : []),
+  ]
+  for (const file of files) {
+    if (file.data.length > MAX_FILE_SIZE) {
+      throw createError({
+        statusCode: 413,
+        statusMessage: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024} MB`,
+      })
+    }
+    const mimeType = await detectAllowedDocumentMimeType(file.data)
+    if (!mimeType) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid file type. Allowed: PDF, DOC, DOCX',
+      })
+    }
+    file.type = mimeType
+  }
+}
 
 function hasComplianceResponse(value: {
   sex?: string

@@ -11,6 +11,12 @@ describe('Render blueprint', () => {
     expect(source).not.toContain('repo: https://github.com/caffeinebounce/factory-careers')
   })
 
+  it('matches the live Starter service and waits for required checks', () => {
+    expect(source).toMatch(/plan: starter/)
+    expect(source).toMatch(/autoDeployTrigger: checksPass/)
+    expect(source).not.toMatch(/plan: free/)
+  })
+
   it('keeps migrations enabled and the recruiting worker disabled for the safe rollout', () => {
     expect(source).toMatch(/key: SKIP_RUNTIME_MIGRATIONS\s+value: "false"/)
     expect(source).toMatch(/key: RECRUITING_WORKER_ENABLED\s+value: "false"/)

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { randomBytes } from 'node:crypto'
 import { envSchema } from '../../server/utils/env'
 
 /**
@@ -25,6 +26,44 @@ const validOidc = {
 }
 
 describe('OIDC SSO — extended edge cases', () => {
+  describe('application intake recovery', () => {
+    it('defaults recovery off with seven-day retention', () => {
+      const result = envSchema.safeParse(baseEnv)
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.APPLICATION_INTAKE_RECOVERY_ENABLED).toBe(false)
+        expect(result.data.APPLICATION_INTAKE_RETENTION_DAYS).toBe(7)
+      }
+    })
+
+    it('requires a present 32-byte active key when recovery is enabled', () => {
+      const validKey = randomBytes(32).toString('base64')
+      expect(envSchema.safeParse({
+        ...baseEnv,
+        APPLICATION_INTAKE_RECOVERY_ENABLED: 'true',
+        APPLICATION_INTAKE_KEYRING: JSON.stringify({ current: validKey }),
+        APPLICATION_INTAKE_ACTIVE_KEY_ID: 'current',
+        CRON_SECRET: 'cron-secret-value-that-is-long-enough',
+      }).success).toBe(true)
+
+      for (const invalid of [
+        {},
+        { APPLICATION_INTAKE_KEYRING: JSON.stringify({ old: validKey }), APPLICATION_INTAKE_ACTIVE_KEY_ID: 'current' },
+        { APPLICATION_INTAKE_KEYRING: JSON.stringify({ current: Buffer.alloc(31).toString('base64') }), APPLICATION_INTAKE_ACTIVE_KEY_ID: 'current' },
+        { APPLICATION_INTAKE_KEYRING: JSON.stringify({ current: validKey, retired: Buffer.alloc(31).toString('base64') }), APPLICATION_INTAKE_ACTIVE_KEY_ID: 'current' },
+        { APPLICATION_INTAKE_KEYRING: JSON.stringify([validKey]), APPLICATION_INTAKE_ACTIVE_KEY_ID: '0' },
+        { APPLICATION_INTAKE_KEYRING: JSON.stringify({ current: validKey }), APPLICATION_INTAKE_ACTIVE_KEY_ID: 'toString' },
+      ]) {
+        expect(envSchema.safeParse({
+          ...baseEnv,
+          APPLICATION_INTAKE_RECOVERY_ENABLED: 'true',
+          CRON_SECRET: 'cron-secret-value-that-is-long-enough',
+          ...invalid,
+        }).success).toBe(false)
+      }
+    })
+  })
+
   describe('provider secret storage mode', () => {
     it('defaults to encrypted storage', () => {
       const result = envSchema.safeParse(baseEnv)

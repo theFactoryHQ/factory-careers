@@ -29,4 +29,16 @@ Read a bounded, server-filtered job pipeline page:
 factory-careers jobs pipeline JOB_ID --stage new --limit 25 --json
 ```
 
+Operate encrypted failed-submission receipts as an organization owner:
+
+```bash
+factory-careers recovery list --json
+factory-careers recovery status RECEIPT_ID --json
+factory-careers recovery replay RECEIPT_ID --yes --json
+factory-careers recovery purge --yes --json
+```
+
+List and status output is metadata-only. It never contains decrypted applicant
+fields, filenames, responses, or file bytes.
+
 Full command documentation lives in the repository guide at `docs/CLI.md`.

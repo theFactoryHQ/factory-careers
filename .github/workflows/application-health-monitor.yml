@@ -1,0 +1,85 @@
+name: Factory Careers application health monitor
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: factory-careers-application-health
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      CAREERS_URL: https://careers.thefactoryhq.com
+    steps:
+      - name: First public application probe
+        id: first
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          for url in \
+            "$CAREERS_URL/api/readyz" \
+            "$CAREERS_URL/api/public/jobs?limit=1" \
+            "$CAREERS_URL/jobs/general-interest/apply" \
+            "https://thefactoryhq.com/careers"
+          do
+            curl --fail --silent --show-error --max-time 20 "$url" >/dev/null || exit 1
+          done
+
+      - name: Retry after a short delay
+        id: second
+        if: ${{ steps.first.outcome == 'failure' }}
+        shell: bash
+        run: |
+          sleep 30
+          for url in \
+            "$CAREERS_URL/api/readyz" \
+            "$CAREERS_URL/api/public/jobs?limit=1" \
+            "$CAREERS_URL/jobs/general-interest/apply" \
+            "https://thefactoryhq.com/careers"
+          do
+            curl --fail --silent --show-error --max-time 20 "$url" >/dev/null || exit 1
+          done
+
+      - name: Reconcile application incident
+        if: ${{ always() }}
+        uses: actions/github-script@v8
+        env:
+          FIRST: ${{ steps.first.outcome }}
+          SECOND: ${{ steps.second.outcome }}
+        with:
+          script: |
+            const unhealthy = process.env.FIRST === 'failure' && process.env.SECOND !== 'success'
+            const marker = 'factory-careers-application-health'
+            const label = 'incident:applications'
+            const { owner, repo } = context.repo
+            const listed = await github.rest.issues.listForRepo({ owner, repo, state: 'open', labels: label, per_page: 100 })
+            const existing = listed.data.find(issue => !issue.pull_request && issue.body?.includes(marker))
+            if (!unhealthy) {
+              if (existing) {
+                await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body: `Recovered. Run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}` })
+                await github.rest.issues.update({ owner, repo, issue_number: existing.number, state: 'closed' })
+              }
+              return
+            }
+            try {
+              await github.rest.issues.createLabel({ owner, repo, name: label, color: 'B60205', description: 'Factory Careers application incident' })
+            } catch (error) {
+              if (error.status !== 422) throw error
+            }
+            const body = `<!-- ${marker} -->\n\nTwo consecutive public application probes failed.\n\nRun: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}\n\nNo applicant data or response bodies are included.`
+            if (existing) await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body })
+            else await github.rest.issues.create({ owner, repo, title: 'Incident: Factory Careers applications unavailable', body, labels: [label] })
+
+      - name: Fail when both application probes fail
+        if: ${{ steps.first.outcome == 'failure' && steps.second.outcome != 'success' }}
+        run: exit 1

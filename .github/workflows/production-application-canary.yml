@@ -1,0 +1,111 @@
+name: Factory Careers production application canary
+
+on:
+  workflow_run:
+    workflows: ['Production deploy gate']
+    types: [completed]
+  schedule:
+    - cron: '17 11 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: factory-careers-production-application-canary
+  cancel-in-progress: false
+
+jobs:
+  canary:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CAREERS_URL: https://careers.thefactoryhq.com
+      FACTORY_CAREERS_CRON_SECRET: ${{ secrets.FACTORY_CAREERS_CRON_SECRET }}
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+    steps:
+      - name: Wait for the exact commit to become live
+        if: ${{ github.event_name == 'workflow_run' }}
+        shell: bash
+        env:
+          TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          test -n "$RENDER_API_KEY"
+          test -n "$RENDER_SERVICE_ID"
+          deadline=$(( $(date +%s) + 900 ))
+          attempt=0
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            attempt=$((attempt + 1))
+            echo "Waiting for exact production commit (attempt $attempt)."
+            payload=$(curl --fail --silent --show-error --max-time 20 \
+              --header "Authorization: Bearer $RENDER_API_KEY" \
+              "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys?limit=20")
+            status=$(node --input-type=module --eval \
+              'const deploys=JSON.parse(process.argv[2]); const match=deploys.map(item=>item.deploy??item).find(deploy=>deploy.commit?.id===process.argv[1]); process.stdout.write(match?.status??"waiting")' \
+              "$TARGET_SHA" "$payload")
+            test "$status" = live && exit 0
+            case "$status" in build_failed|update_failed|canceled) exit 1 ;; esac
+            sleep 30
+          done
+          exit 1
+
+      - name: Submit and clean up the synthetic application
+        id: canary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$FACTORY_CAREERS_CRON_SECRET"
+          response=$(curl --fail --silent --show-error --max-time 90 \
+            --request POST \
+            --header "x-cron-secret: $FACTORY_CAREERS_CRON_SECRET" \
+            "$CAREERS_URL/api/operations/application-canary")
+          node --input-type=module --eval \
+            'const body=JSON.parse(process.argv[1]); if(body.ok!==true||body.code!=="healthy") process.exit(1)' \
+            "$response"
+
+      - name: Purge expired encrypted intake receipts
+        id: purge
+        shell: bash
+        run: |
+          set -euo pipefail
+          response=$(curl --fail --silent --show-error --max-time 90 \
+            --request POST \
+            --header "x-cron-secret: $FACTORY_CAREERS_CRON_SECRET" \
+            "$CAREERS_URL/api/operations/application-intake-recovery-purge")
+          node --input-type=module --eval \
+            'const body=JSON.parse(process.argv[1]); if(body.ok!==true||!["healthy","disabled"].includes(body.code)) process.exit(1)' \
+            "$response"
+
+      - name: Reconcile canary incident
+        if: ${{ always() }}
+        uses: actions/github-script@v8
+        env:
+          RESULT: ${{ steps.canary.outcome }}
+          PURGE_RESULT: ${{ steps.purge.outcome }}
+        with:
+          script: |
+            const unhealthy = process.env.RESULT !== 'success' || process.env.PURGE_RESULT !== 'success'
+            const marker = 'factory-careers-application-canary'
+            const label = 'incident:applications'
+            const { owner, repo } = context.repo
+            const listed = await github.rest.issues.listForRepo({ owner, repo, state: 'open', labels: label, per_page: 100 })
+            const existing = listed.data.find(issue => !issue.pull_request && issue.body?.includes(marker))
+            if (!unhealthy) {
+              if (existing) {
+                await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body: `Synthetic application recovered. Run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}` })
+                await github.rest.issues.update({ owner, repo, issue_number: existing.number, state: 'closed' })
+              }
+              return
+            }
+            try {
+              await github.rest.issues.createLabel({ owner, repo, name: label, color: 'B60205', description: 'Factory Careers application incident' })
+            } catch (error) {
+              if (error.status !== 422) throw error
+            }
+            const body = `<!-- ${marker} -->\n\nThe production application canary workflow did not complete successfully.\n\nCanary step: ${process.env.RESULT}\nReceipt purge step: ${process.env.PURGE_RESULT}\n\nRun: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}\n\nNo applicant data, filenames, or response bodies are included.`
+            if (existing) await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body })
+            else await github.rest.issues.create({ owner, repo, title: 'Incident: Factory Careers application canary', body, labels: [label] })

@@ -77,7 +77,7 @@ describe("application receipt email branding", () => {
 		expect(html).toContain("5431 W 104th St, Los Angeles, CA 90045");
 	});
 
-	it("sends a sanitized branded SSO operational alert", async () => {
+  it("sends a sanitized branded operational alert", async () => {
 		await sendSsoOperationalAlertEmail({
 			to: "operations@example.com",
 			code: "invalid_client",
@@ -91,7 +91,7 @@ describe("application receipt email branding", () => {
 			react: Parameters<typeof render>[0];
 		};
 		expect(payload.to).toBe("operations@example.com");
-		expect(payload.subject).toContain("Factory Careers SSO alert");
+    expect(payload.subject).toContain("Factory Careers operational alert");
 		const html = await render(payload.react);
 		expect(html).toContain("invalid_client");
 		expect(html).toContain("2026-08-10T12:00:00.000Z");

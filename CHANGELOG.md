@@ -14,6 +14,9 @@ self-hosters.
 
 ### Added
 
+- Added append-only migration enforcement, base-to-branch PostgreSQL upgrade rehearsal, and an exact-commit production deployment gate.
+- Added five-minute public-path monitoring, exact-deploy and daily full application canaries, sanitized incident lifecycle automation, and rate-limited operational alerts.
+- Added AES-256-GCM application intake recovery with seven-day retention, delayed-submission receipts, idempotent owner replay, metadata-only CLI operations, key rotation, and scheduled expiry cleanup.
 - Added CLI batch inspection and resumption plus organization-wide missing-only scoring, finite wait controls, and stable nonzero outcomes for failed, cancelled, or timed-out processing.
 - Added independent application email preferences for each member and the shared careers inbox, with immediate, daily, weekly, monthly, and off cadences in dashboard settings and the authenticated CLI.
 - Added a durable application notification worker with database-triggered event capture, grouped digest emails, tenant isolation, leases, bounded retries, and provider idempotency.
@@ -29,6 +32,9 @@ self-hosters.
 
 ### Fixed
 
+- Suppressed all candidate and internal notifications for authenticated synthetic applications and removed their database, queue, and storage artifacts after each probe.
+- Kept public job listings current within 60 seconds, disabled application-page caching, and made posted dates identical during server rendering and hydration.
+- Made production readiness require the least-privilege application database role and a real storage write, HEAD, and delete probe, with startup failing closed on either dependency.
 - Kept the job sub-navigation to one Add, status, and actions control set while moving between Pipeline, Table, Application, AI, and Settings.
 - Updated the pinned Nano ID, DOMPurify, and tar transitive dependencies to resolve current security advisories.
 - Established migration 0059 as the audited production-ledger baseline while retaining full modeled-schema verification for inherited migrations that predate complete ledger tracking.

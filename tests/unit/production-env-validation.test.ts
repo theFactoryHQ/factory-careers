@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { randomBytes } from 'node:crypto'
 import { parseEnvFile, validateProductionEnv } from '../../scripts/validate-production-env.mjs'
 
 const validProductionEnv = {
@@ -58,6 +59,64 @@ describe('production environment preflight', () => {
     expect(messages(result)).toContain(
       'SKIP_RUNTIME_MIGRATIONS: cannot be true in production',
     )
+  })
+
+  it('rejects production when storage startup verification is disabled', () => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      S3_SKIP_BUCKET_INIT: 'true',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(messages(result)).toContain(
+      'S3_SKIP_BUCKET_INIT: cannot be true in production',
+    )
+  })
+
+  it('requires cron authentication when the application canary is enabled', () => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      FACTORY_CAREERS_CANARY_ENABLED: 'true',
+      CRON_SECRET: '',
+    })
+    expect(result.ok).toBe(false)
+    expect(messages(result)).toContain(
+      'CRON_SECRET: is required when FACTORY_CAREERS_CANARY_ENABLED is true',
+    )
+  })
+
+  it('requires a valid active recovery key when intake recovery is enabled', () => {
+    const validKey = randomBytes(32).toString('base64')
+    const missing = validateProductionEnv({
+      ...validProductionEnv,
+      APPLICATION_INTAKE_RECOVERY_ENABLED: 'true',
+    })
+    expect(missing.ok).toBe(false)
+    expect(messages(missing)).toEqual(expect.arrayContaining([
+      'APPLICATION_INTAKE_KEYRING: is required when application intake recovery is enabled',
+      'APPLICATION_INTAKE_ACTIVE_KEY_ID: is required when application intake recovery is enabled',
+    ]))
+
+    const valid = validateProductionEnv({
+      ...validProductionEnv,
+      APPLICATION_INTAKE_RECOVERY_ENABLED: 'true',
+      APPLICATION_INTAKE_KEYRING: JSON.stringify({ current: validKey }),
+      APPLICATION_INTAKE_ACTIVE_KEY_ID: 'current',
+      APPLICATION_INTAKE_RETENTION_DAYS: '7',
+    })
+    expect(valid.ok).toBe(true)
+
+    for (const [keyring, activeKeyId] of [
+      [JSON.stringify([validKey]), '0'],
+      [JSON.stringify({ current: validKey }), 'toString'],
+    ]) {
+      expect(validateProductionEnv({
+        ...validProductionEnv,
+        APPLICATION_INTAKE_RECOVERY_ENABLED: 'true',
+        APPLICATION_INTAKE_KEYRING: keyring,
+        APPLICATION_INTAKE_ACTIVE_KEY_ID: activeKeyId,
+      }).ok).toBe(false)
+    }
   })
 
   it('rejects a migration URL that reuses the application database role', () => {

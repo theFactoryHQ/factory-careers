@@ -3,6 +3,21 @@ import { describe, expect, it } from 'vitest'
 import { evaluateCliParityEvidence } from '../../scripts/cli-parity-check'
 
 describe('CLI parity changed-file guard', () => {
+  it('records reliability probes and public freshness helpers as non-CLI contracts', () => {
+    expect(evaluateCliParityEvidence([
+      'server/api/readyz.get.ts',
+      'server/api/operations/application-canary.post.ts',
+      'shared/public-job-date.ts',
+      'shared/public-job-route-rules.ts',
+      'packages/careers-cli/src/routeCoverage.ts',
+      'docs/CLI.md',
+      'tests/unit/cli-parity-changed-files.test.ts',
+    ])).toMatchObject({
+      ok: true,
+      message: 'CLI parity evidence found.',
+    })
+  })
+
   it('passes for UI-only portal changes without CLI evidence', () => {
     const result = evaluateCliParityEvidence([
       'app/components/AiProviderLogo.vue',

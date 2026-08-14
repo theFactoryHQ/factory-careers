@@ -8,6 +8,7 @@ import {
   isLanguageFeatureEnabled,
 } from "./shared/language-feature";
 import { dashboardLinkPrefetchOn } from "./shared/dashboard-prefetch";
+import { buildPublicJobRouteRules } from "./shared/public-job-route-rules";
 
 const require = createRequire(import.meta.url);
 const pdfjsWorkerPath = require.resolve(
@@ -24,14 +25,7 @@ const i18nDefaultLocale = I18N_DEFAULT_LOCALE;
 const languageFeatureEnabled = isLanguageFeatureEnabled();
 const enabledI18nLocales = getEnabledI18nLocales();
 
-const localizedPublicRouteRules = Object.fromEntries(
-  enabledI18nLocales
-    .filter((locale) => locale.code !== i18nDefaultLocale)
-    .flatMap((locale) => [
-      [`/${locale.code}/jobs`, { isr: 3600 }],
-      [`/${locale.code}/jobs/**`, { isr: 3600 }],
-    ]),
-);
+const publicJobRouteRules = buildPublicJobRouteRules(enabledI18nLocales, i18nDefaultLocale);
 
 // Allow search-engine indexing for localized job board pages
 const localizedJobsRobotsRules = Object.fromEntries(
@@ -56,7 +50,7 @@ const localizedRootRedirectRules = Object.fromEntries(
     const root = locale.code === i18nDefaultLocale ? "/" : `/${locale.code}`;
     const target =
       locale.code === i18nDefaultLocale ? "/jobs" : `/${locale.code}/jobs`;
-    return [root, { redirect: { to: target, statusCode: 301 } }];
+    return [root, { redirect: { to: target, statusCode: 301 as const } }];
   }),
 );
 
@@ -296,9 +290,7 @@ export default defineNuxtConfig({
     // Defining routeRules here would be shadowed by the server route, so we
     // intentionally do not declare them.
     ...localizedRootRedirectRules,
-    "/jobs": { isr: 86400 },      // Daily revalidation for public job board (very stable content)
-    "/jobs/**": { isr: 86400 },
-    ...localizedPublicRouteRules,
+    ...publicJobRouteRules,
   },
 
   nitro: {

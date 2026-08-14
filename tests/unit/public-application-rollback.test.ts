@@ -44,7 +44,7 @@ describe('public application upload compensation', () => {
       storageKeys: ['one.pdf', 'two.pdf'],
     }, adapter)
 
-    expect(result).toEqual({ relationalCleanupSucceeded: true })
+    expect(result).toEqual({ relationalCleanupSucceeded: true, storageCleanupSucceeded: true })
     expect(events[0]).toBe('database')
     expect(new Set(events.slice(1))).toEqual(new Set(['storage:one.pdf', 'storage:two.pdf']))
   })
@@ -69,7 +69,7 @@ describe('public application upload compensation', () => {
     await vi.waitFor(() => expect(started).toEqual(['one.pdf', 'two.pdf']))
     for (const release of releases.values()) release()
 
-    await expect(rollback).resolves.toEqual({ relationalCleanupSucceeded: true })
+    await expect(rollback).resolves.toEqual({ relationalCleanupSucceeded: true, storageCleanupSucceeded: true })
     expect(adapter.deleteStorageObject).toHaveBeenCalledTimes(2)
   })
 
@@ -88,7 +88,7 @@ describe('public application upload compensation', () => {
       storageKeys: ['one.pdf'],
     }, adapter)
 
-    expect(result).toEqual({ relationalCleanupSucceeded: false })
+    expect(result).toEqual({ relationalCleanupSucceeded: false, storageCleanupSucceeded: false })
     expect(deleteStorageObject).not.toHaveBeenCalled()
   })
 
@@ -107,7 +107,7 @@ describe('public application upload compensation', () => {
       storageKeys: ['one.pdf', 'two.pdf'],
     }, adapter)
 
-    expect(result).toEqual({ relationalCleanupSucceeded: true })
+    expect(result).toEqual({ relationalCleanupSucceeded: true, storageCleanupSucceeded: false })
     expect(deleteStorageObject).toHaveBeenCalledTimes(2)
   })
 })

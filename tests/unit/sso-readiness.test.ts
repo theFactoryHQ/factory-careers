@@ -5,6 +5,10 @@ import {
   markSsoStorageReady,
   resetSsoStorageReadiness,
 } from '../../server/utils/ssoReadiness'
+import {
+  markDependencyReady,
+  resetDependencyReadiness,
+} from '../../server/utils/dependencyReadiness'
 
 describe('SSO storage readiness state', () => {
   beforeEach(() => resetSsoStorageReadiness())
@@ -23,6 +27,7 @@ describe('SSO storage readiness state', () => {
 describe('/api/readyz SSO gate', () => {
   beforeEach(() => {
     resetSsoStorageReadiness()
+    resetDependencyReadiness()
     vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
     vi.stubGlobal('setResponseHeader', vi.fn())
     vi.stubGlobal('createError', (input: Record<string, unknown>) => input)
@@ -40,8 +45,20 @@ describe('/api/readyz SSO gate', () => {
     })
   })
 
-  it('returns the unchanged success body after database and SSO readiness', async () => {
+  it('returns a generic 503 when any critical dependency is not ready', async () => {
     markSsoStorageReady()
+    markDependencyReady('migrations')
+    markDependencyReady('applicationDatabase')
+    const { default: handler } = await import('../../server/api/readyz.get')
+
+    await expect(handler({} as never)).rejects.toMatchObject({ statusCode: 503 })
+  })
+
+  it('returns the unchanged success body after every dependency is ready', async () => {
+    markSsoStorageReady()
+    markDependencyReady('migrations')
+    markDependencyReady('applicationDatabase')
+    markDependencyReady('storage')
     const { default: handler } = await import('../../server/api/readyz.get')
 
     await expect(handler({} as never)).resolves.toEqual({ ok: true })
