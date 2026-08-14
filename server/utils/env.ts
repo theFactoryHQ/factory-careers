@@ -76,6 +76,8 @@ export const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     DATABASE_URL: z.url(),
+    /** Dedicated DDL-capable database role used only by the startup migrator. */
+    DATABASE_MIGRATION_URL: emptyToUndefined.pipe(z.url()).optional(),
     BETTER_AUTH_SECRET: emptyToUndefined.pipe(
       z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
     ),
@@ -333,6 +335,24 @@ export const envSchema = z
     FACTORY_DISABLE_ANALYTICS_CONSENT_BANNER: envFlag(true),
   })
   .superRefine((data, ctx) => {
+    if (data.NODE_ENV === "production") {
+      if (!data.DATABASE_MIGRATION_URL) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["DATABASE_MIGRATION_URL"],
+          message: "DATABASE_MIGRATION_URL is required in production",
+        });
+      }
+
+      if (data.SKIP_RUNTIME_MIGRATIONS) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["SKIP_RUNTIME_MIGRATIONS"],
+          message: "SKIP_RUNTIME_MIGRATIONS cannot be true in production",
+        });
+      }
+    }
+
     if (data.NODE_ENV === "production" && !data.SSO_PROVIDER_SECRET_STORAGE_MODE) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -512,7 +532,7 @@ export const env = new Proxy({} as z.infer<typeof envSchema>, {
             `Ensure these variables are set in the Render web service environment.\n` +
             `Required: DATABASE_URL, BETTER_AUTH_SECRET, S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET\n` +
             `Required on Render: BETTER_AUTH_URL=https://careers.thefactoryhq.com\n` +
-            `Required in production: SSO_PROVIDER_SECRET_STORAGE_MODE=compatibility|encrypted\n` +
+            `Required in production: DATABASE_MIGRATION_URL, SSO_PROVIDER_SECRET_STORAGE_MODE=compatibility|encrypted\n` +
             `Optional outside production: SSO_PROVIDER_SECRET_STORAGE_MODE (default: encrypted), BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), S3_SKIP_BUCKET_POLICY, S3_SKIP_BUCKET_INIT, SKIP_RUNTIME_MIGRATIONS, RECRUITING_WORKER_ENABLED, APPLICATION_NOTIFICATION_WORKER_ENABLED, TRUST_PROXY_HEADERS, TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL, EMAIL_FROM, FACTORY_EMAIL_TEST_MODE, FACTORY_EMAIL_CAPTURE_PATH, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CALENDAR_AUTH_MODE, MICROSOFT_CALENDAR_CLIENT_ID, MICROSOFT_CALENDAR_CLIENT_SECRET, MICROSOFT_CALENDAR_TENANT_ID, FACTORY_CALENDAR_TEST_MODE, FACTORY_CAREERS_CALENDAR_SYNC_SHARED, FACTORY_CAREERS_CALENDAR_USER_EMAILS, FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_DISCOVERY_URL, OIDC_PROVIDER_NAME, AUTH_GOOGLE_CLIENT_ID, AUTH_GOOGLE_CLIENT_SECRET, AUTH_GITHUB_CLIENT_ID, AUTH_GITHUB_CLIENT_SECRET, AUTH_MICROSOFT_CLIENT_ID, AUTH_MICROSOFT_CLIENT_SECRET, AUTH_MICROSOFT_TENANT_ID, FACTORY_CAREERS_HIRING_INBOX, FACTORY_CAREERS_PRIVACY_INBOX, FACTORY_CAREERS_CLI_CLIENT_ID, FACTORY_ALLOWED_EMAIL_DOMAINS, FACTORY_INITIAL_OWNER_EMAILS\n` +
             `Test-only and blocked in production: FACTORY_AI_TEST_MODE=mock, FACTORY_AI_CAPTURE_PATH, FACTORY_CALENDAR_TEST_MODE=mock\n`,
         );

@@ -3,6 +3,7 @@ import { parseEnvFile, validateProductionEnv } from '../../scripts/validate-prod
 
 const validProductionEnv = {
   DATABASE_URL: 'postgresql://factory_careers:db-secret-value-12345@db.internal:5432/factory_careers',
+  DATABASE_MIGRATION_URL: 'postgresql://factory_careers_migrator:migration-secret-value-12345@db.internal:5432/factory_careers',
   BETTER_AUTH_SECRET: 'auth-secret-value-that-is-long-enough',
   BETTER_AUTH_URL: 'https://app.example.test',
   BETTER_AUTH_TRUSTED_ORIGINS: 'https://app.example.test,https://admin.example.test',
@@ -33,6 +34,42 @@ describe('production environment preflight', () => {
 
     expect(result.ok).toBe(true)
     expect(result.errors).toEqual([])
+  })
+
+  it.each([undefined, '', '   '])('rejects a missing production migration role for %j', (migrationUrl) => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      DATABASE_MIGRATION_URL: migrationUrl,
+    })
+
+    expect(result.ok).toBe(false)
+    expect(messages(result)).toContain(
+      'DATABASE_MIGRATION_URL: is required so production deploys can apply schema migrations before serving traffic',
+    )
+  })
+
+  it('rejects production when runtime schema migrations are disabled', () => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      SKIP_RUNTIME_MIGRATIONS: 'true',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(messages(result)).toContain(
+      'SKIP_RUNTIME_MIGRATIONS: cannot be true in production',
+    )
+  })
+
+  it('rejects a migration URL that reuses the application database role', () => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      DATABASE_MIGRATION_URL: 'postgresql://factory_careers:another-secret-value-12345@db.internal:5432/factory_careers',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(messages(result)).toContain(
+      'DATABASE_MIGRATION_URL: must use a database role distinct from DATABASE_URL',
+    )
   })
 
   it.each(['compatibility', 'encrypted'])('accepts %s SSO provider secret storage mode', (mode) => {

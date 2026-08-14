@@ -17,6 +17,7 @@ Record these before deploying:
 Production uses Render plus Supabase Postgres and Supabase Storage S3. Required values include:
 
 - `DATABASE_URL`
+- `DATABASE_MIGRATION_URL`
 - `BETTER_AUTH_URL`
 - `BETTER_AUTH_SECRET`
 - `NUXT_PUBLIC_SITE_URL`
@@ -34,6 +35,38 @@ Production uses Render plus Supabase Postgres and Supabase Storage S3. Required 
 - `FACTORY_CAREERS_OPERATIONS_INBOX`
 - `FACTORY_CAREERS_HIRING_INBOX`
 - `APPLICATION_NOTIFICATION_WORKER_ENABLED=true`
+
+### Database migration invariant
+
+`DATABASE_URL` must use the ordinary application role without DDL authority.
+`DATABASE_MIGRATION_URL` must use a separate DDL-capable role. Production must
+keep `SKIP_RUNTIME_MIGRATIONS=false`; startup rejects a skipped migration gate.
+
+Before readiness succeeds, one reserved database session takes the advisory
+lock, applies every bundled migration, and verifies both of these conditions:
+
+- Every bundled migration timestamp and hash exists in
+  `drizzle.__drizzle_migrations`.
+- Every table and column in the Drizzle runtime model exists in the live
+  `public` schema.
+
+Any migration, ledger, permission, or schema mismatch fails the new deploy.
+Render must keep the last healthy deploy serving until the database gate passes.
+Do not bypass readiness or point `DATABASE_MIGRATION_URL` at the application
+role.
+
+For an incident, preserve the failed deploy logs and run the repository
+migrator with the concealed migration-role URL:
+
+```bash
+DATABASE_URL="$DATABASE_MIGRATION_URL" npm run db:migrate
+```
+
+Redeploy the same reviewed commit. Confirm the startup log reports both
+migrations and runtime schema verified. Then submit one synthetic application
+through the public job form and confirm HTTP 201 plus its application,
+response, and document records. Remove the synthetic record through the
+supported administrative workflow after the proof is recorded.
 
 `FACTORY_CAREERS_HIRING_INBOX` remains the fallback shared recipient when an
 organization has not saved an inbox override. The default shared schedule is a
@@ -206,3 +239,7 @@ npm run ops:object-storage-restore-rehearsal
 - Disable affected public or dashboard flows through feature flags where possible.
 - Preserve logs and deployment metadata before rollback.
 - Prefer rollback to the last known-good commit/image when the blast radius is unclear.
+- For failed public submissions, determine whether the transaction persisted an
+  application before promising recovery. Request logs intentionally contain no
+  form fields or document content; an attempt that failed before persistence
+  requires the applicant to resubmit.
