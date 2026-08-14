@@ -6,7 +6,7 @@ import { defineConfig } from 'drizzle-kit'
  * Falls back to individual PG* and RAILWAY_TCP_PROXY_* variables when available.
  */
 function resolveDatabaseUrl(): string {
-  const raw = process.env.DATABASE_URL ?? ''
+  const raw = process.env.DATABASE_MIGRATION_URL ?? process.env.DATABASE_URL ?? ''
 
   try {
     const parsed = new URL(raw)

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 const root = process.cwd()
 const databaseEnvKeys = [
+  'DATABASE_MIGRATION_URL',
   'DATABASE_URL',
   'PGHOST',
   'PGPORT',
@@ -94,6 +95,18 @@ describe('drizzle database URL diagnostics', () => {
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     expect(result.stdout.trim()).toBe(directUrl)
+  })
+
+  it('prefers the dedicated migration role over the application role', () => {
+    const migrationUrl = 'postgresql://migration-user:migration-password@db.internal:5432/careers'
+    const result = runDrizzleConfig({
+      DATABASE_MIGRATION_URL: migrationUrl,
+      DATABASE_URL: 'postgresql://application-user:application-password@db.internal:5432/careers',
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stderr).toBe('')
+    expect(result.stdout.trim()).toBe(migrationUrl)
   })
 
   it('preserves PG fallback URL reconstruction when DATABASE_URL has no hostname', () => {
