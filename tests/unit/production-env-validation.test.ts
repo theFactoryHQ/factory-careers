@@ -60,6 +60,18 @@ describe('production environment preflight', () => {
     )
   })
 
+  it('rejects production when storage startup verification is disabled', () => {
+    const result = validateProductionEnv({
+      ...validProductionEnv,
+      S3_SKIP_BUCKET_INIT: 'true',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(messages(result)).toContain(
+      'S3_SKIP_BUCKET_INIT: cannot be true in production',
+    )
+  })
+
   it('rejects a migration URL that reuses the application database role', () => {
     const result = validateProductionEnv({
       ...validProductionEnv,

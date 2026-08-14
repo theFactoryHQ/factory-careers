@@ -106,12 +106,16 @@ export async function downloadFromS3(
  *
  * @param key - The storage key of the object to delete
  */
-export async function deleteFromS3(key: string): Promise<void> {
+export async function deleteFromS3(
+  key: string,
+  options: S3RequestOptions = {},
+): Promise<void> {
   await getS3Client().send(
     new DeleteObjectCommand({
       Bucket: env.S3_BUCKET,
       Key: key,
     }),
+    { abortSignal: options.abortSignal },
   )
 }
 

@@ -353,6 +353,14 @@ export const envSchema = z
           message: "SKIP_RUNTIME_MIGRATIONS cannot be true in production",
         });
       }
+
+      if (data.S3_SKIP_BUCKET_INIT) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["S3_SKIP_BUCKET_INIT"],
+          message: "S3_SKIP_BUCKET_INIT cannot be true in production",
+        });
+      }
     }
 
     if (data.NODE_ENV === "production" && !data.SSO_PROVIDER_SECRET_STORAGE_MODE) {

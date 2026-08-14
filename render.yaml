@@ -62,6 +62,8 @@ services:
         value: "true"
       - key: S3_SKIP_BUCKET_POLICY
         value: "true"
+      - key: S3_SKIP_BUCKET_INIT
+        value: "false"
       - key: DATABASE_URL
         sync: false
       - key: DATABASE_MIGRATION_URL

@@ -10,6 +10,7 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
 import * as schema from '../server/database/schema'
+import { assertApplicationDatabaseReady } from '../server/utils/applicationDatabaseReadiness'
 
 const migrationsPath = 'server/database/migrations'
 
@@ -17,9 +18,11 @@ function git(args: string[]): string {
   return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 }).trim()
 }
 
-function databaseUrl(source: string, databaseName: string): string {
+function databaseUrl(source: string, databaseName: string, username?: string, password?: string): string {
   const url = new URL(source)
   url.pathname = `/${databaseName}`
+  if (username) url.username = username
+  if (password) url.password = password
   return url.toString()
 }
 
@@ -61,13 +64,19 @@ async function main(): Promise<void> {
   const temporaryRoot = mkdtempSync(join(tmpdir(), 'factory-careers-migration-upgrade-'))
   const baseMigrations = join(temporaryRoot, 'base')
   const databaseName = `factory_migration_${process.pid}_${randomBytes(4).toString('hex')}`
+  const applicationRole = `factory_app_${process.pid}_${randomBytes(4).toString('hex')}`
+  const applicationPassword = randomBytes(24).toString('hex')
   const admin = postgres(adminUrl, { max: 1 })
   let databaseCreated = false
+  let applicationRoleCreated = false
 
   try {
     materializeMigrations(baseRef, baseMigrations)
     await admin.unsafe(`CREATE DATABASE "${databaseName}"`)
     databaseCreated = true
+    await admin.unsafe(`CREATE ROLE "${applicationRole}" LOGIN PASSWORD '${applicationPassword}'`)
+    applicationRoleCreated = true
+    await admin.unsafe(`GRANT CONNECT ON DATABASE "${databaseName}" TO "${applicationRole}"`)
 
     const client = postgres(databaseUrl(adminUrl, databaseName), { max: 1 })
     try {
@@ -94,6 +103,22 @@ async function main(): Promise<void> {
         [...columns].filter(column => !actual.get(table)?.has(column)).map(column => `${table}.${column}`),
       )
       if (missing.length > 0) throw new Error(`Upgraded schema is missing modeled columns: ${missing.slice(0, 20).join(', ')}`)
+
+      await client.unsafe(`GRANT USAGE ON SCHEMA public TO "${applicationRole}"`)
+      await client.unsafe(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO "${applicationRole}"`)
+      await client.unsafe(`GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO "${applicationRole}"`)
+      const applicationUrl = databaseUrl(adminUrl, databaseName, applicationRole, applicationPassword)
+      await assertApplicationDatabaseReady(applicationUrl)
+
+      await client.unsafe(`REVOKE INSERT ON TABLE application FROM "${applicationRole}"`)
+      let missingPrivilegeRejected = false
+      try {
+        await assertApplicationDatabaseReady(applicationUrl)
+      }
+      catch {
+        missingPrivilegeRejected = true
+      }
+      if (!missingPrivilegeRejected) throw new Error('Application role rehearsal did not reject a missing INSERT privilege')
     }
     finally {
       await client.end({ timeout: 5 })
@@ -103,6 +128,7 @@ async function main(): Promise<void> {
   }
   finally {
     if (databaseCreated) await admin.unsafe(`DROP DATABASE IF EXISTS "${databaseName}" WITH (FORCE)`)
+    if (applicationRoleCreated) await admin.unsafe(`DROP ROLE IF EXISTS "${applicationRole}"`)
     await admin.end({ timeout: 5 })
     rmSync(temporaryRoot, { recursive: true, force: true })
   }

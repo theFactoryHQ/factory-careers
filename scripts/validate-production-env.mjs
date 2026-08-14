@@ -378,6 +378,9 @@ function checkDatabase(env, errors, warnings) {
 }
 
 function checkStorage(env, errors, warnings) {
+  if (parseBoolean(env.S3_SKIP_BUCKET_INIT) === true) {
+    errors.push(issue('S3_SKIP_BUCKET_INIT', 'cannot be true in production'))
+  }
   const s3Endpoint = requireUrl(env, 'S3_ENDPOINT', errors)
   if (s3Endpoint) {
     if (s3Endpoint.protocol !== 'https:' && !isPrivateHostname(s3Endpoint.hostname)) {

@@ -325,6 +325,8 @@ export default defineNitroPlugin(async () => {
   // Skip during build-time prerendering — database isn't available
   if (import.meta.prerender) return
   resetSsoStorageReadiness()
+  resetDependencyReadiness('migrations')
+  resetDependencyReadiness('applicationDatabase')
 
   // Temporary bootstrap services can opt out of schema migrations. The SSO
   // secret backfill still runs because it is a key-dependent data migration
@@ -374,10 +376,16 @@ export default defineNitroPlugin(async () => {
       },
     })
 
+    markDependencyReady('migrations')
+    await assertApplicationDatabaseReady(env.DATABASE_URL)
+    markDependencyReady('applicationDatabase')
+
     const completion = migrationCompletionSummary(skipSchemaMigrations)
     console.log(`[Factory Careers] ${completion.message}`)
     logInfo('migrations.completed', completion.details)
   } catch (error) {
+    markDependencyFailed('migrations', error)
+    markDependencyFailed('applicationDatabase', error)
     markSsoStorageFailed(error)
     console.error('[Factory Careers] Migration failed:', error)
     logError('migrations.failed', {
