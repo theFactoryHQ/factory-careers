@@ -6,7 +6,7 @@ import {
   resetDependencyReadiness,
 } from '../../server/utils/dependencyReadiness'
 import { findApplicationRoleAccessFailures } from '../../server/utils/applicationDatabaseReadiness'
-import { probeStorageReadiness } from '../../server/utils/storageReadiness'
+import { probeStorageReadiness, STORAGE_READINESS_CONTENT_TYPE } from '../../server/utils/storageReadiness'
 
 describe('dependency readiness state', () => {
   beforeEach(() => resetDependencyReadiness())
@@ -45,6 +45,10 @@ describe('application database role contract', () => {
 })
 
 describe('storage readiness probe', () => {
+  it('uses a content type accepted by the private applicant-document bucket', () => {
+    expect(STORAGE_READINESS_CONTENT_TYPE).toBe('application/pdf')
+  })
+
   it('writes, heads, and deletes a non-identifying canary object', async () => {
     const calls: string[] = []
     const key = await probeStorageReadiness({

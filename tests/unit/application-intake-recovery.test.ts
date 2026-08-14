@@ -114,6 +114,7 @@ describe('application intake recovery encryption', () => {
     })
     expect(result.storageKey).not.toContain('private')
     const stored = putObject.mock.calls[0]?.[1]
+    expect(putObject).toHaveBeenCalledWith(result.storageKey, expect.any(Buffer), 'application/pdf')
     expect(Buffer.from(stored as Uint8Array).toString('utf8')).not.toContain('private@example.com')
   })
 

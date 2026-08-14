@@ -181,7 +181,9 @@ export async function createApplicationIntakeReceipt(
   )
   const body = Buffer.from(JSON.stringify(encrypted), 'utf8')
   const putObject = options.putObject ?? uploadToS3
-  await putObject(storageKey, body, 'application/octet-stream')
+  // The private production bucket allowlists applicant-document MIME types.
+  // Receipts remain ciphertext and are authenticated before every decrypt.
+  await putObject(storageKey, body, 'application/pdf')
   return {
     receiptId,
     storageKey,

@@ -32,6 +32,7 @@ self-hosters.
 
 ### Fixed
 
+- Kept production storage readiness and encrypted intake buffering compatible with the private applicant-document bucket MIME policy.
 - Suppressed all candidate and internal notifications for authenticated synthetic applications and removed their database, queue, and storage artifacts after each probe.
 - Kept public job listings current within 60 seconds, disabled application-page caching, and made posted dates identical during server rendering and hydration.
 - Made production readiness require the least-privilege application database role and a real storage write, HEAD, and delete probe, with startup failing closed on either dependency.
