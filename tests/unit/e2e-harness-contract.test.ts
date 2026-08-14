@@ -435,6 +435,20 @@ describe('Playwright E2E harness contract', () => {
     expect(config).not.toContain('tests share state')
   })
 
+  it('runs E2E migrations separately from the least-privileged application role', () => {
+    const config = read('playwright.config.ts')
+    const workflow = read('.github/workflows/e2e-tests.yml')
+    const roleAction = read('.github/actions/setup-e2e-database-role/action.yml')
+
+    expect(config).toContain("process.env.DATABASE_MIGRATION_URL ?? process.env.DATABASE_URL")
+    expect(config).toContain('`${migrationWebServerEnv} npm run db:migrate')
+    expect(workflow.match(/uses: \.\/\.github\/actions\/setup-e2e-database-role/g)).toHaveLength(18)
+    expect(roleAction).toContain('NOSUPERUSER NOCREATEDB NOCREATEROLE')
+    expect(roleAction).toContain('REVOKE CREATE ON SCHEMA public FROM PUBLIC')
+    expect(roleAction).toContain('ALTER DEFAULT PRIVILEGES FOR ROLE factory_e2e')
+    expect(roleAction).toContain('DATABASE_MIGRATION_URL=$MIGRATION_DATABASE_URL')
+  })
+
   it('does not swallow e2e publish response failures', () => {
     const unsafeFiles = walk(join(root, 'e2e'))
       .filter(path => /\.spec\.ts$/.test(path))

@@ -70,6 +70,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
 
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -141,6 +144,9 @@ jobs:
         run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
@@ -221,6 +227,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
 
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -298,6 +307,9 @@ jobs:
         run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
@@ -377,6 +389,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
 
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -448,6 +463,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
 
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -518,6 +536,9 @@ jobs:
         run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
@@ -596,6 +617,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
 
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -665,6 +689,9 @@ jobs:
         run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
@@ -742,6 +769,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
 
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -811,6 +841,9 @@ jobs:
         run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
@@ -884,6 +917,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
 
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -955,6 +991,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
 
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -1024,6 +1063,9 @@ jobs:
         run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
@@ -1095,6 +1137,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
 
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -1165,6 +1210,9 @@ jobs:
         run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
@@ -1239,6 +1287,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
 
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -1308,6 +1359,9 @@ jobs:
         run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+
+      - name: Set up least-privileged database role
+        uses: ./.github/actions/setup-e2e-database-role
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
