@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto'
 
+// The production bucket allowlists applicant-document MIME types. The probe is
+// private, contains no applicant data, and is deleted immediately after HEAD.
+export const STORAGE_READINESS_CONTENT_TYPE = 'application/pdf'
+
 interface StorageReadinessDependencies {
   key?: string
   timeoutMs?: number

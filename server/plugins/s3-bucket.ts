@@ -24,7 +24,7 @@ export default defineNitroPlugin(async () => {
   try {
     if (env.S3_FORCE_PATH_STYLE) await ensureBucketExists()
     await probeStorageReadiness({
-      put: (key, signal) => uploadToS3(key, Buffer.from('ready'), 'application/octet-stream', { abortSignal: signal }),
+      put: (key, signal) => uploadToS3(key, Buffer.from('ready'), STORAGE_READINESS_CONTENT_TYPE, { abortSignal: signal }),
       head: (key, signal) => objectExistsInS3(key, { abortSignal: signal }),
       remove: (key, signal) => deleteFromS3(key, { abortSignal: signal }),
     })
