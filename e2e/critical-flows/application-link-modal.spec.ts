@@ -25,11 +25,11 @@ test.describe('ApplicationLinkModal and detail drawer smoke', () => {
 
     await expectSingleActionSet()
 
-    await page.getByRole('link', { name: 'Table', exact: true }).click()
+    await page.locator(`a[href="/dashboard/jobs/${job.id}/candidates"]`).click()
     await expect(page).toHaveURL(`/dashboard/jobs/${job.id}/candidates`)
     await expectSingleActionSet()
 
-    await page.getByRole('link', { name: 'Settings', exact: true }).click()
+    await page.locator(`a[href="/dashboard/jobs/${job.id}/settings"]`).click()
     await expect(page).toHaveURL(`/dashboard/jobs/${job.id}/settings`)
     await expectSingleActionSet()
   })
