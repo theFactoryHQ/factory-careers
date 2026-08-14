@@ -200,9 +200,7 @@ function openPropertyEditor(scope: 'org' | 'job') {
 </script>
 
 <template>
-  <!-- Quick actions teleported to sub-nav bar -->
-  <Teleport to="#job-sub-nav-actions">
-    <div class="flex items-center gap-2">
+  <div class="flex items-center gap-2">
       <!-- Add Candidate -->
       <button
         type="button"
@@ -335,8 +333,7 @@ function openPropertyEditor(scope: 'org' | 'job') {
           </Transition>
         </Teleport>
       </div>
-    </div>
-  </Teleport>
+  </div>
 
   <!-- Property schema editor (per-job application properties) -->
   <PropertySchemaEditor

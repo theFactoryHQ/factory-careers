@@ -7,6 +7,33 @@ import {
 } from '../helpers/recruiting-fixtures'
 
 test.describe('ApplicationLinkModal and detail drawer smoke', () => {
+  test('renders one job action set while navigating between job subpages', async ({ authenticatedPage }, testInfo) => {
+    const page = authenticatedPage
+    const unique = `${Date.now()}-r${testInfo.retry}`
+    const job = await createJob(page.request, `E2E Job Actions ${unique}`)
+    await publishJob(page.request, job.id)
+
+    await page.goto(`/dashboard/jobs/${job.id}`)
+    await page.waitForLoadState('networkidle')
+
+    const actions = page.locator('#job-sub-nav-actions')
+    const expectSingleActionSet = async () => {
+      await expect(actions.getByRole('button', { name: 'Add', exact: true })).toHaveCount(1)
+      await expect(actions.getByRole('button', { name: /Close this job so new candidates can no longer apply/i })).toHaveCount(1)
+      await expect(actions.getByRole('button', { name: 'Job actions', exact: true })).toHaveCount(1)
+    }
+
+    await expectSingleActionSet()
+
+    await page.locator(`a[href="/dashboard/jobs/${job.id}/candidates"]`).click()
+    await expect(page).toHaveURL(`/dashboard/jobs/${job.id}/candidates`)
+    await expectSingleActionSet()
+
+    await page.locator(`a[href="/dashboard/jobs/${job.id}/settings"]`).click()
+    await expect(page).toHaveURL(`/dashboard/jobs/${job.id}/settings`)
+    await expectSingleActionSet()
+  })
+
   test('opens apply-to-job modal from candidate drawer and dismisses with Escape', async ({ authenticatedPage }, testInfo) => {
     const page = authenticatedPage
     const unique = `${Date.now()}-r${testInfo.retry}`

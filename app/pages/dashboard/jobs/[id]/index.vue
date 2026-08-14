@@ -965,9 +965,6 @@ function closeDocPreview() {
     </div>
 
     <template v-else-if="jobData">
-      <!-- Quick actions teleported to sub-nav bar -->
-      <JobSubNavActions :job-id="jobId" />
-
       <!-- ═══════════════════════════════════════ -->
       <!-- PIPELINE STATUS TABS                     -->
       <!-- ═══════════════════════════════════════ -->

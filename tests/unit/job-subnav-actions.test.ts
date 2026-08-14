@@ -7,10 +7,27 @@ function readProjectFile(path: string) {
 }
 
 describe('job subnav actions', () => {
+  it('mounts one shared action owner in the persistent job subnav', () => {
+    const topBar = readProjectFile('app/components/AppTopBar.vue')
+    const jobPages = [
+      'app/pages/dashboard/jobs/[id]/index.vue',
+      'app/pages/dashboard/jobs/[id]/candidates.vue',
+      'app/pages/dashboard/jobs/[id]/application-form.vue',
+      'app/pages/dashboard/jobs/[id]/ai-analysis.vue',
+      'app/pages/dashboard/jobs/[id]/settings.vue',
+    ]
+
+    expect(topBar).toContain('<JobSubNavActions v-if="activeJobId" :key="activeJobId" :job-id="activeJobId" />')
+    for (const page of jobPages) {
+      expect(readProjectFile(page), page).not.toContain('<JobSubNavActions')
+    }
+  })
+
   it('does not render keyboard shortcut hints as subnav action controls', () => {
     const jobDetail = readProjectFile('app/pages/dashboard/jobs/[id]/index.vue')
+    const topBar = readProjectFile('app/components/AppTopBar.vue')
 
-    expect(jobDetail).toContain('<JobSubNavActions :job-id="jobId" />')
+    expect(topBar).toContain('<JobSubNavActions v-if="activeJobId" :key="activeJobId" :job-id="activeJobId" />')
     expect(jobDetail).not.toContain('Keyboard shortcut hints in sub-nav bar')
     expect(jobDetail).not.toContain('<span>candidates</span>')
     expect(jobDetail).not.toContain('<span>stages</span>')
