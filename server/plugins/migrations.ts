@@ -105,7 +105,28 @@ export function findMigrationLedgerDrift(
     }
   }
 
+  const expectedTimestamps = new Set(expected.map(migration => String(migration.folderMillis)))
+  for (const migration of actual) {
+    if (!expectedTimestamps.has(migration.createdAt)) {
+      drift.push(`${migration.createdAt}:unexpected`)
+    }
+  }
+
   return drift.sort()
+}
+
+export function migrationCompletionSummary(
+  schemaMigrationsSkipped: boolean,
+): { message: string, details: Record<string, boolean> } {
+  return {
+    message: schemaMigrationsSkipped
+      ? 'Runtime database schema verified; schema migrations were skipped'
+      : 'Database migrations applied and runtime schema verified successfully',
+    details: {
+      schema_migrations_skipped: schemaMigrationsSkipped,
+      schema_verified: true,
+    },
+  }
 }
 
 function expectedRuntimeSchemaColumns(): Record<string, string[]> {
@@ -304,7 +325,7 @@ export default defineNitroPlugin(async () => {
     databaseUrl: env.DATABASE_URL,
     migrationDatabaseUrl: env.DATABASE_MIGRATION_URL,
     skipRuntimeMigrations: env.SKIP_RUNTIME_MIGRATIONS,
-    railwayEnvironmentId: process.env.RAILWAY_ENVIRONMENT_ID,
+    railwayEnvironmentId: env.RAILWAY_ENVIRONMENT_ID,
   })
   const { skipSchemaMigrations } = migrationExecution
   if (skipSchemaMigrations) {
@@ -344,8 +365,9 @@ export default defineNitroPlugin(async () => {
       },
     })
 
-    console.log('[Factory Careers] Database migrations applied and runtime schema verified successfully')
-    logInfo('migrations.completed', { schema_verified: true })
+    const completion = migrationCompletionSummary(skipSchemaMigrations)
+    console.log(`[Factory Careers] ${completion.message}`)
+    logInfo('migrations.completed', completion.details)
   } catch (error) {
     markSsoStorageFailed(error)
     console.error('[Factory Careers] Migration failed:', error)

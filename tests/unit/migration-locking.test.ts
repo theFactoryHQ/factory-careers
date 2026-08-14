@@ -107,11 +107,28 @@ describe('runtime migration locking', () => {
       [
         { createdAt: '100', hash: 'first-hash' },
         { createdAt: '200', hash: 'unexpected-hash' },
+        { createdAt: '400', hash: 'future-hash' },
       ],
     )).toEqual([
       '200:hash-mismatch',
       '300:missing',
+      '400:unexpected',
     ])
+  })
+
+  it('reports migration completion accurately when a non-production bootstrap skips SQL', async () => {
+    const migrationModule = await import('../../server/plugins/migrations') as Record<string, unknown>
+    const migrationCompletionSummary = migrationModule.migrationCompletionSummary as undefined | ((
+      skipped: boolean,
+    ) => { message: string, details: Record<string, boolean> })
+
+    expect(migrationCompletionSummary?.(true)).toEqual({
+      message: 'Runtime database schema verified; schema migrations were skipped',
+      details: {
+        schema_migrations_skipped: true,
+        schema_verified: true,
+      },
+    })
   })
 
   it('validates before backfill, validates again, and marks encrypted storage ready', async () => {

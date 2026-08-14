@@ -112,6 +112,8 @@ export const envSchema = z
       .default([]),
     /** Railway environment metadata for PR/preview detection. */
     RAILWAY_ENVIRONMENT_NAME: emptyToUndefined.optional(),
+    /** Railway environment identifier used to recognize temporary bootstrap services. */
+    RAILWAY_ENVIRONMENT_ID: emptyToUndefined.optional(),
     /** PR number provided by Railway for GitHub-triggered deployments. */
     RAILWAY_GIT_PR_NUMBER: emptyToUndefined
       .pipe(z.string().regex(/^\d+$/, "RAILWAY_GIT_PR_NUMBER must be numeric"))
