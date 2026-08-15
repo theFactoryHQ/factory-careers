@@ -95,5 +95,9 @@ describe("application receipt email branding", () => {
 		const html = await render(payload.react);
 		expect(html).toContain("invalid_client");
 		expect(html).toContain("2026-08-10T12:00:00.000Z");
+		expect(html).toContain(
+			'src="https://careers.thefactoryhq.com/factory-logo.png"',
+		);
+		expect(html).toContain('alt="Factory Careers"');
 	});
 });
