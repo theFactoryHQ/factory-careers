@@ -12,8 +12,7 @@ export const careersEmailConfig = {
   address: "5431 W 104th St, Los Angeles, CA 90045",
   accentColor: "#FF4426",
   siteUrl: "https://careers.thefactoryhq.com",
-  logoUrl:
-    "https://nypetlcjkgntmkebnxbx.supabase.co/storage/v1/object/public/public-assets/factory-logo.png",
+  logoUrl: "https://careers.thefactoryhq.com/factory-logo.png",
   logoMode: "full" as const,
   logoAlign: "left" as const,
   unsubscribeSecret: env.UNSUBSCRIBE_SECRET || "factory-careers-unsub-secret",
