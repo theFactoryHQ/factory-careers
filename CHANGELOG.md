@@ -32,6 +32,7 @@ self-hosters.
 
 ### Fixed
 
+- Prevented browser autofill from causing public applications to report success without being saved.
 - Loaded the Factory logo in operational alert emails from the first-party careers site instead of the retired external asset host.
 - Kept production storage readiness and encrypted intake buffering compatible with the private applicant-document bucket MIME policy.
 - Suppressed all candidate and internal notifications for authenticated synthetic applications and removed their database, queue, and storage artifacts after each probe.
