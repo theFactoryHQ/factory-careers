@@ -136,7 +136,6 @@ export default defineEventHandler(async (event) => {
   let phone: string | undefined
   let country: string
   let state: string
-  let website: string | undefined
   let responseArray: { questionId: string; value: string | string[] | number | boolean }[] = []
   let coverLetterText: string | undefined
   let compliance: {
@@ -214,7 +213,6 @@ export default defineEventHandler(async (event) => {
       phone: fields.phone?.trim() || undefined,
       country: fields.country?.trim() ?? '',
       state: fields.state?.trim() ?? '',
-      website: fields.website || undefined,
       coverLetterText: fields.coverLetterText?.trim() || undefined,
       responses: rawResponses,
       compliance: rawCompliance,
@@ -232,7 +230,6 @@ export default defineEventHandler(async (event) => {
     phone = validated.phone
     country = validated.country
     state = validated.state
-    website = validated.website
     coverLetterText = validated.coverLetterText
     responseArray = validated.responses
     compliance = validated.compliance
@@ -251,7 +248,6 @@ export default defineEventHandler(async (event) => {
     phone = body.phone
     country = body.country
     state = body.state
-    website = body.website
     coverLetterText = body.coverLetterText
     responseArray = body.responses
     compliance = body.compliance
@@ -261,12 +257,6 @@ export default defineEventHandler(async (event) => {
     utmCampaign = body.utmCampaign
     utmTerm = body.utmTerm
     utmContent = body.utmContent
-  }
-
-  // Honeypot check — if the hidden `website` field is filled, silently reject
-  if (website) {
-    setResponseStatus(event, 200)
-    return { success: true }
   }
 
   if (canaryRequested && !validateApplicationCanaryIdentity({

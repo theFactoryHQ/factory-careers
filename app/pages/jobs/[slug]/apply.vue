@@ -55,7 +55,6 @@ const form = ref({
   phone: '',
   country: 'United States',
   state: '',
-  website: '', // honeypot
 })
 
 // Dynamic question responses: questionId → value
@@ -382,10 +381,6 @@ async function handleSubmit() {
       if (form.value.phone.trim()) {
         formData.append('phone', form.value.phone.trim())
       }
-      if (form.value.website) {
-        formData.append('website', form.value.website)
-      }
-
       // Serialize non-file responses as JSON
       formData.append('responses', JSON.stringify(responseArray))
 
@@ -429,7 +424,6 @@ async function handleSubmit() {
           phone: form.value.phone.trim() || undefined,
           country: form.value.country,
           state: form.value.state,
-          website: form.value.website, // honeypot
           coverLetterText: coverLetterText.value.trim() || undefined,
           responses: responseArray,
           compliance: normalizedCompliance.value,
@@ -587,12 +581,6 @@ function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[
           </div>
 
           <form class="space-y-5" @submit.prevent="handleSubmit">
-            <!-- Honeypot (hidden from humans) -->
-            <div class="absolute -left-[9999px]" aria-hidden="true">
-              <label for="website">Website</label>
-              <input id="website" v-model="form.website" type="text" tabindex="-1" autocomplete="off" />
-            </div>
-
             <div v-if="finalApplicationStep > 1" class="flex items-center gap-3 border-b border-white/10 pb-5">
               <div class="flex items-center gap-2">
                 <span
