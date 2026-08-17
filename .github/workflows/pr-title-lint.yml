@@ -24,7 +24,7 @@ permissions:
 jobs:
   lint:
     name: Validate PR title
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, factory-careers]
     steps:
       - uses: amannn/action-semantic-pull-request@v6
         env:

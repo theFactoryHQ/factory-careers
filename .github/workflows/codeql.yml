@@ -22,7 +22,7 @@ jobs:
   analyze:
     name: Analyze JavaScript/TypeScript
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, factory-careers]
     timeout-minutes: 15
 
     steps:
