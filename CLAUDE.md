@@ -234,7 +234,10 @@ started per boot (the update script must not start them):
 ```bash
 sudo pg_ctlcluster 16 main start                     # Postgres → localhost:5432
 set -a && . /workspace/.env && set +a
-minio server "$HOME/minio-data" --address :9000 --console-address :9001 &  # S3 → :9000, console → :9001
+# MinIO must boot with the same root credentials the app uses as S3 keys, or it
+# ignores them / fails against the existing data dir → S3 → :9000, console → :9001
+MINIO_ROOT_USER="$STORAGE_USER" MINIO_ROOT_PASSWORD="$STORAGE_PASSWORD" \
+  minio server "$HOME/minio-data" --address :9000 --console-address :9001 &
 ```
 
 The Postgres roles/database and the `factory-careers` MinIO bucket already match
