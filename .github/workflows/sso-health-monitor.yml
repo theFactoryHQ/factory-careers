@@ -89,7 +89,7 @@ jobs:
 
       - name: Reconcile the SSO incident issue
         if: ${{ always() }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           FIRST_CODE: ${{ steps.first.outputs.first_code }}
           SECOND_CODE: ${{ steps.second.outputs.second_code }}
