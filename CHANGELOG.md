@@ -23,6 +23,7 @@ self-hosters.
 
 ### Changed
 
+- Updated production npm dependencies for AI providers, S3, Better Auth SSO, Nuxt MDC, PostHog, Mammoth, Nodemailer, and Resend.
 - Updated the supported application, authentication, observability, testing, and GitHub Actions dependency sets, including Nuxt 4.5 and the current checkout and Node setup actions.
 - Made shareable invite links a one-time reveal and stored only one-way token hashes, while preserving previously distributed links through migration.
 - Kept pre-made scoring rubrics consistent across job creation, job editing, API, and CLI paths.
