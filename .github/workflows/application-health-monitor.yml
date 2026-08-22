@@ -52,7 +52,7 @@ jobs:
 
       - name: Reconcile application incident
         if: ${{ always() }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           FIRST: ${{ steps.first.outcome }}
           SECOND: ${{ steps.second.outcome }}

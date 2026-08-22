@@ -82,7 +82,7 @@ jobs:
 
       - name: Reconcile canary incident
         if: ${{ always() }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           RESULT: ${{ steps.canary.outcome }}
           PURGE_RESULT: ${{ steps.purge.outcome }}
