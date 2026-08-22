@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# CodeRabbit automated reviews are disabled for factory-careers. Code review is
+# handled by the self-hosted CI checks and human/Cursor Bugbot review instead.
+# On-demand reviews can still be triggered by commenting "@coderabbitai review"
+# on a pull request if ever needed.
+reviews:
+  # Do not automatically review pull requests.
+  auto_review:
+    enabled: false
+  # Do not post the CodeRabbit review status check / summary.
+  review_status: false
+  high_level_summary: false
+  poem: false
+chat:
+  auto_reply: false

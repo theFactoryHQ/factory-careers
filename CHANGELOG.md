@@ -32,6 +32,8 @@ self-hosters.
 - Made CI compare ordinary changelog additions with the pull request merge base, preserve its existing Unreleased entries, and reject stale or unfinalized release PRs before publishing and validating the exact versioned GitHub Release body.
 - Shared typed job create and update contracts across the dashboard and API while preserving deliberate null-versus-omitted field behavior.
 - Made the generated Nuxt ESLint configuration a required local and pull-request gate, and clarified that host development runs on port 3001 while the full Docker stack remains on port 3000.
+- Ran the PR title lint, CodeQL, and secret-scan checks on the self-hosted CI runners.
+- Turned off automated CodeRabbit pull request reviews.
 
 ### Fixed
 
