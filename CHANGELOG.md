@@ -34,6 +34,7 @@ self-hosters.
 - Made the generated Nuxt ESLint configuration a required local and pull-request gate, and clarified that host development runs on port 3001 while the full Docker stack remains on port 3000.
 - Ran the PR title lint, CodeQL, and secret-scan checks on the self-hosted CI runners.
 - Turned off automated CodeRabbit pull request reviews.
+- Installed the shared `@caffeinebounce/email` transactional email package from the public npm registry, removing the GitHub Packages read token requirement for local installs and Docker builds.
 
 ### Fixed
 
