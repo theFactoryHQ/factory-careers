@@ -6,7 +6,10 @@ import { fileURLToPath } from 'node:url'
 
 const MIGRATIONS_DIR = 'server/database/migrations/'
 const JOURNAL_PATH = `${MIGRATIONS_DIR}meta/_journal.json`
+const SNAPSHOT_DIR = `${MIGRATIONS_DIR}meta/`
 const SCHEMA_DIR = 'server/database/schema/'
+const SNAPSHOT_BASELINE_TAG = '0066_current_schema_snapshot'
+const SNAPSHOT_BASELINE_INDEX = 66
 
 function git(cwd, args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
@@ -40,6 +43,24 @@ function migrationTag(path) {
   return path.slice(MIGRATIONS_DIR.length, -'.sql'.length)
 }
 
+function snapshotPath(index) {
+  return `${SNAPSHOT_DIR}${String(index).padStart(4, '0')}_snapshot.json`
+}
+
+function isSnapshotPath(path) {
+  return path.startsWith(SNAPSHOT_DIR) && path.endsWith('_snapshot.json')
+}
+
+function pathExistsAtRef(cwd, ref, path) {
+  try {
+    git(cwd, ['cat-file', '-e', `${ref}:${path}`])
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
 export function checkMigrationDiscipline({ cwd = process.cwd(), baseRef, headRef = 'HEAD' }) {
   const mergeBase = git(cwd, ['merge-base', baseRef, headRef])
   const migrationChanges = changedFiles(cwd, mergeBase, headRef, MIGRATIONS_DIR)
@@ -54,8 +75,19 @@ export function checkMigrationDiscipline({ cwd = process.cwd(), baseRef, headRef
     errors.push(`Applied migration SQL is immutable: ${historicalSqlChanges.flatMap(change => change.paths).join(', ')}`)
   }
 
+  const historicalSnapshotChanges = migrationChanges.filter(({ status, paths }) => {
+    return status !== 'A' && paths.some(isSnapshotPath)
+  })
+  if (historicalSnapshotChanges.length > 0) {
+    errors.push(`Migration snapshot history is immutable: ${historicalSnapshotChanges.flatMap(change => change.paths).join(', ')}`)
+  }
+
   const newSqlPaths = migrationChanges
     .filter(({ status, paths }) => status === 'A' && paths[0]?.endsWith('.sql'))
+    .map(({ paths }) => paths[0])
+    .sort()
+  const newSnapshotPaths = migrationChanges
+    .filter(({ status, paths }) => status === 'A' && paths[0] && isSnapshotPath(paths[0]))
     .map(({ paths }) => paths[0])
     .sort()
 
@@ -81,6 +113,32 @@ export function checkMigrationDiscipline({ cwd = process.cwd(), baseRef, headRef
   const appendedTags = appendedEntries.map(entry => entry.tag)
   if (JSON.stringify(newTags) !== JSON.stringify(appendedTags)) {
     errors.push(`New migration files must exactly match appended journal entries (files: ${newTags.join(', ') || 'none'}; journal: ${appendedTags.join(', ') || 'none'})`)
+  }
+
+  const baselineEntry = headEntries.find(entry => entry.tag === SNAPSHOT_BASELINE_TAG)
+  if (baselineEntry && baselineEntry.idx !== SNAPSHOT_BASELINE_INDEX) {
+    errors.push(`Snapshot enforcement baseline ${SNAPSHOT_BASELINE_TAG} must remain at journal index ${SNAPSHOT_BASELINE_INDEX}`)
+  }
+  if (!baselineEntry && (appendedEntries.length > 0 || newSnapshotPaths.length > 0)) {
+    errors.push(`New migrations require the fixed snapshot enforcement baseline ${SNAPSHOT_BASELINE_TAG}`)
+  }
+
+  const expectedSnapshotPaths = baselineEntry
+    ? appendedEntries
+        .filter(entry => entry.idx >= SNAPSHOT_BASELINE_INDEX)
+        .map(entry => snapshotPath(entry.idx))
+        .sort()
+    : []
+  if (JSON.stringify(newSnapshotPaths) !== JSON.stringify(expectedSnapshotPaths)) {
+    errors.push(`New migration snapshots must exactly match appended journal entries (snapshots: ${newSnapshotPaths.join(', ') || 'none'}; expected: ${expectedSnapshotPaths.join(', ') || 'none'})`)
+  }
+
+  const newestEntry = headEntries.at(-1)
+  if (baselineEntry && newestEntry?.idx >= SNAPSHOT_BASELINE_INDEX) {
+    const newestSnapshotPath = snapshotPath(newestEntry.idx)
+    if (!pathExistsAtRef(cwd, headRef, newestSnapshotPath)) {
+      errors.push(`Newest migration journal entry ${newestEntry.tag} requires snapshot ${newestSnapshotPath}`)
+    }
   }
 
   let previous = baseEntries.at(-1)

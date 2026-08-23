@@ -35,8 +35,9 @@ any applied SQL or existing journal entry.
 - `server/database/migrations/meta/0034_snapshot.json` is the newest snapshot;
   snapshots `0035` through `0065` do not exist.
 - `package.json` defines `db:generate` as `drizzle-kit generate`.
-- Installed Drizzle Kit supports `generate --custom`, documented by its local
-  help as preparing an empty custom migration.
+- Installed Drizzle Kit supports `generate --custom`, but validated execution
+  showed that it copies the prior snapshot shape and is unsuitable for repairing
+  a stale baseline.
 - `scripts/check-migration-discipline.mjs:57-98` checks new SQL files and journal
   entries but never checks snapshot presence.
 - `tests/unit/migration-discipline.test.ts:49-66` considers appended SQL and a
@@ -45,18 +46,28 @@ any applied SQL or existing journal entry.
 
 ## Required repair shape
 
-Use Drizzle Kit itself to append one no-op custom migration named
-`current_schema_snapshot`. It must create the next journal entry and a snapshot
-representing the current schema. The generated SQL must contain no executable
-DDL. Do not synthesize missing historical snapshots and do not edit identifiers
-or `prevId` values manually.
+Use ordinary Drizzle generation to append one migration named
+`current_schema_snapshot` and materialize a snapshot of the current schema.
+Resolve rename prompts only where migrations `0035` through `0065` provide
+unambiguous evidence. Preserve the tool-generated snapshot and journal append,
+then replace the generated duplicate DDL body with a comment-only no-op SQL
+file. Do not synthesize missing historical snapshots and do not edit snapshot
+identifiers or `prevId` values manually.
+
+Drizzle Kit 0.31.10's `generate --custom` cannot be used for this repair. A
+validated execution showed that it advanced the snapshot IDs while retaining
+the stale 36-table schema shape, so a subsequent ordinary generation still
+prompted for schema decisions. Ordinary generation produced the current
+52-table snapshot; migration `0061_hash_invite_link_tokens.sql` established the
+only prompt decision by explicitly adding `token_hash`, backfilling it from
+`token`, and then dropping `token`.
 
 ## Commands you will need
 
 | Purpose | Command | Expected on success |
 | --- | --- | --- |
 | Tool version | `npx drizzle-kit --version` | version matching the lockfile |
-| Custom baseline | `npm run db:generate -- --custom --name current_schema_snapshot` | one next-numbered SQL file, journal append, and snapshot |
+| Current baseline | `npm run db:generate -- --name current_schema_snapshot` | one next-numbered SQL file, journal append, and current snapshot after evidence-backed prompts |
 | Discipline | `npm run check:migration-discipline` | exit 0 |
 | Upgrade rehearsal | `npm run test:integration:migrations` | exit 0 against isolated PostgreSQL |
 | No-diff probe | `npm run db:generate -- --name unchanged_schema_probe` | reports no schema changes and creates no migration |
@@ -70,7 +81,7 @@ environment. Never point them at production or a shared development database.
 
 **In scope**:
 
-- one tool-generated next-numbered custom migration SQL file
+- one tool-generated next-numbered migration SQL file reduced to a no-op comment
 - its tool-generated `server/database/migrations/meta/*_snapshot.json`
 - appended `_journal.json` entry produced by the tool
 - `scripts/check-migration-discipline.mjs`
@@ -107,18 +118,22 @@ false and the plan needs revision.
 
 ### Step 2: Generate a tool-owned current snapshot
 
-Run the custom-baseline command once on the implementation branch. Confirm:
+Run the ordinary baseline command once on the implementation branch. Resolve
+each rename prompt only after identifying the applied migration that proves the
+choice. Confirm:
 
 - exactly one next-numbered SQL file was added;
 - exactly one snapshot was added;
 - the journal only appended one entry;
 - existing journal entries and migrations are byte-for-byte unchanged;
-- the SQL file has no executable DDL.
+- the generated snapshot describes the current schema;
+- the generated duplicate DDL is fully replaced by a comment-only no-op body.
 
-**Verify**: `git diff -- server/database/migrations` shows only those generated
-additions and the journal append. If the tool creates executable DDL, omits a
-snapshot, or rewrites history, stop and discard only the uncommitted generated
-files through a recoverable, reviewed operation.
+**Verify**: a second ordinary generation reports no schema changes and creates
+no files. `git diff -- server/database/migrations` shows only the no-op SQL,
+tool-generated snapshot, and journal append. If a prompt is ambiguous, the tool
+omits a snapshot, or history is rewritten, stop and discard only the
+uncommitted generated files through a recoverable, reviewed operation.
 
 ### Step 3: Enforce a current snapshot for future migrations
 
@@ -154,19 +169,21 @@ exit 0. `git status --short` contains no probe artifact.
 
 ## Done criteria
 
-- [ ] A tool-generated current snapshot exists at the journal tip.
-- [ ] The accompanying custom migration contains no executable DDL.
-- [ ] No historical SQL, snapshot, or journal entry was rewritten.
-- [ ] Future appended migrations require corresponding snapshots.
-- [ ] A second generation produces no changes or files.
-- [ ] Migration rehearsal and full PR preflight pass.
-- [ ] `git diff --check` exits 0 and only in-scope files changed.
+- [x] A tool-generated current snapshot exists at the journal tip.
+- [x] The accompanying no-op migration contains no executable DDL.
+- [x] No historical SQL, snapshot, or journal entry was rewritten.
+- [x] Future appended migrations require corresponding snapshots.
+- [x] A second generation produces no changes or files.
+- [x] Migration rehearsal and all plan-scoped PR preflight gates pass.
+- [x] `git diff --check` exits 0 and only in-scope files changed.
 
 ## STOP conditions
 
 - Ordinary generation already reports no schema changes at `88f7c18`.
-- `--custom` does not create a current snapshot with the installed Drizzle Kit.
-- The tool generates executable DDL for the baseline.
+- Ordinary generation presents a rename prompt without unambiguous evidence in
+  migrations `0035` through `0065`.
+- The tool-generated snapshot does not make the second generation a clean
+  no-diff.
 - Repair appears to require editing an applied migration or existing journal entry.
 - Migration rehearsal targets anything except a disposable isolated database.
 

@@ -1,0 +1,1 @@
+-- No-op migration: establishes a current Drizzle schema snapshot after migrations 0035-0065.

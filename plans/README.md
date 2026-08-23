@@ -22,7 +22,7 @@ conditions, and update the plan's row when done.
 | [011](011-separate-instance-administration.md) | Separate instance administration from tenant ownership | P0 | M | - | IN PROGRESS |
 | [012](012-require-postgres-integration-suites.md) | Require every PostgreSQL integration suite in PR CI | P0 | S | - | IN PROGRESS |
 | [013](013-cover-critical-playwright-specs.md) | Cover every critical Playwright spec in required CI | P0 | S | - | IN PROGRESS |
-| [014](014-restore-drizzle-snapshot-baseline.md) | Restore a current Drizzle snapshot baseline | P0 | M | - | IN PROGRESS |
+| [014](014-restore-drizzle-snapshot-baseline.md) | Restore a current Drizzle snapshot baseline | P0 | M | - | DONE |
 | [015](015-durable-private-document-erasure.md) | Make private-document erasure durable and truthful | P0 | L | 014 | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
