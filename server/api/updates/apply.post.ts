@@ -23,10 +23,10 @@ interface UpdateResult {
  * Only works for Docker-based deployments. Railway deployments
  * auto-update via GitHub integration.
  *
- * Requires authentication (owner only).
+ * Requires explicit instance-administrator access.
  */
 export default defineEventHandler(async (event) => {
-  await requirePermission(event, { organization: ['delete'] })
+  await requireInstanceAdmin(event)
 
   const steps: UpdateResult['steps'] = []
 

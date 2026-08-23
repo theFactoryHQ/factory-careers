@@ -39,6 +39,7 @@ self-hosters.
 ### Fixed
 
 - Made bulk scoring-criteria replacement atomic and rejected duplicate criterion keys before any database write.
+- Separated host-global update and backup administration from tenant ownership with an explicit, default-deny Better Auth user-ID allowlist.
 - Prevented browser autofill from causing public applications to report success without being saved.
 - Loaded the Factory logo in operational alert emails from the first-party careers site instead of the retired external asset host.
 - Kept production storage readiness and encrypted intake buffering compatible with the private applicant-document bucket MIME policy.

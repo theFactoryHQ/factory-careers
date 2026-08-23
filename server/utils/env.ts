@@ -48,6 +48,91 @@ const commaEmailList = (defaultValue: string[] = []) =>
       : defaultValue,
   ).pipe(z.array(z.email()));
 
+class ImmutableStringSet implements ReadonlySet<string> {
+  readonly #values: Set<string>
+
+  constructor(values: Iterable<string>) {
+    this.#values = new Set(values)
+    Object.freeze(this)
+  }
+
+  get size(): number {
+    return this.#values.size
+  }
+
+  get [Symbol.toStringTag](): string {
+    return 'ImmutableStringSet'
+  }
+
+  has(value: string): boolean {
+    return this.#values.has(value)
+  }
+
+  entries(): SetIterator<[string, string]> {
+    return this.#values.entries()
+  }
+
+  keys(): SetIterator<string> {
+    return this.#values.keys()
+  }
+
+  values(): SetIterator<string> {
+    return this.#values.values()
+  }
+
+  union<U>(other: ReadonlySetLike<U>): Set<string | U> {
+    return this.#values.union(other)
+  }
+
+  intersection<U>(other: ReadonlySetLike<U>): Set<string & U> {
+    return this.#values.intersection(other)
+  }
+
+  difference<U>(other: ReadonlySetLike<U>): Set<string> {
+    return this.#values.difference(other)
+  }
+
+  symmetricDifference<U>(other: ReadonlySetLike<U>): Set<string | U> {
+    return this.#values.symmetricDifference(other)
+  }
+
+  isSubsetOf(other: ReadonlySetLike<unknown>): boolean {
+    return this.#values.isSubsetOf(other)
+  }
+
+  isSupersetOf(other: ReadonlySetLike<unknown>): boolean {
+    return this.#values.isSupersetOf(other)
+  }
+
+  isDisjointFrom(other: ReadonlySetLike<unknown>): boolean {
+    return this.#values.isDisjointFrom(other)
+  }
+
+  forEach(
+    callback: (value: string, value2: string, set: ReadonlySet<string>) => void,
+    thisArg?: unknown,
+  ): void {
+    for (const value of this.#values) {
+      callback.call(thisArg, value, value, this)
+    }
+  }
+
+  [Symbol.iterator](): SetIterator<string> {
+    return this.#values[Symbol.iterator]()
+  }
+}
+
+const commaExactSet = z
+  .preprocess(
+    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.string().optional(),
+  )
+  .transform(value => new ImmutableStringSet(
+    value
+      ? value.split(',').map(item => item.trim()).filter(Boolean)
+      : [],
+  ))
+
 /**
  * Detect whether the current Railway environment is a PR/preview environment.
  * Production and long-lived environments must provide explicit BETTER_AUTH_URL.
@@ -293,6 +378,8 @@ export const envSchema = z
     FACTORY_ALLOWED_EMAIL_DOMAINS: commaList(["thefactoryhq.com"]),
     /** Comma-separated email addresses allowed to perform emergency first-org bootstrap. */
     FACTORY_INITIAL_OWNER_EMAILS: commaList([]),
+    /** Stable Better Auth user IDs permitted to perform host-global administration. */
+    FACTORY_INSTANCE_ADMIN_USER_IDS: commaExactSet,
     /** Hiring team notification inbox for new public applications. */
     FACTORY_CAREERS_HIRING_INBOX: emptyToUndefined
       .pipe(z.string().min(1))
@@ -624,7 +711,7 @@ export const env = new Proxy({} as z.infer<typeof envSchema>, {
             `Required: DATABASE_URL, BETTER_AUTH_SECRET, S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET\n` +
             `Required on Render: BETTER_AUTH_URL=https://careers.thefactoryhq.com\n` +
             `Required in production: DATABASE_MIGRATION_URL, SSO_PROVIDER_SECRET_STORAGE_MODE=compatibility|encrypted\n` +
-            `Optional outside production: SSO_PROVIDER_SECRET_STORAGE_MODE (default: encrypted), BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), S3_SKIP_BUCKET_POLICY, S3_SKIP_BUCKET_INIT, SKIP_RUNTIME_MIGRATIONS, RECRUITING_WORKER_ENABLED, APPLICATION_NOTIFICATION_WORKER_ENABLED, TRUST_PROXY_HEADERS, TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL, EMAIL_FROM, FACTORY_EMAIL_TEST_MODE, FACTORY_EMAIL_CAPTURE_PATH, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CALENDAR_AUTH_MODE, MICROSOFT_CALENDAR_CLIENT_ID, MICROSOFT_CALENDAR_CLIENT_SECRET, MICROSOFT_CALENDAR_TENANT_ID, FACTORY_CALENDAR_TEST_MODE, FACTORY_CAREERS_CALENDAR_SYNC_SHARED, FACTORY_CAREERS_CALENDAR_USER_EMAILS, FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_DISCOVERY_URL, OIDC_PROVIDER_NAME, AUTH_GOOGLE_CLIENT_ID, AUTH_GOOGLE_CLIENT_SECRET, AUTH_GITHUB_CLIENT_ID, AUTH_GITHUB_CLIENT_SECRET, AUTH_MICROSOFT_CLIENT_ID, AUTH_MICROSOFT_CLIENT_SECRET, AUTH_MICROSOFT_TENANT_ID, FACTORY_CAREERS_HIRING_INBOX, FACTORY_CAREERS_PRIVACY_INBOX, FACTORY_CAREERS_CLI_CLIENT_ID, FACTORY_ALLOWED_EMAIL_DOMAINS, FACTORY_INITIAL_OWNER_EMAILS\n` +
+            `Optional outside production: SSO_PROVIDER_SECRET_STORAGE_MODE (default: encrypted), BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), S3_SKIP_BUCKET_POLICY, S3_SKIP_BUCKET_INIT, SKIP_RUNTIME_MIGRATIONS, RECRUITING_WORKER_ENABLED, APPLICATION_NOTIFICATION_WORKER_ENABLED, TRUST_PROXY_HEADERS, TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL, EMAIL_FROM, FACTORY_EMAIL_TEST_MODE, FACTORY_EMAIL_CAPTURE_PATH, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CALENDAR_AUTH_MODE, MICROSOFT_CALENDAR_CLIENT_ID, MICROSOFT_CALENDAR_CLIENT_SECRET, MICROSOFT_CALENDAR_TENANT_ID, FACTORY_CALENDAR_TEST_MODE, FACTORY_CAREERS_CALENDAR_SYNC_SHARED, FACTORY_CAREERS_CALENDAR_USER_EMAILS, FACTORY_CAREERS_CALENDAR_SYNC_INTERVIEWERS, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_DISCOVERY_URL, OIDC_PROVIDER_NAME, AUTH_GOOGLE_CLIENT_ID, AUTH_GOOGLE_CLIENT_SECRET, AUTH_GITHUB_CLIENT_ID, AUTH_GITHUB_CLIENT_SECRET, AUTH_MICROSOFT_CLIENT_ID, AUTH_MICROSOFT_CLIENT_SECRET, AUTH_MICROSOFT_TENANT_ID, FACTORY_CAREERS_HIRING_INBOX, FACTORY_CAREERS_PRIVACY_INBOX, FACTORY_CAREERS_CLI_CLIENT_ID, FACTORY_ALLOWED_EMAIL_DOMAINS, FACTORY_INITIAL_OWNER_EMAILS, FACTORY_INSTANCE_ADMIN_USER_IDS\n` +
             `Test-only and blocked in production: FACTORY_AI_TEST_MODE=mock, FACTORY_AI_CAPTURE_PATH, FACTORY_CALENDAR_TEST_MODE=mock\n`,
         );
         throw result.error;

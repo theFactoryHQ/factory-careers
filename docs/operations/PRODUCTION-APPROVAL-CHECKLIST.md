@@ -32,6 +32,8 @@ Use this checklist before launching or materially changing any environment that 
 | SSO credential metadata | Key ID, activation, expiry, and last success present; no secret fields |  |
 | Authenticated Microsoft probe | Stable healthy code; no raw provider data |  |
 | Real Microsoft sign-in | Reaches `/dashboard` |  |
+| Instance administrator bootstrap | One exact Better Auth user ID configured; `system info` returns `canAdministerInstance: true` |  |
+| Tenant-owner host denial | Non-allowlisted owner receives HTTP 403 for update and backup before host work |  |
 | Minimum safe rollback target | Compatibility-capable SHA and Render deploy recorded |  |
 | Historical-artifact rollback rehearsal | Old artifact fails readiness; current deploy remains live |  |
 | SSO monitor | Manual run healthy and 15-minute schedule enabled |  |

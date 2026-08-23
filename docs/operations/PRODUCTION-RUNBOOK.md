@@ -47,6 +47,29 @@ GitHub Actions additionally requires concealed
 `RENDER_API_KEY`, and `RENDER_SERVICE_ID` secrets. The Render identifiers and
 credentials are deployment controls and must not be emitted by workflow logs.
 
+### Instance administrator bootstrap
+
+`FACTORY_INSTANCE_ADMIN_USER_IDS` is a comma-separated allowlist of stable
+Better Auth user IDs. It controls host-global update and backup operations.
+Organization ownership does not grant this access. An empty or missing value
+disables host mutations for every account.
+
+Bootstrap one operator through the supported authenticated readback:
+
+1. Sign in to the production CLI as the intended operator.
+2. Run `factory-careers auth whoami --json`.
+3. Copy the exact `user.id` from that operator's authenticated response.
+4. Set only that ID in `FACTORY_INSTANCE_ADMIN_USER_IDS`.
+5. Deploy the reviewed release.
+6. Run `factory-careers system info --json` as that operator.
+7. Confirm `canAdministerInstance` is `true`.
+8. Sign in as a tenant owner who is absent from the allowlist.
+9. Confirm update and backup requests return HTTP 403 before any host work.
+10. Add further operator IDs only after the bounded bootstrap proof passes.
+
+Use exact, case-sensitive IDs. Never use an email address, domain, organization
+role, or partial ID. Never print the configured allowlist in logs or evidence.
+
 ### Database migration invariant
 
 `DATABASE_URL` must use the ordinary application role without DDL authority.

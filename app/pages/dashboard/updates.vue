@@ -21,8 +21,6 @@ useSeoMeta({
   description: 'Review Factory Careers releases and product changes',
 })
 
-const { allowed: isOwner } = usePermission({ organization: ['delete'] })
-
 // ─────────────────────────────────────────────
 // Version check
 // ─────────────────────────────────────────────
@@ -54,6 +52,7 @@ async function handleCheckUpdate() {
 const { data: systemInfo, pending: systemLoading } = await useFetch('/api/updates/system', {
   lazy: true,
 })
+const canAdministerInstance = computed(() => systemInfo.value?.canAdministerInstance === true)
 
 // ─────────────────────────────────────────────
 // Backup
@@ -325,9 +324,9 @@ function formatDate(dateString: string | null | undefined): string {
     </section>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- One-click update section (owner only)      -->
+    <!-- One-click update section (instance admins) -->
     <!-- ═══════════════════════════════════════════ -->
-    <section v-if="isOwner && versionInfo?.updateAvailable" class="ui-panel-brand mb-6 overflow-hidden shadow-sm">
+    <section v-if="canAdministerInstance && versionInfo?.updateAvailable" class="ui-panel-brand mb-6 overflow-hidden shadow-sm">
       <div class="ui-panel-brand-header px-6 py-5">
         <div class="flex items-center gap-3">
           <div class="ui-icon-state ui-icon-state-brand size-10 rounded-lg">
@@ -449,9 +448,9 @@ function formatDate(dateString: string | null | undefined): string {
       </div>
     </section>
 
-    <!-- Read-only notice for non-owner users -->
-    <div v-if="!isOwner && versionInfo?.updateAvailable" class="ui-alert ui-alert-info mb-6 px-4 py-3">
-      Only organization owners can apply updates. Contact the owner to update your instance.
+    <!-- Read-only notice for users without host access -->
+    <div v-if="systemInfo && !canAdministerInstance && versionInfo?.updateAvailable" class="ui-alert ui-alert-info mb-6 px-4 py-3">
+      Host administration is unavailable for this account.
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
