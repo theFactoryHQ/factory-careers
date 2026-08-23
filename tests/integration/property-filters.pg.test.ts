@@ -13,7 +13,12 @@ import {
   type PropertyFilter,
 } from '../../server/utils/properties'
 
-const adminUrl = process.env.PROPERTY_FILTER_PG_TEST_URL
+const coreAdminUrl = process.env.FACTORY_CORE_PG_TEST_URL
+if (process.env.FACTORY_CORE_PG_REQUIRED === 'true' && !coreAdminUrl) {
+  throw new Error('property filters PostgreSQL suite: FACTORY_CORE_PG_TEST_URL is required when FACTORY_CORE_PG_REQUIRED=true')
+}
+const adminUrl = coreAdminUrl
+  ?? process.env.PROPERTY_FILTER_PG_TEST_URL
   ?? process.env.PROCESSING_QUEUE_PG_TEST_URL
   ?? process.env.SCORING_RUN_PG_TEST_URL
 const describeWithPostgres = adminUrl ? describe : describe.skip

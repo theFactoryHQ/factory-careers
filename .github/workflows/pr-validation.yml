@@ -86,6 +86,12 @@ jobs:
           APPLICATION_NOTIFICATION_PG_TEST_URL: postgresql://factory_notifications_ci:factory_notifications_ci@127.0.0.1:55440/postgres
           APPLICATION_NOTIFICATION_PG_REQUIRED: "true"
 
+      - name: Run core PostgreSQL integration tests
+        run: npm run test:integration:postgres-core
+        env:
+          FACTORY_CORE_PG_TEST_URL: postgresql://factory_notifications_ci:factory_notifications_ci@127.0.0.1:55440/postgres
+          FACTORY_CORE_PG_REQUIRED: "true"
+
       - name: Lint
         id: lint
         run: npm run lint

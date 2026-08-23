@@ -7,7 +7,11 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
 import { describe, expect, it } from 'vitest'
 
-const adminUrl = process.env.SCORING_RUN_PG_TEST_URL
+const coreAdminUrl = process.env.FACTORY_CORE_PG_TEST_URL
+if (process.env.FACTORY_CORE_PG_REQUIRED === 'true' && !coreAdminUrl) {
+  throw new Error('application current analysis run PostgreSQL suite: FACTORY_CORE_PG_TEST_URL is required when FACTORY_CORE_PG_REQUIRED=true')
+}
+const adminUrl = coreAdminUrl ?? process.env.SCORING_RUN_PG_TEST_URL
 const describeWithPostgres = adminUrl ? describe : describe.skip
 const migrationsFolder = join(process.cwd(), 'server/database/migrations')
 
@@ -199,6 +203,7 @@ describeWithPostgres('application current analysis run PostgreSQL constraints', 
     const freshDatabase = `careers_score_fresh_${suffix}`
     const upgradeDatabase = `careers_score_upgrade_${suffix}`
     const partialMigrations = migrationsThrough(55)
+    const currentAnalysisMigrations = migrationsThrough(56)
 
     try {
       await admin.unsafe(`create database "${freshDatabase}"`)
@@ -225,6 +230,10 @@ describeWithPostgres('application current analysis run PostgreSQL constraints', 
         await legacy.end()
       }
 
+      // Apply the migration under test in its own deployment transaction.
+      // Later data-maintenance migrations can fire deferred triggers that must
+      // settle before their following RLS changes alter the affected tables.
+      await applyMigrations(upgradeUrl, currentAnalysisMigrations)
       await applyMigrations(upgradeUrl)
       const upgraded = postgres(upgradeUrl, { max: 1, onnotice: () => undefined })
       try {
@@ -240,6 +249,7 @@ describeWithPostgres('application current analysis run PostgreSQL constraints', 
     }
     finally {
       rmSync(partialMigrations, { recursive: true, force: true })
+      rmSync(currentAnalysisMigrations, { recursive: true, force: true })
       await admin.unsafe(`drop database if exists "${freshDatabase}" with (force)`)
       await admin.unsafe(`drop database if exists "${upgradeDatabase}" with (force)`)
       await admin.end()

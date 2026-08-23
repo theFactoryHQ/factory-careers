@@ -15,7 +15,12 @@ import {
 } from '../../server/utils/ssoProviderSecrets'
 
 const ROOT_SECRET = 'postgres-sso-provider-test-secret'.repeat(2)
-const adminUrl = process.env.SSO_PROVIDER_SECRETS_PG_TEST_URL
+const coreAdminUrl = process.env.FACTORY_CORE_PG_TEST_URL
+if (process.env.FACTORY_CORE_PG_REQUIRED === 'true' && !coreAdminUrl) {
+  throw new Error('SSO provider secrets PostgreSQL suite: FACTORY_CORE_PG_TEST_URL is required when FACTORY_CORE_PG_REQUIRED=true')
+}
+const adminUrl = coreAdminUrl
+  ?? process.env.SSO_PROVIDER_SECRETS_PG_TEST_URL
   ?? process.env.PROCESSING_QUEUE_PG_TEST_URL
 const describeWithPostgres = adminUrl ? describe : describe.skip
 const migrationsFolder = join(process.cwd(), 'server/database/migrations')
