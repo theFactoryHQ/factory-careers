@@ -5,6 +5,9 @@ import { describe, expect, it } from 'vitest'
 const root = process.cwd()
 const emptyCatchPattern = /\.catch\s*\(\s*(?:\([^)]*\)|[$A-Z_a-z][$\w]*)\s*=>\s*\{\s*\}\s*\)/m
 const e2eRequiredNeeds = 'needs: [smoke, security-core, security-extended, uploads, ui, a11y, candidate, recruiter, job_lifecycle, email, tracking_analytics, interviews, calendar, auth_org, rbac, sso, ai_review, production_session]'
+// No exceptions exist. Future entries must map a critical-flow path to a
+// concrete rationale explaining why required PR CI cannot run that spec.
+const criticalFlowCoverageExceptions: Record<string, string> = {}
 
 function read(path: string): string {
   return readFileSync(join(root, path), 'utf8')
@@ -120,7 +123,7 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:candidate']).toBe(
-      'FEATURE_FLAG_LANGUAGE_SUPPORT=true FACTORY_EMAIL_TEST_MODE=capture FACTORY_EMAIL_CAPTURE_PATH=/tmp/factory-careers-e2e-candidate-email.jsonl FACTORY_CAREERS_HIRING_INBOX=hiring-e2e@example.com playwright test e2e/critical-flows/candidate-application.spec.ts e2e/critical-flows/public-localization.spec.ts',
+      'FEATURE_FLAG_LANGUAGE_SUPPORT=true FACTORY_EMAIL_TEST_MODE=capture FACTORY_EMAIL_CAPTURE_PATH=/tmp/factory-careers-e2e-candidate-email.jsonl FACTORY_CAREERS_HIRING_INBOX=hiring-e2e@example.com playwright test e2e/critical-flows/candidate-application.spec.ts e2e/critical-flows/public-localization.spec.ts e2e/critical-flows/public-application-autofill.spec.ts',
     )
     expect(workflow).toContain('name: Playwright candidate')
     expect(workflow).toContain('npm run test:e2e:candidate')
@@ -137,7 +140,7 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:recruiter']).toBe(
-      'playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts e2e/critical-flows/application-saved-views.spec.ts e2e/critical-flows/application-custom-properties.spec.ts e2e/critical-flows/candidate-custom-properties.spec.ts e2e/critical-flows/application-board.spec.ts e2e/critical-flows/activity-timeline.spec.ts',
+      'playwright test e2e/critical-flows/recruiter-application-lifecycle.spec.ts e2e/critical-flows/application-saved-views.spec.ts e2e/critical-flows/application-custom-properties.spec.ts e2e/critical-flows/candidate-custom-properties.spec.ts e2e/critical-flows/application-board.spec.ts e2e/critical-flows/activity-timeline.spec.ts e2e/critical-flows/dashboard-list-pagination.spec.ts',
     )
     expect(workflow).toContain('name: Playwright recruiter')
     expect(workflow).toContain('npm run test:e2e:recruiter')
@@ -161,7 +164,7 @@ describe('Playwright E2E harness contract', () => {
     }
 
     expect(packageJson.scripts?.['test:e2e:job-lifecycle']).toBe(
-      'playwright test e2e/critical-flows/job-lifecycle.spec.ts e2e/critical-flows/application-form-builder.spec.ts',
+      'playwright test e2e/critical-flows/job-lifecycle.spec.ts e2e/critical-flows/application-form-builder.spec.ts e2e/critical-flows/public-job-date-timezones.spec.ts',
     )
     expect(workflow).toContain('name: Playwright job lifecycle')
     expect(workflow).toContain('npm run test:e2e:job-lifecycle')
@@ -420,6 +423,55 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('needs.rbac.result')
     expect(workflow).toContain('needs.sso.result')
     expect(workflow).toContain('needs.production_session.result')
+  })
+
+  it('covers every critical-flow spec through a required package script', () => {
+    const workflow = read('.github/workflows/e2e-tests.yml')
+    const packageJson = JSON.parse(read('package.json')) as {
+      scripts?: Record<string, string>
+    }
+    const requiredJob = workflowJobBlock(workflow, 'e2e-required')
+    const needs = requiredJob.match(/needs:\s*\[([^\]]+)]/)?.[1]
+      ?.split(',')
+      .map(jobId => jobId.trim())
+      .filter(Boolean)
+
+    expect(needs, 'e2e-required must declare its required jobs inline').toBeDefined()
+
+    const requiredScripts = new Set(
+      needs!.flatMap((jobId) => {
+        const job = workflowJobBlock(workflow, jobId)
+        return [...job.matchAll(/npm run (test:e2e:[A-Za-z0-9:-]+)/g)]
+          .map(match => match[1]!)
+      }),
+    )
+    const coveredSpecs = new Set(
+      [...requiredScripts].flatMap((scriptName) => {
+        const command = packageJson.scripts?.[scriptName] ?? ''
+        return command.match(/e2e\/critical-flows\/[A-Za-z0-9_-]+\.spec\.ts/g) ?? []
+      }),
+    )
+    const criticalSpecs = readdirSync(join(root, 'e2e/critical-flows'))
+      .filter(file => file.endsWith('.spec.ts'))
+      .map(file => `e2e/critical-flows/${file}`)
+      .sort()
+    const uncovered = criticalSpecs.filter(spec =>
+      !coveredSpecs.has(spec) && !(spec in criticalFlowCoverageExceptions),
+    )
+    const staleExceptions = Object.keys(criticalFlowCoverageExceptions)
+      .filter(spec => !criticalSpecs.includes(spec))
+
+    for (const [spec, rationale] of Object.entries(criticalFlowCoverageExceptions)) {
+      expect(rationale.trim(), `${spec} must have a coverage-exception rationale`).not.toBe('')
+    }
+    expect(
+      uncovered,
+      `Critical-flow specs missing from required PR CI: ${uncovered.join(', ')}`,
+    ).toEqual([])
+    expect(
+      staleExceptions,
+      `Coverage exceptions no longer matching a critical-flow spec: ${staleExceptions.join(', ')}`,
+    ).toEqual([])
   })
 
   it('keeps Playwright parallel-ready for independent smoke specs', () => {
