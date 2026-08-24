@@ -84,6 +84,24 @@ describe('document erasure processing cycle', () => {
     ])
   })
 
+  it('reconciles a privacy request attached after the unlinked tombstone was claimed', async () => {
+    const reconcilePrivacy = vi.fn()
+    const result = await processDocumentErasureCycle({}, {
+      claimTasks: vi.fn(async () => [task({ privacyRequestId: null })]),
+      deleteObject: vi.fn(async () => undefined),
+      transaction: async operation => operation({} as never),
+      completeTask: vi.fn(async () => ({ id: 'queue-1', privacyRequestId: 'privacy-attached' })),
+      reconcilePrivacy,
+      failTask: vi.fn(),
+      logFailure: vi.fn(),
+    })
+
+    expect(result).toEqual({ claimed: 1, succeeded: 1, retried: 0, failed: 0 })
+    expect(reconcilePrivacy).toHaveBeenCalledWith(expect.anything(), {
+      privacyRequestId: 'privacy-attached',
+    })
+  })
+
   it('retries transient failures, makes exhausted failures terminal, and logs sanitized codes only', async () => {
     const logFailure = vi.fn()
     const result = await processDocumentErasureCycle({}, {

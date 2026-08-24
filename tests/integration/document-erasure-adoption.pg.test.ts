@@ -27,6 +27,7 @@ import {
 import {
   claimDocumentErasures,
   completeDocumentErasure,
+  enqueueDocumentErasure,
   recordDocumentErasureFailure,
   type DocumentErasureQueueRecord,
 } from '../../server/utils/documentErasureQueue'
@@ -363,6 +364,52 @@ describeWithPostgres('document erasure producer adoption', () => {
 
     expect(reconciled?.status).toBe(status)
     expect(persisted).toEqual({ status, completedAt: null })
+  })
+
+  it('reconciles a privacy request attached after an unlinked tombstone is already processing', async () => {
+    const seeded = await seedCandidate(`privacy_attach_processing_${suffix}`, true)
+    await deleteDocumentRelationalRecordWithProcessingHistory({
+      organizationId: seeded.organizationId,
+      documentId: seeded.documentId,
+    })
+
+    const now = new Date('2026-08-23T20:00:00.000Z')
+    await client`update "document_erasure_queue" set
+      "status" = 'processing', "attempt_count" = 1,
+      "lease_expires_at" = ${new Date(now.getTime() + 120_000).toISOString()},
+      "updated_at" = ${now.toISOString()}
+      where "storage_key" = ${seeded.storageKey}`
+    const [claimed] = await harness.database.select().from(schema.documentErasureQueue)
+      .where(eq(schema.documentErasureQueue.storageKey, seeded.storageKey))
+    expect(claimed).toMatchObject({ privacyRequestId: null, status: 'processing', attemptCount: 1 })
+
+    await enqueueDocumentErasure(harness.database, {
+      organizationId: seeded.organizationId,
+      privacyRequestId: seeded.privacyRequestId,
+      storageKey: seeded.storageKey,
+      now,
+    })
+    await client`update "privacy_request" set
+      "status" = 'in_review', "reviewed_by_id" = ${seeded.actorId},
+      "reviewed_at" = ${now.toISOString()}, "updated_at" = ${now.toISOString()}
+      where "id" = ${seeded.privacyRequestId}`
+
+    const result = await processDocumentErasureCycle({}, {
+      claimTasks: async () => [claimed!],
+      deleteObject: async () => undefined,
+      transaction: operation => harness.database.transaction(operation),
+      completeTask: completeDocumentErasure,
+      reconcilePrivacy: reconcilePrivacyRequestErasureCompletionInTransaction,
+      failTask: input => recordDocumentErasureFailure(harness.database, input),
+      logFailure: () => undefined,
+    })
+
+    expect(result).toEqual({ claimed: 1, succeeded: 1, retried: 0, failed: 0 })
+    const [request] = await client<{ status: string, completedAt: Date | null }[]>`
+      select "status", "completed_at" as "completedAt"
+      from "privacy_request" where "id" = ${seeded.privacyRequestId}`
+    expect(request?.status).toBe('completed')
+    expect(request?.completedAt).toBeTruthy()
   })
 
   it('rolls back tombstone completion when privacy reconciliation fails in the same transaction', async () => {

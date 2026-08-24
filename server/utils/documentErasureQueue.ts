@@ -251,7 +251,7 @@ export async function completeDocumentErasure(
     now?: Date
     resultCode: unknown
   },
-): Promise<boolean> {
+): Promise<{ id: string; privacyRequestId: string | null } | false> {
   const now = input.now ?? new Date()
   const [completed] = await database.update(documentErasureQueue).set({
     status: 'completed',
@@ -264,8 +264,11 @@ export async function completeDocumentErasure(
     eq(documentErasureQueue.status, 'processing'),
     eq(documentErasureQueue.attemptCount, input.attemptCount),
     gt(documentErasureQueue.leaseExpiresAt, now),
-  )).returning({ id: documentErasureQueue.id })
-  return Boolean(completed)
+  )).returning({
+    id: documentErasureQueue.id,
+    privacyRequestId: documentErasureQueue.privacyRequestId,
+  })
+  return completed ?? false
 }
 
 export async function recordDocumentErasureFailure(

@@ -12,13 +12,14 @@ import { deleteFromS3 } from './s3'
 
 type TransitionExecutor = Parameters<typeof reconcilePrivacyRequestErasureCompletionInTransaction>[0]
 type CompletionInput = Parameters<typeof completeDocumentErasure>[1]
+type CompletionResult = Awaited<ReturnType<typeof completeDocumentErasure>> | boolean
 type FailureInput = Parameters<typeof recordDocumentErasureFailure>[1]
 
 export type DocumentErasureProcessorDependencies = {
   claimTasks(input: { limit?: number }): Promise<DocumentErasureQueueRecord[]>
   deleteObject(storageKey: string, options: { abortSignal?: AbortSignal }): Promise<void>
   transaction<T>(operation: (executor: TransitionExecutor) => Promise<T>): Promise<T>
-  completeTask(executor: TransitionExecutor, input: CompletionInput): Promise<boolean>
+  completeTask(executor: TransitionExecutor, input: CompletionInput): Promise<CompletionResult>
   reconcilePrivacy(
     executor: TransitionExecutor,
     input: { privacyRequestId: string; now?: Date },
@@ -76,12 +77,16 @@ export async function processDocumentErasureCycle(
         attemptCount: task.attemptCount,
         resultCode,
       })
-      if (transitioned && task.privacyRequestId) {
+      if (!transitioned) return false
+      const privacyRequestId = (
+        typeof transitioned === 'object' ? transitioned.privacyRequestId : null
+      ) ?? task.privacyRequestId
+      if (privacyRequestId) {
         await dependencies.reconcilePrivacy(executor, {
-          privacyRequestId: task.privacyRequestId,
+          privacyRequestId,
         })
       }
-      return transitioned
+      return true
     })
     return completed ? 'succeeded' : 'stale'
   }))
