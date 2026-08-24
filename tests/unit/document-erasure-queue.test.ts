@@ -1,0 +1,93 @@
+import { getTableConfig } from 'drizzle-orm/pg-core'
+import { describe, expect, it } from 'vitest'
+import * as schema from '../../server/database/schema'
+import {
+  getDocumentErasureDedupeKey,
+  getDocumentErasureFailureOutcome,
+  getDocumentErasureResultCode,
+  isMissingDocumentObject,
+  sanitizeDocumentErasureResultCode,
+} from '../../server/utils/documentErasureQueue'
+
+describe('document erasure queue schema', () => {
+  it('keeps durable work after organization deletion and constrains runnable attempts', () => {
+    const table = schema.documentErasureQueue
+    expect(table).toBeDefined()
+
+    const config = getTableConfig(table!)
+    const organizationId = config.columns.find(column => column.name === 'organization_id')
+    const privacyRequestId = config.columns.find(column => column.name === 'privacy_request_id')
+    const organizationForeignKey = config.foreignKeys.find(foreignKey =>
+      foreignKey.reference().columns.some(column => column.name === 'organization_id'),
+    )
+
+    expect(organizationId?.notNull).toBe(false)
+    expect(privacyRequestId?.notNull).toBe(false)
+    expect(organizationForeignKey?.onDelete).toBe('set null')
+    expect(config.indexes.map(index => index.config.name)).toEqual(expect.arrayContaining([
+      'document_erasure_queue_dedupe_key_idx',
+      'document_erasure_queue_runnable_idx',
+    ]))
+    expect(config.indexes.find(index => index.config.name === 'document_erasure_queue_dedupe_key_idx')?.config.unique)
+      .toBe(true)
+    expect(config.checks.map(check => check.name)).toEqual(expect.arrayContaining([
+      'document_erasure_queue_attempts_check',
+      'document_erasure_queue_state_check',
+    ]))
+  })
+})
+
+describe('document erasure queue helpers', () => {
+  it('derives the same opaque dedupe key for every deletion path', () => {
+    expect(getDocumentErasureDedupeKey('org/acme/document.pdf'))
+      .toBe('document-erasure:cdc40927aa2144d95167e3cb5d124bc2')
+  })
+
+  it('classifies missing objects as successful erasure without exposing provider messages', () => {
+    expect(isMissingDocumentObject({ name: 'NoSuchKey' })).toBe(true)
+    expect(isMissingDocumentObject({ $metadata: { httpStatusCode: 404 } })).toBe(true)
+    expect(isMissingDocumentObject({ statusCode: 404 })).toBe(true)
+    expect(isMissingDocumentObject({ name: 'AccessDenied', statusCode: 403 })).toBe(false)
+
+    const providerError = new Error('candidate@example.com at private/storage/key')
+    providerError.name = 'ProviderTimeoutError'
+    expect(getDocumentErasureResultCode(providerError)).toBe('provider_timeout_error')
+    expect(getDocumentErasureResultCode({ message: 'candidate@example.com' }))
+      .toBe('storage_error')
+    expect(getDocumentErasureResultCode({ name: 'NoSuchKey' })).toBe('object_absent')
+    expect(sanitizeDocumentErasureResultCode('candidate@example.com at private/key'))
+      .toBe('storage_error')
+  })
+
+  it('schedules bounded exponential retries and makes the final failure terminal', () => {
+    const now = new Date('2026-08-23T12:00:00.000Z')
+    expect(getDocumentErasureFailureOutcome({
+      attemptCount: 1,
+      maxAttempts: 10,
+      now,
+      resultCode: 'ProviderTimeoutError',
+    })).toEqual({
+      status: 'pending',
+      availableAt: new Date('2026-08-23T12:01:00.000Z'),
+      completedAt: null,
+      resultCode: 'provider_timeout_error',
+    })
+    expect(getDocumentErasureFailureOutcome({
+      attemptCount: 8,
+      maxAttempts: 10,
+      now,
+      resultCode: 'ProviderTimeoutError',
+    })?.availableAt).toEqual(new Date('2026-08-23T13:00:00.000Z'))
+    expect(getDocumentErasureFailureOutcome({
+      attemptCount: 10,
+      maxAttempts: 10,
+      now,
+      resultCode: 'ProviderTimeoutError',
+    })).toEqual({
+      status: 'failed',
+      availableAt: now,
+      completedAt: now,
+      resultCode: 'provider_timeout_error',
+    })
+  })
+})

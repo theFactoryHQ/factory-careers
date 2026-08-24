@@ -31,6 +31,7 @@
     "test:integration:application-notifications": "vitest run tests/integration/application-notifications.pg.test.ts tests/integration/candidate-workflow-email.pg.test.ts",
     "test:integration:postgres-core": "vitest run tests/integration/application-current-analysis-run.pg.test.ts tests/integration/job-pipeline.pg.test.ts tests/integration/processing-queue.pg.test.ts tests/integration/property-filters.pg.test.ts tests/integration/sso-provider-secrets.pg.test.ts",
     "test:integration:migrations": "tsx scripts/rehearse-migration-upgrade.ts",
+    "test:integration:postgres-core": "vitest run tests/integration/document-erasure-queue.pg.test.ts",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "test:smoke:ai-candidate-review": "vitest run --config vitest.smoke.config.ts tests/smoke/ai-candidate-review-context-smoke.smoke.ts",

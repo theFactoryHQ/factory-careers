@@ -93,6 +93,12 @@ export const privacyRequestStatusEnum = pgEnum('privacy_request_status', [
   'denied',
   'cancelled',
 ])
+export const documentErasureStatusEnum = pgEnum('document_erasure_status', [
+  'pending',
+  'processing',
+  'completed',
+  'failed',
+])
 export const applicationNotificationCadenceEnum = pgEnum('application_notification_cadence', [
   'immediate',
   'daily',
@@ -1316,6 +1322,47 @@ export const privacyRequest = pgTable('privacy_request', {
   index('privacy_request_requester_email_idx').on(t.requesterEmail),
   index('privacy_request_status_idx').on(t.status),
   uniqueIndex('privacy_request_verification_token_hash_idx').on(t.verificationTokenHash),
+]))
+
+/**
+ * Durable, append-only ownership tombstones for private objects. The storage
+ * key remains available after relational ownership is deleted so an erasure
+ * worker can confirm that the object is absent.
+ */
+export const documentErasureQueue = pgTable('document_erasure_queue', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').references(() => organization.id, { onDelete: 'set null' }),
+  privacyRequestId: text('privacy_request_id').references(() => privacyRequest.id, { onDelete: 'set null' }),
+  storageKey: text('storage_key').notNull(),
+  dedupeKey: text('dedupe_key').notNull(),
+  status: documentErasureStatusEnum('status').notNull().default('pending'),
+  attemptCount: integer('attempt_count').notNull().default(0),
+  maxAttempts: integer('max_attempts').notNull().default(10),
+  availableAt: timestamp('available_at', { withTimezone: true }).notNull().defaultNow(),
+  leaseExpiresAt: timestamp('lease_expires_at', { withTimezone: true }),
+  resultCode: text('result_code'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+}, (t) => ([
+  index('document_erasure_queue_organization_id_idx').on(t.organizationId),
+  index('document_erasure_queue_privacy_request_id_idx').on(t.privacyRequestId),
+  uniqueIndex('document_erasure_queue_dedupe_key_idx').on(t.dedupeKey),
+  index('document_erasure_queue_runnable_idx')
+    .on(t.status, t.availableAt)
+    .where(sql`${t.status} IN ('pending', 'processing')`),
+  check('document_erasure_queue_storage_key_check', sql`length(${t.storageKey}) > 0`),
+  check('document_erasure_queue_dedupe_key_check', sql`length(${t.dedupeKey}) > 0`),
+  check('document_erasure_queue_attempts_check', sql`
+    ${t.attemptCount} >= 0
+    AND ${t.maxAttempts} > 0
+    AND ${t.attemptCount} <= ${t.maxAttempts}
+  `),
+  check('document_erasure_queue_state_check', sql`
+    (${t.status} = 'pending' AND ${t.leaseExpiresAt} IS NULL AND ${t.completedAt} IS NULL)
+    OR (${t.status} = 'processing' AND ${t.leaseExpiresAt} IS NOT NULL AND ${t.completedAt} IS NULL)
+    OR (${t.status} IN ('completed', 'failed') AND ${t.leaseExpiresAt} IS NULL AND ${t.completedAt} IS NOT NULL)
+  `),
 ]))
 
 export const candidateRelations = relations(candidate, ({ one, many }) => ({
