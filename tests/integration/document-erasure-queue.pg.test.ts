@@ -122,21 +122,45 @@ describeWithPostgres('document erasure queue PostgreSQL behavior', () => {
     expect(constraints.map(row => row.definition).join('\n')).toContain('attempt_count')
     expect(constraints.map(row => row.definition).join('\n')).toContain('lease_expires_at')
 
-    const [policy] = await client<{ qual: string, withCheck: string }[]>`
-      select qual, with_check as "withCheck"
+    const [tableSecurity] = await client<{ enabled: boolean, forced: boolean }[]>`
+      select relrowsecurity as enabled, relforcerowsecurity as forced
+      from pg_class
+      where oid = 'document_erasure_queue'::regclass
+    `
+    expect(tableSecurity).toEqual({ enabled: true, forced: false })
+
+    const [policy] = await client<{
+      command: string
+      permissive: string
+      roles: string
+      qual: string
+      withCheck: string
+    }[]>`
+      select cmd as command, permissive, roles::text as roles,
+        qual, with_check as "withCheck"
       from pg_policies
       where tablename = 'document_erasure_queue'
         and policyname = 'factory_careers_server_roles_full_access'
     `
-    expect(policy?.qual).toContain('anon')
-    expect(policy?.qual).toContain('authenticated')
-    expect(policy?.withCheck).toContain('anon')
-    expect(policy?.withCheck).toContain('authenticated')
+    expect(policy).toEqual({
+      command: 'ALL',
+      permissive: 'PERMISSIVE',
+      roles: '{public}',
+      qual: "(CURRENT_USER <> ALL (ARRAY['anon'::text, 'authenticated'::text]))",
+      withCheck: "(CURRENT_USER <> ALL (ARRAY['anon'::text, 'authenticated'::text]))",
+    })
 
     await expect(client`insert into "document_erasure_queue" (
       "id", "storage_key", "dedupe_key", "attempt_count", "max_attempts"
     ) values (
       ${`invalid_${suffix}`}, ${`invalid-${suffix}`}, ${`invalid-dedupe-${suffix}`}, 2, 1
+    )`).rejects.toMatchObject({ code: '23514' })
+
+    await expect(client`insert into "document_erasure_queue" (
+      "id", "storage_key", "dedupe_key", "result_code"
+    ) values (
+      ${`unsafe_result_${suffix}`}, ${`unsafe-result-${suffix}`},
+      ${`unsafe-result-dedupe-${suffix}`}, 'AliceApplicant'
     )`).rejects.toMatchObject({ code: '23514' })
   })
 
@@ -187,7 +211,7 @@ describeWithPostgres('document erasure queue PostgreSQL behavior', () => {
     }])
   })
 
-  it('claims distinct rows concurrently and fences stale completion and retry attempts', async () => {
+  it('claims distinct rows concurrently and fences mismatched attempts', async () => {
     const now = new Date('2026-08-23T14:00:00.000Z')
     await client`update "document_erasure_queue" set
       "status" = 'completed', "lease_expires_at" = null,
@@ -251,6 +275,61 @@ describeWithPostgres('document erasure queue PostgreSQL behavior', () => {
     expect(state).toEqual({ status: 'processing', attemptCount: 2 })
   })
 
+  it('rejects renewal, completion, and failure transitions after the lease expires', async () => {
+    const now = new Date('2026-08-23T14:30:00.000Z')
+    await client`update "document_erasure_queue" set
+      "status" = 'completed', "lease_expires_at" = null,
+      "completed_at" = ${now.toISOString()}, "updated_at" = ${now.toISOString()}
+      where "status" in ('pending', 'processing')`
+
+    const ids = {
+      renew: `expired_renew_${suffix}`,
+      complete: `expired_complete_${suffix}`,
+      failure: `expired_failure_${suffix}`,
+    }
+    for (const id of Object.values(ids)) {
+      await client`insert into "document_erasure_queue" (
+        "id", "storage_key", "dedupe_key", "status", "attempt_count",
+        "available_at", "lease_expires_at"
+      ) values (
+        ${id}, ${`fixture-${id}`}, ${`dedupe-${id}`}, 'processing', 1,
+        ${new Date(now.getTime() - 180_000).toISOString()},
+        ${new Date(now.getTime() - 1).toISOString()}
+      )`
+    }
+
+    await expect(renewDocumentErasureLease(database, {
+      id: ids.renew,
+      attemptCount: 1,
+      now,
+    })).resolves.toBe(false)
+    await expect(completeDocumentErasure(database, {
+      id: ids.complete,
+      attemptCount: 1,
+      now,
+      resultCode: 'deleted',
+    })).resolves.toBe(false)
+    await expect(recordDocumentErasureFailure(database, {
+      id: ids.failure,
+      attemptCount: 1,
+      maxAttempts: 10,
+      now,
+      resultCode: 'ProviderTimeoutError',
+    })).resolves.toBe(false)
+
+    const rows = await client<{ id: string, status: string, attemptCount: number }[]>`
+      select "id", "status", "attempt_count" as "attemptCount"
+      from "document_erasure_queue"
+      where "id" in (${ids.renew}, ${ids.complete}, ${ids.failure})
+      order by "id"
+    `
+    expect(rows).toEqual([
+      { id: ids.complete, status: 'processing', attemptCount: 1 },
+      { id: ids.failure, status: 'processing', attemptCount: 1 },
+      { id: ids.renew, status: 'processing', attemptCount: 1 },
+    ])
+  })
+
   it('persists retry scheduling and terminal failure behind the current lease fence', async () => {
     const now = new Date('2026-08-23T15:00:00.000Z')
     await client`update "document_erasure_queue" set
@@ -282,7 +361,7 @@ describeWithPostgres('document erasure queue PostgreSQL behavior', () => {
     expect(retry).toMatchObject({
       status: 'pending',
       completedAt: null,
-      resultCode: 'provider_timeout_error',
+      resultCode: 'storage_timeout',
     })
     expect(new Date(retry!.availableAt).toISOString()).toBe('2026-08-23T15:01:00.000Z')
 

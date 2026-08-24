@@ -51,12 +51,24 @@ describe('document erasure queue helpers', () => {
 
     const providerError = new Error('candidate@example.com at private/storage/key')
     providerError.name = 'ProviderTimeoutError'
-    expect(getDocumentErasureResultCode(providerError)).toBe('provider_timeout_error')
+    expect(getDocumentErasureResultCode(providerError)).toBe('storage_timeout')
+    expect(getDocumentErasureResultCode({ name: 'AccessDenied', statusCode: 403 }))
+      .toBe('storage_access_denied')
+    expect(getDocumentErasureResultCode({ name: 'SlowDown', statusCode: 429 }))
+      .toBe('storage_throttled')
+    expect(getDocumentErasureResultCode({ name: 'ServiceUnavailable', statusCode: 503 }))
+      .toBe('storage_unavailable')
     expect(getDocumentErasureResultCode({ message: 'candidate@example.com' }))
       .toBe('storage_error')
     expect(getDocumentErasureResultCode({ name: 'NoSuchKey' })).toBe('object_absent')
     expect(sanitizeDocumentErasureResultCode('candidate@example.com at private/key'))
       .toBe('storage_error')
+    expect(sanitizeDocumentErasureResultCode('AliceApplicant'))
+      .toBe('storage_error')
+    expect(sanitizeDocumentErasureResultCode('candidate_email'))
+      .toBe('storage_error')
+    expect(sanitizeDocumentErasureResultCode('deleted')).toBe('erased')
+    expect(sanitizeDocumentErasureResultCode('lease_expired')).toBe('lease_expired')
   })
 
   it('schedules bounded exponential retries and makes the final failure terminal', () => {
@@ -70,7 +82,7 @@ describe('document erasure queue helpers', () => {
       status: 'pending',
       availableAt: new Date('2026-08-23T12:01:00.000Z'),
       completedAt: null,
-      resultCode: 'provider_timeout_error',
+      resultCode: 'storage_timeout',
     })
     expect(getDocumentErasureFailureOutcome({
       attemptCount: 8,
@@ -87,7 +99,7 @@ describe('document erasure queue helpers', () => {
       status: 'failed',
       availableAt: now,
       completedAt: now,
-      resultCode: 'provider_timeout_error',
+      resultCode: 'storage_timeout',
     })
   })
 })

@@ -1353,6 +1353,18 @@ export const documentErasureQueue = pgTable('document_erasure_queue', {
     .where(sql`${t.status} IN ('pending', 'processing')`),
   check('document_erasure_queue_storage_key_check', sql`length(${t.storageKey}) > 0`),
   check('document_erasure_queue_dedupe_key_check', sql`length(${t.dedupeKey}) > 0`),
+  check('document_erasure_queue_result_code_check', sql`
+    ${t.resultCode} IS NULL OR ${t.resultCode} IN (
+      'erased',
+      'object_absent',
+      'storage_timeout',
+      'storage_throttled',
+      'storage_access_denied',
+      'storage_unavailable',
+      'storage_error',
+      'lease_expired'
+    )
+  `),
   check('document_erasure_queue_attempts_check', sql`
     ${t.attemptCount} >= 0
     AND ${t.maxAttempts} > 0

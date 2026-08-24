@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { and, asc, eq, inArray, lte, or, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, lte, or, sql } from 'drizzle-orm'
 import { documentErasureQueue } from '../database/schema'
 import { db } from './db'
 
@@ -21,24 +21,54 @@ type ProviderErrorShape = {
   }
 }
 
+type DocumentErasureResultCode =
+  | 'erased'
+  | 'object_absent'
+  | 'storage_timeout'
+  | 'storage_throttled'
+  | 'storage_access_denied'
+  | 'storage_unavailable'
+  | 'storage_error'
+  | 'lease_expired'
+
+const DOCUMENT_ERASURE_RESULT_CODES: Readonly<Record<string, DocumentErasureResultCode>> = {
+  erased: 'erased',
+  deleted: 'erased',
+  object_absent: 'object_absent',
+  NoSuchKey: 'object_absent',
+  NotFound: 'object_absent',
+  storage_timeout: 'storage_timeout',
+  ProviderTimeoutError: 'storage_timeout',
+  TimeoutError: 'storage_timeout',
+  RequestTimeout: 'storage_timeout',
+  RequestTimeoutException: 'storage_timeout',
+  storage_throttled: 'storage_throttled',
+  SlowDown: 'storage_throttled',
+  Throttling: 'storage_throttled',
+  ThrottlingException: 'storage_throttled',
+  TooManyRequestsException: 'storage_throttled',
+  storage_access_denied: 'storage_access_denied',
+  AccessDenied: 'storage_access_denied',
+  AccessDeniedException: 'storage_access_denied',
+  Forbidden: 'storage_access_denied',
+  storage_unavailable: 'storage_unavailable',
+  ServiceUnavailable: 'storage_unavailable',
+  ServiceUnavailableException: 'storage_unavailable',
+  InternalError: 'storage_unavailable',
+  InternalServerError: 'storage_unavailable',
+  storage_error: 'storage_error',
+  Error: 'storage_error',
+  lease_expired: 'lease_expired',
+}
+
 export function getDocumentErasureDedupeKey(storageKey: string): string {
   const digest = createHash('md5').update(storageKey).digest('hex')
   return `document-erasure:${digest}`
 }
 
-export function sanitizeDocumentErasureResultCode(
-  value: unknown,
-  fallback = 'storage_error',
-): string {
-  if (typeof value !== 'string' || value.trim() === '') return fallback
-  if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(value)) return fallback
-  const normalized = value
-    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .slice(0, 64)
-  return normalized || fallback
+export function sanitizeDocumentErasureResultCode(value: unknown): DocumentErasureResultCode {
+  if (typeof value !== 'string') return 'storage_error'
+  return DOCUMENT_ERASURE_RESULT_CODES[value] ?? 'storage_error'
 }
 
 export function isMissingDocumentObject(error: unknown): boolean {
@@ -53,11 +83,14 @@ export function isMissingDocumentObject(error: unknown): boolean {
 
 export function getDocumentErasureResultCode(error: unknown): string {
   if (isMissingDocumentObject(error)) return 'object_absent'
-  if (error instanceof Error) {
-    return sanitizeDocumentErasureResultCode(error.name)
-  }
   if (error && typeof error === 'object') {
-    return sanitizeDocumentErasureResultCode((error as ProviderErrorShape).name)
+    const candidate = error as ProviderErrorShape
+    const status = candidate.$metadata?.httpStatusCode ?? candidate.statusCode ?? candidate.status
+    if (status === 401 || status === 403) return 'storage_access_denied'
+    if (status === 408 || status === 504) return 'storage_timeout'
+    if (status === 429) return 'storage_throttled'
+    if (status === 500 || status === 502 || status === 503) return 'storage_unavailable'
+    return sanitizeDocumentErasureResultCode(candidate.name)
   }
   return 'storage_error'
 }
@@ -193,6 +226,7 @@ export async function renewDocumentErasureLease(
     eq(documentErasureQueue.id, input.id),
     eq(documentErasureQueue.status, 'processing'),
     eq(documentErasureQueue.attemptCount, input.attemptCount),
+    gt(documentErasureQueue.leaseExpiresAt, now),
   )).returning({ id: documentErasureQueue.id })
   return Boolean(renewed)
 }
@@ -210,13 +244,14 @@ export async function completeDocumentErasure(
   const [completed] = await database.update(documentErasureQueue).set({
     status: 'completed',
     leaseExpiresAt: null,
-    resultCode: sanitizeDocumentErasureResultCode(input.resultCode, 'erased'),
+    resultCode: sanitizeDocumentErasureResultCode(input.resultCode),
     completedAt: now,
     updatedAt: now,
   }).where(and(
     eq(documentErasureQueue.id, input.id),
     eq(documentErasureQueue.status, 'processing'),
     eq(documentErasureQueue.attemptCount, input.attemptCount),
+    gt(documentErasureQueue.leaseExpiresAt, now),
   )).returning({ id: documentErasureQueue.id })
   return Boolean(completed)
 }
@@ -242,6 +277,7 @@ export async function recordDocumentErasureFailure(
     eq(documentErasureQueue.status, 'processing'),
     eq(documentErasureQueue.attemptCount, input.attemptCount),
     eq(documentErasureQueue.maxAttempts, input.maxAttempts),
+    gt(documentErasureQueue.leaseExpiresAt, now),
   )).returning({ id: documentErasureQueue.id })
   return Boolean(transitioned)
 }
