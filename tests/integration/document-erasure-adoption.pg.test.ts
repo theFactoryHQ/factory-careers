@@ -89,26 +89,150 @@ describeWithPostgres('document erasure producer adoption', () => {
     return { actorId, candidateId, documentId, organizationId, privacyRequestId, storageKey }
   }
 
+  async function seedDeletionDependents(
+    prefix: string,
+    seeded: Awaited<ReturnType<typeof seedCandidate>>,
+  ) {
+    const applicationId = `${prefix}_application`
+    const jobId = `${prefix}_job`
+    const candidateCommentId = `${prefix}_candidate_comment`
+    const applicationCommentId = `${prefix}_application_comment`
+    const candidatePropertyValueId = `${prefix}_candidate_property_value`
+    const applicationPropertyValueId = `${prefix}_application_property_value`
+    const candidatePropertyDefinitionId = `${prefix}_candidate_property`
+    const applicationPropertyDefinitionId = `${prefix}_application_property`
+    const documentTaskId = `${prefix}_document_task`
+    const applicationTaskId = `${prefix}_application_task`
+
+    await client`insert into "job" ("id", "organization_id", "title", "slug")
+      values (${jobId}, ${seeded.organizationId}, 'Fixture Job', ${`${prefix}-job`})`
+    await client`insert into "application" ("id", "organization_id", "candidate_id", "job_id")
+      values (${applicationId}, ${seeded.organizationId}, ${seeded.candidateId}, ${jobId})`
+    await client`insert into "comment" ("id", "organization_id", "author_id", "target_type", "target_id", "body")
+      values
+        (${candidateCommentId}, ${seeded.organizationId}, ${seeded.actorId}, 'candidate', ${seeded.candidateId}, 'Candidate fixture'),
+        (${applicationCommentId}, ${seeded.organizationId}, ${seeded.actorId}, 'application', ${applicationId}, 'Application fixture')`
+    await client`insert into "property_definition" ("id", "organization_id", "entity_type", "type", "name")
+      values
+        (${candidatePropertyDefinitionId}, ${seeded.organizationId}, 'candidate', 'text', 'Candidate fixture'),
+        (${applicationPropertyDefinitionId}, ${seeded.organizationId}, 'application', 'text', 'Application fixture')`
+    await client`insert into "property_value" (
+      "id", "organization_id", "property_definition_id", "entity_type", "entity_id", "value"
+    ) values
+      (${candidatePropertyValueId}, ${seeded.organizationId}, ${candidatePropertyDefinitionId}, 'candidate', ${seeded.candidateId}, ${JSON.stringify('candidate fixture')}::jsonb),
+      (${applicationPropertyValueId}, ${seeded.organizationId}, ${applicationPropertyDefinitionId}, 'application', ${applicationId}, ${JSON.stringify('application fixture')}::jsonb)`
+    await client`insert into "processing_task" (
+      "id", "organization_id", "type", "resource_id", "status", "attempt_count", "lease_expires_at"
+    ) values
+      (${documentTaskId}, ${seeded.organizationId}, 'document_parse', ${seeded.documentId}, 'processing', 2, now() + interval '5 minutes'),
+      (${applicationTaskId}, ${seeded.organizationId}, 'application_analysis', ${applicationId}, 'processing', 3, now() + interval '5 minutes')`
+
+    return {
+      applicationId,
+      commentIds: [applicationCommentId, candidateCommentId].sort(),
+      processingTaskIds: [applicationTaskId, documentTaskId].sort(),
+      propertyValueIds: [applicationPropertyValueId, candidatePropertyValueId].sort(),
+    }
+  }
+
+  async function captureRollbackState(
+    seeded: Awaited<ReturnType<typeof seedCandidate>>,
+    dependents: Awaited<ReturnType<typeof seedDeletionDependents>>,
+  ) {
+    const candidates = await client`select "id", "email" from "candidate" where "id" = ${seeded.candidateId}`
+    const applications = await client`select "id", "candidate_id" from "application" where "id" = ${dependents.applicationId}`
+    const documents = await client`select "id", "candidate_id", "storage_key" from "document" where "id" = ${seeded.documentId}`
+    const processingTasks = await client`
+      select "id", "status", "attempt_count", "result_code", "completed_at"
+      from "processing_task" where "id" in ${client(dependents.processingTaskIds)} order by "id"`
+    const comments = await client`
+      select "id", "target_type", "target_id", "body"
+      from "comment" where "id" in ${client(dependents.commentIds)} order by "id"`
+    const propertyValues = await client`
+      select "id", "entity_type", "entity_id", "value"
+      from "property_value" where "id" in ${client(dependents.propertyValueIds)} order by "id"`
+    const [privacyRequest] = await client`
+      select "id", "status", "reviewed_by_id", "reviewed_at", "completed_by_id", "completed_at", "resolution_notes"
+      from "privacy_request" where "id" = ${seeded.privacyRequestId}`
+    const tombstones = await client`
+      select "id", "organization_id", "privacy_request_id", "storage_key", "status"
+      from "document_erasure_queue" where "storage_key" = ${seeded.storageKey} order by "id"`
+    return { candidates, applications, documents, processingTasks, comments, propertyValues, privacyRequest, tombstones }
+  }
+
+  async function withRejectedErasureEnqueue(run: () => Promise<void>) {
+    const triggerName = `reject_test_erasure_${randomUUID().replaceAll('-', '')}`
+    const functionName = `${triggerName}_fn`
+    await client.unsafe(`
+      create function public.${functionName}() returns trigger language plpgsql as $$
+      begin raise exception 'test enqueue rejection'; end $$;
+      create trigger ${triggerName} before insert on document_erasure_queue
+      for each row execute function public.${functionName}();
+    `)
+    try {
+      await run()
+    }
+    finally {
+      await client.unsafe(`drop trigger ${triggerName} on document_erasure_queue`)
+      await client.unsafe(`drop function public.${functionName}()`)
+    }
+  }
+
   it('rolls back direct relational deletion when durable enqueue fails', async () => {
     const seeded = await seedCandidate(`direct_rollback_${suffix}`, true)
-    await client.unsafe(`
-      create function public.reject_test_erasure() returns trigger language plpgsql as $$
-      begin raise exception 'test enqueue rejection'; end $$;
-      create trigger reject_test_erasure before insert on document_erasure_queue
-      for each row execute function public.reject_test_erasure();
-    `)
+    const dependents = await seedDeletionDependents(`direct_rollback_${suffix}`, seeded)
+    const before = await captureRollbackState(seeded, dependents)
 
-    await expect(deleteDocumentRelationalRecordWithProcessingHistory({
-      organizationId: seeded.organizationId,
-      documentId: seeded.documentId,
-    })).rejects.toThrow()
+    await withRejectedErasureEnqueue(async () => {
+      await expect(deleteDocumentRelationalRecordWithProcessingHistory({
+        organizationId: seeded.organizationId,
+        documentId: seeded.documentId,
+      })).rejects.toThrow()
+    })
 
-    const [document] = await client<{ id: string }[]>`select "id" from "document" where "id" = ${seeded.documentId}`
-    const tombstones = await client`select "id" from "document_erasure_queue" where "storage_key" = ${seeded.storageKey}`
-    expect(document?.id).toBe(seeded.documentId)
-    expect(tombstones).toHaveLength(0)
-    await client`drop trigger reject_test_erasure on document_erasure_queue`
-    await client`drop function public.reject_test_erasure()`
+    expect(await captureRollbackState(seeded, dependents)).toEqual(before)
+  })
+
+  it('rolls back candidate cascade state when durable enqueue fails', async () => {
+    const seeded = await seedCandidate(`candidate_rollback_${suffix}`, true)
+    const dependents = await seedDeletionDependents(`candidate_rollback_${suffix}`, seeded)
+    const before = await captureRollbackState(seeded, dependents)
+
+    vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
+    vi.stubGlobal('requirePermission', async () => ({
+      session: { activeOrganizationId: seeded.organizationId },
+      user: { id: seeded.actorId },
+    }))
+    vi.stubGlobal('getValidatedRouterParams', async () => ({ id: seeded.candidateId }))
+    vi.stubGlobal('db', harness.database)
+    vi.stubGlobal('recordActivity', () => undefined)
+    vi.stubGlobal('invalidateOrgScopedDashboardCache', async () => undefined)
+    vi.stubGlobal('setResponseStatus', () => undefined)
+    const { default: deleteCandidate } = await import('../../server/api/candidates/[id].delete')
+
+    await withRejectedErasureEnqueue(async () => {
+      await expect(deleteCandidate({} as never)).rejects.toThrow()
+    })
+
+    expect(await captureRollbackState(seeded, dependents)).toEqual(before)
+  })
+
+  it('rolls back privacy fulfillment state when durable enqueue fails', async () => {
+    const seeded = await seedCandidate(`privacy_rollback_${suffix}`, true)
+    const dependents = await seedDeletionDependents(`privacy_rollback_${suffix}`, seeded)
+    const before = await captureRollbackState(seeded, dependents)
+
+    await withRejectedErasureEnqueue(async () => {
+      await expect(deleteCandidatePersonalDataForPrivacyRequest({
+        organizationId: seeded.organizationId,
+        candidateIds: [seeded.candidateId],
+        actorId: seeded.actorId,
+        privacyRequestId: seeded.privacyRequestId,
+        resolutionNotes: 'This update must roll back',
+      })).rejects.toThrow()
+    })
+
+    expect(await captureRollbackState(seeded, dependents)).toEqual(before)
   })
 
   it('does not enqueue or delete an absent or cross-tenant document', async () => {
