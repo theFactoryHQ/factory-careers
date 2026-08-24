@@ -126,14 +126,16 @@ async function fulfillRequest() {
   actionError.value = ''
   actionSuccess.value = ''
   try {
-    await $fetch(`/api/privacy-requests/${selectedRequest.value.id}/fulfill`, {
+    const response = await $fetch<{ result: { erasureStatus: 'pending' | 'completed' } }>(`/api/privacy-requests/${selectedRequest.value.id}/fulfill`, {
       method: 'POST' as any,
       body: {
         candidateIds: selectedCandidateIds.value,
         resolutionNotes: resolutionNotes.value,
       },
     })
-    actionSuccess.value = 'Deletion request fulfilled.'
+    actionSuccess.value = response.result.erasureStatus === 'completed'
+      ? 'Deletion request fulfilled.'
+      : 'Applicant data was removed. Private document erasure is pending.'
     selectedCandidateIds.value = []
     await refresh()
     await fetchDetail()

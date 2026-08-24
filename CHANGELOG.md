@@ -38,6 +38,7 @@ self-hosters.
 
 ### Fixed
 
+- Kept applicant privacy requests in review until durable private-document erasure finishes, while completing requests with no documents immediately.
 - Made bulk scoring-criteria replacement atomic and rejected duplicate criterion keys before any database write.
 - Separated host-global update and backup administration from tenant ownership with an explicit, default-deny Better Auth user-ID allowlist.
 - Applied PostgreSQL journal entries in separate atomic transactions so deferred trigger work cannot block a later migration during production upgrades.

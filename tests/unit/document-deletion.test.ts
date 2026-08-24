@@ -11,17 +11,13 @@ describe('document deletion with processing history', () => {
     expect(existsSync(join(process.cwd(), 'server/utils/documentDeletion.ts'))).toBe(true)
   })
 
-  it('commits queue-aware relational deletion before removing storage', async () => {
+  it('returns only the relational deletion result after the durable enqueue transaction', async () => {
     const events: string[] = []
     const adapter: DocumentDeletionAdapter = {
       async deleteRelationalRecord(input) {
         expect(input).toEqual({ organizationId: 'org-1', documentId: 'document-1' })
-        events.push('queue-and-database')
-        return { id: 'document-1', storageKey: 'private/document-1.pdf' }
-      },
-      async deleteStorageObject(storageKey) {
-        expect(storageKey).toBe('private/document-1.pdf')
-        events.push('storage')
+        events.push('enqueue-and-delete')
+        return { id: 'document-1' }
       },
     }
 
@@ -29,7 +25,8 @@ describe('document deletion with processing history', () => {
       organizationId: 'org-1', documentId: 'document-1',
     }, adapter)
     expect(deleted?.id).toBe('document-1')
-    expect(events).toEqual(['queue-and-database', 'storage'])
+    expect(deleted).toEqual({ id: 'document-1' })
+    expect(events).toEqual(['enqueue-and-delete'])
   })
 
   it('does not touch storage when the tenant-scoped document is absent', async () => {
@@ -39,9 +36,6 @@ describe('document deletion with processing history', () => {
         events.push('queue-and-database')
         return null
       },
-      async deleteStorageObject() {
-        events.push('storage')
-      },
     }
 
     await expect(deleteDocumentWithProcessingHistory({
@@ -50,7 +44,7 @@ describe('document deletion with processing history', () => {
     expect(events).toEqual(['queue-and-database'])
   })
 
-  it('routes normal deletion through queue-first cleanup with non-sensitive logging', () => {
+  it('routes normal deletion through atomic durable enqueue without storage cleanup', () => {
     const route = readFileSync(
       join(process.cwd(), 'server/api/documents/[id].delete.ts'),
       'utf8',
@@ -73,10 +67,12 @@ describe('document deletion with processing history', () => {
       .toBeLessThan(relationalDeletion.indexOf(".for('update')"))
     expect(relationalDeletion.indexOf('cancelDocumentProcessingTasksInTransaction'))
       .toBeLessThan(relationalDeletion.indexOf('tx.delete(document)'))
-    expect(helper.indexOf('adapter.deleteRelationalRecord(input)'))
-      .toBeLessThan(helper.indexOf('adapter.deleteStorageObject'))
+    expect(relationalDeletion.indexOf('enqueueDocumentErasure'))
+      .toBeLessThan(relationalDeletion.indexOf('tx.delete(document)'))
+    expect(helper).not.toContain('deleteStorageObject')
+    expect(helper).not.toContain('deleteFromS3')
     expect(helper).not.toContain('storage_key:')
     expect(helper).not.toContain('error_message:')
-    expect(helper).toContain("result_code: 'storage_cleanup_failed'")
+    expect(helper).not.toContain('storage_cleanup_failed')
   })
 })

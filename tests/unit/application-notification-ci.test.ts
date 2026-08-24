@@ -11,6 +11,8 @@ describe('application notification PostgreSQL CI gate', () => {
     'tests/integration/processing-queue.pg.test.ts',
     'tests/integration/property-filters.pg.test.ts',
     'tests/integration/sso-provider-secrets.pg.test.ts',
+    'tests/integration/document-erasure-queue.pg.test.ts',
+    'tests/integration/document-erasure-adoption.pg.test.ts',
   ]
 
   it('exposes a dedicated script for the notification PostgreSQL test', () => {

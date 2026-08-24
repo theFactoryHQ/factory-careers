@@ -237,27 +237,24 @@ describe('P0 tenant-isolation route coverage', () => {
     expect(source).toContain('eq(job.organizationId, orgId)')
   })
 
-  it('cleans up candidate-owned document objects when deleting a candidate', () => {
+  it('durably enqueues candidate-owned document objects when deleting a candidate', () => {
     const source = read('server/api/candidates/[id].delete.ts')
 
     expect(source).toContain('prepareCandidateProcessingCascadeInTransaction')
-    expect(source).toContain('deletion.cascade.documents.map(doc => deleteFromS3(doc.storageKey))')
-    expect(source).toContain('candidate.document_s3_delete_failed')
-    expect(source).toContain("result_code: 'storage_cleanup_failed'")
+    expect(source).toContain('enqueueDocumentErasure')
+    expect(source).not.toContain('deleteFromS3')
+    expect(source).not.toContain('candidate.document_s3_delete_failed')
   })
 
-  it('cleans up organization-owned document objects when deleting an organization', () => {
+  it('relies on the database trigger for organization-owned document erasure', () => {
     const source = read('server/utils/auth.ts')
 
-    expect(source).toContain('beforeDeleteOrganization')
-    expect(source).toContain('afterDeleteOrganization')
-    expect(source).toContain('pendingOrganizationDocumentDeletes')
-    expect(source).toContain('ORGANIZATION_DOCUMENT_DELETE_TTL_MS')
-    expect(source).toContain('clearPendingOrganizationDocumentDelete')
-    expect(source).toContain('db.query.document.findMany')
-    expect(source).toContain('eq(schema.document.organizationId, organization.id)')
-    expect(source).toContain('deleteFromS3(doc.storageKey)')
-    expect(source).toContain('organization.document_s3_delete_failed')
+    expect(source).not.toContain('beforeDeleteOrganization')
+    expect(source).not.toContain('afterDeleteOrganization')
+    expect(source).not.toContain('pendingOrganizationDocumentDeletes')
+    expect(source).not.toContain('ORGANIZATION_DOCUMENT_DELETE_TTL_MS')
+    expect(source).not.toContain('deleteFromS3')
+    expect(source).not.toContain('organization.document_s3_delete_failed')
   })
 
   it('records audit activity for production-sensitive admin and source tracking changes', () => {
