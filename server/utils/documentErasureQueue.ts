@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { and, asc, eq, gt, inArray, isNotNull, lte, or, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm'
 import { documentErasureQueue } from '../database/schema'
 import { db } from './db'
 
@@ -140,15 +140,24 @@ export async function enqueueDocumentErasure(
     maxAttempts?: number
   },
 ): Promise<{ id: string } | null> {
+  const now = input.now ?? new Date()
   const [inserted] = await executor.insert(documentErasureQueue).values({
     organizationId: input.organizationId ?? null,
     privacyRequestId: input.privacyRequestId ?? null,
     storageKey: input.storageKey,
     dedupeKey: getDocumentErasureDedupeKey(input.storageKey),
-    availableAt: input.now ?? new Date(),
+    availableAt: now,
     maxAttempts: input.maxAttempts,
-  }).onConflictDoNothing({
+  }).onConflictDoUpdate({
     target: documentErasureQueue.dedupeKey,
+    set: {
+      privacyRequestId: sql`excluded.privacy_request_id`,
+      updatedAt: now,
+    },
+    setWhere: and(
+      isNull(documentErasureQueue.privacyRequestId),
+      sql`excluded.privacy_request_id is not null`,
+    ),
   }).returning({ id: documentErasureQueue.id })
   return inserted ?? null
 }

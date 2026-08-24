@@ -212,6 +212,45 @@ describeWithPostgres('document erasure queue PostgreSQL behavior', () => {
     }])
   })
 
+  it('attaches a privacy request when enqueue races an unlinked tombstone', async () => {
+    const seeded = await seedDocument(`privacy_attach_${suffix}`)
+    const privacyRequestId = `privacy_attach_${suffix}_request`
+    await client`insert into "privacy_request" (
+      "id", "organization_id", "requester_name", "requester_email",
+      "state_of_residence", "verification_token_hash"
+    ) values (
+      ${privacyRequestId}, ${seeded.organizationId}, 'Fixture Requester',
+      ${`privacy-attach-${suffix}@example.invalid`}, 'NY', ${`token-attach-${suffix}`}
+    )`
+
+    await client`delete from "document" where "id" = ${seeded.documentId}`
+    const before = await client<{ privacyRequestId: string | null }[]>`
+      select "privacy_request_id" as "privacyRequestId"
+      from "document_erasure_queue" where "storage_key" = ${seeded.storageKey}`
+    expect(before).toEqual([{ privacyRequestId: null }])
+
+    await database.transaction(async (tx) => {
+      await enqueueDocumentErasure(tx, {
+        organizationId: seeded.organizationId,
+        privacyRequestId,
+        storageKey: seeded.storageKey,
+        now: new Date('2026-08-23T12:30:00.000Z'),
+      })
+    })
+
+    const rows = await client<{
+      privacyRequestId: string | null
+      storageKey: string
+    }[]>`select
+      "privacy_request_id" as "privacyRequestId",
+      "storage_key" as "storageKey"
+    from "document_erasure_queue" where "storage_key" = ${seeded.storageKey}`
+    expect(rows).toEqual([{
+      privacyRequestId,
+      storageKey: seeded.storageKey,
+    }])
+  })
+
   it('claims distinct rows concurrently and fences mismatched attempts', async () => {
     const now = new Date('2026-08-23T14:00:00.000Z')
     await client`update "document_erasure_queue" set

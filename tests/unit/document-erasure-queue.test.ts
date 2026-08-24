@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { getTableConfig } from 'drizzle-orm/pg-core'
 import { describe, expect, it } from 'vitest'
 import * as schema from '../../server/database/schema'
@@ -34,6 +36,19 @@ describe('document erasure queue schema', () => {
       'document_erasure_queue_attempts_check',
       'document_erasure_queue_state_check',
     ]))
+  })
+
+  it('attaches a privacy request to an existing unlinked tombstone on enqueue conflict', () => {
+    const source = readFileSync(join(process.cwd(), 'server/utils/documentErasureQueue.ts'), 'utf8')
+    const enqueue = source.slice(
+      source.indexOf('export async function enqueueDocumentErasure'),
+      source.indexOf('export async function claimDocumentErasures'),
+    )
+
+    expect(enqueue).toContain('onConflictDoUpdate')
+    expect(enqueue).toContain('excluded.privacy_request_id')
+    expect(enqueue).toContain('isNull(documentErasureQueue.privacyRequestId)')
+    expect(enqueue).not.toContain('onConflictDoNothing')
   })
 })
 

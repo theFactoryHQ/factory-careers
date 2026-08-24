@@ -39,6 +39,7 @@ self-hosters.
 
 ### Fixed
 
+- Attached a privacy request to an existing unlinked document-erasure tombstone so fulfillment cannot complete while that object is still outstanding.
 - Kept applicant privacy requests in review until durable private-document erasure finishes, preserved explicit denied or cancelled dispositions, and derived operator warnings from actual outstanding erasure work.
 - Made bulk scoring-criteria replacement atomic and rejected duplicate criterion keys before any database write.
 - Separated host-global update and backup administration from tenant ownership with an explicit, default-deny Better Auth user-ID allowlist.
