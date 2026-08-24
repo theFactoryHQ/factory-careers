@@ -43,6 +43,9 @@ abandoned)
   in separate worktrees.
 - 014 must land before 015 because 015 adds durable queue schema and must build
   on the repaired Drizzle metadata baseline.
+- Plan 014 is implementation-complete with its plan-scoped gates passing. The
+  owner of this consolidated multi-plan branch must run the final full
+  `npm run preflight:pr` after sibling plan changes are integrated.
 - 015 should reuse the lease, retry, idempotency, and observability conventions
   established by the processing and email queues from plans 005-009.
 

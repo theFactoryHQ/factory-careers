@@ -17,6 +17,8 @@
 - **Depends on**: none
 - **Category**: migration
 - **Planned at**: commit `88f7c18`, 2026-08-23
+- **Execution status**: DONE; the consolidated multi-plan branch owns the final
+  full `npm run preflight:pr` after all sibling changes are integrated.
 
 ## Why this matters
 
@@ -72,7 +74,8 @@ only prompt decision by explicitly adding `token_hash`, backfilling it from
 | Upgrade rehearsal | `npm run test:integration:migrations` | exit 0 against isolated PostgreSQL |
 | No-diff probe | `npm run db:generate -- --name unchanged_schema_probe` | reports no schema changes and creates no migration |
 | Focused tests | `npm run test:unit -- tests/unit/migration-discipline.test.ts tests/unit/migration-locking.test.ts` | all pass |
-| Full preflight | `npm run preflight:pr` | exit 0 |
+| Plan-scoped preflight | run every `preflight:pr` step applicable to plan 014 | each plan-scoped step exits 0 |
+| Consolidated preflight | `npm run preflight:pr` | final integration owner runs this after sibling plans are combined |
 
 The integration commands require the repo's documented isolated PostgreSQL
 environment. Never point them at production or a shared development database.
@@ -154,10 +157,16 @@ snapshot fixtures fail with actionable messages.
 
 Run the no-diff probe after the baseline. It must report no changes and create
 no files. Run the base-to-branch migration rehearsal against isolated
-PostgreSQL, then the full PR preflight.
+PostgreSQL, then every plan-scoped PR preflight gate. When this task shares a
+branch with unrelated in-progress plans, record any earlier consolidated-gate
+failure and run the remaining plan-scoped steps directly. The consolidated
+branch owner must run the final full `npm run preflight:pr` after all sibling
+plans are integrated.
 
-**Verify**: discipline, no-diff probe, migration rehearsal, and preflight all
-exit 0. `git status --short` contains no probe artifact.
+**Verify**: discipline, no-diff probe, migration rehearsal, and every
+plan-scoped preflight step exit 0. `git status --short` contains no probe
+artifact. Final branch integration is incomplete until the consolidated full
+preflight exits 0.
 
 ## Test plan
 

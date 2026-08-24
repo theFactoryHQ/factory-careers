@@ -10,6 +10,8 @@ const SNAPSHOT_DIR = `${MIGRATIONS_DIR}meta/`
 const SCHEMA_DIR = 'server/database/schema/'
 const SNAPSHOT_BASELINE_TAG = '0066_current_schema_snapshot'
 const SNAPSHOT_BASELINE_INDEX = 66
+const SNAPSHOT_LEGACY_PREDECESSOR_INDEX = 34
+const SNAPSHOT_OBJECT_FIELDS = ['tables', 'enums', 'schemas', 'sequences', 'roles', 'policies', 'views', '_meta']
 
 function git(cwd, args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
@@ -49,6 +51,37 @@ function snapshotPath(index) {
 
 function isSnapshotPath(path) {
   return path.startsWith(SNAPSHOT_DIR) && path.endsWith('_snapshot.json')
+}
+
+function snapshotIndex(path) {
+  const match = path.match(/\/(\d{4})_snapshot\.json$/)
+  return match ? Number.parseInt(match[1], 10) : null
+}
+
+function snapshotPathsAtRef(cwd, ref) {
+  const output = git(cwd, ['ls-tree', '-r', '--name-only', ref, '--', SNAPSHOT_DIR])
+  if (!output) return []
+  return output
+    .split('\n')
+    .filter(isSnapshotPath)
+    .map(path => ({ path, index: snapshotIndex(path) }))
+    .filter(snapshot => snapshot.index !== null)
+    .sort((left, right) => left.index - right.index)
+}
+
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function isDrizzlePostgresSnapshot(value) {
+  return isRecord(value)
+    && typeof value.id === 'string'
+    && value.id.length > 0
+    && typeof value.prevId === 'string'
+    && value.prevId.length > 0
+    && value.version === '7'
+    && value.dialect === 'postgresql'
+    && SNAPSHOT_OBJECT_FIELDS.every(field => isRecord(value[field]))
 }
 
 function pathExistsAtRef(cwd, ref, path) {
@@ -138,6 +171,56 @@ export function checkMigrationDiscipline({ cwd = process.cwd(), baseRef, headRef
     const newestSnapshotPath = snapshotPath(newestEntry.idx)
     if (!pathExistsAtRef(cwd, headRef, newestSnapshotPath)) {
       errors.push(`Newest migration journal entry ${newestEntry.tag} requires snapshot ${newestSnapshotPath}`)
+    }
+  }
+
+  const snapshots = []
+  for (const { path, index } of snapshotPathsAtRef(cwd, headRef)) {
+    let value
+    try {
+      value = readJsonAtRef(cwd, headRef, path)
+    }
+    catch {
+      errors.push(`Invalid migration snapshot JSON: ${path}`)
+      continue
+    }
+    if (!isDrizzlePostgresSnapshot(value)) {
+      errors.push(`Migration snapshot ${path} must be a Drizzle PostgreSQL snapshot with IDs and object maps`)
+      continue
+    }
+    snapshots.push({ path, index, value })
+  }
+
+  const snapshotIds = new Map()
+  for (const snapshot of snapshots) {
+    const duplicatePath = snapshotIds.get(snapshot.value.id)
+    if (duplicatePath) {
+      errors.push(`Migration snapshot IDs must be unique: ${duplicatePath} and ${snapshot.path}`)
+    }
+    else {
+      snapshotIds.set(snapshot.value.id, snapshot.path)
+    }
+  }
+
+  const snapshotsByIndex = new Map(snapshots.map(snapshot => [snapshot.index, snapshot]))
+  const baselineSnapshot = snapshotsByIndex.get(SNAPSHOT_BASELINE_INDEX)
+  const legacyPredecessor = snapshotsByIndex.get(SNAPSHOT_LEGACY_PREDECESSOR_INDEX)
+  if (baselineSnapshot) {
+    if (!legacyPredecessor) {
+      errors.push('Snapshot 0066 must bridge the fixed legacy gap from snapshot 0034')
+    }
+    else if (baselineSnapshot.value.prevId !== legacyPredecessor.value.id) {
+      errors.push(`Migration snapshot ${baselineSnapshot.path} must reference previous snapshot ID ${legacyPredecessor.value.id}`)
+    }
+  }
+
+  for (const snapshot of snapshots.filter(snapshot => snapshot.index > SNAPSHOT_BASELINE_INDEX)) {
+    const previousSnapshot = snapshotsByIndex.get(snapshot.index - 1)
+    if (!previousSnapshot) {
+      errors.push(`Snapshots after 0066 must be consecutive before ${snapshot.path}`)
+    }
+    else if (snapshot.value.prevId !== previousSnapshot.value.id) {
+      errors.push(`Migration snapshot ${snapshot.path} must reference previous snapshot ID ${previousSnapshot.value.id}`)
     }
   }
 
