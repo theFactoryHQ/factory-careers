@@ -1,4 +1,8 @@
-import { canAccessPrivacyRequestForOrg, findPrivacyRequestCandidateMatches } from '../../utils/privacyRequests'
+import {
+  canAccessPrivacyRequestForOrg,
+  findPrivacyRequestCandidateMatches,
+  getPrivacyRequestErasureSummaries,
+} from '../../utils/privacyRequests'
 import { privacyRequestIdParamSchema } from '../../utils/schemas/privacyRequest'
 
 export default defineEventHandler(async (event) => {
@@ -15,10 +19,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Privacy request not found' })
   }
 
-  const matches = await findPrivacyRequestCandidateMatches({
-    organizationId: orgId,
-    requesterEmail: request.requesterEmail,
-  })
+  const [matches, erasureSummaries] = await Promise.all([
+    findPrivacyRequestCandidateMatches({
+      organizationId: orgId,
+      requesterEmail: request.requesterEmail,
+    }),
+    getPrivacyRequestErasureSummaries([request.id]),
+  ])
 
-  return { request, matches }
+  return {
+    request: { ...request, erasure: erasureSummaries.get(request.id)! },
+    matches,
+  }
 })

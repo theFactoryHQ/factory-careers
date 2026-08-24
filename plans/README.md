@@ -18,12 +18,12 @@ conditions, and update the plan's row when done.
 | [007](007-keep-public-job-pages-current.md) | Keep job listings and application forms current | P1 | M | 006 | DONE |
 | [008](008-production-canaries-and-alerts.md) | Add production canaries and incident alerts | P0 | L | 005-007 | DONE |
 | [009](009-encrypted-application-intake-recovery.md) | Add encrypted replayable submission recovery | P0 | XL | 005-008 | DONE |
-| [010](010-atomic-scoring-criteria-replacement.md) | Make scoring-criteria replacement atomic | P0 | S | - | IN PROGRESS |
-| [011](011-separate-instance-administration.md) | Separate instance administration from tenant ownership | P0 | M | - | IN PROGRESS |
-| [012](012-require-postgres-integration-suites.md) | Require every PostgreSQL integration suite in PR CI | P0 | S | - | IN PROGRESS |
-| [013](013-cover-critical-playwright-specs.md) | Cover every critical Playwright spec in required CI | P0 | S | - | IN PROGRESS |
+| [010](010-atomic-scoring-criteria-replacement.md) | Make scoring-criteria replacement atomic | P0 | S | - | DONE |
+| [011](011-separate-instance-administration.md) | Separate instance administration from tenant ownership | P0 | M | - | DONE |
+| [012](012-require-postgres-integration-suites.md) | Require every PostgreSQL integration suite in PR CI | P0 | S | - | DONE |
+| [013](013-cover-critical-playwright-specs.md) | Cover every critical Playwright spec in required CI | P0 | S | - | DONE |
 | [014](014-restore-drizzle-snapshot-baseline.md) | Restore a current Drizzle snapshot baseline | P0 | M | - | DONE |
-| [015](015-durable-private-document-erasure.md) | Make private-document erasure durable and truthful | P0 | L | 014 | TODO |
+| [015](015-durable-private-document-erasure.md) | Make private-document erasure durable and truthful | P0 | L | 014 | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
 REJECTED (with one-line rationale - finding fixed independently or approach
@@ -46,8 +46,9 @@ abandoned)
 - Plan 014 is implementation-complete with its plan-scoped gates passing. The
   owner of this consolidated multi-plan branch must run the final full
   `npm run preflight:pr` after sibling plan changes are integrated.
-- 015 should reuse the lease, retry, idempotency, and observability conventions
-  established by the processing and email queues from plans 005-009.
+- 015 reuses the lease, retry, idempotency, and observability conventions
+  established by the processing and email queues from plans 005-009. Its worker
+  and reconciliation remain disabled pending the documented rollout gates.
 
 ## Findings Considered And Rejected
 

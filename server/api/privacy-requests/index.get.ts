@@ -1,6 +1,7 @@
 import { and, desc, eq, exists, isNull, or } from 'drizzle-orm'
 import { candidate, privacyRequest } from '../../database/schema'
 import { privacyRequestListQuerySchema } from '../../utils/schemas/privacyRequest'
+import { getPrivacyRequestErasureSummaries } from '../../utils/privacyRequests'
 
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { privacyRequest: ['read'] })
@@ -35,6 +36,15 @@ export default defineEventHandler(async (event) => {
       .offset(offset),
     db.$count(privacyRequest, where),
   ])
+  const erasureSummaries = await getPrivacyRequestErasureSummaries(data.map(request => request.id))
 
-  return { data, total, page: query.page, limit: query.limit }
+  return {
+    data: data.map(request => ({
+      ...request,
+      erasure: erasureSummaries.get(request.id)!,
+    })),
+    total,
+    page: query.page,
+    limit: query.limit,
+  }
 })

@@ -1,4 +1,5 @@
 import {
+  assertPrivacyRequestFulfillableStatus,
   canAccessPrivacyRequestForOrg,
   deleteCandidatePersonalDataForPrivacyRequest,
 } from '../../../utils/privacyRequests'
@@ -21,9 +22,7 @@ export default defineEventHandler(async (event) => {
   if (!request.verifiedAt) {
     throw createError({ statusCode: 409, statusMessage: 'Privacy request must be verified before fulfillment' })
   }
-  if (request.status === 'completed') {
-    throw createError({ statusCode: 409, statusMessage: 'Privacy request is already completed' })
-  }
+  assertPrivacyRequestFulfillableStatus(request.status)
 
   const result = await deleteCandidatePersonalDataForPrivacyRequest({
     organizationId: orgId,

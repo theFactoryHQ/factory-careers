@@ -1,4 +1,4 @@
-import { and, eq, exists, inArray, isNull, ne, or } from 'drizzle-orm'
+import { and, eq, exists, inArray, isNull, ne, or, sql } from 'drizzle-orm'
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { createError } from 'h3'
 import {
@@ -16,6 +16,26 @@ import { env } from './env'
 import { enqueueDocumentErasure } from './documentErasureQueue'
 import { prepareCandidateProcessingCascadeInTransaction } from './processingCascadeCleanup'
 import type { ProcessingQueueDatabaseExecutor } from './processingQueue'
+import {
+  buildPrivacyRequestErasureSummary,
+  type PrivacyRequestErasureSummary,
+} from '../../shared/privacyRequestErasure'
+
+type PrivacyRequestStatus = typeof privacyRequest.$inferSelect.status
+const TERMINAL_PRIVACY_REQUEST_STATUSES = new Set<PrivacyRequestStatus>(['completed', 'denied', 'cancelled'])
+
+export function assertPrivacyRequestFulfillableStatus(status: PrivacyRequestStatus): void {
+  if (!TERMINAL_PRIVACY_REQUEST_STATUSES.has(status)) return
+  throw createError({ statusCode: 409, statusMessage: 'Privacy request has a terminal disposition' })
+}
+
+export function assertPrivacyRequestStatusTransition(
+  currentStatus: PrivacyRequestStatus,
+  nextStatus: PrivacyRequestStatus,
+): void {
+  if (!TERMINAL_PRIVACY_REQUEST_STATUSES.has(currentStatus) || currentStatus === nextStatus) return
+  throw createError({ statusCode: 409, statusMessage: 'Privacy request has a terminal disposition' })
+}
 
 export function buildPrivacyRequestPublicResponse() {
   return {
@@ -122,6 +142,33 @@ export async function findPrivacyRequestCandidateMatches(params: {
     ))
 }
 
+export async function getPrivacyRequestErasureSummaries(
+  requestIds: string[],
+  executor: Pick<typeof db, 'select'> = db,
+): Promise<Map<string, PrivacyRequestErasureSummary>> {
+  const summaries = new Map<string, PrivacyRequestErasureSummary>()
+  if (requestIds.length === 0) return summaries
+  const rows = await executor.select({
+    privacyRequestId: documentErasureQueue.privacyRequestId,
+    status: documentErasureQueue.status,
+    count: sql<number>`count(*)::int`,
+  }).from(documentErasureQueue)
+    .where(inArray(documentErasureQueue.privacyRequestId, requestIds))
+    .groupBy(documentErasureQueue.privacyRequestId, documentErasureQueue.status)
+
+  const grouped = new Map<string, Array<{ status: typeof documentErasureQueue.$inferSelect.status; count: number }>>()
+  for (const row of rows) {
+    if (!row.privacyRequestId) continue
+    const group = grouped.get(row.privacyRequestId) ?? []
+    group.push({ status: row.status, count: Number(row.count) })
+    grouped.set(row.privacyRequestId, group)
+  }
+  for (const requestId of requestIds) {
+    summaries.set(requestId, buildPrivacyRequestErasureSummary(grouped.get(requestId) ?? []))
+  }
+  return summaries
+}
+
 export async function deleteCandidatePersonalDataForPrivacyRequest(params: {
   organizationId: string
   candidateIds: string[]
@@ -145,9 +192,7 @@ export async function deleteCandidatePersonalDataForPrivacyRequest(params: {
     if (!request.verifiedAt) {
       throw createError({ statusCode: 409, statusMessage: 'Privacy request must be verified before fulfillment' })
     }
-    if (request.status === 'completed') {
-      throw createError({ statusCode: 409, statusMessage: 'Privacy request is already completed' })
-    }
+    assertPrivacyRequestFulfillableStatus(request.status)
 
     const matchingCandidates = await tx.select({ id: candidate.id }).from(candidate).where(and(
       eq(candidate.organizationId, params.organizationId),
@@ -263,7 +308,7 @@ export async function reconcilePrivacyRequestErasureCompletionInTransaction(
     .limit(1)
     .for('update')
   if (!request) return null
-  if (request.status === 'completed') return request
+  if (TERMINAL_PRIVACY_REQUEST_STATUSES.has(request.status)) return request
 
   const [unfinished] = await executor.select({ id: documentErasureQueue.id })
     .from(documentErasureQueue)

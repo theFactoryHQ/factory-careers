@@ -21,6 +21,7 @@ vi.mock('../../server/utils/recordActivity', () => ({ recordActivity: async () =
 import { deleteDocumentRelationalRecordWithProcessingHistory } from '../../server/utils/documentDeletion'
 import {
   deleteCandidatePersonalDataForPrivacyRequest,
+  getPrivacyRequestErasureSummaries,
   reconcilePrivacyRequestErasureCompletionInTransaction,
 } from '../../server/utils/privacyRequests'
 import {
@@ -275,6 +276,23 @@ describeWithPostgres('document erasure producer adoption', () => {
     expect(result.request?.completedAt).toBeTruthy()
   })
 
+  it('derives no erasure work for an ordinary in-review request with zero tombstones', async () => {
+    const seeded = await seedCandidate(`privacy_review_only_${suffix}`, false)
+    await client`update "privacy_request" set "status" = 'in_review'
+      where "id" = ${seeded.privacyRequestId}`
+
+    const summaries = await getPrivacyRequestErasureSummaries(
+      [seeded.privacyRequestId],
+      harness.database,
+    )
+
+    expect(summaries.get(seeded.privacyRequestId)).toEqual({
+      state: 'none',
+      totalCount: 0,
+      outstandingCount: 0,
+    })
+  })
+
   it('keeps privacy fulfillment in review while its document tombstone is unfinished', async () => {
     const seeded = await seedCandidate(`privacy_pending_${suffix}`, true)
 
@@ -318,6 +336,33 @@ describeWithPostgres('document erasure producer adoption', () => {
     })
     expect(completed).toMatchObject({ status: 'completed', completedById: seeded.actorId })
     expect(completed?.completedAt).toBeTruthy()
+  })
+
+  it.each(['denied', 'cancelled'] as const)('preserves an explicit %s disposition when erasure completes', async (status) => {
+    const seeded = await seedCandidate(`privacy_${status}_${suffix}`, true)
+    await deleteCandidatePersonalDataForPrivacyRequest({
+      organizationId: seeded.organizationId,
+      candidateIds: [seeded.candidateId],
+      actorId: seeded.actorId,
+      privacyRequestId: seeded.privacyRequestId,
+    })
+    await client`update "privacy_request" set "status" = ${status}
+      where "id" = ${seeded.privacyRequestId}`
+    await client`update "document_erasure_queue" set
+      "status" = 'completed', "result_code" = 'erased',
+      "completed_at" = now(), "lease_expires_at" = null
+      where "privacy_request_id" = ${seeded.privacyRequestId}`
+
+    const reconciled = await reconcilePrivacyRequestErasureCompletionInTransaction(harness.database, {
+      privacyRequestId: seeded.privacyRequestId,
+      completedById: seeded.actorId,
+    })
+    const [persisted] = await client<{ status: string, completedAt: Date | null }[]>`
+      select "status", "completed_at" as "completedAt"
+      from "privacy_request" where "id" = ${seeded.privacyRequestId}`
+
+    expect(reconciled?.status).toBe(status)
+    expect(persisted).toEqual({ status, completedAt: null })
   })
 
   it('rolls back tombstone completion when privacy reconciliation fails in the same transaction', async () => {

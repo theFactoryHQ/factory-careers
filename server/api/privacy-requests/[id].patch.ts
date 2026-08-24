@@ -1,6 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import { privacyRequest } from '../../database/schema'
-import { canAccessPrivacyRequestForOrg } from '../../utils/privacyRequests'
+import { assertPrivacyRequestStatusTransition, canAccessPrivacyRequestForOrg } from '../../utils/privacyRequests'
 import { privacyRequestIdParamSchema, updatePrivacyRequestSchema } from '../../utils/schemas/privacyRequest'
 
 export default defineEventHandler(async (event) => {
@@ -19,6 +19,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const nextStatus = body.status ?? request.status
+  assertPrivacyRequestStatusTransition(request.status, nextStatus)
   const now = new Date()
   const [updated] = await db.update(privacyRequest)
     .set({
@@ -31,11 +32,15 @@ export default defineEventHandler(async (event) => {
     })
     .where(and(
       eq(privacyRequest.id, request.id),
+      eq(privacyRequest.status, request.status),
       request.organizationId === null
         ? isNull(privacyRequest.organizationId)
         : eq(privacyRequest.organizationId, orgId),
     ))
     .returning()
+  if (!updated) {
+    throw createError({ statusCode: 409, statusMessage: 'Privacy request changed; refresh before updating' })
+  }
 
   recordActivity({
     organizationId: orgId,

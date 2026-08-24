@@ -118,8 +118,9 @@ describe('privacy request source contracts', () => {
   it('keeps pending private-document erasure visible after the fulfillment action settles', () => {
     const page = read('app/pages/dashboard/settings/privacy-requests.vue')
 
-    expect(page).toContain("selectedRequest.status === 'in_review'")
-    expect(page).toContain('Private document erasure is still pending.')
+    expect(page).toContain('selectedErasureNotice')
+    expect(page).toContain('getPrivacyRequestErasureNotice')
+    expect(page).not.toContain("selectedRequest.status === 'in_review'")
   })
 
   it('adds permissions and settings navigation for privacy requests', () => {

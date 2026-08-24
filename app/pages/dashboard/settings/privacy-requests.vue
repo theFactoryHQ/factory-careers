@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { Check, FileCheck2, Loader2, RefreshCw, ShieldCheck, Trash2, XCircle } from 'lucide-vue-next'
+import {
+  getPrivacyRequestErasureNotice,
+  type PrivacyRequestErasureSummary,
+} from '~~/shared/privacyRequestErasure'
 
 definePageMeta({})
 
@@ -22,6 +26,7 @@ type PrivacyRequestRow = {
   createdAt: string | Date
   resolutionNotes: string | null
   denialReason: string | null
+  erasure: PrivacyRequestErasureSummary
 }
 
 type CandidateMatch = {
@@ -60,10 +65,16 @@ watch(selectedRequest, (request) => {
 }, { immediate: true })
 
 const matches = computed(() => detail.value?.matches ?? [])
+const selectedErasureNotice = computed(() => selectedRequest.value
+  ? getPrivacyRequestErasureNotice(selectedRequest.value.erasure)
+  : null)
+const selectedRequestIsTerminal = computed(() => selectedRequest.value
+  ? ['completed', 'denied', 'cancelled'].includes(selectedRequest.value.status)
+  : false)
 const canFulfill = computed(() =>
   canUpdatePrivacyRequests.value
   && !!selectedRequest.value?.verifiedAt
-  && selectedRequest.value.status !== 'completed'
+  && !selectedRequestIsTerminal.value
   && selectedCandidateIds.value.length > 0,
 )
 
@@ -243,7 +254,7 @@ async function fulfillRequest() {
                 <input
                   type="checkbox"
                   :checked="selectedCandidateIds.includes(match.id)"
-                  :disabled="selectedRequest.status === 'completed'"
+                  :disabled="selectedRequestIsTerminal"
                   @change="toggleCandidate(match.id, ($event.target as HTMLInputElement).checked)"
                 />
                 <span class="min-w-0 flex-1">
@@ -267,17 +278,17 @@ async function fulfillRequest() {
 
           <div v-if="actionError" class="ui-alert ui-alert-danger">{{ actionError }}</div>
           <div v-if="actionSuccess" class="ui-alert ui-alert-success">{{ actionSuccess }}</div>
-          <div v-if="selectedRequest.status === 'in_review'" class="ui-alert ui-alert-warning">
-            Private document erasure is still pending.
+          <div v-if="selectedErasureNotice" class="ui-alert ui-alert-warning">
+            {{ selectedErasureNotice }}
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
-            <button class="ui-button ui-button-secondary" type="button" :disabled="isActing || !canUpdatePrivacyRequests" @click="markInReview">
+            <button class="ui-button ui-button-secondary" type="button" :disabled="isActing || !canUpdatePrivacyRequests || selectedRequestIsTerminal" @click="markInReview">
               <Loader2 v-if="isActing" class="size-4 animate-spin" />
               <Check v-else class="size-4" />
               Mark in review
             </button>
-            <button class="ui-button ui-button-danger-outline" type="button" :disabled="isActing || !canUpdatePrivacyRequests" @click="denyRequest">
+            <button class="ui-button ui-button-danger-outline" type="button" :disabled="isActing || !canUpdatePrivacyRequests || selectedRequestIsTerminal" @click="denyRequest">
               <XCircle class="size-4" />
               Deny
             </button>
