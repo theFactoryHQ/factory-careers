@@ -3,9 +3,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { drizzle } from 'drizzle-orm/postgres-js'
-import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
 import { describe, expect, it } from 'vitest'
+import { migrateDatabase } from '../../server/utils/databaseMigrations'
 
 const coreAdminUrl = process.env.FACTORY_CORE_PG_TEST_URL
 if (process.env.FACTORY_CORE_PG_REQUIRED === 'true' && !coreAdminUrl) {
@@ -24,7 +24,7 @@ function databaseUrl(databaseName: string) {
 async function applyMigrations(url: string, folder = migrationsFolder) {
   const client = postgres(url, { max: 1, onnotice: () => undefined })
   try {
-    await migrate(drizzle(client), { migrationsFolder: folder })
+    await migrateDatabase(drizzle(client), { migrationsFolder: folder })
   }
   finally {
     await client.end()
@@ -203,7 +203,6 @@ describeWithPostgres('application current analysis run PostgreSQL constraints', 
     const freshDatabase = `careers_score_fresh_${suffix}`
     const upgradeDatabase = `careers_score_upgrade_${suffix}`
     const partialMigrations = migrationsThrough(55)
-    const currentAnalysisMigrations = migrationsThrough(56)
 
     try {
       await admin.unsafe(`create database "${freshDatabase}"`)
@@ -230,10 +229,6 @@ describeWithPostgres('application current analysis run PostgreSQL constraints', 
         await legacy.end()
       }
 
-      // Apply the migration under test in its own deployment transaction.
-      // Later data-maintenance migrations can fire deferred triggers that must
-      // settle before their following RLS changes alter the affected tables.
-      await applyMigrations(upgradeUrl, currentAnalysisMigrations)
       await applyMigrations(upgradeUrl)
       const upgraded = postgres(upgradeUrl, { max: 1, onnotice: () => undefined })
       try {
@@ -249,7 +244,6 @@ describeWithPostgres('application current analysis run PostgreSQL constraints', 
     }
     finally {
       rmSync(partialMigrations, { recursive: true, force: true })
-      rmSync(currentAnalysisMigrations, { recursive: true, force: true })
       await admin.unsafe(`drop database if exists "${freshDatabase}" with (force)`)
       await admin.unsafe(`drop database if exists "${upgradeDatabase}" with (force)`)
       await admin.end()
