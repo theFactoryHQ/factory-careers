@@ -267,6 +267,9 @@ async function fulfillRequest() {
 
           <div v-if="actionError" class="ui-alert ui-alert-danger">{{ actionError }}</div>
           <div v-if="actionSuccess" class="ui-alert ui-alert-success">{{ actionSuccess }}</div>
+          <div v-if="selectedRequest.status === 'in_review'" class="ui-alert ui-alert-warning">
+            Private document erasure is still pending.
+          </div>
 
           <div class="flex flex-wrap items-center gap-2">
             <button class="ui-button ui-button-secondary" type="button" :disabled="isActing || !canUpdatePrivacyRequests" @click="markInReview">

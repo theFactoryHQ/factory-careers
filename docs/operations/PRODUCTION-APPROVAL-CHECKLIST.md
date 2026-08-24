@@ -45,6 +45,10 @@ Use this checklist before launching or materially changing any environment that 
 | Intake encryption proof | Tamper, wrong-key, rotation, and no-plaintext tests pass |  |
 | Delayed submission drill | Forced downstream failure returns 202; replay succeeds; zero residue |  |
 | Recovery expiry | Seven-day purge and retired-key retention verified |  |
+| Document erasure disabled deploy | Migrations healthy; worker remains explicitly disabled |  |
+| Document erasure synthetic storage proof | Disposable MinIO success, missing-object, retry, and terminal paths pass |  |
+| Document erasure enablement | Privacy, security, and operations approval recorded before enabling |  |
+| Legacy storage reconciliation | Separate dry-run evidence and human approval recorded; never coupled to rollout |  |
 | `npm run ops:validate-production-env -- <env-file>` | Pass against exact production values |  |
 | Database roles | `DATABASE_URL` is app-only; `DATABASE_MIGRATION_URL` is a distinct DDL role |  |
 | Runtime migration setting | `SKIP_RUNTIME_MIGRATIONS=false` |  |

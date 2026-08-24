@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { and, asc, eq, gt, inArray, lte, or, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, isNotNull, lte, or, sql } from 'drizzle-orm'
 import { documentErasureQueue } from '../database/schema'
 import { db } from './db'
 
@@ -8,9 +8,10 @@ const MAX_RETRY_DELAY_MS = 60 * 60_000
 const LEASE_DURATION_MS = 2 * 60_000
 export const DOCUMENT_ERASURE_CLAIM_LIMIT = 25
 
-type QueueRecord = typeof documentErasureQueue.$inferSelect
+export type DocumentErasureQueueRecord = typeof documentErasureQueue.$inferSelect
 type EnqueueExecutor = Pick<typeof db, 'insert'>
-type QueueDatabase = Pick<typeof db, 'transaction' | 'update'>
+type QueueDatabase = Pick<typeof db, 'transaction' | 'update' | 'select'>
+type QueueTransitionExecutor = Pick<typeof db, 'update'>
 
 type ProviderErrorShape = {
   name?: unknown
@@ -68,7 +69,9 @@ export function getDocumentErasureDedupeKey(storageKey: string): string {
 
 export function sanitizeDocumentErasureResultCode(value: unknown): DocumentErasureResultCode {
   if (typeof value !== 'string') return 'storage_error'
-  return DOCUMENT_ERASURE_RESULT_CODES[value] ?? 'storage_error'
+  return Object.hasOwn(DOCUMENT_ERASURE_RESULT_CODES, value)
+    ? DOCUMENT_ERASURE_RESULT_CODES[value]!
+    : 'storage_error'
 }
 
 export function isMissingDocumentObject(error: unknown): boolean {
@@ -156,7 +159,7 @@ export async function claimDocumentErasures(
     now?: Date
     limit?: number
   } = {},
-): Promise<QueueRecord[]> {
+): Promise<DocumentErasureQueueRecord[]> {
   const now = input.now ?? new Date()
   const limit = Math.max(1, Math.min(input.limit ?? DOCUMENT_ERASURE_CLAIM_LIMIT, 100))
   return database.transaction(async (tx) => {
@@ -232,7 +235,7 @@ export async function renewDocumentErasureLease(
 }
 
 export async function completeDocumentErasure(
-  database: QueueDatabase,
+  database: QueueTransitionExecutor,
   input: {
     id: string
     attemptCount: number
@@ -257,7 +260,7 @@ export async function completeDocumentErasure(
 }
 
 export async function recordDocumentErasureFailure(
-  database: QueueDatabase,
+  database: QueueTransitionExecutor,
   input: {
     id: string
     attemptCount: number
@@ -280,4 +283,49 @@ export async function recordDocumentErasureFailure(
     gt(documentErasureQueue.leaseExpiresAt, now),
   )).returning({ id: documentErasureQueue.id })
   return Boolean(transitioned)
+}
+
+export type DocumentErasureOperationsSnapshot = {
+  counts: Record<'pending' | 'processing' | 'completed' | 'failed', number>
+  oldestPendingAgeSeconds: number | null
+  oldestProcessingAgeSeconds: number | null
+  resultCodes: Array<{ code: string; count: number }>
+}
+
+export async function getDocumentErasureOperationsSnapshot(
+  database: Pick<typeof db, 'select'> = db,
+  now = new Date(),
+): Promise<DocumentErasureOperationsSnapshot> {
+  const statusRows = await database.select({
+    status: documentErasureQueue.status,
+    count: sql<number>`count(*)::int`,
+    oldestCreatedAt: sql<Date | null>`min(${documentErasureQueue.createdAt})`,
+  }).from(documentErasureQueue).groupBy(documentErasureQueue.status)
+  const resultRows = await database.select({
+    resultCode: documentErasureQueue.resultCode,
+    count: sql<number>`count(*)::int`,
+  }).from(documentErasureQueue)
+    .where(isNotNull(documentErasureQueue.resultCode))
+    .groupBy(documentErasureQueue.resultCode)
+
+  const counts = { pending: 0, processing: 0, completed: 0, failed: 0 }
+  let oldestPendingAgeSeconds: number | null = null
+  let oldestProcessingAgeSeconds: number | null = null
+  for (const row of statusRows) {
+    counts[row.status] = Number(row.count)
+    const age = row.oldestCreatedAt
+      ? Math.max(0, Math.floor((now.getTime() - new Date(row.oldestCreatedAt).getTime()) / 1_000))
+      : null
+    if (row.status === 'pending') oldestPendingAgeSeconds = age
+    if (row.status === 'processing') oldestProcessingAgeSeconds = age
+  }
+
+  return {
+    counts,
+    oldestPendingAgeSeconds,
+    oldestProcessingAgeSeconds,
+    resultCodes: resultRows
+      .map(row => ({ code: sanitizeDocumentErasureResultCode(row.resultCode), count: Number(row.count) }))
+      .sort((left, right) => left.code.localeCompare(right.code)),
+  }
 }

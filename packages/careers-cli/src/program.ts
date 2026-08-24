@@ -14,6 +14,7 @@ import { registerFeedbackCommands } from './commands/feedback'
 import { registerInterviewsCommands } from './commands/interviews'
 import { registerJobsCommands } from './commands/jobs'
 import { registerNotificationCommands } from './commands/notifications'
+import { registerOperationsCommands } from './commands/operations'
 import { registerRecoveryCommands } from './commands/recovery'
 import { registerOrgCommands } from './commands/org'
 import { registerPropertiesCommands } from './commands/properties'
@@ -55,6 +56,7 @@ export function createProgram(io: CliIo = {}): Command {
   registerApplicationsCommands(program, runtime)
   registerNotificationCommands(program, runtime)
   registerRecoveryCommands(program, runtime)
+  registerOperationsCommands(program, runtime)
 
   return program
 }

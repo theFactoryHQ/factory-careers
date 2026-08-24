@@ -67,6 +67,8 @@ describe('document erasure queue helpers', () => {
       .toBe('storage_error')
     expect(sanitizeDocumentErasureResultCode('candidate_email'))
       .toBe('storage_error')
+    expect(sanitizeDocumentErasureResultCode('toString')).toBe('storage_error')
+    expect(sanitizeDocumentErasureResultCode('__proto__')).toBe('storage_error')
     expect(sanitizeDocumentErasureResultCode('deleted')).toBe('erased')
     expect(sanitizeDocumentErasureResultCode('lease_expired')).toBe('lease_expired')
   })

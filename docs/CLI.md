@@ -196,6 +196,7 @@ Core commands:
 - `chatbot upload`, `chatbot conversations list`, `chatbot conversations get`, `chatbot conversations create`, `chatbot conversations update`, `chatbot conversations delete`, `chatbot folders list`, `chatbot folders create`, `chatbot folders update`, `chatbot folders delete`, `chatbot agents list`, `chatbot agents create`, `chatbot agents update`, `chatbot agents delete`, `chatbot chat`
 - `public jobs list`, `public jobs get`, `public jobs apply`
 - `recovery list`, `recovery status`, `recovery replay`, `recovery purge`
+- `operations document-erasure status`, `operations document-erasure drain`
 
 ## Not CLI Surfaced
 
@@ -229,6 +230,12 @@ name, email, filename, response, file bytes, job slug, or decrypted envelope.
 workflow and removes the encrypted receipt only after completion or a verified
 already-completed application. `recovery purge --yes` removes expired receipts
 owned by the active organization.
+
+`operations document-erasure status` returns aggregate queue counts, the age of
+the oldest active work, sanitized result-code counts, and whether the worker is
+enabled. It never returns storage keys, document IDs, or applicant data.
+`operations document-erasure drain --yes --limit 10` performs one bounded drain
+cycle. The CLI and API require explicit confirmation for every manual drain.
 
 ## Examples
 

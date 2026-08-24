@@ -17,9 +17,10 @@ This document captures the minimum retention decisions needed before Factory Car
 
 ## Current Deletion Expectations
 
-- Document deletes remove the database row and attempt object deletion.
-- Candidate deletes cascade candidate-linked database rows and attempt linked document object cleanup.
-- Organization deletes remove organization-linked rows and attempt organization document cleanup.
+- Document deletes remove the database row and atomically enqueue a durable private-object erasure tombstone.
+- Candidate deletes cascade candidate-linked database rows and atomically enqueue linked document tombstones.
+- Organization deletes remove organization-linked rows and atomically enqueue organization document tombstones.
+- Privacy requests remain `in_review` until every linked tombstone reaches confirmed completion.
+- Follow the [document-erasure rollout](DOCUMENT-ERASURE-ROLLOUT.md) before enabling the worker. Treat legacy-object [reconciliation](DOCUMENT-ERASURE-RECONCILIATION.md) as a separately approved operation.
 - Job deletes remove job-linked application data, but candidate profiles and documents may remain unless separate retention policy requires purge.
 - Removed members lose membership and session access; stale access is covered by e2e checks.
-

@@ -41,6 +41,7 @@ Production uses Render plus Supabase Postgres and Supabase Storage S3. Required 
 - `APPLICATION_INTAKE_ACTIVE_KEY_ID`
 - `APPLICATION_INTAKE_RETENTION_DAYS=7`
 - `APPLICATION_NOTIFICATION_WORKER_ENABLED=true`
+- `DOCUMENT_ERASURE_WORKER_ENABLED=false` until the staged rollout is approved
 
 GitHub Actions additionally requires concealed
 `FACTORY_CAREERS_PRODUCTION_URL`, `FACTORY_CAREERS_CRON_SECRET`,
@@ -148,6 +149,22 @@ key until all objects written by it have expired and been purged. Remove a
 retired key only after `recovery list` shows no receipt using that key ID.
 Never print the keyring, encrypted object, decrypted fields, request bodies, or
 applicant identifiers in logs, issues, chat, or command output.
+
+### Durable private-document erasure
+
+Deploy migrations and application code with `DOCUMENT_ERASURE_WORKER_ENABLED=false`.
+Follow the [document-erasure rollout](DOCUMENT-ERASURE-ROLLOUT.md) to prove the
+queue against disposable storage, monitor aggregate backlog, obtain explicit
+approval, and enable one worker. Use
+`factory-careers operations document-erasure status --json` for sanitized
+counts and ages. A manual bounded drain requires
+`operations document-erasure drain --yes --limit 10 --json`.
+
+Disable and redeploy the worker for rollback. After active leases expire, an
+approved operator may run one bounded drain only when the post-disable response
+is explicitly authorized. Leave failed queue rows unchanged for investigation.
+Legacy-object [reconciliation](DOCUMENT-ERASURE-RECONCILIATION.md) is a separate,
+dry-run-first privacy operation and is never part of ordinary deployment.
 
 For an incident, preserve the failed deploy logs and run the repository
 migrator with the concealed migration-role URL:

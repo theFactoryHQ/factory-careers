@@ -23,6 +23,13 @@ import {
   deleteCandidatePersonalDataForPrivacyRequest,
   reconcilePrivacyRequestErasureCompletionInTransaction,
 } from '../../server/utils/privacyRequests'
+import {
+  claimDocumentErasures,
+  completeDocumentErasure,
+  recordDocumentErasureFailure,
+  type DocumentErasureQueueRecord,
+} from '../../server/utils/documentErasureQueue'
+import { processDocumentErasureCycle } from '../../server/utils/processDocumentErasures'
 
 const adminUrl = process.env.FACTORY_CORE_PG_TEST_URL
 const postgresRequired = process.env.FACTORY_CORE_PG_REQUIRED === 'true'
@@ -311,6 +318,61 @@ describeWithPostgres('document erasure producer adoption', () => {
     })
     expect(completed).toMatchObject({ status: 'completed', completedById: seeded.actorId })
     expect(completed?.completedAt).toBeTruthy()
+  })
+
+  it('rolls back tombstone completion when privacy reconciliation fails in the same transaction', async () => {
+    const seeded = await seedCandidate(`privacy_atomic_${suffix}`, true)
+    await deleteCandidatePersonalDataForPrivacyRequest({
+      organizationId: seeded.organizationId,
+      candidateIds: [seeded.candidateId],
+      actorId: seeded.actorId,
+      privacyRequestId: seeded.privacyRequestId,
+    })
+
+    let claimedTask: DocumentErasureQueueRecord | undefined
+    const dependencies = {
+      claimTasks: async (input: { limit?: number }) => {
+        const claimed = await claimDocumentErasures(harness.database, input)
+        claimedTask = claimed[0]
+        return claimed
+      },
+      deleteObject: async () => undefined,
+      transaction: <T>(operation: (executor: any) => Promise<T>) => harness.database.transaction(operation),
+      completeTask: completeDocumentErasure,
+      reconcilePrivacy: async () => { throw new Error('forced privacy reconciliation rollback') },
+      failTask: (input: Parameters<typeof recordDocumentErasureFailure>[1]) =>
+        recordDocumentErasureFailure(harness.database, input),
+      logFailure: () => undefined,
+    }
+
+    await expect(processDocumentErasureCycle({ limit: 1 }, dependencies))
+      .rejects.toThrow('forced privacy reconciliation rollback')
+    expect(claimedTask).toBeDefined()
+
+    const [rolledBackTombstone] = await client<{ status: string, completedAt: Date | null }[]>`
+      select "status", "completed_at" as "completedAt"
+      from "document_erasure_queue" where "id" = ${claimedTask!.id}`
+    const [pendingRequest] = await client<{ status: string, completedAt: Date | null }[]>`
+      select "status", "completed_at" as "completedAt"
+      from "privacy_request" where "id" = ${seeded.privacyRequestId}`
+    expect(rolledBackTombstone).toEqual({ status: 'processing', completedAt: null })
+    expect(pendingRequest).toEqual({ status: 'in_review', completedAt: null })
+
+    const completed = await processDocumentErasureCycle({}, {
+      ...dependencies,
+      claimTasks: async () => [claimedTask!],
+      reconcilePrivacy: reconcilePrivacyRequestErasureCompletionInTransaction,
+    })
+    expect(completed).toEqual({ claimed: 1, succeeded: 1, retried: 0, failed: 0 })
+
+    const [completedTombstone] = await client<{ status: string }[]>`
+      select "status" from "document_erasure_queue" where "id" = ${claimedTask!.id}`
+    const [completedRequest] = await client<{ status: string, completedAt: Date | null }[]>`
+      select "status", "completed_at" as "completedAt"
+      from "privacy_request" where "id" = ${seeded.privacyRequestId}`
+    expect(completedTombstone?.status).toBe('completed')
+    expect(completedRequest?.status).toBe('completed')
+    expect(completedRequest?.completedAt).toBeTruthy()
   })
 
   it('does not regress a concurrently completed zero-document request', async () => {

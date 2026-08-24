@@ -10,6 +10,7 @@ import {
   claimDocumentErasures,
   completeDocumentErasure,
   enqueueDocumentErasure,
+  getDocumentErasureOperationsSnapshot,
   recordDocumentErasureFailure,
   renewDocumentErasureLease,
 } from '../../server/utils/documentErasureQueue'
@@ -380,5 +381,30 @@ describeWithPostgres('document erasure queue PostgreSQL behavior', () => {
       from "document_erasure_queue" where "id" = ${retryId}`
     expect(failed?.status).toBe('failed')
     expect(new Date(failed!.completedAt!).toISOString()).toBe(retryAt.toISOString())
+  })
+
+  it('reports exact aggregate queue counts, active ages, and sanitized result codes', async () => {
+    const now = new Date('2030-08-23T20:00:00.000Z')
+    const snapshot = await getDocumentErasureOperationsSnapshot(database, now)
+    const statusRows = await client<{ status: keyof typeof snapshot.counts, count: number }[]>`
+      select "status", count(*)::int as "count"
+      from "document_erasure_queue" group by "status"`
+    const expectedCounts = { pending: 0, processing: 0, completed: 0, failed: 0 }
+    for (const row of statusRows) expectedCounts[row.status] = Number(row.count)
+
+    const [activeAges] = await client<{ pending: Date | null, processing: Date | null }[]>`
+      select
+        min("created_at") filter (where "status" = 'pending') as "pending",
+        min("created_at") filter (where "status" = 'processing') as "processing"
+      from "document_erasure_queue"`
+    const expectedAge = (createdAt: Date | null) => createdAt
+      ? Math.max(0, Math.floor((now.getTime() - new Date(createdAt).getTime()) / 1_000))
+      : null
+
+    expect(snapshot.counts).toEqual(expectedCounts)
+    expect(snapshot.oldestPendingAgeSeconds).toBe(expectedAge(activeAges!.pending))
+    expect(snapshot.oldestProcessingAgeSeconds).toBe(expectedAge(activeAges!.processing))
+    expect(snapshot.resultCodes).toEqual([...snapshot.resultCodes].sort((left, right) => left.code.localeCompare(right.code)))
+    expect(JSON.stringify(snapshot)).not.toMatch(/storageKey|organizationId|privacyRequestId|candidate|provider|message/i)
   })
 })

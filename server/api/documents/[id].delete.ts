@@ -4,14 +4,14 @@ import { deleteDocumentWithProcessingHistory } from '../../utils/documentDeletio
 /**
  * DELETE /api/documents/:id
  *
- * Cancel active processing, delete the database row, then remove storage.
+ * Cancel active processing and atomically enqueue storage erasure before deleting the database row.
  *
  * Security:
  *   - Auth required, org-scoped
  *   - Document must belong to the authenticated org (prevents IDOR)
  *   - Returns 404 for non-existent or cross-org documents
  *   - Durable processing history is retained as cancelled
- *   - S3 deletion happens only after the relational transaction commits
+ *   - Storage deletion is handled asynchronously by the durable erasure worker
  */
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { document: ['delete'] })
