@@ -14,6 +14,8 @@ self-hosters.
 
 ### Added
 
+- Added the Factory development-knowledge writeback contract for durable
+  architecture, deployment, CI, infrastructure, lifecycle, and operations work.
 - Added append-only migration enforcement, base-to-branch PostgreSQL upgrade rehearsal, and an exact-commit production deployment gate.
 - Added five-minute public-path monitoring, exact-deploy and daily full application canaries, sanitized incident lifecycle automation, and rate-limited operational alerts.
 - Added AES-256-GCM application intake recovery with seven-day retention, delayed-submission receipts, idempotent owner replay, metadata-only CLI operations, key rotation, and scheduled expiry cleanup.
