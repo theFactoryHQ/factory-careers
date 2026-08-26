@@ -25,6 +25,7 @@ self-hosters.
 
 ### Changed
 
+- Updated development npm dependencies for ESLint and vue-tsc.
 - Updated development npm dependencies for axe-core Playwright, Nuxt ESLint, and ESLint.
 - Updated the GitHub Actions github-script action from v8 to v9 for application, canary, and SSO incident workflows.
 - Updated production npm dependencies for AI providers, S3, Better Auth SSO, Nuxt MDC, PostHog, Mammoth, Nodemailer, and Resend.
