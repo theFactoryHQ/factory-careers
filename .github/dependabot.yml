@@ -23,9 +23,16 @@ updates:
           - minor
           - patch
     # Never auto-bump major versions — those require manual review.
+    # better-auth 1.7 is a breaking minor: generic OAuth client APIs,
+    # callback URLs, and schema all change. Keep 1.6.x until a dedicated
+    # migration PR lands.
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "better-auth"
+        versions: [">=1.7.0"]
+      - dependency-name: "@better-auth/sso"
+        versions: [">=1.7.0"]
     labels:
       - dependencies
     commit-message:
