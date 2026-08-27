@@ -341,13 +341,15 @@ const localePath = useLocalePath()
     </div>
 
     <!-- Error -->
-    <div
+    <LoadErrorState
       v-else-if="error"
-      class="rounded-xl border border-danger-200 bg-danger-50 p-5 text-sm text-danger-700 dark:border-danger-800/60 dark:bg-danger-950/40 dark:text-danger-300"
+      :error="error"
+      not-found-message="Interview not found."
+      failed-message="Failed to load interview."
+      @retry="refresh()"
     >
-      {{ (error as any).statusCode === 404 ? 'Interview not found.' : 'Failed to load interview.' }}
-      <NuxtLink :to="$localePath('/dashboard/interviews')" class="underline ml-1">Back to Interviews</NuxtLink>
-    </div>
+      <NuxtLink :to="$localePath('/dashboard/interviews')" class="underline">Back to Interviews</NuxtLink>
+    </LoadErrorState>
 
     <!-- Interview detail -->
     <template v-else-if="interview">

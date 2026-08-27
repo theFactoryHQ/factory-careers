@@ -14,6 +14,8 @@ self-hosters.
 
 ### Added
 
+- Added the Factory development-knowledge writeback contract for durable
+  architecture, deployment, CI, infrastructure, lifecycle, and operations work.
 - Added append-only migration enforcement, base-to-branch PostgreSQL upgrade rehearsal, and an exact-commit production deployment gate.
 - Added five-minute public-path monitoring, exact-deploy and daily full application canaries, sanitized incident lifecycle automation, and rate-limited operational alerts.
 - Added AES-256-GCM application intake recovery with seven-day retention, delayed-submission receipts, idempotent owner replay, metadata-only CLI operations, key rotation, and scheduled expiry cleanup.
@@ -24,6 +26,7 @@ self-hosters.
 
 ### Changed
 
+- Updated development npm dependencies for ESLint and vue-tsc.
 - Updated development npm dependencies for axe-core Playwright, Nuxt ESLint, and ESLint.
 - Updated the GitHub Actions github-script action from v8 to v9 for application, canary, and SSO incident workflows.
 - Updated production npm dependencies for AI providers, S3, Better Auth SSO, Nuxt MDC, PostHog, Mammoth, Nodemailer, and Resend.
@@ -46,6 +49,8 @@ self-hosters.
 - Separated host-global update and backup administration from tenant ownership with an explicit, default-deny Better Auth user-ID allowlist.
 - Applied PostgreSQL journal entries in separate atomic transactions so deferred trigger work cannot block a later migration during production upgrades.
 - Prevented browser autofill from causing public applications to report success without being saved.
+- Distinguished missing public jobs and dashboard records from temporary load failures, and added Retry on those pages so applicants and recruiters can recover without being told the record is gone.
+- Associated public application validation errors with their fields, moved keyboard focus to the first invalid control, and forwarded `aria-invalid` through shared dropdowns.
 - Loaded the Factory logo in operational alert emails from the first-party careers site instead of the retired external asset host.
 - Kept production storage readiness and encrypted intake buffering compatible with the private applicant-document bucket MIME policy.
 - Suppressed all candidate and internal notifications for authenticated synthetic applications and removed their database, queue, and storage artifacts after each probe.

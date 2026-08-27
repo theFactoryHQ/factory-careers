@@ -430,7 +430,7 @@ describe('brand-neutral theme variables', () => {
           'getSourceChannelBadgeClass',
           'getSourceChannelDotClass',
           'getSourceChannelLabel',
-          'ui-alert-danger',
+          'LoadErrorState',
           'ui-button-ghost',
           'ui-button-primary',
           'ui-button-secondary',

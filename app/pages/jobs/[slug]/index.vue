@@ -32,7 +32,7 @@ const applyQuery = computed(() => {
 
 onMounted(() => track('public_job_viewed', { slug: jobSlug }))
 
-const { data: job, status: fetchStatus, error: fetchError } = useFetch(
+const { data: job, status: fetchStatus, error: fetchError, refresh } = useFetch(
   `/api/public/jobs/${jobSlug}`,
   { key: `public-job-detail-${jobSlug}` },
 )
@@ -252,15 +252,17 @@ function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[
       </div>
     </div>
 
-    <!-- Not found -->
-    <div v-else-if="fetchError" class="flex flex-col items-center justify-center py-20 text-center">
-      <div class="mb-5 flex size-16 items-center justify-center border border-white/10 bg-white/[0.03]">
-        <Briefcase class="size-7 text-brand-500" />
-      </div>
-      <h1 class="mb-2 text-xl font-semibold text-white">Job Not Found</h1>
-      <p class="mb-6 max-w-xs text-sm text-white/50">
-        This position may no longer be available or is not currently accepting applications.
-      </p>
+    <!-- Not found / load failure -->
+    <LoadErrorState
+      v-else-if="fetchError"
+      variant="hero"
+      :error="fetchError"
+      not-found-title="Job Not Found"
+      not-found-message="This position may no longer be available or is not currently accepting applications."
+      failed-title="Couldn't load this position"
+      failed-message="A temporary problem prevented us from loading this job. Check your connection and try again."
+      @retry="refresh()"
+    >
       <NuxtLink
         :to="$localePath('/jobs')"
         class="factory-button-cta factory-button-outline inline-flex h-[48px] min-h-[48px] items-center justify-center gap-1.5 px-5 py-0 transition-colors"
@@ -268,7 +270,7 @@ function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[
         <ArrowLeft class="size-4" />
         Browse all positions
       </NuxtLink>
-    </div>
+    </LoadErrorState>
 
     <!-- Job detail -->
     <template v-else-if="job">

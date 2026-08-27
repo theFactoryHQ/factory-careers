@@ -20,7 +20,7 @@ const { formatPersonName } = useOrgSettings()
 // Fetch job info for page header
 // ─────────────────────────────────────────────
 
-const { data: jobData, status: jobFetchStatus, error: jobError } = useFetch(
+const { data: jobData, status: jobFetchStatus, error: jobError, refresh: refreshJob } = useFetch(
   () => `/api/jobs/${jobId}`,
   {
     key: `candidates-job-${jobId}`,
@@ -125,6 +125,10 @@ function clearFilters() {
   selectedStatuses.value = []
   scoreMin.value = undefined
   scoreMax.value = undefined
+}
+
+function retryCandidatesLoad() {
+  void Promise.all([refreshJob(), refreshApps()])
 }
 
 // ─────────────────────────────────────────────
@@ -232,13 +236,15 @@ const isLoading = computed(() => jobFetchStatus.value === 'pending' || appFetchS
     </div>
 
     <!-- Error -->
-    <div
+    <LoadErrorState
       v-else-if="jobError || appError"
-      class="rounded-xl border border-danger-200/80 bg-danger-50 p-5 text-sm text-danger-700 dark:border-danger-800/60 dark:bg-danger-950/40 dark:text-danger-300"
+      :error="jobError || appError"
+      not-found-message="Job not found."
+      failed-message="Failed to load candidates. Please try again."
+      @retry="retryCandidatesLoad"
     >
-      {{ jobError ? 'Job not found or failed to load.' : 'Failed to load candidates.' }}
-      <NuxtLink :to="$localePath('/dashboard')" class="ml-1 font-medium underline hover:no-underline">Back to Jobs</NuxtLink>
-    </div>
+      <NuxtLink :to="$localePath('/dashboard')" class="font-medium underline hover:no-underline">Back to Jobs</NuxtLink>
+    </LoadErrorState>
 
     <template v-else-if="jobData">
       <!-- Toolbar -->

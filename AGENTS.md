@@ -128,6 +128,16 @@ parity guard wiring, merge-conflict hygiene, theme rules, and agent-facing docs.
 This is a focused rules bundle, not a replacement for typecheck, build, e2e, or
 runtime browser checks when behavior changes.
 
+## Factory development knowledge
+
+After a durable change to architecture, deployment, CI, infrastructure,
+repository relationships, lifecycle, or operating procedures, update the
+repository changelog and capture the operating meaning with
+`work --org factory knowledge capture`. Link
+`[[sources/topics/development-hub|Factory development]]` and current evidence.
+Skip ordinary patches. Keep credentials, private data, and detailed threat
+information out of general development pages.
+
 ## Changelog Maintenance
 
 Treat the in-product changelog as part of the product.

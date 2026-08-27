@@ -55,7 +55,7 @@ const { formatPersonName } = useOrgSettings()
 // Job data (with update/delete support)
 // ─────────────────────────────────────────────
 
-const { job: jobData, status: jobFetchStatus, error: jobError } = useJob(jobId)
+const { job: jobData, status: jobFetchStatus, error: jobError, refresh: refreshJob } = useJob(jobId)
 
 // ─────────────────────────────────────────────
 // Applications data
@@ -127,6 +127,10 @@ const {
   propertyFilters,
   limit: 25,
 })
+
+function retryPipelineLoad() {
+  void Promise.all([refreshJob(), refreshApps()])
+}
 
 const focusedApplications = computed(() => applications.value)
 const filteredApplications = computed(() => applications.value)
@@ -958,10 +962,16 @@ function closeDocPreview() {
     <!-- Error -->
     <div
       v-else-if="jobError || appError"
-      class="m-6 rounded-xl border border-danger-200/80 bg-danger-50 p-5 text-sm text-danger-700 dark:border-danger-800/60 dark:bg-danger-950/40 dark:text-danger-300"
+      class="m-6"
     >
-      {{ jobError ? 'Job not found or failed to load.' : 'Failed to load applications.' }}
-      <NuxtLink :to="$localePath('/dashboard')" class="ml-1 font-medium underline hover:no-underline">Back to Jobs</NuxtLink>
+      <LoadErrorState
+        :error="jobError || appError"
+        not-found-message="Job not found."
+        failed-message="Failed to load this pipeline. Please try again."
+        @retry="retryPipelineLoad"
+      >
+        <NuxtLink :to="$localePath('/dashboard')" class="font-medium underline hover:no-underline">Back to Jobs</NuxtLink>
+      </LoadErrorState>
     </div>
 
     <template v-else-if="jobData">
