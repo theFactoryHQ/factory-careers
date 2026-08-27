@@ -239,6 +239,7 @@ const describedBy = computed(() => {
       :aria-labelledby="`q-${question.id}-label`"
       :aria-invalid="error ? true : undefined"
       :aria-describedby="describedBy"
+      :tabindex="error ? -1 : undefined"
     >
       <label
         v-for="opt in question.options"
@@ -383,6 +384,9 @@ const describedBy = computed(() => {
         v-else
         class="flex items-center justify-between border bg-black/35 px-4 py-2.5 text-sm"
         :class="error ? 'border-danger-500/70' : 'border-white/14'"
+        :aria-invalid="error ? true : undefined"
+        :aria-describedby="describedBy"
+        :tabindex="error ? -1 : undefined"
       >
         <span class="mr-2 truncate text-white">{{ selectedFileName }}</span>
         <button

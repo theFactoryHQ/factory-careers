@@ -3,6 +3,7 @@ import { MapPin, Briefcase, Building2 } from 'lucide-vue-next'
 import { COUNTRY_OPTIONS, US_STATE_OPTIONS } from '~~/shared/location-options'
 import { isRequiredCustomQuestionAnswered } from '~~/shared/custom-question-validation'
 import { formatApplicationSubmitError } from '~/utils/fetch-error'
+import { focusFirstInvalidField } from '~/utils/focus-invalid-field'
 import {
   formatDivisionLabel,
   jobDescriptionBlocksToMarkdown,
@@ -317,21 +318,16 @@ function fieldErrorId(field: string) {
   return `${field}-error`
 }
 
-function focusFirstInvalidField() {
+function focusFirstInvalidApplicationField() {
   nextTick(() => {
-    const root = document.querySelector('.factory-public-form')
-    if (!(root instanceof HTMLElement)) return
-    const invalid = root.querySelector<HTMLElement>('[aria-invalid="true"]')
-    if (!invalid) return
-    invalid.focus({ preventScroll: true })
-    invalid.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    focusFirstInvalidField(document.querySelector('.factory-public-form'))
   })
 }
 
 function goToResumeAndQuestionsStep() {
   submitError.value = null
   if (!validateContactFields()) {
-    focusFirstInvalidField()
+    focusFirstInvalidApplicationField()
     return
   }
   currentApplicationStep.value = 2
@@ -341,12 +337,12 @@ function goToComplianceStep() {
   submitError.value = null
   if (!validateContactFields()) {
     currentApplicationStep.value = 1
-    focusFirstInvalidField()
+    focusFirstInvalidApplicationField()
     return
   }
   if (!validateResumeAndQuestionsFields()) {
     currentApplicationStep.value = 2
-    focusFirstInvalidField()
+    focusFirstInvalidApplicationField()
     return
   }
   currentApplicationStep.value = 3
@@ -365,7 +361,7 @@ async function handleSubmit() {
     } else if (Object.keys(errors.value).some((key) => key === 'resume' || key === 'coverLetter' || key.startsWith('q-'))) {
       currentApplicationStep.value = 2
     }
-    focusFirstInvalidField()
+    focusFirstInvalidApplicationField()
     return
   }
 
