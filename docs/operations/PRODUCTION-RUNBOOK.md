@@ -41,11 +41,35 @@ Production uses Render plus Supabase Postgres and Supabase Storage S3. Required 
 - `APPLICATION_INTAKE_ACTIVE_KEY_ID`
 - `APPLICATION_INTAKE_RETENTION_DAYS=7`
 - `APPLICATION_NOTIFICATION_WORKER_ENABLED=true`
+- `DOCUMENT_ERASURE_WORKER_ENABLED=false` until the staged rollout is approved
 
 GitHub Actions additionally requires concealed
 `FACTORY_CAREERS_PRODUCTION_URL`, `FACTORY_CAREERS_CRON_SECRET`,
 `RENDER_API_KEY`, and `RENDER_SERVICE_ID` secrets. The Render identifiers and
 credentials are deployment controls and must not be emitted by workflow logs.
+
+### Instance administrator bootstrap
+
+`FACTORY_INSTANCE_ADMIN_USER_IDS` is a comma-separated allowlist of stable
+Better Auth user IDs. It controls host-global update and backup operations.
+Organization ownership does not grant this access. An empty or missing value
+disables host mutations for every account.
+
+Bootstrap one operator through the supported authenticated readback:
+
+1. Sign in to the production CLI as the intended operator.
+2. Run `factory-careers auth whoami --json`.
+3. Copy the exact `user.id` from that operator's authenticated response.
+4. Set only that ID in `FACTORY_INSTANCE_ADMIN_USER_IDS`.
+5. Deploy the reviewed release.
+6. Run `factory-careers system info --json` as that operator.
+7. Confirm `canAdministerInstance` is `true`.
+8. Sign in as a tenant owner who is absent from the allowlist.
+9. Confirm update and backup requests return HTTP 403 before any host work.
+10. Add further operator IDs only after the bounded bootstrap proof passes.
+
+Use exact, case-sensitive IDs. Never use an email address, domain, organization
+role, or partial ID. Never print the configured allowlist in logs or evidence.
 
 ### Database migration invariant
 
@@ -125,6 +149,22 @@ key until all objects written by it have expired and been purged. Remove a
 retired key only after `recovery list` shows no receipt using that key ID.
 Never print the keyring, encrypted object, decrypted fields, request bodies, or
 applicant identifiers in logs, issues, chat, or command output.
+
+### Durable private-document erasure
+
+Deploy migrations and application code with `DOCUMENT_ERASURE_WORKER_ENABLED=false`.
+Follow the [document-erasure rollout](DOCUMENT-ERASURE-ROLLOUT.md) to prove the
+queue against disposable storage, monitor aggregate backlog, obtain explicit
+approval, and enable one worker. Use
+`factory-careers operations document-erasure status --json` for sanitized
+counts and ages. A manual bounded drain requires
+`operations document-erasure drain --yes --limit 10 --json`.
+
+Disable and redeploy the worker for rollback. After active leases expire, an
+approved operator may run one bounded drain only when the post-disable response
+is explicitly authorized. Leave failed queue rows unchanged for investigation.
+Legacy-object [reconciliation](DOCUMENT-ERASURE-RECONCILIATION.md) is a separate,
+dry-run-first privacy operation and is never part of ordinary deployment.
 
 For an incident, preserve the failed deploy logs and run the repository
 migrator with the concealed migration-role URL:

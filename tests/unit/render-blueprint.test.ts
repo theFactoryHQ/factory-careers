@@ -17,9 +17,10 @@ describe('Render blueprint', () => {
     expect(source).not.toMatch(/plan: free/)
   })
 
-  it('keeps migrations enabled and the recruiting worker disabled for the safe rollout', () => {
+  it('keeps migrations enabled and opt-in workers disabled for the safe rollout', () => {
     expect(source).toMatch(/key: SKIP_RUNTIME_MIGRATIONS\s+value: "false"/)
     expect(source).toMatch(/key: RECRUITING_WORKER_ENABLED\s+value: "false"/)
+    expect(source).toMatch(/key: DOCUMENT_ERASURE_WORKER_ENABLED\s+value: "false"/)
   })
 
   it('trusts Render-owned forwarding headers for production rate-limit identity', () => {

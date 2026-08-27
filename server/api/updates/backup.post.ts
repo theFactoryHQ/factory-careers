@@ -17,10 +17,10 @@ interface BackupResult {
  * Docker volume for persistence. Falls back to /tmp/ if the
  * directory cannot be created.
  *
- * Requires authentication (owner only).
+ * Requires explicit instance-administrator access.
  */
 export default defineEventHandler(async (event) => {
-  await requirePermission(event, { organization: ['delete'] })
+  await requireInstanceAdmin(event)
 
   const { mkdir, writeFile, unlink } = await import('node:fs/promises')
   const { join } = await import('node:path')

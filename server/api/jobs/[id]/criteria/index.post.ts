@@ -23,14 +23,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Job not found' })
   }
 
-  // Delete existing criteria for this job (replace strategy)
-  await db.delete(scoringCriterion)
-    .where(and(
-      eq(scoringCriterion.jobId, jobId),
-      eq(scoringCriterion.organizationId, orgId),
-    ))
-
-  // Insert new criteria
   const values = body.criteria.map((c, index) => ({
     organizationId: orgId,
     jobId,
@@ -43,9 +35,17 @@ export default defineEventHandler(async (event) => {
     displayOrder: c.displayOrder ?? index,
   }))
 
-  const created = await db.insert(scoringCriterion)
-    .values(values)
-    .returning()
+  const created = await db.transaction(async (tx) => {
+    await tx.delete(scoringCriterion)
+      .where(and(
+        eq(scoringCriterion.jobId, jobId),
+        eq(scoringCriterion.organizationId, orgId),
+      ))
+
+    return tx.insert(scoringCriterion)
+      .values(values)
+      .returning()
+  })
 
   recordActivity({
     organizationId: orgId,

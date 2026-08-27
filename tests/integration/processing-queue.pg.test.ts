@@ -17,7 +17,13 @@ import {
   getProcessingBatchStatus,
 } from '../../server/utils/processingQueue'
 
-const adminUrl = process.env.PROCESSING_QUEUE_PG_TEST_URL ?? process.env.SCORING_RUN_PG_TEST_URL
+const coreAdminUrl = process.env.FACTORY_CORE_PG_TEST_URL
+if (process.env.FACTORY_CORE_PG_REQUIRED === 'true' && !coreAdminUrl) {
+  throw new Error('processing queue PostgreSQL suite: FACTORY_CORE_PG_TEST_URL is required when FACTORY_CORE_PG_REQUIRED=true')
+}
+const adminUrl = coreAdminUrl
+  ?? process.env.PROCESSING_QUEUE_PG_TEST_URL
+  ?? process.env.SCORING_RUN_PG_TEST_URL
 const describeWithPostgres = adminUrl ? describe : describe.skip
 const migrationsFolder = join(process.cwd(), 'server/database/migrations')
 

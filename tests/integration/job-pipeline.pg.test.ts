@@ -8,7 +8,12 @@ import * as schema from '../../server/database/schema'
 import { loadJobPipeline } from '../../server/utils/jobPipeline'
 import { jobPipelineQuerySchema } from '../../server/utils/schemas/jobPipeline'
 
-const adminUrl = process.env.JOB_PIPELINE_PG_TEST_URL
+const coreAdminUrl = process.env.FACTORY_CORE_PG_TEST_URL
+if (process.env.FACTORY_CORE_PG_REQUIRED === 'true' && !coreAdminUrl) {
+  throw new Error('job pipeline PostgreSQL suite: FACTORY_CORE_PG_TEST_URL is required when FACTORY_CORE_PG_REQUIRED=true')
+}
+const adminUrl = coreAdminUrl
+  ?? process.env.JOB_PIPELINE_PG_TEST_URL
   ?? process.env.PROPERTY_FILTER_PG_TEST_URL
   ?? process.env.PROCESSING_QUEUE_PG_TEST_URL
   ?? process.env.SCORING_RUN_PG_TEST_URL

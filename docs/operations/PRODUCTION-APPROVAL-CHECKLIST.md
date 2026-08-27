@@ -32,6 +32,8 @@ Use this checklist before launching or materially changing any environment that 
 | SSO credential metadata | Key ID, activation, expiry, and last success present; no secret fields |  |
 | Authenticated Microsoft probe | Stable healthy code; no raw provider data |  |
 | Real Microsoft sign-in | Reaches `/dashboard` |  |
+| Instance administrator bootstrap | One exact Better Auth user ID configured; `system info` returns `canAdministerInstance: true` |  |
+| Tenant-owner host denial | Non-allowlisted owner receives HTTP 403 for update and backup before host work |  |
 | Minimum safe rollback target | Compatibility-capable SHA and Render deploy recorded |  |
 | Historical-artifact rollback rehearsal | Old artifact fails readiness; current deploy remains live |  |
 | SSO monitor | Manual run healthy and 15-minute schedule enabled |  |
@@ -43,6 +45,10 @@ Use this checklist before launching or materially changing any environment that 
 | Intake encryption proof | Tamper, wrong-key, rotation, and no-plaintext tests pass |  |
 | Delayed submission drill | Forced downstream failure returns 202; replay succeeds; zero residue |  |
 | Recovery expiry | Seven-day purge and retired-key retention verified |  |
+| Document erasure disabled deploy | Migrations healthy; worker remains explicitly disabled |  |
+| Document erasure synthetic storage proof | Disposable MinIO success, missing-object, retry, and terminal paths pass |  |
+| Document erasure enablement | Privacy, security, and operations approval recorded before enabling |  |
+| Legacy storage reconciliation | Separate dry-run evidence and human approval recorded; never coupled to rollout |  |
 | `npm run ops:validate-production-env -- <env-file>` | Pass against exact production values |  |
 | Database roles | `DATABASE_URL` is app-only; `DATABASE_MIGRATION_URL` is a distinct DDL role |  |
 | Runtime migration setting | `SKIP_RUNTIME_MIGRATIONS=false` |  |

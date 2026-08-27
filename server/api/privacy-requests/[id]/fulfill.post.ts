@@ -1,6 +1,5 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm'
-import { candidate, privacyRequest } from '../../../database/schema'
 import {
+  assertPrivacyRequestFulfillableStatus,
   canAccessPrivacyRequestForOrg,
   deleteCandidatePersonalDataForPrivacyRequest,
 } from '../../../utils/privacyRequests'
@@ -23,51 +22,15 @@ export default defineEventHandler(async (event) => {
   if (!request.verifiedAt) {
     throw createError({ statusCode: 409, statusMessage: 'Privacy request must be verified before fulfillment' })
   }
-  if (request.status === 'completed') {
-    throw createError({ statusCode: 409, statusMessage: 'Privacy request is already completed' })
-  }
-
-  const matchingCandidates = await db.query.candidate.findMany({
-    where: and(
-      eq(candidate.organizationId, orgId),
-      eq(candidate.email, request.requesterEmail),
-      inArray(candidate.id, body.candidateIds),
-    ),
-    columns: { id: true },
-  })
-
-  if (matchingCandidates.length !== body.candidateIds.length) {
-    throw createError({
-      statusCode: 422,
-      statusMessage: 'Selected candidates must match the verified requester email and active organization',
-    })
-  }
+  assertPrivacyRequestFulfillableStatus(request.status)
 
   const result = await deleteCandidatePersonalDataForPrivacyRequest({
     organizationId: orgId,
     candidateIds: body.candidateIds,
     actorId: session.user.id,
     privacyRequestId: request.id,
+    resolutionNotes: body.resolutionNotes,
   })
-
-  const now = new Date()
-  const [updated] = await db.update(privacyRequest)
-    .set({
-      status: 'completed',
-      reviewedById: request.reviewedById ?? session.user.id,
-      reviewedAt: request.reviewedAt ?? now,
-      completedById: session.user.id,
-      completedAt: now,
-      resolutionNotes: body.resolutionNotes ?? request.resolutionNotes,
-      updatedAt: now,
-    })
-    .where(and(
-      eq(privacyRequest.id, request.id),
-      request.organizationId === null
-        ? isNull(privacyRequest.organizationId)
-        : eq(privacyRequest.organizationId, orgId),
-    ))
-    .returning()
-
-  return { request: updated, result }
+  const { request: updated, ...publicResult } = result
+  return { request: updated, result: publicResult }
 })

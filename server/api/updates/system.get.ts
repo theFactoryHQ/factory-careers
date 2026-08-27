@@ -12,7 +12,7 @@ import { getAppVersion } from '../../utils/appVersion'
  * Requires authentication.
  */
 export default defineEventHandler(async (event) => {
-  await requireAuth(event)
+  const session = await requireAuth(event)
 
   const version = await getAppVersion()
 
@@ -38,13 +38,14 @@ export default defineEventHandler(async (event) => {
 
   // Detect deployment method
   const isDocker = await isRunningInDocker()
-  const isRailway = !!process.env.RAILWAY_ENVIRONMENT_NAME
+  const isRailway = !!env.RAILWAY_ENVIRONMENT_NAME
 
   const totalMem = totalmem()
   const usedMem = totalMem - freemem()
 
   return {
     version,
+    canAdministerInstance: isInstanceAdminUserId(session.user.id),
     nodeVersion: process.version,
     platform: process.platform,
     arch: process.arch,

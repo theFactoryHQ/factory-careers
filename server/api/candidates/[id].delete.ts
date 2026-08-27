@@ -4,6 +4,7 @@ import {
   prepareCandidateProcessingCascadeInTransaction,
 } from '../../utils/processingCascadeCleanup'
 import type { ProcessingQueueDatabaseExecutor } from '../../utils/processingQueue'
+import { enqueueDocumentErasure } from '../../utils/documentErasureQueue'
 import { candidateIdParamSchema } from '../../utils/schemas/candidate'
 
 export default defineEventHandler(async (event) => {
@@ -18,6 +19,12 @@ export default defineEventHandler(async (event) => {
       { organizationId: orgId, candidateIds: [id] },
     )
     if (cascade.candidateIds.length === 0) return null
+    for (const doc of cascade.documents) {
+      await enqueueDocumentErasure(tx, {
+        organizationId: orgId,
+        storageKey: doc.storageKey,
+      })
+    }
     const [deleted] = await tx.delete(candidate)
       .where(and(eq(candidate.id, id), eq(candidate.organizationId, orgId)))
       .returning({ id: candidate.id })
@@ -26,17 +33,6 @@ export default defineEventHandler(async (event) => {
 
   if (!deletion) {
     throw createError({ statusCode: 404, statusMessage: 'Not found' })
-  }
-
-  const storageResults = await Promise.allSettled(
-    deletion.cascade.documents.map(doc => deleteFromS3(doc.storageKey)),
-  )
-  const failedStorageDeletes = storageResults.filter(result => result.status === 'rejected').length
-  if (failedStorageDeletes > 0) {
-    logWarn('candidate.document_s3_delete_failed', {
-      result_code: 'storage_cleanup_failed',
-      failed_count: failedStorageDeletes,
-    })
   }
 
   recordActivity({

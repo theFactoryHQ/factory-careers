@@ -2,9 +2,9 @@ import { getTableColumns, getTableName, is } from 'drizzle-orm'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
 import { PgTable } from 'drizzle-orm/pg-core'
 import { drizzle } from 'drizzle-orm/postgres-js'
-import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
 import * as schema from '../database/schema'
+import { migrateDatabase } from '../utils/databaseMigrations'
 import {
   backfillSsoProviderClientSecrets,
   validateSsoProviderClientSecrets,
@@ -357,7 +357,7 @@ export default defineNitroPlugin(async () => {
       migrate: async (database, client) => {
         if (!skipSchemaMigrations) {
           console.log('[Factory Careers] Running database migrations...')
-          await migrate(database, {
+          await migrateDatabase(database, {
             migrationsFolder: './server/database/migrations',
           })
           await assertMigrationLedgerMatchesBundle(client)

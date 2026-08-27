@@ -23,7 +23,9 @@ describe('processing-aware parent cascade cleanup', () => {
     for (const source of [candidateRoute, privacy]) {
       expect(source).not.toContain('storage_key:')
       expect(source).not.toContain('error_message:')
-      expect(source).toContain("result_code: 'storage_cleanup_failed'")
+      expect(source).toContain('enqueueDocumentErasure')
+      expect(source).not.toContain('deleteFromS3')
+      expect(source).not.toContain('storage_cleanup_failed')
     }
   })
 

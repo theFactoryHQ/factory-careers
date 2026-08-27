@@ -22,6 +22,7 @@ self-hosters.
 - Added CLI batch inspection and resumption plus organization-wide missing-only scoring, finite wait controls, and stable nonzero outcomes for failed, cancelled, or timed-out processing.
 - Added independent application email preferences for each member and the shared careers inbox, with immediate, daily, weekly, monthly, and off cadences in dashboard settings and the authenticated CLI.
 - Added a durable application notification worker with database-triggered event capture, grouped digest emails, tenant isolation, leases, bounded retries, and provider idempotency.
+- Added disabled-by-default durable private-document erasure processing with aggregate instance-admin status, confirmed bounded drains, and CLI parity.
 
 ### Changed
 
@@ -41,6 +42,12 @@ self-hosters.
 
 ### Fixed
 
+- Closed privacy requests whose document-erasure tombstone received its privacy link after the worker had already claimed it.
+- Attached a privacy request to an existing unlinked document-erasure tombstone so fulfillment cannot complete while that object is still outstanding.
+- Kept applicant privacy requests in review until durable private-document erasure finishes, preserved explicit denied or cancelled dispositions, and derived operator warnings from actual outstanding erasure work.
+- Made bulk scoring-criteria replacement atomic and rejected duplicate criterion keys before any database write.
+- Separated host-global update and backup administration from tenant ownership with an explicit, default-deny Better Auth user-ID allowlist.
+- Applied PostgreSQL journal entries in separate atomic transactions so deferred trigger work cannot block a later migration during production upgrades.
 - Prevented browser autofill from causing public applications to report success without being saved.
 - Distinguished missing public jobs and dashboard records from temporary load failures, and added Retry on those pages so applicants and recruiters can recover without being told the record is gone.
 - Associated public application validation errors with their fields, moved keyboard focus to the first invalid control, and forwarded `aria-invalid` through shared dropdowns.

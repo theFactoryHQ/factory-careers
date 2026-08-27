@@ -3,11 +3,15 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { drizzle } from 'drizzle-orm/postgres-js'
-import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
 import { describe, expect, it } from 'vitest'
+import { migrateDatabase } from '../../server/utils/databaseMigrations'
 
-const adminUrl = process.env.SCORING_RUN_PG_TEST_URL
+const coreAdminUrl = process.env.FACTORY_CORE_PG_TEST_URL
+if (process.env.FACTORY_CORE_PG_REQUIRED === 'true' && !coreAdminUrl) {
+  throw new Error('application current analysis run PostgreSQL suite: FACTORY_CORE_PG_TEST_URL is required when FACTORY_CORE_PG_REQUIRED=true')
+}
+const adminUrl = coreAdminUrl ?? process.env.SCORING_RUN_PG_TEST_URL
 const describeWithPostgres = adminUrl ? describe : describe.skip
 const migrationsFolder = join(process.cwd(), 'server/database/migrations')
 
@@ -20,7 +24,7 @@ function databaseUrl(databaseName: string) {
 async function applyMigrations(url: string, folder = migrationsFolder) {
   const client = postgres(url, { max: 1, onnotice: () => undefined })
   try {
-    await migrate(drizzle(client), { migrationsFolder: folder })
+    await migrateDatabase(drizzle(client), { migrationsFolder: folder })
   }
   finally {
     await client.end()

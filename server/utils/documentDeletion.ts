@@ -1,16 +1,14 @@
 import { and, eq } from 'drizzle-orm'
 import { document } from '../database/schema'
 import { db } from './db'
-import { logWarn } from './logger'
+import { enqueueDocumentErasure } from './documentErasureQueue'
 import {
   cancelDocumentProcessingTasksInTransaction,
   type ProcessingQueueDatabaseExecutor,
 } from './processingQueue'
-import { deleteFromS3 } from './s3'
 
 export type DocumentDeletionResult = {
   id: string
-  storageKey: string
 }
 
 export type DocumentDeletionAdapter = {
@@ -18,7 +16,6 @@ export type DocumentDeletionAdapter = {
     organizationId: string
     documentId: string
   }): Promise<DocumentDeletionResult | null>
-  deleteStorageObject(storageKey: string): Promise<void>
 }
 
 export async function deleteDocumentRelationalRecordWithProcessingHistory(input: {
@@ -45,32 +42,27 @@ export async function deleteDocumentRelationalRecordWithProcessingHistory(input:
       .limit(1)
       .for('update')
     if (!lockedDocument) return null
+    await enqueueDocumentErasure(tx, {
+      organizationId: input.organizationId,
+      storageKey: lockedDocument.storageKey,
+    })
     const [deletedDocument] = await tx.delete(document)
       .where(and(
         eq(document.id, input.documentId),
         eq(document.organizationId, input.organizationId),
       ))
-      .returning({ id: document.id, storageKey: document.storageKey })
+      .returning({ id: document.id })
     return deletedDocument ?? null
   })
 }
 
 const defaultAdapter: DocumentDeletionAdapter = {
   deleteRelationalRecord: deleteDocumentRelationalRecordWithProcessingHistory,
-  deleteStorageObject: deleteFromS3,
 }
 
 export async function deleteDocumentWithProcessingHistory(
   input: { organizationId: string; documentId: string },
   adapter: DocumentDeletionAdapter = defaultAdapter,
 ): Promise<DocumentDeletionResult | null> {
-  const deletedDocument = await adapter.deleteRelationalRecord(input)
-  if (!deletedDocument) return null
-  try {
-    await adapter.deleteStorageObject(deletedDocument.storageKey)
-  }
-  catch {
-    logWarn('document.s3_delete_failed', { result_code: 'storage_cleanup_failed' })
-  }
-  return deletedDocument
+  return adapter.deleteRelationalRecord(input)
 }

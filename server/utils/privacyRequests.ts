@@ -1,19 +1,41 @@
-import { and, eq, exists, inArray, isNull, or } from 'drizzle-orm'
+import { and, eq, exists, inArray, isNull, ne, or, sql } from 'drizzle-orm'
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
+import { createError } from 'h3'
 import {
   application,
   candidate,
   comment,
+  documentErasureQueue,
   job,
   privacyRequest,
   propertyValue,
 } from '../database/schema'
-import { logWarn } from './logger'
 import { recordActivity } from './recordActivity'
-import { deleteFromS3 } from './s3'
+import { db } from './db'
 import { env } from './env'
+import { enqueueDocumentErasure } from './documentErasureQueue'
 import { prepareCandidateProcessingCascadeInTransaction } from './processingCascadeCleanup'
 import type { ProcessingQueueDatabaseExecutor } from './processingQueue'
+import {
+  buildPrivacyRequestErasureSummary,
+  type PrivacyRequestErasureSummary,
+} from '../../shared/privacyRequestErasure'
+
+type PrivacyRequestStatus = typeof privacyRequest.$inferSelect.status
+const TERMINAL_PRIVACY_REQUEST_STATUSES = new Set<PrivacyRequestStatus>(['completed', 'denied', 'cancelled'])
+
+export function assertPrivacyRequestFulfillableStatus(status: PrivacyRequestStatus): void {
+  if (!TERMINAL_PRIVACY_REQUEST_STATUSES.has(status)) return
+  throw createError({ statusCode: 409, statusMessage: 'Privacy request has a terminal disposition' })
+}
+
+export function assertPrivacyRequestStatusTransition(
+  currentStatus: PrivacyRequestStatus,
+  nextStatus: PrivacyRequestStatus,
+): void {
+  if (!TERMINAL_PRIVACY_REQUEST_STATUSES.has(currentStatus) || currentStatus === nextStatus) return
+  throw createError({ statusCode: 409, statusMessage: 'Privacy request has a terminal disposition' })
+}
 
 export function buildPrivacyRequestPublicResponse() {
   return {
@@ -120,20 +142,94 @@ export async function findPrivacyRequestCandidateMatches(params: {
     ))
 }
 
+export async function getPrivacyRequestErasureSummaries(
+  requestIds: string[],
+  executor: Pick<typeof db, 'select'> = db,
+): Promise<Map<string, PrivacyRequestErasureSummary>> {
+  const summaries = new Map<string, PrivacyRequestErasureSummary>()
+  if (requestIds.length === 0) return summaries
+  const rows = await executor.select({
+    privacyRequestId: documentErasureQueue.privacyRequestId,
+    status: documentErasureQueue.status,
+    count: sql<number>`count(*)::int`,
+  }).from(documentErasureQueue)
+    .where(inArray(documentErasureQueue.privacyRequestId, requestIds))
+    .groupBy(documentErasureQueue.privacyRequestId, documentErasureQueue.status)
+
+  const grouped = new Map<string, Array<{ status: typeof documentErasureQueue.$inferSelect.status; count: number }>>()
+  for (const row of rows) {
+    if (!row.privacyRequestId) continue
+    const group = grouped.get(row.privacyRequestId) ?? []
+    group.push({ status: row.status, count: Number(row.count) })
+    grouped.set(row.privacyRequestId, group)
+  }
+  for (const requestId of requestIds) {
+    summaries.set(requestId, buildPrivacyRequestErasureSummary(grouped.get(requestId) ?? []))
+  }
+  return summaries
+}
+
 export async function deleteCandidatePersonalDataForPrivacyRequest(params: {
   organizationId: string
   candidateIds: string[]
   actorId: string
   privacyRequestId: string
+  resolutionNotes?: string
 }) {
   const uniqueCandidateIds = Array.from(new Set(params.candidateIds)).sort()
 
   const deletion = await db.transaction(async (tx) => {
+    const [request] = await tx.select().from(privacyRequest).where(and(
+      eq(privacyRequest.id, params.privacyRequestId),
+      or(
+        eq(privacyRequest.organizationId, params.organizationId),
+        isNull(privacyRequest.organizationId),
+      ),
+    )).limit(1).for('update')
+    if (!request) {
+      throw createError({ statusCode: 404, statusMessage: 'Privacy request not found' })
+    }
+    if (!request.verifiedAt) {
+      throw createError({ statusCode: 409, statusMessage: 'Privacy request must be verified before fulfillment' })
+    }
+    assertPrivacyRequestFulfillableStatus(request.status)
+
+    const matchingCandidates = await tx.select({ id: candidate.id }).from(candidate).where(and(
+      eq(candidate.organizationId, params.organizationId),
+      eq(candidate.email, request.requesterEmail),
+      inArray(candidate.id, params.candidateIds),
+    )).orderBy(candidate.id).for('update')
+    if (matchingCandidates.length !== params.candidateIds.length) {
+      throw createError({
+        statusCode: 422,
+        statusMessage: 'Selected candidates must match the verified requester email and active organization',
+      })
+    }
+
+    const now = new Date()
+    await tx.update(privacyRequest).set({
+      status: 'in_review',
+      reviewedById: request.reviewedById ?? params.actorId,
+      reviewedAt: request.reviewedAt ?? now,
+      completedById: null,
+      completedAt: null,
+      resolutionNotes: params.resolutionNotes ?? request.resolutionNotes,
+      updatedAt: now,
+    }).where(eq(privacyRequest.id, request.id))
+
     const cascade = await prepareCandidateProcessingCascadeInTransaction(
       tx as unknown as ProcessingQueueDatabaseExecutor,
       { organizationId: params.organizationId, candidateIds: uniqueCandidateIds },
     )
     const { applicationIds, candidateIds } = cascade
+    for (const doc of cascade.documents) {
+      await enqueueDocumentErasure(tx, {
+        organizationId: params.organizationId,
+        privacyRequestId: request.id,
+        storageKey: doc.storageKey,
+        now,
+      })
+    }
     if (applicationIds.length > 0) {
       await tx.delete(comment).where(and(
         eq(comment.organizationId, params.organizationId),
@@ -169,19 +265,14 @@ export async function deleteCandidatePersonalDataForPrivacyRequest(params: {
           .returning({ id: candidate.id })
       : []
 
-    return { cascade, deletedCandidateIds: deleted.map(row => row.id) }
-  })
-
-  const storageResults = await Promise.allSettled(
-    deletion.cascade.documents.map(doc => deleteFromS3(doc.storageKey)),
-  )
-  const failedStorageDeletes = storageResults.filter(result => result.status === 'rejected').length
-  if (failedStorageDeletes > 0) {
-    logWarn('privacy_request.document_s3_delete_failed', {
-      result_code: 'storage_cleanup_failed',
-      failed_count: failedStorageDeletes,
+    const completion = await reconcilePrivacyRequestErasureCompletionInTransaction(tx, {
+      privacyRequestId: request.id,
+      completedById: params.actorId,
+      now,
     })
-  }
+    if (!completion) throw new Error('Privacy request disappeared during fulfillment')
+    return { cascade, deletedCandidateIds: deleted.map(row => row.id), completion }
+  })
 
   recordActivity({
     organizationId: params.organizationId,
@@ -190,7 +281,7 @@ export async function deleteCandidatePersonalDataForPrivacyRequest(params: {
     resourceType: 'privacy_request',
     resourceId: params.privacyRequestId,
     metadata: {
-      deletedCandidateIds: deletion.deletedCandidateIds,
+      deletedCandidateCount: deletion.deletedCandidateIds.length,
       deletedApplicationCount: deletion.cascade.applicationIds.length,
       deletedDocumentCount: deletion.cascade.documents.length,
     },
@@ -200,5 +291,41 @@ export async function deleteCandidatePersonalDataForPrivacyRequest(params: {
     deletedCandidateIds: deletion.deletedCandidateIds,
     deletedApplicationCount: deletion.cascade.applicationIds.length,
     deletedDocumentCount: deletion.cascade.documents.length,
+    erasureStatus: deletion.completion.status === 'completed' ? 'completed' : 'pending',
+    request: deletion.completion,
   }
+}
+
+type PrivacyCompletionExecutor = Pick<typeof db, 'select' | 'update'>
+
+export async function reconcilePrivacyRequestErasureCompletionInTransaction(
+  executor: PrivacyCompletionExecutor,
+  input: { privacyRequestId: string; completedById?: string | null; now?: Date },
+) {
+  const now = input.now ?? new Date()
+  const [request] = await executor.select().from(privacyRequest)
+    .where(eq(privacyRequest.id, input.privacyRequestId))
+    .limit(1)
+    .for('update')
+  if (!request) return null
+  if (TERMINAL_PRIVACY_REQUEST_STATUSES.has(request.status)) return request
+
+  const [unfinished] = await executor.select({ id: documentErasureQueue.id })
+    .from(documentErasureQueue)
+    .where(and(
+      eq(documentErasureQueue.privacyRequestId, input.privacyRequestId),
+      ne(documentErasureQueue.status, 'completed'),
+    ))
+    .limit(1)
+  const completed = !unfinished
+  const [updated] = await executor.update(privacyRequest).set({
+    status: completed ? 'completed' : 'in_review',
+    completedById: completed ? (input.completedById ?? request.reviewedById) : null,
+    completedAt: completed ? now : null,
+    updatedAt: now,
+  }).where(and(
+    eq(privacyRequest.id, input.privacyRequestId),
+    ne(privacyRequest.status, 'completed'),
+  )).returning()
+  return updated ?? request
 }

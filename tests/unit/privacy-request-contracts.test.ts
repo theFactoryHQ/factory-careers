@@ -96,8 +96,31 @@ describe('privacy request source contracts', () => {
     expect(source).toContain("eq(comment.targetType, 'application')")
     expect(source).toContain("eq(propertyValue.entityType, 'candidate')")
     expect(source).toContain("eq(propertyValue.entityType, 'application')")
-    expect(source).toContain('deleteFromS3(doc.storageKey)')
+    expect(source).toContain('enqueueDocumentErasure')
+    expect(source).not.toContain('deleteFromS3')
+    expect(source).not.toContain('Promise.allSettled')
     expect(source).toContain('recordActivity')
+    const activityMetadata = source.slice(source.indexOf('recordActivity({'), source.indexOf('return {', source.indexOf('recordActivity({')))
+    expect(activityMetadata).not.toContain('deletedCandidateIds:')
+    expect(activityMetadata).toContain('deletedCandidateCount')
+  })
+
+  it('keeps storage erasure pending until every privacy tombstone completes', () => {
+    const helper = read('server/utils/privacyRequests.ts')
+    const route = read('server/api/privacy-requests/[id]/fulfill.post.ts')
+
+    expect(helper).toContain('reconcilePrivacyRequestErasureCompletionInTransaction')
+    expect(helper).toContain("erasureStatus: deletion.completion.status === 'completed' ? 'completed' : 'pending'")
+    expect(route).not.toContain("status: 'completed'")
+    expect(route).not.toContain('db.update(privacyRequest)')
+  })
+
+  it('keeps pending private-document erasure visible after the fulfillment action settles', () => {
+    const page = read('app/pages/dashboard/settings/privacy-requests.vue')
+
+    expect(page).toContain('selectedErasureNotice')
+    expect(page).toContain('getPrivacyRequestErasureNotice')
+    expect(page).not.toContain("selectedRequest.status === 'in_review'")
   })
 
   it('adds permissions and settings navigation for privacy requests', () => {

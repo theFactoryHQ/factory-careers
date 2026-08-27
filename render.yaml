@@ -18,6 +18,8 @@ services:
         value: "false"
       - key: APPLICATION_NOTIFICATION_WORKER_ENABLED
         value: "true"
+      - key: DOCUMENT_ERASURE_WORKER_ENABLED
+        value: "false"
       - key: TRUST_PROXY_HEADERS
         value: "true"
       - key: SSO_PROVIDER_SECRET_STORAGE_MODE

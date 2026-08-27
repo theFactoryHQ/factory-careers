@@ -68,6 +68,21 @@ export const updateCriterionSchema = z.object({
 
 export const bulkCriteriaSchema = z.object({
   criteria: z.array(createCriterionSchema).min(1).max(20),
+}).superRefine(({ criteria }, context) => {
+  const keys = new Set<string>()
+
+  criteria.forEach((criterion, index) => {
+    if (keys.has(criterion.key)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['criteria', index, 'key'],
+        message: 'Criterion keys must be unique',
+      })
+      return
+    }
+
+    keys.add(criterion.key)
+  })
 })
 
 export const updateWeightsSchema = z.object({

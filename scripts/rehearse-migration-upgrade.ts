@@ -7,10 +7,10 @@ import { getTableColumns, getTableName, is } from 'drizzle-orm'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
 import { PgTable } from 'drizzle-orm/pg-core'
 import { drizzle } from 'drizzle-orm/postgres-js'
-import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
 import * as schema from '../server/database/schema'
 import { assertApplicationDatabaseReady } from '../server/utils/applicationDatabaseReadiness'
+import { migrateDatabase } from '../server/utils/databaseMigrations'
 
 const migrationsPath = 'server/database/migrations'
 
@@ -81,8 +81,8 @@ async function main(): Promise<void> {
     const client = postgres(databaseUrl(adminUrl, databaseName), { max: 1 })
     try {
       const db = drizzle(client, { schema })
-      await migrate(db, { migrationsFolder: baseMigrations })
-      await migrate(db, { migrationsFolder: migrationsPath })
+      await migrateDatabase(db, { migrationsFolder: baseMigrations })
+      await migrateDatabase(db, { migrationsFolder: migrationsPath })
 
       const ledger = await client<{ count: string }[]>`SELECT count(*)::text AS count FROM drizzle.__drizzle_migrations`
       const bundledCount = readMigrationFiles({ migrationsFolder: migrationsPath }).length
