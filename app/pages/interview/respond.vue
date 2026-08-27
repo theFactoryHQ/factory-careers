@@ -17,7 +17,7 @@ const token = computed(() => {
   return typeof t === 'string' ? t : ''
 })
 
-const { data, error: fetchError, status: fetchStatus } = await useFetch('/api/public/interviews/respond', {
+const { data, error: fetchError, status: fetchStatus, refresh } = await useFetch('/api/public/interviews/respond', {
   query: { token },
   immediate: !!token.value,
 })
@@ -104,20 +104,19 @@ useHead({
     </div>
 
     <!-- Error fetching -->
-    <div v-else-if="fetchError" class="text-center">
-      <div class="ui-icon-state ui-icon-state-danger mx-auto mb-4 size-16">
-        <span class="text-2xl">⚠</span>
-      </div>
-      <h1 class="text-xl font-semibold text-surface-900 dark:text-surface-100 mb-2">
-        {{ fetchError.statusCode === 400 ? 'Link Expired' : 'Something went wrong' }}
-      </h1>
-      <p class="text-surface-500">
-        {{ fetchError.statusCode === 400
-          ? 'This response link has expired or is no longer valid. Please contact the hiring team for a new invitation.'
-          : 'We couldn\'t load the interview details. Please try again later.'
-        }}
-      </p>
-    </div>
+    <LoadErrorState
+      v-else-if="fetchError"
+      variant="hero"
+      :error="fetchError"
+      :permanent-status-codes="[400]"
+      :not-found-title="fetchError.statusCode === 400 ? 'Link Expired' : 'Interview not found'"
+      :not-found-message="fetchError.statusCode === 400
+        ? 'This response link has expired or is no longer valid. Please contact the hiring team for a new invitation.'
+        : 'We couldn\'t find this interview. Please use the link from your invitation email.'"
+      failed-title="Couldn't load this interview"
+      failed-message="We couldn't load the interview details. Check your connection and try again."
+      @retry="refresh()"
+    />
 
     <!-- Confirmed successfully -->
     <div v-else-if="confirmed" class="text-center">

@@ -245,13 +245,15 @@ const {
     </div>
 
     <!-- Error / not found -->
-    <div
+    <LoadErrorState
       v-else-if="error"
-      class="border border-danger-500/45 bg-danger-500/10 p-4 text-sm text-danger-200"
+      :error="error"
+      not-found-message="Candidate not found."
+      failed-message="Failed to load candidate."
+      @retry="refresh()"
     >
-      {{ error.statusCode === 404 ? 'Candidate not found.' : 'Failed to load candidate.' }}
-      <NuxtLink :to="$localePath('/dashboard/candidates')" class="ml-1 underline hover:text-white">Back to Candidates</NuxtLink>
-    </div>
+      <NuxtLink :to="$localePath('/dashboard/candidates')" class="underline hover:text-white">Back to Candidates</NuxtLink>
+    </LoadErrorState>
 
     <!-- Candidate detail -->
     <template v-else-if="candidate">

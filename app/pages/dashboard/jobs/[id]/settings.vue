@@ -12,7 +12,7 @@ const jobId = route.params.id as string
 const toast = useToast()
 const { track } = useTrack()
 
-const { job, status: fetchStatus, error: fetchError, deleteJob } = useJob(jobId)
+const { job, status: fetchStatus, error: fetchError, deleteJob, refresh } = useJob(jobId)
 
 const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, job)
 
@@ -99,12 +99,14 @@ async function handleDelete() {
       </section>
     </template>
 
-    <div
+    <LoadErrorState
       v-if="fetchStatus !== 'pending' && !job && fetchError"
-      class="rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700 dark:border-danger-800 dark:bg-danger-950 dark:text-danger-400"
+      :error="fetchError"
+      not-found-message="Job not found."
+      failed-message="Failed to load job."
+      @retry="refresh()"
     >
-      {{ fetchError.statusCode === 404 ? 'Job not found.' : 'Failed to load job.' }}
-      <NuxtLink :to="$localePath('/dashboard/jobs')" class="ml-1 underline">Back to Jobs</NuxtLink>
-    </div>
+      <NuxtLink :to="$localePath('/dashboard/jobs')" class="underline">Back to Jobs</NuxtLink>
+    </LoadErrorState>
   </div>
 </template>

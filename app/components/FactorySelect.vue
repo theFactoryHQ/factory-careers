@@ -11,8 +11,11 @@ const props = defineProps<{
   options: ReadonlyArray<{ value: any; label: string }>
   placeholder?: string
   disabled?: boolean
+  invalid?: boolean
   class?: string
 }>()
+
+const attrs = useAttrs()
 
 const emit = defineEmits<{
   'update:modelValue': [value: any]
@@ -89,12 +92,15 @@ useOutsidePointer({
     <button
       ref="triggerRef"
       :id="selectId"
+      v-bind="attrs"
       type="button"
       class="factory-filter-select factory-filter-dropdown-trigger flex w-full items-center justify-between gap-2 border px-3 py-2 text-sm text-left focus:outline-none transition-colors"
+      :class="{ 'is-error': invalid }"
       :disabled="disabled"
       :aria-expanded="open"
       :aria-controls="`${selectId}-listbox`"
       :aria-activedescendant="activeDescendantId"
+      :aria-invalid="invalid ? true : undefined"
       aria-haspopup="listbox"
       @click="toggle"
       @keydown="listboxNavigation.onKeydown"

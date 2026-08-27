@@ -3,7 +3,7 @@ import {
   Link2, Globe, BarChart3, Users,
   MousePointerClick, Target, Activity, TrendingUp,
   CheckCircle2, XCircle, Clock,
-  ExternalLink, AlertCircle, CalendarDays,
+  ExternalLink, CalendarDays,
   Hash, Tag, Layers, Pencil, X, ChevronDown,
 } from 'lucide-vue-next'
 import {
@@ -268,19 +268,20 @@ async function handleSidebarUpdated() {
     </div>
 
     <!-- ─── Error ─── -->
-    <div
+    <LoadErrorState
       v-else-if="fetchError"
-      class="ui-alert-danger rounded-2xl p-5 text-sm flex items-center gap-3"
+      :error="fetchError"
+      not-found-message="Tracking link not found."
+      failed-message="Failed to load link details."
+      @retry="refresh()"
     >
-      <AlertCircle class="size-5 shrink-0" />
-      <span>{{ fetchError?.statusCode === 404 ? 'Tracking link not found.' : 'Failed to load link details.' }}</span>
       <NuxtLink
         :to="localePath('/dashboard/source-tracking')"
-        class="underline ml-auto font-medium"
+        class="ml-auto font-medium underline"
       >
         Back to Tracking
       </NuxtLink>
-    </div>
+    </LoadErrorState>
 
     <!-- ─── Main content ─── -->
     <template v-else-if="link">

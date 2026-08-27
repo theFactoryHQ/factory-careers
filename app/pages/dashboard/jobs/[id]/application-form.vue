@@ -38,7 +38,7 @@ const jobId = route.params.id as string
 const toast = useToast()
 const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 
-const { job, status: fetchStatus, error, updateJob } = useJob(jobId)
+const { job, status: fetchStatus, error, updateJob, refresh } = useJob(jobId)
 
 const { showSkeleton, isRevalidating } = useStaleFetchUi(fetchStatus, job)
 const { defaultSalaryUnit } = useOrgSettings()
@@ -1379,12 +1379,14 @@ async function copyTrackingUrl(code: string) {
     />
 
     <!-- Error -->
-    <div
+    <LoadErrorState
       v-if="fetchStatus !== 'pending' && !job && error"
-      class="ui-alert ui-alert-danger p-4 text-sm"
+      :error="error"
+      not-found-message="Job not found."
+      failed-message="Failed to load job."
+      @retry="refresh()"
     >
-      {{ error.statusCode === 404 ? 'Job not found.' : 'Failed to load job.' }}
-      <NuxtLink :to="$localePath('/dashboard')" class="underline ml-1">Back to Jobs</NuxtLink>
-    </div>
+      <NuxtLink :to="$localePath('/dashboard')" class="underline">Back to Jobs</NuxtLink>
+    </LoadErrorState>
   </div>
 </template>

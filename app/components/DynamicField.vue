@@ -174,11 +174,20 @@ function clearFile() {
 const inputClasses = 'w-full border bg-black/35 px-3.5 py-2.5 text-sm text-white placeholder:text-white/38 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25'
 const errorBorderClass = 'border-danger-500/70 focus:border-danger-500 focus:ring-danger-500/25'
 const normalBorderClass = 'border-white/14'
+const errorId = computed(() => `q-${props.question.id}-error`)
+const helpId = computed(() => `q-${props.question.id}-help`)
+const describedBy = computed(() => {
+  const ids = [
+    props.question.description ? helpId.value : null,
+    props.error ? errorId.value : null,
+  ].filter(Boolean)
+  return ids.length > 0 ? ids.join(' ') : undefined
+})
 </script>
 
 <template>
   <div>
-    <label :for="`q-${question.id}`" class="mb-1.5 block text-sm font-medium text-white/70">
+    <label :id="`q-${question.id}-label`" :for="`q-${question.id}`" class="mb-1.5 block text-sm font-medium text-white/70">
       {{ question.label }}
       <span v-if="question.required" class="text-danger-300">*</span>
     </label>
@@ -190,6 +199,8 @@ const normalBorderClass = 'border-white/14'
       v-model="stringModel"
       type="text"
       :class="[inputClasses, error ? errorBorderClass : normalBorderClass]"
+      :aria-invalid="error ? true : undefined"
+      :aria-describedby="describedBy"
     />
 
     <!-- Long Text -->
@@ -199,6 +210,8 @@ const normalBorderClass = 'border-white/14'
       v-model="stringModel"
       rows="4"
       :class="[inputClasses, error ? errorBorderClass : normalBorderClass]"
+      :aria-invalid="error ? true : undefined"
+      :aria-describedby="describedBy"
     />
 
     <!-- Single Select -->
@@ -207,6 +220,8 @@ const normalBorderClass = 'border-white/14'
         :id="`q-${question.id}`"
         v-model="stringModel"
         :class="[inputClasses, 'appearance-none pr-9', error ? errorBorderClass : normalBorderClass]"
+        :aria-invalid="error ? true : undefined"
+        :aria-describedby="describedBy"
       >
         <option value="" disabled>Select an option…</option>
         <option v-for="opt in question.options" :key="opt" :value="opt">
@@ -217,7 +232,14 @@ const normalBorderClass = 'border-white/14'
     </div>
 
     <!-- Multi Select (checkboxes) -->
-    <div v-else-if="question.type === 'multi_select'" class="mt-1 space-y-2">
+    <div
+      v-else-if="question.type === 'multi_select'"
+      class="mt-1 space-y-2"
+      role="group"
+      :aria-labelledby="`q-${question.id}-label`"
+      :aria-invalid="error ? true : undefined"
+      :aria-describedby="describedBy"
+    >
       <label
         v-for="opt in question.options"
         :key="opt"
@@ -240,6 +262,8 @@ const normalBorderClass = 'border-white/14'
       v-model="numberModel"
       type="number"
       :class="[inputClasses, error ? errorBorderClass : normalBorderClass]"
+      :aria-invalid="error ? true : undefined"
+      :aria-describedby="describedBy"
     />
 
     <!-- Date -->
@@ -249,6 +273,8 @@ const normalBorderClass = 'border-white/14'
       v-model="stringModel"
       type="date"
       :class="[inputClasses, error ? errorBorderClass : normalBorderClass]"
+      :aria-invalid="error ? true : undefined"
+      :aria-describedby="describedBy"
     />
 
     <!-- URL -->
@@ -265,6 +291,8 @@ const normalBorderClass = 'border-white/14'
           inputmode="url"
           placeholder="https://linkedin.com/in/..."
           :class="[inputClasses, error ? errorBorderClass : normalBorderClass]"
+          :aria-invalid="error ? true : undefined"
+          :aria-describedby="describedBy"
           @input="syncProfileLinksModel"
         />
       </div>
@@ -309,6 +337,8 @@ const normalBorderClass = 'border-white/14'
       type="url"
       placeholder="https://…"
       :class="[inputClasses, error ? errorBorderClass : normalBorderClass]"
+      :aria-invalid="error ? true : undefined"
+      :aria-describedby="describedBy"
     />
 
     <!-- Checkbox (boolean) -->
@@ -318,6 +348,8 @@ const normalBorderClass = 'border-white/14'
         v-model="booleanModel"
         type="checkbox"
         class="size-4 rounded-none border-white/20 bg-black text-brand-500 focus:ring-brand-500"
+        :aria-invalid="error ? true : undefined"
+        :aria-describedby="describedBy"
       />
       <span class="text-sm text-white/70">Yes</span>
     </label>
@@ -338,6 +370,8 @@ const normalBorderClass = 'border-white/14'
         type="button"
         class="factory-button-cta flex h-[48px] min-h-[48px] w-full items-center justify-center gap-2 border border-dashed px-4 py-0 transition-colors"
         :class="error ? 'border-danger-500/70 bg-danger-500/10 text-danger-300' : 'border-white/14 bg-black/35 text-white/50 hover:border-brand-500/60 hover:text-brand-500'"
+        :aria-invalid="error ? true : undefined"
+        :aria-describedby="describedBy"
         @click="fileInputRef?.click()"
       >
         <Upload class="size-4" />
@@ -362,11 +396,11 @@ const normalBorderClass = 'border-white/14'
     </div>
 
     <!-- Help text -->
-    <p v-if="question.description" class="mt-1.5 text-xs text-white/40">
+    <p v-if="question.description" :id="helpId" class="mt-1.5 text-xs text-white/40">
       {{ question.description }}
     </p>
 
     <!-- Error message -->
-    <p v-if="error" class="mt-1.5 text-xs text-danger-300">{{ error }}</p>
+    <p v-if="error" :id="errorId" class="mt-1.5 text-xs text-danger-300">{{ error }}</p>
   </div>
 </template>

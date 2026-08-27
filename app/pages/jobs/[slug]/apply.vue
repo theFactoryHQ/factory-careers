@@ -2,6 +2,7 @@
 import { MapPin, Briefcase, Building2 } from 'lucide-vue-next'
 import { COUNTRY_OPTIONS, US_STATE_OPTIONS } from '~~/shared/location-options'
 import { isRequiredCustomQuestionAnswered } from '~~/shared/custom-question-validation'
+import { formatApplicationSubmitError } from '~/utils/fetch-error'
 import {
   formatDivisionLabel,
   jobDescriptionBlocksToMarkdown,
@@ -29,7 +30,7 @@ const utmContent = (route.query.utm_content as string) || undefined
 onMounted(() => track('application_started', { slug: jobSlug }))
 
 // Fetch public job data (no auth needed)
-const { data: job, status: fetchStatus, error: fetchError } = useFetch(
+const { data: job, status: fetchStatus, error: fetchError, refresh } = useFetch(
   `/api/public/jobs/${jobSlug}`,
   { key: `public-job-${jobSlug}` },
 )
@@ -312,9 +313,27 @@ function validate(): boolean {
   return Object.keys(errors.value).length === 0
 }
 
+function fieldErrorId(field: string) {
+  return `${field}-error`
+}
+
+function focusFirstInvalidField() {
+  nextTick(() => {
+    const root = document.querySelector('.factory-public-form')
+    if (!(root instanceof HTMLElement)) return
+    const invalid = root.querySelector<HTMLElement>('[aria-invalid="true"]')
+    if (!invalid) return
+    invalid.focus({ preventScroll: true })
+    invalid.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  })
+}
+
 function goToResumeAndQuestionsStep() {
   submitError.value = null
-  if (!validateContactFields()) return
+  if (!validateContactFields()) {
+    focusFirstInvalidField()
+    return
+  }
   currentApplicationStep.value = 2
 }
 
@@ -322,10 +341,12 @@ function goToComplianceStep() {
   submitError.value = null
   if (!validateContactFields()) {
     currentApplicationStep.value = 1
+    focusFirstInvalidField()
     return
   }
   if (!validateResumeAndQuestionsFields()) {
     currentApplicationStep.value = 2
+    focusFirstInvalidField()
     return
   }
   currentApplicationStep.value = 3
@@ -344,6 +365,7 @@ async function handleSubmit() {
     } else if (Object.keys(errors.value).some((key) => key === 'resume' || key === 'coverLetter' || key.startsWith('q-'))) {
       currentApplicationStep.value = 2
     }
+    focusFirstInvalidField()
     return
   }
 
@@ -445,7 +467,7 @@ async function handleSubmit() {
         : undefined,
     })
   } catch (err: any) {
-    const message = err.data?.statusMessage ?? 'Something went wrong. Please try again.'
+    const message = formatApplicationSubmitError(err)
     submitError.value = message
 
     // Surface file-related errors next to the resume field so the user knows what to fix
@@ -486,22 +508,24 @@ function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[
       <div class="mt-8 h-48 border border-white/10 bg-white/[0.03]" />
     </div>
 
-    <!-- Not found / not open -->
-    <div v-else-if="fetchError" class="flex flex-col items-center justify-center py-20 text-center">
-      <div class="mb-5 flex size-16 items-center justify-center border border-white/10 bg-white/[0.03]">
-        <Briefcase class="size-7 text-brand-500" />
-      </div>
-      <h1 class="mb-2 text-xl font-semibold text-white">Position Not Found</h1>
-      <p class="mb-6 max-w-xs text-sm text-white/50">
-        This position may have been filled or is no longer accepting applications.
-      </p>
+    <!-- Not found / load failure -->
+    <LoadErrorState
+      v-else-if="fetchError"
+      variant="hero"
+      :error="fetchError"
+      not-found-title="Position Not Found"
+      not-found-message="This position may have been filled or is no longer accepting applications."
+      failed-title="Couldn't load this position"
+      failed-message="A temporary problem prevented us from loading the application form. Check your connection and try again."
+      @retry="refresh()"
+    >
       <a
         :href="useRuntimeConfig().public.marketingUrl"
-        class="factory-button-cta factory-button-premium inline-flex h-[48px] min-h-[48px] items-center justify-center gap-2 px-5 py-0 transition-colors"
+        class="factory-button-cta factory-button-outline inline-flex h-[48px] min-h-[48px] items-center justify-center gap-2 px-5 py-0 transition-colors"
       >
         Back to Home
       </a>
-    </div>
+    </LoadErrorState>
 
     <!-- Application form -->
     <template v-else-if="job">
@@ -630,8 +654,10 @@ function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[
                   placeholder="Jane"
                   autocomplete="given-name"
                   :class="fieldClass(!!errors.firstName)"
+                  :aria-invalid="errors.firstName ? true : undefined"
+                  :aria-describedby="errors.firstName ? fieldErrorId('firstName') : undefined"
                 />
-                <p v-if="errors.firstName" :class="errorMessageClass">
+                <p v-if="errors.firstName" :id="fieldErrorId('firstName')" :class="errorMessageClass">
                   <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   {{ errors.firstName }}
                 </p>
@@ -649,8 +675,10 @@ function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[
                   placeholder="Doe"
                   autocomplete="family-name"
                   :class="fieldClass(!!errors.lastName)"
+                  :aria-invalid="errors.lastName ? true : undefined"
+                  :aria-describedby="errors.lastName ? fieldErrorId('lastName') : undefined"
                 />
-                <p v-if="errors.lastName" :class="errorMessageClass">
+                <p v-if="errors.lastName" :id="fieldErrorId('lastName')" :class="errorMessageClass">
                   <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   {{ errors.lastName }}
                 </p>
@@ -669,8 +697,10 @@ function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[
                 placeholder="you@example.com"
                 autocomplete="email"
                 :class="fieldClass(!!errors.email)"
+                :aria-invalid="errors.email ? true : undefined"
+                :aria-describedby="errors.email ? fieldErrorId('email') : undefined"
               />
-              <p v-if="errors.email" :class="errorMessageClass">
+              <p v-if="errors.email" :id="fieldErrorId('email')" :class="errorMessageClass">
                 <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 {{ errors.email }}
               </p>
@@ -703,9 +733,11 @@ function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[
                   :options="COUNTRY_OPTIONS"
                   placeholder="Select country"
                   :class="selectClass(!!errors.country)"
+                  :invalid="!!errors.country"
+                  :aria-describedby="errors.country ? fieldErrorId('country') : undefined"
                   @update:model-value="delete errors.country"
                 />
-                <p v-if="errors.country" :class="errorMessageClass">
+                <p v-if="errors.country" :id="fieldErrorId('country')" :class="errorMessageClass">
                   <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   {{ errors.country }}
                 </p>
@@ -721,9 +753,11 @@ function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[
                   :options="US_STATE_OPTIONS"
                   placeholder="Select state"
                   :class="selectClass(!!errors.state)"
+                  :invalid="!!errors.state"
+                  :aria-describedby="errors.state ? fieldErrorId('state') : undefined"
                   @update:model-value="delete errors.state"
                 />
-                <p v-if="errors.state" :class="errorMessageClass">
+                <p v-if="errors.state" :id="fieldErrorId('state')" :class="errorMessageClass">
                   <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   {{ errors.state }}
                 </p>
@@ -754,7 +788,11 @@ function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[
                     Resume / CV <span class="text-danger-300">*</span>
                   </label>
                   <div
+                    id="resume-dropzone"
+                    tabindex="-1"
                     :class="fileDropClass(!!errors.resume, isResumeDragging)"
+                    :aria-invalid="errors.resume ? true : undefined"
+                    :aria-describedby="errors.resume ? fieldErrorId('resume') : undefined"
                     @dragenter.prevent="isResumeDragging = true"
                     @dragover="handleResumeDragOver"
                     @dragleave="handleResumeDragLeave"
@@ -783,7 +821,7 @@ function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[
                       @change="handleResumeInputChange"
                     />
                   </div>
-                  <p v-if="errors.resume" :class="errorMessageClass">
+                  <p v-if="errors.resume" :id="fieldErrorId('resume')" :class="errorMessageClass">
                     <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     {{ errors.resume }}
                   </p>
@@ -801,9 +839,11 @@ function getJobDivisions(divisions?: FactoryDivision[] | null): FactoryDivision[
                     maxlength="10000"
                     placeholder="Tell us why you're interested in this role…"
                     :class="fieldClass(!!errors.coverLetter)"
+                    :aria-invalid="errors.coverLetter ? true : undefined"
+                    :aria-describedby="errors.coverLetter ? fieldErrorId('coverLetter') : undefined"
                     @input="delete errors.coverLetter"
                   />
-                  <p v-if="errors.coverLetter" :class="errorMessageClass">
+                  <p v-if="errors.coverLetter" :id="fieldErrorId('coverLetter')" :class="errorMessageClass">
                     <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     {{ errors.coverLetter }}
                   </p>
