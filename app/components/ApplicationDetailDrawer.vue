@@ -62,12 +62,13 @@ const {
     </div>
 
     <!-- Error -->
-    <div
+    <LoadErrorState
       v-else-if="error"
-      class="border border-danger-500/45 bg-danger-500/10 p-4 text-sm text-danger-200"
-    >
-      {{ error.statusCode === 404 ? 'Application not found.' : 'Failed to load application.' }}
-    </div>
+      :error="error"
+      not-found-message="Application not found."
+      failed-message="Failed to load application."
+      @retry="refresh()"
+    />
 
     <template v-else-if="application">
       <!-- Header card -->

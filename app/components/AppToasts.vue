@@ -50,7 +50,6 @@ function getConfig(type: string) {
   <Teleport to="body">
     <div
       class="fixed bottom-4 right-4 z-[100] flex w-[calc(100vw-2rem)] max-w-[420px] flex-col-reverse gap-2.5 pointer-events-none sm:bottom-5 sm:right-5"
-      aria-live="polite"
     >
       <TransitionGroup
         enter-active-class="transition-all duration-300 ease-out"
@@ -64,6 +63,7 @@ function getConfig(type: string) {
           v-for="toast in toasts"
           :key="toast.id"
           class="pointer-events-auto overflow-hidden border border-white/14 bg-black shadow-2xl shadow-black/70"
+          :role="toast.type === 'error' ? 'alert' : 'status'"
         >
           <!-- Accent bar -->
           <div class="h-1" :class="getConfig(toast.type).accentClass" />
@@ -128,6 +128,7 @@ function getConfig(type: string) {
               <button
                 type="button"
                 class="shrink-0 border border-transparent bg-transparent p-1 text-white/42 transition-colors hover:border-white/12 hover:bg-white/[0.04] hover:text-white"
+                aria-label="Dismiss notification"
                 @click="remove(toast.id)"
               >
                 <X class="size-4" />

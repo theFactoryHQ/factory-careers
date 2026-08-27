@@ -42,6 +42,8 @@ self-hosters.
 ### Fixed
 
 - Prevented browser autofill from causing public applications to report success without being saved.
+- Distinguished missing public jobs and dashboard records from temporary load failures, and added Retry on those pages so applicants and recruiters can recover without being told the record is gone.
+- Associated public application validation errors with their fields, moved keyboard focus to the first invalid control, and forwarded `aria-invalid` through shared dropdowns.
 - Loaded the Factory logo in operational alert emails from the first-party careers site instead of the retired external asset host.
 - Kept production storage readiness and encrypted intake buffering compatible with the private applicant-document bucket MIME policy.
 - Suppressed all candidate and internal notifications for authenticated synthetic applications and removed their database, queue, and storage artifacts after each probe.

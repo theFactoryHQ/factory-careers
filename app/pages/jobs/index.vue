@@ -372,13 +372,13 @@ function getDescriptionPreview(job: { description?: string | null; descriptionBl
     </div>
 
     <!-- Error state -->
-    <div
+    <LoadErrorState
       v-else-if="error"
-      class="border border-danger-500/30 bg-danger-950/55 p-4 text-sm text-danger-100"
-    >
-      Failed to load jobs. Please try again.
-      <button class="ml-1 cursor-pointer text-brand-500 underline" @click="refresh()">Retry</button>
-    </div>
+      :error="error"
+      not-found-message="No jobs are available right now."
+      failed-message="Failed to load jobs. Please try again."
+      @retry="refresh()"
+    />
 
     <!-- Empty state -->
     <div
