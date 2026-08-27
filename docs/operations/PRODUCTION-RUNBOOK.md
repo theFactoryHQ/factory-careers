@@ -105,6 +105,13 @@ It opens one `incident:applications` issue after two consecutive failures and
 closes that issue after recovery. The issue contains only the failing probe
 name, status class, workflow run, and commit metadata.
 
+`/api/readyz` returns 503 while a new instance is still starting. That is the
+Render health-check signal, not a Microsoft credential failure, and it does not
+send an operations-inbox alert. Persistent unreadiness still opens the
+application incident issue after two consecutive external probes. Dedicated
+startup failures continue to email as `migration.startup_failed` and
+`storage.startup_failed`.
+
 `POST /api/operations/application-canary` requires `CRON_SECRET`. It submits a
 synthetic PDF through the public application workflow, suppresses candidate and
 internal email, skips scoring, and removes the candidate, application,
@@ -300,7 +307,8 @@ provider. It returns only a stable code and checked timestamp. The GitHub
 workflow calls it every 15 minutes. Invalid credentials, missing metadata, and
 expiry thresholds alert immediately; transient failures require two fresh
 probes. Operational email is state-transition based and repeated active-
-incident alerts are rate-limited.
+incident alerts are rate-limited. Hosting `/api/readyz` 503s are not Microsoft
+credential codes and do not use this SSO alert path.
 
 Non-secret key ID, activation, expiry, last-probe status, and last-success time
 live in `sso_provider_credential_metadata`, scoped to the provider's

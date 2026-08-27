@@ -42,6 +42,7 @@ self-hosters.
 
 ### Fixed
 
+- Stopped treating expected `/api/readyz` 503 responses during deploys as Microsoft SSO credential failures, and kept operational alert copy specific to the check that actually failed.
 - Closed privacy requests whose document-erasure tombstone received its privacy link after the worker had already claimed it.
 - Attached a privacy request to an existing unlinked document-erasure tombstone so fulfillment cannot complete while that object is still outstanding.
 - Kept applicant privacy requests in review until durable private-document erasure finishes, preserved explicit denied or cancelled dispositions, and derived operator warnings from actual outstanding erasure work.

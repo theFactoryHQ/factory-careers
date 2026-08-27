@@ -5,6 +5,29 @@ const ALERT_COOLDOWN_MS = 15 * 60 * 1000
 const FAILED_ALERT_COOLDOWN_MS = 60 * 1000
 const lastAlertedAt = new Map<string, Date>()
 const inFlight = new Set<string>()
+const PUBLIC_APPLY_PATH = /^\/api\/public\/jobs\/[^/]+\/apply$/
+
+export function isExpectedHealthCheckUnready(
+  path: string,
+  statusCode: number | undefined,
+): boolean {
+  return path === '/api/readyz' && statusCode === 503
+}
+
+export function criticalHttpErrorAlertCode(
+  path: string,
+  statusCode: number | undefined,
+): string | undefined {
+  const status = statusCode ?? 500
+  if (status < 500) return undefined
+  // /api/readyz 503 is the intended Render health-check signal while a new
+  // instance is still starting. Do not page for that path at all: persistent
+  // unreadiness is covered by the public-path monitor and dedicated startup
+  // alerts (`migration.startup_failed`, `storage.startup_failed`).
+  if (path === '/api/readyz') return undefined
+  if (PUBLIC_APPLY_PATH.test(path)) return 'application.request_failed'
+  return undefined
+}
 
 export function shouldDispatchCriticalAlert(
   previous: Date | null,
