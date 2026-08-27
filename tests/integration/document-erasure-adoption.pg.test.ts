@@ -373,7 +373,7 @@ describeWithPostgres('document erasure producer adoption', () => {
       documentId: seeded.documentId,
     })
 
-    const now = new Date('2026-08-23T20:00:00.000Z')
+    const now = new Date()
     await client`update "document_erasure_queue" set
       "status" = 'processing', "attempt_count" = 1,
       "lease_expires_at" = ${new Date(now.getTime() + 120_000).toISOString()},
