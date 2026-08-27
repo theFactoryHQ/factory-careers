@@ -309,16 +309,47 @@ type OperationalAlertEmailProps = {
   config?: EmailThemeConfig;
 };
 
+const SSO_CREDENTIAL_ALERT_CODES = new Set([
+  "invalid_client",
+  "transient_failure",
+  "metadata_missing",
+  "expires_30d",
+  "expires_14d",
+  "expires_7d",
+  "expired",
+]);
+
+export function operationalAlertCopy(code: string): {
+  preview: string;
+  heading: string;
+  body: string;
+} {
+  if (SSO_CREDENTIAL_ALERT_CODES.has(code)) {
+    return {
+      preview: "Factory Careers SSO needs attention",
+      heading: "Factory Careers SSO alert",
+      body: "The automated Microsoft sign-in credential check reported an unhealthy state.",
+    };
+  }
+
+  return {
+    preview: "Factory Careers needs attention",
+    heading: "Factory Careers operational alert",
+    body: "An automated production check reported an unhealthy state.",
+  };
+}
+
 export function OperationalAlertEmail({
   code,
   checkedAt,
   config,
 }: OperationalAlertEmailProps) {
+  const copy = operationalAlertCopy(code);
   return (
     <CareersEmailShell
-      preview="Factory Careers SSO needs attention"
-      heading="Factory Careers SSO alert"
-      body="The automated Microsoft sign-in credential check reported an unhealthy state."
+      preview={copy.preview}
+      heading={copy.heading}
+      body={copy.body}
       subtext={`Status: ${code} · Checked: ${checkedAt}`}
       config={config}
       footerNote="No credential values, tokens, or provider identifiers are included in this message."
