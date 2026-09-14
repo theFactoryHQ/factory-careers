@@ -44,6 +44,7 @@ self-hosters.
 
 ### Fixed
 
+- Updated the pinned js-yaml and SVGO transitive dependencies to resolve current security advisories.
 - Updated the pinned `@xmldom/xmldom` transitive dependency to 0.8.15 to resolve current XML parser security advisories.
 - Stopped treating expected `/api/readyz` 503 responses during deploys as Microsoft SSO credential failures, and kept operational alert copy specific to the check that actually failed.
 - Closed privacy requests whose document-erasure tombstone received its privacy link after the worker had already claimed it.
