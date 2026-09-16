@@ -21,7 +21,7 @@
   "dependencies": {
     "commander": "^13.1.0",
     "tsx": "^4.23.13",
-    "zod": "^4.5.4"
+    "zod": "^4.6.2"
   },
   "scripts": {
     "smoke": "./bin/factory-careers.mjs --help"

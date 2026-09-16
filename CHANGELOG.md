@@ -26,6 +26,7 @@ self-hosters.
 
 ### Changed
 
+- Updated production npm dependencies for AI providers, S3, Better Auth, PostHog, Resend, Undici, Zod, and the careers CLI.
 - Updated development npm dependencies for Playwright, Node types, React types, and ESLint.
 - Updated production npm dependencies for AI providers, S3, OpenTelemetry, PostHog, Mammoth, Nodemailer, Resend, Zod, and the careers CLI.
 - Updated development npm dependencies for ESLint and vue-tsc.
