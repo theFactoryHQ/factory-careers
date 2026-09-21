@@ -32,6 +32,7 @@ const panelClass = useApplicationPanelClass(() => props.surface)
 
 <template>
   <div
+    data-testid="application-scoring-panel"
     :class="[
       panelClass,
       'p-5',
@@ -83,6 +84,7 @@ const panelClass = useApplicationPanelClass(() => props.surface)
           :class="surface === 'page' ? 'mt-2' : 'mt-1'"
         >
           <span
+            data-testid="application-ai-score"
             class="font-semibold text-surface-900 dark:text-white"
             :class="surface === 'page' ? 'text-2xl' : 'text-2xl'"
           >
@@ -107,6 +109,7 @@ const panelClass = useApplicationPanelClass(() => props.surface)
         </dt>
         <dd
           v-if="scoringSummary"
+          data-testid="application-ai-summary"
           class="max-w-3xl text-sm leading-6 text-surface-700 dark:text-surface-300"
           :class="surface === 'page' ? 'mt-2' : 'mt-1'"
         >
@@ -114,6 +117,7 @@ const panelClass = useApplicationPanelClass(() => props.surface)
         </dd>
         <dd
           v-else
+          data-testid="application-ai-summary"
           class="max-w-3xl text-sm leading-6"
           :class="[
             surface === 'page' ? 'mt-2 text-surface-500 dark:text-surface-500' : 'mt-1 text-surface-500 dark:text-surface-400',

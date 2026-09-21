@@ -127,8 +127,12 @@ test.describe('AI candidate review', () => {
     })
     expect(analysis.analysisRunId).toBeTruthy()
 
-    await expect(page.getByText('90')).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByText('Deterministic E2E review: strong Factory-domain alignment for this candidate.')).toBeVisible({ timeout: 15_000 })
+    const scoringPanel = page.getByTestId('application-scoring-panel')
+    await expect(scoringPanel.getByTestId('application-ai-score')).toHaveText(/^\s*90\s+pts\s*$/, { timeout: 15_000 })
+    await expect(scoringPanel.getByTestId('application-ai-summary')).toHaveText(
+      'Deterministic E2E review: strong Factory-domain alignment for this candidate.',
+      { timeout: 15_000 },
+    )
 
     const scoresResponse = await page.request.get(`/api/applications/${application.applicationId}/scores`)
     expect(scoresResponse.status(), `Scores API returned ${scoresResponse.status()}`).toBe(200)
