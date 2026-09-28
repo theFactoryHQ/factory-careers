@@ -8,7 +8,7 @@ inputs:
   image:
     description: MinIO image tag to run.
     required: false
-    default: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    default: docker.io/elestio/minio@sha256:25348a257f1ece1b192f25f6cd9854618fa86422ac87b494b5d4e629c556d4bd
   access-key:
     description: MinIO root access key.
     required: true

@@ -47,7 +47,7 @@ services:
         SQL
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    image: docker.io/elestio/minio@sha256:25348a257f1ece1b192f25f6cd9854618fa86422ac87b494b5d4e629c556d4bd
     container_name: factory_careers_minio
     restart: unless-stopped
     ports:
