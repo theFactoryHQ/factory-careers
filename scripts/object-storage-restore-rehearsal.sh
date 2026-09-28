@@ -8,8 +8,11 @@ set -euo pipefail
 SOURCE_CONTAINER="${SOURCE_CONTAINER:-factory-careers-object-rehearsal-source-$$}"
 TARGET_CONTAINER="${TARGET_CONTAINER:-factory-careers-object-rehearsal-target-$$}"
 NETWORK="${NETWORK:-factory-careers-object-rehearsal-$$}"
-MINIO_IMAGE="${MINIO_IMAGE:-quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z}"
-MC_IMAGE="${MC_IMAGE:-quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z}"
+# Quay rejects anonymous pulls of minio/minio and minio/mc. The server image is
+# Coolify's community release (same `server /data` entry, no license gate). The
+# mc image is upstream RELEASE.2025-08-13 republished with its original digest.
+MINIO_IMAGE="${MINIO_IMAGE:-ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z}"
+MC_IMAGE="${MC_IMAGE:-ghcr.io/artifact-keeper/ci-mirror/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727}"
 CLEANUP_IMAGE="${CLEANUP_IMAGE:-alpine:3.20}"
 MINIO_ROOT_USER="${MINIO_ROOT_USER:-factory_careers}"
 MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-factory-careers-object-rehearsal-secret}"
