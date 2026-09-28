@@ -8,7 +8,7 @@ inputs:
   image:
     description: MinIO image tag to run.
     required: false
-    default: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    default: cleanstart/minio@sha256:25a88377f4c16dad1d93fbbecc95365b72bb9c32ed59b74b4bc047234d2e4578
   access-key:
     description: MinIO root access key.
     required: true
@@ -28,7 +28,9 @@ runs:
       run: |
         set -euo pipefail
 
+        # The pinned image has no /data directory and its default user cannot create one.
         docker run -d --rm \
+          --user 0 \
           --name "${{ inputs.container-name }}" \
           -e MINIO_ROOT_USER="${{ inputs.access-key }}" \
           -e MINIO_ROOT_PASSWORD="${{ inputs.secret-key }}" \

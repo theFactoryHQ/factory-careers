@@ -8,8 +8,8 @@ set -euo pipefail
 SOURCE_CONTAINER="${SOURCE_CONTAINER:-factory-careers-object-rehearsal-source-$$}"
 TARGET_CONTAINER="${TARGET_CONTAINER:-factory-careers-object-rehearsal-target-$$}"
 NETWORK="${NETWORK:-factory-careers-object-rehearsal-$$}"
-MINIO_IMAGE="${MINIO_IMAGE:-quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z}"
-MC_IMAGE="${MC_IMAGE:-quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z}"
+MINIO_IMAGE="${MINIO_IMAGE:-cleanstart/minio@sha256:25a88377f4c16dad1d93fbbecc95365b72bb9c32ed59b74b4bc047234d2e4578}"
+MC_IMAGE="${MC_IMAGE:-chainguard/minio-client@sha256:b2bd7824d23d3e3b15bedd7e87fbc3be29d2e213307b4f901e4a1d92356dc20f}"
 CLEANUP_IMAGE="${CLEANUP_IMAGE:-alpine:3.20}"
 MINIO_ROOT_USER="${MINIO_ROOT_USER:-factory_careers}"
 MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-factory-careers-object-rehearsal-secret}"
@@ -38,6 +38,7 @@ trap cleanup EXIT
 
 run_mc() {
   docker run --rm \
+    --user 0 \
     --network "$NETWORK" \
     -v "$TMP_DIR:/work" \
     "$MC_IMAGE" \
@@ -67,6 +68,7 @@ docker network create "$NETWORK" >/dev/null
 mkdir -p "$BACKUP_DIR"
 
 docker run -d \
+  --user 0 \
   --name "$SOURCE_CONTAINER" \
   --network "$NETWORK" \
   -e MINIO_ROOT_USER="$MINIO_ROOT_USER" \
@@ -85,6 +87,7 @@ if [[ ! -s "${BACKUP_DIR}/${BUCKET}/${SENTINEL_KEY}" ]]; then
 fi
 
 docker run -d \
+  --user 0 \
   --name "$TARGET_CONTAINER" \
   --network "$NETWORK" \
   -e MINIO_ROOT_USER="$MINIO_ROOT_USER" \
