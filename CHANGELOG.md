@@ -26,6 +26,7 @@ self-hosters.
 
 ### Changed
 
+- Updated production npm dependencies for AI providers, S3, Drizzle, PostHog, Resend, and tsx.
 - Updated production npm dependencies for AI providers, S3, Better Auth, PostHog, Resend, Undici, Zod, and the careers CLI.
 - Updated development npm dependencies for Playwright, Node types, React types, and ESLint.
 - Updated production npm dependencies for AI providers, S3, OpenTelemetry, PostHog, Mammoth, Nodemailer, Resend, Zod, and the careers CLI.
@@ -46,7 +47,7 @@ self-hosters.
 ### Fixed
 
 - Pinned local and CI MinIO image pulls to Quay so setup, backup rehearsal, and Playwright storage jobs no longer fail when Docker Hub stops serving the pinned release.
-- Pinned MinIO to a CleanStart digest and the object-storage rehearsal client to a Chainguard `mc` digest so setup, backup rehearsal, and Playwright storage jobs can still pull images after Quay and Docker Hub deny the official MinIO repositories.
+- Pinned MinIO to the elestio image digest of community RELEASE.2025-09-07, and mc to its original RELEASE.2025-08-13 digest, so Compose, CI, and backup rehearsal can start object storage without a Quay or Docker Hub login.
 - Updated the pinned `js-yaml` and `svgo` transitive dependencies to 4.3.2 and 4.1.0 to resolve current high-severity npm audit advisories.
 - Updated the pinned `@xmldom/xmldom` transitive dependency to 0.8.15 to resolve current XML parser security advisories.
 - Stopped treating expected `/api/readyz` 503 responses during deploys as Microsoft SSO credential failures, and kept operational alert copy specific to the check that actually failed.

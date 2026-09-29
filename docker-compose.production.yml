@@ -58,11 +58,9 @@ services:
         SQL
 
   minio:
-    image: cleanstart/minio@sha256:25a88377f4c16dad1d93fbbecc95365b72bb9c32ed59b74b4bc047234d2e4578
+    image: docker.io/elestio/minio@sha256:25348a257f1ece1b192f25f6cd9854618fa86422ac87b494b5d4e629c556d4bd
     container_name: factory_careers_minio
     restart: unless-stopped
-    # Default image user cannot create /data; root matches the previous MinIO image.
-    user: "0:0"
     ports:
       - "127.0.0.1:9000:9000" # S3 API — localhost only, never expose publicly
       - "127.0.0.1:9001:9001" # MinIO Console → http://localhost:9001
@@ -73,7 +71,7 @@ services:
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 5s
       timeout: 5s
       retries: 10

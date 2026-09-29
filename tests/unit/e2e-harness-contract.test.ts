@@ -373,11 +373,10 @@ describe('Playwright E2E harness contract', () => {
     expect(workflow).toContain('npm run test:e2e:security:core')
     expect(workflow).toContain('uses: ./.github/actions/start-minio')
     expect(minioAction).toContain(
-      'cleanstart/minio@sha256:25a88377f4c16dad1d93fbbecc95365b72bb9c32ed59b74b4bc047234d2e4578',
+      'docker.io/elestio/minio@sha256:25348a257f1ece1b192f25f6cd9854618fa86422ac87b494b5d4e629c556d4bd',
     )
-    expect(minioAction).toContain('--user 0')
-    expect(minioAction).not.toContain('quay.io/minio/minio')
-    expect(minioAction).not.toContain('default: minio/minio:latest')
+    expect(minioAction).not.toContain('quay.io/minio/')
+    expect(minioAction).not.toContain('latest')
     expect(workflow).toContain('S3_SKIP_BUCKET_INIT: "false"')
   })
 

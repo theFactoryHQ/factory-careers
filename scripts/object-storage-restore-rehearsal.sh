@@ -8,8 +8,12 @@ set -euo pipefail
 SOURCE_CONTAINER="${SOURCE_CONTAINER:-factory-careers-object-rehearsal-source-$$}"
 TARGET_CONTAINER="${TARGET_CONTAINER:-factory-careers-object-rehearsal-target-$$}"
 NETWORK="${NETWORK:-factory-careers-object-rehearsal-$$}"
-MINIO_IMAGE="${MINIO_IMAGE:-cleanstart/minio@sha256:25a88377f4c16dad1d93fbbecc95365b72bb9c32ed59b74b4bc047234d2e4578}"
-MC_IMAGE="${MC_IMAGE:-chainguard/minio-client@sha256:b2bd7824d23d3e3b15bedd7e87fbc3be29d2e213307b4f901e4a1d92356dc20f}"
+# Quay and Docker Hub reject anonymous pulls of minio/minio and minio/mc.
+# elestio/minio has no dated tag, so this digest pins community RELEASE.2025-09-07.
+# cleanstart/minio:0.20260330.001845 is pullable but cannot write /data as its
+# non-root user. mc is the original RELEASE.2025-08-13 image by digest.
+MINIO_IMAGE="${MINIO_IMAGE:-docker.io/elestio/minio@sha256:25348a257f1ece1b192f25f6cd9854618fa86422ac87b494b5d4e629c556d4bd}"
+MC_IMAGE="${MC_IMAGE:-ghcr.io/artifact-keeper/ci-mirror/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727}"
 CLEANUP_IMAGE="${CLEANUP_IMAGE:-alpine:3.20}"
 MINIO_ROOT_USER="${MINIO_ROOT_USER:-factory_careers}"
 MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-factory-careers-object-rehearsal-secret}"
@@ -38,7 +42,6 @@ trap cleanup EXIT
 
 run_mc() {
   docker run --rm \
-    --user 0 \
     --network "$NETWORK" \
     -v "$TMP_DIR:/work" \
     "$MC_IMAGE" \
@@ -68,7 +71,6 @@ docker network create "$NETWORK" >/dev/null
 mkdir -p "$BACKUP_DIR"
 
 docker run -d \
-  --user 0 \
   --name "$SOURCE_CONTAINER" \
   --network "$NETWORK" \
   -e MINIO_ROOT_USER="$MINIO_ROOT_USER" \
@@ -87,7 +89,6 @@ if [[ ! -s "${BACKUP_DIR}/${BUCKET}/${SENTINEL_KEY}" ]]; then
 fi
 
 docker run -d \
-  --user 0 \
   --name "$TARGET_CONTAINER" \
   --network "$NETWORK" \
   -e MINIO_ROOT_USER="$MINIO_ROOT_USER" \
