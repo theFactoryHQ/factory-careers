@@ -26,6 +26,7 @@ self-hosters.
 
 ### Changed
 
+- Updated Nodemailer from 9.1.1 to 10.0.2.
 - Updated production npm dependencies for AI providers, S3, Drizzle, PostHog, Resend, and tsx.
 - Updated production npm dependencies for AI providers, S3, Better Auth, PostHog, Resend, Undici, Zod, and the careers CLI.
 - Updated development npm dependencies for Playwright, Node types, React types, and ESLint.
