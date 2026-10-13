@@ -102,6 +102,11 @@ function cancelForm() {
 
 const supportsOptions = computed(() => formType.value === 'select' || formType.value === 'multi_select')
 const supportsNumberFormat = computed(() => formType.value === 'number')
+// Indexed in script so vue-tsc does not rewrite the imported label record as a ref inside a template arrow.
+const propertyTypeOptions = PROPERTY_TYPES.map(type => ({
+  value: type,
+  label: PROPERTY_TYPE_LABELS[type],
+}))
 
 function addOption() {
   const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
@@ -343,7 +348,7 @@ const overlayTitle = computed(() => {
                 <label class="mb-1 block text-xs font-medium text-white/68">Type</label>
                 <FactorySelect
                   v-model="formType"
-                  :options="PROPERTY_TYPES.map(t => ({ value: t, label: PROPERTY_TYPE_LABELS[t] }))"
+                  :options="propertyTypeOptions"
                 />
                 <p class="mt-1 text-[11px] text-white/38">Type cannot be changed after creation.</p>
               </div>
