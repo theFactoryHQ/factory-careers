@@ -26,6 +26,7 @@ self-hosters.
 
 ### Changed
 
+- Updated production npm dependencies for AI providers, S3, OpenTelemetry, Nuxt 4.6, Vue, Drizzle, Mammoth, Nodemailer, PostHog, Resend, Undici, Zod, and the careers CLI.
 - Updated Nodemailer from 9.1.1 to 10.0.2.
 - Updated production npm dependencies for AI providers, S3, Drizzle, PostHog, Resend, and tsx.
 - Updated production npm dependencies for AI providers, S3, Better Auth, PostHog, Resend, Undici, Zod, and the careers CLI.
