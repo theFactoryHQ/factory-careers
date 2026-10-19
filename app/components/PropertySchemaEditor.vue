@@ -62,6 +62,9 @@ type FormMode = 'create' | 'edit'
 const formMode = ref<FormMode | null>(null)
 const editingId = ref<string | null>(null)
 const formType = ref<PropertyType>('text')
+const propertyTypeOptions = computed(() =>
+  PROPERTY_TYPES.map(type => ({ value: type, label: PROPERTY_TYPE_LABELS[type] })),
+)
 const formName = ref('')
 const formDescription = ref('')
 const formOptions = ref<PropertySelectOption[]>([])
@@ -343,7 +346,7 @@ const overlayTitle = computed(() => {
                 <label class="mb-1 block text-xs font-medium text-white/68">Type</label>
                 <FactorySelect
                   v-model="formType"
-                  :options="PROPERTY_TYPES.map(t => ({ value: t, label: PROPERTY_TYPE_LABELS[t] }))"
+                  :options="propertyTypeOptions"
                 />
                 <p class="mt-1 text-[11px] text-white/38">Type cannot be changed after creation.</p>
               </div>
