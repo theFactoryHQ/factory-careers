@@ -54,6 +54,10 @@ const userInitials = computed(() => {
   }
   return name.slice(0, 2).toUpperCase()
 })
+const accountMenuLabel = computed(() => {
+  const visibleName = userImage.value ? userName.value : userInitials.value
+  return `Account menu, ${visibleName}`
+})
 
 async function handleSignOut() {
   isSigningOut.value = true
@@ -542,7 +546,7 @@ function handleNewJobClick() {
             <button
               ref="userTriggerRef"
               class="flex h-9 items-center gap-1.5 border-0 bg-transparent px-0 transition-colors duration-200 cursor-pointer hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500/60"
-              aria-label="Account menu"
+              :aria-label="accountMenuLabel"
               aria-haspopup="menu"
               :aria-expanded="showUserMenu"
               aria-controls="topbar-user-menu"

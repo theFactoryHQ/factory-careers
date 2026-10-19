@@ -9,7 +9,7 @@ describe('Microsoft sign-in button presentation', () => {
     const source = read('app/pages/auth/sign-in.vue')
 
     expect(source).toContain('Sign in with Microsoft')
-    expect(source).toContain('aria-label="Sign in with Microsoft"')
+    expect(source).toContain("Sign in with Microsoft, Continue with SSO")
     expect(source).not.toContain('Continue with Microsoft')
   })
 
