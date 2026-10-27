@@ -49,6 +49,7 @@ self-hosters.
 ### Fixed
 
 - Included each control's visible label in the accessible name for the account menu, chatbot pickers, and Microsoft sign-in button.
+- Updated the pinned `source-map-js` transitive dependency to 1.2.2 to resolve a denial-of-service advisory in indexed source maps.
 - Pinned local and CI MinIO image pulls to Quay so setup, backup rehearsal, and Playwright storage jobs no longer fail when Docker Hub stops serving the pinned release.
 - Pinned MinIO to the elestio image digest of community RELEASE.2025-09-07, and mc to its original RELEASE.2025-08-13 digest, so Compose, CI, and backup rehearsal can start object storage without a Quay or Docker Hub login.
 - Updated the pinned `js-yaml` and `svgo` transitive dependencies to 4.3.2 and 4.1.0 to resolve current high-severity npm audit advisories.
