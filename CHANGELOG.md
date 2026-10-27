@@ -26,6 +26,7 @@ self-hosters.
 
 ### Changed
 
+- Updated development npm dependencies for axe-core Playwright, Playwright, Node types, ESLint, Vitest, and vue-tsc.
 - Updated Nodemailer from 9.1.1 to 10.0.2.
 - Updated production npm dependencies for AI providers, S3, Drizzle, PostHog, Resend, and tsx.
 - Updated production npm dependencies for AI providers, S3, Better Auth, PostHog, Resend, Undici, Zod, and the careers CLI.
@@ -47,6 +48,7 @@ self-hosters.
 
 ### Fixed
 
+- Included each control's visible label in the accessible name for the account menu, chatbot pickers, and Microsoft sign-in button.
 - Updated the pinned `source-map-js` transitive dependency to 1.2.2 to resolve a denial-of-service advisory in indexed source maps.
 - Pinned local and CI MinIO image pulls to Quay so setup, backup rehearsal, and Playwright storage jobs no longer fail when Docker Hub stops serving the pinned release.
 - Pinned MinIO to the elestio image digest of community RELEASE.2025-09-07, and mc to its original RELEASE.2025-08-13 digest, so Compose, CI, and backup rehearsal can start object storage without a Quay or Docker Hub login.
