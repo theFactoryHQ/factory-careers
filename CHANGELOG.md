@@ -26,6 +26,7 @@ self-hosters.
 
 ### Changed
 
+- Updated production npm dependencies for the AI SDK 6.0.319, S3 client 3.1160.0, PostHog Nuxt 1.9.0, React Email render 2.2.0, Nuxt 4.6.3, Nodemailer 10.3.1, and Resend 6.35.0.
 - Updated production npm dependencies for AI providers, S3, OpenTelemetry, Nuxt, PostHog, Mammoth, Nodemailer, Resend, Undici, Zod, and Drizzle.
 - Updated development npm dependencies for axe-core Playwright, Playwright, Node types, ESLint, Vitest, and vue-tsc.
 - Updated Nodemailer from 9.1.1 to 10.0.2.
