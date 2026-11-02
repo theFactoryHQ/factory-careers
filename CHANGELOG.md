@@ -26,6 +26,7 @@ self-hosters.
 
 ### Changed
 
+- Updated development npm dependencies for ESLint 10.13.0 and vue-tsc 3.3.14.
 - Updated production npm dependencies for AI providers, S3, OpenTelemetry, Nuxt, PostHog, Mammoth, Nodemailer, Resend, Undici, Zod, and Drizzle.
 - Updated development npm dependencies for axe-core Playwright, Playwright, Node types, ESLint, Vitest, and vue-tsc.
 - Updated Nodemailer from 9.1.1 to 10.0.2.
