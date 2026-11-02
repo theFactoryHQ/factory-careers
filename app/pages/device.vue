@@ -21,6 +21,8 @@ const userCode = ref(
 const verifying = ref(false);
 const processing = ref<"approve" | "deny" | null>(null);
 const verifiedCode = ref("");
+const verifiedClientId = ref("");
+const verifiedScope = ref("");
 const status = ref("");
 const error = ref("");
 
@@ -57,6 +59,8 @@ async function verifyCode() {
   error.value = "";
   status.value = "";
   verifiedCode.value = "";
+  verifiedClientId.value = "";
+  verifiedScope.value = "";
 
   if (!normalizedUserCode.value) {
     error.value = "Enter the code shown in your terminal.";
@@ -83,6 +87,8 @@ async function verifyCode() {
 
     verifiedCode.value = normalizedUserCode.value;
     status.value = result.data?.status || "";
+    verifiedClientId.value = result.data?.client_id || "";
+    verifiedScope.value = result.data?.scope || "";
   } catch (err) {
     error.value = err instanceof Error ? err.message : "Unable to verify this device code.";
   } finally {
@@ -159,6 +165,16 @@ onMounted(() => {
         A terminal session is requesting access to your Factory Careers account.
         Approve only if you started this sign-in.
       </p>
+      <dl class="mt-3 space-y-1 text-sm leading-6 text-white/70">
+        <div class="flex gap-2">
+          <dt class="text-white/42">Client</dt>
+          <dd class="font-mono">{{ verifiedClientId || "Not identified" }}</dd>
+        </div>
+        <div class="flex gap-2">
+          <dt class="text-white/42">Permissions</dt>
+          <dd>{{ verifiedScope || "None requested" }}</dd>
+        </div>
+      </dl>
       <div class="mt-4 grid gap-3 sm:grid-cols-2">
         <button
           type="button"

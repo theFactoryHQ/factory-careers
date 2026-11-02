@@ -143,6 +143,8 @@ describe('Rate limiting configuration', () => {
 // ── Issue #5: OAuth PKCE verification ───────────────────────────────
 // Better Auth enables PKCE (codeVerifier in OAuth state) by default for
 // all social providers. The genericOAuth plugin config in auth.ts sets
-// pkce: true explicitly for OIDC. No unit test can exercise the real
+// pkce: true explicitly for OIDC, and Better Auth 1.7 verifies the
+// discovery issuer and ID token without requireIssuerValidation.
+// No unit test can exercise the real
 // OAuth state builder without a running auth instance; these assertions
 // are intentionally omitted until an integration test harness exists.

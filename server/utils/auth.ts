@@ -297,7 +297,9 @@ function getAuth(): Auth {
 
         // ── OIDC SSO (Keycloak, Authentik, Authelia, Okta, Azure AD, etc.) ──
         // Activated only when all three OIDC env vars are set.
-        // Uses better-auth's genericOAuth plugin with OIDC discovery.
+        // Better Auth 1.7 registers generic OAuth providers on the social
+        // sign-in path. Callbacks land on /api/auth/callback/:providerId.
+        // Discovery verifies the issuer and ID token automatically.
         ...(env.OIDC_CLIENT_ID &&
         env.OIDC_CLIENT_SECRET &&
         env.OIDC_DISCOVERY_URL
@@ -311,23 +313,26 @@ function getAuth(): Auth {
                     discoveryUrl: env.OIDC_DISCOVERY_URL,
                     scopes: ["openid", "email", "profile"],
                     pkce: true,
-                    requireIssuerValidation: true,
+                    requireIdTokenVerification: true,
                     async mapProfileToUser(profile) {
-                      if (!profile.email) {
+                      const email = typeof profile.email === "string" ? profile.email : "";
+                      if (!email) {
                         throw new Error(
                           "Email is required but was not provided by the identity provider. Ensure the 'email' scope is granted and the user has a verified email.",
                         );
                       }
+                      const givenName = typeof profile.given_name === "string" ? profile.given_name : "";
+                      const familyName = typeof profile.family_name === "string" ? profile.family_name : "";
+                      const composedName = [givenName, familyName].filter(Boolean).join(" ");
+                      const preferredUsername = typeof profile.preferred_username === "string"
+                        ? profile.preferred_username
+                        : "";
+                      const profileName = typeof profile.name === "string" ? profile.name : "";
+                      const picture = typeof profile.picture === "string" ? profile.picture : undefined;
                       return {
-                        name:
-                          profile.name ||
-                          [profile.given_name, profile.family_name]
-                            .filter(Boolean)
-                            .join(" ") ||
-                          profile.preferred_username ||
-                          profile.email,
-                        email: profile.email,
-                        image: profile.picture,
+                        name: profileName || composedName || preferredUsername || email,
+                        email,
+                        image: picture,
                       };
                     },
                   },
