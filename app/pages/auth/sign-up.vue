@@ -116,8 +116,8 @@ async function handleSsoSignUp() {
         ? localePath(`/auth/accept-invitation/${pendingInvitation.value}`)
         : localePath("/dashboard");
     try {
-        const result = await authClient.signIn.oauth2({
-            providerId: "oidc",
+        const result = await authClient.signIn.social({
+            provider: "oidc",
             callbackURL,
         });
         if (result.error) {

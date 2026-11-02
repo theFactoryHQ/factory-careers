@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { envSchema } from '../../server/utils/env'
 
@@ -230,17 +231,16 @@ describe('SSO permission boundaries', () => {
 
 describe('SSO PKCE + issuer validation', () => {
   /**
-   * Validate that the OIDC configuration always enables PKCE
-   * and requires issuer validation (anti-token-substitution).
+   * Better Auth 1.7 verifies discovery issuers and ID tokens automatically.
+   * PKCE stays explicit for the global OIDC provider.
    */
-  it('global OIDC config has PKCE enabled', () => {
-    const globalOidcConfig = {
-      scopes: ['openid', 'email', 'profile'],
-      pkce: true,
-      requireIssuerValidation: true,
-    }
-    expect(globalOidcConfig.pkce).toBe(true)
-    expect(globalOidcConfig.requireIssuerValidation).toBe(true)
+  it('global OIDC config has PKCE enabled and automatic issuer verification', () => {
+    const authSource = readFileSync(new URL('../../server/utils/auth.ts', import.meta.url), 'utf8')
+    expect(authSource).toContain('pkce: true')
+    expect(authSource).toContain('requireIdTokenVerification: true')
+    expect(authSource).toContain('discoveryUrl: env.OIDC_DISCOVERY_URL')
+    expect(authSource).not.toContain('requireIssuerValidation')
+    expect(authSource).not.toContain('signIn.oauth2')
   })
 
   it('enterprise SSO config has PKCE in oidcConfig', () => {

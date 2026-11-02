@@ -26,6 +26,7 @@ self-hosters.
 
 ### Changed
 
+- Global OIDC sign-in now finishes at `/api/auth/callback/oidc`. Identity providers that still list `/api/auth/oauth2/callback/oidc` need that redirect URI updated before the next sign-in.
 - Updated production npm dependencies for AI providers, S3, OpenTelemetry, Nuxt, PostHog, Mammoth, Nodemailer, Resend, Undici, Zod, and Drizzle.
 - Updated development npm dependencies for axe-core Playwright, Playwright, Node types, ESLint, Vitest, and vue-tsc.
 - Updated Nodemailer from 9.1.1 to 10.0.2.
@@ -49,6 +50,9 @@ self-hosters.
 
 ### Fixed
 
+- Upgraded Better Auth and `@better-auth/sso` to 1.7.15, closing the OAuth-state magic-link sign-in advisory (GHSA-965c-763c-88jm / CVE-2026-110862). Device approval now shows the requesting client and requested permissions, and device-code lookups are unique.
+- Upgraded Vue I18n and `@intlify/*` to 11.4.17 so translation parameter escaping covers the reported cross-site scripting cases.
+- Updated the pinned `fast-xml-parser` transitive dependency to 5.11.2 so Better Auth SSO 1.7.15 uses its declared parser range.
 - Included each control's visible label in the accessible name for the account menu, chatbot pickers, and Microsoft sign-in button.
 - Updated the pinned `source-map-js` transitive dependency to 1.2.2 to resolve a denial-of-service advisory in indexed source maps.
 - Pinned local and CI MinIO image pulls to Quay so setup, backup rehearsal, and Playwright storage jobs no longer fail when Docker Hub stops serving the pinned release.

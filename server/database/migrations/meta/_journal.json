@@ -491,6 +491,13 @@
       "when": 1787532009881,
       "tag": "0068_constrain_document_erasure_result_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1793636393200,
+      "tag": "0069_better_auth_1_7_indexes",
+      "breakpoints": true
     }
   ]
 }
