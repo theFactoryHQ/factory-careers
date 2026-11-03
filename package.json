@@ -92,7 +92,7 @@
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
     "ai": "^6.0.314",
-    "better-auth": "~1.6.31",
+    "better-auth": "~1.7.15",
     "better-sqlite3": "^12.11.1",
     "drizzle-orm": "^0.45.4",
     "file-type": "^21.3.0",
