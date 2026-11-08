@@ -49,6 +49,7 @@ self-hosters.
 
 ### Fixed
 
+- Updated the resolved direct Undici client from 8.12.2 to 8.12.4 to close a high-severity cache-poisoning advisory and five medium advisories.
 - Included each control's visible label in the accessible name for the account menu, chatbot pickers, and Microsoft sign-in button.
 - Updated the pinned `source-map-js` transitive dependency to 1.2.2 to resolve a denial-of-service advisory in indexed source maps.
 - Pinned local and CI MinIO image pulls to Quay so setup, backup rehearsal, and Playwright storage jobs no longer fail when Docker Hub stops serving the pinned release.
