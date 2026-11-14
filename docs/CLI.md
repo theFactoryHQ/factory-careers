@@ -203,6 +203,7 @@ Core commands:
 Some routes intentionally remain outside the deterministic CLI surface:
 
 - Auth provider callbacks, the browser-only Microsoft SSO launcher, session callback endpoints, and provider callbacks are browser-auth internals handled by Better Auth or external identity providers. Use `auth login`, `auth status`, `auth whoami`, and `auth logout`.
+- Microsoft sign-in, Outlook calendar health checks, and incident notices use the production cron credential. The operator CLI uses `calendar status` for configuration and destinations.
 - Calendar OAuth callbacks and webhook receivers are provider callbacks, not user commands. Use `calendar connect`, `calendar status`, `calendar disconnect`, and `calendar renew-webhooks`.
 - The health and readiness probes are platform checks for hosting and monitoring, not authenticated ATS workflows.
 - The application canary is a cron-secret-only production monitor that creates and removes synthetic records; it is not an applicant or staff command.

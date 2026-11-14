@@ -49,6 +49,8 @@ self-hosters.
 
 ### Fixed
 
+- Microsoft sign-in and Outlook calendar monitoring notify once per incident and label expiry warnings separately from outages.
+
 - Included each control's visible label in the accessible name for the account menu, chatbot pickers, and Microsoft sign-in button.
 - Updated the pinned `source-map-js` transitive dependency to 1.2.2 to resolve a denial-of-service advisory in indexed source maps.
 - Pinned local and CI MinIO image pulls to Quay so setup, backup rehearsal, and Playwright storage jobs no longer fail when Docker Hub stops serving the pinned release.
