@@ -14,6 +14,7 @@ self-hosters.
 
 ### Added
 
+- Added a commissioning-gated workflow to rotate Factory Careers Microsoft sign-in and calendar credentials before they reach the expiry warning window.
 - Added the Factory development-knowledge writeback contract for durable
   architecture, deployment, CI, infrastructure, lifecycle, and operations work.
 - Added append-only migration enforcement, base-to-branch PostgreSQL upgrade rehearsal, and an exact-commit production deployment gate.
