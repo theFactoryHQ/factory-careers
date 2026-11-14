@@ -80,4 +80,22 @@ describe('incident notification delivery', () => {
       vi.unstubAllGlobals()
     }
   })
+
+  it('closes a recovered incident while a separate notice needs reconciliation', async () => {
+    const { reconcileMonitorIssues } = await import('../../scripts/microsoft-monitor-incidents.mjs')
+    const created_at = new Date(Date.now() - 24 * 3_600_000).toISOString()
+    const update = vi.fn().mockResolvedValue(undefined)
+    const github = {
+      rest: { issues: { listForRepo: vi.fn(), update } },
+      paginate: async () => [
+        { number: 1, body: '<!-- factory-careers-microsoft:sso:outage -->', created_at },
+        { number: 2, body: '<!-- factory-careers-microsoft:calendar:outage -->\n<!-- notice delivered -->', created_at },
+      ],
+    }
+    const repo = { owner: 'test', repo: 'careers' }
+    const results = [{ service: 'sso', code: 'healthy' }, { service: 'calendar', code: 'healthy' }]
+    const config = { base: 'https://careers.example.com', secret: 'test-only', warn: vi.fn() }
+    await expect(reconcileMonitorIssues(github, { repo }, results, config)).rejects.toThrow('require delivery')
+    expect(update).toHaveBeenCalledExactlyOnceWith({ ...repo, issue_number: 2, state: 'closed' })
+  })
 })

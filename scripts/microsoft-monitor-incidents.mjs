@@ -102,11 +102,11 @@ export async function reconcileMonitorIssues(github, context, results, { base, s
     })
     pending.push({ ...change, githubIssue })
   }
-  let failed = false
+  const failed = new Set()
   for (const { githubIssue: issue, service, category } of pending) {
     const age = Date.now() - Date.parse(issue.created_at)
     if (!Number.isFinite(age) || age >= 23 * 3_600_000) {
-      failed = true
+      failed.add(issue.number)
       warn('Notice delivery needs review for incident #' + issue.number)
       continue
     }
@@ -121,12 +121,14 @@ export async function reconcileMonitorIssues(github, context, results, { base, s
       if (!response.ok || !(await response.json())?.ok) throw Error('Notice was not accepted')
       await github.rest.issues.update({ ...repo, issue_number: issue.number, body: issue.body + '\n\n<!-- notice delivered -->' })
     } catch {
-      failed = true
+      failed.add(issue.number)
       warn('Notice delivery incomplete for incident #' + issue.number)
     }
   }
-  if (failed) throw Error('Some Microsoft notices still require delivery')
   for (const change of changes.filter(item => item.action === 'close')) {
-    await github.rest.issues.update({ ...repo, issue_number: change.number, state: 'closed' })
+    if (!failed.has(change.number)) {
+      await github.rest.issues.update({ ...repo, issue_number: change.number, state: 'closed' })
+    }
   }
+  if (failed.size) throw Error('Some Microsoft notices still require delivery')
 }
