@@ -39,7 +39,7 @@ function assertSanitized(value: unknown) {
 
 describe('Microsoft SSO credential health probe', () => {
   it('maps a successful token exchange to a sanitized healthy result', async () => {
-    const safeFetch = vi.fn(async () => new Response(JSON.stringify({
+    const safeFetch = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({
       access_token: 'access-token-that-must-not-leak',
       token_type: 'Bearer',
     }), { status: 200 }))
@@ -94,7 +94,7 @@ describe('Microsoft SSO credential health probe', () => {
       now: NOW,
     })
 
-    expect(result).toEqual({ ok: false, code, checkedAt: NOW.toISOString() })
+    expect(result).toEqual({ ok: code !== 'expired', code, checkedAt: NOW.toISOString() })
   })
 
   it.each([

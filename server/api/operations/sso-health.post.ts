@@ -6,7 +6,6 @@ import {
 } from '../../database/schema'
 import { requireCronSecret } from '../../utils/cronAuth'
 import { db } from '../../utils/db'
-import { sendSsoOperationalAlertEmail } from '../../utils/email'
 import { env } from '../../utils/env'
 import {
   deriveSsoHealthPersistence,
@@ -75,11 +74,10 @@ async function runProductionProbe(): Promise<MicrosoftSsoHealthResponse> {
         ))
         .for('update')
         .limit(1)
-      if (!currentMetadata) return
+      if (!currentMetadata || currentMetadata.credentialKeyId !== metadata.credentialKeyId
+        || (currentMetadata.lastProbedAt && currentMetadata.lastProbedAt >= checkedAt)) return
 
       const persistence = deriveSsoHealthPersistence({
-        previousStatus: currentMetadata.lastProbeStatus,
-        previousAlertedAt: currentMetadata.lastAlertedAt,
         consecutiveTransientFailures: currentMetadata.consecutiveTransientFailures,
         result: response,
         now: checkedAt,
@@ -99,19 +97,6 @@ async function runProductionProbe(): Promise<MicrosoftSsoHealthResponse> {
           updatedAt: checkedAt,
         })
         .where(metadataWhere)
-
-      if (persistence.shouldAlert && env.FACTORY_CAREERS_OPERATIONS_INBOX) {
-        const sent = await sendSsoOperationalAlertEmail({
-          to: env.FACTORY_CAREERS_OPERATIONS_INBOX,
-          code: response.code,
-          checkedAt: response.checkedAt,
-        })
-        if (sent) {
-          await tx.update(ssoProviderCredentialMetadata)
-            .set({ lastAlertedAt: checkedAt, updatedAt: checkedAt })
-            .where(metadataWhere)
-        }
-      }
     })
   }
 
@@ -123,7 +108,9 @@ export default defineEventHandler(async (event) => {
   const response = await executeSsoHealthRoute({
     providedSecret: getHeader(event, 'x-cron-secret'),
     expectedSecret: env.CRON_SECRET,
-    probe: () => getCachedMicrosoftSsoHealth(runProductionProbe),
+    probe: () => getHeader(event, 'x-fresh-probe') === '1'
+      ? runProductionProbe()
+      : getCachedMicrosoftSsoHealth(runProductionProbe),
   })
   setResponseStatus(event, response.ok ? 200 : 503)
   return response

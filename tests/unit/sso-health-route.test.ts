@@ -31,9 +31,8 @@ describe('SSO health operations route', () => {
     expect(source).toContain('eq(ssoProvider.organizationId, targetOrganization.id)')
     expect(source).toContain('await db.transaction(async (tx) =>')
     expect(source).toContain(".for('update')")
-    expect(source.indexOf(".for('update')")).toBeLessThan(
-      source.lastIndexOf('sendSsoOperationalAlertEmail'),
-    )
+    expect(source).toContain('currentMetadata.credentialKeyId !== metadata.credentialKeyId')
+    expect(source).not.toContain('sendSsoOperationalAlertEmail')
   })
 
   it.each([undefined, '', 'wrong-secret'])('rejects a missing or invalid cron secret', async (providedSecret) => {

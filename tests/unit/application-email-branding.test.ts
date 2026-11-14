@@ -44,7 +44,7 @@ vi.stubGlobal("env", {
 });
 vi.stubGlobal("logError", vi.fn());
 
-const { sendApplicationReceiptEmail, sendOperationalAlertEmail, sendSsoOperationalAlertEmail } = await import(
+const { sendApplicationReceiptEmail, sendOperationalAlertEmail } = await import(
 	"../../server/utils/email"
 );
 
@@ -77,31 +77,6 @@ describe("application receipt email branding", () => {
 		expect(html).toContain("5431 W 104th St, Los Angeles, CA 90045");
 	});
 
-  it("sends a sanitized branded operational alert", async () => {
-		await sendSsoOperationalAlertEmail({
-			to: "operations@example.com",
-			code: "invalid_client",
-			checkedAt: "2026-08-10T12:00:00.000Z",
-		});
-
-		expect(emailSend).toHaveBeenCalledTimes(1);
-		const payload = emailSend.mock.calls[0][0] as {
-			to: string;
-			subject: string;
-			react: Parameters<typeof render>[0];
-		};
-		expect(payload.to).toBe("operations@example.com");
-    expect(payload.subject).toContain("Factory Careers operational alert");
-		const html = await render(payload.react);
-		expect(html).toContain("invalid_client");
-		expect(html).toContain("Factory Careers SSO alert");
-		expect(html).toContain("The automated Microsoft sign-in credential check reported an unhealthy state.");
-		expect(html).toContain("2026-08-10T12:00:00.000Z");
-		expect(html).toContain(
-			'src="https://careers.thefactoryhq.com/factory-logo.png"',
-		);
-		expect(html).toContain('alt="Factory Careers"');
-	});
 
 	it.each(['storage.startup_failed', 'readiness.request_failed', 'migration.startup_failed'])(
 		'keeps %s from looking like a credential failure',
