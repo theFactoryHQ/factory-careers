@@ -51,8 +51,8 @@ describe('CLI auth foundation', () => {
     }
 
     expect(source).toContain("pgTable('device_code'")
-    expect(source).toContain('device_code_device_code_idx')
-    expect(source).toContain('device_code_user_code_idx')
+    expect(source).toContain("uniqueIndex('device_code_device_code_idx')")
+    expect(source).toContain("uniqueIndex('device_code_user_code_idx')")
   })
 
   it('adds the device authorization client plugin to the Vue auth client', () => {
@@ -70,6 +70,8 @@ describe('CLI auth foundation', () => {
     expect(source).toContain('authClient.device')
     expect(source).toContain('authClient.device.approve')
     expect(source).toContain('authClient.device.deny')
+    expect(source).toContain('verifiedClientId')
+    expect(source).toContain('verifiedScope')
     expect(source).toContain('/auth/sign-in')
   })
 })

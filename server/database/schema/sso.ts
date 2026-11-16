@@ -26,7 +26,7 @@ export const ssoProvider = pgTable('sso_provider', {
   organizationId: text('organization_id').references(() => organization.id, { onDelete: 'cascade' }),
 }, (t) => ([
   index('sso_provider_domain_idx').on(t.domain),
-  index('sso_provider_provider_id_idx').on(t.providerId),
+  uniqueIndex('sso_provider_provider_id_idx').on(t.providerId),
   index('sso_provider_organization_id_idx').on(t.organizationId),
   uniqueIndex('sso_provider_id_organization_id_unique_idx').on(t.id, t.organizationId),
 ]))

@@ -76,6 +76,7 @@ describe('API route security coverage', () => {
     expect(authSource).toContain('validateFactoryCareersCliClient')
     expect(authSource).toContain('FACTORY_CAREERS_CLI_CLIENT_ID')
     expect(clientSource).toContain('deviceAuthorizationClient()')
+    expect(clientSource).not.toContain('genericOAuthClient')
     expect(devicePageSource).toContain('authClient.device')
     expect(devicePageSource).toContain('authClient.device.approve')
     expect(devicePageSource).toContain('authClient.device.deny')
@@ -102,6 +103,14 @@ describe('API route security coverage', () => {
     expect(migrationSource).toContain('"device_code" text NOT NULL')
     expect(migrationSource).toContain('"user_code" text NOT NULL')
     expect(journalSource).toContain('0035_device_authorization')
+
+    const uniqueIndexMigration = read('server/database/migrations/0069_better_auth_1_7_indexes.sql')
+    expect(uniqueIndexMigration).toContain('DELETE FROM "device_code"')
+    expect(uniqueIndexMigration).toContain('CREATE UNIQUE INDEX "device_code_device_code_idx"')
+    expect(uniqueIndexMigration).toContain('CREATE UNIQUE INDEX "device_code_user_code_idx"')
+    expect(uniqueIndexMigration).toContain('CREATE UNIQUE INDEX "sso_provider_provider_id_idx"')
+    expect(uniqueIndexMigration).toContain('sso_provider.provider_id has duplicates')
+    expect(journalSource).toContain('0069_better_auth_1_7_indexes')
   })
 })
 

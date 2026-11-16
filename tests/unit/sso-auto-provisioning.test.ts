@@ -31,7 +31,7 @@ describe("enterprise SSO auto-provisioning", () => {
     expect(plugin.id).toBe("sso");
     expect(plugin.endpoints).toHaveProperty("callbackSSO");
     expect(plugin.endpoints).toHaveProperty("callbackSSOShared");
-    expect(plugin.endpoints).toHaveProperty("callbackSSOSAML");
+    expect(plugin.endpoints).toHaveProperty("acsEndpoint");
   });
 
   it("keeps app provisioning constants locked to member-only org access", () => {
@@ -47,7 +47,7 @@ describe("enterprise SSO auto-provisioning", () => {
     expect(betterAuthSsoSource).toMatch(/provider\.organizationId\)\s*return/);
     expect(betterAuthSsoSource).toMatch(/provisioningOptions\?\.disabled\)\s*return/);
     expect(betterAuthSsoSource).toMatch(/model:\s*["']member["']/);
-    expect(betterAuthSsoSource).toMatch(/organizationId:\s*provider\.organizationId/);
+    expect(betterAuthSsoSource).toMatch(/organizationId\s*=\s*options\.provider\.organizationId/);
     expect(betterAuthSsoSource).toMatch(/userId:\s*user\.id/);
     expect(betterAuthSsoSource).toMatch(
       /provisioningOptions\?\.defaultRole\s*\|\|\s*["']member["']/,

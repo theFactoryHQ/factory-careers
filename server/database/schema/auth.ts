@@ -87,8 +87,8 @@ export const deviceCode = pgTable('device_code', {
   lastPolledAt: timestamp('last_polled_at'),
   pollingInterval: integer('polling_interval'),
 }, (t) => ([
-  index('device_code_device_code_idx').on(t.deviceCode),
-  index('device_code_user_code_idx').on(t.userCode),
+  uniqueIndex('device_code_device_code_idx').on(t.deviceCode),
+  uniqueIndex('device_code_user_code_idx').on(t.userCode),
   index('device_code_user_id_idx').on(t.userId),
 ]))
 
