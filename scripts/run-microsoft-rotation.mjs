@@ -52,10 +52,25 @@ function vaultItem(id, write) {
     OP_SERVICE_ACCOUNT_TOKEN: setting('CAREERS_ROTATION_OP_TOKEN'),
   }
   if (write) {
-    // The CLI consumes a piped template. Capture both streams so credential
-    // fields cannot reach the workflow log, including on a failed save.
-    const result = spawnSync('sh', ['-c', 'cat | op item edit "$@"', 'op', id, '--vault', vault, '--format', 'json'], {
-      input: JSON.stringify(write), encoding: 'utf8', env, timeout: 30_000,
+    // 1Password detects an OS pipe. Node's subprocess stdin uses a socket on
+    // Linux, so use subprocess.run to pipe the template without a shell.
+    const pipeTemplate = `
+import subprocess
+import sys
+
+item_id, vault_id = sys.argv[1:]
+result = subprocess.run(
+    ['op', 'item', 'edit', item_id, '--vault', vault_id, '--format', 'json'],
+    input=sys.stdin.buffer.read(),
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+    timeout=25,
+)
+sys.exit(result.returncode)
+`
+    const result = spawnSync('python3', ['-c', pipeTemplate, id, vault], {
+      input: JSON.stringify(write), env, timeout: 30_000,
+      stdio: ['pipe', 'ignore', 'ignore'],
     })
     requireValue(result.status === 0, '1Password edit failed')
   }
