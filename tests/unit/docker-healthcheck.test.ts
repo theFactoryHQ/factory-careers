@@ -30,8 +30,8 @@ describe('Docker app health checks', () => {
 
     expect(dockerfile).toContain('HEALTHCHECK')
     expect(dockerfile).toContain('/api/readyz')
-    expect(dockerfile).toContain('FROM node:22.22.0-alpine AS builder')
-    expect(dockerfile).toContain('FROM node:22.22.0-alpine AS runner')
+    expect(dockerfile).toContain('FROM node:22.23.5-alpine AS builder')
+    expect(dockerfile).toContain('FROM node:22.23.5-alpine AS runner')
 
     for (const source of [compose, productionCompose]) {
       expect(source).toContain('container_name: factory_careers_app')

@@ -51,6 +51,10 @@ self-hosters.
 
 ### Fixed
 
+- Pinned Node.js 22.23.5 for local development, CI, and the Docker runtime image, and raised the Node 22 engines floor to that security release.
+- Updated the pinned `node-forge` transitive dependency from 1.4.1 to 1.4.3.
+- Resolved Nuxt, `@nuxt/nitro-server`, and `@nuxt/schema` at 4.6.4 for the Nuxt 4.6.4 security release.
+- Updated the pinned `readdir-glob` override from 2.0.2 to 3.0.0 so Nitro 2.13.6 can load its archiver dependency.
 - Microsoft sign-in and Outlook calendar monitoring notify once per incident and label expiry warnings separately from outages.
 
 - Upgraded Better Auth and `@better-auth/sso` to 1.7.15, closing the OAuth-state magic-link sign-in advisory (GHSA-965c-763c-88jm / CVE-2026-110862). Device approval now shows the requesting client and requested permissions, and device-code lookups are unique.
