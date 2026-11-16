@@ -51,6 +51,7 @@ self-hosters.
 
 ### Fixed
 
+- Use the orange Factory dot for the Careers browser tab and home-screen icons.
 - Pinned Node.js 22.23.5 for local development, CI, and the Docker runtime image, and raised the Node 22 engines floor to that security release.
 - Updated the pinned `node-forge` transitive dependency from 1.4.1 to 1.4.3.
 - Resolved Nuxt, `@nuxt/nitro-server`, and `@nuxt/schema` at 4.6.4 for the Nuxt 4.6.4 security release.
