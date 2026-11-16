@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ─── Stage 1: Build ─────────────────────────────────────────────────────────
-FROM node:22.22.0-alpine AS builder
+FROM node:22.23.5-alpine AS builder
 WORKDIR /app
 
 # Install dependencies first (layer-cached unless package.json changes)
@@ -33,7 +33,7 @@ ENV POSTHOG_HOST=${POSTHOG_HOST}
 RUN npm run build
 
 # ─── Stage 2: Run ────────────────────────────────────────────────────────────
-FROM node:22.22.0-alpine AS runner
+FROM node:22.23.5-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

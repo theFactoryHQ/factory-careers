@@ -230,10 +230,10 @@ The update script is just `npm ci`.
 
 ### Node version
 
-The repo pins Node `22.22.0` (see `.nvmrc`), but the base VM's PATH exposes an
-older `/exec-daemon/node` (22.14.0) shim. `~/.bashrc` prepends the nvm 22.22.0
-bin so interactive shells and the Shell tool already resolve the correct version
-(`node -v` → `22.22.0`). Do not rely on the bare system node.
+The repo pins Node `22.23.5` (see `.nvmrc`), but the base VM's PATH exposes an
+older `/exec-daemon/node` (22.14.0) shim. `~/.bashrc` loads nvm so interactive
+shells and the Shell tool resolve the installed Node version rather than that
+shim. Do not rely on the bare system node.
 
 ### Services run natively (no Docker)
 
