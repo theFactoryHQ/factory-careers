@@ -172,23 +172,22 @@ export default defineNuxtConfig({
     head: {
       titleTemplate: "%s — Factory Careers",
       link: [
-        { rel: "shortcut icon", href: "/favicon.ico" },
-        { rel: "icon", href: "/favicon.ico", sizes: "any", type: "image/x-icon" },
-        { rel: "icon", href: "/icon.png", sizes: "512x512", type: "image/png" },
+        { rel: "icon", href: "/favicon.ico?v=factory", sizes: "any", type: "image/x-icon" },
+        { rel: "icon", href: "/favicon.svg?v=factory", type: "image/svg+xml" },
         {
           rel: "apple-touch-icon",
           sizes: "180x180",
-          href: "/apple-touch-icon.png",
+          href: "/apple-touch-icon.png?v=factory",
         },
         {
           rel: "apple-touch-icon",
           sizes: "167x167",
-          href: "/apple-touch-icon-167x167.png",
+          href: "/apple-touch-icon-167x167.png?v=factory",
         },
         {
           rel: "apple-touch-icon",
           sizes: "152x152",
-          href: "/apple-touch-icon-152x152.png",
+          href: "/apple-touch-icon-152x152.png?v=factory",
         },
       ],
       meta: [
