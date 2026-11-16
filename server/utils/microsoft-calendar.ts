@@ -138,7 +138,7 @@ function getConfiguredMicrosoftCalendarGroupId(): string | null {
   return env.FACTORY_CAREERS_CALENDAR_GROUP_ID?.trim() || null
 }
 
-function getMicrosoftConfig(): MicrosoftCalendarConfig | null {
+export function getMicrosoftConfig(): MicrosoftCalendarConfig | null {
   const clientId = env.MICROSOFT_CALENDAR_CLIENT_ID || env.AUTH_MICROSOFT_CLIENT_ID
   const clientSecret = env.MICROSOFT_CALENDAR_CLIENT_SECRET || env.AUTH_MICROSOFT_CLIENT_SECRET
   const tenantId = env.MICROSOFT_CALENDAR_TENANT_ID || env.AUTH_MICROSOFT_TENANT_ID || 'common'

@@ -50,6 +50,8 @@ self-hosters.
 
 ### Fixed
 
+- Microsoft sign-in and Outlook calendar monitoring notify once per incident and label expiry warnings separately from outages.
+
 - Upgraded Better Auth and `@better-auth/sso` to 1.7.15, closing the OAuth-state magic-link sign-in advisory (GHSA-965c-763c-88jm / CVE-2026-110862). Device approval now shows the requesting client and requested permissions, and device-code lookups are unique.
 - Upgraded Vue I18n and `@intlify/*` to 11.4.17 so translation parameter escaping covers the reported cross-site scripting cases.
 - Updated the pinned `fast-xml-parser` transitive dependency to 5.11.2 so Better Auth SSO 1.7.15 uses its declared parser range.

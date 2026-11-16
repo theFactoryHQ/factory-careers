@@ -265,30 +265,25 @@ export async function sendApplicationTeamAlertEmail(data: {
   }
 }
 
-export async function sendSsoOperationalAlertEmail(data: {
-  to: string;
-  code: string;
-  checkedAt: string;
-}): Promise<boolean> {
-  return sendOperationalAlertEmail(data);
-}
-
 export async function sendOperationalAlertEmail(data: {
   to: string;
   code: string;
   checkedAt: string;
+  notice?: { heading: string; body: string };
+  idempotencyKey?: string;
 }): Promise<boolean> {
   try {
     const response = await emailClient.send({
       from: emailClient.defaultFrom,
       to: data.to,
-      subject: `Factory Careers operational alert — ${data.code}`,
+      subject: data.notice?.heading ?? `Factory Careers operational alert — ${data.code}`,
       react: OperationalAlertEmail({
         code: data.code,
+        notice: data.notice,
         checkedAt: data.checkedAt,
         config: careersEmailConfig,
       }) as React.ReactElement,
-    });
+    }, data.idempotencyKey ? { idempotencyKey: data.idempotencyKey } : undefined);
 
     if (response.error) {
       logError("email.operational_alert_send_failed", { provider: "resend" });

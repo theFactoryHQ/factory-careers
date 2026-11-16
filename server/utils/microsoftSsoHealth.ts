@@ -36,7 +36,6 @@ interface ProbeMicrosoftSsoCredentialOptions {
 
 const MICROSOFT_GRAPH_SCOPE = 'https://graph.microsoft.com/.default'
 const CACHE_TTL_MS = 5 * 60_000
-const ALERT_RATE_LIMIT_MS = 24 * 60 * 60_000
 
 let cachedHealth: { expiresAt: number, value: MicrosoftSsoHealthResponse } | undefined
 let pendingHealth: Promise<MicrosoftSsoHealthResponse> | undefined
@@ -45,10 +44,10 @@ function result(
   code: MicrosoftSsoHealthCode,
   checkedAt: string,
 ): MicrosoftSsoHealthResponse {
-  return { ok: code === 'healthy', code, checkedAt }
+  return { ok: code === 'healthy' || code.startsWith('expires_'), code, checkedAt }
 }
 
-function expiryCode(expiresAt: Date, now: Date): MicrosoftSsoHealthCode | undefined {
+export function microsoftCredentialExpiryCode(expiresAt: Date, now: Date): MicrosoftSsoHealthCode | undefined {
   const remainingMs = expiresAt.getTime() - now.getTime()
   if (!Number.isFinite(remainingMs) || remainingMs <= 0) return 'expired'
 
@@ -118,7 +117,7 @@ export async function probeMicrosoftSsoCredential({
     try {
       const body = await response.json() as { access_token?: unknown }
       if (typeof body.access_token === 'string' && body.access_token.trim()) {
-        return result(expiryCode(metadata.expiresAt, now) ?? 'healthy', checkedAt)
+        return result(microsoftCredentialExpiryCode(metadata.expiresAt, now) ?? 'healthy', checkedAt)
       }
     }
     catch {
@@ -172,15 +171,12 @@ export function isSuccessfulMicrosoftSsoExchange(code: MicrosoftSsoHealthCode): 
 }
 
 interface DeriveSsoHealthPersistenceOptions {
-  previousStatus: string | null
-  previousAlertedAt: Date | null
   consecutiveTransientFailures: number
   result: MicrosoftSsoHealthResponse
   now?: Date
 }
 
 export type SsoHealthPersistence = {
-  shouldAlert: boolean
   lastProbeStatus: MicrosoftSsoHealthCode
   lastProbedAt: Date
   lastSuccessfulProbeAt?: Date
@@ -188,29 +184,11 @@ export type SsoHealthPersistence = {
 }
 
 export function deriveSsoHealthPersistence({
-  previousStatus,
-  previousAlertedAt,
   consecutiveTransientFailures,
   result: health,
   now = new Date(health.checkedAt),
 }: DeriveSsoHealthPersistenceOptions): SsoHealthPersistence {
-  const unhealthy = health.code !== 'healthy'
-  const transitionedToUnhealthy = unhealthy && previousStatus !== health.code
-  const repeatableIncident = [
-    'invalid_client',
-    'transient_failure',
-    'metadata_missing',
-    'expired',
-  ].includes(health.code)
-  const alertWindowElapsed = unhealthy
-    && (
-      previousAlertedAt === null
-      || now.getTime() - previousAlertedAt.getTime() >= ALERT_RATE_LIMIT_MS
-    )
-
   return {
-    shouldAlert: unhealthy
-      && (transitionedToUnhealthy || (repeatableIncident && alertWindowElapsed)),
     lastProbeStatus: health.code,
     lastProbedAt: now,
     ...(isSuccessfulMicrosoftSsoExchange(health.code)

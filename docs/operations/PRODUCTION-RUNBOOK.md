@@ -303,12 +303,16 @@ sequence.
 
 `POST /api/operations/sso-health` requires `CRON_SECRET` and performs a real
 Microsoft client-credential exchange with the configured Factory Careers SSO
-provider. It returns only a stable code and checked timestamp. The GitHub
-workflow calls it every 15 minutes. Invalid credentials, missing metadata, and
-expiry thresholds alert immediately; transient failures require two fresh
-probes. Operational email is state-transition based and repeated active-
-incident alerts are rate-limited. Hosting `/api/readyz` 503s are not Microsoft
-credential codes and do not use this SSO alert path.
+provider. The Outlook health check also opens the configured mailbox calendar.
+The GitHub workflow checks both every 15 minutes and sends one operations email
+per incident or expiry warning. Set `MICROSOFT_CALENDAR_CREDENTIAL_EXPIRES_AT`
+to the current Entra calendar key expiry in UTC. Set
+`FACTORY_CAREERS_MICROSOFT_ALERT_EMAIL` to the designated notice recipient.
+When the override is empty, notices go to the operations inbox.
+
+The monitor retries unresolved email delivery with the same idempotency key
+for up to 23 hours. Review recipient and provider records before replaying a
+notice with uncertain delivery beyond that window.
 
 Non-secret key ID, activation, expiry, last-probe status, and last-success time
 live in `sso_provider_credential_metadata`, scoped to the provider's
