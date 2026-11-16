@@ -125,6 +125,8 @@ export const cliRouteCoverage: CliRouteCoverageEntry[] = [
   { route: 'server/api/notification-preferences/application-email.put.ts', status: 'supported', command: 'notifications personal set' },
   { route: 'server/api/notification-settings/application-email.get.ts', status: 'supported', command: 'notifications inbox get' },
   { route: 'server/api/notification-settings/application-email.patch.ts', status: 'supported', command: 'notifications inbox set' },
+  { route: 'server/api/operations/calendar-health.post.ts', status: 'internal', reason: 'CRON-secret-only Outlook calendar and credential check for production monitoring.' },
+  { route: 'server/api/operations/microsoft-notice.post.ts', status: 'internal', reason: 'CRON-secret-only notice delivery for the Microsoft health monitor.' },
   { route: 'server/api/operations/sso-health.post.ts', status: 'internal', reason: 'CRON-secret-only Microsoft credential probe for the production monitor; it is not a user-authenticated ATS command.' },
   { route: 'server/api/operations/application-canary.post.ts', status: 'internal', reason: 'CRON-secret-only synthetic application probe for production monitoring; it is not a user-authenticated ATS command.' },
   { route: 'server/api/operations/application-intake-recovery-purge.post.ts', status: 'internal', reason: 'CRON-secret-only retention enforcement for encrypted failed-submission receipts; owners use the authenticated recovery CLI.' },
