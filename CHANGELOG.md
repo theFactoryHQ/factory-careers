@@ -51,6 +51,7 @@ self-hosters.
 
 ### Fixed
 
+- Updated the physical address in Factory Careers email footers to 5350 Wilshire Blvd #36043, Los Angeles, CA 90036.
 - Use the orange Factory dot for the Careers browser tab and home-screen icons.
 - Pinned Node.js 22.23.5 for local development, CI, and the Docker runtime image, and raised the Node 22 engines floor to that security release.
 - Updated the pinned `node-forge` transitive dependency from 1.4.1 to 1.4.3.

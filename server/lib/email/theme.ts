@@ -9,7 +9,7 @@ import { env } from "../../utils/env";
 export const careersEmailConfig = {
   appName: "Factory Careers",
   companyName: "Factory Holdings LLC.",
-  address: "5431 W 104th St, Los Angeles, CA 90045",
+  address: "5350 Wilshire Blvd #36043, Los Angeles, CA 90036",
   accentColor: "#FF4426",
   siteUrl: "https://careers.thefactoryhq.com",
   logoUrl: "https://careers.thefactoryhq.com/factory-logo.png",

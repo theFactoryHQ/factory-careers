@@ -74,7 +74,7 @@ describe("application receipt email branding", () => {
 		expect(html).toContain("Taylor Candidate");
 		expect(html).toContain("Product Engineer");
 		expect(html).toContain("Factory Holdings LLC.");
-		expect(html).toContain("5431 W 104th St, Los Angeles, CA 90045");
+		expect(html).toContain("5350 Wilshire Blvd #36043, Los Angeles, CA 90036");
 	});
 
 
